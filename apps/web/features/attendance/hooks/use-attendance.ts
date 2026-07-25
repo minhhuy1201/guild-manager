@@ -60,7 +60,7 @@ export function useAttendanceRecords() {
 
 /**
  * Danh sách nhân vật đã lọc theo state của bộ lọc (tìm kiếm + lưu phái).
- * So khớp tên/gameId không phân biệt hoa/thường.
+ * So khớp tên/ID trong game không phân biệt hoa/thường.
  * @returns Mảng nhân vật khớp bộ lọc (rỗng khi query chưa có data)
  */
 export function useFilteredCharacters(): Character[] {
@@ -74,7 +74,7 @@ export function useFilteredCharacters(): Character[] {
       const matchKeyword =
         keyword === "" ||
         character.name.toLowerCase().includes(keyword) ||
-        character.gameId.toLowerCase().includes(keyword);
+        character.id.toLowerCase().includes(keyword);
       const matchClass =
         guildClasses.length === 0 ||
         guildClasses.includes(character.guildClass);

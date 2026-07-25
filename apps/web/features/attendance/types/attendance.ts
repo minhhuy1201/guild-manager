@@ -4,16 +4,12 @@ import type { AttendanceStatus, GuildClass } from "@shared/enums";
  * Nhân vật trong bang hội.
  */
 export interface Character {
-  /** ID nội bộ (để map với BE sau) */
+  /** ID trong game — cũng là khóa chính của nhân vật */
   id: string;
   /** Tên nhân vật */
   name: string;
-  /** ID trong game */
-  gameId: string;
   /** Lưu phái (class) */
   guildClass: GuildClass;
-  /** Mật khẩu điểm danh riêng của nhân vật */
-  password: string;
 }
 
 /**

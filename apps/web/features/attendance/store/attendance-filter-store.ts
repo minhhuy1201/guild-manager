@@ -2,7 +2,7 @@ import { create } from "zustand";
 import type { GuildClass } from "@shared/enums";
 
 interface AttendanceFilterState {
-  /** Từ khóa tìm kiếm (tên hoặc gameId) */
+  /** Từ khóa tìm kiếm (tên hoặc ID trong game) */
   search: string;
   /** Các lưu phái đang lọc. Mảng rỗng = tất cả lưu phái. */
   guildClasses: GuildClass[];

@@ -23,6 +23,9 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# generated code (Prisma Client — sinh lại bằng `pnpm prisma:generate`)
+apps/api/src/generated/
+
 # testing
 coverage/
 

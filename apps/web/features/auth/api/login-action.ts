@@ -1,5 +1,7 @@
 "use server";
 
+import { ApiError } from "@/lib/api-client";
+import { loginRequest } from "./auth-api";
 import { clearSession, createSession } from "./session";
 
 /** Kết quả trả về của action đăng nhập. */
@@ -13,44 +15,31 @@ export interface LoginResult {
 }
 
 /**
- * Xác thực tài khoản quản trị dựa trên biến môi trường ADMIN_USERNAME/ADMIN_PASSWORD,
- * rồi tạo cookie phiên httpOnly nếu hợp lệ.
- * Chạy ở server nên thông tin đăng nhập không bị lộ ra client bundle.
- * @param username - Tên đăng nhập người dùng nhập (so sánh không phân biệt hoa thường)
- * @param password - Mật khẩu người dùng nhập (so sánh chính xác)
- * @returns Kết quả đăng nhập kèm thông báo lỗi nếu thất bại
+ * Đăng nhập qua API backend rồi lưu cặp JWT vào cookie httpOnly.
+ * Chạy ở server nên token không bao giờ đi qua JS phía client.
+ * @param username - Tên đăng nhập người dùng nhập
+ * @param password - Mật khẩu người dùng nhập
+ * @returns Kết quả đăng nhập kèm thông báo lỗi tiếng Việt của backend nếu thất bại
  */
 export async function login(
   username: string,
   password: string
 ): Promise<LoginResult> {
-  const expectedUsername = process.env.ADMIN_USERNAME;
-  const expectedPassword = process.env.ADMIN_PASSWORD;
+  try {
+    const tokens = await loginRequest({ username, password });
+    await createSession(tokens);
 
-  if (!expectedUsername || !expectedPassword) {
-    return {
-      success: false,
-      message: "Chưa cấu hình tài khoản quản trị trên máy chủ.",
-    };
+    return { success: true, username: tokens.user.username };
+  } catch (error) {
+    if (error instanceof ApiError) {
+      return { success: false, message: error.message };
+    }
+    throw error;
   }
-
-  const matched =
-    username.trim().toLowerCase() === expectedUsername.trim().toLowerCase() &&
-    password === expectedPassword;
-
-  if (!matched) {
-    return {
-      success: false,
-      message: "Tên đăng nhập hoặc mật khẩu không đúng.",
-    };
-  }
-
-  await createSession(expectedUsername);
-  return { success: true, username: expectedUsername };
 }
 
 /**
- * Đăng xuất: xóa cookie phiên quản trị.
+ * Đăng xuất: xóa cookie access/refresh token.
  * @returns Promise hoàn tất khi phiên bị hủy
  */
 export async function logout(): Promise<void> {

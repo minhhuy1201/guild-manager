@@ -1,17 +1,15 @@
-import type { AttendanceStatus } from "@shared/enums";
+import type { MarkAttendanceInput } from "@shared/schemas";
+
+import { apiFetch } from "@/lib/api-client";
 import type {
   AttendanceRecord,
   BattleSession,
   Character,
   Week,
 } from "../types/attendance";
-import {
-  CHARACTERS,
-  getBattleSessions,
-  getCurrentWeek,
-  getRecordsSnapshot,
-  upsertRecord,
-} from "./mock-data";
+import { recordKey } from "../types/attendance";
+
+export type { MarkAttendanceInput };
 
 /**
  * Query key factory cho domain điểm danh.
@@ -27,6 +25,7 @@ export const attendanceKeys = {
 
 /**
  * Kiểm tra đã quá hạn điểm danh (deadline) hay chưa.
+ * Chỉ dùng để khóa cột trên UI — server mới là nơi chặn thật.
  * @param deadline - Hạn chót cần kiểm tra (ISO string)
  * @returns true nếu hiện tại đã quá deadline
  */
@@ -38,87 +37,56 @@ export function isDeadlinePassed(deadline: string): boolean {
  * Lấy danh sách nhân vật trong bang.
  * @returns Promise trả về mảng nhân vật
  */
-export async function fetchCharacters(): Promise<Character[]> {
-  return CHARACTERS;
+export function fetchCharacters(): Promise<Character[]> {
+  return apiFetch<Character[]>("/attendance/characters");
 }
 
 /**
- * Lấy danh sách buổi đánh trong tuần.
+ * Lấy danh sách buổi đánh của tuần đang mở.
  * @returns Promise trả về mảng buổi đánh
  */
-export async function fetchBattleSessions(): Promise<BattleSession[]> {
-  return getBattleSessions();
+export function fetchBattleSessions(): Promise<BattleSession[]> {
+  return apiFetch<BattleSession[]>("/attendance/sessions");
 }
 
 /**
  * Lấy thông tin tuần điểm danh hiện tại.
  * @returns Promise trả về tuần hiện tại
  */
-export async function fetchCurrentWeek(): Promise<Week> {
-  return getCurrentWeek();
+export function fetchCurrentWeek(): Promise<Week> {
+  return apiFetch<Week>("/attendance/week");
 }
 
 /**
- * Lấy toàn bộ record điểm danh hiện có.
- * @returns Promise trả về map record theo khóa
+ * Lấy toàn bộ record điểm danh của tuần đang mở.
+ * API trả về mảng, component tra cứu theo cặp (nhân vật, buổi đánh) nên đổi sang map.
+ * @returns Promise trả về map record theo khóa `recordKey`
  */
 export async function fetchAttendanceRecords(): Promise<
   Record<string, AttendanceRecord>
 > {
-  return getRecordsSnapshot();
-}
+  const records = await apiFetch<AttendanceRecord[]>("/attendance/records");
 
-/** Tham số điểm danh cho một nhân vật ở một buổi đánh. */
-export interface MarkAttendanceInput {
-  /** ID nhân vật */
-  characterId: string;
-  /** ID buổi đánh */
-  sessionId: string;
-  /** Trạng thái Có/Không */
-  status: AttendanceStatus;
-  /** Mật khẩu điểm danh */
-  password: string;
+  return Object.fromEntries(
+    records.map((record) => [
+      recordKey(record.characterId, record.sessionId),
+      record,
+    ])
+  );
 }
 
 /**
- * Điểm danh cho một nhân vật ở một buổi đánh (validation phía "server").
- * Ném lỗi nếu sai mật khẩu hoặc đã quá hạn.
+ * Điểm danh cho một nhân vật ở một buổi đánh.
+ * Mật khẩu và deadline do server kiểm tra; lỗi nổi lên dưới dạng `ApiError`
+ * với message tiếng Việt để modal hiển thị.
  * @param input - Thông tin điểm danh
  * @returns Promise trả về record vừa ghi
  */
-export async function markAttendance(
+export function markAttendance(
   input: MarkAttendanceInput
 ): Promise<AttendanceRecord> {
-  const { characterId, sessionId, status, password } = input;
-
-  // Early throw: không tìm thấy nhân vật.
-  const character = CHARACTERS.find((c) => c.id === characterId);
-  if (!character) {
-    throw new Error("Không tìm thấy thành viên.");
-  }
-
-  // Early throw: sai mật khẩu của chính nhân vật này.
-  if (password.trim() !== character.password) {
-    throw new Error("Sai mật khẩu thành viên.");
-  }
-
-  // Early throw: không tìm thấy ngày đánh.
-  const session = getBattleSessions().find((s) => s.id === sessionId);
-  if (!session) {
-    throw new Error("Không tìm thấy ngày đánh.");
-  }
-
-  // Early throw: quá hạn điểm danh của chính ngày này.
-  if (isDeadlinePassed(session.deadline)) {
-    throw new Error("Đã quá hạn điểm danh ngày này.");
-  }
-
-  const record: AttendanceRecord = {
-    characterId,
-    sessionId,
-    status,
-    markedAt: new Date().toISOString(),
-  };
-  upsertRecord(record);
-  return record;
+  return apiFetch<AttendanceRecord>("/attendance", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
 }

@@ -101,8 +101,46 @@ web/
 ## Nên / Tránh
 
 - ✅ Server data → TanStack Query · UI state → Zustand.
+- ✅ Gọi backend qua `lib/api-client.ts` (`apiFetch`) trong `features/<feature>/api/` — không `fetch` trực tiếp. Lỗi trả về là `ApiError` với message tiếng Việt của backend, hiển thị thẳng lên UI.
 - ✅ Type/schema dùng chung lấy từ package `shared`.
 - ✅ Giữ `app/` mỏng, logic nằm ở `features/`.
 - ❌ Không gọi `fetch`/`useQuery` rải rác trong component — gói vào hook.
 - ❌ Không lưu response API vào Zustand.
 - ❌ Không over-engineer: chưa cần thì chưa tạo store/abstraction.
+
+# Backend
+
+Quy ước cho `apps/api`. Chi tiết cây thư mục và ghi chú kỹ thuật: `apps/api/docs/structure.md`.
+
+## Stack
+
+- **NestJS 11** (Express) — HTTP layer, kiến trúc feature-based
+- **Prisma 7 + PostgreSQL** — dữ liệu, kết nối qua driver adapter `@prisma/adapter-pg`
+- **Zod + nestjs-zod** — validate env (fail-fast lúc boot) và DTO (`createZodDto`)
+- **Swagger** — `/api/docs`, tắt ở production
+- **TypeScript** — strict mode
+
+## Tầng và luật phụ thuộc
+
+`src/modules/` (business) → `src/shared/` (service/util có logic) → `src/common/` (guard, filter,
+interceptor, constants — không business logic); `src/infrastructure/` (Prisma) và `src/config/` nằm dưới cùng.
+
+- `common/` và `config/` **không** import từ `modules/`, `shared/`, `infrastructure/`.
+- Module chỉ import **file `*.module`** của module khác, không đụng file nội bộ.
+- Controller **không** gọi Prisma trực tiếp: Controller → Service → (Repository) → Prisma.
+- ESLint (`no-restricted-imports`) chặn cứng hai luật trên — vi phạm là lỗi lint, không phải quy ước miệng.
+
+## Code dùng chung với frontend
+
+- Enum: `@guild/shared/enums` · Zod schema: `@guild/shared/schemas` (nguồn ở `packages/shared/`).
+- **Không** định nghĩa lại type/schema đã có ở đó. Enum trong `schema.prisma` phải khớp giá trị với enum dùng chung.
+- Alias nội bộ chỉ có `@/*` = `src/*` (không dùng `@modules/*`, `@common/*`, `@shared/*` để tránh đụng nghĩa với web).
+
+## Nên / Tránh
+
+- ✅ Response thành công `{ data }`, lỗi `{ statusCode, message, errors?, path, requestId, timestamp }`.
+- ✅ DTO chỉ validate shape (zod), logic nằm ở service.
+- ✅ Mật khẩu luôn lưu hash (`src/shared/utils/password.util.ts`), không bao giờ plaintext.
+- ❌ Không trả thẳng model Prisma ra API — map sang entity/response type.
+- ❌ Không dùng `forwardRef()` để chữa circular dependency — tách module thứ 3 hoặc dùng event.
+- ❌ Không tạo folder/abstraction cho đủ bộ khi chưa dùng tới.

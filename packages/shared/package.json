@@ -2,8 +2,12 @@
   "name": "@guild/shared",
   "version": "0.0.0",
   "private": true,
-  "type": "module",
+  "//": "Không đặt \"type\": \"module\" — apps/api dùng TypeScript nodenext + CommonJS, nếu là ESM thì import tương đối bắt buộc có đuôi .js, mà Next.js/Turbopack của apps/web lại không resolve được đuôi đó.",
   "exports": {
-    "./enums": "./enums/index.ts"
+    "./enums": "./enums/index.ts",
+    "./schemas": "./schemas/index.ts"
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
   }
 }

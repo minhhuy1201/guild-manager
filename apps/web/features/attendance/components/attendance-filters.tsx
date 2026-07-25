@@ -22,7 +22,7 @@ import {
 import { useAttendanceFilterStore } from "../store/attendance-filter-store";
 
 /**
- * Thanh lọc: tìm kiếm theo tên/gameId, chọn lưu phái, và nhập mật khẩu điểm danh.
+ * Thanh lọc: tìm kiếm theo tên/ID trong game, chọn lưu phái, và nhập mật khẩu điểm danh.
  * Đọc/ghi trực tiếp vào store bộ lọc (Zustand).
  * @returns Card chứa các bộ lọc
  */

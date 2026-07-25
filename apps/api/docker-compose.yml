@@ -1,0 +1,30 @@
+
+# PostgreSQL cho môi trường dev. Biến POSTGRES_* đọc từ file .env cùng thư mục,
+# giá trị mặc định khớp với DATABASE_URL trong .env.example.
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: guild-manager-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-guild_manager}
+      # Cần thiết để tên nhân vật tiếng Việt sort/so sánh đúng.
+      LANG: C.UTF-8
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - guild-manager-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-guild_manager}',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  guild-manager-db-data:

@@ -3,16 +3,27 @@ import "server-only";
 import { cookies } from "next/headers";
 
 import {
-  SESSION_COOKIE,
-  SESSION_MAX_AGE,
-  signSessionToken,
-  verifySessionToken,
-  type SessionPayload,
-} from "../lib/session-token";
+  ACCESS_TOKEN_COOKIE,
+  ACCESS_TOKEN_MAX_AGE,
+  AUTH_COOKIE_OPTIONS,
+  REFRESH_TOKEN_COOKIE,
+  REFRESH_TOKEN_MAX_AGE,
+  type AuthTokens,
+} from "../lib/auth-cookies";
+import { verifyJwt } from "../lib/jwt";
+
+/** Thông tin quản trị viên đang đăng nhập, đọc từ access token. */
+export interface SessionUser {
+  /** Tên đăng nhập */
+  username: string;
+  /** Quyền của tài khoản */
+  role: string;
+}
 
 /**
  * Lấy AUTH_SECRET từ biến môi trường, ném lỗi sớm nếu chưa cấu hình.
- * @returns Chuỗi bí mật dùng ký token phiên
+ * Giá trị phải trùng AUTH_SECRET của apps/api vì backend là bên ký token.
+ * @returns Chuỗi bí mật dùng verify JWT
  */
 export function getAuthSecret(): string {
   const secret = process.env.AUTH_SECRET;
@@ -23,41 +34,47 @@ export function getAuthSecret(): string {
 }
 
 /**
- * Tạo phiên đăng nhập mới và ghi cookie httpOnly.
- * @param username - Tên đăng nhập đã được xác thực
+ * Ghi cặp token vào cookie httpOnly.
+ * @param tokens - Access token và refresh token do API phát
  * @returns Promise hoàn tất khi cookie được ghi
  */
-export async function createSession(username: string): Promise<void> {
-  const exp = Math.floor(Date.now() / 1000) + SESSION_MAX_AGE;
-  const token = await signSessionToken({ username, exp }, getAuthSecret());
-
+export async function createSession(tokens: AuthTokens): Promise<void> {
   const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE, token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: SESSION_MAX_AGE,
+
+  cookieStore.set(ACCESS_TOKEN_COOKIE, tokens.accessToken, {
+    ...AUTH_COOKIE_OPTIONS,
+    maxAge: ACCESS_TOKEN_MAX_AGE,
+  });
+  cookieStore.set(REFRESH_TOKEN_COOKIE, tokens.refreshToken, {
+    ...AUTH_COOKIE_OPTIONS,
+    maxAge: REFRESH_TOKEN_MAX_AGE,
   });
 }
 
 /**
- * Đọc phiên đăng nhập hiện tại từ cookie và xác thực chữ ký/hạn dùng.
- * @returns Payload phiên nếu hợp lệ, ngược lại null
+ * Đọc phiên đăng nhập hiện tại từ access token trong cookie.
+ * Không tự gia hạn ở đây vì Server Component không ghi được cookie —
+ * việc refresh do `middleware.ts` đảm nhiệm.
+ * @returns Thông tin tài khoản nếu access token còn hợp lệ, ngược lại null
  */
-export async function getSession(): Promise<SessionPayload | null> {
+export async function getSession(): Promise<SessionUser | null> {
   const cookieStore = await cookies();
-  return verifySessionToken(
-    cookieStore.get(SESSION_COOKIE)?.value,
+  const payload = await verifyJwt(
+    cookieStore.get(ACCESS_TOKEN_COOKIE)?.value,
     getAuthSecret()
   );
+
+  if (!payload) return null;
+
+  return { username: payload.sub, role: payload.role };
 }
 
 /**
- * Xóa cookie phiên (đăng xuất).
+ * Xóa cả hai cookie token (đăng xuất).
  * @returns Promise hoàn tất khi cookie bị xóa
  */
 export async function clearSession(): Promise<void> {
   const cookieStore = await cookies();
-  cookieStore.delete(SESSION_COOKIE);
+  cookieStore.delete(ACCESS_TOKEN_COOKIE);
+  cookieStore.delete(REFRESH_TOKEN_COOKIE);
 }

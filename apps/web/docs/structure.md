@@ -15,7 +15,7 @@ apps/web/
 ├── middleware.ts               # Chặn route admin ("/xep-team/*") khi chưa có phiên hợp lệ
 ├── features/
 │   └── attendance/             # Feature điểm danh
-│       ├── api/                # mock-data (backend stub) + query key factory + async stubs
+│       ├── api/                # query key factory + hàm gọi API thật (qua lib/api-client)
 │       ├── hooks/              # TanStack Query hooks (useCharacters, useMarkAttendance...)
 │       ├── store/              # Zustand: UI state của bộ lọc (search/lưu phái/mật khẩu)
 │       ├── types/              # Type nội bộ feature (Character, BattleSession...)
@@ -36,8 +36,10 @@ apps/web/
 │   │                           #   site-header.tsx, main-nav.tsx, status-badge...
 │   └── providers.tsx           # QueryClientProvider (TanStack Query)
 ├── config/
-│   └── routes.ts               # ROUTES — hằng đường dẫn dùng cho nav/điều hướng
+│   ├── routes.ts               # ROUTES — hằng đường dẫn dùng cho nav/điều hướng
+│   └── api.ts                  # API_BASE_URL (NEXT_PUBLIC_API_URL)
 └── lib/
+    ├── api-client.ts           # apiFetch() — chỗ DUY NHẤT fetch tới backend + ApiError
     ├── utils.ts                # cn() — merge Tailwind class
     └── format.ts               # formatDate/formatDateTime
 ```
@@ -45,6 +47,7 @@ apps/web/
 ## Quy tắc cơ bản
 
 - Server data (records, characters...) → **TanStack Query** qua `features/<feature>/hooks`. Không lưu vào Zustand.
+- Mọi lời gọi backend đi qua `lib/api-client.ts` (`apiFetch`) trong `features/<feature>/api/` — không `fetch` trực tiếp ở component/hook. Lỗi từ API là `ApiError`, `message` đã là tiếng Việt do backend trả, hiển thị thẳng lên UI.
 - UI/client state (bộ lọc, modal...) → **Zustand** trong `features/<feature>/store`.
 - `app/` giữ mỏng: mọi logic nằm trong `features/`.
 - Component shadcn → luôn ở `components/ui/`, không sửa trực tiếp file generate. Biến thể riêng (vd tone badge success/danger) → wrap ở `components/shared/`.

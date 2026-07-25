@@ -2,9 +2,10 @@
 
 Tổng hợp toàn bộ luật về **thời gian / deadline** của tính năng điểm danh. Dùng để map với backend sau. Mọi mốc giờ hiểu theo giờ Việt Nam (UTC+7) trừ khi ghi khác.
 
-> Trạng thái: các luật ở **Mục 3 đã được triển khai** trong `features/attendance/api/mock-data.ts`
-> (`getBattleSessions`, `getCurrentWeek`, `activeGuildWarSaturday`). Nguồn dữ liệu (nhân vật/record)
-> vẫn hardcode, sẽ map với BE sau. Danh sách ngày đánh chỉnh ở `SESSION_TEMPLATES`.
+> Trạng thái: toàn bộ luật đã **chuyển sang backend** — `apps/api/src/modules/attendance/attendance-schedule.ts`
+> (`getActiveWeek`, `isDeadlinePassed`), tính theo **UTC+7 cố định**, không phụ thuộc giờ máy. Danh sách ngày
+> đánh chỉnh ở `SESSION_TEMPLATES` của file đó. FE chỉ dùng `isDeadlinePassed` để khóa cột trên UI;
+> chặn thật nằm ở server.
 
 ## 1. Mô hình
 

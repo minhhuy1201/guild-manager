@@ -1,0 +1,90 @@
+// Prisma schema — single source of truth cho model dữ liệu của Guild Manager.
+// Domain lấy từ apps/web/docs/idea.md + attendance-time-rules.md.
+
+// App chạy CommonJS (NestJS) nên client phải sinh ra ở dạng cjs,
+// nếu không jest/ts-node sẽ vỡ vì `import.meta` trong code generate.
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+  runtime      = "nodejs"
+  // Import không đuôi để ts-node (seed script) resolve được, không chỉ webpack/jest.
+  importFileExtension = ""
+}
+
+// Connection URL khai báo ở prisma.config.ts (Prisma 7 không còn nhận `url` trong schema).
+datasource db {
+  provider = "postgresql"
+}
+
+/// Lưu phái (class nhân vật). Giá trị phải khớp enum GuildClass ở packages/shared/enums.
+enum GuildClass {
+  CUU_LINH
+  HUYET_HA
+  LONG_NGAM
+  THAN_TUONG
+  THIET_Y
+  TOAI_MONG
+  TO_VAN
+}
+
+/// Trạng thái điểm danh. Giá trị phải khớp enum AttendanceStatus ở packages/shared/enums.
+enum AttendanceStatus {
+  CO
+  KHONG
+}
+
+/// Nhân vật trong bang hội.
+model Character {
+  /// ID trong game — dùng luôn làm khóa chính, không sinh thêm id nội bộ.
+  id         String     @id
+  /// Tên hiển thị của nhân vật.
+  name       String
+  guildClass GuildClass
+  /// Hash mật khẩu điểm danh riêng của nhân vật (không bao giờ lưu plaintext).
+  passwordHash String
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  attendanceRecords AttendanceRecord[]
+
+  @@index([guildClass])
+}
+
+/// Một trận đánh trong tuần (ví dụ: Thứ 7 · Guild War).
+model BattleSession {
+  id        String   @id @default(cuid())
+  /// Nhãn hiển thị ngắn gọn (thứ + ghi chú).
+  label     String
+  /// Thời điểm diễn ra trận đánh.
+  dateTime  DateTime
+  /// Hạn chót điểm danh hiệu dụng của trận này (đã tính cả trần 17:00 Thứ 5).
+  deadline  DateTime
+  /// Trận Guild War Thứ 7 — cố định, được làm nổi bật ở UI.
+  isGuildWar Boolean @default(false)
+  /// Mốc Thứ 2 00:00 của tuần chứa trận này — dùng để gom trận theo tuần.
+  weekStart DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  attendanceRecords AttendanceRecord[]
+
+  @@unique([weekStart, label])
+  @@index([weekStart])
+}
+
+/// Một lượt điểm danh của nhân vật cho một trận đánh.
+model AttendanceRecord {
+  id          String           @id @default(cuid())
+  characterId String
+  sessionId   String
+  status      AttendanceStatus
+  /// Thời điểm điểm danh gần nhất (đổi Có ⇄ Không trong hạn thì cập nhật lại).
+  markedAt    DateTime         @default(now())
+
+  character Character     @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  session   BattleSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([characterId, sessionId])
+  @@index([sessionId])
+}

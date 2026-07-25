@@ -5,3 +5,7 @@ packages:
 ignoredBuiltDependencies:
   - sharp
   - unrs-resolver
+  # Prisma 7 chạy rust-free, không cần postinstall script tải engine.
+  - "@prisma/engines"
+  - "@scarf/scarf"
+  - prisma
