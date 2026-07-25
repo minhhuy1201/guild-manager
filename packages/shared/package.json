@@ -1,0 +1,9 @@
+{
+  "name": "@guild/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./enums": "./enums/index.ts"
+  }
+}

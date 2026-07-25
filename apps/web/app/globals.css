@@ -1,0 +1,318 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+    --font-heading: var(--font-sans);
+    --font-sans: var(--font-google-sans), sans-serif;
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar: var(--sidebar);
+    --color-chart-5: var(--chart-5);
+    --color-chart-4: var(--chart-4);
+    --color-chart-3: var(--chart-3);
+    --color-chart-2: var(--chart-2);
+    --color-chart-1: var(--chart-1);
+    --color-ring: var(--ring);
+    --color-input: var(--input);
+    --color-border: var(--border);
+    --color-destructive: var(--destructive);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-accent: var(--accent);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-muted: var(--muted);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary: var(--secondary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary: var(--primary);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-popover: var(--popover);
+    --color-card-foreground: var(--card-foreground);
+    --color-card: var(--card);
+    --color-foreground: var(--foreground);
+    --color-background: var(--background);
+    --radius-sm: calc(var(--radius) * 0.6);
+    --radius-md: calc(var(--radius) * 0.8);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) * 1.4);
+    --radius-2xl: calc(var(--radius) * 1.8);
+    --radius-3xl: calc(var(--radius) * 2.2);
+    --radius-4xl: calc(var(--radius) * 2.6);
+    --font-mono: Geist Mono, monospace;
+    --font-serif: Noto Serif Georgian, ui-serif, serif;
+    --radius: 0.5rem;
+    --tracking-tighter: calc(var(--tracking-normal) - 0.05em);
+    --tracking-tight: calc(var(--tracking-normal) - 0.025em);
+    --tracking-wide: calc(var(--tracking-normal) + 0.025em);
+    --tracking-wider: calc(var(--tracking-normal) + 0.05em);
+    --tracking-widest: calc(var(--tracking-normal) + 0.1em);
+    --tracking-normal: var(--tracking-normal);
+    --shadow-2xl: var(--shadow-2xl);
+    --shadow-xl: var(--shadow-xl);
+    --shadow-lg: var(--shadow-lg);
+    --shadow-md: var(--shadow-md);
+    --shadow: var(--shadow);
+    --shadow-sm: var(--shadow-sm);
+    --shadow-xs: var(--shadow-xs);
+    --shadow-2xs: var(--shadow-2xs);
+    --spacing: var(--spacing);
+    --letter-spacing: var(--letter-spacing);
+    --shadow-offset-y: var(--shadow-offset-y);
+    --shadow-offset-x: var(--shadow-offset-x);
+    --shadow-spread: var(--shadow-spread);
+    --shadow-blur: var(--shadow-blur);
+    --shadow-opacity: var(--shadow-opacity);
+    --color-shadow-color: var(--shadow-color);
+    --color-destructive-foreground: var(--destructive-foreground);
+}
+
+:root {
+    --background: oklch(0.9851 0 0);
+    --foreground: oklch(0 0 0);
+    --card: oklch(1 0 267.5100);
+    --card-foreground: oklch(0.2103 0 267.5100);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0 0 0);
+    --primary: oklch(0.5144 0.1605 267.4400);
+    --primary-foreground: oklch(0.9700 0.0140 254.6040);
+    --secondary: oklch(0.9400 0 0);
+    --secondary-foreground: oklch(0.2500 0 0);
+    --muted: oklch(0.9700 0 0);
+    --muted-foreground: oklch(0.4400 0 0);
+    --accent: oklch(0.9214 0.0248 257.6500);
+    --accent-foreground: oklch(0.2571 0.1161 272.2400);
+    --destructive: oklch(0.5800 0.2200 27);
+    --border: oklch(0.9200 0 0);
+    --input: oklch(0.9400 0 0);
+    --ring: oklch(0.5144 0.1605 267.4400);
+    --chart-1: oklch(0.9214 0.0248 257.6500);
+    --chart-2: oklch(0.7597 0.0804 267.0100);
+    --chart-3: oklch(0.6083 0.1247 272.7200);
+    --chart-4: oklch(0.5144 0.1605 267.4400);
+    --chart-5: oklch(0.2571 0.1161 272.2400);
+    --radius: 0.5rem;
+    --sidebar: oklch(1 0 267.5100);
+    --sidebar-foreground: oklch(0 0 0);
+    --sidebar-primary: oklch(0.5144 0.1605 267.4400);
+    --sidebar-primary-foreground: oklch(0.9700 0.0140 254.6040);
+    --sidebar-accent: oklch(0.9214 0.0248 257.6500);
+    --sidebar-accent-foreground: oklch(0.2571 0.1161 272.2400);
+    --sidebar-border: oklch(0.9200 0 0);
+    --sidebar-ring: oklch(0.5144 0.1605 267.4400);
+    --destructive-foreground: oklch(0.9700 0.0140 254.6040);
+    --font-sans: var(--font-google-sans), sans-serif;
+    --font-serif: Noto Serif Georgian, ui-serif, serif;
+    --font-mono: Geist Mono, monospace;
+    --shadow-color: oklch(0.2571 0.1161 272.24);
+    --shadow-opacity: 0.15;
+    --shadow-blur: 3px;
+    --shadow-spread: 0px;
+    --shadow-offset-x: 0.25px;
+    --shadow-offset-y: 1px;
+    --letter-spacing: 0em;
+    --spacing: 0.25rem;
+    --shadow-2xs: 0.25px 1px 3px 0px hsl(236.5829 64.2250% 21.4383% / 0.07);
+    --shadow-xs: 0.25px 1px 3px 0px hsl(236.5829 64.2250% 21.4383% / 0.07);
+    --shadow-sm: 0.25px 1px 3px 0px hsl(236.5829 64.2250% 21.4383% / 0.15), 0.25px 1px 2px -1px hsl(236.5829 64.2250% 21.4383% / 0.15);
+    --shadow: 0.25px 1px 3px 0px hsl(236.5829 64.2250% 21.4383% / 0.15), 0.25px 1px 2px -1px hsl(236.5829 64.2250% 21.4383% / 0.15);
+    --shadow-md: 0.25px 1px 3px 0px hsl(236.5829 64.2250% 21.4383% / 0.15), 0.25px 2px 4px -1px hsl(236.5829 64.2250% 21.4383% / 0.15);
+    --shadow-lg: 0.25px 1px 3px 0px hsl(236.5829 64.2250% 21.4383% / 0.15), 0.25px 4px 6px -1px hsl(236.5829 64.2250% 21.4383% / 0.15);
+    --shadow-xl: 0.25px 1px 3px 0px hsl(236.5829 64.2250% 21.4383% / 0.15), 0.25px 8px 10px -1px hsl(236.5829 64.2250% 21.4383% / 0.15);
+    --shadow-2xl: 0.25px 1px 3px 0px hsl(236.5829 64.2250% 21.4383% / 0.38);
+    --tracking-normal: 0em;
+}
+
+.dark {
+    --background: oklch(0 0 0);
+    --foreground: oklch(1 0 0);
+    --card: oklch(0.2103 0 267.5100);
+    --card-foreground: oklch(0.9461 0 0);
+    --popover: oklch(0.2103 0 267.5100);
+    --popover-foreground: oklch(1 0 0);
+    --primary: oklch(0.5144 0.1605 267.4400);
+    --primary-foreground: oklch(0.9700 0.0140 254.6040);
+    --secondary: oklch(0.2500 0 0);
+    --secondary-foreground: oklch(0.9400 0 0);
+    --muted: oklch(0.2300 0 0);
+    --muted-foreground: oklch(0.7200 0 0);
+    --accent: oklch(0.3200 0 0);
+    --accent-foreground: oklch(0.9214 0.0248 257.6500);
+    --destructive: oklch(0.7040 0.1910 22.2160);
+    --border: oklch(0.2600 0 0);
+    --input: oklch(0.3200 0 0);
+    --ring: oklch(0.5144 0.1605 267.4400);
+    --chart-1: oklch(0.9214 0.0248 257.6500);
+    --chart-2: oklch(0.7597 0.0804 267.0100);
+    --chart-3: oklch(0.6083 0.1247 272.7200);
+    --chart-4: oklch(0.5144 0.1605 267.4400);
+    --chart-5: oklch(0.2571 0.1161 272.2400);
+    --sidebar: oklch(0.2103 0 267.5100);
+    --sidebar-foreground: oklch(1 0 0);
+    --sidebar-primary: oklch(0.5144 0.1605 267.4400);
+    --sidebar-primary-foreground: oklch(0.9700 0.0140 254.6040);
+    --sidebar-accent: oklch(0.3200 0 0);
+    --sidebar-accent-foreground: oklch(0.9214 0.0248 257.6500);
+    --sidebar-border: oklch(0.2600 0 0);
+    --sidebar-ring: oklch(0.5144 0.1605 267.4400);
+    --destructive-foreground: oklch(0.9700 0.0140 254.6040);
+    --radius: 0.5rem;
+    --font-sans: var(--font-google-sans), sans-serif;
+    --font-serif: Noto Serif Georgian, ui-serif, serif;
+    --font-mono: Geist Mono, monospace;
+    --shadow-color: oklch(0.2571 0.1161 272.24);
+    --shadow-opacity: 0.15;
+    --shadow-blur: 3px;
+    --shadow-spread: 0px;
+    --shadow-offset-x: 0.25px;
+    --shadow-offset-y: 1px;
+    --letter-spacing: 0em;
+    --spacing: 0.25rem;
+    --shadow-2xs: 0.25px 1px 3px 0px hsl(236.5829 64.2250% 21.4383% / 0.07);
+    --shadow-xs: 0.25px 1px 3px 0px hsl(236.5829 64.2250% 21.4383% / 0.07);
+    --shadow-sm: 0.25px 1px 3px 0px hsl(236.5829 64.2250% 21.4383% / 0.15), 0.25px 1px 2px -1px hsl(236.5829 64.2250% 21.4383% / 0.15);
+    --shadow: 0.25px 1px 3px 0px hsl(236.5829 64.2250% 21.4383% / 0.15), 0.25px 1px 2px -1px hsl(236.5829 64.2250% 21.4383% / 0.15);
+    --shadow-md: 0.25px 1px 3px 0px hsl(236.5829 64.2250% 21.4383% / 0.15), 0.25px 2px 4px -1px hsl(236.5829 64.2250% 21.4383% / 0.15);
+    --shadow-lg: 0.25px 1px 3px 0px hsl(236.5829 64.2250% 21.4383% / 0.15), 0.25px 4px 6px -1px hsl(236.5829 64.2250% 21.4383% / 0.15);
+    --shadow-xl: 0.25px 1px 3px 0px hsl(236.5829 64.2250% 21.4383% / 0.15), 0.25px 8px 10px -1px hsl(236.5829 64.2250% 21.4383% / 0.15);
+    --shadow-2xl: 0.25px 1px 3px 0px hsl(236.5829 64.2250% 21.4383% / 0.38);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    }
+  body {
+    @apply text-foreground;
+    letter-spacing: var(--tracking-normal);
+    }
+  html {
+    @apply font-sans;
+    }
+}
+
+/*
+ * Mica / acrylic backdrop
+ * -----------------------
+ * The "aurora" (theme-tinted color blobs + vignette) and the film grain each
+ * live on their own `position: fixed` pseudo-element layer, NOT on the body
+ * background. This matters for scroll performance: `background-attachment: fixed`
+ * forces a full-viewport repaint every scroll frame, whereas a fixed-position
+ * layer is promoted to its own GPU compositor layer and just stays put — no
+ * repaint. Cards float above as translucent glass panels (backdrop-filter),
+ * letting the aurora bleed through — the mica look.
+ */
+@layer base {
+  body {
+    position: relative;
+    background-color: var(--background);
+  }
+
+  /* Aurora + vignette layer (behind everything, composited, no scroll repaint). */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    pointer-events: none;
+    background-image:
+      /* vignette: transparent bright core, darker toward the edges */
+      radial-gradient(
+        ellipse 90% 75% at 50% 32%,
+        transparent 45%,
+        color-mix(in oklab, var(--foreground) 7%, transparent) 100%
+      ),
+      /* aurora blobs, tinted from the theme palette */
+      radial-gradient(
+        circle 45vw at 12% 16%,
+        color-mix(in oklab, var(--primary) 26%, transparent),
+        transparent 60%
+      ),
+      radial-gradient(
+        circle 40vw at 88% 10%,
+        color-mix(in oklab, var(--chart-3) 22%, transparent),
+        transparent 55%
+      ),
+      radial-gradient(
+        circle 48vw at 82% 88%,
+        color-mix(in oklab, var(--chart-4) 24%, transparent),
+        transparent 60%
+      ),
+      radial-gradient(
+        circle 42vw at 16% 92%,
+        color-mix(in oklab, var(--accent) 55%, transparent),
+        transparent 58%
+      );
+  }
+
+  .dark body::before {
+    background-image:
+      radial-gradient(
+        ellipse 90% 75% at 50% 32%,
+        transparent 40%,
+        color-mix(in oklab, black 55%, transparent) 100%
+      ),
+      radial-gradient(
+        circle 45vw at 12% 16%,
+        color-mix(in oklab, var(--primary) 42%, transparent),
+        transparent 60%
+      ),
+      radial-gradient(
+        circle 40vw at 88% 10%,
+        color-mix(in oklab, var(--chart-3) 34%, transparent),
+        transparent 55%
+      ),
+      radial-gradient(
+        circle 48vw at 82% 88%,
+        color-mix(in oklab, var(--chart-4) 40%, transparent),
+        transparent 60%
+      ),
+      radial-gradient(
+        circle 42vw at 16% 92%,
+        color-mix(in oklab, var(--primary) 22%, transparent),
+        transparent 58%
+      );
+  }
+
+  /* Faint film grain for the mica "texture" — its own fixed layer above the
+     aurora but below content. */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.22;
+    background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='160'%20height='160'%3E%3Cfilter%20id='n'%3E%3CfeTurbulence%20type='fractalNoise'%20baseFrequency='0.8'%20numOctaves='3'%20stitchTiles='stitch'/%3E%3C/filter%3E%3Crect%20width='100%25'%20height='100%25'%20filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .dark body::after {
+    opacity: 0.35;
+  }
+
+  /* Cards as acrylic glass panels floating over the mica backdrop. */
+  [data-slot="card"] {
+    background-color: color-mix(in oklab, var(--card) 72%, transparent);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    backdrop-filter: blur(14px) saturate(140%);
+    border-color: color-mix(in oklab, var(--border) 55%, transparent);
+    box-shadow:
+      0 1px 0 0 color-mix(in oklab, var(--foreground) 4%, transparent) inset,
+      0 24px 48px -20px color-mix(in oklab, var(--shadow-color) 45%, transparent),
+      0 8px 20px -12px color-mix(in oklab, var(--shadow-color) 35%, transparent);
+  }
+
+  /*
+   * Sticky first-column cells must stay opaque so content scrolling under them
+   * is masked. They reference the solid --card token, so keep that solid here.
+   */
+  [data-slot="card"] .sticky {
+    background-color: var(--card);
+  }
+}
