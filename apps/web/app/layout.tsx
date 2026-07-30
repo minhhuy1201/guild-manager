@@ -1,20 +1,15 @@
 import type { Metadata } from "next";
-import { Geist_Mono, Google_Sans_Flex } from "next/font/google";
+import { Be_Vietnam_Pro } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { SiteHeader } from "@/components/shared/site-header";
 import "./globals.css";
 
-// Font chính toàn hệ thống: Google Sans Flex (variable, có optical sizing).
-const googleSans = Google_Sans_Flex({
-  variable: "--font-google-sans",
+// Font chính toàn hệ thống: Be Vietnam Pro (sans-serif, hỗ trợ đầy đủ tiếng Việt).
+const beVietnamPro = Be_Vietnam_Pro({
+  variable: "--font-be-vietnam-pro",
   subsets: ["latin", "vietnamese"],
-  axes: ["opsz"],
+  weight: ["300", "400", "500", "600", "700"],
   display: "swap",
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
@@ -30,7 +25,7 @@ export default function RootLayout({
   return (
     <html
       lang="vi"
-      className={`${googleSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${beVietnamPro.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
