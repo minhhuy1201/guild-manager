@@ -18,13 +18,13 @@ const ADMIN_PATH_PREFIX = "/xep-team";
 /**
  * Chạy trước mỗi request trang để làm hai việc:
  * 1. Tự gia hạn phiên — access token hết hạn mà refresh token còn hạn thì đổi cặp token mới.
- *    Middleware là chỗ duy nhất trong Next ghi được cookie cho mọi request, nên việc refresh
+ *    Proxy là chỗ duy nhất trong Next ghi được cookie cho mọi request, nên việc refresh
  *    phải nằm ở đây thay vì trong Server Component.
  * 2. Chặn truy cập trực tiếp (gõ/copy URL) vào route chỉ dành cho quản trị.
  * @param request - Request đang được xử lý
  * @returns Response tiếp tục xử lý (kèm cookie mới nếu vừa gia hạn), hoặc redirect về trang chủ
  */
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const secret = process.env.AUTH_SECRET;
   const accessToken = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
   const refreshToken = request.cookies.get(REFRESH_TOKEN_COOKIE)?.value;

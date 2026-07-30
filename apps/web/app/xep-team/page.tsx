@@ -12,8 +12,8 @@ export const metadata: Metadata = {
 
 /**
  * Route "/xep-team" — trang xếp team, chỉ quản trị viên truy cập được.
- * Middleware đã chặn từ trước; kiểm tra lại ở đây để phòng trường hợp
- * middleware bị bỏ qua (rewrite nội bộ, đổi cấu hình matcher...).
+ * Proxy đã chặn từ trước; kiểm tra lại ở đây để phòng trường hợp
+ * proxy bị bỏ qua (rewrite nội bộ, đổi cấu hình matcher...).
  * @returns Nội dung trang xếp team
  */
 export default async function TeamBuilderPage() {

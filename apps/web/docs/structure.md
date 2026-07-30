@@ -12,7 +12,7 @@ apps/web/
 │   │   └── page.tsx            # Route "/lich-su-diem-danh" — render <AttendanceLogTable/>
 │   └── xep-team/
 │       └── page.tsx            # Route "/xep-team" — CHỈ admin (check lại session ở server)
-├── middleware.ts               # Chặn route admin ("/xep-team/*") khi chưa có phiên hợp lệ
+├── proxy.ts                    # Chặn route admin ("/xep-team/*") khi chưa có phiên hợp lệ
 ├── features/
 │   └── attendance/             # Feature điểm danh
 │       ├── api/                # query key factory + hàm gọi API thật (qua lib/api-client)
@@ -53,4 +53,4 @@ apps/web/
 - Component shadcn → luôn ở `components/ui/`, không sửa trực tiếp file generate. Biến thể riêng (vd tone badge success/danger) → wrap ở `components/shared/`.
 - Không import trực tiếp file nội bộ của feature khác — chỉ qua `index.ts` của feature đó.
 - Phân quyền: trạng thái đăng nhập nằm ở **cookie httpOnly ký HMAC** (`AUTH_SECRET`), không lưu ở client.
-  Ẩn/hiện nav chỉ là UI; chặn thật nằm ở `middleware.ts` + kiểm tra `getSession()` trong page server.
+  Ẩn/hiện nav chỉ là UI; chặn thật nằm ở `proxy.ts` + kiểm tra `getSession()` trong page server.

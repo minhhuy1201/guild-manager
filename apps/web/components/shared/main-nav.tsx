@@ -37,7 +37,7 @@ interface MainNavProps {
 /**
  * Thanh điều hướng chính, highlight mục đang mở theo pathname.
  * Mục `adminOnly` chỉ hiện khi đã đăng nhập — việc chặn truy cập thật sự do
- * middleware và layout server đảm nhiệm.
+ * proxy và layout server đảm nhiệm.
  * @param props.isAdmin - Có hiển thị mục dành riêng cho quản trị hay không
  * @returns Nav chứa các nút điều hướng
  */

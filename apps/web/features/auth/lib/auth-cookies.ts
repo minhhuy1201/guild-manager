@@ -1,7 +1,7 @@
 /**
  * Tên và cấu hình cookie giữ JWT.
  * Token nằm trong cookie httpOnly nên JS phía client không đọc được (chống XSS);
- * file này không import `next/headers` để middleware (Edge) dùng lại được.
+ * file này không import `next/headers` để proxy (Edge) dùng lại được.
  */
 
 /** Cookie chứa access token (hạn 1 ngày). */

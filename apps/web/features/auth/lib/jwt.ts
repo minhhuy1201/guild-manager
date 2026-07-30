@@ -1,7 +1,7 @@
 /**
  * Verify JWT HS256 do backend (apps/api) ký, bằng Web Crypto.
  * File này không dùng API riêng của Node hay `next/headers` nên chạy được cả ở
- * middleware (Edge runtime) lẫn server action.
+ * proxy (Edge runtime) lẫn server action.
  */
 
 /** Thuật toán duy nhất được chấp nhận — trùng với thuật toán mặc định của @nestjs/jwt. */

@@ -54,7 +54,7 @@ export async function createSession(tokens: AuthTokens): Promise<void> {
 /**
  * Đọc phiên đăng nhập hiện tại từ access token trong cookie.
  * Không tự gia hạn ở đây vì Server Component không ghi được cookie —
- * việc refresh do `middleware.ts` đảm nhiệm.
+ * việc refresh do `proxy.ts` đảm nhiệm.
  * @returns Thông tin tài khoản nếu access token còn hợp lệ, ngược lại null
  */
 export async function getSession(): Promise<SessionUser | null> {
