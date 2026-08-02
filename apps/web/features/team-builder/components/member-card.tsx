@@ -29,11 +29,13 @@ export function MemberCard({ character, className }: MemberCardProps) {
         className
       )}
     >
-      <Avatar size="sm">
+      <Avatar size="sm" className="shrink-0">
         <AvatarImage src={GUILD_CLASS_IMAGE[character.guildClass]} alt={classLabel} />
         <AvatarFallback>{classLabel[0]}</AvatarFallback>
       </Avatar>
-      <span className="truncate text-sm font-medium">{character.name}</span>
+      <span className="min-w-0 flex-1 truncate text-sm font-medium">
+        {character.name}
+      </span>
     </div>
   );
 }

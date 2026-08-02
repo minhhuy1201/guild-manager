@@ -38,7 +38,10 @@ export function DraggableMember({ character, from }: DraggableMemberProps) {
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      className={cn("cursor-grab touch-none", isDragging && "opacity-40")}
+      className={cn(
+        "w-full min-w-0 cursor-grab touch-none",
+        isDragging && "opacity-40"
+      )}
     >
       <MemberCard character={character} />
     </div>
