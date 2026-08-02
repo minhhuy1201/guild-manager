@@ -106,13 +106,11 @@ export function TeamBuilderScreen() {
         <SessionTabs
           sessions={screen.sessions}
           activeSessionId={screen.activeSessionId}
-          assignments={screen.assignments}
           dirtySessionIds={screen.dirtySessionIds}
-          slotCount={screen.slotCount}
           onSelect={screen.setActiveSession}
         />
 
-        <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2 mt-4">
           <ClassShortage pool={screen.pool} />
           <FormationToolbar
             dirty={screen.dirty}
