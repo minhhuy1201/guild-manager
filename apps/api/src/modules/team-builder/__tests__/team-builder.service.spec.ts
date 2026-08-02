@@ -1,6 +1,6 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 
-import { AttendanceService } from '@/modules/attendance/attendance.service';
+import { AttendanceService } from '@/modules/attendance/attendance.module';
 import { PrismaService } from '@/infrastructure/prisma/prisma.service';
 import { TeamBuilderService } from '../team-builder.service';
 
@@ -122,7 +122,9 @@ describe('TeamBuilderService.getFormations', () => {
   it('khoá trận đã qua giờ đánh, mở trận còn ở tương lai', async () => {
     const result = await service.getFormations(undefined, WEDNESDAY);
 
-    expect(result.find((i) => i.sessionId === 'session-tue')?.locked).toBe(true);
+    expect(result.find((i) => i.sessionId === 'session-tue')?.locked).toBe(
+      true,
+    );
     expect(result.find((i) => i.sessionId === 'session-thu')?.locked).toBe(
       false,
     );
@@ -158,10 +160,12 @@ describe('TeamBuilderService.getWeeks', () => {
     prisma = {
       character: { findMany: jest.fn().mockResolvedValue([]) },
       battleSession: {
-        findMany: jest.fn().mockResolvedValue([
-          { weekStart: WEEK_START },
-          { weekStart: vn('2026-07-13T00:00') },
-        ]),
+        findMany: jest
+          .fn()
+          .mockResolvedValue([
+            { weekStart: WEEK_START },
+            { weekStart: vn('2026-07-13T00:00') },
+          ]),
       },
       formation: { deleteMany: jest.fn().mockResolvedValue({ count: 2 }) },
     };
@@ -239,8 +243,9 @@ describe('TeamBuilderService.saveFormation', () => {
       formation: {
         upsert: jest
           .fn()
-          .mockImplementation(({ create }: { create: { assignment: unknown } }) =>
-            Promise.resolve(create),
+          .mockImplementation(
+            ({ create }: { create: { assignment: unknown } }) =>
+              Promise.resolve(create),
           ),
       },
     };
@@ -270,8 +275,16 @@ describe('TeamBuilderService.saveFormation', () => {
   it('lưu hai lần cùng payload cho cùng kết quả', async () => {
     const payload = { 'team-1-pos-1': 'char-1' };
 
-    const first = await service.saveFormation('session-sat', payload, WEDNESDAY);
-    const second = await service.saveFormation('session-sat', payload, WEDNESDAY);
+    const first = await service.saveFormation(
+      'session-sat',
+      payload,
+      WEDNESDAY,
+    );
+    const second = await service.saveFormation(
+      'session-sat',
+      payload,
+      WEDNESDAY,
+    );
 
     expect(second).toEqual(first);
   });

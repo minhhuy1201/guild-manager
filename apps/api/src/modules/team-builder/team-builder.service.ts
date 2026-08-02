@@ -6,7 +6,7 @@ import {
 import type { AssignmentInput } from '@guild/shared/schemas';
 
 import { PrismaService } from '@/infrastructure/prisma/prisma.service';
-import { AttendanceService } from '@/modules/attendance/attendance.service';
+import { AttendanceService } from '@/modules/attendance/attendance.module';
 import type {
   FormationWeekEntity,
   SessionFormationEntity,
@@ -91,7 +91,10 @@ export class TeamBuilderService {
       where: { sessionId: { in: sessions.map((session) => session.id) } },
     });
     const assignmentBySession = new Map(
-      formations.map((formation) => [formation.sessionId, formation.assignment]),
+      formations.map((formation) => [
+        formation.sessionId,
+        formation.assignment,
+      ]),
     );
 
     const knownIds = await this.loadCharacterIds();
