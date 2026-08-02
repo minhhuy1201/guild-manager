@@ -30,20 +30,25 @@ describe("createMockFormation", () => {
     }
   });
 
-  it("áp cùng một ràng buộc lưu phái cho mọi team ở cùng vị trí", () => {
+  it("gợi ý Tố Vấn ở vị trí 2 và 3 của mọi team", () => {
     const formation = createMockFormation();
-    const firstPositions = formation.slots.filter((slot) => slot.position === 1);
-    expect(firstPositions).toHaveLength(TEAM_COUNT);
-    for (const slot of firstPositions) {
-      expect(slot.allowedClasses).toEqual([GuildClass.THIET_Y]);
+    const suggested = formation.slots.filter(
+      (slot) => slot.position === 2 || slot.position === 3
+    );
+    expect(suggested).toHaveLength(TEAM_COUNT * 2);
+    for (const slot of suggested) {
+      expect(slot.suggestedClass).toBe(GuildClass.TO_VAN);
     }
   });
 
-  it("để vị trí 5 và 6 tự do, không ràng buộc lưu phái", () => {
+  it("bốn vị trí còn lại không gợi ý lưu phái nào", () => {
     const formation = createMockFormation();
-    const free = formation.slots.filter((slot) => slot.position >= 5);
+    const free = formation.slots.filter(
+      (slot) => slot.position !== 2 && slot.position !== 3
+    );
+    expect(free).toHaveLength(TEAM_COUNT * 4);
     for (const slot of free) {
-      expect(slot.allowedClasses).toBeUndefined();
+      expect(slot.suggestedClass).toBeUndefined();
     }
   });
 

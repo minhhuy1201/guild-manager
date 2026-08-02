@@ -5,7 +5,6 @@ import { useDroppable } from "@dnd-kit/core";
 import type { Character } from "@/features/attendance";
 import { cn } from "@/lib/utils";
 import type { SlotDropData } from "../lib/dnd-data";
-import { invalidPlacementReason, isValidPlacement } from "../lib/validation";
 import type { Slot } from "../types/formation";
 import { DraggableMember } from "./draggable-member";
 import { SlotPlaceholder } from "./slot-placeholder";
@@ -18,9 +17,8 @@ interface SlotCellProps {
 }
 
 /**
- * One droppable cell of the formation. Never rejects a drop — a character of the
- * wrong guild class is accepted and flagged instead, since the admin arranging
- * the formation may be breaking the rule on purpose.
+ * One droppable cell of the formation. Every slot accepts every guild class —
+ * the placeholder only suggests who fits, it never constrains.
  * @param slot - Slot this cell renders
  * @param character - Character currently standing here, if any
  * @returns Droppable cell holding either a draggable member or a placeholder
@@ -28,11 +26,6 @@ interface SlotCellProps {
 export function SlotCell({ slot, character }: SlotCellProps) {
   const data: SlotDropData = { type: "slot", slotId: slot.id };
   const { setNodeRef, isOver } = useDroppable({ id: slot.id, data });
-
-  const invalidReason =
-    character && !isValidPlacement(slot, character.guildClass)
-      ? invalidPlacementReason(slot)
-      : undefined;
 
   return (
     <div
@@ -44,11 +37,7 @@ export function SlotCell({ slot, character }: SlotCellProps) {
       )}
     >
       {character ? (
-        <DraggableMember
-          character={character}
-          from={slot.id}
-          invalidReason={invalidReason}
-        />
+        <DraggableMember character={character} from={slot.id} />
       ) : (
         <SlotPlaceholder slot={slot} />
       )}

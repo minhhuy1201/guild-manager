@@ -9,18 +9,17 @@ export const TEAM_COUNT = 10;
 export const SLOTS_PER_TEAM = 6;
 
 /**
- * Class constraint per position inside a team, applied to all ten teams.
- * `undefined` means the position accepts every guild class.
+ * Suggested guild class per position inside a team, applied to all ten teams.
+ * `undefined` means the empty slot just reads "Ô trống".
  *
- * These values are a demo starting point, not a game rule — they exist so all
- * three slot visuals (valid, wrong class, unconstrained) are reachable.
- * Editing this array is enough; nothing else depends on the specific classes.
+ * This is a display hint only — no slot ever rejects a character. Editing this
+ * array is enough; nothing else depends on the specific classes.
  */
-const POSITION_TEMPLATE: readonly (readonly GuildClass[] | undefined)[] = [
-  [GuildClass.THIET_Y],
-  [GuildClass.TO_VAN],
-  [GuildClass.CUU_LINH, GuildClass.HUYET_HA],
-  [GuildClass.LONG_NGAM, GuildClass.TOAI_MONG],
+const SUGGESTED_CLASS_TEMPLATE: readonly (GuildClass | undefined)[] = [
+  undefined,
+  GuildClass.TO_VAN,
+  GuildClass.TO_VAN,
+  undefined,
   undefined,
   undefined,
 ];
@@ -37,7 +36,7 @@ export function buildSlotId(team: number, position: number): string {
 
 /**
  * Build the demo formation: TEAM_COUNT teams of SLOTS_PER_TEAM slots each,
- * every team sharing the same per-position class constraints.
+ * every team sharing the same per-position class suggestions.
  * @returns A formation with TEAM_COUNT * SLOTS_PER_TEAM flat slots
  */
 export function createMockFormation(): Formation {
@@ -45,12 +44,12 @@ export function createMockFormation(): Formation {
 
   for (let team = 1; team <= TEAM_COUNT; team += 1) {
     for (let position = 1; position <= SLOTS_PER_TEAM; position += 1) {
-      const allowed = POSITION_TEMPLATE[position - 1];
+      const suggested = SUGGESTED_CLASS_TEMPLATE[position - 1];
       slots.push({
         id: buildSlotId(team, position),
         team,
         position,
-        ...(allowed ? { allowedClasses: [...allowed] } : {}),
+        ...(suggested ? { suggestedClass: suggested } : {}),
       });
     }
   }

@@ -8,18 +8,15 @@ interface SlotPlaceholderProps {
 }
 
 /**
- * Content of an empty slot: the allowed guild classes, or a neutral hint when
- * the slot takes anyone.
+ * Content of an empty slot: the suggested guild class, or a neutral hint when
+ * the position suggests nothing. Only a hint — the slot takes anyone either way.
  * @param slot - The empty slot being described
  * @returns Muted label describing what belongs in this slot
  */
 export function SlotPlaceholder({ slot }: SlotPlaceholderProps) {
-  const allowed = slot.allowedClasses ?? [];
-
-  const label =
-    allowed.length === 0
-      ? "Ô trống"
-      : allowed.map((guildClass) => GUILD_CLASS_LABEL[guildClass]).join(" / ");
+  const label = slot.suggestedClass
+    ? GUILD_CLASS_LABEL[slot.suggestedClass]
+    : "Ô trống";
 
   return (
     <span className="truncate px-2 text-xs text-muted-foreground">{label}</span>

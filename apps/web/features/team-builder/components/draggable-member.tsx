@@ -12,8 +12,6 @@ interface DraggableMemberProps {
   character: Character;
   /** Slot id the character currently sits in, or POOL_DROPPABLE_ID */
   from: string;
-  /** Reason the current placement is invalid, if any */
-  invalidReason?: string;
 }
 
 /**
@@ -22,14 +20,9 @@ interface DraggableMemberProps {
  * Renders no transform: the moving preview is handled by DragOverlay instead.
  * @param character - Character to display
  * @param from - Origin of the drag: a slot id, or POOL_DROPPABLE_ID
- * @param invalidReason - Reason the current placement is invalid, if any
  * @returns Draggable wrapper around a MemberCard
  */
-export function DraggableMember({
-  character,
-  from,
-  invalidReason,
-}: DraggableMemberProps) {
+export function DraggableMember({ character, from }: DraggableMemberProps) {
   const data: MemberDragData = {
     type: "member",
     characterId: character.id,
@@ -47,7 +40,7 @@ export function DraggableMember({
       {...attributes}
       className={cn("cursor-grab touch-none", isDragging && "opacity-40")}
     >
-      <MemberCard character={character} invalidReason={invalidReason} />
+      <MemberCard character={character} />
     </div>
   );
 }

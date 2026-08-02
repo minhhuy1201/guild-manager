@@ -10,8 +10,11 @@ export interface Slot {
   team: number;
   /** Row inside the team, 1..6 (each team is a single column of six rows) */
   position: number;
-  /** Guild classes allowed here. Omitted or empty means every class is allowed. */
-  allowedClasses?: GuildClass[];
+  /**
+   * Guild class suggested for this position. Purely a hint shown as the empty
+   * slot's placeholder — every slot accepts every class.
+   */
+  suggestedClass?: GuildClass;
 }
 
 /**
