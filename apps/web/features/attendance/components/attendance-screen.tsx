@@ -19,7 +19,7 @@ export function AttendanceScreen({ isAdmin }: AttendanceScreenProps) {
   return (
     <>
       <WeekTimeline />
-      <AttendanceFilters />
+      <AttendanceFilters scope="attendance" />
       <AttendanceGrid isAdmin={isAdmin} />
     </>
   );

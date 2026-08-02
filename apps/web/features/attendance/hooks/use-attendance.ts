@@ -12,7 +12,10 @@ import {
   markAttendance,
 } from "../api/attendance-api";
 import { markAttendanceAsAdmin } from "../api/mark-attendance-action";
-import { useAttendanceFilterStore } from "../store/attendance-filter-store";
+import {
+  useAttendanceFilterStore,
+  type AttendanceFilterScope,
+} from "../store/attendance-filter-store";
 import type { Character } from "../types/attendance";
 
 /**
@@ -60,14 +63,19 @@ export function useAttendanceRecords() {
 }
 
 /**
- * Danh sách nhân vật đã lọc theo state của bộ lọc (tìm kiếm + lưu phái).
+ * Danh sách nhân vật đã lọc theo bộ lọc của một màn (tìm kiếm + lưu phái).
  * So khớp tên/ID trong game không phân biệt hoa/thường.
+ * @param scope - Màn đang đọc bộ lọc; mỗi màn có state lọc riêng
  * @returns Mảng nhân vật khớp bộ lọc (rỗng khi query chưa có data)
  */
-export function useFilteredCharacters(): Character[] {
+export function useFilteredCharacters(
+  scope: AttendanceFilterScope
+): Character[] {
   const { data: characters } = useCharacters();
-  const search = useAttendanceFilterStore((s) => s.search);
-  const guildClasses = useAttendanceFilterStore((s) => s.guildClasses);
+  const search = useAttendanceFilterStore((s) => s.filters[scope].search);
+  const guildClasses = useAttendanceFilterStore(
+    (s) => s.filters[scope].guildClasses
+  );
 
   return useMemo(() => {
     const keyword = search.trim().toLowerCase();

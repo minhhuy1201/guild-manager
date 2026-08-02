@@ -19,16 +19,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useAttendanceFilterStore } from "../store/attendance-filter-store";
+import {
+  useAttendanceFilterStore,
+  type AttendanceFilterScope,
+} from "../store/attendance-filter-store";
+
+interface AttendanceFiltersProps {
+  /** Màn đang dùng bộ lọc — mỗi màn giữ state riêng. */
+  scope: AttendanceFilterScope;
+}
 
 /**
- * Thanh lọc: tìm kiếm theo tên/ID trong game, chọn lưu phái, và nhập mật khẩu điểm danh.
- * Đọc/ghi trực tiếp vào store bộ lọc (Zustand).
+ * Thanh lọc: tìm kiếm theo tên/ID trong game và chọn lưu phái.
+ * Đọc/ghi vào phần store ứng với `scope`, nên hai màn không dùng chung giá trị lọc.
+ * @param scope - Màn đang dùng bộ lọc
  * @returns Card chứa các bộ lọc
  */
-export function AttendanceFilters() {
-  const search = useAttendanceFilterStore((s) => s.search);
-  const guildClasses = useAttendanceFilterStore((s) => s.guildClasses);
+export function AttendanceFilters({ scope }: AttendanceFiltersProps) {
+  const search = useAttendanceFilterStore((s) => s.filters[scope].search);
+  const guildClasses = useAttendanceFilterStore(
+    (s) => s.filters[scope].guildClasses
+  );
   const setSearch = useAttendanceFilterStore((s) => s.setSearch);
   const setGuildClasses = useAttendanceFilterStore((s) => s.setGuildClasses);
 
@@ -36,13 +47,13 @@ export function AttendanceFilters() {
     <Card>
       <CardContent className="grid gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="search">Tìm kiếm</Label>
+          <Label htmlFor={`${scope}-search`}>Tìm kiếm</Label>
           <div className="relative">
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              id="search"
+              id={`${scope}-search`}
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => setSearch(scope, e.target.value)}
               placeholder="Tên thành viên hoặc ID..."
               className="pl-9"
             />
@@ -50,13 +61,13 @@ export function AttendanceFilters() {
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="guild-class">Lưu phái</Label>
+          <Label htmlFor={`${scope}-guild-class`}>Lưu phái</Label>
           <Select
             multiple
             value={guildClasses}
-            onValueChange={(value) => setGuildClasses(value)}
+            onValueChange={(value) => setGuildClasses(scope, value)}
           >
-            <SelectTrigger id="guild-class" className="w-full">
+            <SelectTrigger id={`${scope}-guild-class`} className="w-full">
               <SelectValue>
                 {(value: GuildClass[]) => {
                   if (value.length === 0) return "Tất cả lưu phái";
@@ -77,7 +88,8 @@ export function AttendanceFilters() {
                 }}
               </SelectValue>
             </SelectTrigger>
-            <SelectContent>
+            {/* Mở như popover dưới trigger thay vì neo item đang chọn vào trigger. */}
+            <SelectContent alignItemWithTrigger={false}>
               {GUILD_CLASS_OPTIONS.map((gc) => (
                 <SelectItem key={gc} value={gc}>
                   <span className="flex items-center gap-2">

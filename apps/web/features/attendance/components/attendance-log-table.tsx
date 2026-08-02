@@ -45,7 +45,7 @@ export function AttendanceLogTable() {
     [sessions]
   );
 
-  const filteredCharacters = useFilteredCharacters();
+  const filteredCharacters = useFilteredCharacters("history");
   const filteredIds = useMemo(
     () => new Set(filteredCharacters.map((character) => character.id)),
     [filteredCharacters]

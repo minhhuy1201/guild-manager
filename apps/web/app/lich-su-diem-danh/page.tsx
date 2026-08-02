@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 export default function AttendanceHistoryPage() {
   return (
     <>
-      <AttendanceFilters />
+      <AttendanceFilters scope="history" />
       <AttendanceLogTable />
     </>
   );

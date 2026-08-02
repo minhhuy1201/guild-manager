@@ -70,9 +70,9 @@ không lọc được, dù store `attendance-filter-store` và hook `useFiltered
   - chưa có record nào → "Chưa có ai điểm danh."
   - có record nhưng lọc không ra → "Không có lượt điểm danh phù hợp."
 
-**Hành vi đã chốt:** `useAttendanceFilterStore` là store global singleton nên bộ lọc **dính khi
-chuyển giữa hai màn**. Đây là hành vi mong muốn (lọc một người rồi xem lịch sử người đó), không
-reset store khi unmount.
+**Hành vi đã chốt:** mỗi màn giữ **state lọc riêng**, không đồng bộ với nhau.
+`useAttendanceFilterStore` tách state theo `scope` (`"attendance"` | `"history"`); `AttendanceFilters`
+và `useFilteredCharacters` đều nhận scope. Lọc ở màn Điểm danh không kéo theo màn Lịch sử và ngược lại.
 
 ## Hạng mục 4 — Tự khoá cột khi qua deadline
 

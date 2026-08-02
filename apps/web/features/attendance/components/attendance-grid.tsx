@@ -51,7 +51,7 @@ interface AttendanceGridProps {
  * @returns Card chứa bảng điểm danh
  */
 export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
-  const characters = useFilteredCharacters();
+  const characters = useFilteredCharacters("attendance");
   const { data: sessions } = useBattleSessions();
   const { data: records } = useAttendanceRecords();
   const { mutateAsync: mark } = useMarkAttendance();
