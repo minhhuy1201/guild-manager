@@ -1,140 +1,149 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect } from "react";
 import {
   DndContext,
   DragOverlay,
   PointerSensor,
   useSensor,
   useSensors,
-  type DragEndEvent,
-  type DragStartEvent,
 } from "@dnd-kit/core";
 
 import { ErrorState } from "@/components/shared/error-state";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { useCharacters, type Character } from "@/features/attendance";
-import { isMemberDragData, toDragSource, toDropTarget } from "../lib/dnd-data";
-import { useFormationStore } from "../store/formation-store";
+import { useFormationScreen } from "../hooks/use-formation-screen";
+import { ClassShortage } from "./class-shortage";
 import { FormationGrid } from "./formation-grid";
+import { FormationToolbar } from "./formation-toolbar";
 import { MemberCard } from "./member-card";
 import { MemberPool } from "./member-pool";
+import { PrefillBanner } from "./prefill-banner";
+import { SessionTabs } from "./session-tabs";
+import { WeekPicker } from "./week-picker";
 
 /**
- * Guild war formation builder (admin only). Owns the DndContext and translates
- * dnd-kit events into store actions; every rule about what a drop means lives in
- * `lib/assignment.ts`, so this handler stays free of business branches.
+ * Guild war formation builder (admin only). One formation per battle of the
+ * week; all the coordination lives in `useFormationScreen`, so this component
+ * only builds the tree.
  * @returns The formation builder screen
  */
 export function TeamBuilderScreen() {
-  const { data, isPending, isError, error, refetch } = useCharacters();
-  const drop = useFormationStore((state) => state.drop);
-  const reset = useFormationStore((state) => state.reset);
-
-  const [activeCharacter, setActiveCharacter] = useState<Character | null>(null);
-
-  const characters = useMemo(() => data ?? [], [data]);
-  const charactersById = useMemo(
-    () => new Map(characters.map((character) => [character.id, character])),
-    [characters]
-  );
+  const screen = useFormationScreen();
 
   // A short distance threshold keeps a plain click on a card from starting a drag.
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   );
 
-  /**
-   * Remember which character is moving so DragOverlay can preview it.
-   * @param event - dnd-kit drag start event
-   */
-  function handleDragStart(event: DragStartEvent) {
-    const data = event.active.data.current;
-    if (!isMemberDragData(data)) return;
-    setActiveCharacter(charactersById.get(data.characterId) ?? null);
-  }
+  const hasUnsaved = screen.dirtySessionIds.size > 0;
 
-  /**
-   * Hand the finished gesture to the store. Malformed payloads and drops
-   * outside every droppable both end up as no-ops.
-   * @param event - dnd-kit drag end event
-   */
-  function handleDragEnd(event: DragEndEvent) {
-    setActiveCharacter(null);
+  // Drafts live in memory, so leaving the page would silently drop them.
+  useEffect(() => {
+    if (!hasUnsaved) return;
 
-    const dragData = event.active.data.current;
-    if (!isMemberDragData(dragData)) return;
+    /**
+     * Ask the browser to confirm before discarding unsaved drafts.
+     * @param event - The beforeunload event
+     */
+    function warn(event: BeforeUnloadEvent) {
+      event.preventDefault();
+    }
 
-    drop(
-      toDragSource(dragData),
-      dragData.characterId,
-      toDropTarget(event.over?.data.current)
-    );
-  }
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [hasUnsaved]);
 
-  if (isError) {
+  if (screen.isError) {
     return (
       <Card>
         <CardContent>
-          <ErrorState
-            message={error?.message ?? "Không tải được danh sách thành viên."}
-            onRetry={() => refetch()}
-          />
+          <ErrorState message={screen.errorMessage} onRetry={screen.refetch} />
         </CardContent>
       </Card>
     );
   }
 
-  if (isPending) {
+  if (screen.isPending) {
     return (
       <div className="flex flex-col gap-4">
+        <Skeleton className="h-16 w-full" />
         <Skeleton className="h-64 w-full" />
         <Skeleton className="h-80 w-full" />
       </div>
     );
   }
 
+  // A week with no battles is empty, not broken — say so instead of rendering
+  // an empty tab bar over an empty grid.
+  if (screen.sessions.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-center text-sm text-muted-foreground">
+          Tuần này chưa có trận đánh nào.
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <DndContext
       sensors={sensors}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-      onDragCancel={() => setActiveCharacter(null)}
+      onDragStart={screen.handleDragStart}
+      onDragEnd={screen.handleDragEnd}
+      onDragCancel={screen.cancelDrag}
     >
       <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <h1 className="text-lg font-semibold">Xếp đội hình bang chiến</h1>
-          <div className="flex gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={reset}>
-              Đặt lại
-            </Button>
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Button type="button" size="sm" disabled>
-                    Lưu đội hình
-                  </Button>
-                }
-              />
-              <TooltipContent>Chức năng đang được xây dựng</TooltipContent>
-            </Tooltip>
-          </div>
+          <WeekPicker
+            weeks={screen.weeks}
+            value={screen.weekStart}
+            onChange={screen.setWeek}
+          />
         </div>
 
-        <FormationGrid charactersById={charactersById} />
-        <MemberPool characters={characters} />
+        <SessionTabs
+          sessions={screen.sessions}
+          activeSessionId={screen.activeSessionId}
+          assignments={screen.assignments}
+          dirtySessionIds={screen.dirtySessionIds}
+          slotCount={screen.slotCount}
+          onSelect={screen.setActiveSession}
+        />
+
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <ClassShortage pool={screen.pool} />
+          <FormationToolbar
+            dirty={screen.dirty}
+            saving={screen.saving}
+            errorMessage={screen.saveErrorMessage}
+            editable={screen.editable}
+            onSave={screen.handleSave}
+            onReset={screen.resetActive}
+          />
+        </div>
+
+        <PrefillBanner
+          result={screen.prefill}
+          onClear={screen.clearActiveDraft}
+        />
+
+        <FormationGrid
+          assignment={screen.assignment}
+          charactersById={screen.charactersById}
+          readOnly={!screen.editable}
+          absentIds={screen.absentIds}
+        />
+        <MemberPool pool={screen.pool} readOnly={!screen.editable} />
       </div>
 
       <DragOverlay>
-        {activeCharacter ? (
-          <MemberCard character={activeCharacter} className="cursor-grabbing" />
+        {screen.activeCharacter ? (
+          <MemberCard
+            character={screen.activeCharacter}
+            className="cursor-grabbing"
+          />
         ) : null}
       </DragOverlay>
     </DndContext>
