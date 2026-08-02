@@ -11,6 +11,7 @@ import {
   fetchCurrentWeek,
   markAttendance,
 } from "../api/attendance-api";
+import { markAttendanceAsAdmin } from "../api/mark-attendance-action";
 import { useAttendanceFilterStore } from "../store/attendance-filter-store";
 import type { Character } from "../types/attendance";
 
@@ -91,6 +92,21 @@ export function useMarkAttendance() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: markAttendance,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: attendanceKeys.records() });
+    },
+  });
+}
+
+/**
+ * Mutation điểm danh hộ dành cho quản trị viên — đi qua Server Action để gắn được
+ * access token, nên không cần mật khẩu của nhân vật.
+ * @returns Mutation TanStack (dùng mutateAsync để bắt lỗi từ backend)
+ */
+export function useMarkAttendanceAsAdmin() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: markAttendanceAsAdmin,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: attendanceKeys.records() });
     },

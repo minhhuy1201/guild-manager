@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { AttendanceStatus } from '@guild/shared/enums';
 
+import { ADMIN_ROLE, TOKEN_TYPE, type JwtPayload } from '@/common';
 import { PrismaService } from '@/infrastructure/prisma/prisma.service';
 import { hashPassword } from '@/shared/utils/password.util';
 import { AttendanceService } from '../attendance.service';
@@ -22,6 +23,13 @@ function vn(iso: string): Date {
 const WEDNESDAY = vn('2026-07-22T12:00');
 const CHARACTER_ID = 'char-1';
 const PASSWORD = 'pass10001';
+
+/** Quản trị viên đang đăng nhập — điểm danh hộ, không cần mật khẩu nhân vật. */
+const ADMIN: JwtPayload = {
+  sub: 'huy',
+  role: ADMIN_ROLE,
+  type: TOKEN_TYPE.access,
+};
 
 /** Id trận được prisma mock sinh ra theo nhãn, khớp với thứ tự trong tuần. */
 const SESSION_IDS: Record<string, string> = {
@@ -106,6 +114,7 @@ describe('AttendanceService.mark', () => {
         status: AttendanceStatus.PRESENT,
         password: PASSWORD,
       },
+      null,
       WEDNESDAY,
     );
 
@@ -125,6 +134,7 @@ describe('AttendanceService.mark', () => {
         status: AttendanceStatus.PRESENT,
         password: PASSWORD,
       },
+      null,
       WEDNESDAY,
     );
     const changed = await service.mark(
@@ -134,6 +144,7 @@ describe('AttendanceService.mark', () => {
         status: AttendanceStatus.ABSENT,
         password: PASSWORD,
       },
+      null,
       WEDNESDAY,
     );
 
@@ -159,6 +170,7 @@ describe('AttendanceService.mark', () => {
           status: AttendanceStatus.PRESENT,
           password: 'sai-mat-khau',
         },
+        null,
         WEDNESDAY,
       ),
     ).rejects.toThrow(UnauthorizedException);
@@ -177,6 +189,7 @@ describe('AttendanceService.mark', () => {
           status: AttendanceStatus.PRESENT,
           password: PASSWORD,
         },
+        null,
         WEDNESDAY,
       ),
     ).rejects.toThrow(NotFoundException);
@@ -191,9 +204,40 @@ describe('AttendanceService.mark', () => {
           status: AttendanceStatus.PRESENT,
           password: PASSWORD,
         },
+        null,
         WEDNESDAY,
       ),
     ).rejects.toThrow(ConflictException);
+  });
+
+  it('quản trị viên điểm danh hộ được mà không cần mật khẩu nhân vật', async () => {
+    const record = await service.mark(
+      {
+        characterId: CHARACTER_ID,
+        sessionId: SESSION_IDS['Thứ 7 · Guild War'],
+        status: AttendanceStatus.PRESENT,
+      },
+      ADMIN,
+      WEDNESDAY,
+    );
+
+    expect(record.status).toBe(AttendanceStatus.PRESENT);
+    expect(prisma.attendanceRecord.upsert).toHaveBeenCalled();
+  });
+
+  it('quản trị viên sửa được cả trận đã quá hạn', async () => {
+    const record = await service.mark(
+      {
+        characterId: CHARACTER_ID,
+        sessionId: SESSION_IDS['Thứ 3 · 20:30'],
+        status: AttendanceStatus.ABSENT,
+      },
+      ADMIN,
+      WEDNESDAY,
+    );
+
+    expect(record.status).toBe(AttendanceStatus.ABSENT);
+    expect(record.sessionId).toBe(SESSION_IDS['Thứ 3 · 20:30']);
   });
 
   it('sau 17:00 Thứ 5 thì khóa cả Guild War Thứ 7', async () => {
@@ -205,6 +249,7 @@ describe('AttendanceService.mark', () => {
           status: AttendanceStatus.PRESENT,
           password: PASSWORD,
         },
+        null,
         vn('2026-07-23T17:01'),
       ),
     ).rejects.toThrow(ConflictException);

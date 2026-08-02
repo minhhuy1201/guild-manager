@@ -25,6 +25,7 @@ import {
   useBattleSessions,
   useFilteredCharacters,
   useMarkAttendance,
+  useMarkAttendanceAsAdmin,
 } from "../hooks/use-attendance";
 import type { Character } from "../types/attendance";
 import { recordKey } from "../types/attendance";
@@ -37,17 +38,25 @@ const PAGE_SIZE = 10;
 /** Số cột skeleton khi chưa biết có bao nhiêu ngày đánh: Thành viên + 3 ngày + Thao tác. */
 const SKELETON_COLUMNS = 5;
 
+interface AttendanceGridProps {
+  /** Người đang xem là quản trị viên — điểm danh hộ không cần mật khẩu, không bị khóa theo deadline. */
+  isAdmin: boolean;
+}
+
 /**
  * Lưới điểm danh: mỗi nhân vật một hàng, mặc định read-only.
  * Bấm nút chỉnh sửa ở cột cuối để sửa một dòng; xác nhận sẽ yêu cầu nhập
- * mật khẩu riêng của nhân vật đó qua modal.
+ * mật khẩu riêng của nhân vật đó qua modal — trừ quản trị viên thì lưu thẳng.
+ * @param isAdmin - Người đang xem có phải quản trị viên hay không
  * @returns Card chứa bảng điểm danh
  */
-export function AttendanceGrid() {
+export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
   const characters = useFilteredCharacters();
   const { data: sessions } = useBattleSessions();
   const { data: records } = useAttendanceRecords();
   const { mutateAsync: mark } = useMarkAttendance();
+  const { mutateAsync: markAsAdmin, error: adminError } =
+    useMarkAttendanceAsAdmin();
   const { isPending, isError, errorMessage, refetch } = useAttendanceBoard();
 
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -78,10 +87,12 @@ export function AttendanceGrid() {
     safePage * PAGE_SIZE
   );
 
-  // Khóa theo từng ngày: ngày nào quá deadline thì khóa cột đó.
-  const lockedSessionIds = new Set(
+  // Ngày nào quá deadline thì khóa cột đó — dùng để hiển thị nhãn "Đã khóa" cho mọi người.
+  const passedSessionIds = new Set(
     battleSessions.filter((s) => isDeadlinePassed(s.deadline)).map((s) => s.id)
   );
+  // Quản trị viên sửa được cả ngày đã quá hạn nên không khóa ô nào.
+  const lockedSessionIds = isAdmin ? new Set<string>() : passedSessionIds;
   const allLocked =
     battleSessions.length > 0 &&
     lockedSessionIds.size === battleSessions.length;
@@ -130,16 +141,31 @@ export function AttendanceGrid() {
     });
 
   /**
-   * Xác nhận thay đổi: nếu có ô thay đổi thì mở modal mật khẩu, không thì thoát.
+   * Xác nhận thay đổi. Quản trị viên lưu thẳng; người thường phải qua modal mật khẩu.
    * @param character - Nhân vật đang chỉnh
+   * @returns Promise hoàn tất khi đã lưu (quản trị viên) hoặc đã mở modal
    */
-  const handleConfirm = (character: Character) => {
-    if (getChangedCells(character).length === 0) {
+  const handleConfirm = async (character: Character) => {
+    const changes = getChangedCells(character);
+    if (changes.length === 0) {
       handleCancel();
       return;
     }
-    setPendingCharacter(character);
-    setDialogOpen(true);
+
+    if (!isAdmin) {
+      setPendingCharacter(character);
+      setDialogOpen(true);
+      return;
+    }
+
+    // Lỗi hiển thị qua `adminError` của mutation nên nuốt ở đây, tránh promise văng ra ngoài.
+    const saved = await Promise.all(
+      changes.map(({ sessionId, status }) =>
+        markAsAdmin({ characterId: character.id, sessionId, status })
+      )
+    ).catch(() => null);
+
+    if (saved) handleCancel();
   };
 
   /**
@@ -182,7 +208,7 @@ export function AttendanceGrid() {
                     {session.isGuildWar && <Swords className="size-3.5" />}
                     {session.label}
                   </span>
-                  {lockedSessionIds.has(session.id) && (
+                  {passedSessionIds.has(session.id) && (
                     <span className="block text-xs font-normal text-muted-foreground">
                       Đã khóa
                     </span>
@@ -233,6 +259,12 @@ export function AttendanceGrid() {
               ))}
           </TableBody>
         </Table>
+
+        {adminError && (
+          <p className="mt-4 text-center text-sm text-destructive">
+            {adminError.message}
+          </p>
+        )}
 
         {!isError && !isPending && pageCount > 1 && (
           <div className="mt-4 flex flex-col items-center gap-2">

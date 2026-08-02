@@ -70,6 +70,18 @@ export async function getSession(): Promise<SessionUser | null> {
 }
 
 /**
+ * Đọc access token thô từ cookie để gọi API backend thay mặt người đang đăng nhập.
+ * Chỉ dùng ở server (Server Action / Server Component) — cookie là httpOnly nên client
+ * không tự gắn được header `Authorization`.
+ * @returns Access token nếu còn trong cookie, ngược lại null
+ */
+export async function getAccessToken(): Promise<string | null> {
+  const cookieStore = await cookies();
+
+  return cookieStore.get(ACCESS_TOKEN_COOKIE)?.value ?? null;
+}
+
+/**
  * Xóa cả hai cookie token (đăng xuất).
  * @returns Promise hoàn tất khi cookie bị xóa
  */

@@ -13,8 +13,12 @@ export const markAttendanceSchema = z.object({
   sessionId: z.string().min(1, "Thiếu ngày đánh."),
   /** Trạng thái Có/Không */
   status: z.enum(AttendanceStatus),
-  /** Mật khẩu điểm danh riêng của nhân vật */
-  password: z.string().min(1, "Vui lòng nhập mật khẩu."),
+  /**
+   * Mật khẩu điểm danh riêng của nhân vật.
+   * Optional vì quản trị viên điểm danh hộ không cần mật khẩu — server mới là nơi
+   * quyết định ai được bỏ qua, dựa trên access token đính kèm request.
+   */
+  password: z.string().optional(),
 });
 
 /** Kiểu payload điểm danh đã validate. */

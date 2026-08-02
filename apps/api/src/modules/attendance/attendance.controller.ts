@@ -1,6 +1,11 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
+import {
+  CurrentUser,
+  OptionalJwtAuthGuard,
+  type JwtPayload,
+} from '@/common';
 import { AttendanceService } from './attendance.service';
 import { MarkAttendanceDto } from './dto/mark-attendance.dto';
 import type {
@@ -56,13 +61,20 @@ export class AttendanceController {
   }
 
   /**
-   * Điểm danh cho một nhân vật ở một trận (cần mật khẩu riêng của nhân vật).
-   * @param body - characterId, sessionId, status, password
+   * Điểm danh cho một nhân vật ở một trận.
+   * Người thường phải kèm mật khẩu riêng của nhân vật và chỉ điểm danh được khi còn hạn;
+   * quản trị viên (có access token hợp lệ) được miễn cả hai.
+   * @param body - characterId, sessionId, status và password (không bắt buộc với quản trị viên)
+   * @param user - Payload JWT nếu request có access token hợp lệ, ngược lại undefined
    * @returns Record vừa ghi
    */
   @Post()
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({ summary: 'Điểm danh cho một nhân vật ở một trận' })
-  mark(@Body() body: MarkAttendanceDto): Promise<AttendanceRecordEntity> {
-    return this.attendance.mark(body);
+  mark(
+    @Body() body: MarkAttendanceDto,
+    @CurrentUser() user?: JwtPayload,
+  ): Promise<AttendanceRecordEntity> {
+    return this.attendance.mark(body, user ?? null);
   }
 }

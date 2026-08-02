@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -7,6 +8,7 @@ import {
 import type { AttendanceStatus, GuildClass } from '@guild/shared/enums';
 import type { MarkAttendanceInput } from '@guild/shared/schemas';
 
+import { ADMIN_ROLE, type JwtPayload } from '@/common';
 import { PrismaService } from '@/infrastructure/prisma/prisma.service';
 import { verifyPassword } from '@/shared/utils/password.util';
 import {
@@ -96,19 +98,26 @@ export class AttendanceService {
 
   /**
    * Ghi nhận điểm danh cho một nhân vật ở một trận.
-   * Còn hạn thì được đổi Có ⇄ Không thoải mái; quá hạn thì khóa.
+   * Người thường: phải đúng mật khẩu của nhân vật và trận còn hạn — còn hạn thì đổi
+   * Có ⇄ Không thoải mái, quá hạn thì khóa.
+   * Quản trị viên: điểm danh hộ được cho mọi nhân vật, không cần mật khẩu và không bị
+   * chặn bởi deadline (dùng để sửa sai sót sau trận).
    * @param input - characterId, sessionId, status và mật khẩu riêng của nhân vật
+   * @param actor - Payload JWT của người gọi, null khi request không đăng nhập
    * @param now - Thời điểm hiện tại (cho phép truyền vào để test)
    * @returns Record vừa ghi
    * @throws NotFoundException khi không có nhân vật hoặc trận đó trong tuần đang mở
+   * @throws BadRequestException khi người thường không gửi mật khẩu
    * @throws UnauthorizedException khi sai mật khẩu
-   * @throws ConflictException khi đã quá hạn điểm danh của trận
+   * @throws ConflictException khi người thường điểm danh trận đã quá hạn
    */
   async mark(
     input: MarkAttendanceInput,
+    actor: JwtPayload | null = null,
     now: Date = new Date(),
   ): Promise<AttendanceRecordEntity> {
     const { characterId, sessionId, status, password } = input;
+    const isAdmin = actor?.role === ADMIN_ROLE;
 
     const character = await this.prisma.character.findUnique({
       where: { id: characterId },
@@ -117,12 +126,8 @@ export class AttendanceService {
       throw new NotFoundException('Không tìm thấy thành viên.');
     }
 
-    const isPasswordValid = await verifyPassword(
-      password.trim(),
-      character.passwordHash,
-    );
-    if (!isPasswordValid) {
-      throw new UnauthorizedException('Sai mật khẩu thành viên.');
+    if (!isAdmin) {
+      await this.verifyCharacterPassword(password, character.passwordHash);
     }
 
     const sessions = await this.ensureWeekSessions(now);
@@ -131,7 +136,7 @@ export class AttendanceService {
       throw new NotFoundException('Không tìm thấy ngày đánh.');
     }
 
-    if (isDeadlinePassed(session.deadline, now)) {
+    if (!isAdmin && isDeadlinePassed(session.deadline, now)) {
       throw new ConflictException('Đã quá hạn điểm danh ngày này.');
     }
 
@@ -147,6 +152,28 @@ export class AttendanceService {
       status: record.status as AttendanceStatus,
       markedAt: record.markedAt.toISOString(),
     };
+  }
+
+  /**
+   * Kiểm tra mật khẩu điểm danh của một nhân vật.
+   * @param password - Mật khẩu người dùng nhập (undefined khi request không gửi)
+   * @param passwordHash - Hash mật khẩu lưu trong database
+   * @returns Promise hoàn tất khi mật khẩu hợp lệ
+   * @throws BadRequestException khi request không kèm mật khẩu
+   * @throws UnauthorizedException khi mật khẩu sai
+   */
+  private async verifyCharacterPassword(
+    password: string | undefined,
+    passwordHash: string,
+  ): Promise<void> {
+    if (!password?.trim()) {
+      throw new BadRequestException('Vui lòng nhập mật khẩu.');
+    }
+
+    const isPasswordValid = await verifyPassword(password.trim(), passwordHash);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Sai mật khẩu thành viên.');
+    }
   }
 
   /**
