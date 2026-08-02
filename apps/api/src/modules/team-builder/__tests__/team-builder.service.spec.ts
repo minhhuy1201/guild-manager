@@ -142,3 +142,71 @@ describe('TeamBuilderService.getFormations', () => {
     expect(attendance.getSessions).toHaveBeenCalled();
   });
 });
+
+describe('TeamBuilderService.getWeeks', () => {
+  let service: TeamBuilderService;
+  let prisma: {
+    character: { findMany: jest.Mock };
+    battleSession: { findMany: jest.Mock };
+    formation: { deleteMany: jest.Mock };
+  };
+  let attendance: { getCurrentWeek: jest.Mock; getSessions: jest.Mock };
+
+  beforeEach(() => {
+    prisma = {
+      character: { findMany: jest.fn().mockResolvedValue([]) },
+      battleSession: {
+        findMany: jest.fn().mockResolvedValue([
+          { weekStart: WEEK_START },
+          { weekStart: vn('2026-07-13T00:00') },
+        ]),
+      },
+      formation: { deleteMany: jest.fn().mockResolvedValue({ count: 2 }) },
+    };
+    attendance = {
+      getCurrentWeek: jest.fn().mockReturnValue({
+        fromDate: WEEK_START.toISOString(),
+        toDate: vn('2026-07-26T00:00').toISOString(),
+      }),
+      getSessions: jest.fn().mockResolvedValue([]),
+    };
+
+    service = new TeamBuilderService(
+      prisma as unknown as PrismaService,
+      attendance as unknown as AttendanceService,
+    );
+  });
+
+  it('trả về các tuần có dữ liệu, mới nhất trước', async () => {
+    const weeks = await service.getWeeks(WEDNESDAY);
+
+    expect(weeks).toEqual([
+      { weekStart: WEEK_START.toISOString() },
+      { weekStart: vn('2026-07-13T00:00').toISOString() },
+    ]);
+  });
+
+  it('xoá đội hình có weekStart cũ hơn 28 ngày trước khi đọc', async () => {
+    await service.getWeeks(WEDNESDAY);
+
+    expect(prisma.formation.deleteMany).toHaveBeenCalledWith({
+      where: { weekStart: { lt: vn('2026-06-24T12:00') } },
+    });
+  });
+
+  it('dọn dữ liệu chạy trước khi liệt kê tuần', async () => {
+    const order: string[] = [];
+    prisma.formation.deleteMany.mockImplementation(() => {
+      order.push('delete');
+      return Promise.resolve({ count: 0 });
+    });
+    prisma.battleSession.findMany.mockImplementation(() => {
+      order.push('read');
+      return Promise.resolve([]);
+    });
+
+    await service.getWeeks(WEDNESDAY);
+
+    expect(order).toEqual(['delete', 'read']);
+  });
+});

@@ -2,7 +2,16 @@ import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '@/infrastructure/prisma/prisma.service';
 import { AttendanceService } from '@/modules/attendance/attendance.service';
-import type { SessionFormationEntity } from './entities/formation.entity';
+import type {
+  FormationWeekEntity,
+  SessionFormationEntity,
+} from './entities/formation.entity';
+
+/** Số ngày giữ lại đội hình cũ. Quá mốc này thì dọn. */
+const RETENTION_DAYS = 28;
+
+/** Số mili giây trong một ngày. */
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 @Injectable()
 export class TeamBuilderService {
@@ -10,6 +19,42 @@ export class TeamBuilderService {
     private readonly prisma: PrismaService,
     private readonly attendance: AttendanceService,
   ) {}
+
+  /**
+   * Liệt kê các tuần còn dữ liệu đội hình, mới nhất trước.
+   * Dọn dữ liệu quá hạn trước khi đọc — màn hình xếp team luôn gọi endpoint này
+   * nên không cần cron riêng.
+   * @param now - Thời điểm hiện tại (cho phép truyền vào để test)
+   * @returns Mảng tuần, mới nhất trước
+   */
+  async getWeeks(now: Date = new Date()): Promise<FormationWeekEntity[]> {
+    await this.purgeExpiredFormations(now);
+    await this.attendance.getSessions(now);
+
+    const sessions = await this.prisma.battleSession.findMany({
+      distinct: ['weekStart'],
+      select: { weekStart: true },
+      orderBy: { weekStart: 'desc' },
+    });
+
+    return sessions.map((session) => ({
+      weekStart: session.weekStart.toISOString(),
+    }));
+  }
+
+  /**
+   * Xoá các đội hình cũ hơn RETENTION_DAYS.
+   * Chỉ xoá bảng Formation — BattleSession và điểm danh là dữ liệu của module khác.
+   * @param now - Thời điểm hiện tại
+   * @returns Promise hoàn tất khi đã dọn
+   */
+  private async purgeExpiredFormations(now: Date): Promise<void> {
+    const cutoff = new Date(now.getTime() - RETENTION_DAYS * DAY_MS);
+
+    await this.prisma.formation.deleteMany({
+      where: { weekStart: { lt: cutoff } },
+    });
+  }
 
   /**
    * Lấy các trận của một tuần kèm đội hình đã lưu.
