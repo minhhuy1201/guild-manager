@@ -1806,8 +1806,13 @@ describe("isDirty", () => {
     expect(isDirty({ ...SAVED, "team-1-pos-1": null }, SAVED)).toBe(true);
   });
 
-  it("nháp thiếu ô so với bản đã lưu thì báo chưa lưu", () => {
-    expect(isDirty({ "team-1-pos-1": "char-1" }, SAVED)).toBe(true);
+  it("nháp thiếu một ô ĐANG CÓ NGƯỜI thì báo chưa lưu", () => {
+    expect(isDirty({ "team-1-pos-2": null }, SAVED)).toBe(true);
+  });
+
+  it("nháp thiếu một ô vốn đang trống thì vẫn coi là chưa đổi gì", () => {
+    // Thiếu khoá và mang null là cùng một nghĩa: ô đó không có ai.
+    expect(isDirty({ "team-1-pos-1": "char-1" }, SAVED)).toBe(false);
   });
 });
 ```
@@ -1858,7 +1863,7 @@ export function isDirty(
 pnpm --filter web test features/team-builder/lib/__tests__/formation-diff.test.ts
 ```
 
-Kỳ vọng: PASS, 6 test.
+Kỳ vọng: PASS, 7 test.
 
 - [ ] **Step 5: Commit**
 
