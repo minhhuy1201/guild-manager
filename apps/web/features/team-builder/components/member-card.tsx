@@ -13,6 +13,8 @@ import { cn } from "@/lib/utils";
 interface MemberCardProps {
   /** Character to display */
   character: Character;
+  /** Why this placement needs attention, e.g. the member dropped out */
+  warning?: string;
   /** Extra classes for the outer element */
   className?: string;
 }
@@ -20,13 +22,15 @@ interface MemberCardProps {
 /**
  * A guild member shown as a compact card: class avatar plus character name.
  * Purely presentational — no drag behaviour, so it can also render inside DragOverlay.
- * Always carries a tooltip with the full name, since a slot is too narrow for
- * the longer ones and truncation gives no way to read them back.
+ * Always carries a tooltip: the full name, since a slot is too narrow for the
+ * longer ones and truncation gives no way to read them back, or the warning
+ * when there is one.
  * @param character - Character to display
+ * @param warning - Why this placement needs attention, if any
  * @param className - Extra classes for the outer element
- * @returns The member card wrapped in its name tooltip
+ * @returns The member card wrapped in its tooltip
  */
-export function MemberCard({ character, className }: MemberCardProps) {
+export function MemberCard({ character, warning, className }: MemberCardProps) {
   const classLabel = GUILD_CLASS_LABEL[character.guildClass];
 
   return (
@@ -36,6 +40,7 @@ export function MemberCard({ character, className }: MemberCardProps) {
           <div
             className={cn(
               "flex w-full items-center gap-2 rounded-md border bg-card px-2 py-1.5 text-left shadow-sm",
+              warning && "border-destructive",
               className
             )}
           >
@@ -52,7 +57,7 @@ export function MemberCard({ character, className }: MemberCardProps) {
           </div>
         }
       />
-      <TooltipContent>{character.name}</TooltipContent>
+      <TooltipContent>{warning ?? character.name}</TooltipContent>
     </Tooltip>
   );
 }

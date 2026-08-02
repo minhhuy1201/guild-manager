@@ -6,29 +6,42 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { Character } from "@/features/attendance";
 import { cn } from "@/lib/utils";
-import { usePool } from "../hooks/use-pool";
 import { POOL_DROPPABLE_ID, type PoolDropData } from "../lib/dnd-data";
+import { usePoolFilterStore } from "../store/pool-filter-store";
 import { DraggableMember } from "./draggable-member";
 import { PoolFilters } from "./pool-filters";
 
 interface MemberPoolProps {
-  /** Full guild roster from the server */
-  characters: Character[];
+  /** Members available for the battle on screen, already filtered */
+  pool: Character[];
+  /** Hide the pool entirely — a past week or a battle already fought */
+  readOnly?: boolean;
 }
 
 /**
- * Members not yet placed in the formation. The list is derived from the
- * assignment on every render, so dropping someone into a slot removes them here
- * without any extra bookkeeping. Dropping a card back onto this area frees their slot.
- * @param characters - Full guild roster from the server
- * @returns Card holding the filters and the available members
+ * Members available for the battle but not yet placed. The list is derived by
+ * the screen hook on every render, so dropping someone into a slot removes them
+ * here without any extra bookkeeping. Dropping a card back onto this area frees
+ * their slot.
+ * @param pool - Members available for the battle, already filtered
+ * @param readOnly - Hide the pool entirely
+ * @returns Card holding the filters and the available members, or nothing when read-only
  */
-export function MemberPool({ characters }: MemberPoolProps) {
+export function MemberPool({ pool, readOnly = false }: MemberPoolProps) {
   const data: PoolDropData = { type: "pool" };
-  const { setNodeRef, isOver } = useDroppable({ id: POOL_DROPPABLE_ID, data });
+  const { setNodeRef, isOver } = useDroppable({
+    id: POOL_DROPPABLE_ID,
+    data,
+    disabled: readOnly,
+  });
 
-  const pool = usePool(characters);
-  const hasFilteredEverythingOut = pool.length === 0 && characters.length > 0;
+  const search = usePoolFilterStore((state) => state.search);
+  const guildClasses = usePoolFilterStore((state) => state.guildClasses);
+
+  // Hooks run first: calling useDroppable conditionally would be a React error.
+  if (readOnly) return null;
+
+  const isFiltering = search.trim().length > 0 || guildClasses.length > 0;
 
   return (
     <Card>
@@ -48,9 +61,9 @@ export function MemberPool({ characters }: MemberPoolProps) {
           <ScrollArea className="h-64">
             {pool.length === 0 ? (
               <p className="py-8 text-center text-sm text-muted-foreground">
-                {hasFilteredEverythingOut
+                {isFiltering
                   ? "Không có thành viên nào khớp bộ lọc."
-                  : "Đã xếp hết thành viên vào đội hình."}
+                  : "Không còn ai để xếp cho trận này."}
               </p>
             ) : (
               <div className="grid grid-cols-2 gap-2 pr-3 md:grid-cols-3 lg:grid-cols-4">

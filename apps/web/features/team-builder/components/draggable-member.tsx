@@ -12,6 +12,8 @@ interface DraggableMemberProps {
   character: Character;
   /** Slot id the character currently sits in, or POOL_DROPPABLE_ID */
   from: string;
+  /** Why this placement needs attention, e.g. the member dropped out */
+  warning?: string;
 }
 
 /**
@@ -20,9 +22,14 @@ interface DraggableMemberProps {
  * Renders no transform: the moving preview is handled by DragOverlay instead.
  * @param character - Character to display
  * @param from - Origin of the drag: a slot id, or POOL_DROPPABLE_ID
+ * @param warning - Why this placement needs attention, if any
  * @returns Draggable wrapper around a MemberCard
  */
-export function DraggableMember({ character, from }: DraggableMemberProps) {
+export function DraggableMember({
+  character,
+  from,
+  warning,
+}: DraggableMemberProps) {
   const data: MemberDragData = {
     type: "member",
     characterId: character.id,
@@ -43,7 +50,7 @@ export function DraggableMember({ character, from }: DraggableMemberProps) {
         isDragging && "opacity-40"
       )}
     >
-      <MemberCard character={character} />
+      <MemberCard character={character} warning={warning} />
     </div>
   );
 }

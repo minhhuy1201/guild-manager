@@ -3,30 +3,48 @@
 import { useMemo } from "react";
 
 import type { Character } from "@/features/attendance";
-import { useFormationStore } from "../store/formation-store";
-import type { Slot } from "../types/formation";
+import { createMockFormation } from "../lib/mock-formation";
+import type { Assignment, Slot } from "../types/formation";
 import { TeamColumn } from "./team-column";
 
+/** Layout is static data, built once at module load. */
+const FORMATION = createMockFormation();
+
 interface FormationGridProps {
+  /** Assignment currently shown — a draft, or the saved copy */
+  assignment: Assignment;
   /** Full roster indexed by character id */
   charactersById: Map<string, Character>;
+  /** Render without drag handles */
+  readOnly?: boolean;
+  /** Ids of members who are placed but marked absent for this battle */
+  absentIds: Set<string>;
 }
 
 /**
  * The whole formation: ten team columns laid out with CSS Grid, five per row on
  * large screens. Slots are stored flat and grouped by team here, so changing the
- * team count only means changing the mock builder.
+ * team count only means changing the layout builder.
+ *
+ * Takes the assignment as a prop rather than reading the store: what shows is
+ * the draft when one exists and the saved copy otherwise, and that merge
+ * belongs to the screen hook.
+ * @param assignment - Assignment currently shown
  * @param charactersById - Full roster indexed by character id
+ * @param readOnly - Render without drag handles
+ * @param absentIds - Ids of placed members who dropped out
  * @returns Grid of team columns
  */
-export function FormationGrid({ charactersById }: FormationGridProps) {
-  const formation = useFormationStore((state) => state.formation);
-  const assignment = useFormationStore((state) => state.assignment);
-
+export function FormationGrid({
+  assignment,
+  charactersById,
+  readOnly = false,
+  absentIds,
+}: FormationGridProps) {
   const teams = useMemo(() => {
     const grouped = new Map<number, Slot[]>();
 
-    for (const slot of formation.slots) {
+    for (const slot of FORMATION.slots) {
       const slots = grouped.get(slot.team) ?? [];
       slots.push(slot);
       grouped.set(slot.team, slots);
@@ -38,7 +56,7 @@ export function FormationGrid({ charactersById }: FormationGridProps) {
         team,
         slots: [...slots].sort((a, b) => a.position - b.position),
       }));
-  }, [formation.slots]);
+  }, []);
 
   const occupants = useMemo(() => {
     const map = new Map<string, Character>();
@@ -55,7 +73,14 @@ export function FormationGrid({ charactersById }: FormationGridProps) {
   return (
     <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
       {teams.map(({ team, slots }) => (
-        <TeamColumn key={team} team={team} slots={slots} occupants={occupants} />
+        <TeamColumn
+          key={team}
+          team={team}
+          slots={slots}
+          occupants={occupants}
+          readOnly={readOnly}
+          absentIds={absentIds}
+        />
       ))}
     </div>
   );
