@@ -33,8 +33,8 @@ export interface Slot {
   team: number;
   /** Vị trí trong team, 1..6 (mỗi team là 1 cột × 6 hàng) */
   position: number;
-  /** Lưu phái được phép. Bỏ trống = nhận mọi lưu phái. */
-  allowedClasses?: GuildClass[];
+  /** Lưu phái gợi ý cho vị trí này — chỉ dùng làm placeholder, không ràng buộc gì. */
+  suggestedClass?: GuildClass;
 }
 
 /** Bố cục đội hình — dữ liệu tĩnh, người dùng không sửa trong màn này. */
@@ -57,9 +57,11 @@ store, logic drag và test không đổi dòng nào.
 - `row`/`col` → `team`/`position`: bố cục chốt là 10 team, mỗi team 1 cột × 6 hàng, nên `col`
   luôn bằng 1 và không mang thông tin. Vị trí của team-block trên màn hình là **derived**:
   team 1–5 ở hàng trên, team 6–10 ở hàng dưới.
-- `role?: 'tank' | 'dps' | 'healer'` → `allowedClasses?: GuildClass[]`: domain của game không có
+- `role?: 'tank' | 'dps' | 'healer'` → `suggestedClass?: GuildClass`: domain của game không có
   ba role đó. Dùng `GuildClass` cho phép tái sử dụng `GUILD_CLASS_LABEL` và `GUILD_CLASS_IMAGE`
   đã có, và không phải thêm enum mới vào `packages/shared` mà backend cũng sẽ phải biết.
+- Đây là **gợi ý hiển thị, không phải ràng buộc**: ô nào cũng nhận mọi lưu phái. Xem mục
+  "Placeholder của ô trống".
 
 ### 2. Pool là derived state
 
@@ -153,19 +155,22 @@ apps/web/features/team-builder/
 ├── types/formation.ts                 # Slot, Formation, Assignment, DragSource, DropTarget
 ├── lib/
 │   ├── assignment.ts                  # applyDrop, assign, unassign, swap, createEmptyAssignment
-│   ├── validation.ts                  # isValidPlacement, invalidPlacementReason
-│   ├── mock-formation.ts              # POSITION_TEMPLATE + createMockFormation()
-│   └── __tests__/assignment.test.ts   # test 6 case + 2 case bảo vệ
+│   ├── dnd-data.ts                    # type guard đọc data.current của dnd-kit
+│   ├── pool.ts                        # lọc pool thuần (derived + search + lưu phái)
+│   ├── mock-formation.ts              # SUGGESTED_CLASS_TEMPLATE + createMockFormation()
+│   └── __tests__/                     # test cho từng file lib ở trên
 ├── store/
 │   ├── formation-store.ts             # Zustand: assignment + assign/unassign/swap/reset/applyDrop
 │   └── pool-filter-store.ts           # Zustand: search + guildClasses
-├── hooks/use-pool.ts                  # derived pool + áp bộ lọc
+├── hooks/use-pool.ts                  # vỏ React mỏng bọc lib/pool.ts
 ├── components/
 │   ├── team-builder-screen.tsx        # SỬA file đang có — container, DndContext, DragOverlay
 │   ├── formation-grid.tsx             # grid-cols-5, 2 hàng team-block
 │   ├── team-column.tsx                # 1 team: tiêu đề + 6 SlotCell theo chiều dọc
 │   ├── slot-cell.tsx                  # useDroppable
-│   ├── member-card.tsx                # useDraggable
+│   ├── slot-placeholder.tsx           # chữ trong ô trống: "Tố Vấn" hoặc "Ô trống"
+│   ├── member-card.tsx                # thuần hiển thị + Tooltip tên (dùng lại trong DragOverlay)
+│   ├── draggable-member.tsx           # bọc MemberCard bằng useDraggable
 │   ├── member-pool.tsx                # useDroppable id="pool" + ScrollArea
 │   └── pool-filters.tsx               # Input search + Select lưu phái
 └── index.ts                           # giữ nguyên, chỉ export TeamBuilderScreen
@@ -197,57 +202,74 @@ như yêu cầu; màn hẹp thì xuống 3 rồi 2 cột thay vì tràn ngang. D
 
 **`team-column.tsx`** — `Card` chứa tiêu đề "Team 1" và 6 `SlotCell` xếp dọc (`flex flex-col gap-2`).
 
-**`slot-cell.tsx`** — `useDroppable`. Ba trạng thái hình:
+**`slot-cell.tsx`** — `useDroppable`. Hai trạng thái hình:
 
-- Trống: viền đứt (`border-dashed`), hiện nhãn lưu phái được phép nếu có ràng buộc.
+- Trống: viền đứt (`border-dashed`) + `SlotPlaceholder`.
 - Đang rê qua (`isOver`): `ring-2 ring-primary`.
-- Có người sai lưu phái: `border-destructive` + `Tooltip` ghi lý do, ví dụ
-  "Ô này dành cho Thiết Y, Tố Vấn".
 
-**`member-card.tsx`** — `useDraggable`. Hiển thị theo đúng cách `character-name.tsx` đang làm:
-`Avatar` ảnh lưu phái từ `GUILD_CLASS_IMAGE` + tên nhân vật, `Tooltip` là tên lưu phái. Nhận prop
-`isOverlay` để bản render trong `DragOverlay` bỏ `useDraggable` và bỏ hiệu ứng mờ.
+Không có trạng thái "sai lưu phái" — ô nào cũng nhận mọi lưu phái.
+
+**`member-card.tsx`** — thuần trình bày, không có hành vi kéo (nhờ vậy dùng lại được trong
+`DragOverlay`). Hiển thị theo đúng cách `character-name.tsx` đang làm: `Avatar` ảnh lưu phái từ
+`GUILD_CLASS_IMAGE` + tên nhân vật. `draggable-member.tsx` bọc `useDraggable` quanh nó.
+
+Thẻ **luôn** có `Tooltip` hiện tên đầy đủ, không phân biệt tên dài hay ngắn. Ô đội hình hẹp nên
+tên dài bị `truncate`; gắn tooltip cho tất cả để không phải đoán tên nào bị cắt ở breakpoint nào.
+
+Chiều rộng thẻ khớp đúng chiều rộng ô: `w-full min-w-0` ở wrapper kéo–thả, `min-w-0 flex-1
+truncate` ở `<span>` tên, `shrink-0` ở `Avatar`. Thiếu `w-full` thì thẻ co bằng độ dài tên; thiếu
+`min-w-0` thì `truncate` không cắt được (flex item mặc định `min-width: auto`) và tên dài đẩy thẻ
+tràn khỏi ô.
 
 **`member-pool.tsx`** — `useDroppable` id `"pool"`. Header hiện số lượng ("Còn 23 thành viên"),
 thân là `ScrollArea` chiều cao cố định chứa lưới card. Rỗng do lọc và rỗng do đã xếp hết là hai
 thông báo khác nhau.
 
 **`pool-filters.tsx`** — sao đúng bố cục của `attendance-filters.tsx`: `Input` có icon `Search`
-bên trái, và `Select multiple` hiện icon lưu phái, `alignItemWithTrigger={false}`.
+bên trái, và bộ chọn lưu phái.
 
-## Validation
+Bộ chọn lưu phái vốn bị chép nguyên si ở `attendance-filters.tsx`, nên tách ra
+**`components/shared/guild-class-filter-select.tsx`** và cả hai màn dùng chung. Nó nhận
+`value: GuildClass[]` + `onChange`, giữ nguyên quy ước "mảng rỗng = không lọc" của các store.
 
-`isValidPlacement(slot, character)` trả `boolean`; `invalidPlacementReason(slot)` trả câu tiếng
-Việt cho tooltip. Cả hai thuần, không phụ thuộc React.
+Danh sách có option **"Tất cả"** đứng đầu. Không thêm state mới: component dịch hai chiều bằng
+một hằng sentinel `ALL_CLASSES` chỉ tồn tại bên trong nó. Chọn "Tất cả" khi đang lọc cụ thể sẽ
+xoá hết lựa chọn; chọn một lưu phái khi "Tất cả" đang tick sẽ bỏ sentinel đi. Nhờ vậy
+`lib/pool.ts`, `use-pool.ts` và store của attendance không phải biết gì về option này.
 
-**Không chặn drop.** Thả sai vẫn thành công, chỉ tô đỏ ô và giải thích lý do qua tooltip. Người
-xếp đội hình là quản trị viên và có thể có lý do cố ý phá ràng buộc; chặn cứng sẽ biến gợi ý
-thành rào cản.
+## Placeholder của ô trống
 
-Ràng buộc khai báo bằng **một template 6 vị trí** trong `mock-formation.ts`:
+**Không có ràng buộc lưu phái.** Mọi ô nhận mọi lưu phái, không có khái niệm "đặt sai chỗ", nên
+không có `lib/validation.ts`, không có `isValidPlacement`, không có viền đỏ hay tooltip báo lỗi.
+
+Lưu phái gợi ý chỉ là **chữ hiện trong ô khi ô đang trống**, khai báo bằng một template 6 vị trí
+trong `mock-formation.ts`:
 
 ```ts
 /**
- * Ràng buộc lưu phái theo vị trí trong team, áp cho cả 10 team.
- * `undefined` = vị trí tự do, nhận mọi lưu phái.
+ * Lưu phái gợi ý theo vị trí trong team, áp cho cả 10 team.
+ * `undefined` = ô trống hiện nhãn trung tính.
  */
-const POSITION_TEMPLATE: readonly (readonly GuildClass[] | undefined)[] = [
-  [GuildClass.THIET_Y],                          // vị trí 1 — chống đỡ
-  [GuildClass.TO_VAN],                           // vị trí 2 — hồi phục
-  [GuildClass.CUU_LINH, GuildClass.HUYET_HA],    // vị trí 3
-  [GuildClass.LONG_NGAM, GuildClass.TOAI_MONG],  // vị trí 4
-  undefined,                                     // vị trí 5 — tự do
-  undefined,                                     // vị trí 6 — tự do
+const SUGGESTED_CLASS_TEMPLATE: readonly (GuildClass | undefined)[] = [
+  undefined,             // vị trí 1 — "Ô trống"
+  GuildClass.TO_VAN,     // vị trí 2 — "Tố Vấn"
+  GuildClass.TO_VAN,     // vị trí 3 — "Tố Vấn"
+  undefined,             // vị trí 4 — "Ô trống"
+  undefined,             // vị trí 5 — "Ô trống"
+  undefined,             // vị trí 6 — "Ô trống"
 ];
 ```
 
-Bộ giá trị trên là **điểm khởi đầu để chạy demo**, không phải luật của game. Nó tồn tại để thấy
-được cả ba trạng thái hình của ô (hợp lệ, sai lưu phái, tự do). Chỉnh lại mảng này là đủ, không
-ảnh hưởng chỗ nào khác.
+`slot-placeholder.tsx` render `GUILD_CLASS_LABEL[slot.suggestedClass]` khi có gợi ý, ngược lại
+render `"Ô trống"`. Người dùng vẫn thả được bất kỳ ai vào bất kỳ ô nào — kể cả ô ghi "Tố Vấn";
+chữ đó biến mất ngay khi ô có người.
 
-`createMockFormation()` lặp team 1..10 × position 1..6, sinh 60 `Slot` từ template đó. Đổi ràng
-buộc chỉ sửa một mảng, không phải sửa 60 chỗ. Nếu sau này từng team cần ràng buộc khác nhau, đổi
-chữ ký hàm sinh — phần còn lại không đụng tới.
+Bộ giá trị trên là **điểm khởi đầu để chạy demo**, không phải luật của game. Chỉnh lại mảng này
+là đủ, không ảnh hưởng chỗ nào khác.
+
+`createMockFormation()` lặp team 1..10 × position 1..6, sinh 60 `Slot` từ template đó. Đổi gợi ý
+chỉ sửa một mảng, không phải sửa 60 chỗ. Nếu sau này từng team cần gợi ý khác nhau, đổi chữ ký
+hàm sinh — phần còn lại không đụng tới.
 
 ## Test
 
@@ -264,7 +286,9 @@ không render:
 7. Bảo vệ — kéo từ pool một người **đang đứng ở ô khác**: chỉ tồn tại ở ô mới, ô cũ thành `null`.
 8. Bảo vệ — thả vào chính ô đang đứng: assignment không đổi.
 
-Ngoài ra test `createEmptyAssignment` sinh đủ 60 khoá `null` từ mock formation.
+Ngoài ra test `createEmptyAssignment` sinh đủ 60 khoá `null` từ mock formation, và
+`createMockFormation` đặt `suggestedClass = TO_VAN` đúng ở vị trí 2 và 3 của cả 10 team, bốn vị
+trí còn lại để `undefined`.
 
 Không viết test component trong lần này: vitest ở repo đang cấu hình `environment: "node"` và chưa
 có jsdom hay testing-library; thêm hạ tầng đó là việc riêng, ngoài phạm vi spec này.

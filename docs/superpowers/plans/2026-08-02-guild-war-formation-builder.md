@@ -19,6 +19,7 @@
 - **Không** `@dnd-kit/sortable`, **không** HTML5 drag API, **không** `react-beautiful-dnd`.
 - **Không** dùng `<Table>` của shadcn cho lưới đội hình — dùng CSS Grid.
 - Layout grid: mỗi team là **1 cột × 6 hàng**; 10 team xếp thành **2 hàng × 5 team-block** ở breakpoint `lg`.
+- **Không ràng buộc lưu phái theo vị trí.** Ô nào cũng nhận mọi lưu phái. Lưu phái chỉ xuất hiện dưới dạng placeholder của ô trống: hàng 2 và hàng 3 ghi "Tố Vấn", bốn hàng còn lại ghi "Ô trống".
 - Ngoài phạm vi: gọi API lưu đội hình, optimistic update, rollback, debounce, test component (repo chưa có jsdom).
 - File: `kebab-case`. Component: `PascalCase`. Hook: `useCamelCase`. Hằng: `UPPER_SNAKE_CASE`.
 - Chạy lệnh từ **thư mục gốc repo** (`/home/huykirito1201/personal/guild-manager`).
@@ -30,7 +31,6 @@
 | `features/team-builder/types/formation.ts` | Kiểu dữ liệu thuần: `Slot`, `Formation`, `Assignment`, `DragSource`, `DropTarget` |
 | `features/team-builder/lib/mock-formation.ts` | Sinh 60 slot từ 1 template 6 vị trí |
 | `features/team-builder/lib/assignment.ts` | Reducer thuần — 6 case kéo–thả |
-| `features/team-builder/lib/validation.ts` | Kiểm tra lưu phái hợp lệ + câu lý do tiếng Việt |
 | `features/team-builder/lib/dnd-data.ts` | Type guard đọc `data.current` của dnd-kit |
 | `features/team-builder/lib/pool.ts` | Lọc pool thuần (derived + search + lưu phái) |
 | `features/team-builder/store/formation-store.ts` | Zustand: `assignment` + actions |
@@ -38,7 +38,7 @@
 | `features/team-builder/hooks/use-pool.ts` | Vỏ React mỏng bọc `lib/pool.ts` |
 | `features/team-builder/components/member-card.tsx` | Hiển thị 1 thành viên (thuần, không dnd) |
 | `features/team-builder/components/draggable-member.tsx` | Bọc `MemberCard` bằng `useDraggable` |
-| `features/team-builder/components/slot-placeholder.tsx` | Nội dung ô trống (nhãn lưu phái được phép) |
+| `features/team-builder/components/slot-placeholder.tsx` | Nội dung ô trống (lưu phái gợi ý, hoặc "Ô trống") |
 | `features/team-builder/components/slot-cell.tsx` | 1 ô — `useDroppable` |
 | `features/team-builder/components/team-column.tsx` | 1 team — tiêu đề + 6 ô dọc |
 | `features/team-builder/components/formation-grid.tsx` | Lưới 10 team-block |
@@ -46,6 +46,8 @@
 | `features/team-builder/components/member-pool.tsx` | Vùng pool — `useDroppable` + `ScrollArea` |
 | `features/team-builder/components/team-builder-screen.tsx` | Container: `DndContext`, `DragOverlay`, `onDragEnd` |
 | `components/ui/scroll-area.tsx` | shadcn CLI sinh |
+| `components/shared/guild-class-filter-select.tsx` | Select lưu phái dùng chung, có option "Tất cả" |
+| `features/attendance/components/attendance-filters.tsx` | **Sửa** — dùng lại select dùng chung |
 | `features/attendance/index.ts` | **Sửa** — thêm export `useCharacters` + type `Character` |
 
 **Tại sao tách `lib/pool.ts` khỏi `hooks/use-pool.ts`:** vitest ở repo chạy `environment: "node"`, không render được hook. Đẩy toàn bộ phép lọc xuống hàm thuần cho phép test thật; hook chỉ còn `useMemo` bọc lại.
@@ -98,8 +100,11 @@ export interface Slot {
   team: number;
   /** Row inside the team, 1..6 (each team is a single column of six rows) */
   position: number;
-  /** Guild classes allowed here. Omitted or empty means every class is allowed. */
-  allowedClasses?: GuildClass[];
+  /**
+   * Guild class suggested for this position. Purely a hint shown as the empty
+   * slot's placeholder — every slot accepts every class.
+   */
+  suggestedClass?: GuildClass;
 }
 
 /**
@@ -162,20 +167,25 @@ describe("createMockFormation", () => {
     }
   });
 
-  it("áp cùng một ràng buộc lưu phái cho mọi team ở cùng vị trí", () => {
+  it("gợi ý Tố Vấn ở vị trí 2 và 3 của mọi team", () => {
     const formation = createMockFormation();
-    const firstPositions = formation.slots.filter((slot) => slot.position === 1);
-    expect(firstPositions).toHaveLength(TEAM_COUNT);
-    for (const slot of firstPositions) {
-      expect(slot.allowedClasses).toEqual([GuildClass.THIET_Y]);
+    const suggested = formation.slots.filter(
+      (slot) => slot.position === 2 || slot.position === 3
+    );
+    expect(suggested).toHaveLength(TEAM_COUNT * 2);
+    for (const slot of suggested) {
+      expect(slot.suggestedClass).toBe(GuildClass.TO_VAN);
     }
   });
 
-  it("để vị trí 5 và 6 tự do, không ràng buộc lưu phái", () => {
+  it("bốn vị trí còn lại không gợi ý lưu phái nào", () => {
     const formation = createMockFormation();
-    const free = formation.slots.filter((slot) => slot.position >= 5);
+    const free = formation.slots.filter(
+      (slot) => slot.position !== 2 && slot.position !== 3
+    );
+    expect(free).toHaveLength(TEAM_COUNT * 4);
     for (const slot of free) {
-      expect(slot.allowedClasses).toBeUndefined();
+      expect(slot.suggestedClass).toBeUndefined();
     }
   });
 
@@ -211,18 +221,17 @@ export const TEAM_COUNT = 10;
 export const SLOTS_PER_TEAM = 6;
 
 /**
- * Class constraint per position inside a team, applied to all ten teams.
- * `undefined` means the position accepts every guild class.
+ * Suggested guild class per position inside a team, applied to all ten teams.
+ * `undefined` means the empty slot just reads "Ô trống".
  *
- * These values are a demo starting point, not a game rule — they exist so all
- * three slot visuals (valid, wrong class, unconstrained) are reachable.
- * Editing this array is enough; nothing else depends on the specific classes.
+ * This is a display hint only — no slot ever rejects a character. Editing this
+ * array is enough; nothing else depends on the specific classes.
  */
-const POSITION_TEMPLATE: readonly (readonly GuildClass[] | undefined)[] = [
-  [GuildClass.THIET_Y],
-  [GuildClass.TO_VAN],
-  [GuildClass.CUU_LINH, GuildClass.HUYET_HA],
-  [GuildClass.LONG_NGAM, GuildClass.TOAI_MONG],
+const SUGGESTED_CLASS_TEMPLATE: readonly (GuildClass | undefined)[] = [
+  undefined,
+  GuildClass.TO_VAN,
+  GuildClass.TO_VAN,
+  undefined,
   undefined,
   undefined,
 ];
@@ -239,7 +248,7 @@ export function buildSlotId(team: number, position: number): string {
 
 /**
  * Build the demo formation: TEAM_COUNT teams of SLOTS_PER_TEAM slots each,
- * every team sharing the same per-position class constraints.
+ * every team sharing the same per-position class suggestions.
  * @returns A formation with TEAM_COUNT * SLOTS_PER_TEAM flat slots
  */
 export function createMockFormation(): Formation {
@@ -247,12 +256,12 @@ export function createMockFormation(): Formation {
 
   for (let team = 1; team <= TEAM_COUNT; team += 1) {
     for (let position = 1; position <= SLOTS_PER_TEAM; position += 1) {
-      const allowed = POSITION_TEMPLATE[position - 1];
+      const suggested = SUGGESTED_CLASS_TEMPLATE[position - 1];
       slots.push({
         id: buildSlotId(team, position),
         team,
         position,
-        ...(allowed ? { allowedClasses: [...allowed] } : {}),
+        ...(suggested ? { suggestedClass: suggested } : {}),
       });
     }
   }
@@ -596,128 +605,13 @@ git commit -m "feat(ui): add pure assignment reducer for formation drag and drop
 
 ---
 
-### Task 3: Kiểm tra ràng buộc lưu phái
+### Task 3: ~~Kiểm tra ràng buộc lưu phái~~ — ĐÃ BỎ
 
-**Files:**
-- Create: `apps/web/features/team-builder/lib/validation.ts`
-- Create: `apps/web/features/team-builder/lib/__tests__/validation.test.ts`
+Spec đổi ngày 2026-08-02: **không còn ràng buộc lưu phái**. Mọi ô nhận mọi lưu phái, nên không có `lib/validation.ts`, không có `isValidPlacement` / `invalidPlacementReason`, không có viền đỏ hay tooltip báo đặt sai.
 
-**Interfaces:**
-- Consumes: `Slot` từ `../types/formation`; `GuildClass`, `GUILD_CLASS_LABEL` từ `@shared/enums`
-- Produces:
-  - `isValidPlacement(slot: Slot, guildClass: GuildClass): boolean`
-  - `invalidPlacementReason(slot: Slot): string`
+Thứ còn lại chỉ là **gợi ý hiển thị**: `Slot.suggestedClass` (Task 1) quyết định chữ trong ô khi ô đang trống — vị trí 2 và 3 hiện "Tố Vấn", bốn vị trí còn lại hiện "Ô trống". Toàn bộ phần đó nằm ở `slot-placeholder.tsx` trong Task 8.
 
-Hàm nhận `GuildClass` chứ **không** nhận cả `Character`: giữ `lib/` không phụ thuộc feature `attendance`, nên test chạy được ở môi trường `node` mà không kéo theo component React nào.
-
-- [ ] **Step 1: Viết test**
-
-Tạo `apps/web/features/team-builder/lib/__tests__/validation.test.ts`:
-
-```ts
-import { describe, expect, it } from "vitest";
-import { GuildClass } from "@shared/enums";
-
-import type { Slot } from "../../types/formation";
-import { invalidPlacementReason, isValidPlacement } from "../validation";
-
-const constrainedSlot: Slot = {
-  id: "team-1-pos-1",
-  team: 1,
-  position: 1,
-  allowedClasses: [GuildClass.THIET_Y, GuildClass.TO_VAN],
-};
-
-const freeSlot: Slot = { id: "team-1-pos-5", team: 1, position: 5 };
-
-describe("isValidPlacement", () => {
-  it("chấp nhận lưu phái nằm trong danh sách cho phép", () => {
-    expect(isValidPlacement(constrainedSlot, GuildClass.THIET_Y)).toBe(true);
-  });
-
-  it("từ chối lưu phái ngoài danh sách cho phép", () => {
-    expect(isValidPlacement(constrainedSlot, GuildClass.LONG_NGAM)).toBe(false);
-  });
-
-  it("ô không ràng buộc thì nhận mọi lưu phái", () => {
-    expect(isValidPlacement(freeSlot, GuildClass.LONG_NGAM)).toBe(true);
-  });
-
-  it("mảng ràng buộc rỗng cũng coi là không ràng buộc", () => {
-    const slot: Slot = { ...freeSlot, allowedClasses: [] };
-    expect(isValidPlacement(slot, GuildClass.LONG_NGAM)).toBe(true);
-  });
-});
-
-describe("invalidPlacementReason", () => {
-  it("liệt kê tên tiếng Việt của các lưu phái được phép", () => {
-    expect(invalidPlacementReason(constrainedSlot)).toBe("Ô này dành cho Thiết Y, Tố Vấn");
-  });
-
-  it("trả chuỗi rỗng cho ô không ràng buộc", () => {
-    expect(invalidPlacementReason(freeSlot)).toBe("");
-  });
-});
-```
-
-- [ ] **Step 2: Chạy test để xác nhận FAIL**
-
-```bash
-pnpm --filter web test features/team-builder/lib/__tests__/validation.test.ts
-```
-
-Kỳ vọng: FAIL — không resolve được module `../validation`.
-
-- [ ] **Step 3: Viết hàm kiểm tra**
-
-Tạo `apps/web/features/team-builder/lib/validation.ts`:
-
-```ts
-import { GUILD_CLASS_LABEL, type GuildClass } from "@shared/enums";
-
-import type { Slot } from "../types/formation";
-
-/**
- * Check whether a guild class satisfies a slot's class constraint.
- * Used only for highlighting — dropping is never blocked.
- * @param slot - Slot being filled
- * @param guildClass - Guild class of the character placed there
- * @returns true when the slot has no constraint or the class is allowed
- */
-export function isValidPlacement(slot: Slot, guildClass: GuildClass): boolean {
-  const allowed = slot.allowedClasses;
-  if (!allowed || allowed.length === 0) return true;
-  return allowed.includes(guildClass);
-}
-
-/**
- * Build the Vietnamese tooltip text explaining a slot's class constraint.
- * @param slot - Slot being explained
- * @returns Sentence listing the allowed classes, or an empty string when unconstrained
- */
-export function invalidPlacementReason(slot: Slot): string {
-  const allowed = slot.allowedClasses ?? [];
-  if (allowed.length === 0) return "";
-
-  const names = allowed.map((guildClass) => GUILD_CLASS_LABEL[guildClass]).join(", ");
-  return `Ô này dành cho ${names}`;
-}
-```
-
-- [ ] **Step 4: Chạy test để xác nhận PASS**
-
-```bash
-pnpm --filter web test features/team-builder/lib/__tests__/validation.test.ts
-```
-
-Kỳ vọng: PASS, 6 test.
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add apps/web/features/team-builder/lib
-git commit -m "feat(ui): add guild class placement validation for formation slots"
-```
+Số hiệu task giữ nguyên để các tham chiếu chéo phía dưới không lệch.
 
 ---
 
@@ -1279,8 +1173,8 @@ git commit -m "feat(ui): add formation and pool filter stores for team builder"
 **Interfaces:**
 - Consumes: `Character` từ `@/features/attendance`; `MemberDragData` từ `../lib/dnd-data`; `GUILD_CLASS_LABEL` từ `@shared/enums`; `GUILD_CLASS_IMAGE` từ `@/lib/guild-class`
 - Produces:
-  - `MemberCard({ character, invalidReason?, className? })`
-  - `DraggableMember({ character, from, invalidReason? })` — `from` là slot id hoặc `POOL_DROPPABLE_ID`
+  - `MemberCard({ character, className? })`
+  - `DraggableMember({ character, from })` — `from` là slot id hoặc `POOL_DROPPABLE_ID`
 
 Tách hai file vì `DragOverlay` cần bản **không** gọi `useDraggable` — gọi hook có điều kiện là lỗi React, nên không gộp bằng prop `isOverlay` được.
 
@@ -1304,8 +1198,6 @@ import { cn } from "@/lib/utils";
 interface MemberCardProps {
   /** Character to display */
   character: Character;
-  /** Why this placement breaks the slot's class rule. Empty or omitted means valid. */
-  invalidReason?: string;
   /** Extra classes for the outer element */
   className?: string;
 }
@@ -1313,43 +1205,49 @@ interface MemberCardProps {
 /**
  * A guild member shown as a compact card: class avatar plus character name.
  * Purely presentational — no drag behaviour, so it can also render inside DragOverlay.
- * When `invalidReason` is set the card gets a destructive border and a tooltip.
+ * Always carries a tooltip with the full name, since a slot is too narrow for
+ * the longer ones and truncation gives no way to read them back.
  * @param character - Character to display
- * @param invalidReason - Reason the placement is invalid, if any
  * @param className - Extra classes for the outer element
- * @returns The member card, wrapped in a tooltip when invalid
+ * @returns The member card wrapped in its name tooltip
  */
-export function MemberCard({ character, invalidReason, className }: MemberCardProps) {
+export function MemberCard({ character, className }: MemberCardProps) {
   const classLabel = GUILD_CLASS_LABEL[character.guildClass];
-
-  const card = (
-    <div
-      className={cn(
-        "flex w-full items-center gap-2 rounded-md border bg-card px-2 py-1.5 shadow-sm",
-        invalidReason && "border-destructive",
-        className
-      )}
-    >
-      <Avatar size="sm">
-        <AvatarImage src={GUILD_CLASS_IMAGE[character.guildClass]} alt={classLabel} />
-        <AvatarFallback>{classLabel[0]}</AvatarFallback>
-      </Avatar>
-      <span className="truncate text-sm font-medium">{character.name}</span>
-    </div>
-  );
-
-  if (!invalidReason) return card;
 
   return (
     <Tooltip>
-      <TooltipTrigger render={card} />
-      <TooltipContent>{invalidReason}</TooltipContent>
+      <TooltipTrigger
+        render={
+          <div
+            className={cn(
+              "flex w-full items-center gap-2 rounded-md border bg-card px-2 py-1.5 text-left shadow-sm",
+              className
+            )}
+          >
+            <Avatar size="sm" className="shrink-0">
+              <AvatarImage
+                src={GUILD_CLASS_IMAGE[character.guildClass]}
+                alt={classLabel}
+              />
+              <AvatarFallback>{classLabel[0]}</AvatarFallback>
+            </Avatar>
+            <span className="min-w-0 flex-1 truncate text-sm font-medium">
+              {character.name}
+            </span>
+          </div>
+        }
+      />
+      <TooltipContent>{character.name}</TooltipContent>
     </Tooltip>
   );
 }
 ```
 
-`TooltipTrigger` nhận prop `render` — đó là API của `@base-ui/react`, giống cách `features/attendance/components/character-name.tsx` đang dùng. Không phải `asChild` của Radix.
+Tooltip đặt cho **mọi** thẻ, không phân biệt tên dài hay ngắn: ô đội hình hẹp nên tên dài bị `truncate`, mà không có cách nào đoán trước tên nào sẽ bị cắt ở từng breakpoint. Gắn hết cho nhất quán.
+
+`TooltipTrigger` nhận prop `render` — đó là API của `@base-ui/react`, giống cách `features/attendance/components/character-name.tsx` đang dùng. Không phải `asChild` của Radix. `TooltipProvider` đã bọc sẵn toàn app ở `components/providers.tsx` (`delay = 0`), không cần thêm.
+
+Thẻ vẫn không có trạng thái lỗi nào: không còn ràng buộc lưu phái thì không có gì để báo.
 
 - [ ] **Step 2: Viết bản kéo được**
 
@@ -1370,8 +1268,6 @@ interface DraggableMemberProps {
   character: Character;
   /** Slot id the character currently sits in, or POOL_DROPPABLE_ID */
   from: string;
-  /** Reason the current placement is invalid, if any */
-  invalidReason?: string;
 }
 
 /**
@@ -1380,14 +1276,9 @@ interface DraggableMemberProps {
  * Renders no transform: the moving preview is handled by DragOverlay instead.
  * @param character - Character to display
  * @param from - Origin of the drag: a slot id, or POOL_DROPPABLE_ID
- * @param invalidReason - Reason the current placement is invalid, if any
  * @returns Draggable wrapper around a MemberCard
  */
-export function DraggableMember({
-  character,
-  from,
-  invalidReason,
-}: DraggableMemberProps) {
+export function DraggableMember({ character, from }: DraggableMemberProps) {
   const data: MemberDragData = {
     type: "member",
     characterId: character.id,
@@ -1403,15 +1294,20 @@ export function DraggableMember({
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      className={cn("cursor-grab touch-none", isDragging && "opacity-40")}
+      className={cn(
+        "w-full min-w-0 cursor-grab touch-none",
+        isDragging && "opacity-40"
+      )}
     >
-      <MemberCard character={character} invalidReason={invalidReason} />
+      <MemberCard character={character} />
     </div>
   );
 }
 ```
 
 `touch-none` là bắt buộc: thiếu nó thì trên thiết bị cảm ứng trình duyệt cuộn trang thay vì bắt đầu kéo.
+
+`w-full min-w-0` cũng bắt buộc: wrapper là flex item của `SlotCell`, thiếu `w-full` thì thẻ co lại bằng độ dài tên thay vì lấp đầy ô. Cặp `min-w-0` (ở wrapper) + `min-w-0 flex-1` (ở `<span>` trong `MemberCard`) là thứ khiến `truncate` thật sự cắt được: flex item mặc định `min-width: auto`, tên dài sẽ đẩy thẻ tràn khỏi ô nếu không đặt.
 
 - [ ] **Step 3: Kiểm tra lint**
 
@@ -1439,7 +1335,7 @@ git commit -m "feat(ui): add member card and draggable member for team builder"
 - Create: `apps/web/features/team-builder/components/formation-grid.tsx`
 
 **Interfaces:**
-- Consumes: `Slot` (Task 1); `isValidPlacement`, `invalidPlacementReason` (Task 3); `SlotDropData` (Task 4); `useFormationStore` (Task 6); `DraggableMember` (Task 7); `Character` từ `@/features/attendance`
+- Consumes: `Slot` (Task 1); `SlotDropData` (Task 4); `useFormationStore` (Task 6); `DraggableMember` (Task 7); `Character` từ `@/features/attendance`; `GUILD_CLASS_LABEL` từ `@shared/enums`
 - Produces:
   - `SlotPlaceholder({ slot })`
   - `SlotCell({ slot, character? })`
@@ -1461,18 +1357,15 @@ interface SlotPlaceholderProps {
 }
 
 /**
- * Content of an empty slot: the allowed guild classes, or a neutral hint when
- * the slot takes anyone.
+ * Content of an empty slot: the suggested guild class, or a neutral hint when
+ * the position suggests nothing. Only a hint — the slot takes anyone either way.
  * @param slot - The empty slot being described
  * @returns Muted label describing what belongs in this slot
  */
 export function SlotPlaceholder({ slot }: SlotPlaceholderProps) {
-  const allowed = slot.allowedClasses ?? [];
-
-  const label =
-    allowed.length === 0
-      ? "Ô trống"
-      : allowed.map((guildClass) => GUILD_CLASS_LABEL[guildClass]).join(" / ");
+  const label = slot.suggestedClass
+    ? GUILD_CLASS_LABEL[slot.suggestedClass]
+    : "Ô trống";
 
   return (
     <span className="truncate px-2 text-xs text-muted-foreground">{label}</span>
@@ -1492,7 +1385,6 @@ import { useDroppable } from "@dnd-kit/core";
 import type { Character } from "@/features/attendance";
 import { cn } from "@/lib/utils";
 import type { SlotDropData } from "../lib/dnd-data";
-import { invalidPlacementReason, isValidPlacement } from "../lib/validation";
 import type { Slot } from "../types/formation";
 import { DraggableMember } from "./draggable-member";
 import { SlotPlaceholder } from "./slot-placeholder";
@@ -1505,9 +1397,8 @@ interface SlotCellProps {
 }
 
 /**
- * One droppable cell of the formation. Never rejects a drop — a character of the
- * wrong guild class is accepted and flagged instead, since the admin arranging
- * the formation may be breaking the rule on purpose.
+ * One droppable cell of the formation. Every slot accepts every guild class —
+ * the placeholder only suggests who fits, it never constrains.
  * @param slot - Slot this cell renders
  * @param character - Character currently standing here, if any
  * @returns Droppable cell holding either a draggable member or a placeholder
@@ -1515,11 +1406,6 @@ interface SlotCellProps {
 export function SlotCell({ slot, character }: SlotCellProps) {
   const data: SlotDropData = { type: "slot", slotId: slot.id };
   const { setNodeRef, isOver } = useDroppable({ id: slot.id, data });
-
-  const invalidReason =
-    character && !isValidPlacement(slot, character.guildClass)
-      ? invalidPlacementReason(slot)
-      : undefined;
 
   return (
     <div
@@ -1531,11 +1417,7 @@ export function SlotCell({ slot, character }: SlotCellProps) {
       )}
     >
       {character ? (
-        <DraggableMember
-          character={character}
-          from={slot.id}
-          invalidReason={invalidReason}
-        />
+        <DraggableMember character={character} from={slot.id} />
       ) : (
         <SlotPlaceholder slot={slot} />
       )}
@@ -1681,7 +1563,9 @@ git commit -m "feat(ui): add formation grid with droppable slots for team builde
 ### Task 9: Bộ lọc và vùng pool
 
 **Files:**
+- Create: `apps/web/components/shared/guild-class-filter-select.tsx`
 - Create: `apps/web/features/team-builder/components/pool-filters.tsx`
+- Modify: `apps/web/features/attendance/components/attendance-filters.tsx` — dùng lại select dùng chung
 - Create: `apps/web/features/team-builder/components/member-pool.tsx`
 
 **Interfaces:**
@@ -1692,29 +1576,18 @@ git commit -m "feat(ui): add formation grid with droppable slots for team builde
 
 - [ ] **Step 1: Viết bộ lọc**
 
-Tạo `apps/web/features/team-builder/components/pool-filters.tsx`. Bố cục sao theo `features/attendance/components/attendance-filters.tsx` để hai màn nhìn giống nhau:
+Bộ chọn lưu phái dùng chung với `features/attendance` — xem `apps/web/components/shared/guild-class-filter-select.tsx`. Nó nhận `value: GuildClass[]` (mảng rỗng = không lọc) + `onChange`, tự lo option "Tất cả" bằng một hằng sentinel nội bộ, nên store hai bên không phải biết gì về nó.
+
+Tạo `apps/web/features/team-builder/components/pool-filters.tsx`:
 
 ```tsx
 "use client";
 
-import Image from "next/image";
 import { Search } from "lucide-react";
-import {
-  GUILD_CLASS_LABEL,
-  GUILD_CLASS_OPTIONS,
-  type GuildClass,
-} from "@shared/enums";
 
+import { GuildClassFilterSelect } from "@/components/shared/guild-class-filter-select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { GUILD_CLASS_IMAGE } from "@/lib/guild-class";
 import { usePoolFilterStore } from "../store/pool-filter-store";
 
 /**
@@ -1746,49 +1619,11 @@ export function PoolFilters() {
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="pool-guild-class">Lưu phái</Label>
-        <Select
-          multiple
+        <GuildClassFilterSelect
+          id="pool-guild-class"
           value={guildClasses}
-          onValueChange={(value) => setGuildClasses(value)}
-        >
-          <SelectTrigger id="pool-guild-class" className="w-full">
-            <SelectValue>
-              {(value: GuildClass[]) => {
-                if (value.length === 0) return "Tất cả lưu phái";
-                if (value.length === 1)
-                  return (
-                    <span className="flex items-center gap-2">
-                      <Image
-                        src={GUILD_CLASS_IMAGE[value[0]]}
-                        alt=""
-                        width={20}
-                        height={20}
-                        className="size-5 rounded-sm object-cover"
-                      />
-                      {GUILD_CLASS_LABEL[value[0]]}
-                    </span>
-                  );
-                return `${value.length} lưu phái`;
-              }}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent alignItemWithTrigger={false}>
-            {GUILD_CLASS_OPTIONS.map((guildClass) => (
-              <SelectItem key={guildClass} value={guildClass}>
-                <span className="flex items-center gap-2">
-                  <Image
-                    src={GUILD_CLASS_IMAGE[guildClass]}
-                    alt=""
-                    width={20}
-                    height={20}
-                    className="size-5 rounded-sm object-cover"
-                  />
-                  {GUILD_CLASS_LABEL[guildClass]}
-                </span>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          onChange={setGuildClasses}
+        />
       </div>
     </div>
   );
@@ -2086,7 +1921,7 @@ pnpm --filter web dev
 4. Kéo card giữa hai ô đều có người → hai người đổi chỗ, không ai biến mất.
 5. Kéo card từ ô thả xuống vùng pool → ô trở lại trạng thái trống có viền đứt.
 6. Thả card ra ngoài mọi vùng (ví dụ ra lề trang) → không có gì thay đổi.
-7. Thả người **sai lưu phái** vào ô có ràng buộc (ví dụ Long Ngâm vào vị trí 1 vốn dành cho Thiết Y) → **vẫn thả được**, card viền đỏ, rê chuột lên hiện tooltip "Ô này dành cho Thiết Y".
+7. Ô trống ở hàng 2 và hàng 3 của mỗi team hiện chữ "Tố Vấn", bốn hàng còn lại hiện "Ô trống". Thả **bất kỳ lưu phái nào** vào ô ghi "Tố Vấn" → vẫn vào bình thường, không có cảnh báo hay viền đỏ.
 8. Gõ vào ô tìm kiếm và chọn lưu phái → pool lọc đúng; người đã xếp không bao giờ xuất hiện lại trong pool.
 
 Thêm một phép kiểm chứng quan trọng: xếp một người vào ô, rồi **tìm kiếm tên người đó** — họ không được xuất hiện trong pool. Đây là bằng chứng pool đúng là derived state chứ không phải bản sao.
