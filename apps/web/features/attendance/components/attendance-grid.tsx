@@ -4,7 +4,9 @@ import { useState } from "react";
 import { Swords } from "lucide-react";
 import { AttendanceStatus } from "@shared/enums";
 
+import { ErrorState } from "@/components/shared/error-state";
 import { TablePagination } from "@/components/shared/table-pagination";
+import { TableSkeleton } from "@/components/shared/table-skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -16,6 +18,8 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { isDeadlinePassed } from "../api/attendance-api";
+import { useAttendanceBoard } from "../hooks/use-attendance-board";
+import { useDeadlineRefresh } from "../hooks/use-deadline-refresh";
 import {
   useAttendanceRecords,
   useBattleSessions,
@@ -30,6 +34,9 @@ import { AttendanceRow, type AttendanceDraft } from "./attendance-row";
 /** Số nhân vật hiển thị mỗi trang. */
 const PAGE_SIZE = 10;
 
+/** Số cột skeleton khi chưa biết có bao nhiêu ngày đánh: Thành viên + 3 ngày + Thao tác. */
+const SKELETON_COLUMNS = 5;
+
 /**
  * Lưới điểm danh: mỗi nhân vật một hàng, mặc định read-only.
  * Bấm nút chỉnh sửa ở cột cuối để sửa một dòng; xác nhận sẽ yêu cầu nhập
@@ -41,6 +48,7 @@ export function AttendanceGrid() {
   const { data: sessions } = useBattleSessions();
   const { data: records } = useAttendanceRecords();
   const { mutateAsync: mark } = useMarkAttendance();
+  const { isPending, isError, errorMessage, refetch } = useAttendanceBoard();
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<AttendanceDraft>({});
@@ -53,6 +61,8 @@ export function AttendanceGrid() {
 
   const battleSessions = sessions ?? [];
   const recordMap = records ?? {};
+
+  useDeadlineRefresh(battleSessions);
 
   // Về trang 1 mỗi khi kết quả lọc đổi (tìm kiếm/lưu phái) để không kẹt ở trang trống.
   // Điều chỉnh state ngay trong render thay vì useEffect (tránh cascading render).
@@ -183,7 +193,17 @@ export function AttendanceGrid() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {characters.length === 0 && (
+            {isError && (
+              <TableRow>
+                <TableCell colSpan={SKELETON_COLUMNS}>
+                  <ErrorState message={errorMessage} onRetry={refetch} />
+                </TableCell>
+              </TableRow>
+            )}
+            {!isError && isPending && (
+              <TableSkeleton rows={5} columns={SKELETON_COLUMNS} />
+            )}
+            {!isError && !isPending && characters.length === 0 && (
               <TableRow>
                 <TableCell
                   colSpan={battleSessions.length + 2}
@@ -193,26 +213,28 @@ export function AttendanceGrid() {
                 </TableCell>
               </TableRow>
             )}
-            {pagedCharacters.map((character) => (
-              <AttendanceRow
-                key={character.id}
-                character={character}
-                sessions={battleSessions}
-                recordMap={recordMap}
-                lockedSessionIds={lockedSessionIds}
-                allLocked={allLocked}
-                isEditing={editingId === character.id}
-                draft={editingId === character.id ? draft : {}}
-                onStartEdit={handleStartEdit}
-                onDraftChange={handleDraftChange}
-                onCancel={handleCancel}
-                onConfirm={handleConfirm}
-              />
-            ))}
+            {!isError &&
+              !isPending &&
+              pagedCharacters.map((character) => (
+                <AttendanceRow
+                  key={character.id}
+                  character={character}
+                  sessions={battleSessions}
+                  recordMap={recordMap}
+                  lockedSessionIds={lockedSessionIds}
+                  allLocked={allLocked}
+                  isEditing={editingId === character.id}
+                  draft={editingId === character.id ? draft : {}}
+                  onStartEdit={handleStartEdit}
+                  onDraftChange={handleDraftChange}
+                  onCancel={handleCancel}
+                  onConfirm={handleConfirm}
+                />
+              ))}
           </TableBody>
         </Table>
 
-        {pageCount > 1 && (
+        {!isError && !isPending && pageCount > 1 && (
           <div className="mt-4 flex flex-col items-center gap-2">
             <p className="text-sm text-muted-foreground">
               {characters.length} thành viên · trang {safePage}/{pageCount}

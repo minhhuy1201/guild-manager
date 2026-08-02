@@ -2,27 +2,61 @@
 
 import { CalendarRange, Clock, Lock, Swords } from "lucide-react";
 
+import { ErrorState } from "@/components/shared/error-state";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { isDeadlinePassed } from "../api/attendance-api";
+import { useAttendanceBoard } from "../hooks/use-attendance-board";
 import { useBattleSessions, useCurrentWeek } from "../hooks/use-attendance";
+import { useDeadlineRefresh } from "../hooks/use-deadline-refresh";
 
 /**
  * Hiển thị khoảng thời gian tuần điểm danh và danh sách ngày đánh,
  * mỗi ngày kèm hạn chót riêng và trạng thái còn hạn/đã khóa.
- * @returns Card timeline tuần (rỗng khi chưa tải xong tuần)
+ * @returns Card timeline tuần, hoặc skeleton/khối lỗi khi query chưa xong hoặc thất bại
  */
 export function WeekTimeline() {
   const { data: week } = useCurrentWeek();
   const { data: sessions } = useBattleSessions();
-
-  if (!week) {
-    return null;
-  }
+  const { isPending, isError, errorMessage, refetch } = useAttendanceBoard();
 
   const battleSessions = sessions ?? [];
+
+  useDeadlineRefresh(battleSessions);
+
+  if (isError) {
+    return (
+      <Card>
+        <CardContent>
+          <ErrorState message={errorMessage} onRetry={refetch} />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (isPending || !week) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col gap-4">
+          <div className="flex items-center gap-3">
+            <Skeleton className="size-9 rounded-lg" />
+            <div className="flex flex-col gap-1.5">
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="h-4 w-44" />
+            </div>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-3">
+            {Array.from({ length: 3 }, (_, index) => (
+              <Skeleton key={index} className="h-24 w-full rounded-lg" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>

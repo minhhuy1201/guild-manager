@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AttendanceLogTable } from "@/features/attendance";
+import { AttendanceFilters, AttendanceLogTable } from "@/features/attendance";
 
 export const metadata: Metadata = {
   title: "Lịch sử điểm danh — Mèo Mập Giang Hồ",
@@ -8,8 +8,13 @@ export const metadata: Metadata = {
 
 /**
  * Route "/lich-su-diem-danh" — trang lịch sử điểm danh.
- * @returns Bảng lịch sử điểm danh
+ * @returns Bộ lọc và bảng lịch sử điểm danh
  */
 export default function AttendanceHistoryPage() {
-  return <AttendanceLogTable />;
+  return (
+    <>
+      <AttendanceFilters />
+      <AttendanceLogTable />
+    </>
+  );
 }
