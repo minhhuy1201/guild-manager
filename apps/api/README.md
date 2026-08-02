@@ -83,6 +83,11 @@ Prisma 7 bỏ `directUrl`, nhưng vẫn tách được vì `prisma.config.ts` **
 > biến trước khi `dotenv` chạy, mà `dotenv` **không ghi đè** biến đã tồn tại kể cả khi rỗng — kết
 > quả là migrate chạy với connection string rỗng.
 
+`DIRECT_DATABASE_URL` phải có `?connect_timeout=30`. Prisma CLI mặc định bỏ cuộc sau 5 giây, mà
+kết nối nguội từ VN sang region Tokyo đo được 3,7–9,5 giây (lúc nóng chỉ ~0,7 giây). Không đặt thì
+`prisma migrate status` lúc chạy lúc báo `P1001` — trước khi sửa là 1/3 lần thành công, sau khi sửa
+5/5. Runtime không dính vì `@prisma/adapter-pg` không đặt timeout ngắn như vậy.
+
 ### Data API bị chặn
 
 Supabase expose schema `public` qua Data API và cấp sẵn toàn quyền cho `anon` / `authenticated`.
