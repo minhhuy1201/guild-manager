@@ -3,8 +3,9 @@
 Ngày: 2026-08-02 · Phạm vi: `apps/api` (cấu hình kết nối), biến môi trường, quy trình migrate.
 **Đã triển khai 2026-08-03.** Project chạy ở region `ap-northeast-1`.
 
-> **Hai quyết định dưới đây đã bị thực tế phản chứng lúc triển khai.** Phần lập luận gốc giữ nguyên
+> **Ba quyết định dưới đây đã bị thực tế phản chứng lúc triển khai.** Phần lập luận gốc giữ nguyên
 > để thấy chỗ suy luận hụt, kèm đính chính ngay tại chỗ:
+> - **Quyết định 1** — bỏ RLS là **sai**: Data API là một đường vào thứ hai mà spec không tính tới.
 > - **Quyết định 2** — runtime **không** cần transaction pooler; session pooler mới đúng.
 > - **Quyết định 3** — **tách được** bằng cấu hình, chỉ là không qua `directUrl`.
 
@@ -33,6 +34,29 @@ phân quyền nữa ở database sẽ tạo ra hai nguồn sự thật cho cùng
 
 Hệ quả trực tiếp: connection string là bí mật của server, không bao giờ lộ ra client. Không có
 `NEXT_PUBLIC_SUPABASE_*` nào cả.
+
+> **Đính chính (2026-08-03).** Phần "không bật Row Level Security" **sai**, và sai ở chỗ tiền đề:
+> lập luận "quyền truy cập đã do NestJS quyết định" chỉ đúng nếu NestJS là đường duy nhất vào
+> database. Không phải. Supabase expose schema `public` qua Data API (PostgREST) và cấp sẵn
+> `SELECT/INSERT/UPDATE/DELETE/TRUNCATE` cho `anon` và `authenticated` trên mọi bảng — kiểm chứng
+> bằng `information_schema.role_table_grants` sau khi migrate. Anon key theo thiết kế của Supabase
+> là thứ công khai, nên đó là toàn quyền đọc/ghi/xoá dữ liệu bang hội, vòng qua `JwtAuthGuard`.
+>
+> Tệ hơn, default privileges của schema `public` cấp lại quyền đó cho **mọi bảng tạo về sau**, nên
+> `REVOKE` một lần không giữ được: migration Prisma tiếp theo sẽ mở lại lỗ hổng.
+>
+> Đã xử lý bằng migration `20260802185500_chan_data_api_truy_cap_bang`: bật RLS trên 4 bảng (không
+> tạo policy nào — bật RLS mà không có policy là từ chối tất cả), `REVOKE` quyền hiện có, và
+> `ALTER DEFAULT PRIVILEGES` để bảng mới không được cấp nữa. Runtime không ảnh hưởng vì role
+> `postgres` có `rolbypassrls = true`.
+>
+> Lưu ý còn lại: default ACL do `supabase_admin` đặt vẫn cấp quyền cho `anon`/`authenticated`, và
+> role `postgres` không sửa được nó. Bảng do Prisma tạo thuộc sở hữu `postgres` nên không dính,
+> nhưng bảng tạo bằng đường khác thì có — RLS là lớp chặn còn lại. Tắt hẳn Data API trong dashboard
+> là cách dứt điểm.
+>
+> Phần còn lại của quyết định 1 (không dùng `@supabase/supabase-js`, không PostgREST, không
+> `NEXT_PUBLIC_SUPABASE_*`) vẫn đúng.
 
 ### 2. Hai cổng cho hai mục đích
 
@@ -166,12 +190,22 @@ ai nhìn.
 
 1. ~~Tạo project Supabase, lấy connection string.~~ Xong — region `ap-northeast-1`.
 2. ~~Đặt `DATABASE_URL` (session pooler) vào `.env`.~~ Xong.
-3. ~~Chạy `pnpm migrate:prod`.~~ Xong — 3 migration.
+3. ~~Chạy `pnpm migrate:prod`.~~ Xong — 3 migration gốc + migration chặn Data API.
 4. ~~Chạy seed.~~ Xong — 25 nhân vật.
 5. ~~Xác nhận app kết nối được: `GET /api/health`.~~ Xong — trả `db: "up"`.
 6. ~~Ghi chú vào README.~~ Xong — mục "Database production" trong `apps/api/README.md`.
+7. **Còn lại:** tắt Data API trong dashboard (Settings → API). RLS đã chặn rồi nên đây là lớp thứ
+   hai, nhưng tắt hẳn thứ mình không dùng vẫn hơn.
+
 Ít việc tới mức không cần file plan riêng — đây là danh sách thao tác, không phải chuỗi thay đổi
 code cần review từng bước.
+
+**Nhìn lại:** đánh giá đó đúng về khối lượng nhưng bỏ sót rủi ro. Ba quyết định sai ở trên đều là
+*quyết định thiết kế*, không phải thao tác — và không cái nào lộ ra cho tới lúc chạm database thật.
+Cái đắt nhất (Data API mở toang) chỉ phát hiện được bằng cách query `information_schema` sau khi
+migrate. Bài học không phải "lẽ ra nên viết plan", mà là: spec dựa trên hiểu biết chung về một dịch
+vụ chưa từng dùng thì phần "chưa đối chiếu tài liệu" cần được coi là việc bắt buộc, không phải ghi
+chú cuối trang.
 
 ## Cần kiểm chứng lại lúc triển khai
 

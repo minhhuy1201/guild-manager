@@ -83,6 +83,20 @@ Prisma 7 bỏ `directUrl`, nhưng vẫn tách được vì `prisma.config.ts` **
 > biến trước khi `dotenv` chạy, mà `dotenv` **không ghi đè** biến đã tồn tại kể cả khi rỗng — kết
 > quả là migrate chạy với connection string rỗng.
 
+### Data API bị chặn
+
+Supabase expose schema `public` qua Data API và cấp sẵn toàn quyền cho `anon` / `authenticated`.
+Migration `20260802185500_chan_data_api_truy_cap_bang` bật RLS (không policy = từ chối tất cả) và
+thu hồi quyền, kể cả default privileges cho bảng tạo về sau. App không bị ảnh hưởng vì role
+`postgres` có `rolbypassrls`.
+
+Nếu sau này có bảng lọt lưới, kiểm tra bằng:
+
+```sql
+select grantee, table_name from information_schema.role_table_grants
+where table_schema = 'public' and grantee in ('anon', 'authenticated');
+```
+
 > **Project bị tạm dừng khi không hoạt động.** Supabase tạm dừng project gói free sau khoảng 7 ngày
 > không có truy vấn. Bang nghỉ dài ngày thì lần vào sau sẽ lỗi kết nối cho tới khi khôi phục thủ công
 > trong dashboard — không phải app hỏng. Kiểm tra bằng `GET /api/health`: `db` trả về `"down"`.
