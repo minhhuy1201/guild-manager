@@ -52,22 +52,36 @@ mặc định khớp với `DATABASE_URL` trong `.env.example`. Đổi user/pass
 
 ## Database production
 
-Dự định host trên **Supabase gói free**, dùng như một Postgres thường: không cài
-`@supabase/supabase-js`, không PostgREST, không Row Level Security — phân quyền đã nằm trọn ở
-NestJS. Chi tiết lập luận: [spec host database](../../docs/superpowers/specs/2026-08-02-supabase-hosting-design.md).
+Đang host trên **Supabase gói free**, dùng như một Postgres thường: không cài
+`@supabase/supabase-js`, không PostgREST. Chi tiết lập luận:
+[spec host database](../../docs/superpowers/specs/2026-08-02-supabase-hosting-design.md).
 
-Hai cổng cho hai mục đích, và Prisma 7 **không có `directUrl`** nên phải tách bằng biến môi trường:
+### Chọn kiểu kết nối
 
-- `DATABASE_URL` → cổng pooler (`6543`), cho runtime. Gói free giới hạn kết nối trực tiếp.
-- `DIRECT_DATABASE_URL` → cổng direct (`5432`), chỉ cho `pnpm migrate:prod` và `prisma db seed`.
-  Pooler chạy transaction mode nên advisory lock của `prisma migrate` sẽ treo hoặc lỗi khó hiểu.
+Supabase cho ba đường vào. Dự án dùng **session pooler** (`…pooler.supabase.com:5432`) cho cả
+runtime lẫn migrate:
 
-Seed cũng phải đi qua direct connection — `prisma/seed.ts` đọc thẳng `process.env.DATABASE_URL`,
-nên nếu quên override thì nó chạy vào pooler mà không báo gì:
+| | Chọn | Vì |
+|---|---|---|
+| Direct (`db.<ref>…:5432`) | ❌ | Chỉ IPv6 nếu không mua add-on IPv4 |
+| Transaction pooler (`:6543`) | ❌ | Dành cho client sống ngắn (serverless); đổi lại mất prepared statement và advisory lock |
+| **Session pooler (`:5432`)** | ✅ | `apps/api` là một process chạy dài hạn giữ sẵn pool, không cần transaction pooling |
 
-```bash
-DATABASE_URL="$DIRECT_DATABASE_URL" pnpm db:seed
-```
+Đổi sang transaction pooler **chỉ khi** deploy `apps/api` lên serverless — lúc đó mỗi request là
+một client mới và lập luận đảo ngược.
+
+### Hai biến, hai vai trò
+
+Prisma 7 bỏ `directUrl`, nhưng vẫn tách được vì `prisma.config.ts` **chỉ CLI đọc**, còn
+`PrismaService` đọc `DATABASE_URL` qua `ConfigService`:
+
+- `DATABASE_URL` → runtime.
+- `DIRECT_DATABASE_URL` → `pnpm migrate:prod` và `pnpm db:seed`, qua fallback trong
+  `prisma.config.ts` và `prisma/seed.ts`. Hiện trùng giá trị với `DATABASE_URL`.
+
+> Đừng viết script kiểu `DATABASE_URL=$DIRECT_DATABASE_URL prisma migrate deploy`: shell expand
+> biến trước khi `dotenv` chạy, mà `dotenv` **không ghi đè** biến đã tồn tại kể cả khi rỗng — kết
+> quả là migrate chạy với connection string rỗng.
 
 > **Project bị tạm dừng khi không hoạt động.** Supabase tạm dừng project gói free sau khoảng 7 ngày
 > không có truy vấn. Bang nghỉ dài ngày thì lần vào sau sẽ lỗi kết nối cho tới khi khôi phục thủ công

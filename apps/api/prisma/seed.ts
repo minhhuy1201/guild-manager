@@ -49,7 +49,8 @@ const CHARACTERS: {
  * Ghi dữ liệu mẫu vào database. Chạy được nhiều lần (upsert theo id trong game).
  */
 async function main(): Promise<void> {
-  const connectionString = process.env.DATABASE_URL;
+  // Cùng thứ tự ưu tiên với prisma.config.ts: seed là thao tác CLI nên đi đường direct nếu có.
+  const connectionString = process.env.DIRECT_DATABASE_URL || process.env.DATABASE_URL;
 
   if (!connectionString) {
     throw new Error('Thiếu DATABASE_URL — kiểm tra file .env của apps/api.');

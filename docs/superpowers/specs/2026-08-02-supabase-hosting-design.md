@@ -1,7 +1,12 @@
 # Host database trên Supabase — Design
 
 Ngày: 2026-08-02 · Phạm vi: `apps/api` (cấu hình kết nối), biến môi trường, quy trình migrate.
-**Chưa triển khai.** Spec này ghi lại quyết định để lúc chuyển sang Supabase không phải dò lại từ đầu.
+**Đã triển khai 2026-08-03.** Project chạy ở region `ap-northeast-1`.
+
+> **Hai quyết định dưới đây đã bị thực tế phản chứng lúc triển khai.** Phần lập luận gốc giữ nguyên
+> để thấy chỗ suy luận hụt, kèm đính chính ngay tại chỗ:
+> - **Quyết định 2** — runtime **không** cần transaction pooler; session pooler mới đúng.
+> - **Quyết định 3** — **tách được** bằng cấu hình, chỉ là không qua `directUrl`.
 
 ## Bối cảnh
 
@@ -48,6 +53,25 @@ nhau, và chạy DDL trong transaction. Trỏ vào cổng `6543` thì lệnh tre
 Chiều ngược lại, runtime **cần** pooler: gói free chỉ cho một số lượng kết nối trực tiếp hạn chế,
 app mở thẳng sẽ hết sạch.
 
+> **Đính chính (2026-08-03).** Có **ba** kiểu kết nối chứ không phải hai, và chọn nhầm ngay từ đầu.
+>
+> | | Dùng | Vì |
+> |---|---|---|
+> | Direct `db.<ref>…:5432` | ❌ | Chỉ IPv6 nếu không mua add-on IPv4 |
+> | Transaction pooler `:6543` | ❌ | Dành cho client sống ngắn |
+> | **Session pooler `:5432`** | ✅ | Giữ được prepared statement và advisory lock, đi qua IPv4 |
+>
+> Lập luận "runtime cần transaction pooler" giải một bài toán dự án không có. Transaction pooling
+> sinh ra cho **nhiều client sống ngắn** — serverless, mỗi request một process. `apps/api` là một
+> process NestJS chạy dài hạn, giữ sẵn một pg pool (mặc định 10 kết nối) và tái dùng suốt vòng đời.
+> `apps/web` không chạm database. Mười kết nối ổn định thì direct hay session pooler đều thừa sức.
+>
+> Đổi lại, transaction pooler bắt trả giá thật — mất prepared statement, advisory lock, `SET` kéo
+> dài — để đổi lấy lợi ích không cần tới.
+>
+> Session pooler dùng chung cho cả runtime lẫn migrate. Quay lại transaction pooler **chỉ khi**
+> `apps/api` chuyển sang serverless.
+
 ### 3. Tách hai cổng bằng dòng lệnh, không bằng cấu hình
 
 **Prisma 7 không có `directUrl`.** Kiểu `Datasource` của `@prisma/config@7.9.0` chỉ nhận:
@@ -78,6 +102,27 @@ DATABASE_URL="postgresql://postgres:<password>@db.<ref>.supabase.co:5432/postgre
 
 **Đừng "sửa" bằng cách thêm `directUrl` vào `prisma.config.ts`** — Prisma sẽ lờ nó đi, và người
 sửa sẽ mất thời gian tìm xem tại sao không có tác dụng.
+
+> **Đính chính (2026-08-03).** Kết luận "không tách được bằng cấu hình" **sai**, và cách ghi đè
+> trên dòng lệnh ở trên **không chạy**.
+>
+> Không chạy vì: shell expand `$DIRECT_DATABASE_URL` trước khi `dotenv` kịp nạp `.env`, nên biến
+> thành rỗng; và `dotenv` **không ghi đè** biến đã tồn tại trong `process.env` — kể cả khi rỗng.
+> Kết quả là `prisma migrate deploy` chạy với connection string rỗng. Cùng lý do đó, script
+> `"migrate:prod": "DATABASE_URL=$DIRECT_DATABASE_URL prisma migrate deploy"` ở cuối phần này cũng
+> hỏng, đừng chép lại.
+>
+> Tách được vì: `prisma.config.ts` **chỉ Prisma CLI đọc**, runtime không đụng tới (`PrismaService`
+> lấy `DATABASE_URL` qua `ConfigService`). Không cần `directUrl` — chỉ cần trỏ `datasource.url`
+> sang biến khác:
+>
+> ```ts
+> url: process.env.DIRECT_DATABASE_URL || env('DATABASE_URL'),
+> ```
+>
+> `prisma/seed.ts` theo cùng thứ tự ưu tiên. `pnpm migrate:prod` rút gọn còn `prisma migrate deploy`.
+> Dùng `process.env` thay vì `env()` cho biến direct vì `env()` ném lỗi khi biến trống, mà trống là
+> trường hợp hợp lệ (dev local).
 
 Nếu thấy cách này dễ quên, đặt một script trong `apps/api/package.json`
 (`"migrate:prod": "DATABASE_URL=$DIRECT_DATABASE_URL prisma migrate deploy"`) và thêm biến
@@ -119,13 +164,12 @@ ai nhìn.
 
 ## Việc cần làm khi triển khai
 
-1. Tạo project Supabase, lấy cả hai connection string.
-2. Đặt `DATABASE_URL` (pooler) vào `.env` của môi trường chạy thật.
-3. Chạy `prisma migrate deploy` với direct connection.
-4. Chạy seed nếu cần dữ liệu khởi tạo, cũng qua direct connection.
-5. Xác nhận app kết nối được: `GET /api/health`.
-6. Ghi chú vào README về chuyện project bị tạm dừng.
-
+1. ~~Tạo project Supabase, lấy connection string.~~ Xong — region `ap-northeast-1`.
+2. ~~Đặt `DATABASE_URL` (session pooler) vào `.env`.~~ Xong.
+3. ~~Chạy `pnpm migrate:prod`.~~ Xong — 3 migration.
+4. ~~Chạy seed.~~ Xong — 25 nhân vật.
+5. ~~Xác nhận app kết nối được: `GET /api/health`.~~ Xong — trả `db: "up"`.
+6. ~~Ghi chú vào README.~~ Xong — mục "Database production" trong `apps/api/README.md`.
 Ít việc tới mức không cần file plan riêng — đây là danh sách thao tác, không phải chuỗi thay đổi
 code cần review từng bước.
 
