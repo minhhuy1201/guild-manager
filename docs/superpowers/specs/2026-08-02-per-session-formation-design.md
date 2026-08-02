@@ -56,8 +56,8 @@ Chọn JSON thay vì bảng chuẩn hoá (mỗi ô một hàng) vì:
 - Dọn dữ liệu cũ là một câu `deleteMany({ weekStart: { lt: … } })`.
 - Đổi bố cục lưới (10 team → 12 team) không cần migrate dữ liệu.
 
-**Không** chọn vì lý do dung lượng. Ở quy mô này hai cách chênh nhau ~110 KB, tức dưới 0,03% hạn
-mức 500 MB của gói free Supabase — con số đó không đủ để quyết định gì.
+**Không** chọn vì lý do dung lượng. Ở quy mô này hai cách chênh nhau ~110 KB — con số đó không đủ
+để quyết định gì, dù host ở đâu.
 
 Nhược điểm thật của JSON: không truy vấn được theo nhân vật ("tháng qua Long hay đứng team mấy"),
 và không có khoá ngoại tới `Character`. Nhu cầu thống kê chưa hề được nêu; nếu sau này cần, chuyển
@@ -277,19 +277,14 @@ Frontend — test các hàm thuần ở bảng trên, chạy `pnpm --filter web 
 **Không** test component: vitest đang cấu hình `environment: "node"`, chưa có jsdom hay
 testing-library. Thêm hạ tầng đó là việc riêng, ngoài phạm vi spec này.
 
-## Hạ tầng: host DB trên Supabase
+## Hạ tầng
 
-Ba điểm cần xử lý ở khâu cấu hình môi trường, không phải ở code:
+Tính năng này chạy trên Postgres local đang có, không phụ thuộc nơi host database.
 
-1. **Hai connection URL.** `prisma.config.ts` hiện chỉ có một `DATABASE_URL`. Với Supabase thường
-   cần cổng `6543` (connection pooler) cho runtime và cổng `5432` (direct) cho `prisma migrate`.
-   Dùng nhầm sẽ hoặc hỏng migrate, hoặc hết connection lúc chạy thật.
-2. **Dự án free bị tạm dừng khi không hoạt động** (~7 ngày không truy vấn). Bang nghỉ một tuần thì
-   lần vào sau sẽ lỗi kết nối cho tới khi vào dashboard khôi phục. Không tránh được trên gói free
-   ngoài việc ping định kỳ.
-3. **Không dùng cron của Supabase** cho việc dọn dữ liệu — đã xử lý bằng luật 2 ở mục vòng đời.
-
-Cần kiểm chứng lại số liệu và hành vi gói free tại thời điểm triển khai; chúng thay đổi theo thời gian.
+Việc chuyển sang Supabase đã tách sang spec riêng:
+[2026-08-02-supabase-hosting-design.md](./2026-08-02-supabase-hosting-design.md). Điều duy nhất
+liên quan tới đây: việc dọn dữ liệu quá 28 ngày cố tình **không** dùng cron của nhà cung cấp — nó
+nằm trong `GET /team-builder/weeks` (luật 2 ở mục vòng đời), nên đổi nơi host không ảnh hưởng.
 
 ## Ngoài phạm vi
 

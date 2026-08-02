@@ -27,7 +27,7 @@
 - **shadcn ở repo này chạy trên `@base-ui/react`** (style `base-nova`), KHÔNG phải Radix. Sinh component bằng CLI, không chép từ trang shadcn bản Radix.
 - File: `kebab-case`. Component: `PascalCase`. Hook: `useCamelCase`. Hằng: `UPPER_SNAKE_CASE`.
 - Chạy mọi lệnh từ **thư mục gốc repo** (`/home/huykirito1201/personal/guild-manager`).
-- **Supabase:** nếu `DATABASE_URL` trỏ tới connection pooler (cổng 6543), `prisma migrate` sẽ hỏng. Migrate phải dùng direct connection (cổng 5432). Xem Task 1 Step 3.
+- **Database:** kế hoạch này chạy trên Postgres local đang có. Việc host trên Supabase là chuyện riêng, đã tách sang [spec host database](../specs/2026-08-02-supabase-hosting-design.md) — không cần biết tới nó để thực hiện kế hoạch này.
 
 ---
 
@@ -149,13 +149,7 @@ pnpm --filter api exec prisma migrate dev --name add_formation
 
 Kỳ vọng: tạo thư mục migration mới và in `Your database is now in sync with your schema.`
 
-**Nếu database host trên Supabase:** lệnh này sẽ hỏng khi `DATABASE_URL` trỏ tới connection pooler (cổng `6543`) vì PgBouncer không chạy được DDL trong prepared statement. Chạy migrate với direct connection:
-
-```bash
-DATABASE_URL="postgresql://...@db.<ref>.supabase.co:5432/postgres" pnpm --filter api exec prisma migrate dev --name add_formation
-```
-
-Runtime của app vẫn dùng cổng `6543` như bình thường.
+Lệnh này chạy với `DATABASE_URL` trong `.env` đang trỏ tới Postgres local. Nếu sau này database chuyển sang connection pooler thì cách chạy migrate khác đi — xem [spec host database](../specs/2026-08-02-supabase-hosting-design.md), nhưng không liên quan tới kế hoạch này.
 
 - [ ] **Step 4: Viết schema dùng chung**
 
@@ -3695,6 +3689,5 @@ git commit -m "fix(ui): address issues found during manual verification"
 
 **Chỗ dễ vỡ khi vận hành:**
 
-- Nếu database host trên Supabase, `prisma migrate` phải chạy qua direct connection (cổng `5432`), không phải connection pooler (`6543`). Xem Task 1 Step 3.
-- Dự án Supabase gói free bị tạm dừng sau khoảng 7 ngày không có truy vấn; lần vào sau sẽ lỗi kết nối cho tới khi khôi phục thủ công trong dashboard.
 - Dọn dữ liệu quá 28 ngày chạy trong `GET /team-builder/weeks`. Nếu sau này màn hình không còn gọi endpoint đó, việc dọn sẽ im lặng ngừng chạy.
+- Việc host database ở đâu nằm ngoài kế hoạch này. Khi chuyển sang Supabase, đọc [spec host database](../specs/2026-08-02-supabase-hosting-design.md) trước — quy trình migrate đổi khác.
