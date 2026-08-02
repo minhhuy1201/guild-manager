@@ -1,53 +1,62 @@
 import { create } from "zustand";
 
-import {
-  applyDrop,
-  assign,
-  createEmptyAssignment,
-  swap,
-  unassign,
-} from "../lib/assignment";
-import { createMockFormation } from "../lib/mock-formation";
-import type { Assignment, DragSource, DropTarget, Formation } from "../types/formation";
-
-/** Layout is static demo data for now, built once at module load. */
-const FORMATION = createMockFormation();
+import { applyDrop } from "../lib/assignment";
+import type { Assignment, DragSource, DropTarget } from "../types/formation";
 
 interface FormationState {
-  /** Slot layout — never edited by the user in this screen */
-  formation: Formation;
-  /** Who stands where */
-  assignment: Assignment;
-  /** Place a character into a slot, clearing their previous slot */
-  assign: (slotId: string, characterId: string) => void;
-  /** Empty a slot, sending its occupant back to the pool */
-  unassign: (slotId: string) => void;
-  /** Exchange the occupants of two slots */
-  swap: (slotIdA: string, slotIdB: string) => void;
-  /** Resolve one drag gesture through the pure reducer */
-  drop: (source: DragSource, characterId: string, target: DropTarget) => void;
-  /** Clear every slot */
-  reset: () => void;
+  /** Unsaved edits per battle, keyed by session id. Missing key = untouched. */
+  drafts: Record<string, Assignment>;
+  /** Battle whose tab is open */
+  activeSessionId: string | null;
+  /** Monday of the week on screen; null means the open week */
+  selectedWeekStart: string | null;
+  /** Switch to another battle's tab */
+  setActiveSession: (sessionId: string) => void;
+  /** Switch to another week; drafts of the previous week are dropped */
+  setWeek: (weekStart: string | null) => void;
+  /** Replace a battle's draft outright — used by the prefill */
+  setDraft: (sessionId: string, assignment: Assignment) => void;
+  /** Discard a battle's draft, falling back to the saved copy */
+  clearDraft: (sessionId: string) => void;
+  /** Resolve one drag gesture into the battle's draft */
+  drop: (
+    sessionId: string,
+    base: Assignment,
+    source: DragSource,
+    characterId: string,
+    target: DropTarget
+  ) => void;
 }
 
 /**
- * Client state of the formation builder (Zustand).
- * Holds UI state only — the guild roster is server data and stays in TanStack Query.
- * Every action delegates to the pure reducer in `lib/assignment.ts`; this store
- * adds no rules of its own.
+ * Draft state of the formation builder (Zustand).
+ * Holds ONLY unsaved edits — the saved formations are server data and stay in
+ * TanStack Query. Every rule about what a drop means lives in
+ * `lib/assignment.ts`; this store adds none of its own.
  */
 export const useFormationStore = create<FormationState>((set) => ({
-  formation: FORMATION,
-  assignment: createEmptyAssignment(FORMATION.slots),
-  assign: (slotId, characterId) =>
-    set((state) => ({ assignment: assign(state.assignment, slotId, characterId) })),
-  unassign: (slotId) =>
-    set((state) => ({ assignment: unassign(state.assignment, slotId) })),
-  swap: (slotIdA, slotIdB) =>
-    set((state) => ({ assignment: swap(state.assignment, slotIdA, slotIdB) })),
-  drop: (source, characterId, target) =>
-    set((state) => ({
-      assignment: applyDrop(state.assignment, source, characterId, target),
-    })),
-  reset: () => set({ assignment: createEmptyAssignment(FORMATION.slots) }),
+  drafts: {},
+  activeSessionId: null,
+  selectedWeekStart: null,
+  setActiveSession: (sessionId) => set({ activeSessionId: sessionId }),
+  setWeek: (weekStart) =>
+    set({ selectedWeekStart: weekStart, drafts: {}, activeSessionId: null }),
+  setDraft: (sessionId, assignment) =>
+    set((state) => ({ drafts: { ...state.drafts, [sessionId]: assignment } })),
+  clearDraft: (sessionId) =>
+    set((state) => {
+      const next = { ...state.drafts };
+      delete next[sessionId];
+      return { drafts: next };
+    }),
+  drop: (sessionId, base, source, characterId, target) =>
+    set((state) => {
+      const current = state.drafts[sessionId] ?? base;
+      const next = applyDrop(current, source, characterId, target);
+
+      // applyDrop returns the same reference for an out-of-bounds drop.
+      if (next === current) return state;
+
+      return { drafts: { ...state.drafts, [sessionId]: next } };
+    }),
 }));
