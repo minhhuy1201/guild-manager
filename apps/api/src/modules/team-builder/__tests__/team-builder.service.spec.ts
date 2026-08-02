@@ -1,3 +1,5 @@
+import { ConflictException, NotFoundException } from '@nestjs/common';
+
 import { AttendanceService } from '@/modules/attendance/attendance.service';
 import { PrismaService } from '@/infrastructure/prisma/prisma.service';
 import { TeamBuilderService } from '../team-builder.service';
@@ -208,5 +210,91 @@ describe('TeamBuilderService.getWeeks', () => {
     await service.getWeeks(WEDNESDAY);
 
     expect(order).toEqual(['delete', 'read']);
+  });
+});
+
+describe('TeamBuilderService.saveFormation', () => {
+  let service: TeamBuilderService;
+  let prisma: {
+    character: { findMany: jest.Mock };
+    battleSession: { findUnique: jest.Mock };
+    formation: { upsert: jest.Mock };
+  };
+  let attendance: { getCurrentWeek: jest.Mock; getSessions: jest.Mock };
+
+  beforeEach(() => {
+    prisma = {
+      character: {
+        findMany: jest.fn().mockResolvedValue([{ id: 'char-1' }]),
+      },
+      battleSession: {
+        findUnique: jest
+          .fn()
+          .mockImplementation(({ where }: { where: { id: string } }) =>
+            Promise.resolve(
+              SESSION_ROWS.find((row) => row.id === where.id) ?? null,
+            ),
+          ),
+      },
+      formation: {
+        upsert: jest
+          .fn()
+          .mockImplementation(({ create }: { create: { assignment: unknown } }) =>
+            Promise.resolve(create),
+          ),
+      },
+    };
+    attendance = {
+      getCurrentWeek: jest.fn(),
+      getSessions: jest.fn(),
+    };
+
+    service = new TeamBuilderService(
+      prisma as unknown as PrismaService,
+      attendance as unknown as AttendanceService,
+    );
+  });
+
+  it('ghi đội hình cho trận chưa đánh', async () => {
+    const result = await service.saveFormation(
+      'session-sat',
+      { 'team-1-pos-1': 'char-1' },
+      WEDNESDAY,
+    );
+
+    expect(result.sessionId).toBe('session-sat');
+    expect(result.assignment).toEqual({ 'team-1-pos-1': 'char-1' });
+    expect(result.locked).toBe(false);
+  });
+
+  it('lưu hai lần cùng payload cho cùng kết quả', async () => {
+    const payload = { 'team-1-pos-1': 'char-1' };
+
+    const first = await service.saveFormation('session-sat', payload, WEDNESDAY);
+    const second = await service.saveFormation('session-sat', payload, WEDNESDAY);
+
+    expect(second).toEqual(first);
+  });
+
+  it('từ chối ghi vào trận đã đánh xong', async () => {
+    await expect(
+      service.saveFormation('session-tue', {}, WEDNESDAY),
+    ).rejects.toThrow(ConflictException);
+  });
+
+  it('báo không tìm thấy khi sessionId không tồn tại', async () => {
+    await expect(
+      service.saveFormation('session-khong-co', {}, WEDNESDAY),
+    ).rejects.toThrow(NotFoundException);
+  });
+
+  it('bỏ nhân vật đã rời bang ngay khi trả về', async () => {
+    const result = await service.saveFormation(
+      'session-sat',
+      { 'team-1-pos-1': 'char-1', 'team-1-pos-2': 'char-99' },
+      WEDNESDAY,
+    );
+
+    expect(result.assignment).toEqual({ 'team-1-pos-1': 'char-1' });
   });
 });

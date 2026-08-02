@@ -1,4 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import type { AssignmentInput } from '@guild/shared/schemas';
 
 import { PrismaService } from '@/infrastructure/prisma/prisma.service';
 import { AttendanceService } from '@/modules/attendance/attendance.service';
@@ -102,6 +107,50 @@ export class TeamBuilderService {
         knownIds,
       ),
     }));
+  }
+
+  /**
+   * Ghi đè đội hình của một trận. Idempotent — gửi cùng payload nhiều lần cho
+   * cùng kết quả.
+   * @param sessionId - ID trận cần lưu đội hình
+   * @param assignment - slotId → characterId, ô trống thì không có khoá
+   * @param now - Thời điểm hiện tại (cho phép truyền vào để test)
+   * @returns Trận kèm đội hình vừa ghi
+   * @throws NotFoundException khi không có trận nào mang sessionId đó
+   * @throws ConflictException khi trận đã qua giờ đánh
+   */
+  async saveFormation(
+    sessionId: string,
+    assignment: AssignmentInput,
+    now: Date = new Date(),
+  ): Promise<SessionFormationEntity> {
+    const session = await this.prisma.battleSession.findUnique({
+      where: { id: sessionId },
+    });
+    if (!session) {
+      throw new NotFoundException('Không tìm thấy ngày đánh.');
+    }
+
+    if (session.dateTime.getTime() < now.getTime()) {
+      throw new ConflictException('Trận này đã đánh xong, không sửa được nữa.');
+    }
+
+    await this.prisma.formation.upsert({
+      where: { sessionId },
+      create: { sessionId, weekStart: session.weekStart, assignment },
+      update: { assignment },
+    });
+
+    const knownIds = await this.loadCharacterIds();
+
+    return {
+      sessionId: session.id,
+      label: session.label,
+      dateTime: session.dateTime.toISOString(),
+      isGuildWar: session.isGuildWar,
+      locked: false,
+      assignment: this.pruneMissingCharacters(assignment, knownIds),
+    };
   }
 
   /**
