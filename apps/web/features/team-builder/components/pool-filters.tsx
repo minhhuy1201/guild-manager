@@ -1,23 +1,10 @@
 "use client";
 
-import Image from "next/image";
 import { Search } from "lucide-react";
-import {
-  GUILD_CLASS_LABEL,
-  GUILD_CLASS_OPTIONS,
-  type GuildClass,
-} from "@shared/enums";
 
+import { GuildClassFilterSelect } from "@/components/shared/guild-class-filter-select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { GUILD_CLASS_IMAGE } from "@/lib/guild-class";
 import { usePoolFilterStore } from "../store/pool-filter-store";
 
 /**
@@ -49,49 +36,11 @@ export function PoolFilters() {
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="pool-guild-class">Lưu phái</Label>
-        <Select
-          multiple
+        <GuildClassFilterSelect
+          id="pool-guild-class"
           value={guildClasses}
-          onValueChange={(value) => setGuildClasses(value)}
-        >
-          <SelectTrigger id="pool-guild-class" className="w-full">
-            <SelectValue>
-              {(value: GuildClass[]) => {
-                if (value.length === 0) return "Tất cả lưu phái";
-                if (value.length === 1)
-                  return (
-                    <span className="flex items-center gap-2">
-                      <Image
-                        src={GUILD_CLASS_IMAGE[value[0]]}
-                        alt=""
-                        width={20}
-                        height={20}
-                        className="size-5 rounded-sm object-cover"
-                      />
-                      {GUILD_CLASS_LABEL[value[0]]}
-                    </span>
-                  );
-                return `${value.length} lưu phái`;
-              }}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent alignItemWithTrigger={false}>
-            {GUILD_CLASS_OPTIONS.map((guildClass) => (
-              <SelectItem key={guildClass} value={guildClass}>
-                <span className="flex items-center gap-2">
-                  <Image
-                    src={GUILD_CLASS_IMAGE[guildClass]}
-                    alt=""
-                    width={20}
-                    height={20}
-                    className="size-5 rounded-sm object-cover"
-                  />
-                  {GUILD_CLASS_LABEL[guildClass]}
-                </span>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          onChange={setGuildClasses}
+        />
       </div>
     </div>
   );
