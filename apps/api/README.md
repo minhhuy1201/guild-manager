@@ -7,6 +7,7 @@ Backend NestJS cho ứng dụng điểm danh bang hội.
 - **NestJS 11** (Express) — HTTP layer
 - **Prisma 7 + PostgreSQL** — dữ liệu (kết nối qua driver adapter `@prisma/adapter-pg`)
 - **Zod + nestjs-zod** — validate env và DTO; schema dùng chung với frontend ở `packages/shared/schemas`
+- **JWT** (`@nestjs/jwt`) — access token 1 ngày, refresh token 1 tuần
 - **Swagger** — tài liệu API tự sinh, bật ở mọi môi trường trừ production
 
 ## Chạy dev
@@ -25,6 +26,32 @@ pnpm dev                  # http://localhost:3001/api
 
 `AUTH_SECRET` phải trùng giá trị với `apps/web` vì hai bên dùng chung cookie phiên đăng nhập.
 
+Danh sách biến môi trường đầy đủ và cách xử lý lỗi thường gặp: [`docs/development.md`](../../docs/development.md).
+
+## Endpoint
+
+Tất cả nằm sau prefix `/api`. Response thành công `{ data }`, lỗi
+`{ statusCode, message, errors?, path, requestId, timestamp }` — `message` đã là tiếng Việt.
+
+| Method | Đường dẫn | Việc | Quyền |
+|---|---|---|---|
+| `GET` | `/health` | Trạng thái API + database | Công khai |
+| `POST` | `/auth/login` | Đăng nhập quản trị | Công khai |
+| `POST` | `/auth/refresh` | Đổi refresh token lấy cặp token mới | Công khai |
+| `GET` | `/auth/me` | Tài khoản của access token hiện tại | Bearer |
+| `GET` | `/attendance/characters` | Danh sách nhân vật (không kèm mật khẩu) | Công khai |
+| `GET` | `/attendance/week` | Tuần điểm danh đang mở | Công khai |
+| `GET` | `/attendance/sessions` | Các trận của tuần đang mở kèm deadline | Công khai |
+| `GET` | `/attendance/records` | Lượt điểm danh của tuần đang mở | Công khai |
+| `POST` | `/attendance` | Điểm danh một nhân vật ở một trận | Mật khẩu nhân vật, **hoặc** Bearer (quản trị được miễn deadline lẫn mật khẩu) |
+| `GET` | `/team-builder/weeks` | Các tuần còn dữ liệu đội hình | Bearer |
+| `GET` | `/team-builder/formations?weekStart=` | Đội hình các trận của một tuần | Bearer |
+| `PUT` | `/team-builder/formations/:sessionId` | Ghi đè đội hình một trận | Bearer |
+
+Luật deadline (chốt sổ 17h Thứ 5, mở tuần kế sau 22h Thứ 7…) nằm ở
+`src/modules/attendance/attendance-schedule.ts`, tính theo UTC+7 cố định. Đặc tả:
+[`apps/web/docs/attendance-time-rules.md`](../web/docs/attendance-time-rules.md).
+
 ## Lệnh hay dùng
 
 | Lệnh | Việc |
@@ -34,10 +61,12 @@ pnpm dev                  # http://localhost:3001/api
 | `pnpm lint` | ESLint + Prettier, kèm luật chặn import xuyên tầng |
 | `pnpm test` / `pnpm test:e2e` | Unit test / e2e test |
 | `pnpm prisma:generate` | Sinh lại Prisma Client vào `src/generated/prisma` (không commit) |
+| `pnpm prisma:migrate` | Tạo migration mới từ thay đổi schema (`migrate dev`) |
 | `pnpm prisma:studio` | Mở Prisma Studio |
-| `pnpm migrate:prod` | Áp migration lên database thật qua `DIRECT_DATABASE_URL` (xem [Database production](#database-production)) |
+| `pnpm migrate:prod` | Áp migration lên database thật qua `DIRECT_DATABASE_URL` |
 | `pnpm db:up` / `pnpm db:down` | Bật/tắt container PostgreSQL |
 | `pnpm db:reset` | Xóa sạch volume và dựng lại DB trống (chạy lại `prisma:migrate` + `db:seed` sau đó) |
+| `pnpm db:seed` | Nạp 25 nhân vật mẫu (upsert, chạy lại được) |
 
 ## Database dev
 
@@ -52,62 +81,21 @@ mặc định khớp với `DATABASE_URL` trong `.env.example`. Đổi user/pass
 
 ## Database production
 
-Đang host trên **Supabase gói free**, dùng như một Postgres thường: không cài
-`@supabase/supabase-js`, không PostgREST. Chi tiết lập luận:
-[spec host database](../../docs/superpowers/specs/2026-08-02-supabase-hosting-design.md).
+Đang host trên **Supabase gói free** (region `ap-northeast-1`), dùng như một Postgres thường: không
+cài `@supabase/supabase-js`, không PostgREST. Toàn bộ phần vận hành — chọn kiểu kết nối, vai trò của
+`DATABASE_URL` vs `DIRECT_DATABASE_URL`, quy trình migrate, chặn Data API, hạn mức gói free — nằm ở
+[`docs/production.md`](../../docs/production.md).
 
-### Chọn kiểu kết nối
+Ba điểm dễ mất thời gian nhất, nhắc lại ở đây:
 
-Supabase cho ba đường vào. Dự án dùng **session pooler** (`…pooler.supabase.com:5432`) cho cả
-runtime lẫn migrate:
-
-| | Chọn | Vì |
-|---|---|---|
-| Direct (`db.<ref>…:5432`) | ❌ | Chỉ IPv6 nếu không mua add-on IPv4 |
-| Transaction pooler (`:6543`) | ❌ | Dành cho client sống ngắn (serverless); đổi lại mất prepared statement và advisory lock |
-| **Session pooler (`:5432`)** | ✅ | `apps/api` là một process chạy dài hạn giữ sẵn pool, không cần transaction pooling |
-
-Đổi sang transaction pooler **chỉ khi** deploy `apps/api` lên serverless — lúc đó mỗi request là
-một client mới và lập luận đảo ngược.
-
-### Hai biến, hai vai trò
-
-Prisma 7 bỏ `directUrl`, nhưng vẫn tách được vì `prisma.config.ts` **chỉ CLI đọc**, còn
-`PrismaService` đọc `DATABASE_URL` qua `ConfigService`:
-
-- `DATABASE_URL` → runtime.
-- `DIRECT_DATABASE_URL` → `pnpm migrate:prod` và `pnpm db:seed`, qua fallback trong
-  `prisma.config.ts` và `prisma/seed.ts`. Hiện trùng giá trị với `DATABASE_URL`.
-
-> Đừng viết script kiểu `DATABASE_URL=$DIRECT_DATABASE_URL prisma migrate deploy`: shell expand
-> biến trước khi `dotenv` chạy, mà `dotenv` **không ghi đè** biến đã tồn tại kể cả khi rỗng — kết
-> quả là migrate chạy với connection string rỗng.
-
-`DIRECT_DATABASE_URL` phải có `?connect_timeout=30`. Prisma CLI mặc định bỏ cuộc sau 5 giây, mà
-kết nối nguội từ VN sang region Tokyo đo được 3,7–9,5 giây (lúc nóng chỉ ~0,7 giây). Không đặt thì
-`prisma migrate status` lúc chạy lúc báo `P1001` — trước khi sửa là 1/3 lần thành công, sau khi sửa
-5/5. Runtime không dính vì `@prisma/adapter-pg` không đặt timeout ngắn như vậy.
-
-### Data API bị chặn
-
-Supabase expose schema `public` qua Data API và cấp sẵn toàn quyền cho `anon` / `authenticated`.
-Migration `20260802185500_chan_data_api_truy_cap_bang` bật RLS (không policy = từ chối tất cả) và
-thu hồi quyền, kể cả default privileges cho bảng tạo về sau. App không bị ảnh hưởng vì role
-`postgres` có `rolbypassrls`.
-
-Nếu sau này có bảng lọt lưới, kiểm tra bằng:
-
-```sql
-select grantee, table_name from information_schema.role_table_grants
-where table_schema = 'public' and grantee in ('anon', 'authenticated');
-```
-
-> **Project bị tạm dừng khi không hoạt động.** Supabase tạm dừng project gói free sau khoảng 7 ngày
-> không có truy vấn. Bang nghỉ dài ngày thì lần vào sau sẽ lỗi kết nối cho tới khi khôi phục thủ công
-> trong dashboard — không phải app hỏng. Kiểm tra bằng `GET /api/health`: `db` trả về `"down"`.
+- Dùng **session pooler** (`…pooler.supabase.com:5432`), không phải transaction pooler (`:6543`).
+- `DIRECT_DATABASE_URL` phải có `?connect_timeout=30`, nếu không `P1001` sẽ xuất hiện ngẫu nhiên.
+- **Project bị tạm dừng sau ~7 ngày không có truy vấn** — phải khôi phục thủ công trong dashboard.
+  Kiểm tra bằng `GET /api/health`: `db` trả `"down"`.
 
 ## Tài liệu
 
 - [`docs/structure.md`](docs/structure.md) — cây thư mục thực tế và quy tắc theo tầng
 - [`docs/nestjs-folder-structure.md`](docs/nestjs-folder-structure.md) — lý thuyết kiến trúc feature-based
-- Đặc tả nghiệp vụ điểm danh: `apps/web/docs/attendance-time-rules.md`
+- [`../../docs/development.md`](../../docs/development.md) — setup local, biến môi trường, lệnh
+- [`../../docs/production.md`](../../docs/production.md) — build, deploy, vận hành
