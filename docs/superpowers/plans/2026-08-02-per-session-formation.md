@@ -588,7 +588,7 @@ describe('TeamBuilderService.getWeeks', () => {
     await service.getWeeks(WEDNESDAY);
 
     expect(prisma.formation.deleteMany).toHaveBeenCalledWith({
-      where: { weekStart: { lt: vn('2026-06-22T00:00') } },
+      where: { weekStart: { lt: vn('2026-06-24T12:00') } },
     });
   });
 
@@ -687,7 +687,7 @@ pnpm --filter api test -- team-builder
 
 Kỳ vọng: PASS, 8 test.
 
-Chú ý: test "xoá đội hình có weekStart cũ hơn 28 ngày" so mốc `2026-06-22T00:00` giờ VN. Nếu lệch, kiểm tra lại `RETENTION_DAYS * DAY_MS` chứ đừng sửa test cho khớp.
+Chú ý: mốc `2026-06-24T12:00` là `WEDNESDAY` trừ đúng 28 ngày — cutoff tính từ **thời điểm hiện tại**, không phải từ mốc đầu tuần. Nếu lệch, kiểm tra lại `RETENTION_DAYS * DAY_MS` chứ đừng sửa test cho khớp.
 
 - [ ] **Step 5: Commit**
 
