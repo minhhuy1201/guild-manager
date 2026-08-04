@@ -6,7 +6,10 @@ import {
 import type { AssignmentInput } from '@guild/shared/schemas';
 
 import { PrismaService } from '@/infrastructure/prisma/prisma.service';
-import { AttendanceService } from '@/modules/attendance/attendance.module';
+import {
+  BattleSessionsService,
+  formatSessionLabel,
+} from '@/modules/battle-sessions/battle-sessions.module';
 import type {
   FormationWeekEntity,
   SessionFormationEntity,
@@ -22,7 +25,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export class TeamBuilderService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly attendance: AttendanceService,
+    private readonly battleSessions: BattleSessionsService,
   ) {}
 
   /**
@@ -34,7 +37,7 @@ export class TeamBuilderService {
    */
   async getWeeks(now: Date = new Date()): Promise<FormationWeekEntity[]> {
     await this.purgeExpiredFormations(now);
-    await this.attendance.getSessions(now);
+    await this.battleSessions.listByWeek(undefined, now);
 
     const sessions = await this.prisma.battleSession.findMany({
       distinct: ['weekStart'],
@@ -63,8 +66,8 @@ export class TeamBuilderService {
 
   /**
    * Lấy các trận của một tuần kèm đội hình đã lưu.
-   * Tuần đang mở thì gọi qua AttendanceService để chắc chắn các trận đã có trong
-   * database; tuần cũ chỉ đọc những gì còn lưu.
+   * Tuần đang mở thì gọi qua BattleSessionsService để chắc chắn các trận đã có
+   * trong database; tuần cũ chỉ đọc những gì còn lưu.
    * @param weekStart - Mốc Thứ 2 của tuần cần xem (ISO string). Bỏ trống = tuần đang mở
    * @param now - Thời điểm hiện tại (cho phép truyền vào để test)
    * @returns Mảng trận sắp theo thời gian đánh, mỗi trận kèm assignment và cờ locked
@@ -73,12 +76,12 @@ export class TeamBuilderService {
     weekStart?: string,
     now: Date = new Date(),
   ): Promise<SessionFormationEntity[]> {
-    const activeWeekStart = this.attendance.getCurrentWeek(now).fromDate;
+    const activeWeekStart = this.battleSessions.getActiveWeekStart(now);
     const targetWeekStart = weekStart ?? activeWeekStart;
 
-    // Tuần đang mở có thể chưa được sinh trận — để attendance lo việc đó.
+    // Tuần đang mở có thể chưa được sinh trận — để module lịch đánh lo việc đó.
     if (targetWeekStart === activeWeekStart) {
-      await this.attendance.getSessions(now);
+      await this.battleSessions.listByWeek(undefined, now);
     }
 
     const sessions = await this.prisma.battleSession.findMany({
@@ -101,7 +104,8 @@ export class TeamBuilderService {
 
     return sessions.map((session) => ({
       sessionId: session.id,
-      label: session.label,
+      label: formatSessionLabel(session.dateTime, session.isGuildWar),
+      opponent: session.opponent,
       dateTime: session.dateTime.toISOString(),
       isGuildWar: session.isGuildWar,
       locked: session.dateTime.getTime() < now.getTime(),
@@ -148,7 +152,8 @@ export class TeamBuilderService {
 
     return {
       sessionId: session.id,
-      label: session.label,
+      label: formatSessionLabel(session.dateTime, session.isGuildWar),
+      opponent: session.opponent,
       dateTime: session.dateTime.toISOString(),
       isGuildWar: session.isGuildWar,
       locked: false,

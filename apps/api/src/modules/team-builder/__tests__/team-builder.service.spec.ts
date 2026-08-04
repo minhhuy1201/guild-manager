@@ -1,6 +1,6 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 
-import { AttendanceService } from '@/modules/attendance/attendance.module';
+import { BattleSessionsService } from '@/modules/battle-sessions/battle-sessions.module';
 import { PrismaService } from '@/infrastructure/prisma/prisma.service';
 import { TeamBuilderService } from '../team-builder.service';
 
@@ -20,25 +20,25 @@ const WEEK_START = vn('2026-07-20T00:00');
 const SESSION_ROWS = [
   {
     id: 'session-tue',
-    label: 'Thứ 3 · 20:30',
     dateTime: vn('2026-07-21T20:30'),
     deadline: vn('2026-07-21T10:00'),
+    opponent: 'Hắc Long Đường',
     isGuildWar: false,
     weekStart: WEEK_START,
   },
   {
     id: 'session-thu',
-    label: 'Thứ 5 · 20:30',
     dateTime: vn('2026-07-23T20:30'),
     deadline: vn('2026-07-23T17:00'),
+    opponent: 'Thiên Nhẫn Giáo',
     isGuildWar: false,
     weekStart: WEEK_START,
   },
   {
     id: 'session-sat',
-    label: 'Thứ 7 · Guild War',
     dateTime: vn('2026-07-25T20:00'),
     deadline: vn('2026-07-23T17:00'),
+    opponent: null,
     isGuildWar: true,
     weekStart: WEEK_START,
   },
@@ -56,9 +56,9 @@ describe('TeamBuilderService.getFormations', () => {
       findUnique: jest.Mock;
     };
   };
-  let attendance: {
-    getCurrentWeek: jest.Mock;
-    getSessions: jest.Mock;
+  let battleSessions: {
+    getActiveWeekStart: jest.Mock;
+    listByWeek: jest.Mock;
   };
 
   beforeEach(() => {
@@ -88,17 +88,14 @@ describe('TeamBuilderService.getFormations', () => {
       },
     };
 
-    attendance = {
-      getCurrentWeek: jest.fn().mockReturnValue({
-        fromDate: WEEK_START.toISOString(),
-        toDate: vn('2026-07-26T00:00').toISOString(),
-      }),
-      getSessions: jest.fn().mockResolvedValue([]),
+    battleSessions = {
+      getActiveWeekStart: jest.fn().mockReturnValue(WEEK_START.toISOString()),
+      listByWeek: jest.fn().mockResolvedValue([]),
     };
 
     service = new TeamBuilderService(
       prisma as unknown as PrismaService,
-      attendance as unknown as AttendanceService,
+      battleSessions as unknown as BattleSessionsService,
     );
   });
 
@@ -143,7 +140,17 @@ describe('TeamBuilderService.getFormations', () => {
   it('đảm bảo trận của tuần đang mở tồn tại trước khi đọc', async () => {
     await service.getFormations(undefined, WEDNESDAY);
 
-    expect(attendance.getSessions).toHaveBeenCalled();
+    expect(battleSessions.listByWeek).toHaveBeenCalled();
+  });
+
+  it('nhãn trận suy ra từ giờ đánh, không đọc từ database', async () => {
+    const result = await service.getFormations(undefined, WEDNESDAY);
+
+    expect(result.map((item) => item.label)).toEqual([
+      'Thứ 3 · 20:30',
+      'Thứ 5 · 20:30',
+      'Thứ 7 · Guild War',
+    ]);
   });
 });
 
@@ -154,7 +161,10 @@ describe('TeamBuilderService.getWeeks', () => {
     battleSession: { findMany: jest.Mock };
     formation: { deleteMany: jest.Mock };
   };
-  let attendance: { getCurrentWeek: jest.Mock; getSessions: jest.Mock };
+  let battleSessions: {
+    getActiveWeekStart: jest.Mock;
+    listByWeek: jest.Mock;
+  };
 
   beforeEach(() => {
     prisma = {
@@ -169,17 +179,14 @@ describe('TeamBuilderService.getWeeks', () => {
       },
       formation: { deleteMany: jest.fn().mockResolvedValue({ count: 2 }) },
     };
-    attendance = {
-      getCurrentWeek: jest.fn().mockReturnValue({
-        fromDate: WEEK_START.toISOString(),
-        toDate: vn('2026-07-26T00:00').toISOString(),
-      }),
-      getSessions: jest.fn().mockResolvedValue([]),
+    battleSessions = {
+      getActiveWeekStart: jest.fn().mockReturnValue(WEEK_START.toISOString()),
+      listByWeek: jest.fn().mockResolvedValue([]),
     };
 
     service = new TeamBuilderService(
       prisma as unknown as PrismaService,
-      attendance as unknown as AttendanceService,
+      battleSessions as unknown as BattleSessionsService,
     );
   });
 
@@ -224,7 +231,10 @@ describe('TeamBuilderService.saveFormation', () => {
     battleSession: { findUnique: jest.Mock };
     formation: { upsert: jest.Mock };
   };
-  let attendance: { getCurrentWeek: jest.Mock; getSessions: jest.Mock };
+  let battleSessions: {
+    getActiveWeekStart: jest.Mock;
+    listByWeek: jest.Mock;
+  };
 
   beforeEach(() => {
     prisma = {
@@ -249,14 +259,14 @@ describe('TeamBuilderService.saveFormation', () => {
           ),
       },
     };
-    attendance = {
-      getCurrentWeek: jest.fn(),
-      getSessions: jest.fn(),
+    battleSessions = {
+      getActiveWeekStart: jest.fn().mockReturnValue(WEEK_START.toISOString()),
+      listByWeek: jest.fn().mockResolvedValue([]),
     };
 
     service = new TeamBuilderService(
       prisma as unknown as PrismaService,
-      attendance as unknown as AttendanceService,
+      battleSessions as unknown as BattleSessionsService,
     );
   });
 

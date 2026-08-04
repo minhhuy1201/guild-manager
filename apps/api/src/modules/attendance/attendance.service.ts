@@ -12,20 +12,20 @@ import { ADMIN_ROLE, type JwtPayload } from '@/common';
 import { PrismaService } from '@/infrastructure/prisma/prisma.service';
 import { verifyPassword } from '@/shared/utils/password.util';
 import {
-  getActiveWeek,
+  BattleSessionsService,
   isDeadlinePassed,
-  type ScheduledSession,
-} from './attendance-schedule';
+} from '@/modules/battle-sessions/battle-sessions.module';
 import type {
   AttendanceRecordEntity,
-  BattleSessionEntity,
   CharacterEntity,
-  WeekEntity,
 } from './entities/attendance.entity';
 
 @Injectable()
 export class AttendanceService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly battleSessions: BattleSessionsService,
+  ) {}
 
   /**
    * Lấy danh sách nhân vật trong bang, sắp xếp theo tên.
@@ -46,43 +46,12 @@ export class AttendanceService {
   }
 
   /**
-   * Lấy khoảng thời gian của tuần điểm danh đang mở.
-   * @param now - Thời điểm hiện tại (cho phép truyền vào để test)
-   * @returns Mốc đầu và cuối tuần dạng ISO string
-   */
-  getCurrentWeek(now: Date = new Date()): WeekEntity {
-    const week = getActiveWeek(now);
-
-    return {
-      fromDate: week.weekStart.toISOString(),
-      toDate: week.weekEnd.toISOString(),
-    };
-  }
-
-  /**
-   * Lấy các trận của tuần đang mở, tự tạo trong database nếu tuần đó chưa có.
-   * @param now - Thời điểm hiện tại (cho phép truyền vào để test)
-   * @returns Mảng trận đã sắp theo thời gian đánh
-   */
-  async getSessions(now: Date = new Date()): Promise<BattleSessionEntity[]> {
-    const sessions = await this.ensureWeekSessions(now);
-
-    return sessions.map((session) => ({
-      id: session.id,
-      label: session.label,
-      dateTime: session.dateTime.toISOString(),
-      deadline: session.deadline.toISOString(),
-      isGuildWar: session.isGuildWar,
-    }));
-  }
-
-  /**
    * Lấy toàn bộ lượt điểm danh của tuần đang mở.
    * @param now - Thời điểm hiện tại (cho phép truyền vào để test)
    * @returns Mảng record của các trận trong tuần
    */
   async getRecords(now: Date = new Date()): Promise<AttendanceRecordEntity[]> {
-    const sessions = await this.ensureWeekSessions(now);
+    const sessions = await this.battleSessions.listByWeek(undefined, now);
     const records = await this.prisma.attendanceRecord.findMany({
       where: { sessionId: { in: sessions.map((session) => session.id) } },
       orderBy: { markedAt: 'desc' },
@@ -130,13 +99,16 @@ export class AttendanceService {
       await this.verifyCharacterPassword(password, character.passwordHash);
     }
 
-    const sessions = await this.ensureWeekSessions(now);
-    const session = sessions.find((item) => item.id === sessionId);
-    if (!session) {
+    const session = await this.battleSessions.findById(sessionId);
+    // Người thường chỉ điểm danh được cho tuần đang mở; quản trị viên sửa được
+    // cả tuần khác để bù sai sót.
+    const inActiveWeek =
+      session?.weekStart === this.battleSessions.getActiveWeekStart(now);
+    if (!session || (!isAdmin && !inActiveWeek)) {
       throw new NotFoundException('Không tìm thấy ngày đánh.');
     }
 
-    if (!isAdmin && isDeadlinePassed(session.deadline, now)) {
+    if (!isAdmin && isDeadlinePassed(new Date(session.deadline), now)) {
       throw new ConflictException('Đã quá hạn điểm danh ngày này.');
     }
 
@@ -174,46 +146,5 @@ export class AttendanceService {
     if (!isPasswordValid) {
       throw new UnauthorizedException('Sai mật khẩu thành viên.');
     }
-  }
-
-  /**
-   * Đảm bảo các trận của tuần đang mở đã có trong database rồi trả về.
-   * Lịch đánh và deadline luôn tính lại từ `attendance-schedule` nên đổi luật là
-   * bản ghi cũ được cập nhật theo, không cần migration dữ liệu.
-   * @param now - Thời điểm hiện tại
-   * @returns Bản ghi BattleSession của tuần đang mở, sắp theo thời gian đánh
-   */
-  private async ensureWeekSessions(now: Date) {
-    const week = getActiveWeek(now);
-
-    await Promise.all(
-      week.sessions.map((session: ScheduledSession) =>
-        this.prisma.battleSession.upsert({
-          where: {
-            weekStart_label: {
-              weekStart: week.weekStart,
-              label: session.label,
-            },
-          },
-          create: {
-            weekStart: week.weekStart,
-            label: session.label,
-            dateTime: session.dateTime,
-            deadline: session.deadline,
-            isGuildWar: session.isGuildWar,
-          },
-          update: {
-            dateTime: session.dateTime,
-            deadline: session.deadline,
-            isGuildWar: session.isGuildWar,
-          },
-        }),
-      ),
-    );
-
-    return this.prisma.battleSession.findMany({
-      where: { weekStart: week.weekStart },
-      orderBy: { dateTime: 'asc' },
-    });
   }
 }

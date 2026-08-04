@@ -6,9 +6,7 @@ import { AttendanceService } from './attendance.service';
 import { MarkAttendanceDto } from './dto/mark-attendance.dto';
 import type {
   AttendanceRecordEntity,
-  BattleSessionEntity,
   CharacterEntity,
-  WeekEntity,
 } from './entities/attendance.entity';
 
 @ApiTags('attendance')
@@ -24,26 +22,6 @@ export class AttendanceController {
   @ApiOperation({ summary: 'Danh sách nhân vật trong bang' })
   getCharacters(): Promise<CharacterEntity[]> {
     return this.attendance.getCharacters();
-  }
-
-  /**
-   * Khoảng thời gian của tuần điểm danh đang mở.
-   * @returns fromDate (Thứ 2) và toDate (Thứ 7) dạng ISO string
-   */
-  @Get('week')
-  @ApiOperation({ summary: 'Tuần điểm danh đang mở' })
-  getCurrentWeek(): WeekEntity {
-    return this.attendance.getCurrentWeek();
-  }
-
-  /**
-   * Các trận đánh của tuần đang mở kèm hạn điểm danh.
-   * @returns Mảng trận sắp theo thời gian đánh
-   */
-  @Get('sessions')
-  @ApiOperation({ summary: 'Các trận đánh của tuần đang mở' })
-  getSessions(): Promise<BattleSessionEntity[]> {
-    return this.attendance.getSessions();
   }
 
   /**

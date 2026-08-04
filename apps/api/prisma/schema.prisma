@@ -51,16 +51,18 @@ model Character {
   @@index([guildClass])
 }
 
-/// Một trận đánh trong tuần (ví dụ: Thứ 7 · Guild War).
+/// Một trận đánh trong tuần. Guild War do hệ thống sinh, scrim do quản trị viên nhập.
 model BattleSession {
+  /// Guild War dùng id tất định `gw-<YYYY-MM-DD của weekStart>` để upsert idempotent;
+  /// scrim do quản trị viên tạo dùng cuid() mặc định.
   id        String   @id @default(cuid())
-  /// Nhãn hiển thị ngắn gọn (thứ + ghi chú).
-  label     String
   /// Thời điểm diễn ra trận đánh.
   dateTime  DateTime
-  /// Hạn chót điểm danh hiệu dụng của trận này (đã tính cả trần 17:00 Thứ 5).
+  /// Hạn chót điểm danh do quản trị viên đặt (không bị kẹp lại theo luật nào).
   deadline  DateTime
-  /// Trận Guild War Thứ 7 — cố định, được làm nổi bật ở UI.
+  /// Tên bang đối thủ. null với Guild War và với scrim chưa chốt đối thủ.
+  opponent  String?
+  /// Trận Guild War — do hệ thống sinh, không xoá được.
   isGuildWar Boolean @default(false)
   /// Mốc Thứ 2 00:00 của tuần chứa trận này — dùng để gom trận theo tuần.
   weekStart DateTime
@@ -71,7 +73,6 @@ model BattleSession {
   /// Đội hình bang chiến của trận này (có thể chưa xếp).
   formation         Formation?
 
-  @@unique([weekStart, label])
   @@index([weekStart])
 }
 

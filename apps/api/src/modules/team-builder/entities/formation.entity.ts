@@ -8,6 +8,8 @@ export interface SessionFormationEntity {
   dateTime: string;
   /** Trận Guild War Thứ 7 */
   isGuildWar: boolean;
+  /** Tên bang đối thủ, null với Guild War hoặc scrim chưa chốt đối thủ */
+  opponent: string | null;
   /** Trận đã đánh xong — không cho sửa đội hình nữa */
   locked: boolean;
   /** slotId → characterId. Ô trống không có khoá. Rỗng nghĩa là chưa xếp. */

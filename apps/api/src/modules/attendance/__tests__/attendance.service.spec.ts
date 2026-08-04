@@ -7,6 +7,7 @@ import { AttendanceStatus } from '@guild/shared/enums';
 
 import { ADMIN_ROLE, TOKEN_TYPE, type JwtPayload } from '@/common';
 import { PrismaService } from '@/infrastructure/prisma/prisma.service';
+import { BattleSessionsService } from '@/modules/battle-sessions/battle-sessions.module';
 import { hashPassword } from '@/shared/utils/password.util';
 import { AttendanceService } from '../attendance.service';
 
@@ -19,7 +20,7 @@ function vn(iso: string): Date {
   return new Date(`${iso}:00+07:00`);
 }
 
-// Thứ 4 — mọi trận trong tuần đều còn hạn trừ trận Thứ 3 (đã qua 10:00 Thứ 3).
+// Thứ 4 — Guild War Thứ 7 còn hạn, trận Thứ 3 đã qua 10:00 nên bị khóa.
 const WEDNESDAY = vn('2026-07-22T12:00');
 const CHARACTER_ID = 'char-1';
 const PASSWORD = 'pass10001';
@@ -31,19 +32,48 @@ const ADMIN: JwtPayload = {
   type: TOKEN_TYPE.access,
 };
 
-/** Id trận được prisma mock sinh ra theo nhãn, khớp với thứ tự trong tuần. */
+/** Id trận trong lịch giả lập, tra theo nhãn cho dễ đọc. */
 const SESSION_IDS: Record<string, string> = {
   'Thứ 3 · 20:30': 'session-tue',
-  'Thứ 5 · 20:30': 'session-thu',
   'Thứ 7 · Guild War': 'session-sat',
 };
+
+/** Lịch của tuần đang mở mà BattleSessionsService trả về. */
+const SESSIONS = [
+  {
+    id: 'session-tue',
+    label: 'Thứ 3 · 20:30',
+    dateTime: vn('2026-07-21T20:30').toISOString(),
+    deadline: vn('2026-07-21T10:00').toISOString(),
+    isGuildWar: false,
+    opponent: 'Hắc Long Đường',
+    weekStart: vn('2026-07-20T00:00').toISOString(),
+    attendanceCount: 0,
+    hasFormation: false,
+  },
+  {
+    id: 'session-sat',
+    label: 'Thứ 7 · Guild War',
+    dateTime: vn('2026-07-25T20:00').toISOString(),
+    deadline: vn('2026-07-23T17:00').toISOString(),
+    isGuildWar: true,
+    opponent: null,
+    weekStart: vn('2026-07-20T00:00').toISOString(),
+    attendanceCount: 0,
+    hasFormation: false,
+  },
+];
 
 describe('AttendanceService.mark', () => {
   let service: AttendanceService;
   let prisma: {
     character: { findUnique: jest.Mock };
-    battleSession: { upsert: jest.Mock; findMany: jest.Mock };
     attendanceRecord: { upsert: jest.Mock; findMany: jest.Mock };
+  };
+  let battleSessions: {
+    listByWeek: jest.Mock;
+    findById: jest.Mock;
+    getActiveWeekStart: jest.Mock;
   };
   let passwordHash: string;
 
@@ -52,14 +82,6 @@ describe('AttendanceService.mark', () => {
   });
 
   beforeEach(() => {
-    const sessionRows: {
-      id: string;
-      label: string;
-      dateTime: Date;
-      deadline: Date;
-      isGuildWar: boolean;
-    }[] = [];
-
     prisma = {
       character: {
         findUnique: jest.fn().mockResolvedValue({
@@ -67,22 +89,6 @@ describe('AttendanceService.mark', () => {
           name: 'Mèo Béo',
           passwordHash,
         }),
-      },
-      battleSession: {
-        // Mock upsert lưu lại đúng lịch/deadline mà service tính ra từ luật thời gian thật.
-        upsert: jest.fn().mockImplementation((args: { create: unknown }) => {
-          const row = args.create as {
-            label: string;
-            dateTime: Date;
-            deadline: Date;
-            isGuildWar: boolean;
-          };
-          sessionRows.push({ id: SESSION_IDS[row.label], ...row });
-          return Promise.resolve(row);
-        }),
-        findMany: jest
-          .fn()
-          .mockImplementation(() => Promise.resolve(sessionRows)),
       },
       attendanceRecord: {
         upsert: jest
@@ -103,7 +109,22 @@ describe('AttendanceService.mark', () => {
       },
     };
 
-    service = new AttendanceService(prisma as unknown as PrismaService);
+    battleSessions = {
+      listByWeek: jest.fn().mockResolvedValue(SESSIONS),
+      findById: jest
+        .fn()
+        .mockImplementation((id: string) =>
+          Promise.resolve(SESSIONS.find((item) => item.id === id) ?? null),
+        ),
+      getActiveWeekStart: jest
+        .fn()
+        .mockReturnValue(vn('2026-07-20T00:00').toISOString()),
+    };
+
+    service = new AttendanceService(
+      prisma as unknown as PrismaService,
+      battleSessions as unknown as BattleSessionsService,
+    );
   });
 
   it('ghi nhận điểm danh khi mật khẩu đúng và còn hạn', async () => {
@@ -186,6 +207,21 @@ describe('AttendanceService.mark', () => {
         {
           characterId: 'khong-ton-tai',
           sessionId: SESSION_IDS['Thứ 7 · Guild War'],
+          status: AttendanceStatus.PRESENT,
+          password: PASSWORD,
+        },
+        null,
+        WEDNESDAY,
+      ),
+    ).rejects.toThrow(NotFoundException);
+  });
+
+  it('từ chối khi trận không còn tồn tại', async () => {
+    await expect(
+      service.mark(
+        {
+          characterId: CHARACTER_ID,
+          sessionId: 'session-da-xoa',
           status: AttendanceStatus.PRESENT,
           password: PASSWORD,
         },
