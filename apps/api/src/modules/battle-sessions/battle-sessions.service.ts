@@ -1,5 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { defaultDeadline } from '@guild/shared/lib';
+import type {
+  CreateBattleSessionInput,
+  UpdateBattleSessionInput,
+} from '@guild/shared/schemas';
 
 import { PrismaService } from '@/infrastructure/prisma/prisma.service';
 import type {
@@ -12,6 +20,7 @@ import {
   getEditableWeeks,
   guildWarDateTime,
   guildWarSessionId,
+  weekStartOf,
 } from './session-schedule';
 
 /** Hàng BattleSession đọc kèm số liệu phụ cho entity. */
@@ -107,6 +116,125 @@ export class BattleSessionsService {
   }
 
   /**
+   * Tạo một trận scrim mới. Không tạo được Guild War — trận đó do hệ thống sinh.
+   * @param input - Giờ đánh, hạn chót và tên bang đối thủ
+   * @param now - Thời điểm hiện tại (cho phép truyền vào để test)
+   * @returns Trận vừa tạo
+   * @throws BadRequestException khi trận không thuộc tuần được thiết lập hoặc hạn chót muộn hơn giờ đánh
+   */
+  async create(
+    input: CreateBattleSessionInput,
+    now: Date = new Date(),
+  ): Promise<BattleSessionEntity> {
+    const dateTime = new Date(input.dateTime);
+    const deadline = new Date(input.deadline);
+
+    this.assertEditableWeek(weekStartOf(dateTime), now);
+    this.assertDeadlineBeforeBattle(deadline, dateTime);
+
+    const created = await this.prisma.battleSession.create({
+      data: {
+        dateTime,
+        deadline,
+        opponent: normalizeOpponent(input.opponent),
+        isGuildWar: false,
+        weekStart: weekStartOf(dateTime),
+      },
+      include: SESSION_INCLUDE,
+    });
+
+    return this.toEntity(created);
+  }
+
+  /**
+   * Sửa một trận. Dời giờ đánh sang tuần khác thì `weekStart` của trận và của
+   * đội hình đi kèm được cập nhật trong cùng một transaction.
+   * @param id - Id trận cần sửa
+   * @param input - Các field cần đổi
+   * @param now - Thời điểm hiện tại (cho phép truyền vào để test)
+   * @returns Trận sau khi sửa
+   * @throws NotFoundException khi trận không còn tồn tại
+   * @throws BadRequestException khi tuần không được thiết lập, hạn chót muộn hơn giờ đánh, hoặc đặt đối thủ cho Guild War
+   */
+  async update(
+    id: string,
+    input: UpdateBattleSessionInput,
+    now: Date = new Date(),
+  ): Promise<BattleSessionEntity> {
+    const current = await this.prisma.battleSession.findUnique({
+      where: { id },
+      include: SESSION_INCLUDE,
+    });
+    if (!current) {
+      throw new NotFoundException('Không tìm thấy ngày đánh.');
+    }
+
+    this.assertEditableWeek(current.weekStart, now);
+
+    const opponent =
+      input.opponent === undefined
+        ? current.opponent
+        : normalizeOpponent(input.opponent);
+    if (current.isGuildWar && opponent !== null) {
+      throw new BadRequestException('Trận Guild War không có đối thủ.');
+    }
+
+    const dateTime = input.dateTime
+      ? new Date(input.dateTime)
+      : current.dateTime;
+    const deadline = input.deadline
+      ? new Date(input.deadline)
+      : current.deadline;
+    const weekStart = weekStartOf(dateTime);
+
+    this.assertEditableWeek(weekStart, now);
+    this.assertDeadlineBeforeBattle(deadline, dateTime);
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const session = await tx.battleSession.update({
+        where: { id },
+        data: { dateTime, deadline, opponent, weekStart },
+        include: SESSION_INCLUDE,
+      });
+
+      // Formation giữ bản copy weekStart để dọn dữ liệu cũ không phải join —
+      // dời trận sang tuần khác mà quên chỗ này thì đội hình biến mất khỏi tuần của nó.
+      await tx.formation.updateMany({
+        where: { sessionId: id },
+        data: { weekStart },
+      });
+
+      return session;
+    });
+
+    return this.toEntity(updated);
+  }
+
+  /**
+   * Xoá một trận scrim. Điểm danh và đội hình của trận bị xoá theo (cascade).
+   * @param id - Id trận cần xoá
+   * @param now - Thời điểm hiện tại (cho phép truyền vào để test)
+   * @returns Promise hoàn tất khi đã xoá
+   * @throws NotFoundException khi trận không còn tồn tại
+   * @throws BadRequestException khi là Guild War hoặc thuộc tuần đã qua
+   */
+  async remove(id: string, now: Date = new Date()): Promise<void> {
+    const current = await this.prisma.battleSession.findUnique({
+      where: { id },
+    });
+    if (!current) {
+      throw new NotFoundException('Không tìm thấy ngày đánh.');
+    }
+    if (current.isGuildWar) {
+      throw new BadRequestException('Không thể xoá trận Guild War.');
+    }
+
+    this.assertEditableWeek(current.weekStart, now);
+
+    await this.prisma.battleSession.delete({ where: { id } });
+  }
+
+  /**
    * Đảm bảo tuần đã có trận Guild War. Idempotent nhờ id tất định.
    * @param weekStart - Mốc Thứ 2 00:00 của tuần
    * @returns Promise hoàn tất khi trận đã tồn tại
@@ -141,6 +269,34 @@ export class BattleSessionsService {
   }
 
   /**
+   * Chặn thao tác lên tuần ngoài phạm vi thiết lập.
+   * @param weekStart - Mốc Thứ 2 của tuần cần xét
+   * @param now - Thời điểm hiện tại
+   * @returns Không trả về gì khi hợp lệ
+   * @throws BadRequestException khi tuần đã qua hoặc quá xa ở tương lai
+   */
+  private assertEditableWeek(weekStart: Date, now: Date): void {
+    if (!this.isEditableWeek(weekStart, now)) {
+      throw new BadRequestException(
+        'Chỉ thiết lập được lịch của tuần này và tuần sau.',
+      );
+    }
+  }
+
+  /**
+   * Chặn hạn chót muộn hơn giờ đánh.
+   * @param deadline - Hạn chót điểm danh
+   * @param dateTime - Giờ đánh
+   * @returns Không trả về gì khi hợp lệ
+   * @throws BadRequestException khi hạn chót muộn hơn giờ đánh
+   */
+  private assertDeadlineBeforeBattle(deadline: Date, dateTime: Date): void {
+    if (deadline.getTime() > dateTime.getTime()) {
+      throw new BadRequestException('Hạn chót phải trước hoặc bằng giờ đánh.');
+    }
+  }
+
+  /**
    * Đổi một hàng BattleSession thành entity trả về cho client.
    * @param row - Hàng đọc từ Prisma kèm `_count` và `formation`
    * @returns Entity đã dựng nhãn và đổi thời gian sang ISO string
@@ -160,3 +316,13 @@ export class BattleSessionsService {
   }
 }
 
+/**
+ * Chuẩn hoá tên bang đối thủ: bỏ trắng hai đầu, chuỗi rỗng coi như chưa có.
+ * @param value - Giá trị người dùng gửi lên (undefined = không đổi)
+ * @returns Tên bang đã chuẩn hoá hoặc null
+ */
+function normalizeOpponent(value: string | null | undefined): string | null {
+  const trimmed = value?.trim();
+
+  return trimmed ? trimmed : null;
+}

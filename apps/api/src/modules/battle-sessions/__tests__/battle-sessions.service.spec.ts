@@ -1,0 +1,248 @@
+import { BadRequestException, NotFoundException } from '@nestjs/common';
+
+import { PrismaService } from '@/infrastructure/prisma/prisma.service';
+import { BattleSessionsService } from '../battle-sessions.service';
+
+/**
+ * Tạo Date từ giờ Việt Nam (UTC+7) cho dễ đọc trong test.
+ * @param iso - Chuỗi dạng '2026-07-22T12:00' hiểu theo giờ VN
+ * @returns Date UTC tương ứng
+ */
+function vn(iso: string): Date {
+  return new Date(`${iso}:00+07:00`);
+}
+
+// Thứ 4 2026-07-22 → tuần đang mở bắt đầu Thứ 2 2026-07-20, tuần kế 2026-07-27.
+const WEDNESDAY = vn('2026-07-22T12:00');
+const WEEK_START = vn('2026-07-20T00:00');
+const NEXT_WEEK_START = vn('2026-07-27T00:00');
+const LAST_WEEK_START = vn('2026-07-13T00:00');
+
+/**
+ * Đọc tham số đầu tiên của lần gọi thứ `index` — jest.Mock không giữ kiểu nên
+ * bóc qua đây một lần thay vì rải ép kiểu khắp file.
+ * @param mock - Mock cần đọc
+ * @param index - Lần gọi thứ mấy (tính từ 0)
+ * @returns Tham số đầu tiên của lần gọi đó
+ */
+function firstArg(mock: jest.Mock, index: number): unknown {
+  return (mock.mock.calls[index] as unknown[])[0];
+}
+
+/**
+ * Dựng một hàng BattleSession như Prisma trả về (kèm `_count` và `formation`).
+ * @param overrides - Các field muốn ghi đè
+ * @returns Hàng BattleSession giả lập
+ */
+function row(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'session-tue',
+    dateTime: vn('2026-07-21T20:30'),
+    deadline: vn('2026-07-21T10:00'),
+    opponent: 'Hắc Long Đường',
+    isGuildWar: false,
+    weekStart: WEEK_START,
+    _count: { attendanceRecords: 0 },
+    formation: null,
+    ...overrides,
+  };
+}
+
+describe('BattleSessionsService', () => {
+  let service: BattleSessionsService;
+  let prisma: {
+    battleSession: {
+      upsert: jest.Mock;
+      findMany: jest.Mock;
+      findUnique: jest.Mock;
+      create: jest.Mock;
+      update: jest.Mock;
+      delete: jest.Mock;
+    };
+    formation: { updateMany: jest.Mock };
+    $transaction: jest.Mock;
+  };
+
+  beforeEach(() => {
+    prisma = {
+      battleSession: {
+        upsert: jest.fn().mockResolvedValue(row()),
+        findMany: jest.fn().mockResolvedValue([row()]),
+        findUnique: jest.fn().mockResolvedValue(row()),
+        create: jest.fn().mockImplementation(() => Promise.resolve(row())),
+        update: jest.fn().mockImplementation(() => Promise.resolve(row())),
+        delete: jest.fn().mockResolvedValue(row()),
+      },
+      formation: { updateMany: jest.fn().mockResolvedValue({ count: 0 }) },
+      $transaction: jest
+        .fn()
+        .mockImplementation((fn: (tx: unknown) => unknown) => fn(prisma)),
+    };
+
+    service = new BattleSessionsService(prisma as unknown as PrismaService);
+  });
+
+  describe('ensureGuildWar qua listByWeek', () => {
+    it('upsert theo id tất định nên gọi nhiều lần vẫn một trận', async () => {
+      await service.listByWeek(undefined, WEDNESDAY);
+      await service.listByWeek(undefined, WEDNESDAY);
+
+      expect(prisma.battleSession.upsert).toHaveBeenCalledTimes(2);
+      expect(firstArg(prisma.battleSession.upsert, 0)).toMatchObject({
+        where: { id: 'gw-2026-07-20' },
+        update: {},
+      });
+    });
+
+    it('không tự sinh trận cho tuần đã qua', async () => {
+      await service.listByWeek(LAST_WEEK_START.toISOString(), WEDNESDAY);
+
+      expect(prisma.battleSession.upsert).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('create', () => {
+    it('tạo được trận cho tuần đang mở và tuần kế tiếp', async () => {
+      await service.create(
+        {
+          dateTime: vn('2026-07-21T20:30').toISOString(),
+          deadline: vn('2026-07-21T10:00').toISOString(),
+          opponent: 'Hắc Long Đường',
+        },
+        WEDNESDAY,
+      );
+
+      expect(firstArg(prisma.battleSession.create, 0)).toMatchObject({
+        data: { weekStart: WEEK_START, opponent: 'Hắc Long Đường' },
+      });
+
+      await service.create(
+        {
+          dateTime: vn('2026-07-28T20:30').toISOString(),
+          deadline: vn('2026-07-28T10:00').toISOString(),
+        },
+        WEDNESDAY,
+      );
+
+      expect(firstArg(prisma.battleSession.create, 1)).toMatchObject({
+        data: { weekStart: NEXT_WEEK_START },
+      });
+    });
+
+    it('từ chối trận thuộc tuần đã qua', async () => {
+      await expect(
+        service.create(
+          {
+            dateTime: vn('2026-07-14T20:30').toISOString(),
+            deadline: vn('2026-07-14T10:00').toISOString(),
+          },
+          WEDNESDAY,
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('từ chối hạn chót muộn hơn giờ đánh', async () => {
+      await expect(
+        service.create(
+          {
+            dateTime: vn('2026-07-21T20:30').toISOString(),
+            deadline: vn('2026-07-21T21:00').toISOString(),
+          },
+          WEDNESDAY,
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('quy tên bang rỗng về null', async () => {
+      await service.create(
+        {
+          dateTime: vn('2026-07-21T20:30').toISOString(),
+          deadline: vn('2026-07-21T10:00').toISOString(),
+          opponent: '',
+        },
+        WEDNESDAY,
+      );
+
+      expect(firstArg(prisma.battleSession.create, 0)).toMatchObject({
+        data: { opponent: null },
+      });
+    });
+  });
+
+  describe('update', () => {
+    it('báo 404 khi trận không còn tồn tại', async () => {
+      prisma.battleSession.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.update('mat-roi', { opponent: 'Ai đó' }, WEDNESDAY),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('từ chối đặt đối thủ cho Guild War', async () => {
+      prisma.battleSession.findUnique.mockResolvedValue(
+        row({ id: 'gw-2026-07-20', isGuildWar: true, opponent: null }),
+      );
+
+      await expect(
+        service.update('gw-2026-07-20', { opponent: 'Ai đó' }, WEDNESDAY),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('dời trận sang tuần khác thì cập nhật cả weekStart của đội hình', async () => {
+      await service.update(
+        'session-tue',
+        { dateTime: vn('2026-07-28T20:30').toISOString() },
+        WEDNESDAY,
+      );
+
+      expect(firstArg(prisma.battleSession.update, 0)).toMatchObject({
+        where: { id: 'session-tue' },
+        data: { weekStart: NEXT_WEEK_START },
+      });
+      expect(prisma.formation.updateMany).toHaveBeenCalledWith({
+        where: { sessionId: 'session-tue' },
+        data: { weekStart: NEXT_WEEK_START },
+      });
+    });
+
+    it('từ chối sửa trận thuộc tuần đã qua', async () => {
+      prisma.battleSession.findUnique.mockResolvedValue(
+        row({ weekStart: LAST_WEEK_START, dateTime: vn('2026-07-14T20:30') }),
+      );
+
+      await expect(
+        service.update('session-tue', { opponent: 'Ai đó' }, WEDNESDAY),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('remove', () => {
+    it('xoá được scrim của tuần đang mở', async () => {
+      await service.remove('session-tue', WEDNESDAY);
+
+      expect(prisma.battleSession.delete).toHaveBeenCalledWith({
+        where: { id: 'session-tue' },
+      });
+    });
+
+    it('không cho xoá Guild War', async () => {
+      prisma.battleSession.findUnique.mockResolvedValue(
+        row({ id: 'gw-2026-07-20', isGuildWar: true }),
+      );
+
+      await expect(service.remove('gw-2026-07-20', WEDNESDAY)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('không cho xoá trận thuộc tuần đã qua', async () => {
+      prisma.battleSession.findUnique.mockResolvedValue(
+        row({ weekStart: LAST_WEEK_START }),
+      );
+
+      await expect(service.remove('session-tue', WEDNESDAY)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+  });
+});

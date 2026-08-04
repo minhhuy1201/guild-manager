@@ -1,7 +1,23 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
+import { JwtAuthGuard } from '@/common';
 import { BattleSessionsService } from './battle-sessions.service';
+import {
+  CreateBattleSessionDto,
+  UpdateBattleSessionDto,
+} from './dto/battle-session.dto';
 import type {
   BattleSessionEntity,
   WeekEntity,
@@ -31,5 +47,46 @@ export class BattleSessionsController {
   @ApiOperation({ summary: 'Các trận đánh của một tuần' })
   list(@Query('weekStart') weekStart?: string): Promise<BattleSessionEntity[]> {
     return this.battleSessions.listByWeek(weekStart);
+  }
+
+  /**
+   * Thêm một trận scrim.
+   * @param body - Giờ đánh, hạn chót và tên bang đối thủ
+   * @returns Trận vừa tạo
+   */
+  @Post()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Thêm một trận scrim' })
+  create(@Body() body: CreateBattleSessionDto): Promise<BattleSessionEntity> {
+    return this.battleSessions.create(body);
+  }
+
+  /**
+   * Sửa một trận.
+   * @param id - Id trận cần sửa
+   * @param body - Các field cần đổi
+   * @returns Trận sau khi sửa
+   */
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Sửa một trận' })
+  update(
+    @Param('id') id: string,
+    @Body() body: UpdateBattleSessionDto,
+  ): Promise<BattleSessionEntity> {
+    return this.battleSessions.update(id, body);
+  }
+
+  /**
+   * Xoá một trận scrim cùng toàn bộ điểm danh và đội hình của nó.
+   * @param id - Id trận cần xoá
+   * @returns Promise hoàn tất khi đã xoá
+   */
+  @Delete(':id')
+  @HttpCode(204)
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Xoá một trận scrim' })
+  remove(@Param('id') id: string): Promise<void> {
+    return this.battleSessions.remove(id);
   }
 }
