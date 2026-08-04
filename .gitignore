@@ -37,6 +37,9 @@ coverage/
 *.swp
 Thumbs.db
 
+# plan docs (local only)
+docs/superpowers/plans/
+
 # misc
 .cache/
 .turbo/
