@@ -13,6 +13,7 @@ import { isMemberDragData, toDragSource, toDropTarget } from "../lib/dnd-data";
 import { isDirty } from "../lib/formation-diff";
 import { createMockFormation } from "../lib/mock-formation";
 import { presentCharacterIds } from "../lib/session-pool";
+import { resolveActiveSessionId } from "../lib/active-session";
 import { isSessionEditable } from "../lib/session-status";
 import { fromWire, toWire } from "../lib/wire";
 import { useFormationStore } from "../store/formation-store";
@@ -77,12 +78,7 @@ export function useFormationScreen() {
     [recordsQuery.data]
   );
 
-  // Default to the Guild War tab: it is the battle that matters most.
-  const activeSessionId =
-    storedActiveId ??
-    sessions.find((session) => session.isGuildWar)?.sessionId ??
-    sessions[0]?.sessionId ??
-    null;
+  const activeSessionId = resolveActiveSessionId(sessions, storedActiveId);
 
   const savedBySession = useMemo(() => {
     const map: Record<string, Assignment> = {};
