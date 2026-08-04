@@ -8,6 +8,9 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     environment: "node",
+    // Mọi mốc giờ trong app tính theo giờ Việt Nam; cố định TZ để test không đổi
+    // kết quả theo máy chạy.
+    env: { TZ: "Asia/Ho_Chi_Minh" },
     include: ["**/__tests__/**/*.test.ts"],
     exclude: ["node_modules/**", ".next/**"],
   },

@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { formatDate, formatDateTime } from "@/lib/format";
+import { getSessionSubtitle } from "../lib/session-subtitle";
 import { isDeadlinePassed } from "../api/attendance-api";
 import { useAttendanceBoard } from "../hooks/use-attendance-board";
 import { useBattleSessions, useCurrentWeek } from "../hooks/use-attendance";
@@ -48,7 +49,7 @@ export function WeekTimeline() {
               <Skeleton className="h-4 w-44" />
             </div>
           </div>
-          <div className="grid gap-2 sm:grid-cols-3">
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 3 }, (_, index) => (
               <Skeleton key={index} className="h-24 w-full rounded-lg" />
             ))}
@@ -68,14 +69,15 @@ export function WeekTimeline() {
           <div>
             <div className="text-xs text-muted-foreground">Tuần điểm danh</div>
             <div className="font-semibold">
-              {formatDate(week.fromDate)} → {formatDate(week.toDate)}
+              {formatDate(week.weekStart)} → {formatDate(week.weekEnd)}
             </div>
           </div>
         </div>
 
-        <div className="grid gap-2 sm:grid-cols-3">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {battleSessions.map((session) => {
             const closed = isDeadlinePassed(session.deadline);
+            const subtitle = getSessionSubtitle(session);
             return (
               <div
                 key={session.id}
@@ -92,6 +94,9 @@ export function WeekTimeline() {
                 >
                   {session.isGuildWar && <Swords className="size-4" />}
                   {session.label}
+                </div>
+                <div className="text-xs font-medium text-muted-foreground">
+                  {subtitle}
                 </div>
                 <div className="text-xs text-muted-foreground">
                   Hạn chót: {formatDateTime(session.deadline)}

@@ -13,30 +13,38 @@ export interface Character {
 }
 
 /**
- * Một ngày đánh trong tuần (ví dụ: Thứ 7 · Guild War).
- * Mỗi ngày có hạn chót điểm danh (deadline) riêng.
+ * Một ngày đánh trong tuần — đúng shape backend trả về.
+ * Nhãn do server suy ra từ giờ đánh, client không tự dựng.
  */
 export interface BattleSession {
   /** ID ngày đánh */
   id: string;
-  /** Nhãn hiển thị ngắn gọn (thứ + ghi chú) */
+  /** Nhãn hiển thị, ví dụ "Thứ 3 · 20:30" */
   label: string;
   /** Thời điểm diễn ra trận đánh (ISO string) */
   dateTime: string;
-  /** Hạn chót điểm danh riêng của ngày này (ISO string) — quá hạn thì khóa cột */
+  /** Hạn chót điểm danh (ISO string) — quá hạn thì khóa cột */
   deadline: string;
-  /** Ngày guild war (Thứ 7) — cố định, được làm nổi bật */
+  /** Ngày guild war — được làm nổi bật, không xoá được */
   isGuildWar: boolean;
+  /** Tên bang đối thủ, null với Guild War hoặc scrim chưa chốt đối thủ */
+  opponent: string | null;
+  /** Mốc Thứ 2 00:00 của tuần chứa trận này (ISO string) */
+  weekStart: string;
+  /** Số lượt điểm danh đã ghi cho trận này */
+  attendanceCount: number;
+  /** Trận đã có đội hình xếp sẵn hay chưa */
+  hasFormation: boolean;
 }
 
-/**
- * Thông tin tuần điểm danh hiện tại (chỉ dùng cho khoảng thời gian hiển thị).
- */
+/** Một tuần điểm danh. */
 export interface Week {
-  /** Ngày bắt đầu tuần (ISO string) */
-  fromDate: string;
-  /** Ngày kết thúc tuần (ISO string) */
-  toDate: string;
+  /** Thứ 2 00:00 (ISO string) */
+  weekStart: string;
+  /** Thứ 7 23:59 (ISO string) */
+  weekEnd: string;
+  /** Có phải tuần đang mở không */
+  isActive: boolean;
 }
 
 /**

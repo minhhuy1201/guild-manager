@@ -19,6 +19,7 @@ export const attendanceKeys = {
   all: ["attendance"] as const,
   characters: () => [...attendanceKeys.all, "characters"] as const,
   sessions: () => [...attendanceKeys.all, "sessions"] as const,
+  weeks: () => [...attendanceKeys.all, "weeks"] as const,
   week: () => [...attendanceKeys.all, "week"] as const,
   records: () => [...attendanceKeys.all, "records"] as const,
 };
@@ -46,15 +47,29 @@ export function fetchCharacters(): Promise<Character[]> {
  * @returns Promise trả về mảng buổi đánh
  */
 export function fetchBattleSessions(): Promise<BattleSession[]> {
-  return apiFetch<BattleSession[]>("/attendance/sessions");
+  return apiFetch<BattleSession[]>("/battle-sessions");
 }
 
 /**
- * Lấy thông tin tuần điểm danh hiện tại.
- * @returns Promise trả về tuần hiện tại
+ * Lấy các tuần được phép thiết lập: tuần đang mở và tuần kế tiếp.
+ * @returns Promise trả về mảng tuần, tuần đang mở đứng trước
  */
-export function fetchCurrentWeek(): Promise<Week> {
-  return apiFetch<Week>("/attendance/week");
+export function fetchEditableWeeks(): Promise<Week[]> {
+  return apiFetch<Week[]>("/battle-sessions/weeks");
+}
+
+/**
+ * Lấy tuần điểm danh đang mở.
+ * @returns Promise trả về tuần đang mở
+ * @throws Error khi backend không trả về tuần nào đang mở
+ */
+export async function fetchCurrentWeek(): Promise<Week> {
+  const weeks = await fetchEditableWeeks();
+  const active = weeks.find((week) => week.isActive);
+
+  if (!active) throw new Error("Không xác định được tuần điểm danh.");
+
+  return active;
 }
 
 /**

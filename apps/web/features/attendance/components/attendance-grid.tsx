@@ -17,6 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { getSessionSubtitle } from "../lib/session-subtitle";
 import { isDeadlinePassed } from "../api/attendance-api";
 import { useAttendanceBoard } from "../hooks/use-attendance-board";
 import { useDeadlineRefresh } from "../hooks/use-deadline-refresh";
@@ -196,25 +197,31 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
           <TableHeader>
             <TableRow>
               <TableHead className="sticky left-0 bg-card">Thành viên</TableHead>
-              {battleSessions.map((session) => (
-                <TableHead
-                  key={session.id}
-                  className={cn(
-                    "text-center",
-                    session.isGuildWar && "text-primary"
-                  )}
-                >
-                  <span className="inline-flex items-center justify-center gap-1.5">
-                    {session.isGuildWar && <Swords className="size-3.5" />}
-                    {session.label}
-                  </span>
-                  {passedSessionIds.has(session.id) && (
-                    <span className="block text-xs font-normal text-muted-foreground">
-                      Đã khóa
+              {battleSessions.map((session) => {
+                const subtitle = getSessionSubtitle(session);
+                return (
+                  <TableHead
+                    key={session.id}
+                    className={cn(
+                      "text-center",
+                      session.isGuildWar && "text-primary"
+                    )}
+                  >
+                    <span className="inline-flex items-center justify-center gap-1.5">
+                      {session.isGuildWar && <Swords className="size-3.5" />}
+                      {session.label}
                     </span>
-                  )}
-                </TableHead>
-              ))}
+                    <span className="block text-xs font-normal text-muted-foreground">
+                      {subtitle}
+                    </span>
+                    {passedSessionIds.has(session.id) && (
+                      <span className="block text-xs font-normal text-muted-foreground">
+                        Đã khóa
+                      </span>
+                    )}
+                  </TableHead>
+                );
+              })}
               <TableHead className="w-28 text-right">Thao tác</TableHead>
             </TableRow>
           </TableHeader>

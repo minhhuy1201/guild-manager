@@ -11,6 +11,8 @@ export interface SessionFormation {
   dateTime: string;
   /** Trận Guild War Thứ 7 */
   isGuildWar: boolean;
+  /** Tên bang đối thủ, null với Guild War hoặc scrim chưa chốt đối thủ */
+  opponent: string | null;
   /** Trận đã đánh xong — không sửa được nữa */
   locked: boolean;
   /** Đội hình đã lưu. Rỗng nghĩa là chưa xếp. */

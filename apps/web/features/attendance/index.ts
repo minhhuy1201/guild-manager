@@ -1,6 +1,8 @@
 export { AttendanceScreen } from "./components/attendance-screen";
 export { AttendanceFilters } from "./components/attendance-filters";
 export { AttendanceLogTable } from "./components/attendance-log-table";
+export { attendanceKeys } from "./api/attendance-api";
+export { getSessionSubtitle } from "./lib/session-subtitle";
 export {
   useCharacters,
   useBattleSessions,
@@ -10,4 +12,5 @@ export type {
   AttendanceRecord,
   BattleSession,
   Character,
+  Week,
 } from "./types/attendance";
