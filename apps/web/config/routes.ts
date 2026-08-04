@@ -3,4 +3,5 @@ export const ROUTES = {
   attendance: "/",
   attendanceHistory: "/lich-su-diem-danh",
   teamBuilder: "/xep-team",
+  settings: "/thiet-lap",
 } as const;

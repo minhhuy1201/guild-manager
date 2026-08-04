@@ -12,8 +12,8 @@ import {
 import { verifyJwt } from "@/features/auth/lib/jwt";
 import { ROUTES } from "@/config/routes";
 
-/** Prefix của các route chỉ dành cho quản trị viên. */
-const ADMIN_PATH_PREFIX = "/xep-team";
+/** Các route chỉ dành cho quản trị viên. */
+const ADMIN_PATH_PREFIXES = [ROUTES.teamBuilder, ROUTES.settings];
 
 /**
  * Chạy trước mỗi request trang để làm hai việc:
@@ -43,7 +43,10 @@ export async function proxy(request: NextRequest) {
 
   // Chưa đăng nhập (hoặc phiên đã hết hạn hẳn): trang công khai vẫn vào được,
   // chỉ route quản trị mới bị đẩy về trang điểm danh.
-  const response = request.nextUrl.pathname.startsWith(ADMIN_PATH_PREFIX)
+  const isAdminPath = ADMIN_PATH_PREFIXES.some((prefix) =>
+    request.nextUrl.pathname.startsWith(prefix)
+  );
+  const response = isAdminPath
     ? NextResponse.redirect(new URL(ROUTES.attendance, request.url))
     : NextResponse.next();
 

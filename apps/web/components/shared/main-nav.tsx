@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ClipboardCheck, History, Users } from "lucide-react";
+import { ClipboardCheck, History, Settings, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ROUTES } from "@/config/routes";
@@ -25,6 +25,12 @@ const NAV_ITEMS = [
     href: ROUTES.teamBuilder,
     label: "Xếp team",
     icon: Users,
+    adminOnly: true,
+  },
+  {
+    href: ROUTES.settings,
+    label: "Thiết lập",
+    icon: Settings,
     adminOnly: true,
   },
 ] as const;
