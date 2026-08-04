@@ -1,5 +1,8 @@
 import { API_BASE_URL } from "@/config/api";
 
+/** HTTP status của response thành công nhưng không có body. */
+const NO_CONTENT_STATUS = 204;
+
 /** Thông báo dùng khi không đọc được nội dung lỗi từ server. */
 const FALLBACK_ERROR_MESSAGE = "Không kết nối được máy chủ.";
 
@@ -41,6 +44,9 @@ export async function apiFetch<T>(
   if (!response.ok) {
     throw new ApiError(readErrorMessage(body), response.status);
   }
+
+  // 204 không có body (endpoint DELETE) nên không có lớp bọc `{ data }` để bóc.
+  if (response.status === NO_CONTENT_STATUS) return undefined as T;
 
   return (body as { data: T }).data;
 }
