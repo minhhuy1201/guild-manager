@@ -47,6 +47,7 @@ model Character {
   updatedAt  DateTime   @updatedAt
 
   attendanceRecords AttendanceRecord[]
+  formationSlots    FormationSlot[]
 
   @@index([guildClass])
 }
@@ -72,6 +73,8 @@ model BattleSession {
   attendanceRecords AttendanceRecord[]
   /// Đội hình bang chiến của trận này (có thể chưa xếp).
   formation         Formation?
+  /// Các trận trong ngày này (1 hoặc 2), mỗi trận một đội hình.
+  formationMatches  FormationMatch[]
 
   @@index([weekStart])
 }
@@ -107,4 +110,33 @@ model Formation {
   session BattleSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@index([weekStart])
+}
+
+/// Một trận trong ngày đánh (tối đa 2 — trần đặt ở Zod, không ở đây).
+/// Hàng này tồn tại kể cả khi chưa xếp ai: đó là cách phân biệt
+/// "ngày này có 2 trận" với "trận 2 đang để trống".
+model FormationMatch {
+  id         String @id @default(cuid())
+  sessionId  String
+  /// 1 hoặc 2. Backend gán theo vị trí trong mảng gửi lên, không nhận từ client.
+  matchIndex Int
+
+  session BattleSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  slots   FormationSlot[]
+
+  @@unique([sessionId, matchIndex])
+}
+
+/// Một ô đã xếp người. Ô trống thì KHÔNG có hàng.
+model FormationSlot {
+  matchId     String
+  /// "team-1-pos-1" — bố cục lưới vẫn nằm hẳn ở frontend.
+  slotId      String
+  characterId String
+
+  match     FormationMatch @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  character Character      @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  @@id([matchId, slotId])
+  @@index([characterId])
 }
