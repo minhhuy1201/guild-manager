@@ -31,14 +31,12 @@ type SessionRow = {
   opponent: string | null;
   isGuildWar: boolean;
   weekStart: Date;
-  _count: { attendanceRecords: number };
-  formation: { id: string } | null;
+  _count: { attendanceRecords: number; formationMatches: number };
 };
 
 /** Những gì cần đọc thêm cùng mỗi trận để dựng entity. */
 const SESSION_INCLUDE = {
-  _count: { select: { attendanceRecords: true } },
-  formation: { select: { id: true } },
+  _count: { select: { attendanceRecords: true, formationMatches: true } },
 } as const;
 
 /**
@@ -190,21 +188,10 @@ export class BattleSessionsService {
     this.assertEditableWeek(weekStart, now);
     this.assertDeadlineBeforeBattle(deadline, dateTime);
 
-    const updated = await this.prisma.$transaction(async (tx) => {
-      const session = await tx.battleSession.update({
-        where: { id },
-        data: { dateTime, deadline, opponent, weekStart },
-        include: SESSION_INCLUDE,
-      });
-
-      // Formation giữ bản copy weekStart để dọn dữ liệu cũ không phải join —
-      // dời trận sang tuần khác mà quên chỗ này thì đội hình biến mất khỏi tuần của nó.
-      await tx.formation.updateMany({
-        where: { sessionId: id },
-        data: { weekStart },
-      });
-
-      return session;
+    const updated = await this.prisma.battleSession.update({
+      where: { id },
+      data: { dateTime, deadline, opponent, weekStart },
+      include: SESSION_INCLUDE,
     });
 
     return this.toEntity(updated);
@@ -298,7 +285,7 @@ export class BattleSessionsService {
 
   /**
    * Đổi một hàng BattleSession thành entity trả về cho client.
-   * @param row - Hàng đọc từ Prisma kèm `_count` và `formation`
+   * @param row - Hàng đọc từ Prisma kèm `_count`
    * @returns Entity đã dựng nhãn và đổi thời gian sang ISO string
    */
   private toEntity(row: SessionRow): BattleSessionEntity {
@@ -311,7 +298,7 @@ export class BattleSessionsService {
       opponent: row.opponent,
       weekStart: row.weekStart.toISOString(),
       attendanceCount: row._count.attendanceRecords,
-      hasFormation: row.formation !== null,
+      hasFormation: row._count.formationMatches > 0,
     };
   }
 }

@@ -30,7 +30,7 @@ function firstArg(mock: jest.Mock, index: number): unknown {
 }
 
 /**
- * Dựng một hàng BattleSession như Prisma trả về (kèm `_count` và `formation`).
+ * Dựng một hàng BattleSession như Prisma trả về (kèm `_count`).
  * @param overrides - Các field muốn ghi đè
  * @returns Hàng BattleSession giả lập
  */
@@ -42,8 +42,7 @@ function row(overrides: Record<string, unknown> = {}) {
     opponent: 'Hắc Long Đường',
     isGuildWar: false,
     weekStart: WEEK_START,
-    _count: { attendanceRecords: 0 },
-    formation: null,
+    _count: { attendanceRecords: 0, formationMatches: 0 },
     ...overrides,
   };
 }
@@ -59,7 +58,6 @@ describe('BattleSessionsService', () => {
       update: jest.Mock;
       delete: jest.Mock;
     };
-    formation: { updateMany: jest.Mock };
     $transaction: jest.Mock;
   };
 
@@ -73,7 +71,6 @@ describe('BattleSessionsService', () => {
         update: jest.fn().mockImplementation(() => Promise.resolve(row())),
         delete: jest.fn().mockResolvedValue(row()),
       },
-      formation: { updateMany: jest.fn().mockResolvedValue({ count: 0 }) },
       $transaction: jest
         .fn()
         .mockImplementation((fn: (tx: unknown) => unknown) => fn(prisma)),
@@ -188,7 +185,7 @@ describe('BattleSessionsService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('dời trận sang tuần khác thì cập nhật cả weekStart của đội hình', async () => {
+    it('dời trận sang tuần khác thì cập nhật weekStart', async () => {
       await service.update(
         'session-tue',
         { dateTime: vn('2026-07-28T20:30').toISOString() },
@@ -199,10 +196,19 @@ describe('BattleSessionsService', () => {
         where: { id: 'session-tue' },
         data: { weekStart: NEXT_WEEK_START },
       });
-      expect(prisma.formation.updateMany).toHaveBeenCalledWith({
-        where: { sessionId: 'session-tue' },
-        data: { weekStart: NEXT_WEEK_START },
-      });
+    });
+
+    it('hasFormation bật khi ngày đánh đã có ít nhất một trận được xếp', async () => {
+      prisma.battleSession.findMany.mockResolvedValue([
+        row({ _count: { attendanceRecords: 3, formationMatches: 2 } }),
+      ]);
+
+      const [session] = await service.listByWeek(
+        WEEK_START.toISOString(),
+        WEDNESDAY,
+      );
+
+      expect(session.hasFormation).toBe(true);
     });
 
     it('từ chối sửa trận thuộc tuần đã qua', async () => {
