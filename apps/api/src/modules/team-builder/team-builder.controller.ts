@@ -47,17 +47,17 @@ export class TeamBuilderController {
   }
 
   /**
-   * Ghi đè đội hình của một trận.
-   * @param sessionId - ID trận cần lưu
-   * @param body - assignment dạng slotId → characterId
-   * @returns Trận kèm đội hình vừa ghi
+   * Ghi đè đội hình cả ngày (1 hoặc 2 trận).
+   * @param sessionId - ID ngày đánh cần lưu
+   * @param body - matches: đội hình từng trận, theo thứ tự
+   * @returns Ngày đánh kèm đội hình vừa ghi
    */
   @Put('formations/:sessionId')
-  @ApiOperation({ summary: 'Lưu đội hình của một trận' })
+  @ApiOperation({ summary: 'Lưu đội hình cả ngày (tối đa 2 trận)' })
   saveFormation(
     @Param('sessionId') sessionId: string,
     @Body() body: SaveFormationDto,
   ): Promise<SessionFormationEntity> {
-    return this.teamBuilder.saveFormation(sessionId, body.assignment);
+    return this.teamBuilder.saveFormation(sessionId, body.matches);
   }
 }

@@ -12,8 +12,12 @@ export interface SessionFormationEntity {
   opponent: string | null;
   /** Trận đã đánh xong — không cho sửa đội hình nữa */
   locked: boolean;
-  /** slotId → characterId. Ô trống không có khoá. Rỗng nghĩa là chưa xếp. */
-  assignment: Record<string, string>;
+  /**
+   * Đội hình từng trận trong ngày, theo thứ tự trận 1 → trận 2.
+   * Mỗi phần tử là slotId → characterId, ô trống không có khoá.
+   * Mảng rỗng nghĩa là ngày này chưa xếp gì.
+   */
+  matches: Record<string, string>[];
 }
 
 /** Một tuần còn dữ liệu đội hình. */

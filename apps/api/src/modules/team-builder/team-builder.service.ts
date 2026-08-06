@@ -16,7 +16,7 @@ import type {
 } from './entities/formation.entity';
 
 /** Số ngày giữ lại đội hình cũ. Quá mốc này thì dọn. */
-const RETENTION_DAYS = 28;
+const RETENTION_DAYS = 56;
 
 /** Số mili giây trong một ngày. */
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -52,15 +52,15 @@ export class TeamBuilderService {
 
   /**
    * Xoá các đội hình cũ hơn RETENTION_DAYS.
-   * Chỉ xoá bảng Formation — BattleSession và điểm danh là dữ liệu của module khác.
+   * Chỉ xoá đội hình — BattleSession và điểm danh là dữ liệu của module khác.
    * @param now - Thời điểm hiện tại
    * @returns Promise hoàn tất khi đã dọn
    */
   private async purgeExpiredFormations(now: Date): Promise<void> {
     const cutoff = new Date(now.getTime() - RETENTION_DAYS * DAY_MS);
 
-    await this.prisma.formation.deleteMany({
-      where: { weekStart: { lt: cutoff } },
+    await this.prisma.formationMatch.deleteMany({
+      where: { session: { weekStart: { lt: cutoff } } },
     });
   }
 
@@ -70,7 +70,7 @@ export class TeamBuilderService {
    * trong database; tuần cũ chỉ đọc những gì còn lưu.
    * @param weekStart - Mốc Thứ 2 của tuần cần xem (ISO string). Bỏ trống = tuần đang mở
    * @param now - Thời điểm hiện tại (cho phép truyền vào để test)
-   * @returns Mảng trận sắp theo thời gian đánh, mỗi trận kèm assignment và cờ locked
+   * @returns Mảng ngày đánh sắp theo thời gian, mỗi ngày kèm đội hình từng trận và cờ locked
    */
   async getFormations(
     weekStart?: string,
@@ -87,20 +87,14 @@ export class TeamBuilderService {
     const sessions = await this.prisma.battleSession.findMany({
       where: { weekStart: new Date(targetWeekStart) },
       orderBy: { dateTime: 'asc' },
+      include: {
+        formationMatches: {
+          orderBy: { matchIndex: 'asc' },
+          include: { slots: true },
+        },
+      },
     });
     if (sessions.length === 0) return [];
-
-    const formations = await this.prisma.formation.findMany({
-      where: { sessionId: { in: sessions.map((session) => session.id) } },
-    });
-    const assignmentBySession = new Map(
-      formations.map((formation) => [
-        formation.sessionId,
-        formation.assignment,
-      ]),
-    );
-
-    const knownIds = await this.loadCharacterIds();
 
     return sessions.map((session) => ({
       sessionId: session.id,
@@ -109,26 +103,28 @@ export class TeamBuilderService {
       dateTime: session.dateTime.toISOString(),
       isGuildWar: session.isGuildWar,
       locked: session.dateTime.getTime() < now.getTime(),
-      assignment: this.pruneMissingCharacters(
-        assignmentBySession.get(session.id),
-        knownIds,
+      matches: session.formationMatches.map((match) =>
+        Object.fromEntries(
+          match.slots.map((slot) => [slot.slotId, slot.characterId]),
+        ),
       ),
     }));
   }
 
   /**
-   * Ghi đè đội hình của một trận. Idempotent — gửi cùng payload nhiều lần cho
-   * cùng kết quả.
-   * @param sessionId - ID trận cần lưu đội hình
-   * @param assignment - slotId → characterId, ô trống thì không có khoá
+   * Ghi đè đội hình CẢ NGÀY. Idempotent — gửi cùng payload nhiều lần cho cùng
+   * kết quả. Xoá rồi tạo lại thay vì so từng ô: nhiều nhất ~120 hàng, và nhờ vậy
+   * "bỏ trận 2" chỉ là gửi mảng một phần tử, không cần endpoint riêng.
+   * @param sessionId - ID ngày đánh cần lưu đội hình
+   * @param matches - Đội hình từng trận, theo thứ tự trận 1 → trận 2
    * @param now - Thời điểm hiện tại (cho phép truyền vào để test)
-   * @returns Trận kèm đội hình vừa ghi
-   * @throws NotFoundException khi không có trận nào mang sessionId đó
-   * @throws ConflictException khi trận đã qua giờ đánh
+   * @returns Ngày đánh kèm đội hình vừa ghi
+   * @throws NotFoundException khi không có ngày đánh nào mang sessionId đó
+   * @throws ConflictException khi ngày đánh đã qua giờ đánh
    */
   async saveFormation(
     sessionId: string,
-    assignment: AssignmentInput,
+    matches: AssignmentInput[],
     now: Date = new Date(),
   ): Promise<SessionFormationEntity> {
     const session = await this.prisma.battleSession.findUnique({
@@ -142,13 +138,34 @@ export class TeamBuilderService {
       throw new ConflictException('Trận này đã đánh xong, không sửa được nữa.');
     }
 
-    await this.prisma.formation.upsert({
-      where: { sessionId },
-      create: { sessionId, weekStart: session.weekStart, assignment },
-      update: { assignment },
-    });
-
+    // Lọc TRƯỚC khi ghi: một nhân vật vừa bị xoá khỏi bang mà còn trong nháp sẽ
+    // làm cả câu insert vỡ vì khoá ngoại.
     const knownIds = await this.loadCharacterIds();
+    const cleaned = matches.map((assignment) =>
+      Object.fromEntries(
+        Object.entries(assignment).filter(([, characterId]) =>
+          knownIds.has(characterId),
+        ),
+      ),
+    );
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.formationMatch.deleteMany({ where: { sessionId } });
+
+      for (const [index, assignment] of cleaned.entries()) {
+        await tx.formationMatch.create({
+          data: {
+            sessionId,
+            matchIndex: index + 1,
+            slots: {
+              create: Object.entries(assignment).map(
+                ([slotId, characterId]) => ({ slotId, characterId }),
+              ),
+            },
+          },
+        });
+      }
+    });
 
     return {
       sessionId: session.id,
@@ -157,7 +174,7 @@ export class TeamBuilderService {
       dateTime: session.dateTime.toISOString(),
       isGuildWar: session.isGuildWar,
       locked: false,
-      assignment: this.pruneMissingCharacters(assignment, knownIds),
+      matches: cleaned,
     };
   }
 
@@ -171,26 +188,5 @@ export class TeamBuilderService {
     });
 
     return new Set(characters.map((character) => character.id));
-  }
-
-  /**
-   * Loại các ô trỏ tới nhân vật đã rời bang.
-   * JSON không có khoá ngoại nên đây là chỗ bù lại — UI không bao giờ thấy ô ma.
-   * @param raw - Giá trị assignment đọc từ cột Json (có thể null khi chưa xếp)
-   * @param knownIds - Tập id nhân vật còn tồn tại
-   * @returns Assignment đã lọc, rỗng nếu chưa xếp
-   */
-  private pruneMissingCharacters(
-    raw: unknown,
-    knownIds: Set<string>,
-  ): Record<string, string> {
-    if (typeof raw !== 'object' || raw === null) return {};
-
-    const entries = Object.entries(raw as Record<string, unknown>).filter(
-      (entry): entry is [string, string] =>
-        typeof entry[1] === 'string' && knownIds.has(entry[1]),
-    );
-
-    return Object.fromEntries(entries);
   }
 }

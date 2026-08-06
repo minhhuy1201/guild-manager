@@ -7,9 +7,13 @@ import { z } from "zod";
  */
 export const assignmentSchema = z.record(z.string().min(1), z.string().min(1));
 
-/** Body của PUT /team-builder/formations/:sessionId */
+/**
+ * Body của PUT /team-builder/formations/:sessionId — đội hình CẢ NGÀY.
+ * Một ngày có 1 hoặc 2 trận; trần 2 đặt ở đây chứ không ở cấu trúc bảng, nên
+ * sau này muốn 3 trận chỉ phải sửa con số này.
+ */
 export const saveFormationSchema = z.object({
-  assignment: assignmentSchema,
+  matches: z.array(assignmentSchema).min(1).max(2),
 });
 
 /** Kiểu đội hình trên dây đã validate. */
