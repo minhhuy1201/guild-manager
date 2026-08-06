@@ -91,8 +91,13 @@ pnpm --filter api db:reset       # down -v && up  → chạy lại migrate + see
 Nhân vật mẫu có id `10001`–`10025`, mật khẩu điểm danh là `pass<id>` (vd `pass10001`).
 Danh sách đầy đủ trong `apps/api/prisma/seed.ts`.
 
-> **Podman thay Docker:** export `DOCKER_HOST=unix:///run/user/$UID/podman/podman.sock` trước khi
-> chạy `db:up`.
+> **Runtime container:** các script `db:*` gọi `podman compose`. Máy nào cài Docker thay Podman thì
+> đổi ba script đó sang `docker compose` trong `apps/api/package.json` — file `docker-compose.yml`
+> dùng chung, không phải sửa gì.
+>
+> Cài cả hai thì phải chọn một: mỗi runtime giữ container và volume riêng, nên `podman compose up`
+> và `docker compose up` tạo ra hai database khác nhau và cái chạy sau sẽ báo
+> `bind host port 0.0.0.0:5432: address already in use`.
 
 ## 5. Chạy dev
 
