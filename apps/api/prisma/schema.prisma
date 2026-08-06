@@ -71,8 +71,6 @@ model BattleSession {
   updatedAt DateTime @updatedAt
 
   attendanceRecords AttendanceRecord[]
-  /// Đội hình bang chiến của trận này (có thể chưa xếp).
-  formation         Formation?
   /// Các trận trong ngày này (1 hoặc 2), mỗi trận một đội hình.
   formationMatches  FormationMatch[]
 
@@ -93,23 +91,6 @@ model AttendanceRecord {
 
   @@unique([characterId, sessionId])
   @@index([sessionId])
-}
-
-/// Đội hình bang chiến của một trận đánh.
-model Formation {
-  id         String   @id @default(cuid())
-  /// Một trận chỉ có đúng một đội hình.
-  sessionId  String   @unique
-  /// Copy từ session — để dọn dữ liệu cũ mà không phải join.
-  weekStart  DateTime
-  /// { "team-1-pos-1": "charId", ... }. Ô trống thì KHÔNG có khoá.
-  assignment Json
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  session BattleSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-
-  @@index([weekStart])
 }
 
 /// Một trận trong ngày đánh (tối đa 2 — trần đặt ở Zod, không ở đây).
