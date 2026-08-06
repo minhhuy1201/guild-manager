@@ -23,8 +23,11 @@
     "db:reset": "docker compose down -v && docker compose up -d",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "migrate:prod": "prisma migrate deploy",
+    "prisma:status": "prisma migrate status",
+    "migrate:prod": "PRISMA_ENV_FILE=.env.production prisma migrate deploy",
+    "migrate:prod:status": "PRISMA_ENV_FILE=.env.production prisma migrate status",
     "prisma:studio": "prisma studio",
+    "prisma:studio:prod": "PRISMA_ENV_FILE=.env.production prisma studio",
     "db:seed": "prisma db seed"
   },
   "dependencies": {

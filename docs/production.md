@@ -51,6 +51,15 @@ Lưu ý khi build ở môi trường CI/hosting:
 
 ## 3. Biến môi trường production
 
+Giá trị thật nằm ở `apps/api/.env.production` — file này **không commit** (`.gitignore` bắt
+`.env.*`). Nó không phải file mà runtime đọc; nó là nơi giữ giá trị để chạy các lệnh Prisma nhắm
+vào database thật từ máy local, và là bản sao để chép sang phần environment variables của nhà cung
+cấp hosting khi deploy.
+
+`apps/api/.env` luôn là **local** (Postgres trong container, xem [`development.md`](development.md)).
+Đừng trỏ nó ra Supabase: `pnpm dev`, `pnpm prisma:migrate` và nhất là `pnpm db:seed` đều đọc file
+đó, mà seed thì ghi đè dữ liệu mẫu lên bất cứ database nào nó chạm tới.
+
 ### `apps/api`
 
 | Biến | Giá trị production |
@@ -136,9 +145,23 @@ chạy lúc báo `P1001`. Runtime không dính vì `@prisma/adapter-pg` không �
 
 ```bash
 cd apps/api
-pnpm exec prisma migrate status   # xem lệch bao nhiêu migration
-pnpm migrate:prod                 # prisma migrate deploy
+pnpm migrate:prod:status   # xem production lệch bao nhiêu migration
+pnpm migrate:prod          # prisma migrate deploy lên database thật
 ```
+
+Hai lệnh trên đặt `PRISMA_ENV_FILE=.env.production`, nên chúng đọc `.env.production` **thay cho**
+`.env`. Lệnh không có hậu tố `:prod` (`pnpm prisma:status`, `pnpm prisma:migrate`, `pnpm db:seed`)
+luôn nhắm vào local — đọc datasource in ra đầu output để chắc chắn mình đang gõ đúng chỗ:
+
+```
+Datasource "db": … at "localhost:5432"                          ← local
+Datasource "db": … at "aws-0-….pooler.supabase.com:5432"        ← production
+```
+
+Cơ chế nằm ở `prisma.config.ts`: nó nạp đúng một file env theo `PRISMA_ENV_FILE` với
+`override: true`. Phải `override` vì Prisma CLI tự inject `.env` trước khi config chạy — không có
+nó thì biến local sẽ thắng và lệnh `:prod` âm thầm nhắm nhầm vào local. Đây cũng là lý do không viết
+`DATABASE_URL=$DIRECT_DATABASE_URL prisma …` (xem cảnh báo ở mục trên).
 
 `migrate deploy` chỉ áp migration đã có sẵn trong repo, không tự sinh và không hỏi lại. Migration
 mới luôn được tạo ở local bằng `prisma:migrate` rồi commit, không bao giờ sinh trực tiếp trên
