@@ -34,3 +34,29 @@ export function fromWire(wire: WireAssignment, slots: Slot[]): Assignment {
 
   return assignment;
 }
+
+/**
+ * Strip empty slots from every match of a day before sending it.
+ * @param matches - Line-up of each match, as the UI holds it
+ * @returns Same order, each match carrying only its filled slots
+ */
+export function toWireMatches(matches: Assignment[]): WireAssignment[] {
+  return matches.map(toWire);
+}
+
+/**
+ * Rebuild a day's line-ups from what the server stored.
+ * A day with nothing saved comes back as `[]`; it is normalised to one empty
+ * match here so nothing downstream has to handle "no match at all".
+ * @param wire - Matches as stored, only filled slots present
+ * @param slots - Slots of the current layout
+ * @returns One assignment per match, always at least one
+ */
+export function fromWireMatches(
+  wire: WireAssignment[],
+  slots: Slot[]
+): Assignment[] {
+  const source = wire.length > 0 ? wire : [{}];
+
+  return source.map((match) => fromWire(match, slots));
+}

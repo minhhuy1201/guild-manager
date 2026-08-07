@@ -15,8 +15,11 @@ export interface SessionFormation {
   opponent: string | null;
   /** Trận đã đánh xong — không sửa được nữa */
   locked: boolean;
-  /** Đội hình đã lưu. Rỗng nghĩa là chưa xếp. */
-  assignment: WireAssignment;
+  /**
+   * Đội hình từng trận trong ngày, theo thứ tự trận 1 → trận 2.
+   * Mảng rỗng nghĩa là ngày này chưa xếp gì.
+   */
+  matches: WireAssignment[];
 }
 
 /** Một tuần còn dữ liệu đội hình. */

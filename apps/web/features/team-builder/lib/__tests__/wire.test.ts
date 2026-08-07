@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { Assignment, Slot } from "../../types/formation";
-import { fromWire, toWire } from "../wire";
+import { fromWire, fromWireMatches, toWire, toWireMatches } from "../wire";
 
 const SLOTS: Slot[] = [
   { id: "team-1-pos-1", team: 1, position: 1 },
@@ -52,5 +52,44 @@ describe("fromWire", () => {
     };
 
     expect(fromWire(toWire(original), SLOTS)).toEqual(original);
+  });
+});
+
+describe("toWireMatches", () => {
+  it("bỏ ô trống của từng trận, giữ nguyên thứ tự", () => {
+    const matches: Assignment[] = [
+      { "team-1-pos-1": "char-1", "team-1-pos-2": null },
+      { "team-1-pos-1": null, "team-1-pos-2": "char-2" },
+    ];
+
+    expect(toWireMatches(matches)).toEqual([
+      { "team-1-pos-1": "char-1" },
+      { "team-1-pos-2": "char-2" },
+    ]);
+  });
+});
+
+describe("fromWireMatches", () => {
+  it("ngày chưa xếp gì vẫn cho một trận rỗng", () => {
+    const result = fromWireMatches([], SLOTS);
+
+    expect(result).toHaveLength(1);
+    expect(result[0]).toEqual({
+      "team-1-pos-1": null,
+      "team-1-pos-2": null,
+      "team-1-pos-3": null,
+    });
+  });
+
+  it("dựng lại đủ ô cho cả hai trận", () => {
+    const result = fromWireMatches(
+      [{ "team-1-pos-1": "char-1" }, { "team-1-pos-3": "char-2" }],
+      SLOTS
+    );
+
+    expect(result).toHaveLength(2);
+    expect(result[0]["team-1-pos-1"]).toBe("char-1");
+    expect(result[0]["team-1-pos-3"]).toBeNull();
+    expect(result[1]["team-1-pos-3"]).toBe("char-2");
   });
 });

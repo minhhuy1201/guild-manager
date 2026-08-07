@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { Assignment } from "../../types/formation";
-import { isDirty } from "../formation-diff";
+import { isDayDirty, isDirty } from "../formation-diff";
 
 const SAVED: Assignment = {
   "team-1-pos-1": "char-1",
@@ -36,5 +36,36 @@ describe("isDirty", () => {
   it("nháp thiếu một ô vốn đang trống thì vẫn coi là chưa đổi gì", () => {
     // Thiếu khoá và mang null là cùng một nghĩa: ô đó không có ai.
     expect(isDirty({ "team-1-pos-1": "char-1" }, SAVED)).toBe(false);
+  });
+});
+
+describe("isDayDirty", () => {
+  const saved: Assignment[] = [{ "team-1-pos-1": "char-1" }];
+
+  it("chưa động vào thì không dirty", () => {
+    expect(isDayDirty(undefined, saved)).toBe(false);
+  });
+
+  it("nháp giống hệt bản lưu thì không dirty", () => {
+    expect(isDayDirty([{ "team-1-pos-1": "char-1" }], saved)).toBe(false);
+  });
+
+  it("vừa thêm trận 2 là dirty", () => {
+    expect(isDayDirty([{ "team-1-pos-1": "char-1" }, {}], saved)).toBe(true);
+  });
+
+  it("vừa bỏ trận 2 là dirty", () => {
+    expect(isDayDirty([{ "team-1-pos-1": "char-1" }], [...saved, {}])).toBe(
+      true
+    );
+  });
+
+  it("đổi người trong trận 2 là dirty", () => {
+    expect(
+      isDayDirty(
+        [{ "team-1-pos-1": "char-1" }, { "team-1-pos-1": "char-9" }],
+        [...saved, { "team-1-pos-1": "char-2" }]
+      )
+    ).toBe(true);
   });
 });

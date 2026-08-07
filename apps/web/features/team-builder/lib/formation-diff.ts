@@ -23,3 +23,21 @@ export function isDirty(
 
   return false;
 }
+
+/**
+ * Whether a day's draft differs from what the server has stored.
+ * The save button covers the whole day, so dirtiness has to as well — including
+ * a match 2 that was just added or just removed.
+ * @param draft - Draft for the day, undefined when it was never touched
+ * @param saved - Matches as last read from the server
+ * @returns true when the day holds unsaved changes
+ */
+export function isDayDirty(
+  draft: Assignment[] | undefined,
+  saved: Assignment[]
+): boolean {
+  if (!draft) return false;
+  if (draft.length !== saved.length) return true;
+
+  return draft.some((match, index) => isDirty(match, saved[index]));
+}

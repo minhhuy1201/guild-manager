@@ -15,7 +15,7 @@ export interface PrefillResult {
 /**
  * Propose a formation for a battle by copying the most recent earlier battle of
  * the same week that has one, keeping only people attending this battle.
- * @param sessions - Every battle of the week, ordered by battle time
+ * @param sessions - Every battle day of the week, ordered by battle time
  * @param targetSessionId - Battle needing a formation
  * @param presentIds - Ids of characters attending the target battle
  * @param slots - Slots of the current layout
@@ -35,10 +35,18 @@ export function buildPrefill(
   const source = sessions
     .slice(0, targetIndex)
     .reverse()
-    .find((session) => Object.keys(session.assignment).length > 0);
+    .find((session) =>
+      session.matches.some((match) => Object.keys(match).length > 0)
+    );
   if (!source) return null;
 
-  const previous = fromWire(source.assignment, slots);
+  // Trận cuối cùng của ngày đó là đội hình gần hiện trạng nhất.
+  const sourceMatch = source.matches[source.matches.length - 1];
+  const sourceLabel =
+    source.matches.length > 1
+      ? `${source.label} · trận ${source.matches.length}`
+      : source.label;
+  const previous = fromWire(sourceMatch, slots);
   const assignment: Assignment = {};
   let droppedCount = 0;
 
@@ -58,5 +66,5 @@ export function buildPrefill(
     }
   }
 
-  return { assignment, sourceLabel: source.label, droppedCount };
+  return { assignment, sourceLabel, droppedCount };
 }
