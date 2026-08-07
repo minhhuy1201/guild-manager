@@ -24,6 +24,10 @@ import {
 import { fromInputValue, toInputValue } from "../lib/datetime-input";
 import { DateTimeField } from "./date-time-field";
 
+// Thêm trận mới thì hai ô giờ điền sẵn mốc hay dùng nhất, chỉ còn phải chọn ngày.
+const DEFAULT_BATTLE_TIME = "20:30";
+const DEFAULT_DEADLINE_TIME = "10:00";
+
 interface SessionFormDialogProps {
   /** Dialog đang mở hay không */
   open: boolean;
@@ -149,6 +153,7 @@ function SessionForm({ session, onDone }: SessionFormProps) {
         label="Ngày giờ đánh"
         value={dateTime}
         onChange={handleDateTimeChange}
+        defaultTime={DEFAULT_BATTLE_TIME}
       />
 
       {!isGuildWar && (
@@ -172,6 +177,7 @@ function SessionForm({ session, onDone }: SessionFormProps) {
           setDeadlineTouched(true);
           setDeadline(value);
         }}
+        defaultTime={DEFAULT_DEADLINE_TIME}
       />
 
       {error && (

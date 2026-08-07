@@ -31,6 +31,8 @@ interface DateTimeFieldProps {
   value: string;
   /** Gọi với giá trị mới; rỗng khi ngày giờ chưa hợp lệ */
   onChange: (value: string) => void;
+  /** Giờ điền sẵn khi chưa có giá trị, dạng HH:mm */
+  defaultTime?: string;
 }
 
 /**
@@ -41,6 +43,7 @@ interface DateTimeFieldProps {
  * @param label - Nhãn hiển thị
  * @param value - Giá trị dạng "YYYY-MM-DDTHH:mm"
  * @param onChange - Gọi với giá trị mới
+ * @param defaultTime - Giờ điền sẵn khi chưa có giá trị
  * @returns Cặp ô nhập ngày giờ kèm nút mở lịch
  */
 export function DateTimeField({
@@ -48,8 +51,9 @@ export function DateTimeField({
   label,
   value,
   onChange,
+  defaultTime,
 }: DateTimeFieldProps) {
-  const [parts, setParts] = useState(() => splitLocalValue(value));
+  const [parts, setParts] = useState(() => splitLocalValue(value, defaultTime));
   const [emitted, setEmitted] = useState(value);
   const [calendarOpen, setCalendarOpen] = useState(false);
 
@@ -57,7 +61,7 @@ export function DateTimeField({
   // Còn giá trị do chính ô này vừa gửi đi thì giữ nguyên chữ người dùng đang gõ.
   if (value !== emitted) {
     setEmitted(value);
-    setParts(splitLocalValue(value));
+    setParts(splitLocalValue(value, defaultTime));
   }
 
   const isIncomplete = Boolean(parts.date && parts.time) && emitted === "";

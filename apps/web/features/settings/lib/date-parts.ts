@@ -27,12 +27,16 @@ function daysInMonth(year: number, month: number): number {
 /**
  * Tách chuỗi local thành hai ô hiển thị.
  * @param value - Chuỗi "YYYY-MM-DDTHH:mm", rỗng nếu chưa chọn
+ * @param defaultTime - Giờ điền sẵn khi chưa có giá trị, dạng HH:mm
  * @returns Ngày dạng dd/MM/yyyy và giờ dạng HH:mm
  */
-export function splitLocalValue(value: string): { date: string; time: string } {
+export function splitLocalValue(
+  value: string,
+  defaultTime = ""
+): { date: string; time: string } {
   const [datePart, timePart] = value.split("T");
 
-  if (!datePart || !timePart) return { date: "", time: "" };
+  if (!datePart || !timePart) return { date: "", time: defaultTime };
 
   const [year, month, day] = datePart.split("-");
 

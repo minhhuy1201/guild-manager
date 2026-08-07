@@ -20,6 +20,17 @@ describe("splitLocalValue", () => {
   it("trả về hai ô rỗng khi chưa có giá trị", () => {
     expect(splitLocalValue("")).toEqual({ date: "", time: "" });
   });
+
+  it("điền sẵn giờ mặc định khi chưa có giá trị", () => {
+    expect(splitLocalValue("", "20:30")).toEqual({ date: "", time: "20:30" });
+  });
+
+  it("bỏ qua giờ mặc định khi đã có giá trị", () => {
+    expect(splitLocalValue("2026-07-21T08:00", "20:30")).toEqual({
+      date: "21/07/2026",
+      time: "08:00",
+    });
+  });
 });
 
 describe("joinLocalValue", () => {
