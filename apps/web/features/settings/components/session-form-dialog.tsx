@@ -22,6 +22,7 @@ import {
   useUpdateSession,
 } from "../hooks/use-session-mutations";
 import { fromInputValue, toInputValue } from "../lib/datetime-input";
+import { DateTimeField } from "./date-time-field";
 
 interface SessionFormDialogProps {
   /** Dialog đang mở hay không */
@@ -109,6 +110,12 @@ function SessionForm({ session, onDone }: SessionFormProps) {
     event.preventDefault();
     setError(null);
 
+    // Ô ngày giờ trả về rỗng khi người dùng gõ dở hoặc gõ ngày không có thật.
+    if (!dateTime || !deadline) {
+      setError("Ngày giờ chưa hợp lệ. Nhập theo dạng dd/mm/yyyy và HH:mm.");
+      return;
+    }
+
     const input = {
       dateTime: fromInputValue(dateTime),
       deadline: fromInputValue(deadline),
@@ -137,16 +144,12 @@ function SessionForm({ session, onDone }: SessionFormProps) {
         </DialogTitle>
       </DialogHeader>
 
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="session-date-time">Ngày giờ đánh</Label>
-        <Input
-          id="session-date-time"
-          type="datetime-local"
-          required
-          value={dateTime}
-          onChange={(event) => handleDateTimeChange(event.target.value)}
-        />
-      </div>
+      <DateTimeField
+        id="session-date-time"
+        label="Ngày giờ đánh"
+        value={dateTime}
+        onChange={handleDateTimeChange}
+      />
 
       {!isGuildWar && (
         <div className="flex flex-col gap-1.5">
@@ -161,19 +164,15 @@ function SessionForm({ session, onDone }: SessionFormProps) {
         </div>
       )}
 
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="session-deadline">Hạn chót điểm danh</Label>
-        <Input
-          id="session-deadline"
-          type="datetime-local"
-          required
-          value={deadline}
-          onChange={(event) => {
-            setDeadlineTouched(true);
-            setDeadline(event.target.value);
-          }}
-        />
-      </div>
+      <DateTimeField
+        id="session-deadline"
+        label="Hạn chót điểm danh"
+        value={deadline}
+        onChange={(value) => {
+          setDeadlineTouched(true);
+          setDeadline(value);
+        }}
+      />
 
       {error && (
         <div className="flex items-start gap-1.5 text-sm text-destructive">
