@@ -58,7 +58,14 @@ export function SessionTabs({
       value={activeSessionId ?? undefined}
       onValueChange={(value) => onSelect(String(value))}
     >
-      <TabsList className="grid h-auto w-full gap-2 bg-transparent p-0 sm:grid-cols-2 lg:grid-cols-3">
+      {/*
+        Chiều cao mặc định của TabsList gắn với modifier `group-data-horizontal/tabs`,
+        nên `h-auto` trơn KHÔNG đè được nó: tailwind-merge coi hai lớp khác modifier
+        là không xung đột, và cả hai cùng độ ưu tiên nên lớp sinh sau thắng. Phải
+        đè bằng đúng modifier đó, không thì hàng thẻ trận bị ép còn 32px và tràn
+        xuống che mất hàng "Trận 1 / Tạo trận 2" bên dưới.
+      */}
+      <TabsList className="grid w-full gap-2 bg-transparent p-0 group-data-horizontal/tabs:h-auto sm:grid-cols-2 lg:grid-cols-3">
         {sessions.map((session) => {
           const subtitle = getSessionSubtitle(session);
           const progress = matchProgress(session.matches, slotCount);
