@@ -40,7 +40,7 @@ export function FormationToolbar({
   if (!editable) {
     return (
       <p className="text-sm text-muted-foreground">
-        Trận này đã đánh xong, chỉ xem lại được.
+        Ngày này đã đánh xong, chỉ xem lại được.
       </p>
     );
   }
@@ -68,7 +68,7 @@ export function FormationToolbar({
         onClick={onSave}
         disabled={!dirty || saving}
       >
-        {saving ? "Đang lưu..." : "Lưu đội hình"}
+        {saving ? "Đang lưu..." : "Lưu đội hình cả ngày"}
       </Button>
     </div>
   );

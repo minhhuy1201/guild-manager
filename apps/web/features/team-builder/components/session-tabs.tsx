@@ -15,6 +15,25 @@ interface SessionTabsProps {
   dirtySessionIds: Set<string>;
   /** Called with the battle the user switched to */
   onSelect: (sessionId: string) => void;
+  /** Total slots of one match, for the "12/60" badge */
+  slotCount: number;
+}
+
+/**
+ * Progress label for a day: one count per match, e.g. "12/60 · 8/60".
+ * @param matches - Saved line-up of each match of the day
+ * @param slotCount - Total slots of one match
+ * @returns The label, or null when the day has nothing saved
+ */
+function matchProgress(
+  matches: Record<string, string>[],
+  slotCount: number
+): string | null {
+  if (matches.length === 0) return null;
+
+  return matches
+    .map((match) => `${Object.keys(match).length}/${slotCount}`)
+    .join(" · ");
 }
 
 /**
@@ -24,6 +43,7 @@ interface SessionTabsProps {
  * @param activeSessionId - Battle whose tab is open
  * @param dirtySessionIds - Battles holding unsaved changes
  * @param onSelect - Called with the battle the user switched to
+ * @param slotCount - Total slots of one match
  * @returns The battle tab bar
  */
 export function SessionTabs({
@@ -31,6 +51,7 @@ export function SessionTabs({
   activeSessionId,
   dirtySessionIds,
   onSelect,
+  slotCount,
 }: SessionTabsProps) {
   return (
     <Tabs
@@ -40,6 +61,7 @@ export function SessionTabs({
       <TabsList className="grid h-auto w-full gap-2 bg-transparent p-0 sm:grid-cols-2 lg:grid-cols-3">
         {sessions.map((session) => {
           const subtitle = getSessionSubtitle(session);
+          const progress = matchProgress(session.matches, slotCount);
           return (
             <TabsTrigger
               key={session.sessionId}
@@ -57,7 +79,9 @@ export function SessionTabs({
                   />
                 ) : null}
               </span>
-              <span className="text-xs font-normal opacity-80">{subtitle}</span>
+              <span className="text-xs font-normal opacity-80">
+                {progress ? `${subtitle} · ${progress}` : subtitle}
+              </span>
             </TabsTrigger>
           );
         })}

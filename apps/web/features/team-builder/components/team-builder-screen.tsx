@@ -18,6 +18,7 @@ import { FormationGrid } from "./formation-grid";
 import { FormationToolbar } from "./formation-toolbar";
 import { MemberCard } from "./member-card";
 import { MemberPool } from "./member-pool";
+import { MatchTabs } from "./match-tabs";
 import { PrefillBanner } from "./prefill-banner";
 import { SessionTabs } from "./session-tabs";
 import { WeekPicker } from "./week-picker";
@@ -108,6 +109,19 @@ export function TeamBuilderScreen() {
           activeSessionId={screen.activeSessionId}
           dirtySessionIds={screen.dirtySessionIds}
           onSelect={screen.setActiveSession}
+          slotCount={screen.slotCount}
+        />
+
+        <MatchTabs
+          matchCount={screen.matchCount}
+          activeMatchIndex={screen.activeMatchIndex}
+          secondMatchHasMembers={Object.values(screen.matches[1] ?? {}).some(
+            Boolean
+          )}
+          canAddMatch={screen.canAddMatch}
+          onSelect={screen.setActiveMatch}
+          onAdd={screen.addMatch}
+          onRemove={screen.removeMatch}
         />
 
         <div className="flex flex-wrap items-center justify-between gap-2 mt-4">
@@ -133,7 +147,12 @@ export function TeamBuilderScreen() {
           readOnly={!screen.editable}
           absentIds={screen.absentIds}
         />
-        <MemberPool pool={screen.pool} readOnly={!screen.editable} />
+        <MemberPool
+          pool={screen.pool}
+          readOnly={!screen.editable}
+          otherMatchIds={screen.otherMatchIds}
+          activeMatchIndex={screen.activeMatchIndex}
+        />
       </div>
 
       <DragOverlay>

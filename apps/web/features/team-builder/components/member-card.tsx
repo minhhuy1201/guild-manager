@@ -15,6 +15,8 @@ interface MemberCardProps {
   character: Character;
   /** Why this placement needs attention, e.g. the member dropped out */
   warning?: string;
+  /** Short note shown under the name, e.g. "đang đánh trận 1" */
+  note?: string;
   /** Extra classes for the outer element */
   className?: string;
 }
@@ -27,10 +29,16 @@ interface MemberCardProps {
  * when there is one.
  * @param character - Character to display
  * @param warning - Why this placement needs attention, if any
+ * @param note - Short note shown under the name, if any
  * @param className - Extra classes for the outer element
  * @returns The member card wrapped in its tooltip
  */
-export function MemberCard({ character, warning, className }: MemberCardProps) {
+export function MemberCard({
+  character,
+  warning,
+  note,
+  className,
+}: MemberCardProps) {
   const classLabel = GUILD_CLASS_LABEL[character.guildClass];
 
   return (
@@ -51,8 +59,15 @@ export function MemberCard({ character, warning, className }: MemberCardProps) {
               />
               <AvatarFallback>{classLabel[0]}</AvatarFallback>
             </Avatar>
-            <span className="min-w-0 flex-1 truncate text-sm font-medium">
-              {character.name}
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className="truncate text-sm font-medium">
+                {character.name}
+              </span>
+              {note ? (
+                <span className="truncate text-xs text-muted-foreground">
+                  {note}
+                </span>
+              ) : null}
             </span>
           </div>
         }

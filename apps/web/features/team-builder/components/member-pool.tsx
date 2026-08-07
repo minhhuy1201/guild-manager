@@ -16,6 +16,10 @@ interface MemberPoolProps {
   pool: Character[];
   /** Hide the pool entirely — a past week or a battle already fought */
   readOnly?: boolean;
+  /** Ids of members already placed in the day's other match */
+  otherMatchIds: Set<string>;
+  /** Which match is on screen, 0-based — decides what the note says */
+  activeMatchIndex: number;
 }
 
 /**
@@ -25,9 +29,16 @@ interface MemberPoolProps {
  * their slot.
  * @param pool - Members available for the battle, already filtered
  * @param readOnly - Hide the pool entirely
+ * @param otherMatchIds - Ids of members already placed in the day's other match
+ * @param activeMatchIndex - Which match is on screen, 0-based
  * @returns Card holding the filters and the available members, or nothing when read-only
  */
-export function MemberPool({ pool, readOnly = false }: MemberPoolProps) {
+export function MemberPool({
+  pool,
+  readOnly = false,
+  otherMatchIds,
+  activeMatchIndex,
+}: MemberPoolProps) {
   const data: PoolDropData = { type: "pool" };
   const { setNodeRef, isOver } = useDroppable({
     id: POOL_DROPPABLE_ID,
@@ -72,6 +83,11 @@ export function MemberPool({ pool, readOnly = false }: MemberPoolProps) {
                     key={character.id}
                     character={character}
                     from={POOL_DROPPABLE_ID}
+                    note={
+                      otherMatchIds.has(character.id)
+                        ? `đang đánh trận ${activeMatchIndex === 0 ? 2 : 1}`
+                        : undefined
+                    }
                   />
                 ))}
               </div>
