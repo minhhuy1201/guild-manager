@@ -16,6 +16,7 @@ import { presentCharacterIds } from "../lib/session-pool";
 import { resolveActiveMatchIndex } from "../lib/active-match";
 import { resolveActiveSessionId } from "../lib/active-session";
 import { isSessionEditable } from "../lib/session-status";
+import { findActiveWeekStart, isWeekEditable } from "../lib/week-status";
 import { fromWire, fromWireMatches, toWireMatches } from "../lib/wire";
 import { useFormationStore } from "../store/formation-store";
 import type { Assignment } from "../types/formation";
@@ -48,10 +49,9 @@ export function useFormationScreen() {
   const selectedWeekStart = useFormationStore((s) => s.selectedWeekStart);
   const setWeek = useFormationStore((s) => s.setWeek);
 
-  const currentWeekStart = weeksQuery.data?.[0]?.weekStart ?? null;
-  const weekStart = selectedWeekStart ?? currentWeekStart ?? undefined;
-  const isCurrentWeek =
-    !selectedWeekStart || selectedWeekStart === currentWeekStart;
+  const activeWeekStart = findActiveWeekStart(weeksQuery.data ?? []);
+  const weekStart = selectedWeekStart ?? activeWeekStart ?? undefined;
+  const isEditableWeek = isWeekEditable(weekStart, activeWeekStart);
 
   const formationsQuery = useFormations(weekStart);
   const charactersQuery = useCharacters();
@@ -123,7 +123,7 @@ export function useFormationScreen() {
 
   const activeSession = sessions.find((s) => s.sessionId === activeSessionId);
   const editable = activeSession
-    ? isSessionEditable(activeSession, isCurrentWeek)
+    ? isSessionEditable(activeSession, isEditableWeek)
     : false;
 
   const presentIds = useMemo(
@@ -248,7 +248,7 @@ export function useFormationScreen() {
   return {
     weeks: weeksQuery.data ?? [],
     weekStart: weekStart ?? "",
-    isCurrentWeek,
+    isEditableWeek,
     sessions,
     activeSessionId,
     matches,

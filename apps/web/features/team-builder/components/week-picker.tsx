@@ -49,10 +49,10 @@ export function WeekPicker({ weeks, value, onChange }: WeekPickerProps) {
         <SelectValue>{() => `Tuần ${formatWeek(value)}`}</SelectValue>
       </SelectTrigger>
       <SelectContent alignItemWithTrigger={false}>
-        {weeks.map((week, index) => (
+        {weeks.map((week) => (
           <SelectItem key={week.weekStart} value={week.weekStart}>
             Tuần {formatWeek(week.weekStart)}
-            {index === 0 ? " (hiện tại)" : ""}
+            {week.isActive ? " (hiện tại)" : ""}
           </SelectItem>
         ))}
       </SelectContent>

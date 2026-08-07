@@ -5,12 +5,12 @@ import type { SessionFormation } from "../types/session-formation";
  * `locked` comes from the server, which decides it from the battle time and is
  * the real gate — this only adds the read-only rule for past weeks.
  * @param session - The battle, carrying the server's locked flag
- * @param isCurrentWeek - Whether the week on screen is the open one
+ * @param isEditableWeek - Whether the week on screen is still open for edits
  * @returns true when the formation may be edited
  */
 export function isSessionEditable(
   session: Pick<SessionFormation, "locked">,
-  isCurrentWeek: boolean
+  isEditableWeek: boolean
 ): boolean {
-  return isCurrentWeek && !session.locked;
+  return isEditableWeek && !session.locked;
 }

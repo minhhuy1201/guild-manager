@@ -24,4 +24,9 @@ export interface SessionFormationEntity {
 export interface FormationWeekEntity {
   /** Mốc Thứ 2 00:00 của tuần (ISO string) */
   weekStart: string;
+  /**
+   * Tuần điểm danh đang mở. Danh sách còn có cả tuần kế tiếp — tuần đầu mảng
+   * KHÔNG phải tuần đang mở, nên client phải đọc cờ này.
+   */
+  isActive: boolean;
 }

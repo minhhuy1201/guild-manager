@@ -192,8 +192,23 @@ describe('TeamBuilderService.getWeeks', () => {
     const weeks = await service.getWeeks(WEDNESDAY);
 
     expect(weeks).toEqual([
-      { weekStart: WEEK_START.toISOString() },
-      { weekStart: vn('2026-07-13T00:00').toISOString() },
+      { weekStart: WEEK_START.toISOString(), isActive: true },
+      { weekStart: vn('2026-07-13T00:00').toISOString(), isActive: false },
+    ]);
+  });
+
+  it('đánh dấu đúng tuần đang mở khi tuần kế đã có trận', async () => {
+    const nextWeek = vn('2026-07-27T00:00');
+    prisma.battleSession.findMany.mockResolvedValue([
+      { weekStart: nextWeek },
+      { weekStart: WEEK_START },
+    ]);
+
+    const weeks = await service.getWeeks(WEDNESDAY);
+
+    expect(weeks).toEqual([
+      { weekStart: nextWeek.toISOString(), isActive: false },
+      { weekStart: WEEK_START.toISOString(), isActive: true },
     ]);
   });
 

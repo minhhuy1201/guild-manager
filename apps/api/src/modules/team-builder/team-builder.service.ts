@@ -33,21 +33,24 @@ export class TeamBuilderService {
    * Dọn dữ liệu quá hạn trước khi đọc — màn hình xếp team luôn gọi endpoint này
    * nên không cần cron riêng.
    * @param now - Thời điểm hiện tại (cho phép truyền vào để test)
-   * @returns Mảng tuần, mới nhất trước
+   * @returns Mảng tuần, mới nhất trước, tuần đang mở mang cờ isActive
    */
   async getWeeks(now: Date = new Date()): Promise<FormationWeekEntity[]> {
     await this.purgeExpiredFormations(now);
     await this.battleSessions.listByWeek(undefined, now);
 
+    const activeWeekStart = this.battleSessions.getActiveWeekStart(now);
     const sessions = await this.prisma.battleSession.findMany({
       distinct: ['weekStart'],
       select: { weekStart: true },
       orderBy: { weekStart: 'desc' },
     });
 
-    return sessions.map((session) => ({
-      weekStart: session.weekStart.toISOString(),
-    }));
+    return sessions.map((session) => {
+      const weekStart = session.weekStart.toISOString();
+
+      return { weekStart, isActive: weekStart === activeWeekStart };
+    });
   }
 
   /**
