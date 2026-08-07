@@ -1,14 +1,25 @@
 "use client";
 
 import { useState } from "react";
+import { CalendarDays } from "lucide-react";
+import { vi } from "date-fns/locale";
 
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   joinLocalValue,
   maskDate,
   maskTime,
+  parseDisplayDate,
   splitLocalValue,
+  toDisplayDate,
 } from "../lib/date-parts";
 
 interface DateTimeFieldProps {
@@ -23,14 +34,14 @@ interface DateTimeFieldProps {
 }
 
 /**
- * Ô nhập ngày giờ dạng dd/MM/yyyy và HH:mm. Không dùng `<input
- * type="datetime-local">` vì trình duyệt hiển thị nó theo locale của máy, máy
- * tiếng Anh sẽ ra mm/dd/yyyy.
+ * Ô nhập ngày giờ dạng dd/MM/yyyy và HH:mm, gõ tay hoặc chọn trên lịch đều được.
+ * Không dùng `<input type="datetime-local">` vì trình duyệt hiển thị nó theo
+ * locale của máy, máy tiếng Anh sẽ ra mm/dd/yyyy.
  * @param id - Id của ô ngày
  * @param label - Nhãn hiển thị
  * @param value - Giá trị dạng "YYYY-MM-DDTHH:mm"
  * @param onChange - Gọi với giá trị mới
- * @returns Cặp ô nhập ngày và giờ
+ * @returns Cặp ô nhập ngày giờ kèm nút mở lịch
  */
 export function DateTimeField({
   id,
@@ -40,6 +51,7 @@ export function DateTimeField({
 }: DateTimeFieldProps) {
   const [parts, setParts] = useState(() => splitLocalValue(value));
   const [emitted, setEmitted] = useState(value);
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   // Giá trị đến từ bên ngoài (mở lại form, hạn chót tự điền) thì nạp lại hai ô.
   // Còn giá trị do chính ô này vừa gửi đi thì giữ nguyên chữ người dùng đang gõ.
@@ -51,7 +63,7 @@ export function DateTimeField({
   const isIncomplete = Boolean(parts.date && parts.time) && emitted === "";
 
   /**
-   * Cập nhật một ô rồi báo giá trị ghép lại cho form.
+   * Cập nhật hai ô rồi báo giá trị ghép lại cho form.
    * @param next - Nội dung mới của hai ô
    */
   function update(next: { date: string; time: string }) {
@@ -60,6 +72,17 @@ export function DateTimeField({
     setParts(next);
     setEmitted(joined);
     onChange(joined);
+  }
+
+  /**
+   * Điền ngày vừa chọn trên lịch, giữ nguyên giờ đang có.
+   * @param picked - Ngày người dùng bấm trên lịch
+   */
+  function handlePick(picked: Date | undefined) {
+    if (!picked) return;
+
+    update({ ...parts, date: toDisplayDate(picked) });
+    setCalendarOpen(false);
   }
 
   return (
@@ -79,6 +102,30 @@ export function DateTimeField({
             update({ ...parts, date: maskDate(event.target.value) })
           }
         />
+        <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+          <PopoverTrigger
+            render={
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                aria-label={`${label} — chọn trên lịch`}
+              />
+            }
+          >
+            <CalendarDays />
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-auto p-0">
+            <Calendar
+              mode="single"
+              locale={vi}
+              autoFocus
+              defaultMonth={parseDisplayDate(parts.date)}
+              selected={parseDisplayDate(parts.date)}
+              onSelect={handlePick}
+            />
+          </PopoverContent>
+        </Popover>
         <Input
           id={`${id}-time`}
           required

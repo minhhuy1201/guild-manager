@@ -4,7 +4,9 @@ import {
   joinLocalValue,
   maskDate,
   maskTime,
+  parseDisplayDate,
   splitLocalValue,
+  toDisplayDate,
 } from "../date-parts";
 
 describe("splitLocalValue", () => {
@@ -55,6 +57,29 @@ describe("joinLocalValue", () => {
     expect(joinLocalValue("21/07/2026", "24:00")).toBe("");
     expect(joinLocalValue("21/07/2026", "20:60")).toBe("");
     expect(joinLocalValue("21/07/2026", "8:30")).toBe("");
+  });
+});
+
+describe("toDisplayDate", () => {
+  it("đổi Date thành chuỗi dd/MM/yyyy có số 0 đứng đầu", () => {
+    expect(toDisplayDate(new Date(2026, 6, 5))).toBe("05/07/2026");
+  });
+});
+
+describe("parseDisplayDate", () => {
+  it("đổi chuỗi hiển thị thành Date lúc 0h", () => {
+    expect(parseDisplayDate("21/07/2026")).toEqual(new Date(2026, 6, 21));
+  });
+
+  it("trả về undefined khi ngày chưa hợp lệ", () => {
+    expect(parseDisplayDate("21/07")).toBeUndefined();
+    expect(parseDisplayDate("31/02/2026")).toBeUndefined();
+  });
+
+  it("đi vòng tròn không đổi giá trị", () => {
+    const display = "29/02/2028";
+
+    expect(toDisplayDate(parseDisplayDate(display)!)).toBe(display);
   });
 });
 

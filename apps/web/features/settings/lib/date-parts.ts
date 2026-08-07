@@ -64,6 +64,34 @@ export function joinLocalValue(date: string, time: string): string {
 }
 
 /**
+ * Đổi một `Date` thành chuỗi hiển thị của ô ngày.
+ * @param date - Ngày cần hiển thị
+ * @returns Chuỗi dd/MM/yyyy theo giờ máy
+ */
+export function toDisplayDate(date: Date): string {
+  const pad = (value: number) => String(value).padStart(2, "0");
+
+  return `${pad(date.getDate())}/${pad(
+    date.getMonth() + 1
+  )}/${date.getFullYear()}`;
+}
+
+/**
+ * Đổi chuỗi trong ô ngày thành `Date` để calendar tô sáng đúng ngày.
+ * @param date - Chuỗi dd/MM/yyyy
+ * @returns `Date` lúc 0h, hoặc undefined nếu ngày chưa hợp lệ
+ */
+export function parseDisplayDate(date: string): Date | undefined {
+  const joined = joinLocalValue(date, "00:00");
+
+  if (!joined) return undefined;
+
+  const [year, month, day] = joined.slice(0, 10).split("-").map(Number);
+
+  return new Date(year, month - 1, day);
+}
+
+/**
  * Chèn dấu phân cách vào chuỗi người dùng đang gõ.
  * @param raw - Chuỗi thô trong ô nhập
  * @param separator - Dấu ngăn giữa các nhóm
