@@ -46,7 +46,7 @@
     --radius-3xl: calc(var(--radius) * 2.2);
     --radius-4xl: calc(var(--radius) * 2.6);
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+    --font-serif: var(--font-be-vietnam-pro), ui-sans-serif, system-ui, sans-serif;
     --radius: 0.5rem;
     --tracking-tighter: calc(var(--tracking-normal) - 0.05em);
     --tracking-tight: calc(var(--tracking-normal) - 0.025em);
@@ -107,8 +107,8 @@
     --sidebar-border: oklch(0.8699 0 0);
     --sidebar-ring: oklch(0.3776 0.1447 264.5076);
     --destructive-foreground: oklch(1.0000 0 0);
-    --font-sans: Inter, ui-sans-serif, sans-serif, system-ui;
-    --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+    --font-sans: var(--font-be-vietnam-pro), ui-sans-serif, system-ui, sans-serif;
+    --font-serif: var(--font-be-vietnam-pro), ui-sans-serif, system-ui, sans-serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     --shadow-color: #1a2137;
     --shadow-opacity: 0.05;
@@ -163,8 +163,8 @@
     --sidebar-ring: oklch(0.6497 0.1195 264.3295);
     --destructive-foreground: oklch(0.9851 0 0);
     --radius: 0.5rem;
-    --font-sans: Inter, ui-sans-serif, sans-serif, system-ui;
-    --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+    --font-sans: var(--font-be-vietnam-pro), ui-sans-serif, system-ui, sans-serif;
+    --font-serif: var(--font-be-vietnam-pro), ui-sans-serif, system-ui, sans-serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     --shadow-color: #000000;
     --shadow-opacity: 0.05;
