@@ -10,12 +10,13 @@ import {
 } from "@/features/attendance";
 import { ApiError } from "@/lib/api-client";
 import { isMemberDragData, toDragSource, toDropTarget } from "../lib/dnd-data";
-import { isDirty } from "../lib/formation-diff";
+import { isDayDirty } from "../lib/formation-diff";
 import { createMockFormation } from "../lib/mock-formation";
 import { presentCharacterIds } from "../lib/session-pool";
+import { resolveActiveMatchIndex } from "../lib/active-match";
 import { resolveActiveSessionId } from "../lib/active-session";
 import { isSessionEditable } from "../lib/session-status";
-import { fromWire, toWire } from "../lib/wire";
+import { fromWire, fromWireMatches, toWireMatches } from "../lib/wire";
 import { useFormationStore } from "../store/formation-store";
 import type { Assignment } from "../types/formation";
 import { useFormationWeeks } from "./use-formation-weeks";
@@ -30,8 +31,11 @@ const FORMATION = createMockFormation();
 /** HTTP status the backend returns when a battle is already locked. */
 const CONFLICT_STATUS = 409;
 
-/** Stable stand-in while no battle is selected, so memos do not rerun. */
-const EMPTY_ASSIGNMENT: Assignment = {};
+/** Stable stand-in while no battle day is selected, so memos do not rerun. */
+const EMPTY_MATCHES: Assignment[] = [{}];
+
+/** Trần số trận trong một ngày — khớp với `.max(2)` của Zod ở backend. */
+const MAX_MATCHES = 2;
 
 /**
  * Everything the formation screen needs, assembled in one place so the
@@ -60,6 +64,8 @@ export function useFormationScreen() {
   const setDraft = useFormationStore((s) => s.setDraft);
   const drop = useFormationStore((s) => s.drop);
   const storedActiveId = useFormationStore((s) => s.activeSessionId);
+  const setActiveMatch = useFormationStore((s) => s.setActiveMatch);
+  const storedMatchIndex = useFormationStore((s) => s.activeMatchIndex);
 
   const [activeCharacter, setActiveCharacter] = useState<Character | null>(null);
 
@@ -81,17 +87,17 @@ export function useFormationScreen() {
   const activeSessionId = resolveActiveSessionId(sessions, storedActiveId);
 
   const savedBySession = useMemo(() => {
-    const map: Record<string, Assignment> = {};
+    const map: Record<string, Assignment[]> = {};
 
     for (const session of sessions) {
-      map[session.sessionId] = fromWire(session.assignment, FORMATION.slots);
+      map[session.sessionId] = fromWireMatches(session.matches, FORMATION.slots);
     }
 
     return map;
   }, [sessions]);
 
-  const assignments = useMemo(() => {
-    const map: Record<string, Assignment> = {};
+  const matchesBySession = useMemo(() => {
+    const map: Record<string, Assignment[]> = {};
 
     for (const session of sessions) {
       map[session.sessionId] =
@@ -106,7 +112,7 @@ export function useFormationScreen() {
 
     for (const session of sessions) {
       if (
-        isDirty(drafts[session.sessionId], savedBySession[session.sessionId])
+        isDayDirty(drafts[session.sessionId], savedBySession[session.sessionId])
       ) {
         dirty.add(session.sessionId);
       }
@@ -128,12 +134,33 @@ export function useFormationScreen() {
     [records, activeSessionId]
   );
 
-  const assignment = useMemo(
+  const matches = useMemo(
     () =>
-      (activeSessionId ? assignments[activeSessionId] : null) ??
-      EMPTY_ASSIGNMENT,
-    [activeSessionId, assignments]
+      (activeSessionId ? matchesBySession[activeSessionId] : null) ??
+      EMPTY_MATCHES,
+    [activeSessionId, matchesBySession]
   );
+
+  const activeMatchIndex = resolveActiveMatchIndex(
+    matches.length,
+    storedMatchIndex
+  );
+
+  const assignment = matches[activeMatchIndex] ?? EMPTY_MATCHES[0];
+
+  // Ai đang được xếp ở trận kia — để đánh dấu trên thẻ trong pool.
+  const otherMatchIds = useMemo(() => {
+    const ids = new Set<string>();
+
+    matches.forEach((match, index) => {
+      if (index === activeMatchIndex) return;
+      for (const characterId of Object.values(match)) {
+        if (characterId) ids.add(characterId);
+      }
+    });
+
+    return ids;
+  }, [matches, activeMatchIndex]);
 
   const prefill = usePrefill(
     sessions,
@@ -188,7 +215,8 @@ export function useFormationScreen() {
 
     drop(
       activeSessionId,
-      assignment,
+      activeMatchIndex,
+      matches,
       toDragSource(dragData),
       dragData.characterId,
       toDropTarget(event.over?.data.current)
@@ -196,10 +224,10 @@ export function useFormationScreen() {
   }
 
   /**
-   * Persist the open battle's draft.
+   * Persist the open day's draft — both matches at once.
    * A failed save keeps the draft: the toolbar shows the message and the user
-   * can retry. A 409 means the battle just crossed its start time, so refetch
-   * to flip the screen into read-only.
+   * can retry. A 409 means the day just crossed its start time, so refetch to
+   * flip the screen into read-only.
    */
   async function handleSave() {
     if (!activeSessionId) return;
@@ -207,7 +235,7 @@ export function useFormationScreen() {
     try {
       await saveMutation.mutateAsync({
         sessionId: activeSessionId,
-        assignment: toWire(assignment),
+        matches: toWireMatches(matches),
       });
       clearDraft(activeSessionId);
     } catch (error) {
@@ -223,7 +251,11 @@ export function useFormationScreen() {
     isCurrentWeek,
     sessions,
     activeSessionId,
-    assignments,
+    matches,
+    matchCount: matches.length,
+    activeMatchIndex,
+    otherMatchIds,
+    canAddMatch: editable && matches.length < MAX_MATCHES,
     assignment,
     dirtySessionIds,
     dirty: activeSessionId ? dirtySessionIds.has(activeSessionId) : false,
@@ -253,9 +285,23 @@ export function useFormationScreen() {
     },
     setWeek,
     setActiveSession,
+    setActiveMatch,
+    addMatch: () => {
+      if (!activeSessionId || matches.length >= MAX_MATCHES) return;
+      // Clone nguyên vẹn, kể cả người đã báo nghỉ đang nằm trong ô — không bao
+      // giờ tự gỡ người sau lưng người dùng.
+      setDraft(activeSessionId, [...matches, { ...matches[0] }]);
+      setActiveMatch(matches.length);
+    },
+    removeMatch: () => {
+      if (!activeSessionId || matches.length < 2) return;
+      setDraft(activeSessionId, [matches[0]]);
+      setActiveMatch(0);
+    },
     clearActiveDraft: () => {
       if (!activeSessionId) return;
-      setDraft(activeSessionId, fromWire({}, FORMATION.slots));
+      const cleared = matches.map(() => fromWire({}, FORMATION.slots));
+      setDraft(activeSessionId, cleared);
     },
     resetActive: () => {
       if (!activeSessionId) return;

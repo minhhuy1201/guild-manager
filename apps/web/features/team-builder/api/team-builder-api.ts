@@ -8,12 +8,12 @@ import type {
   WireAssignment,
 } from "../types/session-formation";
 
-/** Payload lưu đội hình của một trận. */
+/** Payload lưu đội hình cả ngày. */
 export interface SaveFormationInput {
-  /** ID trận cần lưu */
+  /** ID ngày đánh cần lưu */
   sessionId: string;
-  /** Đội hình dạng slotId → characterId, ô trống đã bị bỏ khoá */
-  assignment: WireAssignment;
+  /** Đội hình từng trận, ô trống đã bị bỏ khoá */
+  matches: WireAssignment[];
 }
 
 /**
@@ -63,10 +63,10 @@ export async function fetchFormations(
 }
 
 /**
- * Ghi đè đội hình của một trận.
- * @param input - sessionId và assignment cần lưu
- * @returns Trận kèm đội hình vừa ghi
- * @throws ApiError khi chưa đăng nhập, trận đã khoá (409), hoặc backend từ chối
+ * Ghi đè đội hình cả ngày (1 hoặc 2 trận).
+ * @param input - sessionId và đội hình từng trận cần lưu
+ * @returns Ngày đánh kèm đội hình vừa ghi
+ * @throws ApiError khi chưa đăng nhập, ngày đã khoá (409), hoặc backend từ chối
  */
 export async function saveFormation(
   input: SaveFormationInput
@@ -75,7 +75,7 @@ export async function saveFormation(
     `/team-builder/formations/${encodeURIComponent(input.sessionId)}`,
     {
       method: "PUT",
-      body: JSON.stringify({ assignment: input.assignment }),
+      body: JSON.stringify({ matches: input.matches }),
       headers: await authHeader(),
     }
   );

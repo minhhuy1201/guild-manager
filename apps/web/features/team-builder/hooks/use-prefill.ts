@@ -32,7 +32,9 @@ export function usePrefill(
   const active = sessions.find(
     (session) => session.sessionId === activeSessionId
   );
-  const hasSaved = Boolean(active && Object.keys(active.assignment).length > 0);
+  const hasSaved = Boolean(
+    active && active.matches.some((match) => Object.keys(match).length > 0)
+  );
   const hasDraft = Boolean(activeSessionId && drafts[activeSessionId]);
 
   const proposal = useMemo(() => {
@@ -51,7 +53,8 @@ export function usePrefill(
 
   useEffect(() => {
     if (!activeSessionId || !proposal) return;
-    setDraft(activeSessionId, proposal.assignment);
+    // Ngày mới bắt đầu với một trận; muốn trận 2 thì bấm nút "Tạo trận 2".
+    setDraft(activeSessionId, [proposal.assignment]);
   }, [activeSessionId, proposal, setDraft]);
 
   return proposal;
