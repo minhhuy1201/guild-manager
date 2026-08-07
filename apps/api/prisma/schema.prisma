@@ -36,13 +36,13 @@ enum AttendanceStatus {
 
 /// Nhân vật trong bang hội.
 model Character {
-  /// ID trong game — dùng luôn làm khóa chính, không sinh thêm id nội bộ.
+  /// Khoá chính do hệ thống sinh: slug tên + hậu tố ngẫu nhiên ("meo-beo-k7ma3x").
   id         String     @id
   /// Tên hiển thị của nhân vật.
   name       String
   guildClass GuildClass
-  /// Hash mật khẩu điểm danh riêng của nhân vật (không bao giờ lưu plaintext).
-  passwordHash String
+  /// Mật khẩu điểm danh dạng plaintext — quản trị viên cấp và xem lại được.
+  password   String
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
 

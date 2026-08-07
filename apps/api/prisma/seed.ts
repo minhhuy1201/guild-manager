@@ -4,12 +4,10 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { GuildClass } from '@guild/shared/enums';
 
 import { PrismaClient } from '../src/generated/prisma/client';
-import { hashPassword } from '../src/shared/utils/password.util';
 
 /**
  * Danh sách nhân vật mẫu — giữ khớp với mock data của frontend
  * (apps/web/features/attendance/api/mock-data.ts) để FE chuyển sang API thật không lệch dữ liệu.
- * Mật khẩu ở đây là plaintext mẫu, seed sẽ hash trước khi ghi vào database.
  */
 const CHARACTERS: {
   /** ID trong game — cũng là khóa chính của nhân vật. */
@@ -59,21 +57,20 @@ async function main(): Promise<void> {
   const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
 
   try {
-    const rows = await Promise.all(
-      CHARACTERS.map(async (character) => ({
-        id: character.id,
-        name: character.name,
-        guildClass: character.guildClass,
-        passwordHash: await hashPassword(character.password),
-      })),
-    );
+    const rows = CHARACTERS.map((character) => ({
+      id: character.id,
+      name: character.name,
+      guildClass: character.guildClass,
+      password: character.password,
+    }));
 
     await Promise.all(
       rows.map((row) =>
         prisma.character.upsert({
           where: { id: row.id },
           create: row,
-          update: { name: row.name, guildClass: row.guildClass },
+          // Ghi đè cả mật khẩu: migration đã cấp mật khẩu ngẫu nhiên, chạy seed là về lại mẫu.
+          update: row,
         }),
       ),
     );

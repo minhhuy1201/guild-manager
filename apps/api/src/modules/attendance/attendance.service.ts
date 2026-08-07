@@ -10,7 +10,6 @@ import type { MarkAttendanceInput } from '@guild/shared/schemas';
 
 import { ADMIN_ROLE, type JwtPayload } from '@/common';
 import { PrismaService } from '@/infrastructure/prisma/prisma.service';
-import { verifyPassword } from '@/shared/utils/password.util';
 import {
   BattleSessionsService,
   isDeadlinePassed,
@@ -96,7 +95,7 @@ export class AttendanceService {
     }
 
     if (!isAdmin) {
-      await this.verifyCharacterPassword(password, character.passwordHash);
+      this.verifyCharacterPassword(password, character.password);
     }
 
     const session = await this.battleSessions.findById(sessionId);
@@ -129,21 +128,19 @@ export class AttendanceService {
   /**
    * Kiểm tra mật khẩu điểm danh của một nhân vật.
    * @param password - Mật khẩu người dùng nhập (undefined khi request không gửi)
-   * @param passwordHash - Hash mật khẩu lưu trong database
-   * @returns Promise hoàn tất khi mật khẩu hợp lệ
+   * @param expected - Mật khẩu lưu trong database
    * @throws BadRequestException khi request không kèm mật khẩu
    * @throws UnauthorizedException khi mật khẩu sai
    */
-  private async verifyCharacterPassword(
+  private verifyCharacterPassword(
     password: string | undefined,
-    passwordHash: string,
-  ): Promise<void> {
+    expected: string,
+  ): void {
     if (!password?.trim()) {
       throw new BadRequestException('Vui lòng nhập mật khẩu.');
     }
 
-    const isPasswordValid = await verifyPassword(password.trim(), passwordHash);
-    if (!isPasswordValid) {
+    if (password.trim() !== expected) {
       throw new UnauthorizedException('Sai mật khẩu thành viên.');
     }
   }

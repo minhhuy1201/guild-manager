@@ -8,7 +8,6 @@ import { AttendanceStatus } from '@guild/shared/enums';
 import { ADMIN_ROLE, TOKEN_TYPE, type JwtPayload } from '@/common';
 import { PrismaService } from '@/infrastructure/prisma/prisma.service';
 import { BattleSessionsService } from '@/modules/battle-sessions/battle-sessions.module';
-import { hashPassword } from '@/shared/utils/password.util';
 import { AttendanceService } from '../attendance.service';
 
 /**
@@ -75,11 +74,6 @@ describe('AttendanceService.mark', () => {
     findById: jest.Mock;
     getActiveWeekStart: jest.Mock;
   };
-  let passwordHash: string;
-
-  beforeAll(async () => {
-    passwordHash = await hashPassword(PASSWORD);
-  });
 
   beforeEach(() => {
     prisma = {
@@ -87,7 +81,7 @@ describe('AttendanceService.mark', () => {
         findUnique: jest.fn().mockResolvedValue({
           id: CHARACTER_ID,
           name: 'Mèo Béo',
-          passwordHash,
+          password: PASSWORD,
         }),
       },
       attendanceRecord: {

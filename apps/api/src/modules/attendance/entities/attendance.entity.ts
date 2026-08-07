@@ -1,11 +1,11 @@
 import type { AttendanceStatus, GuildClass } from '@guild/shared/enums';
 
 /**
- * Nhân vật trả về cho client.
- * Không bao giờ chứa `passwordHash` — mật khẩu chỉ dùng để verify phía server.
+ * Nhân vật trả về cho client ở luồng điểm danh công khai.
+ * Không bao giờ chứa `password` — mật khẩu chỉ quản trị viên xem được, qua module characters.
  */
 export interface CharacterEntity {
-  /** ID trong game — khóa chính của nhân vật. */
+  /** Khoá chính do hệ thống sinh. */
   id: string;
   name: string;
   guildClass: GuildClass;
