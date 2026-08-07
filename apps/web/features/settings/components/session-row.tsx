@@ -4,6 +4,11 @@ import { Pencil, Swords, Trash2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { getSessionSubtitle, type BattleSession } from "@/features/attendance";
 import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -19,7 +24,8 @@ interface SessionRowProps {
 
 /**
  * Một trận trong danh sách thiết lập: nhãn, đối thủ, hạn chót và hai nút thao tác.
- * Guild War do hệ thống sinh nên chỉ sửa được giờ, không có nút xoá.
+ * Guild War luôn rơi vào thứ 7 với hạn chót cố định nên không sửa cũng không xoá được,
+ * hàng của nó chỉ để xem.
  * @param session - Trận cần hiển thị
  * @param onEdit - Gọi khi bấm Sửa
  * @param onDelete - Gọi khi bấm Xoá
@@ -52,23 +58,41 @@ export function SessionRow({ session, onEdit, onDelete }: SessionRowProps) {
         </div>
       </div>
 
-      <div className="flex items-center gap-1">
-        <Button variant="ghost" size="sm" onClick={() => onEdit(session)}>
-          <Pencil className="size-4" />
-          Sửa
-        </Button>
-        {!session.isGuildWar && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-destructive"
-            onClick={() => onDelete(session)}
-          >
-            <Trash2 className="size-4" />
-            Xoá
-          </Button>
-        )}
-      </div>
+      {!session.isGuildWar && (
+        <div className="flex items-center gap-1">
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() => onEdit(session)}
+                />
+              }
+            >
+              <Pencil className="size-4" />
+              <span className="sr-only">Sửa</span>
+            </TooltipTrigger>
+            <TooltipContent>Sửa</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="text-destructive"
+                  onClick={() => onDelete(session)}
+                />
+              }
+            >
+              <Trash2 className="size-4" />
+              <span className="sr-only">Xoá</span>
+            </TooltipTrigger>
+            <TooltipContent>Xoá</TooltipContent>
+          </Tooltip>
+        </div>
+      )}
     </div>
   );
 }
