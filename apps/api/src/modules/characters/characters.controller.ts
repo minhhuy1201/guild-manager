@@ -1,0 +1,87 @@
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
+
+import { JwtAuthGuard } from '@/common';
+import { CharactersService } from './characters.service';
+import { CreateCharacterDto, UpdateCharacterDto } from './dto/character.dto';
+import type { MemberEntity } from './entities/character.entity';
+
+/**
+ * Quản lý thành viên — toàn bộ endpoint đều trả về mật khẩu điểm danh,
+ * nên guard đặt ở cấp controller chứ không đặt lẻ từng route.
+ */
+@ApiTags('characters')
+@Controller('characters')
+@UseGuards(JwtAuthGuard)
+export class CharactersController {
+  constructor(private readonly characters: CharactersService) {}
+
+  /**
+   * Danh sách thành viên kèm mật khẩu.
+   * @returns Mảng thành viên sắp theo tên
+   */
+  @Get()
+  @ApiOperation({ summary: 'Danh sách thành viên kèm mật khẩu' })
+  list(): Promise<MemberEntity[]> {
+    return this.characters.list();
+  }
+
+  /**
+   * Thêm một thành viên.
+   * @param body - Tên và lưu phái
+   * @returns Thành viên vừa tạo, kèm mật khẩu vừa cấp
+   */
+  @Post()
+  @ApiOperation({ summary: 'Thêm một thành viên' })
+  create(@Body() body: CreateCharacterDto): Promise<MemberEntity> {
+    return this.characters.create(body);
+  }
+
+  /**
+   * Sửa tên hoặc lưu phái của một thành viên.
+   * @param id - Id thành viên
+   * @param body - Các field cần đổi
+   * @returns Thành viên sau khi sửa
+   */
+  @Patch(':id')
+  @ApiOperation({ summary: 'Sửa một thành viên' })
+  update(
+    @Param('id') id: string,
+    @Body() body: UpdateCharacterDto,
+  ): Promise<MemberEntity> {
+    return this.characters.update(id, body);
+  }
+
+  /**
+   * Cấp lại mật khẩu điểm danh cho một thành viên.
+   * @param id - Id thành viên
+   * @returns Thành viên kèm mật khẩu mới
+   */
+  @Post(':id/password')
+  @ApiOperation({ summary: 'Cấp lại mật khẩu cho một thành viên' })
+  resetPassword(@Param('id') id: string): Promise<MemberEntity> {
+    return this.characters.resetPassword(id);
+  }
+
+  /**
+   * Xoá một thành viên cùng toàn bộ lịch sử điểm danh và đội hình của họ.
+   * @param id - Id thành viên
+   * @returns Promise hoàn tất khi đã xoá
+   */
+  @Delete(':id')
+  @HttpCode(204)
+  @ApiOperation({ summary: 'Xoá một thành viên' })
+  remove(@Param('id') id: string): Promise<void> {
+    return this.characters.remove(id);
+  }
+}
