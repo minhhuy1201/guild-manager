@@ -201,7 +201,7 @@ describe('TeamBuilderService.getWeeks', () => {
     await service.getWeeks(WEDNESDAY);
 
     expect(prisma.formationMatch.deleteMany).toHaveBeenCalledWith({
-      where: { session: { weekStart: { lt: vn('2026-05-28T12:00') } } },
+      where: { session: { weekStart: { lt: vn('2026-05-27T12:00') } } },
     });
   });
 
