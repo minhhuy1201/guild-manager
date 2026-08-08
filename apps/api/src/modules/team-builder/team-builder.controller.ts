@@ -47,9 +47,9 @@ export class TeamBuilderController {
   }
 
   /**
-   * Ghi đè đội hình cả ngày (1 hoặc 2 trận).
+   * Ghi đè đội hình cả ngày (1 hoặc 2 trận), kèm ghi chú theo ô.
    * @param sessionId - ID ngày đánh cần lưu
-   * @param body - matches: đội hình từng trận, theo thứ tự
+   * @param body - matches: đội hình và ghi chú từng trận, theo thứ tự
    * @returns Ngày đánh kèm đội hình vừa ghi
    */
   @Put('formations/:sessionId')

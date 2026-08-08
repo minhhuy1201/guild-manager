@@ -69,13 +69,26 @@ describe('TeamBuilderService.getFormations', () => {
                     {
                       matchIndex: 1,
                       slots: [
-                        { slotId: 'team-1-pos-1', characterId: 'char-1' },
+                        {
+                          slotId: 'team-1-pos-1',
+                          characterId: 'char-1',
+                          note: 'giữ buồng',
+                        },
+                        {
+                          slotId: 'team-1-pos-4',
+                          characterId: null,
+                          note: 'chừa cho X',
+                        },
                       ],
                     },
                     {
                       matchIndex: 2,
                       slots: [
-                        { slotId: 'team-1-pos-1', characterId: 'char-2' },
+                        {
+                          slotId: 'team-1-pos-1',
+                          characterId: 'char-2',
+                          note: null,
+                        },
                       ],
                     },
                   ]
@@ -130,9 +143,20 @@ describe('TeamBuilderService.getFormations', () => {
     const saturday = result.find((item) => item.sessionId === 'session-sat');
 
     expect(saturday?.matches).toEqual([
-      { 'team-1-pos-1': 'char-1' },
-      { 'team-1-pos-1': 'char-2' },
+      {
+        slots: { 'team-1-pos-1': 'char-1' },
+        notes: { 'team-1-pos-1': 'giữ buồng', 'team-1-pos-4': 'chừa cho X' },
+      },
+      { slots: { 'team-1-pos-1': 'char-2' }, notes: {} },
     ]);
+  });
+
+  it('hàng chỉ có ghi chú không lọt vào slots', async () => {
+    const result = await service.getFormations(undefined, WEDNESDAY);
+    const saturday = result.find((item) => item.sessionId === 'session-sat');
+
+    expect(saturday?.matches[0].slots).not.toHaveProperty('team-1-pos-4');
+    expect(saturday?.matches[0].notes['team-1-pos-4']).toBe('chừa cho X');
   });
 
   it('đảm bảo trận của tuần đang mở tồn tại trước khi đọc', async () => {
@@ -242,7 +266,13 @@ interface CreateMatchArgs {
   data: {
     sessionId: string;
     matchIndex: number;
-    slots: { create: { slotId: string; characterId: string }[] };
+    slots: {
+      create: {
+        slotId: string;
+        characterId: string | null;
+        note: string | null;
+      }[];
+    };
   };
 }
 
@@ -296,7 +326,10 @@ describe('TeamBuilderService.saveFormation', () => {
   it('lưu hai trận thành hai FormationMatch, matchIndex 1 và 2', async () => {
     await service.saveFormation(
       'session-thu',
-      [{ 'team-1-pos-1': 'char-1' }, { 'team-1-pos-1': 'char-2' }],
+      [
+        { slots: { 'team-1-pos-1': 'char-1' }, notes: {} },
+        { slots: { 'team-1-pos-1': 'char-2' }, notes: {} },
+      ],
       WEDNESDAY,
     );
 
@@ -304,13 +337,21 @@ describe('TeamBuilderService.saveFormation', () => {
     expect(tx.formationMatch.create.mock.calls[0][0].data).toEqual({
       sessionId: 'session-thu',
       matchIndex: 1,
-      slots: { create: [{ slotId: 'team-1-pos-1', characterId: 'char-1' }] },
+      slots: {
+        create: [
+          { slotId: 'team-1-pos-1', characterId: 'char-1', note: null },
+        ],
+      },
     });
     expect(tx.formationMatch.create.mock.calls[1][0].data.matchIndex).toBe(2);
   });
 
   it('xoá sạch đội hình cũ của ngày trước khi ghi lại', async () => {
-    await service.saveFormation('session-thu', [{}], WEDNESDAY);
+    await service.saveFormation(
+      'session-thu',
+      [{ slots: {}, notes: {} }],
+      WEDNESDAY,
+    );
 
     expect(tx.formationMatch.deleteMany).toHaveBeenCalledWith({
       where: { sessionId: 'session-thu' },
@@ -318,7 +359,11 @@ describe('TeamBuilderService.saveFormation', () => {
   });
 
   it('lưu lại mảng một phần tử thì chỉ còn một trận', async () => {
-    await service.saveFormation('session-thu', [{}], WEDNESDAY);
+    await service.saveFormation(
+      'session-thu',
+      [{ slots: {}, notes: {} }],
+      WEDNESDAY,
+    );
 
     expect(tx.formationMatch.create).toHaveBeenCalledTimes(1);
   });
@@ -326,18 +371,74 @@ describe('TeamBuilderService.saveFormation', () => {
   it('bỏ characterId không còn trong bảng Character', async () => {
     const result = await service.saveFormation(
       'session-thu',
-      [{ 'team-1-pos-1': 'char-1', 'team-1-pos-2': 'char-99' }],
+      [
+        {
+          slots: { 'team-1-pos-1': 'char-1', 'team-1-pos-2': 'char-99' },
+          notes: {},
+        },
+      ],
       WEDNESDAY,
     );
 
     expect(tx.formationMatch.create.mock.calls[0][0].data.slots.create).toEqual(
-      [{ slotId: 'team-1-pos-1', characterId: 'char-1' }],
+      [{ slotId: 'team-1-pos-1', characterId: 'char-1', note: null }],
     );
-    expect(result.matches).toEqual([{ 'team-1-pos-1': 'char-1' }]);
+    expect(result.matches).toEqual([
+      { slots: { 'team-1-pos-1': 'char-1' }, notes: {} },
+    ]);
+  });
+
+  it('ô chỉ có ghi chú mà chưa xếp ai vẫn được lưu', async () => {
+    await service.saveFormation(
+      'session-thu',
+      [{ slots: {}, notes: { 'team-1-pos-4': 'chừa cho X' } }],
+      WEDNESDAY,
+    );
+
+    expect(tx.formationMatch.create.mock.calls[0][0].data.slots.create).toEqual(
+      [{ slotId: 'team-1-pos-4', characterId: null, note: 'chừa cho X' }],
+    );
+  });
+
+  it('ô vừa có người vừa có ghi chú chỉ tạo một hàng', async () => {
+    await service.saveFormation(
+      'session-thu',
+      [
+        {
+          slots: { 'team-1-pos-1': 'char-1' },
+          notes: { 'team-1-pos-1': 'giữ buồng' },
+        },
+      ],
+      WEDNESDAY,
+    );
+
+    expect(tx.formationMatch.create.mock.calls[0][0].data.slots.create).toEqual(
+      [{ slotId: 'team-1-pos-1', characterId: 'char-1', note: 'giữ buồng' }],
+    );
+  });
+
+  it('characterId không còn trong bang bị lọc nhưng ghi chú của ô đó vẫn giữ', async () => {
+    const result = await service.saveFormation(
+      'session-thu',
+      [
+        {
+          slots: { 'team-1-pos-2': 'char-99' },
+          notes: { 'team-1-pos-2': 'vào sau' },
+        },
+      ],
+      WEDNESDAY,
+    );
+
+    expect(tx.formationMatch.create.mock.calls[0][0].data.slots.create).toEqual(
+      [{ slotId: 'team-1-pos-2', characterId: null, note: 'vào sau' }],
+    );
+    expect(result.matches).toEqual([
+      { slots: {}, notes: { 'team-1-pos-2': 'vào sau' } },
+    ]);
   });
 
   it('gửi hai lần cùng payload cho cùng kết quả', async () => {
-    const matches = [{ 'team-1-pos-1': 'char-1' }];
+    const matches = [{ slots: { 'team-1-pos-1': 'char-1' }, notes: {} }];
 
     const first = await service.saveFormation(
       'session-thu',
@@ -357,7 +458,7 @@ describe('TeamBuilderService.saveFormation', () => {
     prisma.battleSession.findUnique.mockResolvedValue(null);
 
     await expect(
-      service.saveFormation('khong-co', [{}], WEDNESDAY),
+      service.saveFormation('khong-co', [{ slots: {}, notes: {} }], WEDNESDAY),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 
@@ -371,7 +472,11 @@ describe('TeamBuilderService.saveFormation', () => {
     });
 
     await expect(
-      service.saveFormation('session-tue', [{}], WEDNESDAY),
+      service.saveFormation(
+        'session-tue',
+        [{ slots: {}, notes: {} }],
+        WEDNESDAY,
+      ),
     ).rejects.toBeInstanceOf(ConflictException);
   });
 });

@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import type { AssignmentInput } from '@guild/shared/schemas';
+import type { MatchInput } from '@guild/shared/schemas';
 
 import { PrismaService } from '@/infrastructure/prisma/prisma.service';
 import {
@@ -12,6 +12,7 @@ import {
 } from '@/modules/battle-sessions/battle-sessions.module';
 import type {
   FormationWeekEntity,
+  MatchFormation,
   SessionFormationEntity,
 } from './entities/formation.entity';
 
@@ -20,6 +21,33 @@ const RETENTION_DAYS = 56;
 
 /** Số mili giây trong một ngày. */
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Một hàng FormationSlot sắp ghi xuống. */
+interface SlotRow {
+  slotId: string;
+  characterId: string | null;
+  note: string | null;
+}
+
+/**
+ * Dựng các hàng FormationSlot của một trận.
+ * Một hàng tồn tại khi ô CÓ NGƯỜI hoặc CÓ GHI CHÚ, nên phải lấy hợp của hai tập
+ * khoá — duyệt riêng slots sẽ đánh rơi ô chỉ có ghi chú.
+ * @param match - Đội hình và ghi chú của một trận, characterId đã lọc sạch
+ * @returns Mảng hàng để đưa vào nested create của Prisma
+ */
+function buildSlotRows(match: MatchFormation): SlotRow[] {
+  const slotIds = new Set([
+    ...Object.keys(match.slots),
+    ...Object.keys(match.notes),
+  ]);
+
+  return [...slotIds].map((slotId) => ({
+    slotId,
+    characterId: match.slots[slotId] ?? null,
+    note: match.notes[slotId] ?? null,
+  }));
+}
 
 @Injectable()
 export class TeamBuilderService {
@@ -106,11 +134,18 @@ export class TeamBuilderService {
       dateTime: session.dateTime.toISOString(),
       isGuildWar: session.isGuildWar,
       locked: session.dateTime.getTime() < now.getTime(),
-      matches: session.formationMatches.map((match) =>
-        Object.fromEntries(
-          match.slots.map((slot) => [slot.slotId, slot.characterId]),
+      matches: session.formationMatches.map((match) => ({
+        slots: Object.fromEntries(
+          match.slots
+            .filter((slot) => slot.characterId !== null)
+            .map((slot) => [slot.slotId, slot.characterId as string]),
         ),
-      ),
+        notes: Object.fromEntries(
+          match.slots
+            .filter((slot) => slot.note !== null)
+            .map((slot) => [slot.slotId, slot.note as string]),
+        ),
+      })),
     }));
   }
 
@@ -119,7 +154,7 @@ export class TeamBuilderService {
    * kết quả. Xoá rồi tạo lại thay vì so từng ô: nhiều nhất ~120 hàng, và nhờ vậy
    * "bỏ trận 2" chỉ là gửi mảng một phần tử, không cần endpoint riêng.
    * @param sessionId - ID ngày đánh cần lưu đội hình
-   * @param matches - Đội hình từng trận, theo thứ tự trận 1 → trận 2
+   * @param matches - Đội hình và ghi chú từng trận, theo thứ tự trận 1 → trận 2
    * @param now - Thời điểm hiện tại (cho phép truyền vào để test)
    * @returns Ngày đánh kèm đội hình vừa ghi
    * @throws NotFoundException khi không có ngày đánh nào mang sessionId đó
@@ -127,7 +162,7 @@ export class TeamBuilderService {
    */
   async saveFormation(
     sessionId: string,
-    matches: AssignmentInput[],
+    matches: MatchInput[],
     now: Date = new Date(),
   ): Promise<SessionFormationEntity> {
     const session = await this.prisma.battleSession.findUnique({
@@ -142,29 +177,27 @@ export class TeamBuilderService {
     }
 
     // Lọc TRƯỚC khi ghi: một nhân vật vừa bị xoá khỏi bang mà còn trong nháp sẽ
-    // làm cả câu insert vỡ vì khoá ngoại.
+    // làm cả câu insert vỡ vì khoá ngoại. Ghi chú của ô đó thì giữ nguyên —
+    // ghi chú mô tả vị trí, không mô tả người.
     const knownIds = await this.loadCharacterIds();
-    const cleaned = matches.map((assignment) =>
-      Object.fromEntries(
-        Object.entries(assignment).filter(([, characterId]) =>
+    const cleaned: MatchFormation[] = matches.map((match) => ({
+      slots: Object.fromEntries(
+        Object.entries(match.slots).filter(([, characterId]) =>
           knownIds.has(characterId),
         ),
       ),
-    );
+      notes: match.notes,
+    }));
 
     await this.prisma.$transaction(async (tx) => {
       await tx.formationMatch.deleteMany({ where: { sessionId } });
 
-      for (const [index, assignment] of cleaned.entries()) {
+      for (const [index, match] of cleaned.entries()) {
         await tx.formationMatch.create({
           data: {
             sessionId,
             matchIndex: index + 1,
-            slots: {
-              create: Object.entries(assignment).map(
-                ([slotId, characterId]) => ({ slotId, characterId }),
-              ),
-            },
+            slots: { create: buildSlotRows(match) },
           },
         });
       }

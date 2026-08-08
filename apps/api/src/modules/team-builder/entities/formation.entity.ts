@@ -1,3 +1,11 @@
+/** Đội hình và ghi chú của một trận trong ngày. */
+export interface MatchFormation {
+  /** slotId → characterId. Ô trống không có khoá. */
+  slots: Record<string, string>;
+  /** slotId → ghi chú. Ô không ghi gì không có khoá. */
+  notes: Record<string, string>;
+}
+
 /** Một trận kèm đội hình đã lưu của nó, trả về cho client. */
 export interface SessionFormationEntity {
   /** ID trận đánh */
@@ -13,11 +21,10 @@ export interface SessionFormationEntity {
   /** Trận đã đánh xong — không cho sửa đội hình nữa */
   locked: boolean;
   /**
-   * Đội hình từng trận trong ngày, theo thứ tự trận 1 → trận 2.
-   * Mỗi phần tử là slotId → characterId, ô trống không có khoá.
-   * Mảng rỗng nghĩa là ngày này chưa xếp gì.
+   * Từng trận trong ngày, theo thứ tự trận 1 → trận 2.
+   * Mảng rỗng nghĩa là ngày này chưa xếp gì và cũng chưa ghi chú gì.
    */
-  matches: Record<string, string>[];
+  matches: MatchFormation[];
 }
 
 /** Một tuần còn dữ liệu đội hình. */
