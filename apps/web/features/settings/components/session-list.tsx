@@ -2,7 +2,7 @@
 
 import { CalendarPlus } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { CreateButton } from "@/components/shared/action-buttons";
 import type { BattleSession } from "@/features/attendance";
 import { SessionRow } from "./session-row";
 
@@ -51,10 +51,13 @@ export function SessionList({
         </div>
       )}
 
-      <Button variant="outline" className="self-start" onClick={onAdd}>
-        <CalendarPlus className="size-4" />
-        Thêm trận scrim
-      </Button>
+      <CreateButton
+        label="Thêm trận scrim"
+        icon={<CalendarPlus className="size-4" />}
+        variant="outline"
+        className="self-start"
+        onClick={onAdd}
+      />
     </div>
   );
 }

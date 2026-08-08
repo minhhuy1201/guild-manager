@@ -35,6 +35,8 @@ apps/web/
 │   ├── shared/                 # Wrapper tái sử dụng cross-feature + app shell
 │   │                           #   site-header.tsx, main-nav.tsx, status-badge...
 │   └── providers.tsx           # QueryClientProvider (TanStack Query)
+├── hooks/                      # Hook dùng chung cross-feature
+│   └── use-table-pagination.ts # State phân trang client cho các bảng
 ├── config/
 │   ├── routes.ts               # ROUTES — hằng đường dẫn dùng cho nav/điều hướng
 │   └── api.ts                  # API_BASE_URL (NEXT_PUBLIC_API_URL)
@@ -51,6 +53,7 @@ apps/web/
 - UI/client state (bộ lọc, modal...) → **Zustand** trong `features/<feature>/store`.
 - `app/` giữ mỏng: mọi logic nằm trong `features/`.
 - Component shadcn → luôn ở `components/ui/`, không sửa trực tiếp file generate. Biến thể riêng (vd tone badge success/danger) → wrap ở `components/shared/`.
+- Nút thêm/sửa/xoá → dùng `components/shared/action-buttons.tsx`: `CreateButton` (nút có chữ) cho thêm mới, `RowActions` + `EditAction`/`DeleteAction` (nút icon kèm tooltip) cho thao tác trên từng dòng. Không tự dựng lại `Button` + icon rời.
 - Không import trực tiếp file nội bộ của feature khác — chỉ qua `index.ts` của feature đó.
 - Phân quyền: trạng thái đăng nhập nằm ở **cookie httpOnly ký HMAC** (`AUTH_SECRET`), không lưu ở client.
   Ẩn/hiện nav chỉ là UI; chặn thật nằm ở `proxy.ts` + kiểm tra `getSession()` trong page server.

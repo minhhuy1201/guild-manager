@@ -1,14 +1,13 @@
 "use client";
 
-import { Pencil, Swords, Trash2 } from "lucide-react";
+import { Swords } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  DeleteAction,
+  EditAction,
+  RowActions,
+} from "@/components/shared/action-buttons";
+import { Badge } from "@/components/ui/badge";
 import { getSessionSubtitle, type BattleSession } from "@/features/attendance";
 import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -59,39 +58,10 @@ export function SessionRow({ session, onEdit, onDelete }: SessionRowProps) {
       </div>
 
       {!session.isGuildWar && (
-        <div className="flex items-center gap-1">
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={() => onEdit(session)}
-                />
-              }
-            >
-              <Pencil className="size-4" />
-              <span className="sr-only">Sửa</span>
-            </TooltipTrigger>
-            <TooltipContent>Sửa</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  className="text-destructive"
-                  onClick={() => onDelete(session)}
-                />
-              }
-            >
-              <Trash2 className="size-4" />
-              <span className="sr-only">Xoá</span>
-            </TooltipTrigger>
-            <TooltipContent>Xoá</TooltipContent>
-          </Tooltip>
-        </div>
+        <RowActions>
+          <EditAction onClick={() => onEdit(session)} />
+          <DeleteAction onClick={() => onDelete(session)} />
+        </RowActions>
       )}
     </div>
   );

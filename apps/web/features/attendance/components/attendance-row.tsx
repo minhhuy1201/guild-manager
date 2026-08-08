@@ -1,16 +1,15 @@
 "use client";
 
-import { Check, Pencil, X } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { AttendanceStatus } from "@shared/enums";
 
-import { StatusIcon } from "@/components/shared/status-icon";
-import { Button } from "@/components/ui/button";
-import { TableCell, TableRow } from "@/components/ui/table";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  EditAction,
+  RowActionButton,
+  RowActions,
+} from "@/components/shared/action-buttons";
+import { StatusIcon } from "@/components/shared/status-icon";
+import { TableCell, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import type {
   AttendanceRecord,
@@ -94,50 +93,25 @@ export function AttendanceRow({
 
       <TableCell className="w-28 text-right">
         {isEditing ? (
-          <div className="inline-flex gap-1.5">
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Button variant="ghost" size="icon-sm" onClick={onCancel} />
-                }
-              >
-                <X className="size-4" />
-                <span className="sr-only">Huỷ</span>
-              </TooltipTrigger>
-              <TooltipContent>Huỷ</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Button
-                    size="icon-sm"
-                    onClick={() => onConfirm(character)}
-                  />
-                }
-              >
-                <Check className="size-4" />
-                <span className="sr-only">Xác nhận</span>
-              </TooltipTrigger>
-              <TooltipContent>Xác nhận</TooltipContent>
-            </Tooltip>
-          </div>
+          <RowActions className="gap-1.5">
+            <RowActionButton
+              label="Huỷ"
+              icon={<X className="size-4" />}
+              onClick={onCancel}
+            />
+            <RowActionButton
+              label="Xác nhận"
+              icon={<Check className="size-4" />}
+              variant="default"
+              onClick={() => onConfirm(character)}
+            />
+          </RowActions>
         ) : (
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  disabled={allLocked}
-                  onClick={() => onStartEdit(character)}
-                />
-              }
-            >
-              <Pencil className="size-4" />
-              <span className="sr-only">Chỉnh sửa</span>
-            </TooltipTrigger>
-            <TooltipContent>Chỉnh sửa</TooltipContent>
-          </Tooltip>
+          <EditAction
+            label="Chỉnh sửa"
+            disabled={allLocked}
+            onClick={() => onStartEdit(character)}
+          />
         )}
       </TableCell>
     </TableRow>

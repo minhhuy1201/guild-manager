@@ -1,16 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Copy, Eye, EyeOff, Pencil, Trash2 } from "lucide-react";
+import { Check, Copy, Eye, EyeOff } from "lucide-react";
 
-import { GUILD_CLASS_LABEL } from "@shared/enums";
-
+import {
+  DeleteAction,
+  EditAction,
+  RowActions,
+} from "@/components/shared/action-buttons";
+import { GuildClassIcon } from "@/components/shared/guild-class-icon";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import type { Member } from "../types/member";
 
 /** Thời gian giữ icon dấu tích sau khi copy (ms). */
 const COPIED_FEEDBACK_MS = 1500;
+
+/** Độ rộng cố định của ô mật khẩu, tính theo số ký tự của mật khẩu sinh tự động. */
+const PASSWORD_WIDTH_CH = 8;
 
 interface PasswordCellProps {
   /** Mật khẩu điểm danh của thành viên */
@@ -39,8 +46,12 @@ export function PasswordCell({ password }: PasswordCellProps) {
 
   return (
     <div className="flex items-center gap-1">
-      <span className="font-mono text-sm">
-        {visible ? password : "••••••••"}
+      {/* Rộng cố định để lúc hiện/ẩn mật khẩu bảng không bị co giãn cột. */}
+      <span
+        className="inline-block overflow-hidden font-mono text-sm"
+        style={{ width: `${PASSWORD_WIDTH_CH}ch` }}
+      >
+        {visible ? password : "•".repeat(PASSWORD_WIDTH_CH)}
       </span>
       <Button
         variant="ghost"
@@ -86,27 +97,23 @@ export function MemberRow({ member, onEdit, onDelete }: MemberRowProps) {
   return (
     <TableRow>
       <TableCell className="font-medium">{member.name}</TableCell>
-      <TableCell>{GUILD_CLASS_LABEL[member.guildClass]}</TableCell>
+      <TableCell>
+        <GuildClassIcon guildClass={member.guildClass} />
+      </TableCell>
       <TableCell>
         <PasswordCell password={member.password} />
       </TableCell>
       <TableCell className="text-right">
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label={`Sửa ${member.name}`}
-          onClick={() => onEdit(member)}
-        >
-          <Pencil className="size-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label={`Xoá ${member.name}`}
-          onClick={() => onDelete(member)}
-        >
-          <Trash2 className="size-4 text-destructive" />
-        </Button>
+        <RowActions>
+          <EditAction
+            label={`Sửa ${member.name}`}
+            onClick={() => onEdit(member)}
+          />
+          <DeleteAction
+            label={`Xoá ${member.name}`}
+            onClick={() => onDelete(member)}
+          />
+        </RowActions>
       </TableCell>
     </TableRow>
   );

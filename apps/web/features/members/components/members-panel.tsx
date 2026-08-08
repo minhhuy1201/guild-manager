@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { UserPlus } from "lucide-react";
 
+import { CreateButton } from "@/components/shared/action-buttons";
 import { ErrorState } from "@/components/shared/error-state";
-import { Button } from "@/components/ui/button";
+import { TablePaginationBar } from "@/components/shared/table-pagination-bar";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -14,6 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useTablePagination } from "@/hooks/use-table-pagination";
 import type { Member } from "../types/member";
 import { useMembers } from "../hooks/use-members";
 import { DeleteMemberDialog } from "./delete-member-dialog";
@@ -25,7 +27,7 @@ const SKELETON_ROWS = 5;
 
 /**
  * Bảng quản lý thành viên: tìm theo tên, thêm/sửa/xoá, xem và copy mật khẩu.
- * Cả bang chỉ vài chục người nên lọc ngay ở client, không phân trang.
+ * Cả bang chỉ vài chục người nên lọc và phân trang ngay ở client.
  * @returns Panel quản lý thành viên
  */
 export function MembersPanel() {
@@ -34,6 +36,19 @@ export function MembersPanel() {
   const [editing, setEditing] = useState<Member | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [deleting, setDeleting] = useState<Member | null>(null);
+
+  const normalized = keyword.trim().toLowerCase();
+  const allMembers = membersQuery.data ?? [];
+  const members = normalized
+    ? allMembers.filter((member) =>
+        member.name.toLowerCase().includes(normalized)
+      )
+    : allMembers;
+
+  const pagination = useTablePagination({
+    items: members,
+    resetKey: normalized,
+  });
 
   if (membersQuery.isError) {
     return (
@@ -55,13 +70,6 @@ export function MembersPanel() {
     );
   }
 
-  const normalized = keyword.trim().toLowerCase();
-  const members = normalized
-    ? membersQuery.data.filter((member) =>
-        member.name.toLowerCase().includes(normalized)
-      )
-    : membersQuery.data;
-
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -71,15 +79,14 @@ export function MembersPanel() {
           value={keyword}
           onChange={(event) => setKeyword(event.target.value)}
         />
-        <Button
+        <CreateButton
+          label="Thêm thành viên"
+          icon={<UserPlus className="size-4" />}
           onClick={() => {
             setEditing(null);
             setFormOpen(true);
           }}
-        >
-          <UserPlus className="size-4" />
-          Thêm thành viên
-        </Button>
+        />
       </div>
 
       <Table>
@@ -92,7 +99,7 @@ export function MembersPanel() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {members.map((member) => (
+          {pagination.pagedItems.map((member) => (
             <MemberRow
               key={member.id}
               member={member}
@@ -112,6 +119,19 @@ export function MembersPanel() {
             ? "Không có thành viên nào khớp."
             : "Bang chưa có thành viên nào."}
         </div>
+      )}
+
+      {members.length > 0 && (
+        <TablePaginationBar
+          page={pagination.page}
+          pageCount={pagination.pageCount}
+          pageSize={pagination.pageSize}
+          total={pagination.total}
+          onPageChange={pagination.setPage}
+          onPageSizeChange={pagination.setPageSize}
+          itemLabel="thành viên"
+          pageSizeId="members-page-size"
+        />
       )}
 
       <MemberFormDialog

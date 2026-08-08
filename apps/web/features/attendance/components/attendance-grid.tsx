@@ -5,7 +5,7 @@ import { Swords } from "lucide-react";
 import { AttendanceStatus } from "@shared/enums";
 
 import { ErrorState } from "@/components/shared/error-state";
-import { TablePagination } from "@/components/shared/table-pagination";
+import { TablePaginationBar } from "@/components/shared/table-pagination-bar";
 import { TableSkeleton } from "@/components/shared/table-skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -16,6 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useTablePagination } from "@/hooks/use-table-pagination";
 import { cn } from "@/lib/utils";
 import { getSessionSubtitle } from "../lib/session-subtitle";
 import { isDeadlinePassed } from "../api/attendance-api";
@@ -32,9 +33,6 @@ import type { Character } from "../types/attendance";
 import { recordKey } from "../types/attendance";
 import { AttendancePasswordDialog } from "./attendance-password-dialog";
 import { AttendanceRow, type AttendanceDraft } from "./attendance-row";
-
-/** Số nhân vật hiển thị mỗi trang. */
-const PAGE_SIZE = 10;
 
 /** Số cột skeleton khi chưa biết có bao nhiêu ngày đánh: Thành viên + 3 ngày + Thao tác. */
 const SKELETON_COLUMNS = 5;
@@ -66,27 +64,17 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
     null
   );
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [page, setPage] = useState(1);
-  const [prevCharacters, setPrevCharacters] = useState(characters);
+
+  // Kết quả lọc (tìm kiếm/lưu phái) đổi thì về trang 1 để không kẹt ở trang trống.
+  const pagination = useTablePagination({
+    items: characters,
+    resetKey: characters,
+  });
 
   const battleSessions = sessions ?? [];
   const recordMap = records ?? {};
 
   useDeadlineRefresh(battleSessions);
-
-  // Về trang 1 mỗi khi kết quả lọc đổi (tìm kiếm/lưu phái) để không kẹt ở trang trống.
-  // Điều chỉnh state ngay trong render thay vì useEffect (tránh cascading render).
-  if (characters !== prevCharacters) {
-    setPrevCharacters(characters);
-    setPage(1);
-  }
-
-  const pageCount = Math.max(1, Math.ceil(characters.length / PAGE_SIZE));
-  const safePage = Math.min(page, pageCount);
-  const pagedCharacters = characters.slice(
-    (safePage - 1) * PAGE_SIZE,
-    safePage * PAGE_SIZE
-  );
 
   // Ngày nào quá deadline thì khóa cột đó — dùng để hiển thị nhãn "Đã khóa" cho mọi người.
   const passedSessionIds = new Set(
@@ -248,7 +236,7 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
             )}
             {!isError &&
               !isPending &&
-              pagedCharacters.map((character) => (
+              pagination.pagedItems.map((character) => (
                 <AttendanceRow
                   key={character.id}
                   character={character}
@@ -273,15 +261,17 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
           </p>
         )}
 
-        {!isError && !isPending && pageCount > 1 && (
-          <div className="mt-4 flex flex-col items-center gap-2">
-            <p className="text-sm text-muted-foreground">
-              {characters.length} thành viên · trang {safePage}/{pageCount}
-            </p>
-            <TablePagination
-              page={safePage}
-              pageCount={pageCount}
-              onPageChange={setPage}
+        {!isError && !isPending && characters.length > 0 && (
+          <div className="mt-4">
+            <TablePaginationBar
+              page={pagination.page}
+              pageCount={pagination.pageCount}
+              pageSize={pagination.pageSize}
+              total={pagination.total}
+              onPageChange={pagination.setPage}
+              onPageSizeChange={pagination.setPageSize}
+              itemLabel="thành viên"
+              pageSizeId="attendance-page-size"
             />
           </div>
         )}
