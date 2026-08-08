@@ -316,9 +316,9 @@ describe('TeamBuilderService.saveFormation', () => {
       WEDNESDAY,
     );
 
-    expect(tx.formationMatch.create.mock.calls[0][0].data.slots.create).toEqual([
-      { slotId: 'team-1-pos-1', characterId: 'char-1' },
-    ]);
+    expect(tx.formationMatch.create.mock.calls[0][0].data.slots.create).toEqual(
+      [{ slotId: 'team-1-pos-1', characterId: 'char-1' }],
+    );
     expect(result.matches).toEqual([{ 'team-1-pos-1': 'char-1' }]);
   });
 

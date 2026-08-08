@@ -21,9 +21,10 @@ const FALLBACK_PREFIX = 'thanh-vien';
  * @returns Chuỗi ngẫu nhiên
  */
 function randomString(length: number): string {
-  return Array.from({ length }, () => ALPHABET[randomInt(ALPHABET.length)]).join(
-    '',
-  );
+  return Array.from(
+    { length },
+    () => ALPHABET[randomInt(ALPHABET.length)],
+  ).join('');
 }
 
 /**

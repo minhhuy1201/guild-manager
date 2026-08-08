@@ -31,7 +31,9 @@ describe('generateId', () => {
   });
 
   it('sinh id khác nhau cho cùng một tên', () => {
-    const ids = new Set(Array.from({ length: 50 }, () => generateId('Mèo Béo')));
+    const ids = new Set(
+      Array.from({ length: 50 }, () => generateId('Mèo Béo')),
+    );
 
     expect(ids.size).toBe(50);
   });
