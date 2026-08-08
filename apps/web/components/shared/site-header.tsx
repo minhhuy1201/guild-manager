@@ -15,7 +15,7 @@ export async function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-10 border-b bg-background/80 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-5xl items-center gap-2.5 px-4">
+      <div className="mx-auto flex h-14 max-w-[100rem] items-center gap-2.5 px-4">
         <Link
           href={ROUTES.attendance}
           className="flex items-center gap-2.5 rounded-lg outline-none focus-visible:ring-3 focus-visible:ring-ring/50"

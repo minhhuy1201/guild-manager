@@ -1,6 +1,6 @@
 import type { Character } from "@/features/attendance";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { Slot } from "../types/formation";
+import type { Notes, Slot } from "../types/formation";
 import { SlotCell } from "./slot-cell";
 
 interface TeamColumnProps {
@@ -14,6 +14,10 @@ interface TeamColumnProps {
   readOnly?: boolean;
   /** Ids of members who are placed but marked absent for this battle */
   absentIds: Set<string>;
+  /** Notes currently shown, keyed by slot id */
+  notes: Notes;
+  /** Called with the raw text when a slot's note changes */
+  onNoteChange: (slotId: string, text: string) => void;
 }
 
 /**
@@ -25,6 +29,8 @@ interface TeamColumnProps {
  * @param occupants - Occupant of each slot, keyed by slot id
  * @param readOnly - Render without drag handles
  * @param absentIds - Ids of placed members who dropped out
+ * @param notes - Notes currently shown, keyed by slot id
+ * @param onNoteChange - Called with the raw text when a slot's note changes
  * @returns Card holding the team's slots
  */
 export function TeamColumn({
@@ -33,6 +39,8 @@ export function TeamColumn({
   occupants,
   readOnly = false,
   absentIds,
+  notes,
+  onNoteChange,
 }: TeamColumnProps) {
   return (
     <Card className="gap-2 py-3">
@@ -49,6 +57,8 @@ export function TeamColumn({
               slot={slot}
               character={character}
               readOnly={readOnly}
+              note={notes[slot.id] ?? ""}
+              onNoteChange={onNoteChange}
               absentReason={
                 character && absentIds.has(character.id)
                   ? "Đã báo nghỉ trận này"

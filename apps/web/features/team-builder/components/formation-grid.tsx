@@ -4,7 +4,7 @@ import { useMemo } from "react";
 
 import type { Character } from "@/features/attendance";
 import { createMockFormation } from "../lib/mock-formation";
-import type { Assignment, Slot } from "../types/formation";
+import type { Assignment, Notes, Slot } from "../types/formation";
 import { TeamColumn } from "./team-column";
 
 /** Layout is static data, built once at module load. */
@@ -19,12 +19,17 @@ interface FormationGridProps {
   readOnly?: boolean;
   /** Ids of members who are placed but marked absent for this battle */
   absentIds: Set<string>;
+  /** Notes currently shown, keyed by slot id */
+  notes: Notes;
+  /** Called with the raw text when a slot's note changes */
+  onNoteChange: (slotId: string, text: string) => void;
 }
 
 /**
  * The whole formation: ten team columns laid out with CSS Grid, five per row on
- * large screens. Slots are stored flat and grouped by team here, so changing the
- * team count only means changing the layout builder.
+ * the widest screens and three below that — a column holds a slot and its note
+ * side by side, so it needs room. Slots are stored flat and grouped by team
+ * here, so changing the team count only means changing the layout builder.
  *
  * Takes the assignment as a prop rather than reading the store: what shows is
  * the draft when one exists and the saved copy otherwise, and that merge
@@ -33,6 +38,8 @@ interface FormationGridProps {
  * @param charactersById - Full roster indexed by character id
  * @param readOnly - Render without drag handles
  * @param absentIds - Ids of placed members who dropped out
+ * @param notes - Notes currently shown, keyed by slot id
+ * @param onNoteChange - Called with the raw text when a slot's note changes
  * @returns Grid of team columns
  */
 export function FormationGrid({
@@ -40,6 +47,8 @@ export function FormationGrid({
   charactersById,
   readOnly = false,
   absentIds,
+  notes,
+  onNoteChange,
 }: FormationGridProps) {
   const teams = useMemo(() => {
     const grouped = new Map<number, Slot[]>();
@@ -71,7 +80,7 @@ export function FormationGrid({
   }, [assignment, charactersById]);
 
   return (
-    <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
+    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
       {teams.map(({ team, slots }) => (
         <TeamColumn
           key={team}
@@ -80,6 +89,8 @@ export function FormationGrid({
           occupants={occupants}
           readOnly={readOnly}
           absentIds={absentIds}
+          notes={notes}
+          onNoteChange={onNoteChange}
         />
       ))}
     </div>

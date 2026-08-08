@@ -115,9 +115,9 @@ export function TeamBuilderScreen() {
         <MatchTabs
           matchCount={screen.matchCount}
           activeMatchIndex={screen.activeMatchIndex}
-          secondMatchHasMembers={Object.values(screen.matches[1] ?? {}).some(
-            Boolean
-          )}
+          secondMatchHasMembers={Object.values(
+            screen.matches[1]?.assignment ?? {}
+          ).some(Boolean)}
           canAddMatch={screen.canAddMatch}
           onSelect={screen.setActiveMatch}
           onAdd={screen.addMatch}
@@ -143,6 +143,8 @@ export function TeamBuilderScreen() {
 
         <FormationGrid
           assignment={screen.assignment}
+          notes={screen.notes}
+          onNoteChange={screen.setNote}
           charactersById={screen.charactersById}
           readOnly={!screen.editable}
           absentIds={screen.absentIds}
