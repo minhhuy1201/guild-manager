@@ -27,9 +27,9 @@ interface FormationGridProps {
 
 /**
  * The whole formation: ten team columns laid out with CSS Grid, five per row on
- * the widest screens and three below that — a column holds a slot and its note
- * side by side, so it needs room. Slots are stored flat and grouped by team
- * here, so changing the team count only means changing the layout builder.
+ * large screens — two rows of five, each column holding a slot and its note side
+ * by side. Slots are stored flat and grouped by team here, so changing the team
+ * count only means changing the layout builder.
  *
  * Takes the assignment as a prop rather than reading the store: what shows is
  * the draft when one exists and the saved copy otherwise, and that merge
@@ -80,7 +80,7 @@ export function FormationGrid({
   }, [assignment, charactersById]);
 
   return (
-    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
+    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-5">
       {teams.map(({ team, slots }) => (
         <TeamColumn
           key={team}
