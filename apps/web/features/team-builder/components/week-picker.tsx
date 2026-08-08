@@ -1,5 +1,6 @@
 "use client";
 
+import { DateRange } from "@/components/shared/date-range";
 import {
   Select,
   SelectContent,
@@ -18,20 +19,17 @@ interface WeekPickerProps {
   onChange: (weekStart: string) => void;
 }
 
-/**
- * Render a week as "20/07 – 26/07".
- * @param weekStart - Monday of the week (ISO string)
- * @returns Vietnamese date range covering Monday to Sunday
- */
-function formatWeek(weekStart: string): string {
-  const start = new Date(weekStart);
-  const end = new Date(start.getTime() + 6 * 24 * 60 * 60 * 1000);
-  const format = new Intl.DateTimeFormat("vi-VN", {
-    day: "2-digit",
-    month: "2-digit",
-  });
+const DAYS_IN_WEEK_SPAN_MS = 6 * 24 * 60 * 60 * 1000;
 
-  return `${format.format(start)} – ${format.format(end)}`;
+/**
+ * Sunday closing the week — the API only hands back the Monday.
+ * @param weekStart - Monday of the week (ISO string)
+ * @returns Sunday of the same week (ISO string)
+ */
+function weekEnd(weekStart: string): string {
+  return new Date(
+    new Date(weekStart).getTime() + DAYS_IN_WEEK_SPAN_MS
+  ).toISOString();
 }
 
 /**
@@ -46,13 +44,25 @@ export function WeekPicker({ weeks, value, onChange }: WeekPickerProps) {
   return (
     <Select value={value} onValueChange={(next) => onChange(String(next))}>
       <SelectTrigger id="formation-week" className="w-52">
-        <SelectValue>{() => `Tuần ${formatWeek(value)}`}</SelectValue>
+        <SelectValue>
+          {() => (
+            <span className="inline-flex items-center gap-1">
+              Tuần <DateRange start={value} end={weekEnd(value)} />
+            </span>
+          )}
+        </SelectValue>
       </SelectTrigger>
       <SelectContent alignItemWithTrigger={false}>
         {weeks.map((week) => (
           <SelectItem key={week.weekStart} value={week.weekStart}>
-            Tuần {formatWeek(week.weekStart)}
-            {week.isActive ? " (hiện tại)" : ""}
+            <span className="inline-flex items-center gap-1">
+              Tuần{" "}
+              <DateRange
+                start={week.weekStart}
+                end={weekEnd(week.weekStart)}
+              />
+              {week.isActive ? " (hiện tại)" : ""}
+            </span>
           </SelectItem>
         ))}
       </SelectContent>

@@ -12,6 +12,19 @@ export function formatDate(iso: string): string {
 }
 
 /**
+ * Định dạng ngày dạng dd/MM. Tự ghép chuỗi vì Intl tiếng Việt trả về "08-08"
+ * khi bỏ năm, trong khi giao diện luôn dùng dấu gạch chéo.
+ * @param iso - Chuỗi ISO date
+ * @returns Chuỗi ngày dạng dd/MM
+ */
+export function formatDayMonth(iso: string): string {
+  const date = new Date(iso);
+  const pad = (value: number) => String(value).padStart(2, "0");
+
+  return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}`;
+}
+
+/**
  * Định dạng giờ dạng HH:mm theo tiếng Việt.
  * @param iso - Chuỗi ISO date
  * @returns Chuỗi giờ đã định dạng

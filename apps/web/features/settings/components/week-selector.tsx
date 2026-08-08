@@ -1,5 +1,6 @@
 "use client";
 
+import { DateRange } from "@/components/shared/date-range";
 import { Button } from "@/components/ui/button";
 import type { Week } from "@/features/attendance";
 import { cn } from "@/lib/utils";
@@ -11,22 +12,6 @@ interface WeekSelectorProps {
   value: string;
   /** Gọi khi người dùng đổi tuần */
   onChange: (weekStart: string) => void;
-}
-
-/**
- * Hiển thị một tuần dạng "20/07 – 25/07".
- * @param week - Tuần cần hiển thị
- * @returns Khoảng ngày tiếng Việt
- */
-function formatRange(week: Week): string {
-  const format = new Intl.DateTimeFormat("vi-VN", {
-    day: "2-digit",
-    month: "2-digit",
-  });
-
-  return `${format.format(new Date(week.weekStart))} – ${format.format(
-    new Date(week.weekEnd)
-  )}`;
 }
 
 /**
@@ -50,7 +35,11 @@ export function WeekSelector({ weeks, value, onChange }: WeekSelectorProps) {
           onClick={() => onChange(week.weekStart)}
         >
           {week.isActive ? "Tuần này" : "Tuần sau"}
-          <span className="opacity-70">{formatRange(week)}</span>
+          <DateRange
+            start={week.weekStart}
+            end={week.weekEnd}
+            className="opacity-70"
+          />
         </Button>
       ))}
     </div>

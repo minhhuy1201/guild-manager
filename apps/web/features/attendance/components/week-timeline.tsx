@@ -2,12 +2,13 @@
 
 import { CalendarRange, Clock, Lock, Swords } from "lucide-react";
 
+import { DateRange } from "@/components/shared/date-range";
 import { ErrorState } from "@/components/shared/error-state";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { formatDate, formatDateTime } from "@/lib/format";
+import { formatDateTime } from "@/lib/format";
 import { getSessionSubtitle } from "../lib/session-subtitle";
 import { isDeadlinePassed } from "../api/attendance-api";
 import { useAttendanceBoard } from "../hooks/use-attendance-board";
@@ -69,7 +70,7 @@ export function WeekTimeline() {
           <div>
             <div className="text-xs text-muted-foreground">Tuần điểm danh</div>
             <div className="font-semibold">
-              {formatDate(week.weekStart)} → {formatDate(week.weekEnd)}
+              <DateRange start={week.weekStart} end={week.weekEnd} withYear />
             </div>
           </div>
         </div>
