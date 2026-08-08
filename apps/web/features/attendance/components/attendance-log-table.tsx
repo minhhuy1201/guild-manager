@@ -16,6 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatDateTime } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { useAttendanceBoard } from "../hooks/use-attendance-board";
 import {
   useAttendanceRecords,
@@ -24,6 +25,20 @@ import {
   useFilteredCharacters,
 } from "../hooks/use-attendance";
 import { CharacterName } from "./character-name";
+
+/**
+ * Cột "Thời gian điểm danh" bị ẩn dưới `md`: trên điện thoại ba cột còn lại vừa
+ * màn hình, còn mốc giờ điểm danh là thông tin phụ.
+ */
+const MARKED_AT_COLUMN = "hidden md:table-cell";
+
+/** Lớp CSS theo từng cột của skeleton, để nó ẩn đúng cột như phần header. */
+const SKELETON_COLUMN_CLASSES = [
+  undefined,
+  undefined,
+  undefined,
+  MARKED_AT_COLUMN,
+] as const;
 
 /**
  * Bảng lịch sử điểm danh: ai đã điểm danh, buổi nào, Có/Không, thời gian.
@@ -78,7 +93,9 @@ export function AttendanceLogTable() {
               <TableHead>Thành viên</TableHead>
               <TableHead>Ngày đánh</TableHead>
               <TableHead className="text-center">Trạng thái</TableHead>
-              <TableHead>Thời gian điểm danh</TableHead>
+              <TableHead className={MARKED_AT_COLUMN}>
+                Thời gian điểm danh
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -89,7 +106,13 @@ export function AttendanceLogTable() {
                 </TableCell>
               </TableRow>
             )}
-            {!isError && isPending && <TableSkeleton rows={5} columns={4} />}
+            {!isError && isPending && (
+              <TableSkeleton
+                rows={5}
+                columns={4}
+                columnClassNames={SKELETON_COLUMN_CLASSES}
+              />
+            )}
             {!isError && !isPending && rows.length === 0 && (
               <TableRow>
                 <TableCell
@@ -124,7 +147,9 @@ export function AttendanceLogTable() {
                         label={ATTENDANCE_STATUS_LABEL[record.status]}
                       />
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
+                    <TableCell
+                      className={cn("text-muted-foreground", MARKED_AT_COLUMN)}
+                    >
                       {formatDateTime(record.markedAt)}
                     </TableCell>
                   </TableRow>
