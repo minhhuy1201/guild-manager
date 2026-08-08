@@ -16,7 +16,7 @@ export class AttendanceController {
 
   /**
    * Danh sách nhân vật trong bang.
-   * @returns Mảng nhân vật (không kèm mật khẩu)
+   * @returns Mảng nhân vật
    */
   @Get('characters')
   @ApiOperation({ summary: 'Danh sách nhân vật trong bang' })
@@ -36,9 +36,9 @@ export class AttendanceController {
 
   /**
    * Điểm danh cho một nhân vật ở một trận.
-   * Người thường phải kèm mật khẩu riêng của nhân vật và chỉ điểm danh được khi còn hạn;
-   * quản trị viên (có access token hợp lệ) được miễn cả hai.
-   * @param body - characterId, sessionId, status và password (không bắt buộc với quản trị viên)
+   * Người thường chỉ điểm danh được khi còn hạn; quản trị viên (có access token hợp lệ)
+   * được miễn.
+   * @param body - characterId, sessionId và status
    * @param user - Payload JWT nếu request có access token hợp lệ, ngược lại undefined
    * @returns Record vừa ghi
    */
