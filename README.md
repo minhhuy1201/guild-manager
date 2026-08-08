@@ -50,8 +50,9 @@ pnpm --filter web dev     # http://localhost:3000
 ```
 
 Đăng nhập quản trị bằng tài khoản trong `ADMIN_USERNAMES` + `ADMIN_PASSWORD` của `apps/api/.env`
-(mặc định `huy` / `testne`). Thành viên điểm danh bằng mật khẩu riêng của nhân vật — xem
-`apps/api/prisma/seed.ts`.
+(mặc định `huy` / `testne`). Thành viên điểm danh bằng mật khẩu riêng của nhân vật: quản trị viên
+cấp mật khẩu này và xem lại được bất cứ lúc nào ở tab "Quản lý thành viên" của màn Thiết lập —
+mật khẩu của nhân vật mẫu xem ở `apps/api/prisma/seed.ts`.
 
 Kiểm tra nhanh: `curl http://localhost:3001/api/health` phải trả `"db": "up"`.
 
@@ -64,6 +65,7 @@ Chi tiết hơn (biến môi trường, lệnh hay dùng, cách xử lý lỗi t
 | `/` | Điểm danh tuần hiện tại | Mọi người |
 | `/lich-su-diem-danh` | Lịch sử điểm danh | Mọi người |
 | `/xep-team` | Xếp đội hình theo từng trận | Chỉ quản trị |
+| `/thiet-lap` | Hai tab: "Thiết lập trận đánh" (lịch đánh trong tuần) và "Quản lý thành viên" (thêm/sửa/xoá thành viên, xem và cấp lại mật khẩu điểm danh) | Chỉ quản trị |
 
 ## Tài liệu
 
