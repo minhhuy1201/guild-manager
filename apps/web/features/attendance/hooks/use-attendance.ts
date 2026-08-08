@@ -108,7 +108,7 @@ export function useMarkAttendance() {
 
 /**
  * Mutation điểm danh hộ dành cho quản trị viên — đi qua Server Action để gắn được
- * access token, nên không cần mật khẩu của nhân vật.
+ * access token, nhờ đó server cho bỏ qua deadline.
  * @returns Mutation TanStack (dùng mutateAsync để bắt lỗi từ backend)
  */
 export function useMarkAttendanceAsAdmin() {

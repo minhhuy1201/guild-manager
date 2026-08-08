@@ -5,7 +5,7 @@ import { AttendanceFilters } from "./attendance-filters";
 import { AttendanceGrid } from "./attendance-grid";
 
 interface AttendanceScreenProps {
-  /** Người đang xem là quản trị viên — điểm danh hộ không cần mật khẩu, không bị khóa theo deadline. */
+  /** Người đang xem là quản trị viên — không bị khóa theo deadline. */
   isAdmin: boolean;
 }
 

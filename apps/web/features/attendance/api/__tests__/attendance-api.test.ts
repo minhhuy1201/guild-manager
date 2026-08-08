@@ -58,7 +58,6 @@ describe("attendance-api", () => {
       characterId: "c1",
       sessionId: "s1",
       status: AttendanceStatus.PRESENT,
-      password: "pass10001",
     };
 
     await expect(markAttendance(input)).resolves.toEqual(RECORD);
@@ -79,7 +78,6 @@ describe("attendance-api", () => {
         characterId: "c1",
         sessionId: "s1",
         status: AttendanceStatus.PRESENT,
-        password: "pass10001",
       })
     ).rejects.toThrowError("Đã quá hạn điểm danh ngày này.");
   });

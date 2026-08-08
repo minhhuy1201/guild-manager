@@ -35,21 +35,19 @@ import {
 } from "../hooks/use-attendance";
 import type { Character } from "../types/attendance";
 import { recordKey } from "../types/attendance";
-import { AttendancePasswordDialog } from "./attendance-password-dialog";
 import { AttendanceRow, type AttendanceDraft } from "./attendance-row";
 
 /** Số cột skeleton khi chưa biết có bao nhiêu ngày đánh: Thành viên + 3 ngày + Thao tác. */
 const SKELETON_COLUMNS = 5;
 
 interface AttendanceGridProps {
-  /** Người đang xem là quản trị viên — điểm danh hộ không cần mật khẩu, không bị khóa theo deadline. */
+  /** Người đang xem là quản trị viên — không bị khóa theo deadline. */
   isAdmin: boolean;
 }
 
 /**
  * Lưới điểm danh: mỗi nhân vật một hàng, mặc định read-only.
- * Bấm nút chỉnh sửa ở cột cuối để sửa một dòng; xác nhận sẽ yêu cầu nhập
- * mật khẩu riêng của nhân vật đó qua modal — trừ quản trị viên thì lưu thẳng.
+ * Bấm nút chỉnh sửa ở cột cuối để sửa một dòng rồi xác nhận là lưu thẳng.
  * @param isAdmin - Người đang xem có phải quản trị viên hay không
  * @returns Card chứa bảng điểm danh
  */
@@ -57,17 +55,13 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
   const characters = useFilteredCharacters("attendance");
   const { data: sessions } = useBattleSessions();
   const { data: records } = useAttendanceRecords();
-  const { mutateAsync: mark } = useMarkAttendance();
+  const { mutateAsync: mark, error: markError } = useMarkAttendance();
   const { mutateAsync: markAsAdmin, error: adminError } =
     useMarkAttendanceAsAdmin();
   const { isPending, isError, errorMessage, refetch } = useAttendanceBoard();
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<AttendanceDraft>({});
-  const [pendingCharacter, setPendingCharacter] = useState<Character | null>(
-    null
-  );
-  const [dialogOpen, setDialogOpen] = useState(false);
 
   // Kết quả lọc (tìm kiếm/lưu phái) đổi thì về trang 1 để không kẹt ở trang trống.
   const pagination = useTablePagination({
@@ -77,6 +71,8 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
 
   const battleSessions = sessions ?? [];
   const recordMap = records ?? {};
+  // Quản trị viên đi qua Server Action, người thường gọi thẳng API — mỗi đường một mutation.
+  const saveError = isAdmin ? adminError : markError;
 
   useDeadlineRefresh(battleSessions);
 
@@ -134,9 +130,9 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
     });
 
   /**
-   * Xác nhận thay đổi. Quản trị viên lưu thẳng; người thường phải qua modal mật khẩu.
+   * Lưu các ô đã thay đổi của một nhân vật.
    * @param character - Nhân vật đang chỉnh
-   * @returns Promise hoàn tất khi đã lưu (quản trị viên) hoặc đã mở modal
+   * @returns Promise hoàn tất khi đã lưu xong hoặc đã hiển thị lỗi
    */
   const handleConfirm = async (character: Character) => {
     const changes = getChangedCells(character);
@@ -145,38 +141,15 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
       return;
     }
 
-    if (!isAdmin) {
-      setPendingCharacter(character);
-      setDialogOpen(true);
-      return;
-    }
-
-    // Lỗi hiển thị qua `adminError` của mutation nên nuốt ở đây, tránh promise văng ra ngoài.
+    // Lỗi hiển thị qua `saveError` của mutation nên nuốt ở đây, tránh promise văng ra ngoài.
     const saved = await Promise.all(
-      changes.map(({ sessionId, status }) =>
-        markAsAdmin({ characterId: character.id, sessionId, status })
-      )
+      changes.map(({ sessionId, status }) => {
+        const input = { characterId: character.id, sessionId, status };
+        return isAdmin ? markAsAdmin(input) : mark(input);
+      })
     ).catch(() => null);
 
     if (saved) handleCancel();
-  };
-
-  /**
-   * Gửi mật khẩu để lưu tất cả ô đã thay đổi của nhân vật đang chỉnh.
-   * Ném lỗi (để modal hiển thị) nếu sai mật khẩu hoặc quá hạn.
-   * @param password - Mật khẩu nhân vật
-   */
-  const handleSubmitPassword = async (password: string) => {
-    if (!pendingCharacter) return;
-    const changes = getChangedCells(pendingCharacter);
-    await Promise.all(
-      changes.map(({ sessionId, status }) =>
-        mark({ characterId: pendingCharacter.id, sessionId, status, password })
-      )
-    );
-    setDialogOpen(false);
-    setPendingCharacter(null);
-    handleCancel();
   };
 
   return (
@@ -265,9 +238,9 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
           </TableBody>
         </Table>
 
-        {adminError && (
+        {saveError && (
           <p className="mt-4 text-center text-sm text-destructive">
-            {adminError.message}
+            {saveError.message}
           </p>
         )}
 
@@ -286,13 +259,6 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
           </div>
         )}
       </CardContent>
-
-      <AttendancePasswordDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        character={pendingCharacter}
-        onSubmit={handleSubmitPassword}
-      />
     </Card>
   );
 }

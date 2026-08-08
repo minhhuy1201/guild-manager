@@ -47,7 +47,7 @@ interface AttendanceRowProps {
   onDraftChange: (sessionId: string, status: AttendanceStatus) => void;
   /** Huỷ chỉnh sửa, reset dữ liệu */
   onCancel: () => void;
-  /** Xác nhận thay đổi (mở modal mật khẩu) */
+  /** Xác nhận và lưu thay đổi */
   onConfirm: (character: Character) => void;
 }
 

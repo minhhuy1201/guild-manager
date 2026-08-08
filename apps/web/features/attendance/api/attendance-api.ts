@@ -92,8 +92,8 @@ export async function fetchAttendanceRecords(): Promise<
 
 /**
  * Điểm danh cho một nhân vật ở một buổi đánh.
- * Mật khẩu và deadline do server kiểm tra; lỗi nổi lên dưới dạng `ApiError`
- * với message tiếng Việt để modal hiển thị.
+ * Deadline do server kiểm tra; lỗi nổi lên dưới dạng `ApiError` với message
+ * tiếng Việt để hiển thị.
  * @param input - Thông tin điểm danh
  * @returns Promise trả về record vừa ghi
  */
