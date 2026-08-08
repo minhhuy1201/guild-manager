@@ -4,6 +4,7 @@ import { AlertCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, type SubmitEvent } from "react";
 
+import { PasswordInput } from "@/components/shared/password-input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -81,10 +82,9 @@ function LoginForm() {
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="login-password">Mật khẩu</Label>
-        <Input
+        <PasswordInput
           id="login-password"
           name="password"
-          type="password"
           autoComplete="current-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}

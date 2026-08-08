@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AlertCircle } from "lucide-react";
 
+import { PasswordInput } from "@/components/shared/password-input";
 import { Button } from "@/components/ui/button";
 import {
   DialogDescription,
@@ -10,7 +11,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { Character } from "../types/attendance";
 
@@ -74,9 +74,8 @@ export function AttendancePasswordForm({
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="attendance-password">Mật khẩu thành viên</Label>
-        <Input
+        <PasswordInput
           id="attendance-password"
-          type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Nhập mật khẩu..."
