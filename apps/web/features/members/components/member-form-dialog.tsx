@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { AlertCircle, Check, Copy } from "lucide-react";
 
 import {
@@ -27,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ApiError } from "@/lib/api-client";
+import { GUILD_CLASS_IMAGE } from "@/lib/guild-class";
 import type { Member } from "../types/member";
 import {
   useCreateMember,
@@ -151,13 +153,16 @@ function MemberForm({ member, onDone }: MemberFormProps) {
           value={guildClass}
           onValueChange={(next) => setGuildClass(String(next) as GuildClass)}
         >
-          <SelectTrigger id="member-class">
-            <SelectValue>{() => GUILD_CLASS_LABEL[guildClass]}</SelectValue>
+          <SelectTrigger id="member-class" className="w-full">
+            <SelectValue>
+              {() => <GuildClassOption guildClass={guildClass} />}
+            </SelectValue>
           </SelectTrigger>
+          {/* Mở như popover dưới trigger thay vì neo item đang chọn vào trigger. */}
           <SelectContent alignItemWithTrigger={false}>
             {GUILD_CLASS_OPTIONS.map((option) => (
               <SelectItem key={option} value={option}>
-                {GUILD_CLASS_LABEL[option]}
+                <GuildClassOption guildClass={option} />
               </SelectItem>
             ))}
           </SelectContent>
@@ -179,6 +184,31 @@ function MemberForm({ member, onDone }: MemberFormProps) {
         </Button>
       </DialogFooter>
     </form>
+  );
+}
+
+interface GuildClassOptionProps {
+  /** Lưu phái cần hiển thị */
+  guildClass: GuildClass;
+}
+
+/**
+ * Một dòng lưu phái trong select: icon rồi tới tên, giống ô lọc lưu phái.
+ * @param guildClass - Lưu phái cần hiển thị
+ * @returns Icon kèm tên lưu phái
+ */
+function GuildClassOption({ guildClass }: GuildClassOptionProps) {
+  return (
+    <span className="flex items-center gap-2">
+      <Image
+        src={GUILD_CLASS_IMAGE[guildClass]}
+        alt=""
+        width={20}
+        height={20}
+        className="size-5 rounded-sm object-cover"
+      />
+      {GUILD_CLASS_LABEL[guildClass]}
+    </span>
   );
 }
 
