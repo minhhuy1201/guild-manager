@@ -35,9 +35,12 @@ const TUESDAY = session({
   locked: true,
   matches: [
     {
-      "team-1-pos-1": "char-1",
-      "team-1-pos-2": "char-2",
-      "team-1-pos-3": "char-3",
+      slots: {
+        "team-1-pos-1": "char-1",
+        "team-1-pos-2": "char-2",
+        "team-1-pos-3": "char-3",
+      },
+      notes: {},
     },
   ],
 });
@@ -95,7 +98,7 @@ describe("buildPrefill", () => {
   it("lấy trận GẦN NHẤT trước đó, không phải trận đầu tuần", () => {
     const thursdayWithFormation = session({
       ...THURSDAY,
-      matches: [{ "team-1-pos-1": "char-9" }],
+      matches: [{ slots: { "team-1-pos-1": "char-9" }, notes: {} }],
     });
 
     const result = buildPrefill(
@@ -128,8 +131,11 @@ describe("buildPrefill", () => {
       label: "Thứ 3 · 20:30",
       dateTime: "2026-07-21T13:30:00.000Z",
       matches: [
-        { "team-1-pos-1": "char-1" },
-        { "team-1-pos-1": "char-2", "team-1-pos-2": "char-3" },
+        { slots: { "team-1-pos-1": "char-1" }, notes: {} },
+        {
+          slots: { "team-1-pos-1": "char-2", "team-1-pos-2": "char-3" },
+          notes: {},
+        },
       ],
     });
 
@@ -143,6 +149,54 @@ describe("buildPrefill", () => {
     expect(result?.assignment["team-1-pos-1"]).toBe("char-2");
     expect(result?.assignment["team-1-pos-2"]).toBe("char-3");
     expect(result?.sourceLabel).toBe("Thứ 3 · 20:30 · trận 2");
+  });
+
+  it("chép ghi chú sang trận mới, kể cả ghi chú của ô có người bị gỡ vì báo nghỉ", () => {
+    const tuesday = session({
+      sessionId: "tue",
+      label: "Thứ 3 · 20:30",
+      dateTime: "2026-07-21T13:30:00.000Z",
+      matches: [
+        {
+          slots: { "team-1-pos-1": "char-1", "team-1-pos-2": "char-2" },
+          notes: { "team-1-pos-1": "giữ buồng", "team-1-pos-2": "vào sau" },
+        },
+      ],
+    });
+    const thursday = session({
+      sessionId: "thu",
+      dateTime: "2026-07-23T13:30:00.000Z",
+    });
+
+    const result = buildPrefill(
+      [tuesday, thursday],
+      "thu",
+      new Set(["char-1"]),
+      SLOTS
+    );
+
+    expect(result?.assignment["team-1-pos-2"]).toBeNull();
+    expect(result?.droppedCount).toBe(1);
+    expect(result?.notes).toEqual({
+      "team-1-pos-1": "giữ buồng",
+      "team-1-pos-2": "vào sau",
+    });
+  });
+
+  it("ngày trước chỉ có ghi chú, không có ai, thì không phải nguồn để chép", () => {
+    const tuesday = session({
+      sessionId: "tue",
+      dateTime: "2026-07-21T13:30:00.000Z",
+      matches: [{ slots: {}, notes: { "team-1-pos-1": "chừa cho X" } }],
+    });
+    const thursday = session({
+      sessionId: "thu",
+      dateTime: "2026-07-23T13:30:00.000Z",
+    });
+
+    expect(
+      buildPrefill([tuesday, thursday], "thu", new Set(), SLOTS)
+    ).toBeNull();
   });
 
   it("ngày trước chỉ có một trận thì nhãn không kèm số trận", () => {

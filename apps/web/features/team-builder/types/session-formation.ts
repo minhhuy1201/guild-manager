@@ -1,6 +1,17 @@
 /** Đội hình trên dây: slotId → characterId. Ô trống không có khoá. */
 export type WireAssignment = Record<string, string>;
 
+/** Ghi chú trên dây: slotId → text. Ô không ghi gì không có khoá. */
+export type WireNotes = Record<string, string>;
+
+/** Một trận đúng như backend trả về: đội hình và ghi chú của nó. */
+export interface WireMatch {
+  /** slotId → characterId, ô trống không có khoá */
+  slots: WireAssignment;
+  /** slotId → ghi chú, ô không ghi gì không có khoá */
+  notes: WireNotes;
+}
+
 /** Một trận kèm đội hình đã lưu, đúng như backend trả về. */
 export interface SessionFormation {
   /** ID trận đánh */
@@ -16,10 +27,10 @@ export interface SessionFormation {
   /** Trận đã đánh xong — không sửa được nữa */
   locked: boolean;
   /**
-   * Đội hình từng trận trong ngày, theo thứ tự trận 1 → trận 2.
-   * Mảng rỗng nghĩa là ngày này chưa xếp gì.
+   * Từng trận trong ngày, theo thứ tự trận 1 → trận 2.
+   * Mảng rỗng nghĩa là ngày này chưa xếp gì và cũng chưa ghi chú gì.
    */
-  matches: WireAssignment[];
+  matches: WireMatch[];
 }
 
 /** Một tuần còn dữ liệu đội hình. */

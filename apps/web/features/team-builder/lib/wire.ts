@@ -1,5 +1,9 @@
-import type { Assignment, Slot } from "../types/formation";
-import type { WireAssignment } from "../types/session-formation";
+import type { Assignment, MatchDraft, Notes, Slot } from "../types/formation";
+import type {
+  WireAssignment,
+  WireMatch,
+  WireNotes,
+} from "../types/session-formation";
 
 /**
  * Strip empty slots before sending an assignment to the server.
@@ -36,27 +40,64 @@ export function fromWire(wire: WireAssignment, slots: Slot[]): Assignment {
 }
 
 /**
- * Strip empty slots from every match of a day before sending it.
- * @param matches - Line-up of each match, as the UI holds it
- * @returns Same order, each match carrying only its filled slots
+ * Strip blank notes before sending, and trim the ones that stay.
+ * A slot the user typed into and then emptied must lose its key, or the server
+ * would reject the payload — the schema has no room for an empty note.
+ * @param notes - Notes as the UI holds them, possibly with blank entries
+ * @returns Notes with only the non-blank ones, each trimmed
  */
-export function toWireMatches(matches: Assignment[]): WireAssignment[] {
-  return matches.map(toWire);
+export function toWireNotes(notes: Notes): WireNotes {
+  const filled = Object.entries(notes)
+    .map(([slotId, text]): [string, string] => [slotId, text.trim()])
+    .filter(([, text]) => text !== "");
+
+  return Object.fromEntries(filled);
 }
 
 /**
- * Rebuild a day's line-ups from what the server stored.
+ * Rebuild the notes of one match from what the server stored.
+ * Keys matching no current slot are dropped, so an old saved note survives a
+ * layout change instead of hanging off a slot that no longer exists.
+ * @param wire - Notes as stored, blank ones absent
+ * @param slots - Slots of the current layout
+ * @returns Notes keyed by slot id, absent where there is nothing written
+ */
+export function fromWireNotes(wire: WireNotes, slots: Slot[]): Notes {
+  const notes: Notes = {};
+
+  for (const slot of slots) {
+    const text = wire[slot.id];
+    if (text) notes[slot.id] = text;
+  }
+
+  return notes;
+}
+
+/**
+ * Strip empty slots and blank notes from every match of a day before sending.
+ * @param matches - Each match of the day, as the UI holds it
+ * @returns Same order, each match carrying only its filled slots and notes
+ */
+export function toWireMatches(matches: MatchDraft[]): WireMatch[] {
+  return matches.map((match) => ({
+    slots: toWire(match.assignment),
+    notes: toWireNotes(match.notes),
+  }));
+}
+
+/**
+ * Rebuild a day's matches from what the server stored.
  * A day with nothing saved comes back as `[]`; it is normalised to one empty
  * match here so nothing downstream has to handle "no match at all".
- * @param wire - Matches as stored, only filled slots present
+ * @param wire - Matches as stored
  * @param slots - Slots of the current layout
- * @returns One assignment per match, always at least one
+ * @returns One draft per match, always at least one
  */
-export function fromWireMatches(
-  wire: WireAssignment[],
-  slots: Slot[]
-): Assignment[] {
-  const source = wire.length > 0 ? wire : [{}];
+export function fromWireMatches(wire: WireMatch[], slots: Slot[]): MatchDraft[] {
+  const source = wire.length > 0 ? wire : [{ slots: {}, notes: {} }];
 
-  return source.map((match) => fromWire(match, slots));
+  return source.map((match) => ({
+    assignment: fromWire(match.slots, slots),
+    notes: fromWireNotes(match.notes, slots),
+  }));
 }

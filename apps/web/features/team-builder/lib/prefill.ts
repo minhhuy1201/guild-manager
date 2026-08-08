@@ -1,11 +1,13 @@
-import type { Assignment, Slot } from "../types/formation";
+import type { Assignment, Notes, Slot } from "../types/formation";
 import type { SessionFormation } from "../types/session-formation";
-import { fromWire } from "./wire";
+import { fromWire, fromWireNotes } from "./wire";
 
 /** A formation proposed for a battle that has none yet. */
 export interface PrefillResult {
   /** The proposed assignment, already stripped of absentees */
   assignment: Assignment;
+  /** Notes copied along with the line-up, keyed by slot id */
+  notes: Notes;
   /** Label of the battle it was copied from */
   sourceLabel: string;
   /** How many people were dropped for not attending this battle */
@@ -32,11 +34,13 @@ export function buildPrefill(
   );
   if (targetIndex < 0) return null;
 
+  // Nguồn xét theo ĐỘI HÌNH, không xét ghi chú: một ngày chỉ có ghi chú thì
+  // không có gì để chép sang.
   const source = sessions
     .slice(0, targetIndex)
     .reverse()
     .find((session) =>
-      session.matches.some((match) => Object.keys(match).length > 0)
+      session.matches.some((match) => Object.keys(match.slots).length > 0)
     );
   if (!source) return null;
 
@@ -46,7 +50,10 @@ export function buildPrefill(
     source.matches.length > 1
       ? `${source.label} · trận ${source.matches.length}`
       : source.label;
-  const previous = fromWire(sourceMatch, slots);
+  const previous = fromWire(sourceMatch.slots, slots);
+  // Ghi chú đi theo nguyên vẹn, kể cả ghi chú của ô mà người đứng đó đã báo
+  // nghỉ: ghi chú mô tả vị trí, không mô tả người.
+  const notes = fromWireNotes(sourceMatch.notes, slots);
   const assignment: Assignment = {};
   let droppedCount = 0;
 
@@ -66,5 +73,5 @@ export function buildPrefill(
     }
   }
 
-  return { assignment, sourceLabel, droppedCount };
+  return { assignment, notes, sourceLabel, droppedCount };
 }

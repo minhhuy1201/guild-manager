@@ -33,6 +33,17 @@ export interface Formation {
 /** Who stands in which slot. The only thing the user actually edits. */
 export type Assignment = Record<string, string | null>;
 
+/** Per-slot note. A slot with nothing written carries no key. */
+export type Notes = Record<string, string>;
+
+/** One match of a draft: who stands where, plus the note of each slot. */
+export interface MatchDraft {
+  /** Who stands in which slot */
+  assignment: Assignment;
+  /** Note of each slot, keyed by slot id */
+  notes: Notes;
+}
+
 /** Where a drag started from. */
 export type DragSource = { kind: "pool" } | { kind: "slot"; slotId: string };
 
