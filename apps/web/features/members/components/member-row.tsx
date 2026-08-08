@@ -1,81 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { Check, Copy, Eye, EyeOff } from "lucide-react";
-
 import {
   DeleteAction,
   EditAction,
   RowActions,
 } from "@/components/shared/action-buttons";
 import { GuildClassIcon } from "@/components/shared/guild-class-icon";
-import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import type { Member } from "../types/member";
-
-/** Thời gian giữ icon dấu tích sau khi copy (ms). */
-const COPIED_FEEDBACK_MS = 1500;
-
-/** Độ rộng cố định của ô mật khẩu, tính theo số ký tự của mật khẩu sinh tự động. */
-const PASSWORD_WIDTH_CH = 8;
-
-interface PasswordCellProps {
-  /** Mật khẩu điểm danh của thành viên */
-  password: string;
-}
-
-/**
- * Ô mật khẩu: mặc định che, bấm con mắt để hiện, bấm copy để chép.
- * Che sẵn để lúc chia sẻ màn hình không phơi mật khẩu của cả bang.
- * @param password - Mật khẩu điểm danh của thành viên
- * @returns Ô mật khẩu kèm hai nút
- */
-export function PasswordCell({ password }: PasswordCellProps) {
-  const [visible, setVisible] = useState(false);
-  const [copied, setCopied] = useState(false);
-
-  /**
-   * Chép mật khẩu vào clipboard rồi đổi icon trong giây lát làm phản hồi.
-   * @returns Promise hoàn tất khi đã chép xong
-   */
-  async function handleCopy() {
-    await navigator.clipboard.writeText(password);
-    setCopied(true);
-    setTimeout(() => setCopied(false), COPIED_FEEDBACK_MS);
-  }
-
-  return (
-    <div className="flex items-center gap-1">
-      {/* Rộng cố định để lúc hiện/ẩn mật khẩu bảng không bị co giãn cột. */}
-      <span
-        className="inline-block overflow-hidden font-mono text-sm"
-        style={{ width: `${PASSWORD_WIDTH_CH}ch` }}
-      >
-        {visible ? password : "•".repeat(PASSWORD_WIDTH_CH)}
-      </span>
-      <Button
-        variant="ghost"
-        size="icon"
-        aria-label={visible ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
-        onClick={() => setVisible((current) => !current)}
-      >
-        {visible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon"
-        aria-label="Copy mật khẩu"
-        onClick={handleCopy}
-      >
-        {copied ? (
-          <Check className="size-4 text-emerald-600" />
-        ) : (
-          <Copy className="size-4" />
-        )}
-      </Button>
-    </div>
-  );
-}
 
 interface MemberRowProps {
   /** Thành viên của hàng này */
@@ -99,9 +31,6 @@ export function MemberRow({ member, onEdit, onDelete }: MemberRowProps) {
       <TableCell className="font-medium">{member.name}</TableCell>
       <TableCell>
         <GuildClassIcon guildClass={member.guildClass} />
-      </TableCell>
-      <TableCell>
-        <PasswordCell password={member.password} />
       </TableCell>
       <TableCell className="text-right">
         <RowActions>

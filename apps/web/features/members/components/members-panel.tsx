@@ -26,7 +26,7 @@ import { MemberRow } from "./member-row";
 const SKELETON_ROWS = 5;
 
 /**
- * Bảng quản lý thành viên: tìm theo tên, thêm/sửa/xoá, xem và copy mật khẩu.
+ * Bảng quản lý thành viên: tìm theo tên, thêm/sửa/xoá.
  * Cả bang chỉ vài chục người nên lọc và phân trang ngay ở client.
  * @returns Panel quản lý thành viên
  */
@@ -94,7 +94,6 @@ export function MembersPanel() {
           <TableRow>
             <TableHead>Tên</TableHead>
             <TableHead>Lưu phái</TableHead>
-            <TableHead>Mật khẩu</TableHead>
             <TableHead className="text-right">Thao tác</TableHead>
           </TableRow>
         </TableHeader>

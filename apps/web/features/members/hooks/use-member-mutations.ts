@@ -8,12 +8,7 @@ import type {
 
 import { attendanceKeys } from "@/features/attendance";
 import { teamBuilderKeys } from "@/features/team-builder";
-import {
-  createMember,
-  deleteMember,
-  resetMemberPassword,
-  updateMember,
-} from "../api/members-api";
+import { createMember, deleteMember, updateMember } from "../api/members-api";
 import { memberKeys } from "../api/members-keys";
 
 /** Payload sửa một thành viên. */
@@ -45,7 +40,7 @@ function useInvalidateMembers() {
 
 /**
  * Mutation thêm thành viên.
- * @returns Mutation TanStack (dùng mutateAsync để lấy mật khẩu vừa cấp)
+ * @returns Mutation TanStack (dùng mutateAsync để bắt lỗi backend)
  */
 export function useCreateMember() {
   const invalidate = useInvalidateMembers();
@@ -70,18 +65,6 @@ export function useUpdateMember() {
   });
 }
 
-/**
- * Mutation cấp lại mật khẩu.
- * @returns Mutation TanStack (dùng mutateAsync để bắt lỗi backend)
- */
-export function useResetMemberPassword() {
-  const invalidate = useInvalidateMembers();
-
-  return useMutation({
-    mutationFn: (id: string) => resetMemberPassword(id),
-    onSuccess: invalidate,
-  });
-}
 
 /**
  * Mutation xoá thành viên.

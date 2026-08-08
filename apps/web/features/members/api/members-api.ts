@@ -30,7 +30,7 @@ async function authHeader(): Promise<Record<string, string>> {
 }
 
 /**
- * Lấy danh sách thành viên kèm mật khẩu.
+ * Lấy danh sách thành viên.
  * @returns Mảng thành viên sắp theo tên
  */
 export async function fetchMembers(): Promise<Member[]> {
@@ -40,7 +40,7 @@ export async function fetchMembers(): Promise<Member[]> {
 /**
  * Thêm một thành viên.
  * @param input - Tên và lưu phái
- * @returns Thành viên vừa tạo, kèm mật khẩu vừa cấp
+ * @returns Thành viên vừa tạo
  * @throws ApiError với message tiếng Việt của backend khi bị từ chối
  */
 export async function createMember(
@@ -71,18 +71,6 @@ export async function updateMember(
   });
 }
 
-/**
- * Cấp lại mật khẩu điểm danh cho một thành viên.
- * @param id - Id thành viên
- * @returns Thành viên kèm mật khẩu mới
- * @throws ApiError khi thành viên đã bị xoá (404)
- */
-export async function resetMemberPassword(id: string): Promise<Member> {
-  return apiFetch<Member>(`/characters/${encodeURIComponent(id)}/password`, {
-    method: "POST",
-    headers: await authHeader(),
-  });
-}
 
 /**
  * Xoá một thành viên cùng lịch sử điểm danh và đội hình của họ.
