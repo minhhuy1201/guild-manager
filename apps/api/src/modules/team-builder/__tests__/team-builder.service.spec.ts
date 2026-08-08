@@ -237,10 +237,22 @@ describe('TeamBuilderService.getWeeks', () => {
   });
 });
 
+/** Đối số của `formationMatch.create` — khai báo để đọc lại mock.calls không lọt `any`. */
+interface CreateMatchArgs {
+  data: {
+    sessionId: string;
+    matchIndex: number;
+    slots: { create: { slotId: string; characterId: string }[] };
+  };
+}
+
 describe('TeamBuilderService.saveFormation', () => {
   let service: TeamBuilderService;
   let tx: {
-    formationMatch: { deleteMany: jest.Mock; create: jest.Mock };
+    formationMatch: {
+      deleteMany: jest.Mock;
+      create: jest.Mock<Promise<object>, [CreateMatchArgs]>;
+    };
   };
   let prisma: {
     character: { findMany: jest.Mock };
@@ -252,7 +264,9 @@ describe('TeamBuilderService.saveFormation', () => {
     tx = {
       formationMatch: {
         deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
-        create: jest.fn().mockResolvedValue({}),
+        create: jest
+          .fn<Promise<object>, [CreateMatchArgs]>()
+          .mockResolvedValue({}),
       },
     };
     prisma = {
