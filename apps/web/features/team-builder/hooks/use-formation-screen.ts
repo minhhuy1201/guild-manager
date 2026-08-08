@@ -19,7 +19,7 @@ import { isSessionEditable } from "../lib/session-status";
 import { findActiveWeekStart, isWeekEditable } from "../lib/week-status";
 import { fromWire, fromWireMatches, toWireMatches } from "../lib/wire";
 import { useFormationStore } from "../store/formation-store";
-import type { Assignment } from "../types/formation";
+import type { MatchDraft, Notes } from "../types/formation";
 import { useFormationWeeks } from "./use-formation-weeks";
 import { useFormations } from "./use-formations";
 import { usePrefill } from "./use-prefill";
@@ -33,7 +33,7 @@ const FORMATION = createMockFormation();
 const CONFLICT_STATUS = 409;
 
 /** Stable stand-in while no battle day is selected, so memos do not rerun. */
-const EMPTY_MATCHES: Assignment[] = [{}];
+const EMPTY_MATCHES: MatchDraft[] = [{ assignment: {}, notes: {} }];
 
 /** Trần số trận trong một ngày — khớp với `.max(2)` của Zod ở backend. */
 const MAX_MATCHES = 2;
@@ -63,6 +63,7 @@ export function useFormationScreen() {
   const clearDraft = useFormationStore((s) => s.clearDraft);
   const setDraft = useFormationStore((s) => s.setDraft);
   const drop = useFormationStore((s) => s.drop);
+  const setNoteInStore = useFormationStore((s) => s.setNote);
   const storedActiveId = useFormationStore((s) => s.activeSessionId);
   const setActiveMatch = useFormationStore((s) => s.setActiveMatch);
   const storedMatchIndex = useFormationStore((s) => s.activeMatchIndex);
@@ -87,7 +88,7 @@ export function useFormationScreen() {
   const activeSessionId = resolveActiveSessionId(sessions, storedActiveId);
 
   const savedBySession = useMemo(() => {
-    const map: Record<string, Assignment[]> = {};
+    const map: Record<string, MatchDraft[]> = {};
 
     for (const session of sessions) {
       map[session.sessionId] = fromWireMatches(session.matches, FORMATION.slots);
@@ -97,7 +98,7 @@ export function useFormationScreen() {
   }, [sessions]);
 
   const matchesBySession = useMemo(() => {
-    const map: Record<string, Assignment[]> = {};
+    const map: Record<string, MatchDraft[]> = {};
 
     for (const session of sessions) {
       map[session.sessionId] =
@@ -146,7 +147,9 @@ export function useFormationScreen() {
     storedMatchIndex
   );
 
-  const assignment = matches[activeMatchIndex] ?? EMPTY_MATCHES[0];
+  const activeMatch = matches[activeMatchIndex] ?? EMPTY_MATCHES[0];
+  const assignment = activeMatch.assignment;
+  const notes = activeMatch.notes;
 
   // Ai đang được xếp ở trận kia — để đánh dấu trên thẻ trong pool.
   const otherMatchIds = useMemo(() => {
@@ -154,7 +157,7 @@ export function useFormationScreen() {
 
     matches.forEach((match, index) => {
       if (index === activeMatchIndex) return;
-      for (const characterId of Object.values(match)) {
+      for (const characterId of Object.values(match.assignment)) {
         if (characterId) ids.add(characterId);
       }
     });
@@ -224,6 +227,17 @@ export function useFormationScreen() {
   }
 
   /**
+   * Write the note of one slot in the match currently open.
+   * @param slotId - Slot the note belongs to
+   * @param text - New text, raw as typed
+   */
+  function handleNoteChange(slotId: string, text: string) {
+    if (!activeSessionId) return;
+
+    setNoteInStore(activeSessionId, activeMatchIndex, matches, slotId, text);
+  }
+
+  /**
    * Persist the open day's draft — both matches at once.
    * A failed save keeps the draft: the toolbar shows the message and the user
    * can retry. A 409 means the day just crossed its start time, so refetch to
@@ -257,6 +271,7 @@ export function useFormationScreen() {
     otherMatchIds,
     canAddMatch: editable && matches.length < MAX_MATCHES,
     assignment,
+    notes,
     dirtySessionIds,
     dirty: activeSessionId ? dirtySessionIds.has(activeSessionId) : false,
     editable,
@@ -286,11 +301,18 @@ export function useFormationScreen() {
     setWeek,
     setActiveSession,
     setActiveMatch,
+    setNote: handleNoteChange,
     addMatch: () => {
       if (!activeSessionId || matches.length >= MAX_MATCHES) return;
       // Clone nguyên vẹn, kể cả người đã báo nghỉ đang nằm trong ô — không bao
-      // giờ tự gỡ người sau lưng người dùng.
-      setDraft(activeSessionId, [...matches, { ...matches[0] }]);
+      // giờ tự gỡ người sau lưng người dùng. Ghi chú đi theo y hệt.
+      setDraft(activeSessionId, [
+        ...matches,
+        {
+          assignment: { ...matches[0].assignment },
+          notes: { ...matches[0].notes },
+        },
+      ]);
       setActiveMatch(matches.length);
     },
     removeMatch: () => {
@@ -300,7 +322,10 @@ export function useFormationScreen() {
     },
     clearActiveDraft: () => {
       if (!activeSessionId) return;
-      const cleared = matches.map(() => fromWire({}, FORMATION.slots));
+      const cleared = matches.map(() => ({
+        assignment: fromWire({}, FORMATION.slots),
+        notes: {} as Notes,
+      }));
       setDraft(activeSessionId, cleared);
     },
     resetActive: () => {

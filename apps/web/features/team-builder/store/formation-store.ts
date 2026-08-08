@@ -1,11 +1,11 @@
 import { create } from "zustand";
 
 import { applyDrop } from "../lib/assignment";
-import type { Assignment, DragSource, DropTarget } from "../types/formation";
+import type { DragSource, DropTarget, MatchDraft } from "../types/formation";
 
 interface FormationState {
   /** Unsaved edits per battle day, keyed by session id. Missing key = untouched. */
-  drafts: Record<string, Assignment[]>;
+  drafts: Record<string, MatchDraft[]>;
   /** Battle day whose tab is open */
   activeSessionId: string | null;
   /** Sub-tab open inside the day: 0 = match 1, 1 = match 2 */
@@ -19,17 +19,29 @@ interface FormationState {
   /** Switch to another week; drafts of the previous week are dropped */
   setWeek: (weekStart: string | null) => void;
   /** Replace a day's draft outright — used by the prefill and by add/remove match */
-  setDraft: (sessionId: string, matches: Assignment[]) => void;
+  setDraft: (sessionId: string, matches: MatchDraft[]) => void;
   /** Discard a day's draft, falling back to the saved copy */
   clearDraft: (sessionId: string) => void;
   /** Resolve one drag gesture into one match of the day's draft */
   drop: (
     sessionId: string,
     matchIndex: number,
-    base: Assignment[],
+    base: MatchDraft[],
     source: DragSource,
     characterId: string,
     target: DropTarget
+  ) => void;
+  /**
+   * Write the note of one slot in one match.
+   * Takes `base` for the same reason `drop` does: the day may have no draft yet,
+   * and the first note typed has to build one from the saved copy.
+   */
+  setNote: (
+    sessionId: string,
+    matchIndex: number,
+    base: MatchDraft[],
+    slotId: string,
+    text: string
   ) => void;
 }
 
@@ -65,13 +77,35 @@ export const useFormationStore = create<FormationState>((set) => ({
   drop: (sessionId, matchIndex, base, source, characterId, target) =>
     set((state) => {
       const current = state.drafts[sessionId] ?? base;
-      const next = applyDrop(current[matchIndex], source, characterId, target);
+      const match = current[matchIndex];
+      if (!match) return state;
+
+      const next = applyDrop(match.assignment, source, characterId, target);
 
       // applyDrop returns the same reference for an out-of-bounds drop.
-      if (next === current[matchIndex]) return state;
+      if (next === match.assignment) return state;
 
-      const matches = current.map((match, index) =>
-        index === matchIndex ? next : match
+      const matches = current.map((item, index) =>
+        index === matchIndex ? { ...item, assignment: next } : item
+      );
+
+      return { drafts: { ...state.drafts, [sessionId]: matches } };
+    }),
+  setNote: (sessionId, matchIndex, base, slotId, text) =>
+    set((state) => {
+      const current = state.drafts[sessionId] ?? base;
+      const match = current[matchIndex];
+      if (!match) return state;
+
+      const notes = { ...match.notes };
+      // A slot cleared back to blank loses its key, the same way an empty slot
+      // carries no key in the assignment. The raw text is kept otherwise, so
+      // typing a space mid-sentence is not swallowed.
+      if (text.trim() === "") delete notes[slotId];
+      else notes[slotId] = text;
+
+      const matches = current.map((item, index) =>
+        index === matchIndex ? { ...item, notes } : item
       );
 
       return { drafts: { ...state.drafts, [sessionId]: matches } };

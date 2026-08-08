@@ -33,7 +33,12 @@ export function usePrefill(
     (session) => session.sessionId === activeSessionId
   );
   const hasSaved = Boolean(
-    active && active.matches.some((match) => Object.keys(match).length > 0)
+    active &&
+      active.matches.some(
+        (match) =>
+          Object.keys(match.slots).length > 0 ||
+          Object.keys(match.notes).length > 0
+      )
   );
   const hasDraft = Boolean(activeSessionId && drafts[activeSessionId]);
 
@@ -54,7 +59,9 @@ export function usePrefill(
   useEffect(() => {
     if (!activeSessionId || !proposal) return;
     // Ngày mới bắt đầu với một trận; muốn trận 2 thì bấm nút "Tạo trận 2".
-    setDraft(activeSessionId, [proposal.assignment]);
+    setDraft(activeSessionId, [
+      { assignment: proposal.assignment, notes: proposal.notes },
+    ]);
   }, [activeSessionId, proposal, setDraft]);
 
   return proposal;

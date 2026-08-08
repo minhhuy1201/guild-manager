@@ -5,15 +5,15 @@ import { ApiError, apiFetch } from "@/lib/api-client";
 import type {
   FormationWeek,
   SessionFormation,
-  WireAssignment,
+  WireMatch,
 } from "../types/session-formation";
 
 /** Payload lưu đội hình cả ngày. */
 export interface SaveFormationInput {
   /** ID ngày đánh cần lưu */
   sessionId: string;
-  /** Đội hình từng trận, ô trống đã bị bỏ khoá */
-  matches: WireAssignment[];
+  /** Từng trận: đội hình đã bỏ ô trống, và ghi chú đã bỏ ô để rỗng */
+  matches: WireMatch[];
 }
 
 /**
@@ -63,7 +63,7 @@ export async function fetchFormations(
 }
 
 /**
- * Ghi đè đội hình cả ngày (1 hoặc 2 trận).
+ * Ghi đè đội hình cả ngày (1 hoặc 2 trận), kèm ghi chú theo ô.
  * @param input - sessionId và đội hình từng trận cần lưu
  * @returns Ngày đánh kèm đội hình vừa ghi
  * @throws ApiError khi chưa đăng nhập, ngày đã khoá (409), hoặc backend từ chối
