@@ -76,7 +76,7 @@ export function SlotCell({
           <SlotPlaceholder slot={slot} />
         )}
       </div>
-      <div className="w-[40%] shrink-0">
+      <div className="w-1/2 shrink-0">
         <SlotNoteInput
           slotId={slot.id}
           value={note}

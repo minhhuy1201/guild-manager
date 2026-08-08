@@ -2,7 +2,7 @@
 
 import { NOTE_MAX_LENGTH } from "@shared/schemas";
 
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 interface SlotNoteInputProps {
@@ -18,6 +18,8 @@ interface SlotNoteInputProps {
 
 /**
  * Free-text note for one slot, sitting next to the slot's drop area.
+ * A textarea rather than an input so a long note wraps instead of scrolling out
+ * of sight; `field-sizing-content` grows it line by line as the text does.
  * Capped with `maxLength` rather than a validation message: the schema rejects
  * anything longer, and a cap the user can feel beats an error after the fact.
  * Read-only uses the `readOnly` attribute, not `disabled`, so notes of a past
@@ -35,15 +37,16 @@ export function SlotNoteInput({
   onChange,
 }: SlotNoteInputProps) {
   return (
-    <Input
+    <Textarea
       value={value}
       onChange={(event) => onChange(slotId, event.target.value)}
       readOnly={readOnly}
       maxLength={NOTE_MAX_LENGTH}
+      rows={1}
       placeholder="Ghi chú"
       aria-label="Ghi chú cho ô này"
       className={cn(
-        "h-8 text-xs",
+        "min-h-8 resize-none py-1.5 text-xs leading-snug field-sizing-content",
         readOnly && "cursor-default border-transparent bg-muted/30 shadow-none"
       )}
     />
