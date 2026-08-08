@@ -108,15 +108,18 @@ model FormationMatch {
   @@unique([sessionId, matchIndex])
 }
 
-/// Một ô đã xếp người. Ô trống thì KHÔNG có hàng.
+/// Một ô có người HOẶC có ghi chú. Ô vừa trống vừa không ghi gì thì KHÔNG có hàng.
 model FormationSlot {
   matchId     String
   /// "team-1-pos-1" — bố cục lưới vẫn nằm hẳn ở frontend.
   slotId      String
-  characterId String
+  /// Null khi ô chỉ có ghi chú mà chưa xếp ai ("chừa cho X").
+  characterId String?
+  /// Ghi chú của người xếp team cho ô này. Null khi không ghi gì.
+  note        String?
 
   match     FormationMatch @relation(fields: [matchId], references: [id], onDelete: Cascade)
-  character Character      @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  character Character?     @relation(fields: [characterId], references: [id], onDelete: Cascade)
 
   @@id([matchId, slotId])
   @@index([characterId])
