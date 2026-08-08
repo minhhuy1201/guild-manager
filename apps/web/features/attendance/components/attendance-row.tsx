@@ -17,6 +17,10 @@ import type {
   Character,
 } from "../types/attendance";
 import { recordKey } from "../types/attendance";
+import {
+  STICKY_ACTION_COLUMN,
+  STICKY_NAME_COLUMN,
+} from "../lib/sticky-columns";
 import { CharacterName } from "./character-name";
 
 /** Trạng thái nháp của một dòng khi chỉnh sửa: map sessionId → trạng thái. */
@@ -67,7 +71,7 @@ export function AttendanceRow({
 }: AttendanceRowProps) {
   return (
     <TableRow>
-      <TableCell className="sticky left-0 bg-card">
+      <TableCell className={STICKY_NAME_COLUMN}>
         <CharacterName character={character} />
       </TableCell>
 
@@ -91,7 +95,7 @@ export function AttendanceRow({
         );
       })}
 
-      <TableCell className="w-28 text-right">
+      <TableCell className={STICKY_ACTION_COLUMN}>
         {isEditing ? (
           <RowActions className="gap-1.5">
             <RowActionButton

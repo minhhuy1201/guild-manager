@@ -19,6 +19,10 @@ import {
 import { useTablePagination } from "@/hooks/use-table-pagination";
 import { cn } from "@/lib/utils";
 import { getSessionSubtitle } from "../lib/session-subtitle";
+import {
+  STICKY_ACTION_COLUMN,
+  STICKY_NAME_COLUMN,
+} from "../lib/sticky-columns";
 import { isDeadlinePassed } from "../api/attendance-api";
 import { useAttendanceBoard } from "../hooks/use-attendance-board";
 import { useDeadlineRefresh } from "../hooks/use-deadline-refresh";
@@ -181,10 +185,16 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
         <CardTitle>Điểm danh theo ngày đánh</CardTitle>
       </CardHeader>
       <CardContent>
+        {!isError && !isPending && battleSessions.length > 0 && (
+          <p className="mb-2 text-xs text-muted-foreground md:hidden">
+            Vuốt ngang để xem các ngày đánh khác — cột tên và cột thao tác luôn
+            hiện.
+          </p>
+        )}
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="sticky left-0 bg-card">Thành viên</TableHead>
+              <TableHead className={STICKY_NAME_COLUMN}>Thành viên</TableHead>
               {battleSessions.map((session) => {
                 const subtitle = getSessionSubtitle(session);
                 return (
@@ -210,7 +220,7 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
                   </TableHead>
                 );
               })}
-              <TableHead className="w-28 text-right">Thao tác</TableHead>
+              <TableHead className={STICKY_ACTION_COLUMN}>Thao tác</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

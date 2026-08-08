@@ -13,9 +13,11 @@ interface CharacterNameProps {
  */
 export function CharacterName({ character }: CharacterNameProps) {
   return (
-    <div className="flex items-center gap-2">
+    // Giới hạn bề ngang trên điện thoại để cột tên (đang ghim trái) không ăn
+    // hết màn hình khi tên nhân vật dài.
+    <div className="flex max-w-36 items-center gap-2 sm:max-w-none">
       <GuildClassIcon guildClass={character.guildClass} />
-      <span className="font-medium">{character.name}</span>
+      <span className="truncate font-medium">{character.name}</span>
     </div>
   );
 }
