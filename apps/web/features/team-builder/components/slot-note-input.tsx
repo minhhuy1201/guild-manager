@@ -19,7 +19,9 @@ interface SlotNoteInputProps {
 /**
  * Free-text note for one slot, sitting next to the slot's drop area.
  * A textarea rather than an input so a long note wraps instead of scrolling out
- * of sight; `field-sizing-content` grows it line by line as the text does.
+ * of sight; `field-sizing-content` grows it line by line as the text does. The
+ * wrapping is the only way to reach a second line — Enter is swallowed and a
+ * pasted line break is dropped, so a note stays one paragraph.
  * Capped with `maxLength` rather than a validation message: the schema rejects
  * anything longer, and a cap the user can feel beats an error after the fact.
  * Read-only uses the `readOnly` attribute, not `disabled`, so notes of a past
@@ -39,7 +41,12 @@ export function SlotNoteInput({
   return (
     <Textarea
       value={value}
-      onChange={(event) => onChange(slotId, event.target.value)}
+      onChange={(event) =>
+        onChange(slotId, event.target.value.replace(/\n/g, " "))
+      }
+      onKeyDown={(event) => {
+        if (event.key === "Enter") event.preventDefault();
+      }}
       readOnly={readOnly}
       maxLength={NOTE_MAX_LENGTH}
       rows={1}
