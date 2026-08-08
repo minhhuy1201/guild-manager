@@ -88,8 +88,7 @@ Dữ liệu nằm ở volume `guild-manager-db-data` nên `db:down` không mất
 pnpm --filter api db:reset       # down -v && up  → chạy lại migrate + seed sau đó
 ```
 
-Nhân vật mẫu có id `10001`–`10025`, mật khẩu điểm danh là `pass<id>` (vd `pass10001`).
-Danh sách đầy đủ trong `apps/api/prisma/seed.ts`.
+Nhân vật mẫu có id `10001`–`10025`. Danh sách đầy đủ trong `apps/api/prisma/seed.ts`.
 
 > **Runtime container:** các script `db:*` gọi `podman compose`. Máy nào cài Docker thay Podman thì
 > đổi ba script đó sang `docker compose` trong `apps/api/package.json` — file `docker-compose.yml`

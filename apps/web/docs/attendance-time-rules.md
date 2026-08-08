@@ -17,7 +17,6 @@ Tổng hợp toàn bộ luật về **thời gian / deadline** của tính năng
 
 - **Deadline theo từng trận**: quá `deadline` của trận nào thì khóa cột trận đó (`isDeadlinePassed()` trong `attendance-api.ts`).
 - **Còn hạn thì cho đổi qua lại**: trong hạn được chuyển "Có" ⇄ "Không" thoải mái; hết hạn thì khóa, không sửa được.
-- **Mật khẩu riêng**: mỗi nhân vật điểm danh bằng password riêng của mình.
 - **Đã điểm danh hiển thị ở bảng lịch sử**: ghi rõ thời điểm điểm danh (`markedAt`), cả "Có" lẫn "Không".
 
 ## 3. Luật thời gian mới (yêu cầu ngày 2026-07-21, đã chốt)

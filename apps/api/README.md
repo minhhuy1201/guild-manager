@@ -39,11 +39,11 @@ Tất cả nằm sau prefix `/api`. Response thành công `{ data }`, lỗi
 | `POST` | `/auth/login` | Đăng nhập quản trị | Công khai |
 | `POST` | `/auth/refresh` | Đổi refresh token lấy cặp token mới | Công khai |
 | `GET` | `/auth/me` | Tài khoản của access token hiện tại | Bearer |
-| `GET` | `/attendance/characters` | Danh sách nhân vật (không kèm mật khẩu) | Công khai |
+| `GET` | `/attendance/characters` | Danh sách nhân vật | Công khai |
 | `GET` | `/attendance/week` | Tuần điểm danh đang mở | Công khai |
 | `GET` | `/attendance/sessions` | Các trận của tuần đang mở kèm deadline | Công khai |
 | `GET` | `/attendance/records` | Lượt điểm danh của tuần đang mở | Công khai |
-| `POST` | `/attendance` | Điểm danh một nhân vật ở một trận | Mật khẩu nhân vật, **hoặc** Bearer (quản trị được miễn deadline lẫn mật khẩu) |
+| `POST` | `/attendance` | Điểm danh một nhân vật ở một trận | Công khai (Bearer thì được miễn deadline) |
 | `GET` | `/team-builder/weeks` | Các tuần còn dữ liệu đội hình | Bearer |
 | `GET` | `/team-builder/formations?weekStart=` | Đội hình các trận của một tuần | Bearer |
 | `PUT` | `/team-builder/formations/:sessionId` | Ghi đè đội hình một trận | Bearer |

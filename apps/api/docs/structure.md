@@ -7,7 +7,7 @@ File này mô tả cây thư mục **thực tế hiện tại** và những ch�
 apps/api/
 ├── prisma/
 │   ├── schema.prisma           # Model: Character, BattleSession, AttendanceRecord
-│   └── seed.ts                 # Seed nhân vật mẫu (hash mật khẩu trước khi ghi)
+│   └── seed.ts                 # Seed nhân vật mẫu
 ├── prisma.config.ts            # Config của Prisma CLI (Prisma 7 không đọc `url` trong schema nữa)
 ├── docker-compose.yml          # PostgreSQL cho dev (pnpm db:up / db:down / db:reset)
 ├── src/
@@ -24,8 +24,6 @@ apps/api/
 │   │   └── prisma/             # PrismaService (@Global PrismaModule) + isHealthy()
 │   ├── modules/                # Business domain — mỗi module là một "mini-app"
 │   │   └── health/             # Mẫu tham chiếu: health.module.ts + health.controller.ts
-│   ├── shared/
-│   │   └── utils/              # Hàm dùng chung có logic (password.util.ts — scrypt)
 │   ├── generated/prisma/       # Prisma Client (KHÔNG commit, sinh bằng prisma generate)
 │   ├── app.module.ts
 │   └── main.ts                 # Pipe/filter/interceptor global, CORS, Swagger (/docs), shutdown hooks

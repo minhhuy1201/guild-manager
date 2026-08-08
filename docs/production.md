@@ -88,7 +88,6 @@ Biến `POSTGRES_*` chỉ dành cho `docker-compose.yml` ở dev, production kh�
 - [ ] `AUTH_SECRET` mới (cả hai app)
 - [ ] `ADMIN_PASSWORD` mới
 - [ ] Mật khẩu database Supabase không trùng bất kỳ chỗ nào khác
-- [ ] Mật khẩu nhân vật: seed đang dùng `pass<id>` — dữ liệu thật phải đặt lại
 
 ## 4. Deploy ứng dụng
 

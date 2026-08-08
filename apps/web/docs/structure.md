@@ -17,7 +17,7 @@ apps/web/
 │   └── attendance/             # Feature điểm danh
 │       ├── api/                # query key factory + hàm gọi API thật (qua lib/api-client)
 │       ├── hooks/              # TanStack Query hooks (useCharacters, useMarkAttendance...)
-│       ├── store/              # Zustand: UI state của bộ lọc (search/lưu phái/mật khẩu)
+│       ├── store/              # Zustand: UI state của bộ lọc (search/lưu phái)
 │       ├── types/              # Type nội bộ feature (Character, BattleSession...)
 │       ├── components/         # Component của feature + attendance-screen (compose)
 │       └── index.ts            # Barrel (AttendanceScreen, AttendanceLogTable)
