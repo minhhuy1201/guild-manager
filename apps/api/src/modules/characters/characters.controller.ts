@@ -17,8 +17,8 @@ import { CreateCharacterDto, UpdateCharacterDto } from './dto/character.dto';
 import type { MemberEntity } from './entities/character.entity';
 
 /**
- * Quản lý thành viên — toàn bộ endpoint đều trả về mật khẩu điểm danh,
- * nên guard đặt ở cấp controller chứ không đặt lẻ từng route.
+ * Quản lý thành viên — chỉ quản trị viên được đụng tới, nên guard đặt ở cấp
+ * controller chứ không đặt lẻ từng route.
  */
 @ApiTags('characters')
 @Controller('characters')
@@ -27,11 +27,11 @@ export class CharactersController {
   constructor(private readonly characters: CharactersService) {}
 
   /**
-   * Danh sách thành viên kèm mật khẩu.
+   * Danh sách thành viên.
    * @returns Mảng thành viên sắp theo tên
    */
   @Get()
-  @ApiOperation({ summary: 'Danh sách thành viên kèm mật khẩu' })
+  @ApiOperation({ summary: 'Danh sách thành viên' })
   list(): Promise<MemberEntity[]> {
     return this.characters.list();
   }
@@ -39,7 +39,7 @@ export class CharactersController {
   /**
    * Thêm một thành viên.
    * @param body - Tên và lưu phái
-   * @returns Thành viên vừa tạo, kèm mật khẩu vừa cấp
+   * @returns Thành viên vừa tạo
    */
   @Post()
   @ApiOperation({ summary: 'Thêm một thành viên' })
@@ -60,17 +60,6 @@ export class CharactersController {
     @Body() body: UpdateCharacterDto,
   ): Promise<MemberEntity> {
     return this.characters.update(id, body);
-  }
-
-  /**
-   * Cấp lại mật khẩu điểm danh cho một thành viên.
-   * @param id - Id thành viên
-   * @returns Thành viên kèm mật khẩu mới
-   */
-  @Post(':id/password')
-  @ApiOperation({ summary: 'Cấp lại mật khẩu cho một thành viên' })
-  resetPassword(@Param('id') id: string): Promise<MemberEntity> {
-    return this.characters.resetPassword(id);
   }
 
   /**

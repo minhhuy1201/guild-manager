@@ -1,13 +1,10 @@
 import { randomInt } from 'node:crypto';
 
 /**
- * Bảng chữ cái dùng cho mật khẩu và hậu tố id.
+ * Bảng chữ cái dùng cho hậu tố id.
  * Bỏ `l`, `o`, `0`, `1` để đọc lại và gõ lại không nhầm.
  */
 const ALPHABET = 'abcdefghijkmnpqrstuvwxyz23456789';
-
-/** Độ dài mật khẩu điểm danh. */
-const PASSWORD_LENGTH = 8;
 
 /** Độ dài phần ngẫu nhiên trong id — phần đảm bảo id không trùng. */
 const ID_SUFFIX_LENGTH = 6;
@@ -54,12 +51,4 @@ export function slugifyName(name: string): string {
  */
 export function generateId(name: string): string {
   return `${slugifyName(name)}-${randomString(ID_SUFFIX_LENGTH)}`;
-}
-
-/**
- * Sinh mật khẩu điểm danh ngẫu nhiên.
- * @returns Mật khẩu 8 ký tự
- */
-export function generatePassword(): string {
-  return randomString(PASSWORD_LENGTH);
 }

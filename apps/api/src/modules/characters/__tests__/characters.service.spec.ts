@@ -9,7 +9,6 @@ const ROW = {
   id: 'meo-beo-k7ma3x',
   name: 'Mèo Béo',
   guildClass: GuildClass.CUU_LINH,
-  password: 'k7ma3xt9',
   createdAt: new Date(),
   updatedAt: new Date(),
 };
@@ -30,14 +29,13 @@ interface CreateArgs {
     id: string;
     name: string;
     guildClass: GuildClass;
-    password: string;
   };
 }
 
 /** Đối số của `prisma.character.update`. */
 interface UpdateArgs {
   where: { id: string };
-  data: { name?: string; guildClass?: GuildClass; password?: string };
+  data: { name?: string; guildClass?: GuildClass };
 }
 
 describe('CharactersService', () => {
@@ -70,25 +68,20 @@ describe('CharactersService', () => {
   });
 
   describe('list', () => {
-    it('trả về danh sách kèm mật khẩu, sắp theo tên', async () => {
+    it('trả về danh sách sắp theo tên', async () => {
       const members = await service.list();
 
       expect(prisma.character.findMany).toHaveBeenCalledWith({
         orderBy: { name: 'asc' },
       });
       expect(members).toEqual([
-        {
-          id: ROW.id,
-          name: ROW.name,
-          guildClass: ROW.guildClass,
-          password: ROW.password,
-        },
+        { id: ROW.id, name: ROW.name, guildClass: ROW.guildClass },
       ]);
     });
   });
 
   describe('create', () => {
-    it('sinh id mang prefix từ tên và mật khẩu 8 ký tự', async () => {
+    it('sinh id mang prefix từ tên', async () => {
       await service.create({
         name: 'Mèo Béo',
         guildClass: GuildClass.CUU_LINH,
@@ -96,7 +89,6 @@ describe('CharactersService', () => {
 
       const { data } = prisma.character.create.mock.calls[0][0];
       expect(data.id).toMatch(/^meo-beo-[a-z0-9]{6}$/);
-      expect(data.password).toHaveLength(8);
       expect(data.name).toBe('Mèo Béo');
       expect(data.guildClass).toBe(GuildClass.CUU_LINH);
     });
@@ -145,25 +137,6 @@ describe('CharactersService', () => {
         NotFoundException,
       );
       expect(prisma.character.update).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('resetPassword', () => {
-    it('ghi mật khẩu mới khác mật khẩu cũ', async () => {
-      await service.resetPassword(ROW.id);
-
-      const { where, data } = prisma.character.update.mock.calls[0][0];
-      expect(where).toEqual({ id: ROW.id });
-      expect(data.password).toHaveLength(8);
-      expect(data.password).not.toBe(ROW.password);
-    });
-
-    it('ném NotFoundException khi không có thành viên đó', async () => {
-      prisma.character.findUnique.mockResolvedValue(null);
-
-      await expect(service.resetPassword('khong-co')).rejects.toThrow(
-        NotFoundException,
-      );
     });
   });
 

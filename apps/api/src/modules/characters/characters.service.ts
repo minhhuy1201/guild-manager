@@ -6,7 +6,7 @@ import type {
 } from '@guild/shared/schemas';
 
 import { PrismaService } from '@/infrastructure/prisma/prisma.service';
-import { generateId, generatePassword } from './characters.lib';
+import { generateId } from './characters.lib';
 import type { MemberEntity } from './entities/character.entity';
 
 /** Mã lỗi Prisma khi vi phạm ràng buộc duy nhất (ở đây là trùng khoá chính). */
@@ -15,16 +15,13 @@ const UNIQUE_VIOLATION = 'P2002';
 /** Thông báo dùng chung khi id không tồn tại. */
 const NOT_FOUND = 'Không tìm thấy thành viên.';
 
-/**
- * CRUD thành viên cho quản trị viên. Trả về cả mật khẩu điểm danh, nên controller
- * phải khoá toàn bộ endpoint bằng JwtAuthGuard.
- */
+/** CRUD thành viên cho quản trị viên — controller khoá toàn bộ endpoint bằng JwtAuthGuard. */
 @Injectable()
 export class CharactersService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Danh sách toàn bộ thành viên kèm mật khẩu.
+   * Danh sách toàn bộ thành viên.
    * @returns Mảng thành viên sắp theo tên
    */
   async list(): Promise<MemberEntity[]> {
@@ -36,9 +33,9 @@ export class CharactersService {
   }
 
   /**
-   * Thêm một thành viên: id và mật khẩu đều do hệ thống sinh.
+   * Thêm một thành viên: id do hệ thống sinh.
    * @param input - Tên và lưu phái
-   * @returns Thành viên vừa tạo, kèm mật khẩu để quản trị viên gửi cho họ
+   * @returns Thành viên vừa tạo
    */
   async create(input: CreateCharacterInput): Promise<MemberEntity> {
     try {
@@ -70,23 +67,6 @@ export class CharactersService {
   }
 
   /**
-   * Cấp lại mật khẩu điểm danh mới cho một thành viên.
-   * @param id - Id thành viên
-   * @returns Thành viên kèm mật khẩu mới
-   * @throws NotFoundException khi không có thành viên đó
-   */
-  async resetPassword(id: string): Promise<MemberEntity> {
-    await this.ensureExists(id);
-
-    const row = await this.prisma.character.update({
-      where: { id },
-      data: { password: generatePassword() },
-    });
-
-    return toEntity(row);
-  }
-
-  /**
    * Xoá một thành viên cùng toàn bộ điểm danh và ô đội hình của họ (cascade ở database).
    * @param id - Id thành viên
    * @returns Promise hoàn tất khi đã xoá
@@ -99,7 +79,7 @@ export class CharactersService {
   }
 
   /**
-   * Ghi một hàng Character mới với id và mật khẩu vừa sinh.
+   * Ghi một hàng Character mới với id vừa sinh.
    * @param input - Tên và lưu phái
    * @returns Thành viên vừa tạo
    */
@@ -109,7 +89,6 @@ export class CharactersService {
         id: generateId(input.name),
         name: input.name,
         guildClass: input.guildClass,
-        password: generatePassword(),
       },
     });
 
@@ -140,7 +119,6 @@ function toEntity(row: {
   id: string;
   name: string;
   guildClass: string;
-  password: string;
 }): MemberEntity {
   return {
     id: row.id,
@@ -148,7 +126,6 @@ function toEntity(row: {
     // Prisma sinh ra union string literal, enum dùng chung là TS enum — cùng giá trị,
     // ràng buộc bởi enum trong database nên cast ở đây là an toàn.
     guildClass: row.guildClass as GuildClass,
-    password: row.password,
   };
 }
 

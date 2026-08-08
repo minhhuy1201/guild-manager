@@ -1,7 +1,4 @@
-import { generateId, generatePassword, slugifyName } from '../characters.lib';
-
-/** Bảng chữ cái dùng cho mật khẩu và hậu tố id — đã bỏ các ký tự dễ nhầm. */
-const ALPHABET = /^[abcdefghijkmnpqrstuvwxyz23456789]+$/;
+import { generateId, slugifyName } from '../characters.lib';
 
 describe('slugifyName', () => {
   it('bỏ dấu tiếng Việt và nối bằng gạch ngang', () => {
@@ -36,24 +33,5 @@ describe('generateId', () => {
     );
 
     expect(ids.size).toBe(50);
-  });
-});
-
-describe('generatePassword', () => {
-  it('dài đúng 8 ký tự và chỉ dùng bảng chữ cái đã chọn', () => {
-    for (let i = 0; i < 100; i += 1) {
-      const password = generatePassword();
-
-      expect(password).toHaveLength(8);
-      expect(password).toMatch(ALPHABET);
-    }
-  });
-
-  it('không sinh ra hai mật khẩu giống nhau liên tiếp', () => {
-    const passwords = new Set(
-      Array.from({ length: 50 }, () => generatePassword()),
-    );
-
-    expect(passwords.size).toBe(50);
   });
 });

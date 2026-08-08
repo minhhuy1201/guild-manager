@@ -41,8 +41,6 @@ model Character {
   /// Tên hiển thị của nhân vật.
   name       String
   guildClass GuildClass
-  /// Mật khẩu điểm danh dạng plaintext — quản trị viên cấp và xem lại được.
-  password   String
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
 
