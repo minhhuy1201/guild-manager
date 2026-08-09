@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { LoaderCircle, Trash2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -78,6 +79,7 @@ export function DeleteMemberDialog({
             {error && <div className="text-sm text-destructive">{error}</div>}
             <DialogFooter>
               <Button variant="ghost" onClick={onClose}>
+                <X />
                 Huỷ
               </Button>
               <Button
@@ -85,6 +87,11 @@ export function DeleteMemberDialog({
                 disabled={deleteMutation.isPending}
                 onClick={handleDelete}
               >
+                {deleteMutation.isPending ? (
+                  <LoaderCircle className="animate-spin" />
+                ) : (
+                  <Trash2 />
+                )}
                 {deleteMutation.isPending ? "Đang xoá…" : "Xoá thành viên"}
               </Button>
             </DialogFooter>

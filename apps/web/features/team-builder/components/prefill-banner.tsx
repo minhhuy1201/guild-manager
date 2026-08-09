@@ -1,5 +1,7 @@
 "use client";
 
+import { Eraser } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import type { PrefillResult } from "../lib/prefill";
 
@@ -31,6 +33,7 @@ export function PrefillBanner({ result, onClear }: PrefillBannerProps) {
         . Chưa lưu.
       </p>
       <Button type="button" variant="ghost" size="sm" onClick={onClear}>
+        <Eraser />
         Xoá hết
       </Button>
     </div>

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, LoaderCircle, Save } from "lucide-react";
 
 import {
   GUILD_CLASS_LABEL,
@@ -164,6 +164,7 @@ function MemberForm({ member, onDone }: MemberFormProps) {
 
       <DialogFooter>
         <Button type="submit" disabled={saving}>
+          {saving ? <LoaderCircle className="animate-spin" /> : <Save />}
           {saving ? "Đang lưu…" : "Lưu"}
         </Button>
       </DialogFooter>

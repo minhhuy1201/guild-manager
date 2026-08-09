@@ -1,5 +1,7 @@
 "use client";
 
+import { Trash2, X } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -43,6 +45,7 @@ export function DeleteMatchDialog({
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => onOpenChange(false)}>
+              <X />
               Huỷ
             </Button>
             <Button
@@ -52,6 +55,7 @@ export function DeleteMatchDialog({
                 onOpenChange(false);
               }}
             >
+              <Trash2 />
               Xoá trận 2
             </Button>
           </DialogFooter>

@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, LoaderCircle, LogIn, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, type SubmitEvent } from "react";
 
@@ -105,6 +105,7 @@ function LoginForm() {
           onClick={() => setDialogOpen(false)}
           disabled={submitting}
         >
+          <X />
           Huỷ
         </Button>
         <Button
@@ -113,6 +114,7 @@ function LoginForm() {
             submitting || username.trim() === "" || password.trim() === ""
           }
         >
+          {submitting ? <LoaderCircle className="animate-spin" /> : <LogIn />}
           {submitting ? "Đang đăng nhập..." : "Đăng nhập"}
         </Button>
       </DialogFooter>

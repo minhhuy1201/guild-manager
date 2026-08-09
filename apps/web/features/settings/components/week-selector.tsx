@@ -1,5 +1,7 @@
 "use client";
 
+import { CalendarCheck, CalendarClock } from "lucide-react";
+
 import { DateRange } from "@/components/shared/date-range";
 import { Button } from "@/components/ui/button";
 import type { Week } from "@/features/attendance";
@@ -34,6 +36,7 @@ export function WeekSelector({ weeks, value, onChange }: WeekSelectorProps) {
           className={cn(week.weekStart !== value && "text-muted-foreground")}
           onClick={() => onChange(week.weekStart)}
         >
+          {week.isActive ? <CalendarCheck /> : <CalendarClock />}
           {week.isActive ? "Tuần này" : "Tuần sau"}
           <DateRange
             start={week.weekStart}

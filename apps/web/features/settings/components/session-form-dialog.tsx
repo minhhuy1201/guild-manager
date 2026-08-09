@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, LoaderCircle, Save } from "lucide-react";
 
 import { defaultDeadline } from "@shared/lib/battle-session";
 
@@ -189,6 +189,7 @@ function SessionForm({ session, onDone }: SessionFormProps) {
 
       <DialogFooter>
         <Button type="submit" disabled={saving}>
+          {saving ? <LoaderCircle className="animate-spin" /> : <Save />}
           {saving ? "Đang lưu…" : "Lưu"}
         </Button>
       </DialogFooter>

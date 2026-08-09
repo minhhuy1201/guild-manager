@@ -1,5 +1,7 @@
 "use client";
 
+import { LoaderCircle, RotateCcw, Save } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 
 interface FormationToolbarProps {
@@ -60,6 +62,7 @@ export function FormationToolbar({
         onClick={onReset}
         disabled={!dirty || saving}
       >
+        <RotateCcw />
         Đặt lại
       </Button>
       <Button
@@ -68,6 +71,7 @@ export function FormationToolbar({
         onClick={onSave}
         disabled={!dirty || saving}
       >
+        {saving ? <LoaderCircle className="animate-spin" /> : <Save />}
         {saving ? "Đang lưu..." : "Lưu đội hình cả ngày"}
       </Button>
     </div>

@@ -1,5 +1,7 @@
 "use client";
 
+import { Swords, Users } from "lucide-react";
+
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Tabs,
@@ -26,8 +28,14 @@ export function SettingsTabs() {
   return (
     <Tabs defaultValue={TAB.battles}>
       <TabsList>
-        <TabsTrigger value={TAB.battles}>Thiết lập trận đánh</TabsTrigger>
-        <TabsTrigger value={TAB.members}>Quản lý thành viên</TabsTrigger>
+        <TabsTrigger value={TAB.battles}>
+          <Swords />
+          Thiết lập trận đánh
+        </TabsTrigger>
+        <TabsTrigger value={TAB.members}>
+          <Users />
+          Quản lý thành viên
+        </TabsTrigger>
       </TabsList>
 
       <TabsContent value={TAB.battles}>

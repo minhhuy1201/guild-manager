@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, RefreshCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
@@ -24,6 +24,7 @@ export function ErrorState({ message, onRetry }: ErrorStateProps) {
       <AlertCircle className="size-6 text-destructive" />
       <p className="text-sm text-destructive">{message}</p>
       <Button type="button" variant="outline" size="sm" onClick={onRetry}>
+        <RefreshCw />
         Thử lại
       </Button>
     </div>
