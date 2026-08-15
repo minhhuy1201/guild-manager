@@ -16,6 +16,9 @@ services:
       - '${POSTGRES_PORT:-5432}:5432'
     volumes:
       - guild-manager-db-data:/var/lib/postgresql/data
+      # Chạy một lần lúc initdb (database trống): tạo role `anon` / `authenticated` của Supabase
+      # để migration chặn Data API replay được ở local.
+      - ./docker/initdb:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test:
         [
