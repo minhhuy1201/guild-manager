@@ -1,5 +1,5 @@
 /**
- * Luật thời gian của lịch đánh — xem apps/web/docs/attendance-time-rules.md.
+ * Luật thời gian của lịch đánh — tóm tắt ở docs/architecture.md mục 6.
  *
  * Mọi mốc giờ tính theo giờ Việt Nam (UTC+7) cố định, không phụ thuộc giờ máy
  * chạy server. Tuần điểm danh mở lúc 22:00 Thứ 7 cho tuần kế tiếp.

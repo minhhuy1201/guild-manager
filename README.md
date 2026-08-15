@@ -68,5 +68,5 @@ More detail (environment variables, common commands, troubleshooting): [`docs/de
 | [`apps/web/README.md`](apps/web/README.md) | Frontend: running it, commands, env |
 | [`AGENTS.md`](AGENTS.md) | Code conventions for humans and AI agents |
 | [`apps/api/docs/backend.md`](apps/api/docs/backend.md) | Backend structure: layers, dependency rules, conventions |
-| [`apps/web/docs/attendance-time-rules.md`](apps/web/docs/attendance-time-rules.md) | Spec for the attendance deadline rules |
+| [`apps/web/docs/frontend.md`](apps/web/docs/frontend.md) | Frontend structure: data-flow rules, components, UI conventions |
 | `docs/superpowers/specs/` | Design specs per feature |

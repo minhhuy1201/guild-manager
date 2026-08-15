@@ -226,7 +226,8 @@ Rules, in the order they get broken:
 - Import with `@/`. Route paths come from `config/routes.ts`, never string literals.
 
 Display conventions (icons vs. badges, action buttons, tables) live in
-[`../apps/web/docs/ui-conventions.md`](../apps/web/docs/ui-conventions.md).
+[`../apps/web/docs/frontend.md`](../apps/web/docs/frontend.md) §6, along with the reasoning behind
+this layout.
 
 ### 4.3 The session
 
@@ -275,8 +276,9 @@ frontend only mirrors `isDeadlinePassed` to grey out a column.
 - Past a match's deadline the column locks. Until then answers may flip freely. A request with a
   valid admin token bypasses the deadline.
 
-The rule set as originally specified (including the older fixed-deadline scheme it replaced) is in
-[`../apps/web/docs/attendance-time-rules.md`](../apps/web/docs/attendance-time-rules.md).
+Until 2026-08 the deadlines were fixed in code (10:00 on the match day, everything closing at 17:00
+Thursday). They are now entered by an admin at `/thiet-lap` and the backend does not clamp them —
+the old rules survive only as sensible defaults when filling the form.
 
 ## 7. Where new behavior goes
 
@@ -293,7 +295,7 @@ The rule set as originally specified (including the older fixed-deadline scheme 
 | **A cross-cutting backend concern** (logging, error shape, a header) | `src/common/` — interceptor, filter, guard or decorator. Never business logic. |
 | **A new environment variable** | `env.validation.ts` (+ `.env.example`) on the API; `config/api.ts` on the web side. Then the tables in [`development.md`](development.md) §3 and [`production.md`](production.md) §3. |
 | **A change to the week or deadline rules** | `session-schedule.ts` and its `__tests__` — nowhere else. The frontend must not re-derive a rule the backend owns. |
-| **A display convention** (state icon, action button, table shell) | Follow, and extend, [`ui-conventions.md`](../apps/web/docs/ui-conventions.md) with a wrapper in `components/shared/`. |
+| **A display convention** (state icon, action button, table shell) | Follow, and extend, [`frontend.md`](../apps/web/docs/frontend.md) §6 with a wrapper in `components/shared/`. |
 | **Anything with a non-obvious "why"** | A spec in `docs/superpowers/specs/`, then link it from the code comment. |
 
 Tests sit next to what they cover: `__tests__/` beside the module or feature folder (Jest on the

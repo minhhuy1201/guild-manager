@@ -20,7 +20,7 @@ export const envSchema = z.object({
   ADMIN_USERNAMES: z.string().min(1),
   /** Mật khẩu dùng chung cho các tài khoản admin ở trên. */
   ADMIN_PASSWORD: z.string().min(1),
-  /** Múi giờ dùng để tính deadline điểm danh (xem docs/attendance-time-rules.md). */
+  /** Múi giờ dùng để tính deadline điểm danh (xem docs/architecture.md mục 6). */
   APP_TIMEZONE: z.string().default('Asia/Ho_Chi_Minh'),
 });
 

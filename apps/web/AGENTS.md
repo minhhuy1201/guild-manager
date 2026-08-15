@@ -7,4 +7,4 @@ server vs client component, phân quyền) nằm ở [`docs/architecture.md`](..
 mục 4. Đọc trước khi tạo/sửa code trong `apps/web`; mục 7 "Where new behavior goes" nói rõ code mới
 đặt ở đâu.
 
-Quy ước hiển thị: [`docs/ui-conventions.md`](docs/ui-conventions.md).
+Cấu trúc thư mục, luật luồng dữ liệu và quy ước hiển thị: [`docs/frontend.md`](docs/frontend.md).

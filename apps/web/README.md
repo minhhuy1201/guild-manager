@@ -36,9 +36,6 @@ The web app never connects to the database and holds no admin accounts — those
 ## Documentation
 
 - [`../../docs/architecture.md`](../../docs/architecture.md) — layering, data-flow rules, session model, where new behavior goes
-- [`docs/ui-conventions.md`](./docs/ui-conventions.md) — UI conventions
-- [`docs/attendance-time-rules.md`](./docs/attendance-time-rules.md) — spec for the attendance deadline rules
-- [`docs/class.md`](./docs/class.md) — storing a character's class
-- [`docs/setup.md`](./docs/setup.md) — project bootstrap log (Next.js + Tailwind + shadcn)
+- [`docs/frontend.md`](./docs/frontend.md) — folder structure, data-flow rules, components, UI conventions
 - [`../../docs/development.md`](../../docs/development.md) — monorepo-wide setup
 - [`../../docs/production.md`](../../docs/production.md) — build and deploy

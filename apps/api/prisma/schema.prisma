@@ -1,5 +1,5 @@
 // Prisma schema — single source of truth cho model dữ liệu của Guild Manager.
-// Domain lấy từ apps/web/docs/idea.md + attendance-time-rules.md.
+// Domain và luật thời gian tóm tắt ở docs/architecture.md mục 5-6.
 
 // App chạy CommonJS (NestJS) nên client phải sinh ra ở dạng cjs,
 // nếu không jest/ts-node sẽ vỡ vì `import.meta` trong code generate.
