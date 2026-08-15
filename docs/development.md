@@ -80,7 +80,7 @@ The web app **never** connects to the database. There are no Supabase variables 
 ```bash
 pnpm --filter api db:up          # start postgres:17-alpine (container guild-manager-db)
 pnpm --filter api prisma:migrate # create the tables (prisma migrate dev)
-pnpm --filter api db:seed        # 25 sample characters, re-runnable (upsert)
+pnpm --filter api db:seed        # the guild roster, re-runnable
 ```
 
 Data lives in the `guild-manager-db-data` volume, so `db:down` does not lose it. To wipe everything:
@@ -89,7 +89,30 @@ Data lives in the `guild-manager-db-data` volume, so `db:down` does not lose it.
 pnpm --filter api db:reset       # down -v && up  → run migrate + seed again afterwards
 ```
 
-The sample characters use ids `10001`–`10025`. The full list is in `apps/api/prisma/seed.ts`.
+The roster is read from `seed-data.json` at the repo root — real guild data, so it is **not
+committed** (`.gitignore` catches it). Start from the committed example:
+
+```bash
+cp seed-data-example.json seed-data.json   # then edit it for your own guild
+```
+
+If you are working on this guild's instance, ask an admin for the current copy instead. Either way,
+without the file `db:seed` fails with a message telling you this.
+
+Format is an array of `{ id, name, guildClass }`:
+
+- `id` — primary key, any unique string. The example follows the same `slug-suffix` scheme the API
+  generates for characters added through the UI (`characters.lib.ts`), which keeps ids looking
+  consistent whichever way they were created.
+- `name` — display name, must be unique within the file.
+- `guildClass` — one of the `GuildClass` enum values in `packages/shared/enums`.
+
+The file is validated with Zod before anything is written, so a typo in `guildClass` is a clear
+error rather than a bad row in the database.
+
+`db:seed` matches on **name**, so re-running it keeps each existing character's id — and therefore
+their attendance records and formation slots. It only inserts and updates; it never deletes anyone
+dropped from the file. Remove those through the admin UI, where you can see what cascades.
 
 > **Container runtime:** the `db:*` scripts call `docker compose`. On a machine using Podman instead
 > of Docker, export `DOCKER_HOST=unix:///run/user/$UID/podman/podman.sock` (the Podman socket must be
@@ -127,7 +150,7 @@ pnpm --filter web dev    # http://localhost:3000
 | `prisma:migrate` | `migrate dev` — create a new migration from schema changes |
 | `prisma:studio` | Open Prisma Studio |
 | `db:up` / `db:down` / `db:reset` | Postgres container lifecycle |
-| `db:seed` | Load the sample characters |
+| `db:seed` | Load the roster from `seed-data.json` |
 
 ### Frontend (`pnpm --filter web …`)
 

@@ -1,0 +1,72 @@
+[
+  {
+    "id": "meo-beo-4nkt3q",
+    "name": "Mèo Béo",
+    "guildClass": "CUU_LINH"
+  },
+  {
+    "id": "lenh-ho-xung-t59nb4",
+    "name": "Lệnh Hồ Xung",
+    "guildClass": "CUU_LINH"
+  },
+  {
+    "id": "cau-tap-chung-9nctu8",
+    "name": "Cẩu Tạp Chủng",
+    "guildClass": "HUYET_HA"
+  },
+  {
+    "id": "hong-that-cong-gskrf4",
+    "name": "Hồng Thất Công",
+    "guildClass": "HUYET_HA"
+  },
+  {
+    "id": "truong-tam-phong-eiai8c",
+    "name": "Trương Tam Phong",
+    "guildClass": "LONG_NGAM"
+  },
+  {
+    "id": "du-than-chi-9fttzj",
+    "name": "Du Thản Chi",
+    "guildClass": "LONG_NGAM"
+  },
+  {
+    "id": "tieu-long-nu-84mr3u",
+    "name": "Tiểu Long Nữ",
+    "guildClass": "THAN_TUONG"
+  },
+  {
+    "id": "nham-doanh-doanh-cmjcm2",
+    "name": "Nhậm Doanh Doanh",
+    "guildClass": "THAN_TUONG"
+  },
+  {
+    "id": "hac-mieu-nnq2te",
+    "name": "Hắc Miêu",
+    "guildClass": "THIET_Y"
+  },
+  {
+    "id": "meo-muop-5sm3nv",
+    "name": "Mèo Mướp",
+    "guildClass": "THIET_Y"
+  },
+  {
+    "id": "kim-mao-su-kix7yh",
+    "name": "Kim Mao Sư",
+    "guildClass": "TOAI_MONG"
+  },
+  {
+    "id": "nghi-lam-x9qijc",
+    "name": "Nghi Lâm",
+    "guildClass": "TOAI_MONG"
+  },
+  {
+    "id": "chu-chi-nhuoc-8svu5u",
+    "name": "Chu Chỉ Nhược",
+    "guildClass": "TO_VAN"
+  },
+  {
+    "id": "nhac-linh-san-khba9p",
+    "name": "Nhạc Linh San",
+    "guildClass": "TO_VAN"
+  }
+]

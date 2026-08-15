@@ -47,8 +47,8 @@ commands against the real database from a local machine, and serves as the copy 
 hosting provider's environment variables when deploying.
 
 `apps/api/.env` is always **local** (the Postgres container, see [`development.md`](development.md)).
-Do not point it at Supabase: `pnpm dev`, `pnpm prisma:migrate` and especially `pnpm db:seed` all read
-that file, and the seed overwrites sample data onto whatever database it touches.
+Do not point it at Supabase: `pnpm dev`, `pnpm prisma:migrate` and `pnpm db:seed` all read that file
+by default, and each writes to whatever database it names.
 
 ### `apps/api`
 
@@ -160,8 +160,9 @@ is also why we do not write `DATABASE_URL=$DIRECT_DATABASE_URL prisma …` (see 
 never prompts. New migrations are always created locally with `prisma:migrate` and committed — never
 generated directly against the real database.
 
-Seeding (`pnpm db:seed`) upserts by id and is safely re-runnable — but it writes **sample data**, so
-do not run it against a database holding real data.
+Seeding is safely re-runnable and is the intended way to load the roster into production. It matches
+on name, so existing characters keep their ids (and their attendance records), and it never deletes
+anyone — see [`development.md`](development.md) for the file it reads.
 
 ### The Data API is blocked
 
