@@ -39,6 +39,30 @@ Deploy and operations: [`docs/production.md`](docs/production.md).
 
 ---
 
+## Secrets and `.env`
+
+**Never commit credentials.** `.gitignore` catches `.env.*` (except `.env.example`); real values live
+only in local env files and in the hosting provider's environment variables. If a secret does get
+committed, rotating it comes before anything else.
+
+Every variable is declared in the `.env.example` of its app, and the API validates them at startup
+with `envSchema` (`apps/api/src/config/env.validation.ts`) — a missing or malformed value crashes the
+process with a readable message instead of failing later. Adding a variable means updating both the
+schema and `.env.example`.
+
+- `AUTH_SECRET` (≥32 chars) **must be identical in `apps/api` and `apps/web`** — JWTs signed by one
+  are verified by the other, so a mismatch logs everyone out.
+- `apps/api/.env` is always **local**. Never point it at Supabase: `pnpm dev`, `prisma:migrate` and
+  `db:seed` all read it by default.
+- Production values live in `apps/api/.env.production`, selected per-command with `PRISMA_ENV_FILE`
+  (see [`docs/production.md`](docs/production.md), which owns the production env policy).
+- `seed-data.json` is real guild data and is git-ignored; `seed-data-example.json` is the committed
+  sample. See [`docs/development.md`](docs/development.md).
+
+Variable tables and setup: [`docs/development.md`](docs/development.md).
+
+---
+
 ## Conventions
 
 - Minimize token usage: skip unnecessary analysis and long explanations, and focus on completing the
