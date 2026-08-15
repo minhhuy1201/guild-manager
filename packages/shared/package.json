@@ -3,12 +3,29 @@
   "version": "0.0.0",
   "private": true,
   "//": "Không đặt \"type\": \"module\" — apps/api dùng TypeScript nodenext + CommonJS, nếu là ESM thì import tương đối bắt buộc có đuôi .js, mà Next.js/Turbopack của apps/web lại không resolve được đuôi đó.",
+  "//exports": "Kiểu lấy thẳng từ source .ts (khỏi sinh .d.ts), còn lúc chạy thì dùng dist/*.js. Không trỏ runtime vào .ts được: Vercel biên dịch TypeScript tại chỗ rồi chỉ giữ .js, nên đường dẫn .ts trong exports map sẽ không còn file — xem docs/superpowers/specs/2026-08-16-vercel-deployment-design.md.",
   "exports": {
-    "./enums": "./enums/index.ts",
-    "./lib": "./lib/battle-session.ts",
-    "./schemas": "./schemas/index.ts"
+    "./enums": {
+      "types": "./enums/index.ts",
+      "default": "./dist/enums/index.js"
+    },
+    "./lib": {
+      "types": "./lib/battle-session.ts",
+      "default": "./dist/lib/battle-session.js"
+    },
+    "./schemas": {
+      "types": "./schemas/index.ts",
+      "default": "./dist/schemas/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepare": "tsc"
   },
   "dependencies": {
     "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
   }
 }
