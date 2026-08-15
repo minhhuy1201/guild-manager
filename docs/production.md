@@ -1,28 +1,18 @@
 # Production
 
-Cách build, đưa lên môi trường thật và vận hành Guild Manager.
+How to build, ship and operate Guild Manager in the real environment.
 
-> **Trạng thái hiện tại (2026-08-03):** database đã chạy thật trên Supabase (region
-> `ap-northeast-1`, gói free). `apps/api` và `apps/web` **chưa chọn nơi host** — chưa có
-> `Dockerfile`, `vercel.json` hay pipeline CI nào trong repo. Phần "Deploy ứng dụng" dưới đây mô tả
-> yêu cầu và các lựa chọn, không phải quy trình đã chạy.
+> **Current status (2026-08-03):** the database already runs for real on Supabase (region
+> `ap-northeast-1`, free tier). `apps/api` and `apps/web` **have no host chosen yet** — there is no
+> `Dockerfile`, `vercel.json` or CI pipeline in the repo. The "Deploying the apps" section below
+> describes the requirements and the options, not a process that has already been run.
 
-## 1. Kiến trúc triển khai
+## 1. Deployment architecture
 
-```
-người dùng ──► apps/web (Next.js)  ──HTTP──►  apps/api (NestJS)  ──►  Postgres (Supabase)
-                     │                              │
-              AUTH_SECRET (verify JWT)     AUTH_SECRET (ký JWT)
-```
-
-Ba điều quyết định mọi thứ còn lại:
-
-- **Web không chạm database.** Chỉ gọi API qua `NEXT_PUBLIC_API_URL`. Không có
-  `NEXT_PUBLIC_SUPABASE_*`, connection string là bí mật của server.
-- **Hai app dùng chung một `AUTH_SECRET`.** API ký JWT, web verify. Lệch giá trị là đăng nhập
-  được nhưng route quản trị đá về trang chủ.
-- **API là process chạy dài hạn**, giữ sẵn một pg pool (mặc định 10 kết nối). Đây là lý do chọn
-  session pooler chứ không phải transaction pooler — xem mục 5.
+The diagram and the three constraints that govern everything (the web app never touches the
+database, both apps share `AUTH_SECRET`, the API is a long-lived process holding a pg pool) live in
+[`architecture.md`](architecture.md), section 1. The third constraint is why the session pooler is
+chosen in section 5.
 
 ## 2. Build
 
@@ -33,209 +23,217 @@ pnpm --filter api build     # webpack → apps/api/dist/main.js
 pnpm --filter web build     # → apps/web/.next
 ```
 
-Chạy bản build:
+Run the build:
 
 ```bash
 pnpm --filter api start:prod   # node dist/main
 pnpm --filter web start        # next start
 ```
 
-Lưu ý khi build ở môi trường CI/hosting:
+Things to watch for when building on CI/hosting:
 
-- `postinstall` của `apps/api` chạy `prisma generate`, cần `DATABASE_URL` **tồn tại và đúng định
-  dạng URL** (không cần kết nối được).
-- Đây là pnpm workspace: hosting phải cài từ thư mục gốc, không cài riêng trong `apps/*`.
-  `packages/shared` được import bằng source TypeScript, không có bước build riêng.
-- `apps/web` build cần `NEXT_PUBLIC_API_URL` vì biến `NEXT_PUBLIC_*` được nhúng vào bundle lúc build,
-  không đọc lại lúc chạy.
+- The `postinstall` of `apps/api` runs `prisma generate`, which needs `DATABASE_URL` to **exist and
+  be a well-formed URL** (it does not need to be reachable).
+- This is a pnpm workspace: the host must install from the repo root, not inside `apps/*`.
+  `packages/shared` is imported as TypeScript source and has no separate build step.
+- Building `apps/web` requires `NEXT_PUBLIC_API_URL`, because `NEXT_PUBLIC_*` variables are inlined
+  into the bundle at build time and are not read again at runtime.
 
-## 3. Biến môi trường production
+## 3. Production environment variables
 
-Giá trị thật nằm ở `apps/api/.env.production` — file này **không commit** (`.gitignore` bắt
-`.env.*`). Nó không phải file mà runtime đọc; nó là nơi giữ giá trị để chạy các lệnh Prisma nhắm
-vào database thật từ máy local, và là bản sao để chép sang phần environment variables của nhà cung
-cấp hosting khi deploy.
+The real values live in `apps/api/.env.production`, a file that is **not committed** (`.gitignore`
+catches `.env.*`). It is not the file the runtime reads; it holds the values needed to run Prisma
+commands against the real database from a local machine, and serves as the copy you paste into the
+hosting provider's environment variables when deploying.
 
-`apps/api/.env` luôn là **local** (Postgres trong container, xem [`development.md`](development.md)).
-Đừng trỏ nó ra Supabase: `pnpm dev`, `pnpm prisma:migrate` và nhất là `pnpm db:seed` đều đọc file
-đó, mà seed thì ghi đè dữ liệu mẫu lên bất cứ database nào nó chạm tới.
+`apps/api/.env` is always **local** (the Postgres container, see [`development.md`](development.md)).
+Do not point it at Supabase: `pnpm dev`, `pnpm prisma:migrate` and especially `pnpm db:seed` all read
+that file, and the seed overwrites sample data onto whatever database it touches.
 
 ### `apps/api`
 
-| Biến | Giá trị production |
+| Variable | Production value |
 |---|---|
-| `NODE_ENV` | `production` — tắt Swagger |
-| `PORT` | Theo yêu cầu của nhà cung cấp (thường là biến `PORT` họ tự cấp) |
-| `DATABASE_URL` | Session pooler Supabase, cổng `5432` |
-| `DIRECT_DATABASE_URL` | Cùng giá trị, **thêm `?connect_timeout=30`** — chỉ Prisma CLI đọc |
-| `AUTH_SECRET` | `openssl rand -hex 32`, khác hẳn khóa dev, trùng với web |
-| `ADMIN_USERNAMES` | Danh sách tài khoản quản trị thật |
-| `ADMIN_PASSWORD` | Mật khẩu thật, **không** để `testne` |
-| `WEB_ORIGIN` | Origin thật của web (`https://…`) — CORS chặn theo đúng giá trị này |
+| `NODE_ENV` | `production` — disables Swagger |
+| `PORT` | Whatever the provider requires (usually a `PORT` they inject) |
+| `DATABASE_URL` | Supabase session pooler, port `5432` |
+| `DIRECT_DATABASE_URL` | Same value, **plus `?connect_timeout=30`** — read by the Prisma CLI only |
+| `AUTH_SECRET` | `openssl rand -hex 32`, completely different from the dev key, identical to the web one |
+| `ADMIN_USERNAMES` | The real admin accounts |
+| `ADMIN_PASSWORD` | The real password, **not** `testne` |
+| `WEB_ORIGIN` | The web app's real origin (`https://…`) — CORS matches this value exactly |
 | `APP_TIMEZONE` | `Asia/Ho_Chi_Minh` |
 
-Biến `POSTGRES_*` chỉ dành cho `docker-compose.yml` ở dev, production không cần.
+The `POSTGRES_*` variables are for `docker-compose.yml` in development only; production does not need
+them.
 
 ### `apps/web`
 
-| Biến | Giá trị production |
+| Variable | Production value |
 |---|---|
-| `AUTH_SECRET` | Trùng đúng giá trị của API |
-| `NEXT_PUBLIC_API_URL` | `https://<domain-api>/api` |
+| `AUTH_SECRET` | Exactly the API's value |
+| `NEXT_PUBLIC_API_URL` | `https://<api-domain>/api` |
 
-### Danh sách bí mật cần đổi trước khi mở cho người ngoài
+### Secrets to rotate before opening this up to outsiders
 
-- [ ] `AUTH_SECRET` mới (cả hai app)
-- [ ] `ADMIN_PASSWORD` mới
-- [ ] Mật khẩu database Supabase không trùng bất kỳ chỗ nào khác
+- [ ] A fresh `AUTH_SECRET` (both apps)
+- [ ] A fresh `ADMIN_PASSWORD`
+- [ ] A Supabase database password not reused anywhere else
 
-## 4. Deploy ứng dụng
+## 4. Deploying the apps
 
-Chưa chốt nhà cung cấp. Ràng buộc để chọn:
+No provider has been settled on. The constraints that drive the choice:
 
-| | Yêu cầu |
+| | Requirement |
 |---|---|
-| `apps/web` | Next.js 16 App Router, có `proxy.ts` (middleware) và server action. Vercel là đường ít ma sát nhất; nơi khác cần Node runtime, không dùng static export được. |
-| `apps/api` | **Process Node chạy dài hạn.** Đưa lên serverless sẽ đảo ngược quyết định pooler ở mục 5 và làm hỏng pg pool. Phù hợp: VPS, Render, Railway, Fly.io — thứ chạy `node dist/main` liên tục. |
+| `apps/web` | Next.js 16 App Router with `proxy.ts` (middleware) and server actions. Vercel is the path of least friction; anywhere else needs a Node runtime — static export is not an option. |
+| `apps/api` | **A long-lived Node process.** Going serverless would reverse the pooler decision in section 5 and break the pg pool. Suitable: a VPS, Render, Railway, Fly.io — anything that keeps running `node dist/main`. |
 
-Việc phải làm khi dựng lần đầu, bất kể chọn nơi nào:
+What has to happen on the first deploy, whichever host is picked:
 
-1. Đặt đủ biến môi trường ở mục 3.
-2. Cài từ thư mục gốc repo (`pnpm install --frozen-lockfile`), build đúng app cần deploy.
-3. Chạy migration lên database thật (mục 5) **trước** khi khởi động bản build mới.
-4. Trỏ `WEB_ORIGIN` và `NEXT_PUBLIC_API_URL` vào domain thật của nhau.
-5. Xác nhận `GET /api/health` trả `db: "up"`.
+1. Set every environment variable from section 3.
+2. Install from the repo root (`pnpm install --frozen-lockfile`) and build the app being deployed.
+3. Run the migrations against the real database (section 5) **before** starting the new build.
+4. Point `WEB_ORIGIN` and `NEXT_PUBLIC_API_URL` at each other's real domains.
+5. Confirm that `GET /api/health` returns `db: "up"`.
 
-Chưa có CI: build và deploy hiện là thao tác tay.
+There is no CI yet: building and deploying are manual for now.
 
-## 5. Database production (Supabase)
+## 5. Production database (Supabase)
 
-Supabase ở đây chỉ là **một Postgres được host sẵn**: không cài `@supabase/supabase-js`, không
-PostgREST, không Supabase Auth/Storage/Realtime. Lập luận đầy đủ và cả những chỗ suy luận sai lúc
-thiết kế: [spec host database](superpowers/specs/2026-08-02-supabase-hosting-design.md).
+Supabase here is just **a hosted Postgres**: no `@supabase/supabase-js`, no PostgREST, no Supabase
+Auth/Storage/Realtime. The full reasoning, including the wrong turns taken during design, is in the
+[database hosting spec](superpowers/specs/2026-08-02-supabase-hosting-design.md).
 
-### Chọn kiểu kết nối
+### Choosing the connection type
 
-| | Chọn | Vì |
+| | Chosen | Why |
 |---|---|---|
-| Direct (`db.<ref>…:5432`) | ❌ | Chỉ IPv6 nếu không mua add-on IPv4 |
-| Transaction pooler (`:6543`) | ❌ | Dành cho client sống ngắn; mất prepared statement và advisory lock |
-| **Session pooler (`:5432`)** | ✅ | API là process chạy dài hạn giữ sẵn pool |
+| Direct (`db.<ref>…:5432`) | ❌ | IPv6 only unless you pay for the IPv4 add-on |
+| Transaction pooler (`:6543`) | ❌ | Meant for short-lived clients; loses prepared statements and advisory locks |
+| **Session pooler (`:5432`)** | ✅ | The API is a long-lived process holding an open pool |
 
-Đổi sang transaction pooler **chỉ khi** `apps/api` chuyển lên serverless.
+Switch to the transaction pooler **only if** `apps/api` moves to serverless.
 
-### Hai biến, hai vai trò
+### Two variables, two roles
 
-Prisma 7 bỏ `directUrl`, nhưng vẫn tách được vì `prisma.config.ts` **chỉ CLI đọc**, còn
-`PrismaService` đọc `DATABASE_URL` qua `ConfigService`:
+Prisma 7 dropped `directUrl`, but the split still works because `prisma.config.ts` is **read by the
+CLI only**, while `PrismaService` reads `DATABASE_URL` through `ConfigService`:
 
 - `DATABASE_URL` → runtime.
-- `DIRECT_DATABASE_URL` → `pnpm migrate:prod` và `db:seed`. Hiện trùng giá trị với `DATABASE_URL`.
+- `DIRECT_DATABASE_URL` → `pnpm migrate:prod` and `db:seed`. Currently the same value as
+  `DATABASE_URL`.
 
-`DIRECT_DATABASE_URL` phải có `?connect_timeout=30`: Prisma CLI mặc định bỏ cuộc sau 5 giây, mà kết
-nối nguội từ VN sang region Tokyo đo được 3,7–9,5 giây. Không đặt thì `prisma migrate status` lúc
-chạy lúc báo `P1001`. Runtime không dính vì `@prisma/adapter-pg` không đặt timeout ngắn như vậy.
+`DIRECT_DATABASE_URL` must carry `?connect_timeout=30`: the Prisma CLI gives up after 5 seconds by
+default, while a cold connection from Vietnam to the Tokyo region measured 3.7–9.5 seconds. Without
+it, `prisma migrate status` intermittently fails with `P1001`. The runtime is unaffected because
+`@prisma/adapter-pg` does not use such a short timeout.
 
-> **Đừng** viết script kiểu `DATABASE_URL=$DIRECT_DATABASE_URL prisma migrate deploy`: shell expand
-> biến trước khi `dotenv` chạy, mà `dotenv` không ghi đè biến đã tồn tại kể cả khi rỗng — kết quả là
-> migrate chạy với connection string rỗng.
+> **Do not** write scripts like `DATABASE_URL=$DIRECT_DATABASE_URL prisma migrate deploy`: the shell
+> expands the variable before `dotenv` runs, and `dotenv` will not overwrite an existing variable
+> even when it is empty — so the migration runs against an empty connection string.
 
-### Chạy migration
+### Running migrations
 
 ```bash
 cd apps/api
-pnpm migrate:prod:status   # xem production lệch bao nhiêu migration
-pnpm migrate:prod          # prisma migrate deploy lên database thật
+pnpm migrate:prod:status   # how many migrations production is behind
+pnpm migrate:prod          # prisma migrate deploy against the real database
 ```
 
-Hai lệnh trên đặt `PRISMA_ENV_FILE=.env.production`, nên chúng đọc `.env.production` **thay cho**
-`.env`. Lệnh không có hậu tố `:prod` (`pnpm prisma:status`, `pnpm prisma:migrate`, `pnpm db:seed`)
-luôn nhắm vào local — đọc datasource in ra đầu output để chắc chắn mình đang gõ đúng chỗ:
+Both commands set `PRISMA_ENV_FILE=.env.production`, so they read `.env.production` **instead of**
+`.env`. Commands without the `:prod` suffix (`pnpm prisma:status`, `pnpm prisma:migrate`,
+`pnpm db:seed`) always target local — read the datasource printed at the top of the output to be sure
+you are hitting the right one:
 
 ```
 Datasource "db": … at "localhost:5432"                          ← local
 Datasource "db": … at "aws-0-….pooler.supabase.com:5432"        ← production
 ```
 
-Cơ chế nằm ở `prisma.config.ts`: nó nạp đúng một file env theo `PRISMA_ENV_FILE` với
-`override: true`. Phải `override` vì Prisma CLI tự inject `.env` trước khi config chạy — không có
-nó thì biến local sẽ thắng và lệnh `:prod` âm thầm nhắm nhầm vào local. Đây cũng là lý do không viết
-`DATABASE_URL=$DIRECT_DATABASE_URL prisma …` (xem cảnh báo ở mục trên).
+The mechanism is in `prisma.config.ts`: it loads exactly one env file, named by `PRISMA_ENV_FILE`,
+with `override: true`. The override is required because the Prisma CLI injects `.env` before the
+config runs — without it the local variables win and the `:prod` commands quietly target local. This
+is also why we do not write `DATABASE_URL=$DIRECT_DATABASE_URL prisma …` (see the warning above).
 
-`migrate deploy` chỉ áp migration đã có sẵn trong repo, không tự sinh và không hỏi lại. Migration
-mới luôn được tạo ở local bằng `prisma:migrate` rồi commit, không bao giờ sinh trực tiếp trên
-database thật.
+`migrate deploy` only applies migrations that already exist in the repo; it never generates one and
+never prompts. New migrations are always created locally with `prisma:migrate` and committed — never
+generated directly against the real database.
 
-Seed (`pnpm db:seed`) là upsert theo id, chạy lại nhiều lần được — nhưng nó ghi **dữ liệu mẫu**,
-đừng chạy lên database đang có dữ liệu thật.
+Seeding (`pnpm db:seed`) upserts by id and is safely re-runnable — but it writes **sample data**, so
+do not run it against a database holding real data.
 
-### Data API bị chặn
+### The Data API is blocked
 
-Supabase expose schema `public` qua Data API và cấp sẵn toàn quyền cho `anon`/`authenticated` —
-anon key theo thiết kế là thứ công khai, tức toàn quyền đọc/ghi vòng qua `JwtAuthGuard`. Tệ hơn,
-default privileges cấp lại quyền đó cho **mọi bảng tạo về sau**, nên `REVOKE` một lần không giữ được.
+Supabase exposes the `public` schema through the Data API and grants `anon`/`authenticated` full
+access by default — the anon key is public by design, which means full read/write access bypassing
+`JwtAuthGuard`. Worse, default privileges re-grant that access to **every table created later**, so a
+one-off `REVOKE` does not hold.
 
-Migration `20260802185500_chan_data_api_truy_cap_bang` bật RLS (không policy = từ chối tất cả), thu
-hồi quyền hiện có và `ALTER DEFAULT PRIVILEGES` cho bảng tương lai. App không ảnh hưởng vì role
-`postgres` có `rolbypassrls`.
+Migration `20260802185500_chan_data_api_truy_cap_bang` enables RLS (no policies = deny everything),
+revokes the existing grants and sets `ALTER DEFAULT PRIVILEGES` for future tables. The app is
+unaffected because the `postgres` role has `rolbypassrls`.
 
-Sau mỗi lần thêm bảng mới, kiểm tra lại:
+After adding any new table, re-check:
 
 ```sql
 select grantee, table_name from information_schema.role_table_grants
 where table_schema = 'public' and grantee in ('anon', 'authenticated');
 ```
 
-Kết quả rỗng là đúng. **Việc còn tồn:** tắt hẳn Data API trong dashboard (Settings → API) — RLS đã
-chặn rồi nhưng tắt thứ mình không dùng vẫn hơn.
+An empty result is correct. **Still open:** turn the Data API off entirely in the dashboard
+(Settings → API) — RLS already blocks it, but disabling what you do not use is better.
 
-### Hạn mức gói free
+### Free-tier limits
 
-- **500 MB database.** Ước lượng dữ liệu thật của bang (giữ 4 tuần) dưới 150 KB — dung lượng không
-  phải mối lo, đừng lấy nó làm lý do cho quyết định thiết kế nào.
-- **Project bị tạm dừng sau ~7 ngày không có truy vấn.** Bang nghỉ dài ngày thì lần vào sau sẽ lỗi
-  kết nối cho tới khi khôi phục thủ công trong dashboard. Đây là hành vi đã biết và **chấp nhận**,
-  không phải app hỏng.
+- **500 MB of database.** The guild's real data (keeping four weeks) is estimated under 150 KB —
+  storage is not a concern, so do not use it to justify any design decision.
+- **The project is paused after ~7 days without a query.** If the guild goes quiet for a while, the
+  next visit will fail to connect until someone restores it manually in the dashboard. This is known,
+  **accepted** behaviour, not a broken app.
 
-## 6. Vận hành
+## 6. Operations
 
-### Kiểm tra sức khỏe
+### Health check
 
 ```bash
-curl https://<domain-api>/api/health
+curl https://<api-domain>/api/health
 ```
 
 ```json
 { "status": "ok", "uptime": 1234, "db": "up", "timestamp": "..." }
 ```
 
-`status` vẫn là `ok` khi database chết — chỉ `db` chuyển thành `"down"`. Cứ giám sát thì đọc trường
-`db`, đừng đọc mỗi HTTP status.
+`status` stays `ok` even when the database is down — only `db` flips to `"down"`. Any monitoring
+should read the `db` field, not just the HTTP status.
 
-### Log
+### Logs
 
-Mọi response đều có header `x-request-id`, `LoggingInterceptor` ghi cùng id đó vào log. Người dùng
-báo lỗi kèm id là truy được đúng request.
+Every response carries an `x-request-id` header, and `LoggingInterceptor` writes that same id into
+the logs. If a user reports a problem with the id, the exact request can be traced.
 
-Format response: thành công `{ data }`; lỗi `{ statusCode, message, errors?, path, requestId, timestamp }`
-với `message` đã là tiếng Việt, hiển thị thẳng lên UI được.
+Response format: success is `{ data }`; errors are
+`{ statusCode, message, errors?, path, requestId, timestamp }`, with `message` already in Vietnamese
+and safe to show directly in the UI.
 
 ### Rollback
 
-Không có cơ chế rollback tự động. Thực tế:
+There is no automatic rollback. In practice:
 
-- **Code:** deploy lại commit trước.
-- **Migration:** Prisma không sinh down-migration. Muốn lùi thì viết một migration mới đảo lại thay
-  đổi. Vì vậy migration phá dữ liệu (drop column, đổi kiểu) cần soi kỹ trước khi merge.
-- **Dữ liệu:** gói free có giới hạn backup riêng; chưa có quy trình khôi phục nào được thử.
+- **Code:** redeploy the previous commit.
+- **Migrations:** Prisma does not generate down-migrations. To go back, write a new migration that
+  reverses the change. That is why destructive migrations (dropping a column, changing a type) need
+  careful review before merging.
+- **Data:** the free tier has its own backup limits; no restore procedure has been tested.
 
-### Chưa có
+### Not in place yet
 
-Ghi lại cho khỏi tưởng là đã có: CI/CD, môi trường staging, backup có kiểm chứng, giám sát/cảnh báo,
-rate limit ở tầng ứng dụng.
+Recorded so nobody assumes otherwise: CI/CD, a staging environment, verified backups,
+monitoring/alerting, application-level rate limiting.
 
-## Xem thêm
+## See also
 
-- [`development.md`](development.md) — chạy local
-- [`apps/api/README.md`](../apps/api/README.md) — chi tiết backend
-- [spec host database](superpowers/specs/2026-08-02-supabase-hosting-design.md) — vì sao chọn như vậy
+- [`architecture.md`](architecture.md) — system architecture
+- [`development.md`](development.md) — running locally
+- [`apps/api/README.md`](../apps/api/README.md) — backend details
+- [database hosting spec](superpowers/specs/2026-08-02-supabase-hosting-design.md) — why it is set up this way

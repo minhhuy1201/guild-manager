@@ -1,6 +1,6 @@
 # AGENTS.md
 
-## Workflow
+## Super-power Workflow (for plugin superpower)
 
 ### Planning
 
@@ -21,81 +21,30 @@
 - Perform one final review before finishing.
 - Assume the user will review all generated code.
 
-### General
+---
 
-- Minimize token usage.
-- Avoid unnecessary analysis and long explanations.
-- Focus on completing the requested task efficiently.
+## Architecture
 
-## General
+Stack, layering, module and feature boundaries, the data model, the time rules, and **where new
+behavior goes** are all in [`docs/architecture.md`](docs/architecture.md). Read it before writing
+code in either app; the rules there are binding, not suggestions.
 
-- Keep code simple. Don't over-engineer.
-- Reuse existing types/schemas from `packages/shared`.
+Two things it does not repeat:
+
+- All user-facing text **must be Vietnamese** (commit messages and file names stay English).
+- Avoid `forwardRef()` in NestJS — refactor the dependency instead.
+
+Setup and commands: [`docs/development.md`](docs/development.md).
+Deploy and operations: [`docs/production.md`](docs/production.md).
+
+---
+
+## Conventions
+
+- Minimize token usage: skip unnecessary analysis and long explanations, and focus on completing the
+  requested task efficiently.
+- Keep code simple and maintainable — don't over-engineer.
+- Keep files and abstractions minimal; don't add folders, stores, or abstractions that aren't needed.
+- Follow the existing project structure.
+- Reuse existing types/schemas from `packages/shared` instead of duplicating them.
 - Ask before making large architectural changes.
-
----
-
-## Frontend (`apps/web`)
-
-### Stack
-
-- Next.js (App Router)
-- Tailwind CSS
-- shadcn/ui
-- TanStack Query
-- Zustand
-- TypeScript (strict)
-
-### Rules
-
-- All user-facing text **must be Vietnamese**.
-- `app/` only handles routing/layout. Business logic belongs in `features/`.
-- Prefer Server Components. Use `"use client"` only when required.
-- Server state → TanStack Query.
-- Client/UI state → Zustand.
-- Never store API responses in Zustand.
-- Wrap API calls in feature hooks. Don't call `useQuery` or `fetch` directly inside components.
-- Use `apiFetch` from `lib/api-client`.
-- Use shared types/schemas from `packages/shared`.
-- Keep shadcn components unchanged. Wrap them instead of editing.
-- Use Tailwind utility classes and theme tokens.
-- Import via `@/`.
-- Don't import another feature's internal files directly—use its public `index.ts`.
-
----
-
-## Backend (`apps/api`)
-
-### Stack
-
-- NestJS 11
-- Prisma + PostgreSQL
-- Zod
-- Swagger
-- TypeScript (strict)
-
-### Rules
-
-- Flow: Controller → Service → Repository → Prisma.
-- Controllers never access Prisma directly.
-- Business logic belongs in services.
-- DTOs only validate input.
-- Return DTO/response objects, never Prisma models.
-- Use shared enums/schemas from `packages/shared`.
-- Never store plaintext passwords.
-- Avoid `forwardRef()`. Refactor instead.
-- Respect module boundaries. Don't import another module's internals.
-
----
-
-## Do
-
-- Keep files and abstractions minimal.
-- Follow existing project structure.
-- Write clean, maintainable code.
-
-## Don't
-
-- Duplicate shared types.
-- Over-engineer.
-- Add unnecessary folders, stores, or abstractions.

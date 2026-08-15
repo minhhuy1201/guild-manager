@@ -1,107 +1,108 @@
 # Development
 
-Hướng dẫn dựng và làm việc với Guild Manager ở máy local. Bản rút gọn "chạy cho được" nằm ở
-[README gốc](../README.md); file này giải thích thêm phần cấu hình, lệnh và những chỗ hay vướng.
+How to set up and work on Guild Manager locally. The short "just get it running" version lives in
+the [root README](../README.md); this file adds the configuration details, the commands, and the
+places people usually get stuck.
 
-## 1. Yêu cầu môi trường
+## 1. Requirements
 
-| | Phiên bản | Ghi chú |
+| | Version | Notes |
 |---|---|---|
-| Node.js | 22+ | đang dev trên 24.13 |
-| pnpm | 10+ | `corepack enable pnpm` là đủ |
-| Docker | bất kỳ bản còn hỗ trợ | chỉ để chạy PostgreSQL (Podman dùng được, xem mục 4) |
-| `openssl` | | sinh `AUTH_SECRET` |
+| Node.js | 22+ | development happens on 24.13 |
+| pnpm | 10+ | `corepack enable pnpm` is enough |
+| Docker | any supported release | only used to run PostgreSQL (Podman works, see section 4) |
+| `openssl` | | to generate `AUTH_SECRET` |
 
-Monorepo không có root `package.json`. Chạy lệnh của một app theo một trong hai cách:
+The monorepo has no root `package.json`. Run an app's scripts in either of two ways:
 
 ```bash
-pnpm --filter api dev        # từ thư mục gốc
-cd apps/api && pnpm dev      # hoặc vào thẳng app
+pnpm --filter api dev        # from the repo root
+cd apps/api && pnpm dev      # or from inside the app
 ```
 
-Tên filter là `api`, `web`, `@guild/shared`.
+The filter names are `api`, `web`, `@guild/shared`.
 
-## 2. Cài đặt lần đầu
+## 2. First-time setup
 
 ```bash
 pnpm install
 ```
 
-`postinstall` của `apps/api` tự chạy `prisma generate` → sinh Prisma Client vào
-`apps/api/src/generated/prisma` (thư mục này **không commit**).
+The `postinstall` script of `apps/api` runs `prisma generate`, which emits the Prisma Client into
+`apps/api/src/generated/prisma` (that directory is **not committed**).
 
-Tạo hai file env từ mẫu:
+Create the two env files from their templates:
 
 ```bash
 cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env.local
 ```
 
-Sinh khóa và điền vào **cả hai** file:
+Generate a key and put it in **both** files:
 
 ```bash
 openssl rand -hex 32
 ```
 
-## 3. Biến môi trường
+## 3. Environment variables
 
 ### `apps/api/.env`
 
-Validate bằng Zod lúc boot (`src/config/env.validation.ts`) — thiếu hoặc sai định dạng thì app
-chết ngay với thông báo tiếng Việt, không chạy nửa vời.
+Validated with Zod at boot (`src/config/env.validation.ts`) — if a variable is missing or malformed
+the app dies immediately with a Vietnamese error message instead of half-running.
 
-| Biến | Bắt buộc | Mặc định | Việc |
+| Variable | Required | Default | Purpose |
 |---|---|---|---|
 | `NODE_ENV` | | `development` | `development` \| `production` \| `test` |
-| `PORT` | | `3001` | Port API (3000 để dành cho Next.js) |
-| `DATABASE_URL` | ✅ | — | Connection string Postgres cho runtime **và** cho Prisma CLI |
-| `DIRECT_DATABASE_URL` | | rỗng | Chỉ Prisma CLI đọc (`migrate:prod`, `db:seed`). Local để trống |
-| `WEB_ORIGIN` | | `http://localhost:3000` | Origin được phép qua CORS |
-| `AUTH_SECRET` | ✅ | — | Khóa ký JWT, tối thiểu 32 ký tự — **trùng với `apps/web`** |
-| `ADMIN_USERNAMES` | ✅ | — | Tài khoản quản trị, phân tách bằng dấu phẩy |
-| `ADMIN_PASSWORD` | ✅ | — | Mật khẩu dùng chung cho các tài khoản trên |
-| `APP_TIMEZONE` | | `Asia/Ho_Chi_Minh` | Múi giờ tính deadline điểm danh |
-| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` / `POSTGRES_PORT` | | postgres/postgres/guild_manager/5432 | Chỉ `docker-compose.yml` đọc — **phải khớp `DATABASE_URL`** |
+| `PORT` | | `3001` | API port (3000 is reserved for Next.js) |
+| `DATABASE_URL` | ✅ | — | Postgres connection string, used by the runtime **and** the Prisma CLI |
+| `DIRECT_DATABASE_URL` | | empty | Read by the Prisma CLI only (`migrate:prod`, `db:seed`). Leave empty locally |
+| `WEB_ORIGIN` | | `http://localhost:3000` | Origin allowed through CORS |
+| `AUTH_SECRET` | ✅ | — | JWT signing key, at least 32 characters — **must match `apps/web`** |
+| `ADMIN_USERNAMES` | ✅ | — | Admin accounts, comma-separated |
+| `ADMIN_PASSWORD` | ✅ | — | Shared password for those accounts |
+| `APP_TIMEZONE` | | `Asia/Ho_Chi_Minh` | Timezone used to compute attendance deadlines |
+| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` / `POSTGRES_PORT` | | postgres/postgres/guild_manager/5432 | Read by `docker-compose.yml` only — **must match `DATABASE_URL`** |
 
-`DIRECT_DATABASE_URL` cố tình **không** có trong `envSchema`: runtime không được phép đụng tới nó.
+`DIRECT_DATABASE_URL` is deliberately **absent** from `envSchema`: the runtime must never touch it.
 
 ### `apps/web/.env.local`
 
-| Biến | Việc |
+| Variable | Purpose |
 |---|---|
-| `AUTH_SECRET` | Verify JWT do API ký (HMAC-SHA256) — phải trùng giá trị bên API |
-| `NEXT_PUBLIC_API_URL` | Base URL backend, mặc định `http://localhost:3001/api` |
+| `AUTH_SECRET` | Verifies the JWT signed by the API (HMAC-SHA256) — must equal the API's value |
+| `NEXT_PUBLIC_API_URL` | Backend base URL, defaults to `http://localhost:3001/api` |
 
-Web **không** kết nối database. Không có biến Supabase nào ở phía web.
+The web app **never** connects to the database. There are no Supabase variables on the web side.
 
-## 4. Database local
-
-```bash
-pnpm --filter api db:up          # dựng postgres:17-alpine (container guild-manager-db)
-pnpm --filter api prisma:migrate # tạo bảng (prisma migrate dev)
-pnpm --filter api db:seed        # 25 nhân vật mẫu, chạy lại nhiều lần được (upsert)
-```
-
-Dữ liệu nằm ở volume `guild-manager-db-data` nên `db:down` không mất dữ liệu. Muốn xóa sạch:
+## 4. Local database
 
 ```bash
-pnpm --filter api db:reset       # down -v && up  → chạy lại migrate + seed sau đó
+pnpm --filter api db:up          # start postgres:17-alpine (container guild-manager-db)
+pnpm --filter api prisma:migrate # create the tables (prisma migrate dev)
+pnpm --filter api db:seed        # 25 sample characters, re-runnable (upsert)
 ```
 
-Nhân vật mẫu có id `10001`–`10025`. Danh sách đầy đủ trong `apps/api/prisma/seed.ts`.
+Data lives in the `guild-manager-db-data` volume, so `db:down` does not lose it. To wipe everything:
 
-> **Runtime container:** các script `db:*` gọi `docker compose`. Máy nào dùng Podman thay Docker thì
-> export `DOCKER_HOST=unix:///run/user/$UID/podman/podman.sock` (podman socket phải đang chạy:
-> `systemctl --user start podman.socket`), hoặc đổi ba script đó sang `podman compose` trong
-> `apps/api/package.json` — file `docker-compose.yml` dùng chung, không phải sửa gì.
+```bash
+pnpm --filter api db:reset       # down -v && up  → run migrate + seed again afterwards
+```
+
+The sample characters use ids `10001`–`10025`. The full list is in `apps/api/prisma/seed.ts`.
+
+> **Container runtime:** the `db:*` scripts call `docker compose`. On a machine using Podman instead
+> of Docker, export `DOCKER_HOST=unix:///run/user/$UID/podman/podman.sock` (the Podman socket must be
+> running: `systemctl --user start podman.socket`), or switch those three scripts to `podman compose`
+> in `apps/api/package.json` — `docker-compose.yml` is shared and needs no changes.
 >
-> Cài cả hai thì phải chọn một: mỗi runtime giữ container và volume riêng, nên `podman compose up`
-> và `docker compose up` tạo ra hai database khác nhau và cái chạy sau sẽ báo
-> `bind host port 0.0.0.0:5432: address already in use`.
+> If both are installed you must pick one: each runtime keeps its own containers and volumes, so
+> `podman compose up` and `docker compose up` create two different databases and whichever starts
+> second fails with `bind host port 0.0.0.0:5432: address already in use`.
 
-## 5. Chạy dev
+## 5. Running in development
 
-Hai terminal:
+Two terminals:
 
 ```bash
 pnpm --filter api dev    # http://localhost:3001/api — watch mode
@@ -109,96 +110,82 @@ pnpm --filter web dev    # http://localhost:3000
 ```
 
 - Health check: `curl http://localhost:3001/api/health` → `{"status":"ok","db":"up",...}`
-- Swagger UI: <http://localhost:3001/docs> (spec JSON `/docs-json`) — tự tắt khi `NODE_ENV=production`
-- Đăng nhập quản trị: tài khoản trong `ADMIN_USERNAMES`, mật khẩu `ADMIN_PASSWORD`
+- Swagger UI: <http://localhost:3001/docs> (JSON spec at `/docs-json`) — disabled when `NODE_ENV=production`
+- Admin login: an account from `ADMIN_USERNAMES` with `ADMIN_PASSWORD`
 
-## 6. Lệnh hay dùng
+## 6. Common commands
 
 ### Backend (`pnpm --filter api …`)
 
-| Lệnh | Việc |
+| Command | Purpose |
 |---|---|
 | `dev` | Watch mode |
-| `build` / `start:prod` | Build webpack ra `dist/main.js` / chạy bản build |
-| `lint` | ESLint + Prettier, kèm luật chặn import xuyên tầng |
-| `test` / `test:e2e` | Unit test / e2e test (Jest) |
-| `prisma:generate` | Sinh lại Prisma Client |
-| `prisma:migrate` | `migrate dev` — tạo migration mới từ thay đổi schema |
-| `prisma:studio` | Mở Prisma Studio |
-| `db:up` / `db:down` / `db:reset` | Vòng đời container Postgres |
-| `db:seed` | Nạp nhân vật mẫu |
+| `build` / `start:prod` | Webpack build to `dist/main.js` / run the build |
+| `lint` | ESLint + Prettier, including the rule blocking cross-layer imports |
+| `test` / `test:e2e` | Unit tests / e2e tests (Jest) |
+| `prisma:generate` | Regenerate the Prisma Client |
+| `prisma:migrate` | `migrate dev` — create a new migration from schema changes |
+| `prisma:studio` | Open Prisma Studio |
+| `db:up` / `db:down` / `db:reset` | Postgres container lifecycle |
+| `db:seed` | Load the sample characters |
 
 ### Frontend (`pnpm --filter web …`)
 
-| Lệnh | Việc |
+| Command | Purpose |
 |---|---|
 | `dev` | Next.js dev server |
-| `build` / `start` | Build production / chạy bản build |
+| `build` / `start` | Production build / run the build |
 | `lint` | ESLint (`eslint-config-next`) |
 | `test` / `test:watch` | Vitest |
 
-Thêm component shadcn (chạy trong `apps/web`):
+Add a shadcn component (run inside `apps/web`):
 
 ```bash
-pnpm dlx shadcn@latest add <tên-component>
+pnpm dlx shadcn@latest add <component-name>
 ```
 
-## 7. Quy trình làm việc
+## 7. Workflows
 
-### Đổi schema database
+### Changing the database schema
 
-1. Sửa `apps/api/prisma/schema.prisma`.
-2. `pnpm --filter api prisma:migrate` → đặt tên migration bằng tiếng Việt không dấu, kiểu
+1. Edit `apps/api/prisma/schema.prisma`.
+2. `pnpm --filter api prisma:migrate` → name the migration in unaccented Vietnamese, e.g.
    `character_id_la_game_id`.
-3. Enum trong schema phải **giữ khớp giá trị** với `packages/shared/enums` — `seed.ts` import
-   trực tiếp enum dùng chung nên lệch giá trị là compile error, không phải bug lúc chạy.
-4. Commit cả thư mục migration.
+3. Enums in the schema must **keep matching values** with `packages/shared/enums` — `seed.ts` imports
+   the shared enums directly, so a mismatch is a compile error, not a runtime bug.
+4. Commit the whole migration directory.
 
-### Đổi type/schema dùng chung
+### Adding new code (backend module, frontend feature, shared type…)
 
-`packages/shared` được import bằng source TypeScript (`@guild/shared/enums`, `@guild/shared/schemas`),
-không có bước build. Sửa xong là cả hai app thấy ngay.
+Where new code belongs is documented in [`architecture.md`](architecture.md), section 7 "Where new
+behavior goes". `packages/shared` is imported as TypeScript source, so there is no build step: once
+you save, both apps see the change.
 
-Backend bundle bằng webpack chính vì lý do này — builder `tsc` mặc định sẽ đẩy output thành
-`dist/apps/api/src/main.js` do có file nằm ngoài `rootDir`.
-
-### Thêm module backend
-
-Xem [`apps/api/docs/structure.md`](../apps/api/docs/structure.md) mục "Khi thêm một module mới".
-Luồng bắt buộc: Controller → Service → (Repository) → Prisma. Controller không đụng Prisma.
-
-### Thêm feature frontend
-
-Xem [`apps/web/docs/structure.md`](../apps/web/docs/structure.md). Tóm tắt: server data → TanStack
-Query qua `features/<feature>/hooks`; UI state → Zustand; mọi lời gọi backend đi qua `apiFetch` của
-`lib/api-client.ts`; `app/` chỉ routing.
-
-Quy ước chung cho cả hai phía nằm ở [`AGENTS.md`](../AGENTS.md).
-
-## 8. Trước khi commit
+## 8. Before committing
 
 ```bash
 pnpm --filter api lint && pnpm --filter api test
 pnpm --filter web lint && pnpm --filter web test
 ```
 
-Không commit: `.env*` (trừ `.env.example`), `apps/api/src/generated/`, `dist/`, `.next/`.
+Never commit: `.env*` (except `.env.example`), `apps/api/src/generated/`, `dist/`, `.next/`.
 
-## 9. Vướng thường gặp
+## 9. Troubleshooting
 
-| Hiện tượng | Nguyên nhân / cách xử lý |
+| Symptom | Cause / fix |
 |---|---|
-| Boot API báo `Biến môi trường không hợp lệ` | Đọc phần liệt kê ngay dưới thông báo — thường là thiếu `AUTH_SECRET` hoặc khóa ngắn hơn 32 ký tự |
-| Đăng nhập được nhưng vào `/xep-team` lại bị đá về trang chủ | `AUTH_SECRET` của web khác của api → web verify JWT thất bại |
-| `P1001 Can't reach database server` | Container chưa chạy (`db:up`), hoặc `POSTGRES_PORT` lệch với port trong `DATABASE_URL` |
-| Prisma Client báo thiếu type sau khi đổi schema | Chạy `pnpm --filter api prisma:generate` |
-| CORS chặn request từ web | `WEB_ORIGIN` phải khớp đúng origin đang mở (kể cả port) |
-| Port 3000/3001 bận | Đổi `PORT` (api) và `NEXT_PUBLIC_API_URL` (web) cho khớp |
-| `db:up` lỗi socket trên Podman | Thiếu `DOCKER_HOST` — xem mục 4 |
+| API boot fails with `Biến môi trường không hợp lệ` | Read the list printed right below the message — usually a missing `AUTH_SECRET` or a key shorter than 32 characters |
+| Login succeeds but `/xep-team` bounces back to the home page | The web `AUTH_SECRET` differs from the API's → the web app fails to verify the JWT |
+| `P1001 Can't reach database server` | The container is not running (`db:up`), or `POSTGRES_PORT` disagrees with the port in `DATABASE_URL` |
+| Prisma Client reports missing types after a schema change | Run `pnpm --filter api prisma:generate` |
+| CORS blocks requests from the web app | `WEB_ORIGIN` must match the origin you are actually browsing (port included) |
+| Port 3000/3001 already in use | Change `PORT` (api) and `NEXT_PUBLIC_API_URL` (web) to match |
+| `db:up` fails with a socket error on Podman | `DOCKER_HOST` is missing — see section 4 |
 
-## Xem thêm
+## See also
 
-- [`production.md`](production.md) — build, deploy, database thật
-- [`apps/api/README.md`](../apps/api/README.md) — chi tiết backend
-- [`apps/web/README.md`](../apps/web/README.md) — chi tiết frontend
-- `docs/superpowers/specs/` — spec thiết kế từng tính năng
+- [`architecture.md`](architecture.md) — system architecture, layer boundaries, where new code goes
+- [`production.md`](production.md) — build, deploy, the real database
+- [`apps/api/README.md`](../apps/api/README.md) — backend details
+- [`apps/web/README.md`](../apps/web/README.md) — frontend details
+- `docs/superpowers/specs/` — design specs per feature

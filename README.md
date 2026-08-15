@@ -1,79 +1,71 @@
 # Guild Manager
 
-Công cụ điểm danh và xếp đội hình cho bang hội: mỗi tuần có vài trận, thành viên tự điểm danh
-"Có/Không" trước deadline, quản trị viên xem lịch sử và xếp team cho từng trận.
+Attendance and roster tool for a guild: a few matches every week, members mark themselves
+"Yes/No" before the deadline, admins review history and build the team for each match.
 
-## Cấu trúc
+A pnpm workspace monorepo: `apps/api` (NestJS + Prisma + PostgreSQL), `apps/web` (Next.js), and
+`packages/shared` (enums and Zod schemas used by both). There is no root `package.json` — every
+command runs through `pnpm --filter <app>` or from inside the app directory.
 
-```
-guild-manager/
-├── apps/
-│   ├── api/        # NestJS 11 + Prisma 7 + PostgreSQL  → http://localhost:3001/api
-│   └── web/        # Next.js 16 (App Router) + Tailwind + shadcn/ui → http://localhost:3000
-├── packages/
-│   └── shared/     # Enum + Zod schema dùng chung FE/BE (@guild/shared)
-└── docs/           # Tài liệu chung (development, production, spec/plan)
-```
+How the pieces fit together, and where new code belongs: [`docs/architecture.md`](docs/architecture.md).
 
-Monorepo pnpm workspace, không có root `package.json` — mọi lệnh chạy qua `pnpm --filter <app>`
-hoặc `cd` vào thư mục app.
+## Requirements
 
-## Yêu cầu
-
-| | Phiên bản |
+| | Version |
 |---|---|
-| Node.js | 22+ (đang dev trên 24) |
+| Node.js | 22+ (developed on 24) |
 | pnpm | 10+ |
-| Docker | để chạy PostgreSQL local |
+| Docker | to run PostgreSQL locally |
 
-## Chạy local
+## Running locally
 
 ```bash
-# 1. Cài dependency (postinstall của apps/api tự chạy `prisma generate`)
+# 1. Install dependencies (the apps/api postinstall runs `prisma generate` automatically)
 pnpm install
 
-# 2. Tạo file env
+# 2. Create the env files
 cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env.local
 
-# 3. Sinh AUTH_SECRET và điền vào CẢ HAI file (phải trùng giá trị)
+# 3. Generate AUTH_SECRET and put it in BOTH files (the values must match)
 openssl rand -hex 32
 
-# 4. Dựng database + tạo bảng + nạp 25 nhân vật mẫu
+# 4. Start the database, create the tables, seed 25 sample characters
 pnpm --filter api db:up
 pnpm --filter api prisma:migrate
 pnpm --filter api db:seed
 
-# 5. Chạy — mở hai terminal
+# 5. Run — open two terminals
 pnpm --filter api dev     # http://localhost:3001/api  (Swagger: /docs)
 pnpm --filter web dev     # http://localhost:3000
 ```
 
-Đăng nhập quản trị bằng tài khoản trong `ADMIN_USERNAMES` + `ADMIN_PASSWORD` của `apps/api/.env`
-(mặc định `huy` / `testne`). Màn điểm danh không cần đăng nhập: ai vào cũng điểm danh được cho
-mọi thành viên, miễn còn trong hạn.
+Log in as an admin with an account from `ADMIN_USERNAMES` + `ADMIN_PASSWORD` in `apps/api/.env`
+(defaults to `huy` / `testne`). The attendance screen needs no login: anyone can mark attendance for
+any member, as long as the deadline has not passed.
 
-Kiểm tra nhanh: `curl http://localhost:3001/api/health` phải trả `"db": "up"`.
+Quick check: `curl http://localhost:3001/api/health` must return `"db": "up"`.
 
-Chi tiết hơn (biến môi trường, lệnh hay dùng, cách xử lý lỗi thường gặp): [`docs/development.md`](docs/development.md).
+More detail (environment variables, common commands, troubleshooting): [`docs/development.md`](docs/development.md).
 
-## Màn hình
+## Screens
 
-| Route | Việc | Quyền |
+| Route | Purpose | Access |
 |---|---|---|
-| `/` | Điểm danh tuần hiện tại | Mọi người |
-| `/lich-su-diem-danh` | Lịch sử điểm danh | Mọi người |
-| `/xep-team` | Xếp đội hình theo từng trận | Chỉ quản trị |
-| `/thiet-lap` | Hai tab: "Thiết lập trận đánh" (lịch đánh trong tuần) và "Quản lý thành viên" (thêm/sửa/xoá thành viên) | Chỉ quản trị |
+| `/` | Mark attendance for the current week | Everyone |
+| `/lich-su-diem-danh` | Attendance history | Everyone |
+| `/xep-team` | Build the roster for each match | Admin only |
+| `/thiet-lap` | Two tabs: "Match setup" (the week's schedule) and "Member management" (add/edit/delete members) | Admin only |
 
-## Tài liệu
+## Documentation
 
-| File | Nội dung |
+| File | Contents |
 |---|---|
-| [`docs/development.md`](docs/development.md) | Setup local, biến môi trường, lệnh, quy trình làm việc |
-| [`docs/production.md`](docs/production.md) | Build, deploy, migrate database thật, vận hành |
-| [`apps/api/README.md`](apps/api/README.md) | Backend: stack, endpoint, database |
-| [`apps/web/README.md`](apps/web/README.md) | Frontend: stack, cấu trúc feature |
-| [`AGENTS.md`](AGENTS.md) | Quy ước code cho người và cho AI agent |
-| [`apps/web/docs/attendance-time-rules.md`](apps/web/docs/attendance-time-rules.md) | Đặc tả luật deadline điểm danh |
-| `docs/superpowers/specs/` | Spec thiết kế từng tính năng |
+| [`docs/architecture.md`](docs/architecture.md) | How the system is built, the rules that hold it together, where new behavior goes |
+| [`docs/development.md`](docs/development.md) | Local setup, environment variables, commands, workflow |
+| [`docs/production.md`](docs/production.md) | Build, deploy, migrating the real database, operations |
+| [`apps/api/README.md`](apps/api/README.md) | Backend: running it, commands, the database |
+| [`apps/web/README.md`](apps/web/README.md) | Frontend: running it, commands, env |
+| [`AGENTS.md`](AGENTS.md) | Code conventions for humans and AI agents |
+| [`apps/web/docs/attendance-time-rules.md`](apps/web/docs/attendance-time-rules.md) | Spec for the attendance deadline rules |
+| `docs/superpowers/specs/` | Design specs per feature |

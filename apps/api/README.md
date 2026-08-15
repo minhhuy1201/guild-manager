@@ -1,102 +1,73 @@
 # API — Guild Manager
 
-Backend NestJS cho ứng dụng điểm danh bang hội.
+NestJS backend for the guild attendance app.
 
-## Stack
+Stack, layering, modules, the endpoint list and the response contract are in
+[`docs/architecture.md`](../../docs/architecture.md) §3. This file is how you run and operate it.
 
-- **NestJS 11** (Express) — HTTP layer
-- **Prisma 7 + PostgreSQL** — dữ liệu (kết nối qua driver adapter `@prisma/adapter-pg`)
-- **Zod + nestjs-zod** — validate env và DTO; schema dùng chung với frontend ở `packages/shared/schemas`
-- **JWT** (`@nestjs/jwt`) — access token 1 ngày, refresh token 1 tuần
-- **Swagger** — tài liệu API tự sinh, bật ở mọi môi trường trừ production
-
-## Chạy dev
+## Running dev
 
 ```bash
-cp .env.example .env      # điền AUTH_SECRET (openssl rand -hex 32)
-pnpm install              # postinstall tự chạy `prisma generate`
-pnpm db:up                # dựng PostgreSQL bằng Docker (docker-compose.yml)
-pnpm prisma:migrate       # tạo bảng
-pnpm db:seed              # nạp 25 nhân vật mẫu
+cp .env.example .env      # fill in AUTH_SECRET (openssl rand -hex 32)
+pnpm install              # postinstall runs `prisma generate` automatically
+pnpm db:up                # start PostgreSQL with Docker (docker-compose.yml)
+pnpm prisma:migrate       # create the tables
+pnpm db:seed              # seed 25 sample characters
 pnpm dev                  # http://localhost:3001/api
 ```
 
 - Health check: `GET /api/health`
-- Swagger UI: `http://localhost:3001/docs` (spec JSON: `/docs-json`) — tắt khi `NODE_ENV=production`
+- Swagger UI: `http://localhost:3001/docs` (JSON spec: `/docs-json`) — disabled when `NODE_ENV=production`
 
-`AUTH_SECRET` phải trùng giá trị với `apps/web` vì hai bên dùng chung cookie phiên đăng nhập.
+`AUTH_SECRET` must match the value in `apps/web`, since both sides share the session cookie.
 
-Danh sách biến môi trường đầy đủ và cách xử lý lỗi thường gặp: [`docs/development.md`](../../docs/development.md).
+Full list of environment variables and troubleshooting: [`docs/development.md`](../../docs/development.md).
 
-## Endpoint
+## Common commands
 
-Tất cả nằm sau prefix `/api`. Response thành công `{ data }`, lỗi
-`{ statusCode, message, errors?, path, requestId, timestamp }` — `message` đã là tiếng Việt.
-
-| Method | Đường dẫn | Việc | Quyền |
-|---|---|---|---|
-| `GET` | `/health` | Trạng thái API + database | Công khai |
-| `POST` | `/auth/login` | Đăng nhập quản trị | Công khai |
-| `POST` | `/auth/refresh` | Đổi refresh token lấy cặp token mới | Công khai |
-| `GET` | `/auth/me` | Tài khoản của access token hiện tại | Bearer |
-| `GET` | `/attendance/characters` | Danh sách nhân vật | Công khai |
-| `GET` | `/attendance/week` | Tuần điểm danh đang mở | Công khai |
-| `GET` | `/attendance/sessions` | Các trận của tuần đang mở kèm deadline | Công khai |
-| `GET` | `/attendance/records` | Lượt điểm danh của tuần đang mở | Công khai |
-| `POST` | `/attendance` | Điểm danh một nhân vật ở một trận | Công khai (Bearer thì được miễn deadline) |
-| `GET` | `/team-builder/weeks` | Các tuần còn dữ liệu đội hình | Bearer |
-| `GET` | `/team-builder/formations?weekStart=` | Đội hình các trận của một tuần | Bearer |
-| `PUT` | `/team-builder/formations/:sessionId` | Ghi đè đội hình một trận | Bearer |
-
-Luật deadline (chốt sổ 17h Thứ 5, mở tuần kế sau 22h Thứ 7…) nằm ở
-`src/modules/attendance/attendance-schedule.ts`, tính theo UTC+7 cố định. Đặc tả:
-[`apps/web/docs/attendance-time-rules.md`](../web/docs/attendance-time-rules.md).
-
-## Lệnh hay dùng
-
-| Lệnh | Việc |
+| Command | Purpose |
 |---|---|
-| `pnpm dev` | Chạy watch mode |
-| `pnpm build` / `pnpm start:prod` | Build (webpack, ra `dist/main.js`) và chạy bản build |
-| `pnpm lint` | ESLint + Prettier, kèm luật chặn import xuyên tầng |
-| `pnpm test` / `pnpm test:e2e` | Unit test / e2e test |
-| `pnpm prisma:generate` | Sinh lại Prisma Client vào `src/generated/prisma` (không commit) |
-| `pnpm prisma:migrate` | Tạo migration mới từ thay đổi schema (`migrate dev`) |
-| `pnpm prisma:studio` | Mở Prisma Studio |
-| `pnpm migrate:prod` | Áp migration lên database thật qua `DIRECT_DATABASE_URL` |
-| `pnpm db:up` / `pnpm db:down` | Bật/tắt container PostgreSQL |
-| `pnpm db:reset` | Xóa sạch volume và dựng lại DB trống (chạy lại `prisma:migrate` + `db:seed` sau đó) |
-| `pnpm db:seed` | Nạp 25 nhân vật mẫu (upsert, chạy lại được) |
+| `pnpm dev` | Run in watch mode |
+| `pnpm build` / `pnpm start:prod` | Build (webpack, outputs `dist/main.js`) and run the build |
+| `pnpm lint` | ESLint + Prettier, including the cross-layer import ban |
+| `pnpm test` / `pnpm test:e2e` | Unit tests / e2e tests |
+| `pnpm prisma:generate` | Regenerate Prisma Client into `src/generated/prisma` (not committed) |
+| `pnpm prisma:migrate` | Create a new migration from schema changes (`migrate dev`) |
+| `pnpm prisma:studio` | Open Prisma Studio |
+| `pnpm migrate:prod` | Apply migrations to the real database through `DIRECT_DATABASE_URL` |
+| `pnpm db:up` / `pnpm db:down` | Start/stop the PostgreSQL container |
+| `pnpm db:reset` | Wipe the volume and recreate an empty DB (re-run `prisma:migrate` + `db:seed` afterwards) |
+| `pnpm db:seed` | Seed 25 sample characters (upsert, safe to re-run) |
 
-## Database dev
+## Dev database
 
-`docker-compose.yml` dựng `postgres:17-alpine` (container `guild-manager-db`), dữ liệu nằm ở volume
-`guild-manager-db-data` nên tắt container không mất dữ liệu — muốn xóa hẳn thì dùng `pnpm db:reset`.
+`docker-compose.yml` starts `postgres:17-alpine` (container `guild-manager-db`); data lives in the
+`guild-manager-db-data` volume, so stopping the container does not lose data — use `pnpm db:reset`
+to wipe it for real.
 
-Thông tin kết nối đọc từ `.env` (`POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` / `POSTGRES_PORT`),
-mặc định khớp với `DATABASE_URL` trong `.env.example`. Đổi user/password/port thì **phải sửa cả hai chỗ**.
+Connection details are read from `.env` (`POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` /
+`POSTGRES_PORT`) and default to matching `DATABASE_URL` in `.env.example`. If you change the
+user/password/port you **must update both places**.
 
-> Script `db:*` gọi `docker compose`. Máy dùng Podman thay Docker: đặt
-> `DOCKER_HOST=unix:///run/user/$UID/podman/podman.sock` trước lệnh `pnpm db:up` (hoặc export sẵn
-> trong shell).
+> The `db:*` scripts call `docker compose`. On a machine using Podman instead of Docker, set
+> `DOCKER_HOST=unix:///run/user/$UID/podman/podman.sock` before `pnpm db:up` (or export it in your
+> shell).
 
-## Database production
+## Production database
 
-Đang host trên **Supabase gói free** (region `ap-northeast-1`), dùng như một Postgres thường: không
-cài `@supabase/supabase-js`, không PostgREST. Toàn bộ phần vận hành — chọn kiểu kết nối, vai trò của
-`DATABASE_URL` vs `DIRECT_DATABASE_URL`, quy trình migrate, chặn Data API, hạn mức gói free — nằm ở
-[`docs/production.md`](../../docs/production.md).
+Hosted on **Supabase's free tier** (region `ap-northeast-1`) and used as a plain Postgres. Everything
+operational — connection type, `DATABASE_URL` vs `DIRECT_DATABASE_URL`, migrations, the Data API,
+free-tier limits — is in [`docs/production.md`](../../docs/production.md). The three biggest time
+sinks, repeated here:
 
-Ba điểm dễ mất thời gian nhất, nhắc lại ở đây:
+- Use the **session pooler** (`…pooler.supabase.com:5432`), not the transaction pooler (`:6543`).
+- `DIRECT_DATABASE_URL` must include `?connect_timeout=30`, otherwise `P1001` shows up at random.
+- **The project is paused after ~7 days without queries** — you have to resume it manually in the
+  dashboard. Check with `GET /api/health`: `db` returns `"down"`.
 
-- Dùng **session pooler** (`…pooler.supabase.com:5432`), không phải transaction pooler (`:6543`).
-- `DIRECT_DATABASE_URL` phải có `?connect_timeout=30`, nếu không `P1001` sẽ xuất hiện ngẫu nhiên.
-- **Project bị tạm dừng sau ~7 ngày không có truy vấn** — phải khôi phục thủ công trong dashboard.
-  Kiểm tra bằng `GET /api/health`: `db` trả `"down"`.
+## Documentation
 
-## Tài liệu
-
-- [`docs/structure.md`](docs/structure.md) — cây thư mục thực tế và quy tắc theo tầng
-- [`docs/nestjs-folder-structure.md`](docs/nestjs-folder-structure.md) — lý thuyết kiến trúc feature-based
-- [`../../docs/development.md`](../../docs/development.md) — setup local, biến môi trường, lệnh
-- [`../../docs/production.md`](../../docs/production.md) — build, deploy, vận hành
+- [`../../docs/architecture.md`](../../docs/architecture.md) — layering, modules, endpoints, where new behavior goes
+- [`docs/nestjs-folder-structure.md`](docs/nestjs-folder-structure.md) — the feature-based architecture theory this follows
+- [`../../docs/development.md`](../../docs/development.md) — local setup, environment variables, commands
+- [`../../docs/production.md`](../../docs/production.md) — build, deploy, operations

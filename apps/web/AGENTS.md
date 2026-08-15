@@ -2,11 +2,9 @@
 
 Front-end quản lý bang hội.
 
-**Quy ước làm việc đầy đủ** (stack, cấu trúc `features/`, TanStack Query, Zustand, naming, server vs client component...) nằm ở **root `CLAUDE.md`** — mục "Frontend". Đọc file đó trước khi tạo/sửa code trong `apps/web`.
+**Quy ước làm việc đầy đủ** (stack, cây thư mục, `app/` vs `features/`, TanStack Query, Zustand,
+server vs client component, phân quyền) nằm ở [`docs/architecture.md`](../../docs/architecture.md)
+mục 4. Đọc trước khi tạo/sửa code trong `apps/web`; mục 7 "Where new behavior goes" nói rõ code mới
+đặt ở đâu.
 
-Cây thư mục thực tế: xem `docs/structure.md`.
-
-## UI components
-
-- Toàn bộ component trong `components/ui/` phải sinh từ **shadcn/ui** qua CLI, dùng biến thể **Base UI** (`style: "base-nova"` trong `components.json`). Primitive import từ `@base-ui/react/*`.
-- **Không dùng Radix** (`@radix-ui/*`) hay tự viết primitive tay. Cần biến thể riêng → compose/wrap ở `components/shared/`.
+Quy ước hiển thị: [`docs/ui-conventions.md`](docs/ui-conventions.md).
