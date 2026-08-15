@@ -5,6 +5,11 @@ import { useTransition } from "react";
 import { LogIn, LogOut } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { logout } from "../api/login-action";
 import { useAuthStore } from "../store/auth-store";
 import { LoginDialog } from "./login-dialog";
@@ -37,26 +42,43 @@ export function LoginButton({ username }: LoginButtonProps) {
     return (
       <div className="flex items-center gap-1">
         <span className="hidden text-sm font-medium sm:inline">{username}</span>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleLogout}
-          disabled={isPending}
-          aria-label="Đăng xuất"
-        >
-          <LogOut />
-          <span className="hidden sm:inline">Đăng xuất</span>
-        </Button>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={handleLogout}
+                disabled={isPending}
+              />
+            }
+          >
+            <LogOut />
+            <span className="sr-only">Đăng xuất</span>
+          </TooltipTrigger>
+          <TooltipContent>Đăng xuất</TooltipContent>
+        </Tooltip>
       </div>
     );
   }
 
   return (
     <>
-      <Button variant="outline" size="sm" onClick={() => setDialogOpen(true)}>
-        <LogIn />
-        <span className="hidden sm:inline">Đăng nhập</span>
-      </Button>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              variant="outline"
+              size="icon-sm"
+              onClick={() => setDialogOpen(true)}
+            />
+          }
+        >
+          <LogIn />
+          <span className="sr-only">Đăng nhập</span>
+        </TooltipTrigger>
+        <TooltipContent>Đăng nhập</TooltipContent>
+      </Tooltip>
       <LoginDialog />
     </>
   );
