@@ -142,8 +142,13 @@ pnpm migrate:prod          # prisma migrate deploy against the real database
 ```
 
 Both commands set `PRISMA_ENV_FILE=.env.production`, so they read `.env.production` **instead of**
-`.env`. Commands without the `:prod` suffix (`pnpm prisma:status`, `pnpm prisma:migrate`,
-`pnpm db:seed`) always target local — read the datasource printed at the top of the output to be sure
+`.env`. Any Prisma command accepts the same variable, including the seed:
+
+```bash
+PRISMA_ENV_FILE=.env.production pnpm db:seed   # roster → production
+```
+
+Without it, commands target local. Read the datasource printed at the top of the output to be sure
 you are hitting the right one:
 
 ```
@@ -151,10 +156,15 @@ Datasource "db": … at "localhost:5432"                          ← local
 Datasource "db": … at "aws-0-….pooler.supabase.com:5432"        ← production
 ```
 
-The mechanism is in `prisma.config.ts`: it loads exactly one env file, named by `PRISMA_ENV_FILE`,
-with `override: true`. The override is required because the Prisma CLI injects `.env` before the
-config runs — without it the local variables win and the `:prod` commands quietly target local. This
-is also why we do not write `DATABASE_URL=$DIRECT_DATABASE_URL prisma …` (see the warning above).
+The mechanism is `loadPrismaEnv()` in `prisma/load-env.ts`: it loads exactly one env file, named by
+`PRISMA_ENV_FILE`, with `override: true`. The override is required because the Prisma CLI injects
+`.env` before the config runs — without it the local variables win and the `:prod` commands quietly
+target local. This is also why we do not write `DATABASE_URL=$DIRECT_DATABASE_URL prisma …` (see the
+warning above).
+
+Both `prisma.config.ts` and `prisma/seed.ts` call it. The seed needs its own call because the CLI
+runs it in a **child process**, which does not inherit what the config loaded — that is why the seed
+prints which env file it wrote to.
 
 `migrate deploy` only applies migrations that already exist in the repo; it never generates one and
 never prompts. New migrations are always created locally with `prisma:migrate` and committed — never

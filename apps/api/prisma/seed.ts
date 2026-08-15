@@ -1,13 +1,13 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { z } from 'zod';
 
 import { GuildClass } from '@guild/shared/enums';
 
 import { PrismaClient } from '../src/generated/prisma/client';
+import { loadPrismaEnv } from './load-env';
 
 /**
  * Danh sách nhân vật nằm ngoài repo (`seed-data.json` ở gốc, đã gitignore) vì đó là
@@ -65,13 +65,14 @@ function readSeedCharacters(): SeedCharacter[] {
  * để còn thấy rõ dữ liệu điểm danh nào bị xoá theo.
  */
 async function main(): Promise<void> {
+  const envFile = loadPrismaEnv();
   const characters = readSeedCharacters();
 
   // Cùng thứ tự ưu tiên với prisma.config.ts: seed là thao tác CLI nên đi đường direct nếu có.
   const connectionString = process.env.DIRECT_DATABASE_URL || process.env.DATABASE_URL;
 
   if (!connectionString) {
-    throw new Error('Thiếu DATABASE_URL — kiểm tra file .env của apps/api.');
+    throw new Error(`Thiếu DATABASE_URL — kiểm tra file "${envFile}" của apps/api.`);
   }
 
   const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
@@ -109,7 +110,8 @@ async function main(): Promise<void> {
     );
 
     console.log(
-      `Đã seed ${characters.length} nhân vật (thêm ${created.length}, cập nhật ${updated.length}).`,
+      `Đã seed ${characters.length} nhân vật vào database của "${envFile}" ` +
+        `(thêm ${created.length}, cập nhật ${updated.length}).`,
     );
   } finally {
     await prisma.$disconnect();
