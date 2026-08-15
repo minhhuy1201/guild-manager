@@ -31,7 +31,7 @@ export default tseslint.config(
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/no-unsafe-argument': 'error',
       'prettier/prettier': ['error', { endOfLine: 'auto' }],
-      // Dependency rules — xem docs/nestjs-folder-structure.md mục 4.
+      // Dependency rules — xem docs/backend.md mục 4.
       'no-restricted-imports': [
         'error',
         {

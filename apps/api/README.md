@@ -68,6 +68,6 @@ sinks, repeated here:
 ## Documentation
 
 - [`../../docs/architecture.md`](../../docs/architecture.md) — layering, modules, endpoints, where new behavior goes
-- [`docs/nestjs-folder-structure.md`](docs/nestjs-folder-structure.md) — the feature-based architecture theory this follows
+- [`docs/backend.md`](docs/backend.md) — the feature-based architecture theory this follows
 - [`../../docs/development.md`](../../docs/development.md) — local setup, environment variables, commands
 - [`../../docs/production.md`](../../docs/production.md) — build, deploy, operations
