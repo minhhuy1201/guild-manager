@@ -24,7 +24,7 @@ hoặc `cd` vào thư mục app.
 |---|---|
 | Node.js | 22+ (đang dev trên 24) |
 | pnpm | 10+ |
-| Docker / Podman | để chạy PostgreSQL local |
+| Docker | để chạy PostgreSQL local |
 
 ## Chạy local
 

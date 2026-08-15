@@ -76,8 +76,9 @@ Luật deadline (chốt sổ 17h Thứ 5, mở tuần kế sau 22h Thứ 7…) n
 Thông tin kết nối đọc từ `.env` (`POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` / `POSTGRES_PORT`),
 mặc định khớp với `DATABASE_URL` trong `.env.example`. Đổi user/password/port thì **phải sửa cả hai chỗ**.
 
-> Máy dùng Podman thay Docker: đặt `DOCKER_HOST=unix:///run/user/$UID/podman/podman.sock` trước lệnh
-> `pnpm db:up` (hoặc export sẵn trong shell).
+> Script `db:*` gọi `docker compose`. Máy dùng Podman thay Docker: đặt
+> `DOCKER_HOST=unix:///run/user/$UID/podman/podman.sock` trước lệnh `pnpm db:up` (hoặc export sẵn
+> trong shell).
 
 ## Database production
 

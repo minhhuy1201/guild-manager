@@ -9,7 +9,7 @@ Hướng dẫn dựng và làm việc với Guild Manager ở máy local. Bản 
 |---|---|---|
 | Node.js | 22+ | đang dev trên 24.13 |
 | pnpm | 10+ | `corepack enable pnpm` là đủ |
-| Docker hoặc Podman | bất kỳ bản còn hỗ trợ | chỉ để chạy PostgreSQL |
+| Docker | bất kỳ bản còn hỗ trợ | chỉ để chạy PostgreSQL (Podman dùng được, xem mục 4) |
 | `openssl` | | sinh `AUTH_SECRET` |
 
 Monorepo không có root `package.json`. Chạy lệnh của một app theo một trong hai cách:
@@ -90,9 +90,10 @@ pnpm --filter api db:reset       # down -v && up  → chạy lại migrate + see
 
 Nhân vật mẫu có id `10001`–`10025`. Danh sách đầy đủ trong `apps/api/prisma/seed.ts`.
 
-> **Runtime container:** các script `db:*` gọi `podman compose`. Máy nào cài Docker thay Podman thì
-> đổi ba script đó sang `docker compose` trong `apps/api/package.json` — file `docker-compose.yml`
-> dùng chung, không phải sửa gì.
+> **Runtime container:** các script `db:*` gọi `docker compose`. Máy nào dùng Podman thay Docker thì
+> export `DOCKER_HOST=unix:///run/user/$UID/podman/podman.sock` (podman socket phải đang chạy:
+> `systemctl --user start podman.socket`), hoặc đổi ba script đó sang `podman compose` trong
+> `apps/api/package.json` — file `docker-compose.yml` dùng chung, không phải sửa gì.
 >
 > Cài cả hai thì phải chọn một: mỗi runtime giữ container và volume riêng, nên `podman compose up`
 > và `docker compose up` tạo ra hai database khác nhau và cái chạy sau sẽ báo
