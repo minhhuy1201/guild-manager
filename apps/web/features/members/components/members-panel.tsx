@@ -3,8 +3,11 @@
 import { useState } from "react";
 import { UserPlus } from "lucide-react";
 
+import type { GuildClass } from "@shared/enums";
+
 import { CreateButton } from "@/components/shared/action-buttons";
 import { ErrorState } from "@/components/shared/error-state";
+import { GuildClassFilterSelect } from "@/components/shared/guild-class-filter-select";
 import { TablePaginationBar } from "@/components/shared/table-pagination-bar";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -26,28 +29,32 @@ import { MemberRow } from "./member-row";
 const SKELETON_ROWS = 5;
 
 /**
- * Bảng quản lý thành viên: tìm theo tên, thêm/sửa/xoá.
+ * Bảng quản lý thành viên: tìm theo tên, lọc lưu phái, thêm/sửa/xoá.
  * Cả bang chỉ vài chục người nên lọc và phân trang ngay ở client.
  * @returns Panel quản lý thành viên
  */
 export function MembersPanel() {
   const membersQuery = useMembers();
   const [keyword, setKeyword] = useState("");
+  const [guildClasses, setGuildClasses] = useState<GuildClass[]>([]);
   const [editing, setEditing] = useState<Member | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [deleting, setDeleting] = useState<Member | null>(null);
 
   const normalized = keyword.trim().toLowerCase();
   const allMembers = membersQuery.data ?? [];
-  const members = normalized
-    ? allMembers.filter((member) =>
-        member.name.toLowerCase().includes(normalized)
-      )
-    : allMembers;
+  const isFiltering = normalized.length > 0 || guildClasses.length > 0;
+  const members = allMembers.filter((member) => {
+    if (guildClasses.length > 0 && !guildClasses.includes(member.guildClass)) {
+      return false;
+    }
+    return member.name.toLowerCase().includes(normalized);
+  });
 
   const pagination = useTablePagination({
     items: members,
-    resetKey: normalized,
+    // Chuỗi để so sánh theo giá trị: mảng lưu phái mới luôn khác tham chiếu cũ.
+    resetKey: `${normalized}|${guildClasses.join(",")}`,
   });
 
   if (membersQuery.isError) {
@@ -62,7 +69,10 @@ export function MembersPanel() {
   if (membersQuery.isPending) {
     return (
       <div className="flex flex-col gap-3">
-        <Skeleton className="h-9 w-64" />
+        <div className="flex flex-wrap gap-2">
+          <Skeleton className="h-9 w-64" />
+          <Skeleton className="h-9 w-48" />
+        </div>
         {Array.from({ length: SKELETON_ROWS }, (_, index) => (
           <Skeleton key={index} className="h-12 w-full rounded-lg" />
         ))}
@@ -73,12 +83,21 @@ export function MembersPanel() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <Input
-          className="max-w-64"
-          placeholder="Tìm theo tên…"
-          value={keyword}
-          onChange={(event) => setKeyword(event.target.value)}
-        />
+        <div className="flex flex-wrap items-center gap-2">
+          <Input
+            className="w-64"
+            placeholder="Tìm theo tên…"
+            value={keyword}
+            onChange={(event) => setKeyword(event.target.value)}
+          />
+          <div className="w-48">
+            <GuildClassFilterSelect
+              id="members-guild-class"
+              value={guildClasses}
+              onChange={setGuildClasses}
+            />
+          </div>
+        </div>
         <CreateButton
           label="Thêm thành viên"
           icon={<UserPlus className="size-4" />}
@@ -114,7 +133,7 @@ export function MembersPanel() {
 
       {members.length === 0 && (
         <div className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
-          {normalized
+          {isFiltering
             ? "Không có thành viên nào khớp."
             : "Bang chưa có thành viên nào."}
         </div>
