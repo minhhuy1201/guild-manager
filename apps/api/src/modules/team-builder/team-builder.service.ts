@@ -5,11 +5,11 @@ import {
 } from '@nestjs/common';
 import type { MatchInput } from '@guild/shared/schemas';
 
-import { PrismaService } from '@/infrastructure/prisma/prisma.service';
+import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import {
   BattleSessionsService,
   formatSessionLabel,
-} from '@/modules/battle-sessions/battle-sessions.module';
+} from '../battle-sessions/battle-sessions.module';
 import type {
   FormationWeekEntity,
   MatchFormation,

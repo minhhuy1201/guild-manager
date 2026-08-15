@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
-import { JwtAuthGuard } from '@/common';
+import { JwtAuthGuard } from '../../common';
 import { CharactersService } from './characters.service';
 import { CreateCharacterDto, UpdateCharacterDto } from './dto/character.dto';
 import type { MemberEntity } from './entities/character.entity';

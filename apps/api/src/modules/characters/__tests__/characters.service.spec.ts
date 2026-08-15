@@ -1,7 +1,7 @@
 import { NotFoundException } from '@nestjs/common';
 import { GuildClass } from '@guild/shared/enums';
 
-import { PrismaService } from '@/infrastructure/prisma/prisma.service';
+import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { CharactersService } from '../characters.service';
 
 /** Một hàng Character như Prisma trả về. */

@@ -1,7 +1,11 @@
 import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
-import { CurrentUser, OptionalJwtAuthGuard, type JwtPayload } from '@/common';
+import {
+  CurrentUser,
+  OptionalJwtAuthGuard,
+  type JwtPayload,
+} from '../../common';
 import { AttendanceService } from './attendance.service';
 import { MarkAttendanceDto } from './dto/mark-attendance.dto';
 import type {

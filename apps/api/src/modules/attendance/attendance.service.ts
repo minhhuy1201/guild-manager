@@ -6,12 +6,12 @@ import {
 import type { AttendanceStatus, GuildClass } from '@guild/shared/enums';
 import type { MarkAttendanceInput } from '@guild/shared/schemas';
 
-import { ADMIN_ROLE, type JwtPayload } from '@/common';
-import { PrismaService } from '@/infrastructure/prisma/prisma.service';
+import { ADMIN_ROLE, type JwtPayload } from '../../common';
+import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import {
   BattleSessionsService,
   isDeadlinePassed,
-} from '@/modules/battle-sessions/battle-sessions.module';
+} from '../battle-sessions/battle-sessions.module';
 import type {
   AttendanceRecordEntity,
   CharacterEntity,

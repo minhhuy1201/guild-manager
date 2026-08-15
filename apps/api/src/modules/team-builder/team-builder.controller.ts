@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
-import { JwtAuthGuard } from '@/common';
+import { JwtAuthGuard } from '../../common';
 import { SaveFormationDto } from './dto/save-formation.dto';
 import type {
   FormationWeekEntity,

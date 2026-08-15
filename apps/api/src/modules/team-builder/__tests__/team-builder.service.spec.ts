@@ -1,7 +1,7 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 
-import { BattleSessionsService } from '@/modules/battle-sessions/battle-sessions.module';
-import { PrismaService } from '@/infrastructure/prisma/prisma.service';
+import { BattleSessionsService } from '../../battle-sessions/battle-sessions.module';
+import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { TeamBuilderService } from '../team-builder.service';
 
 /**
@@ -338,9 +338,7 @@ describe('TeamBuilderService.saveFormation', () => {
       sessionId: 'session-thu',
       matchIndex: 1,
       slots: {
-        create: [
-          { slotId: 'team-1-pos-1', characterId: 'char-1', note: null },
-        ],
+        create: [{ slotId: 'team-1-pos-1', characterId: 'char-1', note: null }],
       },
     });
     expect(tx.formationMatch.create.mock.calls[1][0].data.matchIndex).toBe(2);

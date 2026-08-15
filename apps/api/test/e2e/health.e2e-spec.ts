@@ -3,13 +3,13 @@ import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import type { App } from 'supertest/types';
 
-import { AppModule } from '@/app.module';
+import { AppModule } from '../../src/app.module';
 import {
   AllExceptionsFilter,
   LoggingInterceptor,
   TransformInterceptor,
-} from '@/common';
-import { API_PREFIX } from '@/config';
+} from '../../src/common';
+import { API_PREFIX } from '../../src/config';
 
 describe('Health (e2e)', () => {
   let app: INestApplication<App>;

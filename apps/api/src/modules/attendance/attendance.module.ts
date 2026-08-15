@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 
-import { BattleSessionsModule } from '@/modules/battle-sessions/battle-sessions.module';
+import { BattleSessionsModule } from '../battle-sessions/battle-sessions.module';
 import { AttendanceController } from './attendance.controller';
 import { AttendanceService } from './attendance.service';
 

@@ -1,9 +1,9 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { AttendanceStatus } from '@guild/shared/enums';
 
-import { ADMIN_ROLE, TOKEN_TYPE, type JwtPayload } from '@/common';
-import { PrismaService } from '@/infrastructure/prisma/prisma.service';
-import { BattleSessionsService } from '@/modules/battle-sessions/battle-sessions.module';
+import { ADMIN_ROLE, TOKEN_TYPE, type JwtPayload } from '../../../common';
+import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
+import { BattleSessionsService } from '../../battle-sessions/battle-sessions.module';
 import { AttendanceService } from '../attendance.service';
 
 /**

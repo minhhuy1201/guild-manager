@@ -5,8 +5,8 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import type { LoginInput, RefreshTokenInput } from '@guild/shared/schemas';
 
-import { ADMIN_ROLE, TOKEN_TYPE, type JwtPayload } from '@/common';
-import type { AppConfigService } from '@/config';
+import { ADMIN_ROLE, TOKEN_TYPE, type JwtPayload } from '../../common';
+import type { AppConfigService } from '../../config';
 import { ACCESS_TOKEN_TTL, REFRESH_TOKEN_TTL } from './auth.constant';
 import type { AuthTokensEntity } from './entities/auth.entity';
 

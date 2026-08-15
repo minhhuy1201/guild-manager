@@ -5,7 +5,7 @@ import type {
   UpdateCharacterInput,
 } from '@guild/shared/schemas';
 
-import { PrismaService } from '@/infrastructure/prisma/prisma.service';
+import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { generateId } from './characters.lib';
 import type { MemberEntity } from './entities/character.entity';
 

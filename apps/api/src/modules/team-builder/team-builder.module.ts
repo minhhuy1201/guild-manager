@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 
-import { BattleSessionsModule } from '@/modules/battle-sessions/battle-sessions.module';
+import { BattleSessionsModule } from '../battle-sessions/battle-sessions.module';
 import { TeamBuilderController } from './team-builder.controller';
 import { TeamBuilderService } from './team-builder.service';
 

@@ -9,8 +9,8 @@ import {
   AllExceptionsFilter,
   LoggingInterceptor,
   TransformInterceptor,
-} from '@/common';
-import { API_PREFIX, SWAGGER_PATH, type Env } from '@/config';
+} from './common';
+import { API_PREFIX, SWAGGER_PATH, type Env } from './config';
 
 /**
  * Khởi động HTTP server: gắn pipe/filter/interceptor toàn cục, CORS, Swagger

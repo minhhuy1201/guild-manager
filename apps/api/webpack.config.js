@@ -14,9 +14,8 @@ module.exports = (options) => ({
   externals: [
     ({ request }, callback) => {
       const isRelative = request.startsWith('.') || request.startsWith('/');
-      // `@/...` là alias tới src của chính app, `@guild/...` là source dùng chung của workspace.
-      const isInternalSource =
-        request.startsWith('@/') || request.startsWith('@guild/');
+      // `@guild/...` là source dùng chung của workspace.
+      const isInternalSource = request.startsWith('@guild/');
 
       if (isRelative || isInternalSource) {
         return callback();

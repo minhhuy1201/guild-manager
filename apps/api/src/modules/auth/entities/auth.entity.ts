@@ -1,4 +1,4 @@
-import { ADMIN_ROLE } from '@/common';
+import { ADMIN_ROLE } from '../../../common';
 
 /** Thông tin tài khoản trả về cho client — không bao giờ chứa mật khẩu. */
 export interface AuthUserEntity {

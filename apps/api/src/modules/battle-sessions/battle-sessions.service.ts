@@ -9,7 +9,7 @@ import type {
   UpdateBattleSessionInput,
 } from '@guild/shared/schemas';
 
-import { PrismaService } from '@/infrastructure/prisma/prisma.service';
+import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import type {
   BattleSessionEntity,
   WeekEntity,

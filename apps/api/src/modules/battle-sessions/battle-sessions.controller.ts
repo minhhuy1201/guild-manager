@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
-import { JwtAuthGuard } from '@/common';
+import { JwtAuthGuard } from '../../common';
 import { BattleSessionsService } from './battle-sessions.service';
 import {
   CreateBattleSessionDto,
