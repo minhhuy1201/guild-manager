@@ -3,8 +3,7 @@
   "installCommand": "pnpm install --frozen-lockfile --filter web --filter @guild/shared",
   "git": {
     "deploymentEnabled": {
-      "**": false,
-      "main": true
+      "**": false
     }
   }
 }

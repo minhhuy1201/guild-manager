@@ -6,10 +6,19 @@ on:
   pull_request:
     branches: [main]
 
-# Push liên tiếp lên cùng một nhánh: hủy run cũ, chỉ giữ run mới nhất.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # Push liên tiếp lên cùng một nhánh: hủy run cũ, chỉ giữ run mới nhất. Trừ main — ở đó run
+  # nào cũng deploy, hủy giữa chừng sẽ bỏ lại một deploy dở dang không ai theo dõi. Cùng
+  # group nhưng không hủy nghĩa là các run trên main xếp hàng, deploy chạy đúng thứ tự commit.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+# Định danh project trên Vercel — không phải secret, tự chúng không cho quyền gì. Quyền deploy
+# nằm ở secrets.VERCEL_TOKEN. Để ở đây thay vì trong secrets để config đi cùng lịch sử git.
+env:
+  VERCEL_ORG_ID: team_dq9qUn1nvLYKPFaEhd3kmpcx
+  VERCEL_API_PROJECT_ID: prj_c8MfMh6UjalladBwl4seKidsFfLs
+  VERCEL_WEB_PROJECT_ID: prj_NQb6Wdj6quicozmVNVFk0Kd8Za1T
 
 jobs:
   backend-test:
@@ -59,3 +68,37 @@ jobs:
           NEXT_PUBLIC_API_URL: http://localhost:3001/api
           AUTH_SECRET: ci-placeholder-secret-0123456789abcdef
         run: pnpm --filter web build
+
+  # Deploy chạy sau khi TOÀN BỘ job kiểm thử xanh, và chỉ khi commit đã nằm trên main.
+  # `needs` là thứ chặn deploy khi test đỏ: job needs bị skip nếu bất kỳ dependency nào fail.
+  #
+  # Vercel không tự deploy nữa (git.deploymentEnabled = false trong apps/*/vercel.json), nên
+  # đây là đường duy nhất đưa code lên production.
+  deploy-api:
+    name: Deploy API
+    needs: [backend-test, frontend-test, quality, build]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Deploy to Vercel
+        # Không dùng `vercel build --prebuilt`: biến môi trường đánh dấu Sensitive không tải về
+        # được qua `vercel pull`, build tại đây sẽ nhúng giá trị rỗng. Đẩy source lên để Vercel
+        # tự build với biến thật, giống hệt cách git integration vẫn làm.
+        env:
+          VERCEL_PROJECT_ID: ${{ env.VERCEL_API_PROJECT_ID }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: npx --yes vercel@59 deploy --prod --yes --token="$VERCEL_TOKEN"
+
+  # Frontend deploy sau backend: web gọi API, nên API phải sẵn sàng trước.
+  deploy-web:
+    name: Deploy web
+    needs: [deploy-api]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Deploy to Vercel
+        env:
+          VERCEL_PROJECT_ID: ${{ env.VERCEL_WEB_PROJECT_ID }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: npx --yes vercel@59 deploy --prod --yes --token="$VERCEL_TOKEN"

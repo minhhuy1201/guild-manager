@@ -8,8 +8,8 @@ How to build, ship and operate Guild Manager in the real environment.
 > - `apps/api` → `https://guild-manager-api.vercel.app`
 > - `apps/web` → `https://guild-manager-web.vercel.app`
 >
-> Both Vercel projects are connected to the GitHub repo, so pushing to `main` deploys them. See
-> section 4.
+> Pushing to `main` deploys both, but only after the tests pass — GitHub Actions drives the deploy.
+> See section 4.
 
 ## 1. Deployment architecture
 
@@ -111,30 +111,60 @@ Directory. The full reasoning is in the
 `apps/api` runs as a Vercel Function, **not** as a long-lived process — an earlier version of this
 document said it needed one. Two things make that work: Vercel's zero-config NestJS detection (it
 builds `src/main.ts` as-is, no build config and no serverless handler to write — the `vercel.json`
-there only turns preview deploys off), and Fluid compute,
+there only turns Vercel's own git deploys off), and Fluid compute,
 which keeps the instance alive between invocations so the pg pool is reused. That is why the pooler
 choice in section 5 does not change.
 
 ### Deploying
 
-Both projects are connected to the GitHub repo (`vercel git connect`), so they deploy themselves:
+[`.github/workflows/ci.yml`](../.github/workflows/ci.yml) owns the whole pipeline. Vercel's own git
+integration is switched off, so **this workflow is the only path to production**:
 
-| Git event | What Vercel builds |
+```
+backend-test ┐
+frontend-test├─→ deploy-api ─→ deploy-web
+quality      │
+build        ┘
+```
+
+| Git event | What happens |
 |---|---|
-| Push to `main` | Production deploy of both projects |
-| Open/update a pull request | Nothing — no preview is built |
+| Push to `main` | Tests, then API deploy, then web deploy |
+| Open/update a pull request | Tests only — `deploy-api` is gated on `github.ref` |
+| Any test job fails | Both deploy jobs are skipped; production keeps the previous build |
 
-The GitHub Actions workflow in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) runs
-**alongside** the Vercel build, not before it — a red test does not stop a deploy. Gating would mean
-deploying from Actions with a `VERCEL_TOKEN` instead.
+Three things make the gate real:
 
-Deploying by hand still works and is the way to ship without a commit:
+- **`needs` is the gate.** A job whose dependency failed does not run. `deploy-api` needs all four
+  test jobs, and `deploy-web` needs `deploy-api`, so a red test anywhere stops everything downstream.
+- **API before web** is a `needs` edge, not a coincidence: web calls the API, so the API contract has
+  to be live first.
+- **`vercel deploy` blocks until the build finishes** and exits non-zero if it fails, so a broken API
+  build also stops the web deploy.
+
+The workflow deploys with `npx vercel deploy --prod`, uploading the source and letting Vercel build
+it — deliberately **not** `vercel build --prebuilt`. Variables marked Sensitive cannot be read back
+by `vercel pull`, so building inside Actions would bake empty values into the bundle. Building on
+Vercel is also exactly what the git integration used to do, which keeps the two paths identical.
+
+Authentication is `secrets.VERCEL_TOKEN`. The org and project IDs sit in plain `env:` at the top of
+the workflow: they are identifiers, not credentials, and they are useless without the token.
+
+Deploying by hand still works and is the way to ship without a commit — or when Actions is down:
 
 ```bash
 # from the repo root, not from apps/*
 vercel deploy --prod --yes --project guild-manager-api --scope <team>
 vercel deploy --prod --yes --project guild-manager-web --scope <team>
 ```
+
+Note that a hand deploy **bypasses the tests**. It is a break-glass tool, not the normal path.
+
+### Why pushes to `main` do not cancel each other
+
+The `concurrency` block cancels superseded runs on every ref **except** `main`. Runs on `main` share
+the group but are not cancelled, so they queue and deploy in commit order. Cancelling one mid-deploy
+would abandon a Vercel build that keeps running with nobody watching its result.
 
 ### `apps/web` installs only what it needs
 
@@ -155,16 +185,19 @@ those import `zod`, which resolves out of `packages/shared/node_modules`.
 
 ### Why there are no preview deployments
 
-Both apps carry a `vercel.json` whose only job is `git.deploymentEnabled`: `"**": false` disables
-every branch, then `"main": true` re-enables production. A branch matching several patterns deploys
-when any one of them is true, so `main` wins its own rule.
+Both apps carry a `vercel.json` setting `git.deploymentEnabled` to `{"**": false}` — no branch, not
+even `main`, deploys on a git event. That is what hands the trigger to GitHub Actions; leaving `main`
+enabled would deploy twice per push, once ungated by the tests.
+
+`deploymentEnabled` governs git events only. CLI deploys — from the workflow or by hand — are
+unaffected, which is why the pipeline still works with everything set to `false`.
 
 > Do not switch this to `ignoreCommand`. An attempt with `[ "$VERCEL_ENV" != "production" ]`
 > **cancelled the production deploy too**, so pushing to `main` shipped nothing. `deploymentEnabled`
 > is declarative, and its failure mode is a branch deploying when it should not — rather than `main`
 > silently never deploying.
 
-Previews are off because neither app can build outside Production:
+Beyond the double-deploy problem, previews are off because neither app can build outside Production:
 
 - `apps/api` — its variables are scoped to Production, and `validateEnv` fails fast at boot, so a
   preview would build and then crash. Fixing that means pointing previews at the real database or
@@ -369,8 +402,10 @@ There is no automatic rollback. In practice:
 ### Not in place yet
 
 Recorded so nobody assumes otherwise: preview deployments (both projects build on `main` only), a
-staging environment, verified backups, monitoring/alerting, application-level rate limiting. CI does
-not gate deploys either — see section 4.
+staging environment, verified backups, monitoring/alerting, application-level rate limiting.
+
+Migrations are still run by hand (section 5) — the pipeline deploys code, never schema. A deploy
+whose code expects a column that nobody migrated will fail at runtime, not in CI.
 
 ## See also
 
