@@ -212,6 +212,11 @@ Vercel không đọc `paths` trong `tsconfig.json`, nên `@/config` sống sót 
 bỏ `moduleNameMapper` khỏi cấu hình jest (cả `package.json` lẫn `test/jest-e2e.json`). Sau đó nft
 trace được 47 file. **Không được đưa alias trở lại.**
 
+Việc này kéo theo một hệ quả không thấy ngay: hai luật `no-restricted-imports` trong
+`eslint.config.mjs` khớp theo `@/modules/*`, nên sau khi bỏ alias chúng **không còn bắt được gì**.
+Đã viết lại theo đường dẫn tương đối (dùng `regex` thay `group`, khoá theo từng độ sâu thư mục) —
+xem `apps/api/docs/backend.md` mục 4.
+
 ### 3. `packages/shared` phải build ra JavaScript
 
 Lỗi kế tiếp, cùng gốc:

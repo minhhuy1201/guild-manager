@@ -152,30 +152,41 @@ modules/  ──►  infrastructure/  ──►  config/
 5. A controller **never** returns a raw Prisma model. Map it to the module's entity, so `password`
    and other internals cannot leak by accident.
 
-### Enforced by ESLint — currently broken
+### Enforced by ESLint
 
-> These two rules were real lint errors until 2026-08-16, when the `@/` alias was removed (§5). The
-> patterns below still match `@/…`, and no import looks like that any more, so **neither rule fires**.
-> They are quoted here as they stand in `eslint.config.mjs`; rewriting them against relative paths is
-> open work. Until then the module-boundary and layering rules hold by convention.
+Both rules are real lint errors, not conventions (`eslint.config.mjs`). Two helpers generate the
+config blocks:
 
 ```js
-// everywhere: only the *.module file of another module may be imported
-'no-restricted-imports': ['error', {
-  patterns: [{
-    group: ['@/modules/*/**', '!@/modules/*/*.module'],
-    message: 'Import qua public API của module…',
-  }],
-}],
+// only the *.module file of another module may be imported
+restrictModuleInternals(['src/modules/*/*.ts'], '\\.\\./')
+//   → regex: ^\.\./(?!\.\.)[^/]+/(?!.*\.module$)
 
 // in src/common/** and src/config/**: no importing upward
-'no-restricted-imports': ['error', {
-  patterns: [{
-    group: ['@/modules/*', '@/shared/*', '@/infrastructure/*'],
-    message: 'common/ và config/ không được import từ modules/…',
-  }],
-}],
+restrictUpwardImports(['src/common/*.ts', 'src/config/*.ts'], '\\.\\./')
+//   → regex: ^\.\./(modules|infrastructure|shared)/
 ```
+
+Two things make this less obvious than it looks, both a consequence of dropping the `@/` alias
+(§5) — the patterns now have to match **relative** import strings.
+
+**Each block is locked to one directory depth.** A relative specifier only means something once you
+know how deep the importing file is: from `src/modules/auth/auth.service.ts`, `../health/…` is a
+sibling module, but from `src/modules/auth/dto/x.ts` the same string is its own module. So the
+helper is called once per depth that actually exists — `src/*.ts`, `src/modules/*/*.ts`,
+`src/modules/*/*/*.ts`, `src/infrastructure/*/*.ts`, `test/*/*.ts` — each with the prefix that
+reaches `src/modules/` from there. **Add a new depth and you must add a block**, or imports at that
+depth are silently unchecked.
+
+**They use `regex`, not `group`.** `group` matches through the `ignore` library (gitignore
+semantics), where `*` also matches `..` — so `../*/**` would swallow `../../config` and flag a
+perfectly legal import. Character classes do not help: `ignore` reads `[!.]` as "the character `!`
+or `.`", and `[^.]` matches nothing at all. The `(?!\.\.)` lookahead in a `regex` pattern says
+exactly what is meant.
+
+Because ESLint flat config **replaces** same-named rules instead of merging them, each block must
+declare everything that applies to its files. `common/` and `config/` get the upward-import ban
+only, which is the stronger of the two and subsumes the module-boundary rule.
 
 `prisma/**` and `prisma.config.ts` are exempt — they run outside the app, under the Prisma CLI.
 
@@ -198,9 +209,9 @@ mappings, so `@/config` survived into the emitted JavaScript and the function di
 **Do not reintroduce an alias here.** `apps/web` keeps its own `@/*` and `@shared/*` — those are a
 Next.js build and unaffected.
 
-> **Known gap:** the `no-restricted-imports` rules in `eslint.config.mjs` still match on `@/modules/*`
-> and friends, so they no longer fire on anything. The layering they describe is currently enforced by
-> convention only. Rewriting those patterns against relative paths is open work.
+Removing the alias also broke the `no-restricted-imports` rules, which matched `@/modules/*`. They
+have been rewritten against relative paths — see the ESLint subsection of §4 for how, and for the
+one maintenance obligation that came with it.
 
 ---
 
@@ -346,8 +357,7 @@ What a NestJS project should have on day one, and where this one stands:
 - [x] Swagger generated from the DTOs, disabled when `NODE_ENV=production`
 - [x] Health check endpoint (`GET /api/health`, including a database ping)
 - [x] Graceful shutdown (`app.enableShutdownHooks()` + `PrismaService.onModuleDestroy`)
-- [ ] ESLint rules blocking cross-layer imports — the rules exist but match the removed `@/` alias,
-      so they currently fire on nothing (§5)
+- [x] ESLint rules blocking cross-layer imports (§4)
 - [ ] Application-level rate limiting — deliberately absent, see
       [`production.md`](../../../docs/production.md) §6
 - [ ] CI running lint and tests — also deliberately absent; `pnpm lint` and `pnpm test` are manual

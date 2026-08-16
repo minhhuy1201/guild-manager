@@ -108,12 +108,13 @@ modules/  ──►  infrastructure/  ──►  config/
     └─────────────────┴──►  common/
 ```
 
-- `common/` and `config/` never import from `modules/` or `infrastructure/`.
-- A module may import another module's `*.module` file only, never its internals.
-- Both rules were enforced by ESLint until the `@/` alias was removed; the patterns in
-  `eslint.config.mjs` still match `@/modules/*`, so they no longer fire. Until they are rewritten
-  against relative paths, this layering is convention, not enforcement — see
-  [`apps/api/docs/backend.md`](../apps/api/docs/backend.md) §5.
+- `common/` and `config/` never import from `modules/` or `infrastructure/` — enforced by ESLint.
+- A module may import another module's `*.module` file only, never its internals — enforced by ESLint.
+
+Since the `@/` alias was removed, those ESLint patterns match **relative** import strings, which
+means each rule is locked to one directory depth. Adding a directory level under `src/` requires
+adding a matching block in `eslint.config.mjs` — see
+[`apps/api/docs/backend.md`](../apps/api/docs/backend.md) §4.
 - Request flow is **Controller → Service → (Repository) → Prisma**. Controllers never touch Prisma.
 - Services hold the business logic. DTOs only validate input. Never return a Prisma model from a
   controller — return the module's entity/response object.
