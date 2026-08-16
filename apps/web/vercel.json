@@ -1,5 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "pnpm install --frozen-lockfile --filter web --filter @guild/shared",
   "git": {
     "deploymentEnabled": {
       "**": false,

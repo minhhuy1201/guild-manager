@@ -136,6 +136,23 @@ vercel deploy --prod --yes --project guild-manager-api --scope <team>
 vercel deploy --prod --yes --project guild-manager-web --scope <team>
 ```
 
+### `apps/web` installs only what it needs
+
+`apps/web/vercel.json` overrides the install command:
+
+```
+pnpm install --frozen-lockfile --filter web --filter @guild/shared
+```
+
+Without it, Vercel installs all three workspace projects, which runs the `postinstall` of `apps/api`
+— `prisma generate` — inside the **web** build, where `DATABASE_URL` does not exist. That failed the
+build during setup.
+
+`@guild/shared` has to be named explicitly: `apps/web` reaches it through the `@shared/*` tsconfig
+alias (see [`apps/web/docs/frontend.md`](../apps/web/docs/frontend.md)), **not** as a declared
+dependency, so `--filter web...` would not pull it in. Next compiles its `.ts` sources directly, and
+those import `zod`, which resolves out of `packages/shared/node_modules`.
+
 ### Why there are no preview deployments
 
 Both apps carry a `vercel.json` whose only job is `git.deploymentEnabled`: `"**": false` disables
