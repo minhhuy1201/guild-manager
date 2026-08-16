@@ -44,7 +44,12 @@ docs/superpowers/plans/
 # seed-data-example.json vẫn commit — đó là file mẫu để người khác biết định dạng.
 seed-data.json
 
+# Vercel: liên kết project và token do `vercel link` sinh ra (mỗi máy một giá trị)
+.vercel/
+
 # misc
 .cache/
 .turbo/
 *.pem
+.vercel
+.env*
