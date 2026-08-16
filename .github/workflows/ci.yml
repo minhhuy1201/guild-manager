@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Push liên tiếp lên cùng một nhánh: hủy run cũ, chỉ giữ run mới nhất.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # `postinstall` của apps/api chạy `prisma generate`, mà prisma.config.ts dùng env('DATABASE_URL')
+  # — biến này thiếu là `pnpm install` chết. CI không kết nối database, chỉ cần chuỗi hợp lệ.
+  DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+
+jobs:
+  backend-test:
+    name: Backend test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter api test
+
+  frontend-test:
+    name: Frontend test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter web test
+
+  quality:
+    name: Lint & typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Lint api
+        run: pnpm --filter api lint
+      - name: Lint web
+        run: pnpm --filter web lint
+      - name: Prettier api
+        run: pnpm --filter api format:check
+      - name: Typecheck api
+        run: pnpm --filter api typecheck
+      - name: Typecheck web
+        run: pnpm --filter web typecheck
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter api build
+      - name: Build web
+        # Giá trị giả cho khâu build: `next build` ném lỗi nếu thiếu NEXT_PUBLIC_API_URL ở
+        # production, còn AUTH_SECRET phải đủ 32 ký tự. Không cái nào chạm hạ tầng thật.
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:3001/api
+          AUTH_SECRET: ci-placeholder-secret-0123456789abcdef
+        run: pnpm --filter web build
