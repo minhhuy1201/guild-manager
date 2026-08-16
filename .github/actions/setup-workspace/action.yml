@@ -1,0 +1,26 @@
+name: Setup workspace
+description: Cài pnpm, Node và dependencies của monorepo cho một job CI.
+
+runs:
+  using: composite
+  steps:
+    - uses: pnpm/action-setup@v4
+      with:
+        version: 10
+
+    - uses: actions/setup-node@v5
+      with:
+        node-version: 22
+        cache: pnpm
+
+    # `postinstall` của apps/api chạy `prisma generate`, và prisma.config.ts gọi loadPrismaEnv()
+    # — hàm này ném lỗi khi apps/api/.env không tồn tại, rồi nạp file đó với override: true.
+    # Biến môi trường ở cấp job vì thế không thay được file; CI phải dựng file từ template.
+    # Giá trị trong template trỏ về localhost, không có secret, và không job nào kết nối database.
+    - name: Prepare the API env file
+      shell: bash
+      run: cp apps/api/.env.example apps/api/.env
+
+    - name: Install dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile
