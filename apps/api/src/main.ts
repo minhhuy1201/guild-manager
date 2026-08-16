@@ -10,7 +10,12 @@ import {
   LoggingInterceptor,
   TransformInterceptor,
 } from './common';
-import { API_PREFIX, SWAGGER_PATH, type Env } from './config';
+import {
+  API_PREFIX,
+  SWAGGER_PATH,
+  createCorsOptions,
+  type Env,
+} from './config';
 
 /**
  * Khởi động HTTP server: gắn pipe/filter/interceptor toàn cục, CORS, Swagger
@@ -27,10 +32,12 @@ async function bootstrap(): Promise<void> {
     new LoggingInterceptor(),
     new TransformInterceptor(),
   );
-  app.enableCors({
-    origin: config.get('WEB_ORIGIN', { infer: true }),
-    credentials: true,
-  });
+  app.enableCors(
+    createCorsOptions(
+      config.get('WEB_ORIGIN', { infer: true }),
+      config.get('WEB_PREVIEW_PROJECT', { infer: true }),
+    ),
+  );
   app.enableShutdownHooks();
 
   const isProduction = config.get('NODE_ENV', { infer: true }) === 'production';

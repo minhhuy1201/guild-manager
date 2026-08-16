@@ -14,6 +14,16 @@ export const envSchema = z.object({
   DATABASE_URL: z.url(),
   /** Origin của frontend, dùng cho CORS. */
   WEB_ORIGIN: z.url().default('http://localhost:3000'),
+  /**
+   * Tên project web trên Vercel — dùng để nhận thêm các domain preview
+   * `https://<project>-…vercel.app`. Bỏ trống khi không deploy trên Vercel — khai báo rỗng trong
+   * .env cũng tính là bỏ trống.
+   */
+  WEB_PREVIEW_PROJECT: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => value || undefined),
   /** Khóa ký JWT (access + refresh) — dùng chung giá trị với apps/web để web verify được. */
   AUTH_SECRET: z.string().min(32),
   /** Danh sách tên đăng nhập toàn quyền admin, phân tách bằng dấu phẩy. */
