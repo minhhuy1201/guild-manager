@@ -96,6 +96,19 @@ app mở thẳng sẽ hết sạch.
 > Session pooler dùng chung cho cả runtime lẫn migrate. Quay lại transaction pooler **chỉ khi**
 > `apps/api` chuyển sang serverless.
 
+> **Đính chính (2026-08-16).** Câu cuối ở trên — "chỉ khi `apps/api` chuyển sang serverless" — đã
+> **sai tiền đề**. `apps/api` giờ chạy đúng là serverless (Vercel Function), mà kết luận session
+> pooler vẫn giữ nguyên.
+>
+> Lý do: điều kiện thật không phải "có serverless hay không" mà là "pool có được tái dùng hay
+> không". Vercel Fluid compute không huỷ instance giữa các request, nên pg pool ở module scope sống
+> qua nhiều lần gọi — đúng thứ mà lập luận bên trên cần. Cái giá của transaction pooler thì không
+> đổi.
+>
+> Mốc đổi sang `:6543` phải viết lại thành: **chỉ khi số connection thực sự trèo, đo được chứ không
+> đoán.** Chi tiết ở
+> [spec deploy Vercel](2026-08-16-vercel-deployment-design.md), quyết định 2.
+
 ### 3. Tách hai cổng bằng dòng lệnh, không bằng cấu hình
 
 **Prisma 7 không có `directUrl`.** Kiểu `Datasource` của `@prisma/config@7.9.0` chỉ nhận:

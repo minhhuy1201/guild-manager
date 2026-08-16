@@ -27,8 +27,10 @@ Three properties everything else follows from:
   Connection strings are a server-side secret; there are no `NEXT_PUBLIC_SUPABASE_*` variables.
 - **Both apps share one `AUTH_SECRET`.** The API signs JWTs, the web app verifies them. If the
   values differ you can log in but every admin route bounces you back to the home page.
-- **The API is a long-running Node process** holding a pg pool. That is why production uses a
-  session pooler, not a transaction pooler — see [`production.md`](production.md) §5.
+- **The API holds a pg pool and reuses it across requests.** That is why production uses a session
+  pooler, not a transaction pooler — see [`production.md`](production.md) §5. In production it runs
+  as a Vercel Function rather than a long-running process, and the constraint still holds because
+  Fluid compute keeps the instance, and the pool, alive between invocations.
 
 ## 2. Repository layout
 
@@ -47,8 +49,12 @@ guild-manager/
 
 ### `packages/shared` — the contract
 
-Imported as **TypeScript source**, with no build step: edit it and both apps see the change
-immediately. This is also why the backend bundles with webpack (§3.5).
+Typed from **TypeScript source** but executed from compiled JavaScript: the `exports` map points
+`types` at the `.ts` files and the runtime condition at `dist/*.js`. The `prepare` script runs `tsc`,
+so `pnpm install` produces `dist` and there is no build step to remember — but after editing the
+package you do need to rebuild it (`pnpm --filter @guild/shared build`) before the API picks the
+change up at runtime; types update immediately. Runtime cannot point at `.ts`, because Vercel deletes
+the sources after compiling — see [`production.md`](production.md) §4.
 
 | Import | Contents |
 |---|---|
@@ -102,16 +108,22 @@ modules/  ──►  infrastructure/  ──►  config/
     └─────────────────┴──►  common/
 ```
 
-- `common/` and `config/` never import from `modules/` or `infrastructure/` — enforced by ESLint.
-- A module may import another module's `*.module` file only, never its internals — enforced by ESLint.
+- `common/` and `config/` never import from `modules/` or `infrastructure/`.
+- A module may import another module's `*.module` file only, never its internals.
+- Both rules were enforced by ESLint until the `@/` alias was removed; the patterns in
+  `eslint.config.mjs` still match `@/modules/*`, so they no longer fire. Until they are rewritten
+  against relative paths, this layering is convention, not enforcement — see
+  [`apps/api/docs/backend.md`](../apps/api/docs/backend.md) §5.
 - Request flow is **Controller → Service → (Repository) → Prisma**. Controllers never touch Prisma.
 - Services hold the business logic. DTOs only validate input. Never return a Prisma model from a
   controller — return the module's entity/response object.
 - Don't create `guards/`, `decorators/` or a repository speculatively. Add them when a second caller
   actually appears.
 
-Only `@/…` (→ `src/…`) exists as an internal alias. Shared code is imported by real package name
-(`@guild/shared/*`), because `@shared/*` already means "packages/shared" over in `apps/web`.
+`apps/api` has **no path aliases at all**: internal imports are relative (`../../config`). The `@/…`
+alias it used to have was removed on 2026-08-16 because Vercel does not rewrite `tsconfig` `paths`
+and the alias survived into the emitted JavaScript — see [`production.md`](production.md) §4. Do not
+reintroduce it. Shared code is imported by real package name (`@guild/shared/*`).
 
 ### 3.3 Modules
 
@@ -166,9 +178,11 @@ Endpoints, all behind the `/api` prefix:
 
 ### 3.5 Build notes
 
-- **Webpack, not `tsc`** (`nest-cli.json` → `builder: "webpack"`), so the TypeScript source of
-  `packages/shared` is bundled in and the output stays a single `dist/main.js`. The default `tsc`
-  builder emits `dist/apps/api/src/main.js` because of files outside `rootDir`.
+- **Webpack, not `tsc`** (`nest-cli.json` → `builder: "webpack"`), so `packages/shared` is bundled in
+  and the output stays a single `dist/main.js`. The default `tsc` builder emits
+  `dist/apps/api/src/main.js` because of files outside `rootDir`. Note that this build is **not** what
+  production runs: Vercel compiles `src/main.ts` with its own `tsc` and ignores `dist/main.js` — see
+  [`production.md`](production.md) §4.
 - **Prisma Client is generated as CJS** (`moduleFormat = "cjs"`, `importFileExtension = ""`): the app
   runs CommonJS, ESM output breaks jest/ts-node via `import.meta`, and `.js`-suffixed imports break
   ts-node when it runs `prisma/seed.ts`.

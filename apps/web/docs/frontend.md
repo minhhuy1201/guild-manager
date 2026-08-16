@@ -116,10 +116,11 @@ These are the rules that get broken first, in the order they get broken:
 6. **Prefer Server Components.** `"use client"` only where interactivity actually requires it.
 7. **Import with `@/`.** Route paths come from `config/routes.ts` (`ROUTES`), never string literals.
 
-Shared code from the workspace package is imported as `@shared/*` (→ `packages/shared`), which is a
-different alias from the API's — the API has only `@/*`, and uses the real package name
-`@guild/shared/*`. Both aliases are declared twice, in `tsconfig.json` and in `vitest.config.ts`;
-a new alias must be added in both or tests fail on imports that type-check fine.
+Shared code from the workspace package is imported as `@shared/*` (→ `packages/shared`). These
+aliases exist in `apps/web` only — `apps/api` has none, it imports relatively and uses the real
+package name `@guild/shared/*` (see [`architecture.md`](../../../docs/architecture.md) §3.2). Both
+web aliases are declared twice, in `tsconfig.json` and in `vitest.config.ts`; a new alias must be
+added in both or tests fail on imports that type-check fine.
 
 ### The API boundary
 

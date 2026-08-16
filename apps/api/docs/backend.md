@@ -152,9 +152,12 @@ modules/  ──►  infrastructure/  ──►  config/
 5. A controller **never** returns a raw Prisma model. Map it to the module's entity, so `password`
    and other internals cannot leak by accident.
 
-### Enforced by ESLint
+### Enforced by ESLint — currently broken
 
-Both rules are real lint errors, not conventions (`eslint.config.mjs`):
+> These two rules were real lint errors until 2026-08-16, when the `@/` alias was removed (§5). The
+> patterns below still match `@/…`, and no import looks like that any more, so **neither rule fires**.
+> They are quoted here as they stand in `eslint.config.mjs`; rewriting them against relative paths is
+> open work. Until then the module-boundary and layering rules hold by convention.
 
 ```js
 // everywhere: only the *.module file of another module may be imported
@@ -180,29 +183,24 @@ Both rules are real lint errors, not conventions (`eslint.config.mjs`):
 
 ---
 
-## 5. Path aliases
+## 5. Path aliases — there are none
 
-`tsconfig.json` deliberately declares **one** internal alias:
+`tsconfig.json` declares **no** `paths` at all. Internal imports are relative
+(`import { Env } from '../../config'`), and code from the workspace package is imported by its real
+name: `@guild/shared/enums`, `@guild/shared/schemas`, `@guild/shared/lib`.
 
-```jsonc
-{
-  "compilerOptions": {
-    "paths": { "@/*": ["./src/*"] },
-    "module": "nodenext",
-    "strict": true
-  }
-}
-```
+This app used to have `"paths": { "@/*": ["./src/*"] }`. It was removed on 2026-08-16, along with
+the matching `jest.moduleNameMapper` entries in `package.json` and `test/jest-e2e.json`, when the API
+moved to Vercel: Vercel compiles the TypeScript with its own `tsc` and does **not** rewrite path
+mappings, so `@/config` survived into the emitted JavaScript and the function died at runtime with
+`Cannot find module '@/config'`. See [`production.md`](../../../docs/production.md) §4.
 
-No `@modules/*`, `@common/*`, `@config/*`. Two reasons: the ESLint patterns above only have to match
-one prefix, and `@shared/*` already means something different in `apps/web` (it points at
-`packages/shared`), so reusing that vocabulary here would be actively misleading. Code from the
-workspace package is imported by its real name: `@guild/shared/enums`, `@guild/shared/schemas`,
-`@guild/shared/lib`.
+**Do not reintroduce an alias here.** `apps/web` keeps its own `@/*` and `@shared/*` — those are a
+Next.js build and unaffected.
 
-The alias is mirrored in the Jest config (`package.json` → `jest.moduleNameMapper`:
-`"^@/(.*)$": "<rootDir>/$1"`). **Any new alias must be added in both places** or tests fail on
-imports that compile fine.
+> **Known gap:** the `no-restricted-imports` rules in `eslint.config.mjs` still match on `@/modules/*`
+> and friends, so they no longer fire on anything. The layering they describe is currently enforced by
+> convention only. Rewriting those patterns against relative paths is open work.
 
 ---
 
@@ -330,8 +328,8 @@ packages/
 
 `packages/shared` is the payoff: a request/response shape is defined once as a Zod schema, the
 backend wraps it with `createZodDto`, the frontend types its fetch functions from it. No shape is
-ever declared twice. It is imported as TypeScript source with no build step, which is why the API
-bundles with webpack — see [`architecture.md`](../../../docs/architecture.md) §3.5.
+ever declared twice. Types come from the `.ts` sources, the runtime from `packages/shared/dist` —
+see [`architecture.md`](../../../docs/architecture.md) §2 for the split and §3.5 for the API build.
 
 ---
 
@@ -348,8 +346,8 @@ What a NestJS project should have on day one, and where this one stands:
 - [x] Swagger generated from the DTOs, disabled when `NODE_ENV=production`
 - [x] Health check endpoint (`GET /api/health`, including a database ping)
 - [x] Graceful shutdown (`app.enableShutdownHooks()` + `PrismaService.onModuleDestroy`)
-- [x] Path alias matching `jest.moduleNameMapper`
-- [x] ESLint rules blocking cross-layer imports
+- [ ] ESLint rules blocking cross-layer imports — the rules exist but match the removed `@/` alias,
+      so they currently fire on nothing (§5)
 - [ ] Application-level rate limiting — deliberately absent, see
       [`production.md`](../../../docs/production.md) §6
 - [ ] CI running lint and tests — also deliberately absent; `pnpm lint` and `pnpm test` are manual

@@ -181,8 +181,13 @@ pnpm dlx shadcn@latest add <component-name>
 ### Adding new code (backend module, frontend feature, shared type…)
 
 Where new code belongs is documented in [`architecture.md`](architecture.md), section 7 "Where new
-behavior goes". `packages/shared` is imported as TypeScript source, so there is no build step: once
-you save, both apps see the change.
+behavior goes". Editing `packages/shared` updates the **types** in both apps as soon as you save, but
+the runtime loads `packages/shared/dist`, so rebuild it before expecting the API to behave
+differently:
+
+```bash
+pnpm --filter @guild/shared build
+```
 
 ## 8. Before committing
 

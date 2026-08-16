@@ -2,17 +2,22 @@
 
 How to build, ship and operate Guild Manager in the real environment.
 
-> **Current status (2026-08-03):** the database already runs for real on Supabase (region
-> `ap-northeast-1`, free tier). `apps/api` and `apps/web` **have no host chosen yet** — there is no
-> `Dockerfile`, `vercel.json` or CI pipeline in the repo. The "Deploying the apps" section below
-> describes the requirements and the options, not a process that has already been run.
+> **Current status (2026-08-16):** everything is live. The database runs on Supabase (region
+> `ap-northeast-1`, free tier); both apps run on Vercel in **production**:
+>
+> - `apps/api` → `https://guild-manager-api.vercel.app`
+> - `apps/web` → `https://guild-manager-web.vercel.app`
+>
+> Neither Vercel project is connected to the GitHub repo, so pushing does **not** deploy anything —
+> every deploy is a manual `vercel deploy` from a local machine. See section 4.
 
 ## 1. Deployment architecture
 
 The diagram and the three constraints that govern everything (the web app never touches the
-database, both apps share `AUTH_SECRET`, the API is a long-lived process holding a pg pool) live in
+database, both apps share `AUTH_SECRET`, the API holds a pg pool it reuses across requests) live in
 [`architecture.md`](architecture.md), section 1. The third constraint is why the session pooler is
-chosen in section 5.
+chosen in section 5 — and it survives the move to Vercel Functions, because Vercel's Fluid compute
+keeps the instance (and therefore the pool) alive between invocations.
 
 ## 2. Build
 
@@ -35,7 +40,10 @@ Things to watch for when building on CI/hosting:
 - The `postinstall` of `apps/api` runs `prisma generate`, which needs `DATABASE_URL` to **exist and
   be a well-formed URL** (it does not need to be reachable).
 - This is a pnpm workspace: the host must install from the repo root, not inside `apps/*`.
-  `packages/shared` is imported as TypeScript source and has no separate build step.
+- `packages/shared` **is compiled to JavaScript** (`packages/shared/dist`). Its `prepare` script runs
+  `tsc`, so `pnpm install` alone produces the output — no separate build step to remember. The
+  `exports` map points `types` at the `.ts` sources and everything else at `dist/*.js`; the runtime
+  side cannot point at `.ts`, see section 4.
 - Building `apps/web` requires `NEXT_PUBLIC_API_URL`, because `NEXT_PUBLIC_*` variables are inlined
   into the bundle at build time and are not read again at runtime.
 
@@ -62,6 +70,7 @@ by default, and each writes to whatever database it names.
 | `ADMIN_USERNAMES` | The real admin accounts |
 | `ADMIN_PASSWORD` | The real password, **not** `testne` |
 | `WEB_ORIGIN` | The web app's real origin (`https://…`) — CORS matches this value exactly |
+| `WEB_PREVIEW_PROJECT` | The web app's Vercel project name (`guild-manager-web`) — makes CORS also accept that project's preview domains. Optional; omit it and only `WEB_ORIGIN` is allowed |
 | `APP_TIMEZONE` | `Asia/Ho_Chi_Minh` |
 
 The `POSTGRES_*` variables are for `docker-compose.yml` in development only; production does not need
@@ -72,7 +81,15 @@ them.
 | Variable | Production value |
 |---|---|
 | `AUTH_SECRET` | Exactly the API's value |
-| `NEXT_PUBLIC_API_URL` | `https://<api-domain>/api` |
+| `NEXT_PUBLIC_API_URL` | `https://<api-domain>/api` — note the `/api` suffix, which is `API_PREFIX` |
+
+> **Never mark a `NEXT_PUBLIC_*` variable as "Sensitive" on Vercel.** A sensitive value is withheld
+> from the build, and Next.js then inlines the literal string `[SENSITIVE]` in its place. The bundle
+> ships `fetch(\`[SENSITIVE]${path}\`)`, which resolves relative to the web app's own origin, and
+> **every API call returns 404 from the web host** — a failure that looks like a broken backend while
+> the API is perfectly healthy. This happened on 2026-08-16. These variables are compiled into public
+> client JavaScript by definition, so there is nothing to protect. Sensitive is correct for the
+> server-side ones (`AUTH_SECRET`, `DATABASE_URL`, …).
 
 ### Secrets to rotate before opening this up to outsiders
 
@@ -82,22 +99,73 @@ them.
 
 ## 4. Deploying the apps
 
-No provider has been settled on. The constraints that drive the choice:
+Both apps run on **Vercel**, as two separate projects on the same repo, distinguished by their Root
+Directory. The full reasoning is in the
+[Vercel deployment spec](superpowers/specs/2026-08-16-vercel-deployment-design.md).
 
-| | Requirement |
-|---|---|
-| `apps/web` | Next.js 16 App Router with `proxy.ts` (middleware) and server actions. Vercel is the path of least friction; anywhere else needs a Node runtime — static export is not an option. |
-| `apps/api` | **A long-lived Node process.** Going serverless would reverse the pooler decision in section 5 and break the pg pool. Suitable: a VPS, Render, Railway, Fly.io — anything that keeps running `node dist/main`. |
+| Project | Root Directory | Domain |
+|---|---|---|
+| `guild-manager-web` | `apps/web` | `https://guild-manager-web.vercel.app` |
+| `guild-manager-api` | `apps/api` | `https://guild-manager-api.vercel.app` |
 
-What has to happen on the first deploy, whichever host is picked:
+`apps/api` runs as a Vercel Function, **not** as a long-lived process — an earlier version of this
+document said it needed one. Two things make that work: Vercel's zero-config NestJS detection (it
+builds `src/main.ts` as-is, no `vercel.json` and no serverless handler to write), and Fluid compute,
+which keeps the instance alive between invocations so the pg pool is reused. That is why the pooler
+choice in section 5 does not change.
 
-1. Set every environment variable from section 3.
-2. Install from the repo root (`pnpm install --frozen-lockfile`) and build the app being deployed.
-3. Run the migrations against the real database (section 5) **before** starting the new build.
-4. Point `WEB_ORIGIN` and `NEXT_PUBLIC_API_URL` at each other's real domains.
-5. Confirm that `GET /api/health` returns `db: "up"`.
+### Deploying
 
-There is no CI yet: building and deploying are manual for now.
+```bash
+# from the repo root, not from apps/*
+vercel deploy --prod --yes --project guild-manager-api --scope <team>
+vercel deploy --prod --yes --project guild-manager-web --scope <team>
+```
+
+Neither project is connected to GitHub, so **pushing deploys nothing**. Connecting them would need
+the Vercel GitHub App installed on the repo; until then every deploy is manual and there is no CI.
+
+Two ordering rules:
+
+- Run any pending migrations (section 5) **before** the new build takes traffic.
+- `NEXT_PUBLIC_API_URL` is inlined at build time, so changing it requires a **redeploy of the web
+  app**, not a restart.
+
+The web/api domain dependency is circular — web needs the API domain to build, the API needs the web
+domain for CORS. Break it by hand: deploy one, read its domain, fill it in for the other, redeploy.
+
+### Two constraints Vercel's NestJS build imposes on `apps/api`
+
+Both were discovered the hard way on 2026-08-16, and both are permanent: Vercel compiles the
+TypeScript itself, per file, next to the sources, then traces the emitted `require` calls. It does
+not use our webpack `dist/main.js`, and a `"main"` field in `package.json` is ignored.
+
+- **No `paths` aliases.** Vercel does not rewrite `tsconfig` path mappings, so an alias like `@/…`
+  survives into the emitted JavaScript and fails at runtime with `Cannot find module '@/config'`.
+  `apps/api` therefore uses **relative imports only** — do not reintroduce the alias.
+- **No raw TypeScript across package boundaries.** Vercel deletes the `.ts` files after compiling,
+  so an `exports` map pointing a runtime condition at a `.ts` file resolves to a file that no longer
+  exists. This is why `packages/shared` is built to `dist` (section 2).
+
+### Verifying a deploy
+
+1. `GET /api/health` returns `db: "up"`.
+2. CORS actually works from the real web origin:
+   ```bash
+   curl -si -H "Origin: https://guild-manager-web.vercel.app" \
+     https://guild-manager-api.vercel.app/api/battle-sessions/weeks | grep -i allow-origin
+   ```
+3. The deployed bundle really carries the API URL — this is what catches the `[SENSITIVE]` trap from
+   section 3:
+   ```bash
+   curl -s https://guild-manager-web.vercel.app/ \
+     | grep -o '/_next/static/chunks/[a-zA-Z0-9_./-]*\.js' | sort -u \
+     | while read c; do curl -s "https://guild-manager-web.vercel.app$c"; done \
+     | grep -o 'await fetch(`[^`]*`'
+   ```
+   Expected: ``await fetch(`https://guild-manager-api.vercel.app/api${e}` ``.
+4. Log in from the real web domain and open an admin route (`/thiet-lap`) — not being bounced to the
+   home page proves `AUTH_SECRET` matches on both sides.
 
 ## 5. Production database (Supabase)
 
@@ -111,9 +179,19 @@ Auth/Storage/Realtime. The full reasoning, including the wrong turns taken durin
 |---|---|---|
 | Direct (`db.<ref>…:5432`) | ❌ | IPv6 only unless you pay for the IPv4 add-on |
 | Transaction pooler (`:6543`) | ❌ | Meant for short-lived clients; loses prepared statements and advisory locks |
-| **Session pooler (`:5432`)** | ✅ | The API is a long-lived process holding an open pool |
+| **Session pooler (`:5432`)** | ✅ | The API keeps an open pool and reuses it across requests |
 
-Switch to the transaction pooler **only if** `apps/api` moves to serverless.
+This held when `apps/api` was a long-lived process, and it still holds on Vercel. Transaction pooling
+exists for **many short-lived clients** — one process per request, no pool to reuse. Fluid compute
+breaks exactly that premise: the instance is not torn down, so the pool survives. The cost of the
+transaction pooler, meanwhile, is unchanged.
+
+Switch to the transaction pooler (with `?pgbouncer=true`) **only if** the connection count actually
+climbs — measured, not guessed.
+
+> **Known risk, not yet hit:** Supabase discussion #40671 reports client connections creeping up on
+> Supavisor when Vercel Fluid is combined with `attachDatabasePool`. If connections climb, look here
+> first.
 
 ### Two variables, two roles
 
@@ -208,7 +286,7 @@ An empty result is correct. **Still open:** turn the Data API off entirely in th
 ### Health check
 
 ```bash
-curl https://<api-domain>/api/health
+curl https://guild-manager-api.vercel.app/api/health
 ```
 
 ```json
@@ -231,7 +309,8 @@ and safe to show directly in the UI.
 
 There is no automatic rollback. In practice:
 
-- **Code:** redeploy the previous commit.
+- **Code:** promote an earlier deployment from the Vercel dashboard (Deployments → ⋯ → Promote to
+  Production), or check out the previous commit and run the `vercel deploy --prod` from section 4.
 - **Migrations:** Prisma does not generate down-migrations. To go back, write a new migration that
   reverses the change. That is why destructive migrations (dropping a column, changing a type) need
   careful review before merging.
@@ -239,12 +318,14 @@ There is no automatic rollback. In practice:
 
 ### Not in place yet
 
-Recorded so nobody assumes otherwise: CI/CD, a staging environment, verified backups,
-monitoring/alerting, application-level rate limiting.
+Recorded so nobody assumes otherwise: CI/CD (the Vercel projects are not connected to GitHub, so
+deploys are manual), a staging environment, verified backups, monitoring/alerting, application-level
+rate limiting.
 
 ## See also
 
 - [`architecture.md`](architecture.md) — system architecture
 - [`development.md`](development.md) — running locally
 - [`apps/api/README.md`](../apps/api/README.md) — backend details
-- [database hosting spec](superpowers/specs/2026-08-02-supabase-hosting-design.md) — why it is set up this way
+- [database hosting spec](superpowers/specs/2026-08-02-supabase-hosting-design.md) — why the database is set up this way
+- [Vercel deployment spec](superpowers/specs/2026-08-16-vercel-deployment-design.md) — why both apps run on Vercel
