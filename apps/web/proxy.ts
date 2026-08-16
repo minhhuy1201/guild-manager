@@ -16,6 +16,28 @@ import { ROUTES } from "@/config/routes";
 const ADMIN_PATH_PREFIXES = [ROUTES.teamBuilder, ROUTES.settings];
 
 /**
+ * Đọc AUTH_SECRET, kêu to khi thiếu.
+ *
+ * Thiếu biến này thì mọi token đều không verify được, tức là quản trị viên đăng nhập xong vẫn bị
+ * đá khỏi route quản trị — triệu chứng giống hệt phiên hết hạn nên rất dễ đi tìm nhầm chỗ. Không
+ * ném lỗi vì proxy chạy trước **mọi** trang: ném là sập cả trang điểm danh công khai, trong khi
+ * cấu hình sai chỉ ảnh hưởng phần quản trị.
+ *
+ * @returns Khóa ký JWT, hoặc undefined khi chưa cấu hình
+ */
+function readAuthSecret(): string | undefined {
+  const secret = process.env.AUTH_SECRET;
+
+  if (!secret) {
+    console.error(
+      "Thiếu biến môi trường AUTH_SECRET — không verify được token, mọi route quản trị sẽ bị chặn."
+    );
+  }
+
+  return secret;
+}
+
+/**
  * Chạy trước mỗi request trang để làm hai việc:
  * 1. Tự gia hạn phiên — access token hết hạn mà refresh token còn hạn thì đổi cặp token mới.
  *    Proxy là chỗ duy nhất trong Next ghi được cookie cho mọi request, nên việc refresh
@@ -25,7 +47,7 @@ const ADMIN_PATH_PREFIXES = [ROUTES.teamBuilder, ROUTES.settings];
  * @returns Response tiếp tục xử lý (kèm cookie mới nếu vừa gia hạn), hoặc redirect về trang chủ
  */
 export async function proxy(request: NextRequest) {
-  const secret = process.env.AUTH_SECRET;
+  const secret = readAuthSecret();
   const accessToken = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
   const refreshToken = request.cookies.get(REFRESH_TOKEN_COOKIE)?.value;
 
