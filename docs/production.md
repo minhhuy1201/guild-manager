@@ -110,7 +110,8 @@ Directory. The full reasoning is in the
 
 `apps/api` runs as a Vercel Function, **not** as a long-lived process — an earlier version of this
 document said it needed one. Two things make that work: Vercel's zero-config NestJS detection (it
-builds `src/main.ts` as-is, no `vercel.json` and no serverless handler to write), and Fluid compute,
+builds `src/main.ts` as-is, no build config and no serverless handler to write — `vercel.json` only
+turns preview deploys off), and Fluid compute,
 which keeps the instance alive between invocations so the pg pool is reused. That is why the pooler
 choice in section 5 does not change.
 
@@ -121,12 +122,19 @@ choice in section 5 does not change.
 | Git event | What Vercel builds |
 |---|---|
 | Push to `main` | Production deploy of `guild-manager-api` |
-| Open/update a pull request | Preview deploy, with the URL posted on the PR |
+| Open/update a pull request | Nothing — the build is skipped |
 
 The GitHub Actions workflow in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) runs
-**alongside** the Vercel build, not before it — a red test does not stop a deploy. That is the
-accepted trade-off for keeping Vercel's native previews; gating would mean deploying from Actions
-with a `VERCEL_TOKEN` instead.
+**alongside** the Vercel build, not before it — a red test does not stop a deploy. Gating would mean
+deploying from Actions with a `VERCEL_TOKEN` instead.
+
+Preview deploys of the API are switched off by `ignoreCommand` in
+[`apps/api/vercel.json`](../apps/api/vercel.json), which exits 0 (= skip) for every `VERCEL_ENV`
+other than `production`. The reason is environment variables: the API's are scoped to Production
+only, and `validateEnv` fails fast at boot, so a preview would build and then crash. Giving previews
+their own values means either pointing them at the real database or standing up a second one —
+neither is worth it while `WEB_PREVIEW_PROJECT` (section 3) already exists so that **web** previews
+call the production API.
 
 `guild-manager-web` is **not connected yet**, so it still deploys by hand:
 
