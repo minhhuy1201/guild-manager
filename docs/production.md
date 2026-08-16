@@ -8,8 +8,8 @@ How to build, ship and operate Guild Manager in the real environment.
 > - `apps/api` → `https://guild-manager-api.vercel.app`
 > - `apps/web` → `https://guild-manager-web.vercel.app`
 >
-> Neither Vercel project is connected to the GitHub repo, so pushing does **not** deploy anything —
-> every deploy is a manual `vercel deploy` from a local machine. See section 4.
+> `guild-manager-api` is connected to the GitHub repo, so pushing to `main` deploys it.
+> `guild-manager-web` is not connected yet and still needs a manual `vercel deploy`. See section 4.
 
 ## 1. Deployment architecture
 
@@ -116,14 +116,24 @@ choice in section 5 does not change.
 
 ### Deploying
 
+`guild-manager-api` is connected to the GitHub repo (`vercel git connect`), so it deploys itself:
+
+| Git event | What Vercel builds |
+|---|---|
+| Push to `main` | Production deploy of `guild-manager-api` |
+| Open/update a pull request | Preview deploy, with the URL posted on the PR |
+
+The GitHub Actions workflow in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) runs
+**alongside** the Vercel build, not before it — a red test does not stop a deploy. That is the
+accepted trade-off for keeping Vercel's native previews; gating would mean deploying from Actions
+with a `VERCEL_TOKEN` instead.
+
+`guild-manager-web` is **not connected yet**, so it still deploys by hand:
+
 ```bash
 # from the repo root, not from apps/*
-vercel deploy --prod --yes --project guild-manager-api --scope <team>
 vercel deploy --prod --yes --project guild-manager-web --scope <team>
 ```
-
-Neither project is connected to GitHub, so **pushing deploys nothing**. Connecting them would need
-the Vercel GitHub App installed on the repo; until then every deploy is manual and there is no CI.
 
 Two ordering rules:
 
@@ -318,9 +328,8 @@ There is no automatic rollback. In practice:
 
 ### Not in place yet
 
-Recorded so nobody assumes otherwise: CI/CD (the Vercel projects are not connected to GitHub, so
-deploys are manual), a staging environment, verified backups, monitoring/alerting, application-level
-rate limiting.
+Recorded so nobody assumes otherwise: CD for `apps/web` (that project is still deployed by hand), a
+staging environment, verified backups, monitoring/alerting, application-level rate limiting.
 
 ## See also
 
