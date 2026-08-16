@@ -30,7 +30,7 @@ Full list of environment variables and troubleshooting: [`docs/development.md`](
 | `pnpm dev` | Run in watch mode |
 | `pnpm build` / `pnpm start:prod` | Build (webpack, outputs `dist/main.js`) and run the build |
 | `pnpm lint` | ESLint + Prettier, including the cross-layer import ban |
-| `pnpm test` / `pnpm test:e2e` | Unit tests / e2e tests |
+| `pnpm test` | Unit tests (Jest) |
 | `pnpm prisma:generate` | Regenerate Prisma Client into `src/generated/prisma` (not committed) |
 | `pnpm prisma:migrate` | Create a new migration from schema changes (`migrate dev`) |
 | `pnpm prisma:studio` | Open Prisma Studio |

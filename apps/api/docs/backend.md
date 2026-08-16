@@ -65,7 +65,6 @@ apps/api/
 │   ├── migrations/
 │   └── seed.ts
 │
-├── test/e2e/
 ├── docker-compose.yml              # local PostgreSQL
 ├── .env.example
 ├── tsconfig.json
@@ -174,9 +173,9 @@ Two things make this less obvious than it looks, both a consequence of dropping 
 know how deep the importing file is: from `src/modules/auth/auth.service.ts`, `../health/…` is a
 sibling module, but from `src/modules/auth/dto/x.ts` the same string is its own module. So the
 helper is called once per depth that actually exists — `src/*.ts`, `src/modules/*/*.ts`,
-`src/modules/*/*/*.ts`, `src/infrastructure/*/*.ts`, `test/*/*.ts` — each with the prefix that
-reaches `src/modules/` from there. **Add a new depth and you must add a block**, or imports at that
-depth are silently unchecked.
+`src/modules/*/*/*.ts`, `src/infrastructure/*/*.ts` — each with the prefix that reaches
+`src/modules/` from there. **Add a new depth and you must add a block**, or imports at that depth are
+silently unchecked.
 
 **They use `regex`, not `group`.** `group` matches through the `ignore` library (gitignore
 semantics), where `*` also matches `..` — so `../*/**` would swallow `../../config` and flag a
@@ -201,7 +200,7 @@ only, which is the stronger of the two and subsumes the module-boundary rule.
 name: `@guild/shared/enums`, `@guild/shared/schemas`, `@guild/shared/lib`.
 
 This app used to have `"paths": { "@/*": ["./src/*"] }`. It was removed on 2026-08-16, along with
-the matching `jest.moduleNameMapper` entries in `package.json` and `test/jest-e2e.json`, when the API
+the matching `jest.moduleNameMapper` entry in `package.json`, when the API
 moved to Vercel: Vercel compiles the TypeScript with its own `tsc` and does **not** rewrite path
 mappings, so `@/config` survived into the emitted JavaScript and the function died at runtime with
 `Cannot find module '@/config'`. See [`production.md`](../../../docs/production.md) §4.

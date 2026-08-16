@@ -145,7 +145,7 @@ pnpm --filter web dev    # http://localhost:3000
 | `dev` | Watch mode |
 | `build` / `start:prod` | Webpack build to `dist/main.js` / run the build |
 | `lint` | ESLint + Prettier, including the rule blocking cross-layer imports |
-| `test` / `test:e2e` | Unit tests / e2e tests (Jest) |
+| `test` | Unit tests (Jest) |
 | `prisma:generate` | Regenerate the Prisma Client |
 | `prisma:migrate` | `migrate dev` — create a new migration from schema changes |
 | `prisma:studio` | Open Prisma Studio |

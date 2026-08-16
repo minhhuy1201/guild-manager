@@ -110,11 +110,6 @@ modules/  ──►  infrastructure/  ──►  config/
 
 - `common/` and `config/` never import from `modules/` or `infrastructure/` — enforced by ESLint.
 - A module may import another module's `*.module` file only, never its internals — enforced by ESLint.
-
-Since the `@/` alias was removed, those ESLint patterns match **relative** import strings, which
-means each rule is locked to one directory depth. Adding a directory level under `src/` requires
-adding a matching block in `eslint.config.mjs` — see
-[`apps/api/docs/backend.md`](../apps/api/docs/backend.md) §4.
 - Request flow is **Controller → Service → (Repository) → Prisma**. Controllers never touch Prisma.
 - Services hold the business logic. DTOs only validate input. Never return a Prisma model from a
   controller — return the module's entity/response object.
@@ -125,6 +120,11 @@ adding a matching block in `eslint.config.mjs` — see
 alias it used to have was removed on 2026-08-16 because Vercel does not rewrite `tsconfig` `paths`
 and the alias survived into the emitted JavaScript — see [`production.md`](production.md) §4. Do not
 reintroduce it. Shared code is imported by real package name (`@guild/shared/*`).
+
+That removal has a maintenance cost worth knowing about: the two ESLint rules above now match
+**relative** import strings, so each is locked to one directory depth. Adding a directory level under
+`src/` requires adding a matching block in `eslint.config.mjs`, or imports at that depth go
+unchecked — see [`apps/api/docs/backend.md`](../apps/api/docs/backend.md) §4.
 
 ### 3.3 Modules
 
@@ -314,7 +314,8 @@ the old rules survive only as sensible defaults when filling the form.
 | **Anything with a non-obvious "why"** | A spec in `docs/superpowers/specs/`, then link it from the code comment. |
 
 Tests sit next to what they cover: `__tests__/` beside the module or feature folder (Jest on the
-API, Vitest on the web), plus `apps/api/test/e2e/` for end-to-end API tests.
+API, Vitest on the web). There are no end-to-end tests; the `apps/api/test/` harness was removed on
+2026-08-16 as unused.
 
 ## 8. What is deliberately absent
 

@@ -63,8 +63,6 @@ function moduleBoundaryRules() {
       ['src/infrastructure/*/*.ts'],
       '\\.\\./\\.\\./modules/',
     ),
-    // test/e2e/*.ts — e2e dựng cả app qua AppModule, không được với vào ruột module
-    restrictModuleInternals(['test/*/*.ts'], '\\.\\./\\.\\./src/modules/'),
   ];
 }
 
