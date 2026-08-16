@@ -81,14 +81,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - name: Deploy to Vercel
-        # Không dùng `vercel build --prebuilt`: biến môi trường đánh dấu Sensitive không tải về
-        # được qua `vercel pull`, build tại đây sẽ nhúng giá trị rỗng. Đẩy source lên để Vercel
-        # tự build với biến thật, giống hệt cách git integration vẫn làm.
-        env:
-          VERCEL_PROJECT_ID: ${{ env.VERCEL_API_PROJECT_ID }}
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: npx --yes vercel@59 deploy --prod --yes --token="$VERCEL_TOKEN"
+      - uses: ./.github/actions/deploy-vercel
+        with:
+          project-id: ${{ env.VERCEL_API_PROJECT_ID }}
+          token: ${{ secrets.VERCEL_TOKEN }}
 
   # Frontend deploy sau backend: web gọi API, nên API phải sẵn sàng trước.
   deploy-web:
@@ -97,8 +93,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - name: Deploy to Vercel
-        env:
-          VERCEL_PROJECT_ID: ${{ env.VERCEL_WEB_PROJECT_ID }}
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: npx --yes vercel@59 deploy --prod --yes --token="$VERCEL_TOKEN"
+      - uses: ./.github/actions/deploy-vercel
+        with:
+          project-id: ${{ env.VERCEL_WEB_PROJECT_ID }}
+          token: ${{ secrets.VERCEL_TOKEN }}

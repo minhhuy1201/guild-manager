@@ -1,0 +1,40 @@
+name: Deploy to Vercel
+description: Đẩy source ở repo root lên một project Vercel và chờ build xong.
+
+inputs:
+  project-id:
+    description: ID của project Vercel nhận bản deploy này.
+    required: true
+  token:
+    description: Vercel token có quyền deploy (secrets.VERCEL_TOKEN).
+    required: true
+
+runs:
+  using: composite
+  steps:
+    # `vercel` coi token rỗng là "thiếu giá trị cho --token" — thông báo không hề gợi ý rằng
+    # secret chưa được nạp. Chặn sớm để lỗi chỉ đúng chỗ cần sửa.
+    - name: Check the Vercel token is present
+      shell: bash
+      env:
+        VERCEL_TOKEN: ${{ inputs.token }}
+      run: |
+        if [ -z "$VERCEL_TOKEN" ]; then
+          echo "::error::secrets.VERCEL_TOKEN rỗng hoặc chưa được đặt." >&2
+          echo "Tạo token tại https://vercel.com/account/settings/tokens rồi thêm vào" >&2
+          echo "Settings → Secrets and variables → Actions của repo." >&2
+          exit 1
+        fi
+
+    # Không dùng `vercel build --prebuilt`: biến môi trường đánh dấu Sensitive không tải về được
+    # qua `vercel pull`, build tại đây sẽ nhúng giá trị rỗng. Đẩy source lên để Vercel tự build
+    # với biến thật, giống hệt cách git integration vẫn làm.
+    #
+    # Chạy từ repo root: Root Directory của project (apps/api, apps/web) do Vercel áp dụng lên
+    # phần source đã upload, đúng như khi deploy từ git.
+    - name: Deploy
+      shell: bash
+      env:
+        VERCEL_PROJECT_ID: ${{ inputs.project-id }}
+        VERCEL_TOKEN: ${{ inputs.token }}
+      run: npx --yes vercel@59 deploy --prod --yes
