@@ -8,8 +8,8 @@ How to build, ship and operate Guild Manager in the real environment.
 > - `apps/api` → `https://guild-manager-api.vercel.app`
 > - `apps/web` → `https://guild-manager-web.vercel.app`
 >
-> `guild-manager-api` is connected to the GitHub repo, so pushing to `main` deploys it.
-> `guild-manager-web` is not connected yet and still needs a manual `vercel deploy`. See section 4.
+> Both Vercel projects are connected to the GitHub repo, so pushing to `main` deploys them. See
+> section 4.
 
 ## 1. Deployment architecture
 
@@ -110,45 +110,53 @@ Directory. The full reasoning is in the
 
 `apps/api` runs as a Vercel Function, **not** as a long-lived process — an earlier version of this
 document said it needed one. Two things make that work: Vercel's zero-config NestJS detection (it
-builds `src/main.ts` as-is, no build config and no serverless handler to write — `vercel.json` only
-turns preview deploys off), and Fluid compute,
+builds `src/main.ts` as-is, no build config and no serverless handler to write — the `vercel.json`
+there only turns preview deploys off), and Fluid compute,
 which keeps the instance alive between invocations so the pg pool is reused. That is why the pooler
 choice in section 5 does not change.
 
 ### Deploying
 
-`guild-manager-api` is connected to the GitHub repo (`vercel git connect`), so it deploys itself:
+Both projects are connected to the GitHub repo (`vercel git connect`), so they deploy themselves:
 
 | Git event | What Vercel builds |
 |---|---|
-| Push to `main` | Production deploy of `guild-manager-api` |
-| Open/update a pull request | Nothing — the build is skipped |
+| Push to `main` | Production deploy of both projects |
+| Open/update a pull request | Nothing — no preview is built |
 
 The GitHub Actions workflow in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) runs
 **alongside** the Vercel build, not before it — a red test does not stop a deploy. Gating would mean
 deploying from Actions with a `VERCEL_TOKEN` instead.
 
-Preview deploys of the API are switched off by `git.deploymentEnabled` in
-[`apps/api/vercel.json`](../apps/api/vercel.json): `"**": false` disables every branch, then
-`"main": true` re-enables production. When a branch matches several patterns, one `true` is enough to
-deploy, so `main` wins its own rule.
-
-> An earlier attempt used `ignoreCommand` with `[ "$VERCEL_ENV" != "production" ]` and **cancelled
-> the production deploy too**. Prefer `deploymentEnabled`: it is declarative, and its failure mode is
-> a branch that deploys when it should not, rather than `main` silently not deploying at all.
-
-The reason previews are off at all is environment variables: the API's are scoped to Production
-only, and `validateEnv` fails fast at boot, so a preview would build and then crash. Giving previews
-their own values means either pointing them at the real database or standing up a second one —
-neither is worth it while `WEB_PREVIEW_PROJECT` (section 3) already exists so that **web** previews
-call the production API.
-
-`guild-manager-web` is **not connected yet**, so it still deploys by hand:
+Deploying by hand still works and is the way to ship without a commit:
 
 ```bash
 # from the repo root, not from apps/*
+vercel deploy --prod --yes --project guild-manager-api --scope <team>
 vercel deploy --prod --yes --project guild-manager-web --scope <team>
 ```
+
+### Why there are no preview deployments
+
+Both apps carry a `vercel.json` whose only job is `git.deploymentEnabled`: `"**": false` disables
+every branch, then `"main": true` re-enables production. A branch matching several patterns deploys
+when any one of them is true, so `main` wins its own rule.
+
+> Do not switch this to `ignoreCommand`. An attempt with `[ "$VERCEL_ENV" != "production" ]`
+> **cancelled the production deploy too**, so pushing to `main` shipped nothing. `deploymentEnabled`
+> is declarative, and its failure mode is a branch deploying when it should not — rather than `main`
+> silently never deploying.
+
+Previews are off because neither app can build outside Production:
+
+- `apps/api` — its variables are scoped to Production, and `validateEnv` fails fast at boot, so a
+  preview would build and then crash. Fixing that means pointing previews at the real database or
+  standing up a second one.
+- `apps/web` — `next build` needs `AUTH_SECRET`, also Production-only. Giving previews a copy would
+  spread the JWT signing key into another environment scope.
+
+`WEB_PREVIEW_PROJECT` (section 3) stays in the CORS config regardless: it costs nothing and it is
+what makes web previews work the day one of these decisions is revisited.
 
 Two ordering rules:
 
@@ -343,8 +351,9 @@ There is no automatic rollback. In practice:
 
 ### Not in place yet
 
-Recorded so nobody assumes otherwise: CD for `apps/web` (that project is still deployed by hand), a
-staging environment, verified backups, monitoring/alerting, application-level rate limiting.
+Recorded so nobody assumes otherwise: preview deployments (both projects build on `main` only), a
+staging environment, verified backups, monitoring/alerting, application-level rate limiting. CI does
+not gate deploys either — see section 4.
 
 ## See also
 
