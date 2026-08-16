@@ -128,9 +128,16 @@ The GitHub Actions workflow in [`.github/workflows/ci.yml`](../.github/workflows
 **alongside** the Vercel build, not before it — a red test does not stop a deploy. Gating would mean
 deploying from Actions with a `VERCEL_TOKEN` instead.
 
-Preview deploys of the API are switched off by `ignoreCommand` in
-[`apps/api/vercel.json`](../apps/api/vercel.json), which exits 0 (= skip) for every `VERCEL_ENV`
-other than `production`. The reason is environment variables: the API's are scoped to Production
+Preview deploys of the API are switched off by `git.deploymentEnabled` in
+[`apps/api/vercel.json`](../apps/api/vercel.json): `"**": false` disables every branch, then
+`"main": true` re-enables production. When a branch matches several patterns, one `true` is enough to
+deploy, so `main` wins its own rule.
+
+> An earlier attempt used `ignoreCommand` with `[ "$VERCEL_ENV" != "production" ]` and **cancelled
+> the production deploy too**. Prefer `deploymentEnabled`: it is declarative, and its failure mode is
+> a branch that deploys when it should not, rather than `main` silently not deploying at all.
+
+The reason previews are off at all is environment variables: the API's are scoped to Production
 only, and `validateEnv` fails fast at boot, so a preview would build and then crash. Giving previews
 their own values means either pointing them at the real database or standing up a second one —
 neither is worth it while `WEB_PREVIEW_PROJECT` (section 3) already exists so that **web** previews
