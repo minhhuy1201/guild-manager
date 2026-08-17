@@ -21,8 +21,41 @@ env:
   VERCEL_WEB_PROJECT_ID: prj_NQb6Wdj6quicozmVNVFk0Kd8Za1T
 
 jobs:
+  # Cửa vào của mọi job khác: commit này chạm phần nào của monorepo. Một commit chỉ sửa docs
+  # không khớp filter nào, nên toàn bộ job phía sau bị skip và không có gì deploy lại.
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      # `global` gộp vào cả hai: packages/shared là contract chung của web và API, còn
+      # lockfile, workspace, .nvmrc và chính CI đổi thì không app nào còn được coi là chưa
+      # đụng tới.
+      api: ${{ steps.filter.outputs.api == 'true' || steps.filter.outputs.global == 'true' }}
+      web: ${{ steps.filter.outputs.web == 'true' || steps.filter.outputs.global == 'true' }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            api:
+              - 'apps/api/**'
+            web:
+              - 'apps/web/**'
+            global:
+              - 'packages/shared/**'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - '.nvmrc'
+              - '.github/**'
+
   backend-test:
     name: Backend test
+    needs: [changes]
+    if: needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -31,36 +64,60 @@ jobs:
 
   frontend-test:
     name: Frontend test
+    needs: [changes]
+    if: needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-workspace
       - run: pnpm --filter web test
 
-  quality:
-    name: Lint & typecheck
+  quality-api:
+    name: Lint & typecheck API
+    needs: [changes]
+    if: needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-workspace
       - name: Lint api
         run: pnpm --filter api lint
-      - name: Lint web
-        run: pnpm --filter web lint
       - name: Prettier api
         run: pnpm --filter api format:check
       - name: Typecheck api
         run: pnpm --filter api typecheck
+
+  quality-web:
+    name: Lint & typecheck web
+    needs: [changes]
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-workspace
+      - name: Lint web
+        run: pnpm --filter web lint
       - name: Typecheck web
         run: pnpm --filter web typecheck
 
-  build:
-    name: Build
+  build-api:
+    name: Build API
+    needs: [changes]
+    if: needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-workspace
       - run: pnpm --filter api build
+
+  build-web:
+    name: Build web
+    needs: [changes]
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-workspace
       - name: Build web
         # Giá trị giả cho khâu build: `next build` ném lỗi nếu thiếu NEXT_PUBLIC_API_URL ở
         # production, còn AUTH_SECRET phải đủ 32 ký tự. Không cái nào chạm hạ tầng thật.
@@ -70,14 +127,23 @@ jobs:
         run: pnpm --filter web build
 
   # Deploy chạy sau khi TOÀN BỘ job kiểm thử xanh, và chỉ khi commit đã nằm trên main.
-  # `needs` là thứ chặn deploy khi test đỏ: job needs bị skip nếu bất kỳ dependency nào fail.
+  #
+  # Từ khi các job kiểm thử bị lọc theo phần, `needs` một mình không còn đủ để chặn: một
+  # dependency bị skip hợp lệ (phần đó không đổi) cũng làm job needs bị skip theo. Nên điều
+  # kiện phải là always() cộng với việc tự kiểm tra không dependency nào fail hoặc bị hủy.
   #
   # Vercel không tự deploy nữa (git.deploymentEnabled = false trong apps/*/vercel.json), nên
   # đây là đường duy nhất đưa code lên production.
   deploy-api:
     name: Deploy API
-    needs: [backend-test, frontend-test, quality, build]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [changes, backend-test, frontend-test, quality-api, quality-web, build-api, build-web]
+    if: >-
+      always()
+      && !contains(needs.*.result, 'failure')
+      && !contains(needs.*.result, 'cancelled')
+      && github.event_name == 'push'
+      && github.ref == 'refs/heads/main'
+      && needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -86,10 +152,18 @@ jobs:
           project-id: ${{ env.VERCEL_API_PROJECT_ID }}
           token: ${{ secrets.VERCEL_TOKEN }}
 
-  # Frontend deploy sau backend: web gọi API, nên API phải sẵn sàng trước.
+  # Frontend deploy sau backend: web gọi API, nên API phải sẵn sàng trước. Khi commit chỉ chạm
+  # web, deploy-api bị skip và job này vẫn chạy — thứ tự chỉ ràng buộc khi cả hai cùng deploy.
   deploy-web:
     name: Deploy web
-    needs: [deploy-api]
+    needs: [changes, backend-test, frontend-test, quality-api, quality-web, build-api, build-web, deploy-api]
+    if: >-
+      always()
+      && !contains(needs.*.result, 'failure')
+      && !contains(needs.*.result, 'cancelled')
+      && github.event_name == 'push'
+      && github.ref == 'refs/heads/main'
+      && needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5

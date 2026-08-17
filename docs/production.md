@@ -125,24 +125,36 @@ choice in section 5 does not change.
 integration is switched off, so **this workflow is the only path to production**:
 
 ```
-backend-test ┐
-frontend-test├─→ deploy-api ─→ deploy-web
-quality      │
-build        ┘
+         ┌ backend-test, quality-api, build-api ┐
+changes ─┤                                      ├─→ deploy-api ─→ deploy-web
+         └ frontend-test, quality-web, build-web ┘
 ```
+
+`changes` runs `dorny/paths-filter` first and decides which half of the pipeline is relevant to the
+commit. `apps/api/**` marks the API affected, `apps/web/**` marks the web app affected, and
+`packages/shared/**`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `.nvmrc` and `.github/**` mark both —
+shared code and workspace-wide config can break either app. A commit matching none of them (docs, for
+instance) skips every job, including the deploys.
 
 | Git event | What happens |
 |---|---|
-| Push to `main` | Tests, then API deploy, then web deploy |
-| Open/update a pull request | Tests only — `deploy-api` is gated on `github.ref` |
+| Push to `main` touching `apps/api` | API test, lint, build, then API deploy only |
+| Push to `main` touching `apps/web` | Web test, lint, build, then web deploy only |
+| Push to `main` touching shared code or workspace config | The whole pipeline, both deploys |
+| Push to `main` touching only docs | Nothing runs; production is untouched |
+| Open/update a pull request | Tests only — the deploy jobs are gated on `github.ref` |
 | Any test job fails | Both deploy jobs are skipped; production keeps the previous build |
 
 Three things make the gate real:
 
-- **`needs` is the gate.** A job whose dependency failed does not run. `deploy-api` needs all four
-  test jobs, and `deploy-web` needs `deploy-api`, so a red test anywhere stops everything downstream.
+- **`needs` plus an explicit result check is the gate.** Path filtering means a dependency can be
+  skipped legitimately, and a skipped dependency would cascade into skipping the deploy. So both
+  deploy jobs run with `always()` and assert `!contains(needs.*.result, 'failure')` and the same for
+  `'cancelled'` — they still refuse to run when any test job is red, but tolerate ones that never
+  needed to run.
 - **API before web** is a `needs` edge, not a coincidence: web calls the API, so the API contract has
-  to be live first.
+  to be live first. When only the web app changed, `deploy-api` is skipped and web deploys alone —
+  the edge orders the two deploys, it does not require both.
 - **`vercel deploy` blocks until the build finishes** and exits non-zero if it fails, so a broken API
   build also stops the web deploy.
 

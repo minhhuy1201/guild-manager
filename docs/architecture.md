@@ -324,6 +324,7 @@ no staging environment, no verified backups, no monitoring or alerting, no appli
 limiting, and no automatic rollback. Migrations are still run by hand — the pipeline ships code,
 never schema. Details and consequences are in [`production.md`](production.md) §6.
 
-CI does exist: `.github/workflows/ci.yml` runs both test suites, lint, Prettier, typecheck and both
-builds on every push and pull request against `main`, then deploys the API and the web app when
-`main` is green — see [`production.md`](production.md) §4.
+CI does exist: `.github/workflows/ci.yml` runs the test suite, lint, Prettier, typecheck and build on
+every push and pull request against `main`, then deploys when `main` is green. The jobs are filtered
+by changed path, so a commit touching only one app runs and deploys only that half, and a docs-only
+commit runs nothing — see [`production.md`](production.md) §4.
