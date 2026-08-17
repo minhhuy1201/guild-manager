@@ -8,7 +8,7 @@ places people usually get stuck.
 
 | | Version | Notes |
 |---|---|---|
-| Node.js | 22+ | development happens on 24.13 |
+| Node.js | 24 | what CI runs and what development happens on |
 | pnpm | 10+ | `corepack enable pnpm` is enough |
 | Docker | any supported release | only used to run PostgreSQL (Podman works, see section 4) |
 | `openssl` | | to generate `AUTH_SECRET` |

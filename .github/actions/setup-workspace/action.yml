@@ -4,13 +4,13 @@ description: Cài pnpm, Node và dependencies của monorepo cho một job CI.
 runs:
   using: composite
   steps:
-    - uses: pnpm/action-setup@v4
+    - uses: pnpm/action-setup@v6
       with:
         version: 10
 
-    - uses: actions/setup-node@v5
+    - uses: actions/setup-node@v7
       with:
-        node-version: 22
+        node-version: 24
         cache: pnpm
 
     # `postinstall` của apps/api chạy `prisma generate`, và prisma.config.ts gọi loadPrismaEnv()
