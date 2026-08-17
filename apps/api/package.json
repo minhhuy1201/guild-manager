@@ -4,6 +4,9 @@
   "description": "Backend NestJS cho Guild Manager",
   "private": true,
   "license": "UNLICENSED",
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "build": "nest build",
     "postinstall": "prisma generate",

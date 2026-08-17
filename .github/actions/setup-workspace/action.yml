@@ -10,7 +10,7 @@ runs:
 
     - uses: actions/setup-node@v7
       with:
-        node-version: 24
+        node-version-file: .nvmrc
         cache: pnpm
 
     # `postinstall` của apps/api chạy `prisma generate`, và prisma.config.ts gọi loadPrismaEnv()

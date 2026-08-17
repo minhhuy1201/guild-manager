@@ -13,7 +13,7 @@ How the pieces fit together, and where new code belongs: [`docs/architecture.md`
 
 | | Version |
 |---|---|
-| Node.js | 24 |
+| Node.js | 24 (pinned in `.nvmrc`) |
 | pnpm | 10+ |
 | Docker | to run PostgreSQL locally |
 

@@ -2,6 +2,9 @@ packages:
   - "apps/*"
   - "packages/*"
 
+# Node 24 chỉ là gợi ý nếu không ai ép: `engines.node` của mỗi package thành lỗi cài đặt thật.
+engineStrict: true
+
 ignoredBuiltDependencies:
   - sharp
   - unrs-resolver

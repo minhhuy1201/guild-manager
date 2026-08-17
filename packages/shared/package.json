@@ -2,6 +2,9 @@
   "name": "@guild/shared",
   "version": "0.0.0",
   "private": true,
+  "engines": {
+    "node": "24.x"
+  },
   "//": "Không đặt \"type\": \"module\" — apps/api dùng TypeScript nodenext + CommonJS, nếu là ESM thì import tương đối bắt buộc có đuôi .js, mà Next.js/Turbopack của apps/web lại không resolve được đuôi đó.",
   "//exports": "Kiểu lấy thẳng từ source .ts (khỏi sinh .d.ts), còn lúc chạy thì dùng dist/*.js. Không trỏ runtime vào .ts được: Vercel biên dịch TypeScript tại chỗ rồi chỉ giữ .js, nên đường dẫn .ts trong exports map sẽ không còn file — xem docs/superpowers/specs/2026-08-16-vercel-deployment-design.md.",
   "exports": {

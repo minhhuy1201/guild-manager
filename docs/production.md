@@ -37,6 +37,10 @@ pnpm --filter web start        # next start
 
 Things to watch for when building on CI/hosting:
 
+- **Node 24 everywhere.** `.nvmrc` pins it for local shells and CI (`node-version-file`), and every
+  package declares `engines.node: 24.x` — which is also what Vercel reads to pick the build and
+  function runtime. `engineStrict: true` in `pnpm-workspace.yaml` turns a mismatch into a failed
+  install instead of a surprise at runtime.
 - The `postinstall` of `apps/api` runs `prisma generate`, which needs `DATABASE_URL` to **exist and
   be a well-formed URL** (it does not need to be reachable).
 - This is a pnpm workspace: the host must install from the repo root, not inside `apps/*`.
