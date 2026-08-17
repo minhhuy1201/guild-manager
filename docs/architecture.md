@@ -319,6 +319,11 @@ API, Vitest on the web). There are no end-to-end tests; the `apps/api/test/` har
 
 ## 8. What is deliberately absent
 
-Recorded so nobody assumes otherwise: no CI/CD, no staging environment, no verified backups, no
-monitoring or alerting, no application-level rate limiting, and no automatic rollback. Details and
-consequences are in [`production.md`](production.md) §6.
+Recorded so nobody assumes otherwise: no preview deployments (both projects build on `main` only),
+no staging environment, no verified backups, no monitoring or alerting, no application-level rate
+limiting, and no automatic rollback. Migrations are still run by hand — the pipeline ships code,
+never schema. Details and consequences are in [`production.md`](production.md) §6.
+
+CI does exist: `.github/workflows/ci.yml` runs both test suites, lint, Prettier, typecheck and both
+builds on every push and pull request against `main`, then deploys the API and the web app when
+`main` is green — see [`production.md`](production.md) §4.

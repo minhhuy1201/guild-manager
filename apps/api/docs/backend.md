@@ -189,7 +189,9 @@ only, which is the stronger of the two and subsumes the module-boundary rule.
 
 `prisma/**` and `prisma.config.ts` are exempt — they run outside the app, under the Prisma CLI.
 
-`pnpm lint` is what checks this; there is no CI, so run it before committing.
+`pnpm lint` is what checks this. CI runs it on every push and pull request against `main`
+(`.github/workflows/ci.yml`), so a broken boundary blocks the deploy — run it locally first and find
+out in seconds rather than minutes.
 
 ---
 
@@ -359,7 +361,8 @@ What a NestJS project should have on day one, and where this one stands:
 - [x] ESLint rules blocking cross-layer imports (§4)
 - [ ] Application-level rate limiting — deliberately absent, see
       [`production.md`](../../../docs/production.md) §6
-- [ ] CI running lint and tests — also deliberately absent; `pnpm lint` and `pnpm test` are manual
+- [x] CI running lint, Prettier, typecheck, tests and both builds on every push and PR against
+      `main`, gating the production deploy (`.github/workflows/ci.yml`)
 
 ---
 
