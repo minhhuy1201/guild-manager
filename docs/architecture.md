@@ -112,7 +112,7 @@ modules/  ──►  infrastructure/  ──►  config/
 - A module may import another module's `*.module` file only, never its internals — enforced by ESLint.
 - Request flow is **Controller → Service → (Repository) → Prisma**. Controllers never touch Prisma.
 - Services hold the business logic. DTOs only validate input. Never return a Prisma model from a
-  controller — return the module's entity/response object.
+  controller — map it to the response shape from `@guild/shared/schemas`.
 - Don't create `guards/`, `decorators/` or a repository speculatively. Add them when a second caller
   actually appears.
 
@@ -128,8 +128,9 @@ unchecked — see [`apps/api/docs/backend.md`](../apps/api/docs/backend.md) §4.
 
 ### 3.3 Modules
 
-Each is `<domain>.module.ts` + `<domain>.controller.ts` + `<domain>.service.ts`, with `dto/`,
-`entities/` and `__tests__/` beside it.
+Each is `<domain>.module.ts` + `<domain>.controller.ts` + `<domain>.service.ts`, with `dto/` and
+`__tests__/` beside it. Response shapes are not declared here — they come from
+`@guild/shared/schemas`, and the object a service builds ends in `satisfies <Shape>`.
 
 | Module | Owns | Access |
 |---|---|---|
@@ -300,7 +301,7 @@ the old rules survive only as sensible defaults when filling the form.
 | What you're adding | Where it goes |
 |---|---|
 | **A new API endpoint on an existing domain** | Controller method → service method in that module. Payload shapes as Zod schemas in `packages/shared/schemas`, wrapped as DTOs with `createZodDto`. |
-| **A new backend domain** | `src/modules/<domain>/` with `<domain>.module.ts`, `.controller.ts`, `.service.ts`, plus `dto/` and `entities/`. Register it in `app.module.ts`. Add a `<domain>.repository.ts` only once the queries are complex or repeated; simple CRUD calls `PrismaService` from the service. |
+| **A new backend domain** | `src/modules/<domain>/` with `<domain>.module.ts`, `.controller.ts`, `.service.ts`, plus `dto/`. Register it in `app.module.ts`. Its request **and** response shapes go in `packages/shared/schemas/`. Add a `<domain>.repository.ts` only once the queries are complex or repeated; simple CRUD calls `PrismaService` from the service. |
 | **A database column or table** | `prisma/schema.prisma` → `pnpm --filter api prisma:migrate` → commit the migration folder. Enums must stay in step with `packages/shared/enums`. Then check the Data API grants ([`production.md`](production.md) §5). |
 | **A request/response shape, an enum, a validation rule** | `packages/shared` — never re-declared per app. |
 | **A new page** | A thin `app/<route>/page.tsx` that renders one feature component, the path added to `config/routes.ts`. Admin-only? Add the prefix to `ADMIN_PATH_PREFIXES` in `proxy.ts` **and** re-check `getSession()` in the page. |

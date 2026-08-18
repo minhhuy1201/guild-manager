@@ -86,7 +86,6 @@ features/members/
 ├── hooks/
 │   ├── use-members.ts              # useQuery
 │   └── use-member-mutations.ts     # useMutation + invalidation
-├── types/member.ts
 └── index.ts                        # everything another module may import
 ```
 

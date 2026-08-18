@@ -18,7 +18,8 @@ The rules that get broken first, in the order they get broken:
   `tsc`, leaves the alias in the emitted JavaScript, and the function dies at runtime — do not
   reintroduce it.
 - **Controller → Service → (Repository) → Prisma.** A controller never touches Prisma, and never
-  returns a Prisma model: map it to the module's entity so `password` cannot leak.
+  returns a Prisma model: map it to the response shape from `@guild/shared/schemas` (with
+  `satisfies`) so `password` cannot leak.
 - **`common/` and `config/` never import from `modules/` or `infrastructure/`**, and a module imports
   another module's `*.module` file only. ESLint enforces both **per directory depth** — adding a
   directory level under `src/` means adding a matching block in `eslint.config.mjs`, or imports at
