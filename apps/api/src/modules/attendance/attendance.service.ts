@@ -4,7 +4,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import type { AttendanceStatus, GuildClass } from '@guild/shared/enums';
-import type { MarkAttendanceInput } from '@guild/shared/schemas';
+import type {
+  AttendanceRecord,
+  Character,
+  MarkAttendanceInput,
+} from '@guild/shared/schemas';
 
 import { ADMIN_ROLE, type JwtPayload } from '../../common';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
@@ -12,10 +16,6 @@ import {
   BattleSessionsService,
   isDeadlinePassed,
 } from '../battle-sessions/battle-sessions.module';
-import type {
-  AttendanceRecordEntity,
-  CharacterEntity,
-} from './entities/attendance.entity';
 
 @Injectable()
 export class AttendanceService {
@@ -28,18 +28,21 @@ export class AttendanceService {
    * Lấy danh sách nhân vật trong bang, sắp xếp theo tên.
    * @returns Mảng nhân vật
    */
-  async getCharacters(): Promise<CharacterEntity[]> {
+  async getCharacters(): Promise<Character[]> {
     const characters = await this.prisma.character.findMany({
       select: { id: true, name: true, guildClass: true },
       orderBy: { name: 'asc' },
     });
 
-    return characters.map((character) => ({
-      ...character,
-      // Prisma sinh ra union string literal, enum dùng chung là TS enum — cùng giá trị,
-      // ràng buộc bởi enum trong database nên cast ở đây là an toàn.
-      guildClass: character.guildClass as GuildClass,
-    }));
+    return characters.map(
+      (character) =>
+        ({
+          ...character,
+          // Prisma sinh ra union string literal, enum dùng chung là TS enum — cùng giá trị,
+          // ràng buộc bởi enum trong database nên cast ở đây là an toàn.
+          guildClass: character.guildClass as GuildClass,
+        }) satisfies Character,
+    );
   }
 
   /**
@@ -47,19 +50,22 @@ export class AttendanceService {
    * @param now - Thời điểm hiện tại (cho phép truyền vào để test)
    * @returns Mảng record của các trận trong tuần
    */
-  async getRecords(now: Date = new Date()): Promise<AttendanceRecordEntity[]> {
+  async getRecords(now: Date = new Date()): Promise<AttendanceRecord[]> {
     const sessions = await this.battleSessions.listByWeek(undefined, now);
     const records = await this.prisma.attendanceRecord.findMany({
       where: { sessionId: { in: sessions.map((session) => session.id) } },
       orderBy: { markedAt: 'desc' },
     });
 
-    return records.map((record) => ({
-      characterId: record.characterId,
-      sessionId: record.sessionId,
-      status: record.status as AttendanceStatus,
-      markedAt: record.markedAt.toISOString(),
-    }));
+    return records.map(
+      (record) =>
+        ({
+          characterId: record.characterId,
+          sessionId: record.sessionId,
+          status: record.status as AttendanceStatus,
+          markedAt: record.markedAt.toISOString(),
+        }) satisfies AttendanceRecord,
+    );
   }
 
   /**
@@ -78,7 +84,7 @@ export class AttendanceService {
     input: MarkAttendanceInput,
     actor: JwtPayload | null = null,
     now: Date = new Date(),
-  ): Promise<AttendanceRecordEntity> {
+  ): Promise<AttendanceRecord> {
     const { characterId, sessionId, status } = input;
     const isAdmin = actor?.role === ADMIN_ROLE;
 
@@ -114,6 +120,6 @@ export class AttendanceService {
       sessionId: record.sessionId,
       status: record.status as AttendanceStatus,
       markedAt: record.markedAt.toISOString(),
-    };
+    } satisfies AttendanceRecord;
   }
 }

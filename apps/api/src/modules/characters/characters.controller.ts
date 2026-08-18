@@ -10,11 +10,11 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import type { Character } from '@guild/shared/schemas';
 
 import { JwtAuthGuard } from '../../common';
 import { CharactersService } from './characters.service';
 import { CreateCharacterDto, UpdateCharacterDto } from './dto/character.dto';
-import type { MemberEntity } from './entities/character.entity';
 
 /**
  * Quản lý thành viên — chỉ quản trị viên được đụng tới, nên guard đặt ở cấp
@@ -32,7 +32,7 @@ export class CharactersController {
    */
   @Get()
   @ApiOperation({ summary: 'Danh sách thành viên' })
-  list(): Promise<MemberEntity[]> {
+  list(): Promise<Character[]> {
     return this.characters.list();
   }
 
@@ -43,7 +43,7 @@ export class CharactersController {
    */
   @Post()
   @ApiOperation({ summary: 'Thêm một thành viên' })
-  create(@Body() body: CreateCharacterDto): Promise<MemberEntity> {
+  create(@Body() body: CreateCharacterDto): Promise<Character> {
     return this.characters.create(body);
   }
 
@@ -58,7 +58,7 @@ export class CharactersController {
   update(
     @Param('id') id: string,
     @Body() body: UpdateCharacterDto,
-  ): Promise<MemberEntity> {
+  ): Promise<Character> {
     return this.characters.update(id, body);
   }
 

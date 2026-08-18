@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import type { AttendanceRecord, Character } from '@guild/shared/schemas';
 
 import {
   CurrentUser,
@@ -8,10 +9,6 @@ import {
 } from '../../common';
 import { AttendanceService } from './attendance.service';
 import { MarkAttendanceDto } from './dto/mark-attendance.dto';
-import type {
-  AttendanceRecordEntity,
-  CharacterEntity,
-} from './entities/attendance.entity';
 
 @ApiTags('attendance')
 @Controller('attendance')
@@ -24,7 +21,7 @@ export class AttendanceController {
    */
   @Get('characters')
   @ApiOperation({ summary: 'Danh sách nhân vật trong bang' })
-  getCharacters(): Promise<CharacterEntity[]> {
+  getCharacters(): Promise<Character[]> {
     return this.attendance.getCharacters();
   }
 
@@ -34,7 +31,7 @@ export class AttendanceController {
    */
   @Get('records')
   @ApiOperation({ summary: 'Lượt điểm danh của tuần đang mở' })
-  getRecords(): Promise<AttendanceRecordEntity[]> {
+  getRecords(): Promise<AttendanceRecord[]> {
     return this.attendance.getRecords();
   }
 
@@ -52,7 +49,7 @@ export class AttendanceController {
   mark(
     @Body() body: MarkAttendanceDto,
     @CurrentUser() user?: JwtPayload,
-  ): Promise<AttendanceRecordEntity> {
+  ): Promise<AttendanceRecord> {
     return this.attendance.mark(body, user ?? null);
   }
 }
