@@ -17,3 +17,18 @@ export const markAttendanceSchema = z.object({
 
 /** Kiểu payload điểm danh đã validate. */
 export type MarkAttendanceInput = z.infer<typeof markAttendanceSchema>;
+
+/** Một lượt điểm danh của nhân vật ở một trận, đúng như API trả về. */
+export const attendanceRecordSchema = z.object({
+  /** ID nhân vật */
+  characterId: z.string(),
+  /** ID buổi đánh */
+  sessionId: z.string(),
+  /** Trạng thái Có/Không */
+  status: z.enum(AttendanceStatus),
+  /** Thời điểm điểm danh (ISO string) */
+  markedAt: z.string(),
+});
+
+/** Kiểu một lượt điểm danh API trả về. */
+export type AttendanceRecord = z.infer<typeof attendanceRecordSchema>;

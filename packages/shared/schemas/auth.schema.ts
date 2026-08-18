@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { ADMIN_ROLE } from "../enums/role.enum";
+
 /**
  * Payload đăng nhập của quản trị viên.
  * Dùng chung: FE validate form, BE validate request body (nestjs-zod).
@@ -22,3 +24,27 @@ export const refreshTokenSchema = z.object({
 
 /** Kiểu payload refresh đã validate. */
 export type RefreshTokenInput = z.infer<typeof refreshTokenSchema>;
+
+/** Thông tin tài khoản API trả về — không bao giờ chứa mật khẩu. */
+export const authUserSchema = z.object({
+  /** Tên đăng nhập đã chuẩn hóa chữ thường */
+  username: z.string(),
+  /** Quyền của tài khoản */
+  role: z.literal(ADMIN_ROLE),
+});
+
+/** Cặp token phát ra sau khi đăng nhập hoặc refresh thành công. */
+export const authTokensSchema = z.object({
+  /** Token dùng cho các request cần xác thực (hạn 1 ngày) */
+  accessToken: z.string(),
+  /** Token dùng để xin cặp token mới (hạn 1 tuần) */
+  refreshToken: z.string(),
+  /** Tài khoản ứng với cặp token này */
+  user: authUserSchema,
+});
+
+/** Kiểu thông tin tài khoản API trả về. */
+export type AuthUser = z.infer<typeof authUserSchema>;
+
+/** Kiểu cặp token API trả về. */
+export type AuthTokens = z.infer<typeof authTokensSchema>;

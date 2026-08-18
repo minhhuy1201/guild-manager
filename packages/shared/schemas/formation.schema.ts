@@ -43,3 +43,57 @@ export type MatchInput = z.infer<typeof matchSchema>;
 
 /** Kiểu body lưu đội hình đã validate. */
 export type SaveFormationInput = z.infer<typeof saveFormationSchema>;
+
+/**
+ * Đội hình và ghi chú của một trận, đúng như API trả về.
+ * Ô trống KHÔNG có khoá, ô không ghi gì cũng KHÔNG có khoá — giống hệt chiều gửi lên.
+ * Khác `matchSchema` ở chỗ không mang ràng buộc độ dài: chiều ra không validate,
+ * schema này chỉ để suy ra kiểu.
+ */
+export const matchFormationSchema = z.object({
+  /** slotId → characterId. Ô trống không có khoá. */
+  slots: z.record(z.string(), z.string()),
+  /** slotId → ghi chú. Ô không ghi gì không có khoá. */
+  notes: z.record(z.string(), z.string()),
+});
+
+/** Một trận kèm đội hình đã lưu của nó, đúng như API trả về. */
+export const sessionFormationSchema = z.object({
+  /** ID trận đánh */
+  sessionId: z.string(),
+  /** Nhãn hiển thị của trận, ví dụ "Thứ 7 · Guild War" */
+  label: z.string(),
+  /** Thời điểm đánh (ISO string) */
+  dateTime: z.string(),
+  /** Trận Guild War Thứ 7 */
+  isGuildWar: z.boolean(),
+  /** Tên bang đối thủ, null với Guild War hoặc scrim chưa chốt đối thủ */
+  opponent: z.string().nullable(),
+  /** Trận đã đánh xong — không cho sửa đội hình nữa */
+  locked: z.boolean(),
+  /**
+   * Từng trận trong ngày, theo thứ tự trận 1 → trận 2.
+   * Mảng rỗng nghĩa là ngày này chưa xếp gì và cũng chưa ghi chú gì.
+   */
+  matches: z.array(matchFormationSchema),
+});
+
+/** Một tuần còn dữ liệu đội hình. */
+export const formationWeekSchema = z.object({
+  /** Mốc Thứ 2 00:00 của tuần (ISO string) */
+  weekStart: z.string(),
+  /**
+   * Tuần điểm danh đang mở. Danh sách còn có cả tuần kế tiếp — tuần đầu mảng
+   * KHÔNG phải tuần đang mở, nên client phải đọc cờ này.
+   */
+  isActive: z.boolean(),
+});
+
+/** Kiểu đội hình một trận API trả về. */
+export type MatchFormation = z.infer<typeof matchFormationSchema>;
+
+/** Kiểu một ngày đánh kèm đội hình API trả về. */
+export type SessionFormation = z.infer<typeof sessionFormationSchema>;
+
+/** Kiểu một tuần còn dữ liệu đội hình. */
+export type FormationWeek = z.infer<typeof formationWeekSchema>;
