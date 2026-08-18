@@ -9,10 +9,6 @@ import { BattleSessionsService } from './battle-sessions.service';
  */
 export { BattleSessionsService } from './battle-sessions.service';
 export { formatSessionLabel, isDeadlinePassed } from './session-schedule';
-export type {
-  BattleSessionEntity,
-  WeekEntity,
-} from './entities/battle-session.entity';
 
 /** Module lịch đánh: sở hữu bảng BattleSession, tự sinh Guild War và CRUD scrim. */
 @Module({

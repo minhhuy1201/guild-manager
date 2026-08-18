@@ -11,6 +11,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import type { BattleSession, Week } from '@guild/shared/schemas';
 
 import { JwtAuthGuard } from '../../common';
 import { BattleSessionsService } from './battle-sessions.service';
@@ -18,10 +19,6 @@ import {
   CreateBattleSessionDto,
   UpdateBattleSessionDto,
 } from './dto/battle-session.dto';
-import type {
-  BattleSessionEntity,
-  WeekEntity,
-} from './entities/battle-session.entity';
 
 @ApiTags('battle-sessions')
 @Controller('battle-sessions')
@@ -34,7 +31,7 @@ export class BattleSessionsController {
    */
   @Get('weeks')
   @ApiOperation({ summary: 'Tuần đang mở và tuần kế tiếp' })
-  getWeeks(): WeekEntity[] {
+  getWeeks(): Week[] {
     return this.battleSessions.getEditableWeeks();
   }
 
@@ -45,7 +42,7 @@ export class BattleSessionsController {
    */
   @Get()
   @ApiOperation({ summary: 'Các trận đánh của một tuần' })
-  list(@Query('weekStart') weekStart?: string): Promise<BattleSessionEntity[]> {
+  list(@Query('weekStart') weekStart?: string): Promise<BattleSession[]> {
     return this.battleSessions.listByWeek(weekStart);
   }
 
@@ -57,7 +54,7 @@ export class BattleSessionsController {
   @Post()
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Thêm một trận scrim' })
-  create(@Body() body: CreateBattleSessionDto): Promise<BattleSessionEntity> {
+  create(@Body() body: CreateBattleSessionDto): Promise<BattleSession> {
     return this.battleSessions.create(body);
   }
 
@@ -73,7 +70,7 @@ export class BattleSessionsController {
   update(
     @Param('id') id: string,
     @Body() body: UpdateBattleSessionDto,
-  ): Promise<BattleSessionEntity> {
+  ): Promise<BattleSession> {
     return this.battleSessions.update(id, body);
   }
 

@@ -3,18 +3,18 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import type { MatchInput } from '@guild/shared/schemas';
+import type {
+  FormationWeek,
+  MatchFormation,
+  MatchInput,
+  SessionFormation,
+} from '@guild/shared/schemas';
 
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import {
   BattleSessionsService,
   formatSessionLabel,
 } from '../battle-sessions/battle-sessions.module';
-import type {
-  FormationWeekEntity,
-  MatchFormation,
-  SessionFormationEntity,
-} from './entities/formation.entity';
 
 /** Số ngày giữ lại đội hình cũ. Quá mốc này thì dọn. */
 const RETENTION_DAYS = 56;
@@ -63,7 +63,7 @@ export class TeamBuilderService {
    * @param now - Thời điểm hiện tại (cho phép truyền vào để test)
    * @returns Mảng tuần, mới nhất trước, tuần đang mở mang cờ isActive
    */
-  async getWeeks(now: Date = new Date()): Promise<FormationWeekEntity[]> {
+  async getWeeks(now: Date = new Date()): Promise<FormationWeek[]> {
     await this.purgeExpiredFormations(now);
     await this.battleSessions.listByWeek(undefined, now);
 
@@ -77,7 +77,10 @@ export class TeamBuilderService {
     return sessions.map((session) => {
       const weekStart = session.weekStart.toISOString();
 
-      return { weekStart, isActive: weekStart === activeWeekStart };
+      return {
+        weekStart,
+        isActive: weekStart === activeWeekStart,
+      } satisfies FormationWeek;
     });
   }
 
@@ -106,7 +109,7 @@ export class TeamBuilderService {
   async getFormations(
     weekStart?: string,
     now: Date = new Date(),
-  ): Promise<SessionFormationEntity[]> {
+  ): Promise<SessionFormation[]> {
     const activeWeekStart = this.battleSessions.getActiveWeekStart(now);
     const targetWeekStart = weekStart ?? activeWeekStart;
 
@@ -127,26 +130,29 @@ export class TeamBuilderService {
     });
     if (sessions.length === 0) return [];
 
-    return sessions.map((session) => ({
-      sessionId: session.id,
-      label: formatSessionLabel(session.dateTime, session.isGuildWar),
-      opponent: session.opponent,
-      dateTime: session.dateTime.toISOString(),
-      isGuildWar: session.isGuildWar,
-      locked: session.dateTime.getTime() < now.getTime(),
-      matches: session.formationMatches.map((match) => ({
-        slots: Object.fromEntries(
-          match.slots
-            .filter((slot) => slot.characterId !== null)
-            .map((slot) => [slot.slotId, slot.characterId as string]),
-        ),
-        notes: Object.fromEntries(
-          match.slots
-            .filter((slot) => slot.note !== null)
-            .map((slot) => [slot.slotId, slot.note as string]),
-        ),
-      })),
-    }));
+    return sessions.map(
+      (session) =>
+        ({
+          sessionId: session.id,
+          label: formatSessionLabel(session.dateTime, session.isGuildWar),
+          opponent: session.opponent,
+          dateTime: session.dateTime.toISOString(),
+          isGuildWar: session.isGuildWar,
+          locked: session.dateTime.getTime() < now.getTime(),
+          matches: session.formationMatches.map((match) => ({
+            slots: Object.fromEntries(
+              match.slots
+                .filter((slot) => slot.characterId !== null)
+                .map((slot) => [slot.slotId, slot.characterId as string]),
+            ),
+            notes: Object.fromEntries(
+              match.slots
+                .filter((slot) => slot.note !== null)
+                .map((slot) => [slot.slotId, slot.note as string]),
+            ),
+          })),
+        }) satisfies SessionFormation,
+    );
   }
 
   /**
@@ -164,7 +170,7 @@ export class TeamBuilderService {
     sessionId: string,
     matches: MatchInput[],
     now: Date = new Date(),
-  ): Promise<SessionFormationEntity> {
+  ): Promise<SessionFormation> {
     const session = await this.prisma.battleSession.findUnique({
       where: { id: sessionId },
     });

@@ -5,15 +5,13 @@ import {
 } from '@nestjs/common';
 import { defaultDeadline } from '@guild/shared/lib';
 import type {
+  BattleSession,
   CreateBattleSessionInput,
   UpdateBattleSessionInput,
+  Week,
 } from '@guild/shared/schemas';
 
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
-import type {
-  BattleSessionEntity,
-  WeekEntity,
-} from './entities/battle-session.entity';
 import {
   formatSessionLabel,
   getActiveWeek,
@@ -62,12 +60,15 @@ export class BattleSessionsService {
    * @param now - Thời điểm hiện tại (cho phép truyền vào để test)
    * @returns Mảng 2 tuần, tuần đang mở đứng trước
    */
-  getEditableWeeks(now: Date = new Date()): WeekEntity[] {
-    return getEditableWeeks(now).map((week, index) => ({
-      weekStart: week.weekStart.toISOString(),
-      weekEnd: week.weekEnd.toISOString(),
-      isActive: index === 0,
-    }));
+  getEditableWeeks(now: Date = new Date()): Week[] {
+    return getEditableWeeks(now).map(
+      (week, index) =>
+        ({
+          weekStart: week.weekStart.toISOString(),
+          weekEnd: week.weekEnd.toISOString(),
+          isActive: index === 0,
+        }) satisfies Week,
+    );
   }
 
   /**
@@ -81,7 +82,7 @@ export class BattleSessionsService {
   async listByWeek(
     weekStart?: string,
     now: Date = new Date(),
-  ): Promise<BattleSessionEntity[]> {
+  ): Promise<BattleSession[]> {
     const target = weekStart
       ? new Date(weekStart)
       : getActiveWeek(now).weekStart;
@@ -104,7 +105,7 @@ export class BattleSessionsService {
    * @param id - Id trận cần đọc
    * @returns Trận tương ứng, null nếu không có
    */
-  async findById(id: string): Promise<BattleSessionEntity | null> {
+  async findById(id: string): Promise<BattleSession | null> {
     const row = await this.prisma.battleSession.findUnique({
       where: { id },
       include: SESSION_INCLUDE,
@@ -123,7 +124,7 @@ export class BattleSessionsService {
   async create(
     input: CreateBattleSessionInput,
     now: Date = new Date(),
-  ): Promise<BattleSessionEntity> {
+  ): Promise<BattleSession> {
     const dateTime = new Date(input.dateTime);
     const deadline = new Date(input.deadline);
 
@@ -158,7 +159,7 @@ export class BattleSessionsService {
     id: string,
     input: UpdateBattleSessionInput,
     now: Date = new Date(),
-  ): Promise<BattleSessionEntity> {
+  ): Promise<BattleSession> {
     const current = await this.prisma.battleSession.findUnique({
       where: { id },
       include: SESSION_INCLUDE,
@@ -284,11 +285,11 @@ export class BattleSessionsService {
   }
 
   /**
-   * Đổi một hàng BattleSession thành entity trả về cho client.
+   * Đổi một hàng BattleSession thành object trả về cho client.
    * @param row - Hàng đọc từ Prisma kèm `_count`
-   * @returns Entity đã dựng nhãn và đổi thời gian sang ISO string
+   * @returns Trận đánh đã dựng nhãn và đổi thời gian sang ISO string
    */
-  private toEntity(row: SessionRow): BattleSessionEntity {
+  private toEntity(row: SessionRow) {
     return {
       id: row.id,
       label: formatSessionLabel(row.dateTime, row.isGuildWar),
@@ -299,7 +300,7 @@ export class BattleSessionsService {
       weekStart: row.weekStart.toISOString(),
       attendanceCount: row._count.attendanceRecords,
       hasFormation: row._count.formationMatches > 0,
-    };
+    } satisfies BattleSession;
   }
 }
 

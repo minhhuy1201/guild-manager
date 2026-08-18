@@ -8,13 +8,10 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import type { FormationWeek, SessionFormation } from '@guild/shared/schemas';
 
 import { JwtAuthGuard } from '../../common';
 import { SaveFormationDto } from './dto/save-formation.dto';
-import type {
-  FormationWeekEntity,
-  SessionFormationEntity,
-} from './entities/formation.entity';
 import { TeamBuilderService } from './team-builder.service';
 
 @ApiTags('team-builder')
@@ -29,7 +26,7 @@ export class TeamBuilderController {
    */
   @Get('weeks')
   @ApiOperation({ summary: 'Các tuần còn dữ liệu đội hình' })
-  getWeeks(): Promise<FormationWeekEntity[]> {
+  getWeeks(): Promise<FormationWeek[]> {
     return this.teamBuilder.getWeeks();
   }
 
@@ -42,7 +39,7 @@ export class TeamBuilderController {
   @ApiOperation({ summary: 'Đội hình của các trận trong một tuần' })
   getFormations(
     @Query('weekStart') weekStart?: string,
-  ): Promise<SessionFormationEntity[]> {
+  ): Promise<SessionFormation[]> {
     return this.teamBuilder.getFormations(weekStart);
   }
 
@@ -57,7 +54,7 @@ export class TeamBuilderController {
   saveFormation(
     @Param('sessionId') sessionId: string,
     @Body() body: SaveFormationDto,
-  ): Promise<SessionFormationEntity> {
+  ): Promise<SessionFormation> {
     return this.teamBuilder.saveFormation(sessionId, body.matches);
   }
 }
