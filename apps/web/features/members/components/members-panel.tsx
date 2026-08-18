@@ -4,6 +4,7 @@ import { useState } from "react";
 import { UserPlus } from "lucide-react";
 
 import type { GuildClass } from "@shared/enums";
+import type { Character } from "@shared/schemas";
 
 import { CreateButton } from "@/components/shared/action-buttons";
 import { ErrorState } from "@/components/shared/error-state";
@@ -19,7 +20,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useTablePagination } from "@/hooks/use-table-pagination";
-import type { Member } from "../types/member";
 import { useMembers } from "../hooks/use-members";
 import { DeleteMemberDialog } from "./delete-member-dialog";
 import { MemberFormDialog } from "./member-form-dialog";
@@ -37,9 +37,9 @@ export function MembersPanel() {
   const membersQuery = useMembers();
   const [keyword, setKeyword] = useState("");
   const [guildClasses, setGuildClasses] = useState<GuildClass[]>([]);
-  const [editing, setEditing] = useState<Member | null>(null);
+  const [editing, setEditing] = useState<Character | null>(null);
   const [formOpen, setFormOpen] = useState(false);
-  const [deleting, setDeleting] = useState<Member | null>(null);
+  const [deleting, setDeleting] = useState<Character | null>(null);
 
   const normalized = keyword.trim().toLowerCase();
   const allMembers = membersQuery.data ?? [];

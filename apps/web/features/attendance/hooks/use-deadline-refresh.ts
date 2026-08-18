@@ -2,9 +2,9 @@
 
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import type { BattleSession } from "@shared/schemas";
 
 import { attendanceKeys } from "../api/attendance-api";
-import type { BattleSession } from "../types/attendance";
 
 /**
  * Schedules a refresh exactly when the next attendance deadline passes, so the

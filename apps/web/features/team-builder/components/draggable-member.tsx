@@ -2,7 +2,7 @@
 
 import { useDraggable } from "@dnd-kit/core";
 
-import type { Character } from "@/features/attendance";
+import type { Character } from "@shared/schemas";
 import { cn } from "@/lib/utils";
 import type { MemberDragData } from "../lib/dnd-data";
 import { MemberCard } from "./member-card";

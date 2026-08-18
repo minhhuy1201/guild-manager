@@ -2,12 +2,9 @@
 
 import { useMemo, useState } from "react";
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
+import type { Character } from "@shared/schemas";
 
-import {
-  useAttendanceRecords,
-  useCharacters,
-  type Character,
-} from "@/features/attendance";
+import { useAttendanceRecords, useCharacters } from "@/features/attendance";
 import { ApiError } from "@/lib/api-client";
 import { isMemberDragData, toDragSource, toDropTarget } from "../lib/dnd-data";
 import { isDayDirty } from "../lib/formation-diff";

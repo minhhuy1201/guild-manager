@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { LoaderCircle, Trash2, X } from "lucide-react";
+import type { BattleSession } from "@shared/schemas";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -11,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { getSessionSubtitle, type BattleSession } from "@/features/attendance";
+import { getSessionSubtitle } from "@/features/attendance";
 import { ApiError } from "@/lib/api-client";
 import { useDeleteSession } from "../hooks/use-session-mutations";
 

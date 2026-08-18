@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { LoaderCircle, Trash2, X } from "lucide-react";
+import type { Character } from "@shared/schemas";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -12,12 +13,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ApiError } from "@/lib/api-client";
-import type { Member } from "../types/member";
 import { useDeleteMember } from "../hooks/use-member-mutations";
 
 interface DeleteMemberDialogProps {
   /** Thành viên sắp xoá; null thì dialog đóng */
-  member: Member | null;
+  member: Character | null;
   /** Gọi khi dialog đóng lại */
   onClose: () => void;
 }

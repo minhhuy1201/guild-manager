@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Swords } from "lucide-react";
 import { AttendanceStatus } from "@shared/enums";
+import type { Character } from "@shared/schemas";
 
 import { ErrorState } from "@/components/shared/error-state";
 import { TablePaginationBar } from "@/components/shared/table-pagination-bar";
@@ -33,8 +34,7 @@ import {
   useMarkAttendance,
   useMarkAttendanceAsAdmin,
 } from "../hooks/use-attendance";
-import type { Character } from "../types/attendance";
-import { recordKey } from "../types/attendance";
+import { recordKey } from "../lib/record-key";
 import { AttendanceRow, type AttendanceDraft } from "./attendance-row";
 
 /** Số cột skeleton khi chưa biết có bao nhiêu ngày đánh: Thành viên + 3 ngày + Thao tác. */

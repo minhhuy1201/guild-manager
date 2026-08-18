@@ -4,7 +4,7 @@ import { Lock, Swords } from "lucide-react";
 
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getSessionSubtitle } from "@/features/attendance";
-import type { SessionFormation, WireMatch } from "../types/session-formation";
+import type { MatchFormation, SessionFormation } from "@shared/schemas";
 
 interface SessionTabsProps {
   /** Battles of the week, ordered by battle time */
@@ -26,7 +26,7 @@ interface SessionTabsProps {
  * @returns The label, or null when the day has nothing saved
  */
 function matchProgress(
-  matches: WireMatch[],
+  matches: MatchFormation[],
   slotCount: number
 ): string | null {
   if (matches.length === 0) return null;

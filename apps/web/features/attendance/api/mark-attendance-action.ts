@@ -1,10 +1,9 @@
 "use server";
 
-import type { MarkAttendanceInput } from "@shared/schemas";
+import type { AttendanceRecord, MarkAttendanceInput } from "@shared/schemas";
 
 import { getAccessToken } from "@/features/auth";
 import { ApiError, apiFetch } from "@/lib/api-client";
-import type { AttendanceRecord } from "../types/attendance";
 
 /**
  * Điểm danh hộ với tư cách quản trị viên.

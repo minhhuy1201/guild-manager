@@ -8,9 +8,3 @@ export {
   useBattleSessions,
   useAttendanceRecords,
 } from "./hooks/use-attendance";
-export type {
-  AttendanceRecord,
-  BattleSession,
-  Character,
-  Week,
-} from "./types/attendance";

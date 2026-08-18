@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { Character } from "@shared/schemas";
 
 import {
   attendanceKeys,
@@ -16,7 +17,6 @@ import {
   useAttendanceFilterStore,
   type AttendanceFilterScope,
 } from "../store/attendance-filter-store";
-import type { Character } from "../types/attendance";
 
 /**
  * Query danh sách nhân vật trong bang.

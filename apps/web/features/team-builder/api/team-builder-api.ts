@@ -4,16 +4,16 @@ import { getAccessToken } from "@/features/auth";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import type {
   FormationWeek,
+  MatchFormation,
   SessionFormation,
-  WireMatch,
-} from "../types/session-formation";
+} from "@shared/schemas";
 
 /** Payload lưu đội hình cả ngày. */
 export interface SaveFormationInput {
   /** ID ngày đánh cần lưu */
   sessionId: string;
   /** Từng trận: đội hình đã bỏ ô trống, và ghi chú đã bỏ ô để rỗng */
-  matches: WireMatch[];
+  matches: MatchFormation[];
 }
 
 /**

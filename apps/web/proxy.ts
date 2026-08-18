@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import type { AuthTokens } from "@shared/schemas";
 
 import { refreshRequest } from "@/features/auth/api/auth-api";
 import {
@@ -7,7 +8,6 @@ import {
   AUTH_COOKIE_OPTIONS,
   REFRESH_TOKEN_COOKIE,
   REFRESH_TOKEN_MAX_AGE,
-  type AuthTokens,
 } from "@/features/auth/lib/auth-cookies";
 import { verifyJwt } from "@/features/auth/lib/jwt";
 import { ROUTES } from "@/config/routes";

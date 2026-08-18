@@ -1,13 +1,13 @@
-import type { MarkAttendanceInput } from "@shared/schemas";
-
-import { apiFetch } from "@/lib/api-client";
 import type {
   AttendanceRecord,
   BattleSession,
   Character,
+  MarkAttendanceInput,
   Week,
-} from "../types/attendance";
-import { recordKey } from "../types/attendance";
+} from "@shared/schemas";
+
+import { apiFetch } from "@/lib/api-client";
+import { recordKey } from "../lib/record-key";
 
 export type { MarkAttendanceInput };
 

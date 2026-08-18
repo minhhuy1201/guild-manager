@@ -1,11 +1,12 @@
 "use server";
 
 import type {
+  BattleSession,
   CreateBattleSessionInput,
   UpdateBattleSessionInput,
+  Week,
 } from "@shared/schemas";
 
-import type { BattleSession, Week } from "@/features/attendance";
 import { getAccessToken } from "@/features/auth";
 import { ApiError, apiFetch } from "@/lib/api-client";
 

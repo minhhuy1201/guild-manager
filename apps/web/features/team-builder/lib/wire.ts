@@ -1,9 +1,6 @@
+import type { MatchFormation } from "@shared/schemas";
+
 import type { Assignment, MatchDraft, Notes, Slot } from "../types/formation";
-import type {
-  WireAssignment,
-  WireMatch,
-  WireNotes,
-} from "../types/session-formation";
 
 /**
  * Strip empty slots before sending an assignment to the server.
@@ -12,7 +9,7 @@ import type {
  * @param assignment - Assignment as the UI holds it, empty slots being null
  * @returns Assignment with only the filled slots
  */
-export function toWire(assignment: Assignment): WireAssignment {
+export function toWire(assignment: Assignment): MatchFormation["slots"] {
   const filled = Object.entries(assignment).filter(
     (entry): entry is [string, string] => entry[1] !== null
   );
@@ -29,7 +26,7 @@ export function toWire(assignment: Assignment): WireAssignment {
  * @param slots - Slots of the current layout
  * @returns Assignment with one key per slot
  */
-export function fromWire(wire: WireAssignment, slots: Slot[]): Assignment {
+export function fromWire(wire: MatchFormation["slots"], slots: Slot[]): Assignment {
   const assignment: Assignment = {};
 
   for (const slot of slots) {
@@ -46,7 +43,7 @@ export function fromWire(wire: WireAssignment, slots: Slot[]): Assignment {
  * @param notes - Notes as the UI holds them, possibly with blank entries
  * @returns Notes with only the non-blank ones, each trimmed
  */
-export function toWireNotes(notes: Notes): WireNotes {
+export function toWireNotes(notes: Notes): MatchFormation["notes"] {
   const filled = Object.entries(notes)
     .map(([slotId, text]): [string, string] => [slotId, text.trim()])
     .filter(([, text]) => text !== "");
@@ -62,7 +59,7 @@ export function toWireNotes(notes: Notes): WireNotes {
  * @param slots - Slots of the current layout
  * @returns Notes keyed by slot id, absent where there is nothing written
  */
-export function fromWireNotes(wire: WireNotes, slots: Slot[]): Notes {
+export function fromWireNotes(wire: MatchFormation["notes"], slots: Slot[]): Notes {
   const notes: Notes = {};
 
   for (const slot of slots) {
@@ -78,7 +75,7 @@ export function fromWireNotes(wire: WireNotes, slots: Slot[]): Notes {
  * @param matches - Each match of the day, as the UI holds it
  * @returns Same order, each match carrying only its filled slots and notes
  */
-export function toWireMatches(matches: MatchDraft[]): WireMatch[] {
+export function toWireMatches(matches: MatchDraft[]): MatchFormation[] {
   return matches.map((match) => ({
     slots: toWire(match.assignment),
     notes: toWireNotes(match.notes),
@@ -93,7 +90,7 @@ export function toWireMatches(matches: MatchDraft[]): WireMatch[] {
  * @param slots - Slots of the current layout
  * @returns One draft per match, always at least one
  */
-export function fromWireMatches(wire: WireMatch[], slots: Slot[]): MatchDraft[] {
+export function fromWireMatches(wire: MatchFormation[], slots: Slot[]): MatchDraft[] {
   const source = wire.length > 0 ? wire : [{ slots: {}, notes: {} }];
 
   return source.map((match) => ({

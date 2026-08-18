@@ -1,5 +1,7 @@
 "use client";
 
+import type { Character } from "@shared/schemas";
+
 import {
   DeleteAction,
   EditAction,
@@ -7,15 +9,14 @@ import {
 } from "@/components/shared/action-buttons";
 import { GuildClassIcon } from "@/components/shared/guild-class-icon";
 import { TableCell, TableRow } from "@/components/ui/table";
-import type { Member } from "../types/member";
 
 interface MemberRowProps {
   /** Thành viên của hàng này */
-  member: Member;
+  member: Character;
   /** Gọi khi bấm Sửa */
-  onEdit: (member: Member) => void;
+  onEdit: (member: Character) => void;
   /** Gọi khi bấm Xoá */
-  onDelete: (member: Member) => void;
+  onDelete: (member: Character) => void;
 }
 
 /**

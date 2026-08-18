@@ -16,12 +16,6 @@ export const ACCESS_TOKEN_MAX_AGE = 60 * 60 * 24;
 /** Tuổi cookie refresh token (giây) — khớp hạn token do backend ký. */
 export const REFRESH_TOKEN_MAX_AGE = 60 * 60 * 24 * 7;
 
-/** Cặp token nhận từ API sau khi đăng nhập hoặc refresh. */
-export interface AuthTokens {
-  accessToken: string;
-  refreshToken: string;
-}
-
 /** Options chung cho cả hai cookie token. */
 export const AUTH_COOKIE_OPTIONS = {
   httpOnly: true,

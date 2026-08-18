@@ -2,6 +2,11 @@
 
 import { Check, X } from "lucide-react";
 import { AttendanceStatus } from "@shared/enums";
+import type {
+  AttendanceRecord,
+  BattleSession,
+  Character,
+} from "@shared/schemas";
 
 import {
   EditAction,
@@ -11,12 +16,7 @@ import {
 import { StatusIcon } from "@/components/shared/status-icon";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import type {
-  AttendanceRecord,
-  BattleSession,
-  Character,
-} from "../types/attendance";
-import { recordKey } from "../types/attendance";
+import { recordKey } from "../lib/record-key";
 import {
   STICKY_ACTION_COLUMN,
   STICKY_NAME_COLUMN,

@@ -1,10 +1,10 @@
 "use client";
 
 import { CalendarCheck, CalendarClock } from "lucide-react";
+import type { Week } from "@shared/schemas";
 
 import { DateRange } from "@/components/shared/date-range";
 import { Button } from "@/components/ui/button";
-import type { Week } from "@/features/attendance";
 import { cn } from "@/lib/utils";
 
 interface WeekSelectorProps {

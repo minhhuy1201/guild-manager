@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AlertCircle, LoaderCircle, Save } from "lucide-react";
 
 import { defaultDeadline } from "@shared/lib/battle-session";
+import type { BattleSession } from "@shared/schemas";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -15,7 +16,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { BattleSession } from "@/features/attendance";
 import { ApiError } from "@/lib/api-client";
 import {
   useCreateSession,

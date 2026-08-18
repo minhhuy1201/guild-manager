@@ -6,7 +6,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { Character } from "@/features/attendance";
+import type { Character } from "@shared/schemas";
 import { GUILD_CLASS_IMAGE } from "@/lib/guild-class";
 import { cn } from "@/lib/utils";
 

@@ -1,5 +1,6 @@
+import type { Character } from "@shared/schemas";
+
 import { GuildClassIcon } from "@/components/shared/guild-class-icon";
-import type { Character } from "../types/attendance";
 
 interface CharacterNameProps {
   /** Nhân vật cần hiển thị */

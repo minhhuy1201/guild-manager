@@ -1,16 +1,6 @@
-import type { LoginInput } from "@shared/schemas";
+import type { AuthTokens, LoginInput } from "@shared/schemas";
 
 import { apiFetch } from "@/lib/api-client";
-import type { AuthTokens } from "../lib/auth-cookies";
-
-/** Response của /auth/login và /auth/refresh. */
-export interface AuthTokensResponse extends AuthTokens {
-  /** Tài khoản ứng với cặp token này */
-  user: {
-    username: string;
-    role: string;
-  };
-}
 
 /**
  * Gọi API đăng nhập để lấy cặp token.
@@ -18,8 +8,8 @@ export interface AuthTokensResponse extends AuthTokens {
  * @returns Access token, refresh token và thông tin tài khoản
  * @throws ApiError khi sai thông tin đăng nhập (message tiếng Việt của backend)
  */
-export function loginRequest(input: LoginInput): Promise<AuthTokensResponse> {
-  return apiFetch<AuthTokensResponse>("/auth/login", {
+export function loginRequest(input: LoginInput): Promise<AuthTokens> {
+  return apiFetch<AuthTokens>("/auth/login", {
     method: "POST",
     body: JSON.stringify(input),
   });
@@ -33,8 +23,8 @@ export function loginRequest(input: LoginInput): Promise<AuthTokensResponse> {
  */
 export function refreshRequest(
   refreshToken: string
-): Promise<AuthTokensResponse> {
-  return apiFetch<AuthTokensResponse>("/auth/refresh", {
+): Promise<AuthTokens> {
+  return apiFetch<AuthTokens>("/auth/refresh", {
     method: "POST",
     body: JSON.stringify({ refreshToken }),
   });

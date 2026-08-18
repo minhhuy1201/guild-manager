@@ -1,13 +1,13 @@
 "use server";
 
 import type {
+  Character,
   CreateCharacterInput,
   UpdateCharacterInput,
 } from "@shared/schemas";
 
 import { getAccessToken } from "@/features/auth";
 import { ApiError, apiFetch } from "@/lib/api-client";
-import type { Member } from "../types/member";
 
 /**
  * Lấy access token của quản trị viên đang đăng nhập.
@@ -33,8 +33,8 @@ async function authHeader(): Promise<Record<string, string>> {
  * Lấy danh sách thành viên.
  * @returns Mảng thành viên sắp theo tên
  */
-export async function fetchMembers(): Promise<Member[]> {
-  return apiFetch<Member[]>("/characters", { headers: await authHeader() });
+export async function fetchMembers(): Promise<Character[]> {
+  return apiFetch<Character[]>("/characters", { headers: await authHeader() });
 }
 
 /**
@@ -45,8 +45,8 @@ export async function fetchMembers(): Promise<Member[]> {
  */
 export async function createMember(
   input: CreateCharacterInput
-): Promise<Member> {
-  return apiFetch<Member>("/characters", {
+): Promise<Character> {
+  return apiFetch<Character>("/characters", {
     method: "POST",
     body: JSON.stringify(input),
     headers: await authHeader(),
@@ -63,8 +63,8 @@ export async function createMember(
 export async function updateMember(
   id: string,
   input: UpdateCharacterInput
-): Promise<Member> {
-  return apiFetch<Member>(`/characters/${encodeURIComponent(id)}`, {
+): Promise<Character> {
+  return apiFetch<Character>(`/characters/${encodeURIComponent(id)}`, {
     method: "PATCH",
     body: JSON.stringify(input),
     headers: await authHeader(),

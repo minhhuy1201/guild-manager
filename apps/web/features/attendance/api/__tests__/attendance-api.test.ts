@@ -1,7 +1,7 @@
 import { AttendanceStatus } from "@shared/enums";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { recordKey } from "../../types/attendance";
+import { recordKey } from "../../lib/record-key";
 import { fetchAttendanceRecords, markAttendance } from "../attendance-api";
 
 /**

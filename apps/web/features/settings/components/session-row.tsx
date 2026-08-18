@@ -1,6 +1,7 @@
 "use client";
 
 import { Swords } from "lucide-react";
+import type { BattleSession } from "@shared/schemas";
 
 import {
   DeleteAction,
@@ -8,7 +9,7 @@ import {
   RowActions,
 } from "@/components/shared/action-buttons";
 import { Badge } from "@/components/ui/badge";
-import { getSessionSubtitle, type BattleSession } from "@/features/attendance";
+import { getSessionSubtitle } from "@/features/attendance";
 import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 

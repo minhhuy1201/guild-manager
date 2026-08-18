@@ -1,4 +1,4 @@
-import type { SessionFormation } from "../types/session-formation";
+import type { SessionFormation } from "@shared/schemas";
 
 /**
  * Whether the user may still rearrange a battle's formation.

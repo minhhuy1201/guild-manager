@@ -9,6 +9,7 @@ import {
   GUILD_CLASS_OPTIONS,
   type GuildClass,
 } from "@shared/enums";
+import type { Character } from "@shared/schemas";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -29,14 +30,13 @@ import {
 } from "@/components/ui/select";
 import { ApiError } from "@/lib/api-client";
 import { GUILD_CLASS_IMAGE } from "@/lib/guild-class";
-import type { Member } from "../types/member";
 import { useCreateMember, useUpdateMember } from "../hooks/use-member-mutations";
 
 interface MemberFormDialogProps {
   /** Dialog đang mở hay không */
   open: boolean;
   /** Thành viên đang sửa; null nghĩa là đang thêm mới */
-  member: Member | null;
+  member: Character | null;
   /** Gọi khi dialog đóng lại */
   onOpenChange: (open: boolean) => void;
 }
@@ -67,7 +67,7 @@ export function MemberFormDialog({
 
 interface MemberFormProps {
   /** Thành viên đang sửa; null nghĩa là thêm mới */
-  member: Member | null;
+  member: Character | null;
   /** Gọi khi đóng dialog */
   onDone: () => void;
 }

@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { FormationWeek } from "../types/session-formation";
+import type { FormationWeek } from "@shared/schemas";
 
 interface WeekPickerProps {
   /** Weeks that still hold data, newest first */

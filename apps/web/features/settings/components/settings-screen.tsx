@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import type { BattleSession } from "@shared/schemas";
 
 import { ErrorState } from "@/components/shared/error-state";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { BattleSession } from "@/features/attendance";
 import { useSettingsWeeks, useWeekSessions } from "../hooks/use-week-sessions";
 import { DeleteSessionDialog } from "./delete-session-dialog";
 import { SessionFormDialog } from "./session-form-dialog";

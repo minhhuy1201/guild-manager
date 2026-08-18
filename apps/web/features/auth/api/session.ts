@@ -1,6 +1,7 @@
 import "server-only";
 
 import { cookies } from "next/headers";
+import type { AuthTokens } from "@shared/schemas";
 
 import {
   ACCESS_TOKEN_COOKIE,
@@ -8,7 +9,6 @@ import {
   AUTH_COOKIE_OPTIONS,
   REFRESH_TOKEN_COOKIE,
   REFRESH_TOKEN_MAX_AGE,
-  type AuthTokens,
 } from "../lib/auth-cookies";
 import { verifyJwt } from "../lib/jwt";
 

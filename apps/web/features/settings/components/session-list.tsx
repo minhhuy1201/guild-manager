@@ -1,9 +1,9 @@
 "use client";
 
 import { CalendarPlus } from "lucide-react";
+import type { BattleSession } from "@shared/schemas";
 
 import { CreateButton } from "@/components/shared/action-buttons";
-import type { BattleSession } from "@/features/attendance";
 import { SessionRow } from "./session-row";
 
 interface SessionListProps {
