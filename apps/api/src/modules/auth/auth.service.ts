@@ -3,12 +3,15 @@ import { createHash, timingSafeEqual } from 'node:crypto';
 import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import type { LoginInput, RefreshTokenInput } from '@guild/shared/schemas';
+import type {
+  AuthTokens,
+  LoginInput,
+  RefreshTokenInput,
+} from '@guild/shared/schemas';
 
 import { ADMIN_ROLE, TOKEN_TYPE, type JwtPayload } from '../../common';
 import type { AppConfigService } from '../../config';
 import { ACCESS_TOKEN_TTL, REFRESH_TOKEN_TTL } from './auth.constant';
-import type { AuthTokensEntity } from './entities/auth.entity';
 
 /** Thông báo dùng chung cho mọi trường hợp thông tin đăng nhập không khớp. */
 const INVALID_CREDENTIALS = 'Tên đăng nhập hoặc mật khẩu không đúng.';
@@ -35,7 +38,7 @@ export class AuthService {
    * @returns Access token, refresh token và thông tin tài khoản
    * @throws UnauthorizedException khi tên đăng nhập không thuộc danh sách admin hoặc sai mật khẩu
    */
-  async login(input: LoginInput): Promise<AuthTokensEntity> {
+  async login(input: LoginInput): Promise<AuthTokens> {
     const username = normalize(input.username);
 
     if (!this.adminUsernames.includes(username)) {
@@ -56,7 +59,7 @@ export class AuthService {
    * @throws UnauthorizedException khi token sai/hết hạn, không phải refresh token,
    * hoặc tài khoản đã bị bỏ khỏi danh sách admin
    */
-  async refresh(input: RefreshTokenInput): Promise<AuthTokensEntity> {
+  async refresh(input: RefreshTokenInput): Promise<AuthTokens> {
     const payload = await this.jwt
       .verifyAsync<JwtPayload>(input.refreshToken)
       .catch(() => null);
@@ -85,7 +88,7 @@ export class AuthService {
    * @param username - Tên đăng nhập đã chuẩn hóa và xác thực
    * @returns Cặp token kèm thông tin tài khoản
    */
-  private async issueTokens(username: string): Promise<AuthTokensEntity> {
+  private async issueTokens(username: string): Promise<AuthTokens> {
     const base = { sub: username, role: ADMIN_ROLE } as const;
 
     const [accessToken, refreshToken] = await Promise.all([
@@ -99,7 +102,11 @@ export class AuthService {
       ),
     ]);
 
-    return { accessToken, refreshToken, user: { username, role: ADMIN_ROLE } };
+    return {
+      accessToken,
+      refreshToken,
+      user: { username, role: ADMIN_ROLE },
+    } satisfies AuthTokens;
   }
 }
 

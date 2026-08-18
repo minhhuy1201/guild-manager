@@ -1,11 +1,11 @@
 import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import type { AuthTokens, AuthUser } from '@guild/shared/schemas';
 
 import { CurrentUser, JwtAuthGuard, type JwtPayload } from '../../common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
-import type { AuthTokensEntity, AuthUserEntity } from './entities/auth.entity';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -19,7 +19,7 @@ export class AuthController {
    */
   @Post('login')
   @ApiOperation({ summary: 'Đăng nhập bằng tài khoản quản trị' })
-  login(@Body() body: LoginDto): Promise<AuthTokensEntity> {
+  login(@Body() body: LoginDto): Promise<AuthTokens> {
     return this.auth.login(body);
   }
 
@@ -30,7 +30,7 @@ export class AuthController {
    */
   @Post('refresh')
   @ApiOperation({ summary: 'Cấp lại token từ refresh token' })
-  refresh(@Body() body: RefreshTokenDto): Promise<AuthTokensEntity> {
+  refresh(@Body() body: RefreshTokenDto): Promise<AuthTokens> {
     return this.auth.refresh(body);
   }
 
@@ -43,7 +43,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Thông tin tài khoản đang đăng nhập' })
-  me(@CurrentUser() user: JwtPayload): AuthUserEntity {
-    return { username: user.sub, role: user.role };
+  me(@CurrentUser() user: JwtPayload): AuthUser {
+    return { username: user.sub, role: user.role } satisfies AuthUser;
   }
 }
