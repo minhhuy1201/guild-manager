@@ -108,13 +108,13 @@ modules/characters/
 ├── dto/
 │   └── character.dto.ts            # createZodDto over @guild/shared/schemas
 │
-├── entities/                       # the response shape
-│   └── character.entity.ts
-│
 └── __tests__/
     ├── characters.lib.spec.ts
     └── characters.service.spec.ts
 ```
+
+The response shape is **not** declared here: it is a Zod schema in `packages/shared/schemas`, and the
+object the service builds ends in `satisfies <Shape>`.
 
 Optional pieces, added **only when a second caller appears**, never speculatively:
 
@@ -148,8 +148,9 @@ modules/  ──►  infrastructure/  ──►  config/
 3. If `A` needs `B` and `B` needs `A`, that logic belongs somewhere else — a third module, or a
    shared service. **`forwardRef()` is not the answer** (also stated in `AGENTS.md`).
 4. A controller **never** touches Prisma. The flow is Controller → Service → (Repository) → Prisma.
-5. A controller **never** returns a raw Prisma model. Map it to the module's entity, so `password`
-   and other internals cannot leak by accident.
+5. A controller **never** returns a raw Prisma model. Map it to the response shape from
+   `@guild/shared/schemas` (with `satisfies`), so `password` and other internals cannot leak by
+   accident.
 
 ### Enforced by ESLint
 
@@ -374,7 +375,7 @@ What a NestJS project should have on day one, and where this one stands:
 | Controller calling Prisma directly | Controller → Service → (Repository) → Prisma |
 | `forwardRef()` everywhere | Restructure: extract a third module, or use an event |
 | Business logic in a DTO | A DTO validates shape only; logic lives in the service |
-| Returning a Prisma model straight from the API | Map to an entity, so `password`/`deletedAt` cannot leak |
+| Returning a Prisma model straight from the API | Map to the shared response shape, so `password`/`deletedAt` cannot leak |
 | `any`, "I'll fix it later" | `unknown` + a type guard (`no-explicit-any` is an error here) |
 | Reading `process.env` inside a service | `ConfigService<Env, true>`, declared in `env.validation.ts` |
 | Re-deriving a backend rule on the frontend | The rule stays in one place (`session-schedule.ts`) |
