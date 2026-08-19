@@ -7,12 +7,10 @@
  * Từ 2026-08 lịch đánh do quản trị viên nhập vào database; file này chỉ còn giữ
  * mốc tuần, trận Guild War cố định và cách dựng nhãn hiển thị.
  */
-import { shiftVnDate } from '@guild/shared/lib';
+import { shiftVnDate, vnParts, vnWeekday } from '@guild/shared/lib';
 
-/** Lệch múi giờ Việt Nam so với UTC (UTC+7, không có DST). */
-const VN_OFFSET_MS = 7 * 60 * 60 * 1000;
-
-/** Thứ 7 theo `Date.getUTCDay()`: 0=CN, 1=T2, ..., 6=T7. */
+/** Thứ trong tuần theo chuẩn ISO của `vnWeekday()`: 1=T2, ..., 7=CN. */
+const MONDAY = 1;
 const SATURDAY = 6;
 
 /** Giờ mở tuần điểm danh mới (22:00 Thứ 7). */
@@ -25,15 +23,16 @@ const SATURDAY_OFFSET_FROM_MONDAY = 5;
 const GUILD_WAR_HOUR = 20;
 const GUILD_WAR_MINUTE = 0;
 
-/** Tên thứ trong tuần theo `Date.getUTCDay()` (0 = Chủ nhật). */
+/** Tên thứ tra thẳng bằng `vnWeekday()`; chỉ số 0 bỏ trống vì ISO đếm từ 1. */
 const WEEKDAY_NAMES = [
-  'Chủ nhật',
+  '',
   'Thứ 2',
   'Thứ 3',
   'Thứ 4',
   'Thứ 5',
   'Thứ 6',
   'Thứ 7',
+  'Chủ nhật',
 ];
 
 /** Một tuần điểm danh: mốc đầu và cuối. */
@@ -50,11 +49,7 @@ export interface ScheduledWeek {
  * @returns Mốc Thứ 2 00:00 của tuần chứa `dateTime`
  */
 export function weekStartOf(dateTime: Date): Date {
-  const vnDay = new Date(dateTime.getTime() + VN_OFFSET_MS).getUTCDay();
-  // Chủ nhật (0) thuộc về tuần bắt đầu từ Thứ 2 sáu ngày trước.
-  const daysSinceMonday = (vnDay + 6) % 7;
-
-  return shiftVnDate(dateTime, -daysSinceMonday, 0, 0);
+  return shiftVnDate(dateTime, -(vnWeekday(dateTime) - MONDAY), 0, 0);
 }
 
 /**
@@ -82,8 +77,8 @@ export function weekEndOf(weekStart: Date): Date {
  * @returns Tuần đang mở
  */
 export function getActiveWeek(now: Date = new Date()): ScheduledWeek {
-  const vnDayOfWeek = new Date(now.getTime() + VN_OFFSET_MS).getUTCDay();
-  const daysSinceSaturday = (vnDayOfWeek - SATURDAY + 7) % 7;
+  // Chủ nhật (ISO 7) đồng dư 0 mod 7 nên vẫn ra 1 ngày kể từ Thứ 7.
+  const daysSinceSaturday = (vnWeekday(now) - SATURDAY + 7) % 7;
 
   let anchorOpen = shiftVnDate(now, -daysSinceSaturday, WEEK_OPEN_HOUR, 0);
 
@@ -129,11 +124,9 @@ export function guildWarDateTime(weekStart: Date): Date {
  * @returns Id dạng `gw-YYYY-MM-DD` theo ngày Thứ 2 giờ VN
  */
 export function guildWarSessionId(weekStart: Date): string {
-  const vn = new Date(weekStart.getTime() + VN_OFFSET_MS);
-  const month = String(vn.getUTCMonth() + 1).padStart(2, '0');
-  const day = String(vn.getUTCDate()).padStart(2, '0');
+  const { year, month, day } = vnParts(weekStart);
 
-  return `gw-${vn.getUTCFullYear()}-${month}-${day}`;
+  return `gw-${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
 /**
@@ -147,15 +140,13 @@ export function formatSessionLabel(
   dateTime: Date,
   isGuildWar: boolean,
 ): string {
-  const vn = new Date(dateTime.getTime() + VN_OFFSET_MS);
-  const weekday = WEEKDAY_NAMES[vn.getUTCDay()];
+  const weekday = WEEKDAY_NAMES[vnWeekday(dateTime)];
 
   if (isGuildWar) return `${weekday} · Guild War`;
 
-  const hour = String(vn.getUTCHours()).padStart(2, '0');
-  const minute = String(vn.getUTCMinutes()).padStart(2, '0');
+  const { hour, minute } = vnParts(dateTime);
 
-  return `${weekday} · ${hour}:${minute}`;
+  return `${weekday} · ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
 }
 
 /**

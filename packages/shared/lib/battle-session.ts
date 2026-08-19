@@ -8,9 +8,7 @@
  * Mọi mốc giờ tính theo giờ Việt Nam (UTC+7) cố định, không phụ thuộc timezone
  * của máy đang chạy.
  */
-
-/** Lệch múi giờ Việt Nam so với UTC (UTC+7, không có DST). */
-const VN_OFFSET_MS = 7 * 60 * 60 * 1000;
+import { atVnTime, shiftVnDate } from './vn-time';
 
 /** Giờ muộn nhất được phép đặt hạn chót, tính trong chính ngày đánh. */
 const DEADLINE_CAP_HOUR = 10;
@@ -20,32 +18,6 @@ const GUILD_WAR_DEADLINE_HOUR = 17;
 
 /** Lệch ngày của Thứ 5 so với Thứ 2 đầu tuần. */
 const THURSDAY_OFFSET_FROM_MONDAY = 3;
-
-/**
- * Dịch một mốc thời gian đi `deltaDays` ngày rồi đặt về giờ/phút cụ thể theo giờ VN.
- * @param base - Mốc gốc (thời điểm UTC thật)
- * @param deltaDays - Số ngày cộng thêm (âm = lùi về trước)
- * @param hour - Giờ VN cần đặt (0-23)
- * @param minute - Phút cần đặt (0-59)
- * @returns Date UTC tương ứng với mốc giờ VN yêu cầu
- */
-export function shiftVnDate(
-  base: Date,
-  deltaDays: number,
-  hour: number,
-  minute: number
-): Date {
-  const vn = new Date(base.getTime() + VN_OFFSET_MS);
-  const shifted = Date.UTC(
-    vn.getUTCFullYear(),
-    vn.getUTCMonth(),
-    vn.getUTCDate() + deltaDays,
-    hour,
-    minute
-  );
-
-  return new Date(shifted - VN_OFFSET_MS);
-}
 
 /**
  * Hạn chót muộn nhất được phép của một trận scrim: 10:00 sáng giờ VN của chính
@@ -58,7 +30,7 @@ export function shiftVnDate(
  * @returns Hạn chót muộn nhất được phép
  */
 export function deadlineCapFor(dateTime: Date): Date {
-  const morning = shiftVnDate(dateTime, 0, DEADLINE_CAP_HOUR, 0);
+  const morning = atVnTime(dateTime, DEADLINE_CAP_HOUR, 0);
 
   return morning.getTime() < dateTime.getTime() ? morning : dateTime;
 }

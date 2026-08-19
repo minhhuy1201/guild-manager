@@ -13,8 +13,8 @@
       "default": "./dist/enums/index.js"
     },
     "./lib": {
-      "types": "./lib/battle-session.ts",
-      "default": "./dist/lib/battle-session.js"
+      "types": "./lib/index.ts",
+      "default": "./dist/lib/index.js"
     },
     "./schemas": {
       "types": "./schemas/index.ts",

@@ -72,6 +72,12 @@ describe('session-schedule', () => {
         vn('2026-07-20T00:00').toISOString(),
       );
     });
+
+    it('Chủ nhật thuộc tuần bắt đầu từ Thứ 2 sáu ngày trước', () => {
+      expect(weekStartOf(vn('2026-07-26T00:00')).toISOString()).toBe(
+        vn('2026-07-20T00:00').toISOString(),
+      );
+    });
   });
 
   describe('Guild War', () => {
@@ -83,6 +89,15 @@ describe('session-schedule', () => {
 
     it('có id tất định theo ngày Thứ 2 của tuần', () => {
       expect(guildWarSessionId(vn('2026-07-20T00:00'))).toBe('gw-2026-07-20');
+    });
+
+    it('tuần vắt qua mốc đổi tháng vẫn lấy ngày của Thứ 2', () => {
+      expect(guildWarSessionId(vn('2026-11-30T00:00'))).toBe('gw-2026-11-30');
+    });
+
+    it('tuần vắt qua mốc đổi năm vẫn lấy ngày của Thứ 2', () => {
+      expect(guildWarSessionId(vn('2026-12-28T00:00'))).toBe('gw-2026-12-28');
+      expect(guildWarSessionId(vn('2027-01-04T00:00'))).toBe('gw-2027-01-04');
     });
   });
 

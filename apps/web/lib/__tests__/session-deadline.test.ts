@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  atVnTime,
   deadlineCapFor,
   guildWarDeadline,
   isWithinDeadlineCap,
-} from "@shared/lib/battle-session";
+  vnWeekday,
+} from "@shared/lib";
 
 /**
  * Tạo Date từ giờ Việt Nam (UTC+7) cho dễ đọc trong test.
@@ -79,6 +81,33 @@ describe("guildWarDeadline", () => {
   it("tuần vắt qua mốc đổi tháng vẫn ra đúng ngày", () => {
     expect(guildWarDeadline(vn("2026-06-29T00:00")).toISOString()).toBe(
       vn("2026-07-02T17:00").toISOString()
+    );
+  });
+});
+
+describe("vnWeekday", () => {
+  it("đếm theo chuẩn ISO: Thứ 2 = 1, Chủ nhật = 7", () => {
+    expect(vnWeekday(vn("2026-07-20T00:00"))).toBe(1);
+    expect(vnWeekday(vn("2026-07-26T23:59"))).toBe(7);
+  });
+
+  it("lấy thứ của ngày VN, không phải ngày UTC", () => {
+    // 17:30 UTC Thứ 2 = 00:30 Thứ 3 giờ VN.
+    expect(vnWeekday(new Date("2026-07-20T17:30:00Z"))).toBe(2);
+  });
+});
+
+describe("atVnTime", () => {
+  it("đặt giờ/phút trong chính ngày VN của mốc gốc", () => {
+    expect(atVnTime(vn("2026-07-21T20:30"), 10, 0).toISOString()).toBe(
+      vn("2026-07-21T10:00").toISOString()
+    );
+  });
+
+  it("mốc sát nửa đêm giờ VN vẫn thuộc ngày VN của nó", () => {
+    // 23:59 VN ngày 21 là 16:59 UTC cùng ngày, không được trôi sang ngày 22.
+    expect(atVnTime(vn("2026-07-21T23:59"), 0, 0).toISOString()).toBe(
+      vn("2026-07-21T00:00").toISOString()
     );
   });
 });

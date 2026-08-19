@@ -60,7 +60,7 @@ the sources after compiling — see [`production.md`](production.md) §4.
 |---|---|
 | `@guild/shared/enums` | `GuildClass`, `AttendanceStatus` |
 | `@guild/shared/schemas` | Zod schemas for attendance, auth, battle sessions, characters, formations |
-| `@guild/shared/lib` | Time helpers shared by both sides (`shiftVnDate`) |
+| `@guild/shared/lib` | The Vietnam clock (`vnWeekday`, `vnParts`, `shiftVnDate`, `atVnTime`) and the deadline-cap rules both sides share |
 
 The package is intentionally **not** `"type": "module"`: `apps/api` is CommonJS under `nodenext`,
 which would force `.js` suffixes on relative imports, and Turbopack in `apps/web` cannot resolve
@@ -279,7 +279,10 @@ time changes the label everywhere.
 
 ## 6. Time and schedule rules
 
-All instants are computed in **fixed UTC+7**, never the server's local time. The rules live in
+All instants are computed in **fixed UTC+7**, never the server's local time. The primitives — reading
+a weekday or calendar parts in Vietnam time — live in `packages/shared/lib/vn-time.ts` and number
+weekdays **ISO-style (1 = Monday … 7 = Sunday)**; the offset itself is not exported, because anyone who
+needs it really needs one of those four functions. The week and deadline rules sit on top of them in
 `apps/api/src/modules/battle-sessions/session-schedule.ts` and are the backend's business — the
 frontend only mirrors `isDeadlinePassed` to grey out a column.
 
