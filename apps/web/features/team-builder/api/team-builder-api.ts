@@ -9,8 +9,12 @@ import type {
 import { getAccessToken } from "@/features/auth";
 import { ApiError, apiFetch } from "@/lib/api-client";
 
-/** Payload lưu đội hình cả ngày. */
-export interface SaveFormationInput {
+/**
+ * Tham số của `saveFormation`. Không phải body của request: `sessionId` đi trên
+ * URL, chỉ `matches` được gửi lên — body ấy là `SaveFormationInput` ở
+ * `@shared/schemas`.
+ */
+export interface SaveFormationArgs {
   /** ID ngày đánh cần lưu */
   sessionId: string;
   /** Từng trận: đội hình đã bỏ ô trống, và ghi chú đã bỏ ô để rỗng */
@@ -70,7 +74,7 @@ export async function fetchFormations(
  * @throws ApiError khi chưa đăng nhập, ngày đã khoá (409), hoặc backend từ chối
  */
 export async function saveFormation(
-  input: SaveFormationInput
+  input: SaveFormationArgs
 ): Promise<SessionFormation> {
   return apiFetch<SessionFormation>(
     `/team-builder/formations/${encodeURIComponent(input.sessionId)}`,
