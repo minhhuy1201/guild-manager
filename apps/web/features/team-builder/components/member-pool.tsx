@@ -1,10 +1,10 @@
 "use client";
 
 import { useDroppable } from "@dnd-kit/core";
+import type { Character } from "@shared/schemas";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import type { Character } from "@shared/schemas";
 import { cn } from "@/lib/utils";
 import { POOL_DROPPABLE_ID, type PoolDropData } from "../lib/dnd-data";
 import { usePoolFilterStore } from "../store/pool-filter-store";

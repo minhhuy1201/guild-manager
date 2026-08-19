@@ -1,8 +1,8 @@
 "use client";
 
 import { useDroppable } from "@dnd-kit/core";
-
 import type { Character } from "@shared/schemas";
+
 import { cn } from "@/lib/utils";
 import type { SlotDropData } from "../lib/dnd-data";
 import type { Slot } from "../types/formation";

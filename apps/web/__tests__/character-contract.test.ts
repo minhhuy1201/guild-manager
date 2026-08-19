@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import { characterSchema } from "@shared/schemas";
+import { describe, expect, it } from "vitest";
 
 /**
  * Khoá số field của `Character` trong contract. Thêm field vào response phải là

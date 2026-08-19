@@ -8,6 +8,8 @@ describe("recordKey", () => {
   });
 
   it("hai cặp khác nhau cho ra hai khoá khác nhau", () => {
-    expect(recordKey("char-1", "sess-2")).not.toBe(recordKey("char-2", "sess-1"));
+    expect(recordKey("char-1", "sess-2")).not.toBe(
+      recordKey("char-2", "sess-1")
+    );
   });
 });

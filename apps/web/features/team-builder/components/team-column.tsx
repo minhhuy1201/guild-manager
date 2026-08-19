@@ -1,4 +1,5 @@
 import type { Character } from "@shared/schemas";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Notes, Slot } from "../types/formation";
 import { SlotCell } from "./slot-cell";

@@ -1,5 +1,6 @@
-import type { Assignment, Notes, Slot } from "../types/formation";
 import type { SessionFormation } from "@shared/schemas";
+
+import type { Assignment, Notes, Slot } from "../types/formation";
 import { fromWire, fromWireNotes } from "./wire";
 
 /** A formation proposed for a battle that has none yet. */

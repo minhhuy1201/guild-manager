@@ -1,5 +1,7 @@
 "use client";
 
+import type { FormationWeek } from "@shared/schemas";
+
 import { DateRange } from "@/components/shared/date-range";
 import {
   Select,
@@ -8,7 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { FormationWeek } from "@shared/schemas";
 
 interface WeekPickerProps {
   /** Weeks that still hold data, newest first */

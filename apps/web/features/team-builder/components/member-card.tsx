@@ -1,4 +1,5 @@
 import { GUILD_CLASS_LABEL } from "@shared/enums";
+import type { Character } from "@shared/schemas";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -6,7 +7,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { Character } from "@shared/schemas";
 import { GUILD_CLASS_IMAGE } from "@/lib/guild-class";
 import { cn } from "@/lib/utils";
 

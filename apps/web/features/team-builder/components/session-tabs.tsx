@@ -1,10 +1,10 @@
 "use client";
 
 import { Lock, Swords } from "lucide-react";
+import type { MatchFormation, SessionFormation } from "@shared/schemas";
 
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getSessionSubtitle } from "@/features/attendance";
-import type { MatchFormation, SessionFormation } from "@shared/schemas";
 
 interface SessionTabsProps {
   /** Battles of the week, ordered by battle time */

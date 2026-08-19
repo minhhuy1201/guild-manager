@@ -1,7 +1,7 @@
+import type { SessionFormation } from "@shared/schemas";
 import { describe, expect, it } from "vitest";
 
 import type { Slot } from "../../types/formation";
-import type { SessionFormation } from "@shared/schemas";
 import { buildPrefill } from "../prefill";
 
 const SLOTS: Slot[] = [

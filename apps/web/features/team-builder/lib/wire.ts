@@ -26,7 +26,10 @@ export function toWire(assignment: Assignment): MatchFormation["slots"] {
  * @param slots - Slots of the current layout
  * @returns Assignment with one key per slot
  */
-export function fromWire(wire: MatchFormation["slots"], slots: Slot[]): Assignment {
+export function fromWire(
+  wire: MatchFormation["slots"],
+  slots: Slot[]
+): Assignment {
   const assignment: Assignment = {};
 
   for (const slot of slots) {
@@ -59,7 +62,10 @@ export function toWireNotes(notes: Notes): MatchFormation["notes"] {
  * @param slots - Slots of the current layout
  * @returns Notes keyed by slot id, absent where there is nothing written
  */
-export function fromWireNotes(wire: MatchFormation["notes"], slots: Slot[]): Notes {
+export function fromWireNotes(
+  wire: MatchFormation["notes"],
+  slots: Slot[]
+): Notes {
   const notes: Notes = {};
 
   for (const slot of slots) {
@@ -90,7 +96,10 @@ export function toWireMatches(matches: MatchDraft[]): MatchFormation[] {
  * @param slots - Slots of the current layout
  * @returns One draft per match, always at least one
  */
-export function fromWireMatches(wire: MatchFormation[], slots: Slot[]): MatchDraft[] {
+export function fromWireMatches(
+  wire: MatchFormation[],
+  slots: Slot[]
+): MatchDraft[] {
   const source = wire.length > 0 ? wire : [{ slots: {}, notes: {} }];
 
   return source.map((match) => ({

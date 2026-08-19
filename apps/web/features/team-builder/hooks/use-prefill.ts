@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
+import type { SessionFormation } from "@shared/schemas";
 
 import { buildPrefill, type PrefillResult } from "../lib/prefill";
 import { useFormationStore } from "../store/formation-store";
 import type { Slot } from "../types/formation";
-import type { SessionFormation } from "@shared/schemas";
 
 /**
  * Fill an untouched battle with the previous battle's line-up, as a draft.
