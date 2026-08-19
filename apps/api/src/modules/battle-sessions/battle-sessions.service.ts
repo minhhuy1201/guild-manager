@@ -18,6 +18,7 @@ import {
   getEditableWeeks,
   guildWarDateTime,
   guildWarSessionId,
+  isDeadlinePassed,
   weekStartOf,
 } from './session-schedule';
 
@@ -97,21 +98,25 @@ export class BattleSessionsService {
       include: SESSION_INCLUDE,
     });
 
-    return rows.map((row) => this.toEntity(row));
+    return rows.map((row) => this.toEntity(row, now));
   }
 
   /**
    * Đọc một trận theo id.
    * @param id - Id trận cần đọc
+   * @param now - Thời điểm hiện tại (cho phép truyền vào để test)
    * @returns Trận tương ứng, null nếu không có
    */
-  async findById(id: string): Promise<BattleSession | null> {
+  async findById(
+    id: string,
+    now: Date = new Date(),
+  ): Promise<BattleSession | null> {
     const row = await this.prisma.battleSession.findUnique({
       where: { id },
       include: SESSION_INCLUDE,
     });
 
-    return row ? this.toEntity(row) : null;
+    return row ? this.toEntity(row, now) : null;
   }
 
   /**
@@ -142,7 +147,7 @@ export class BattleSessionsService {
       include: SESSION_INCLUDE,
     });
 
-    return this.toEntity(created);
+    return this.toEntity(created, now);
   }
 
   /**
@@ -195,7 +200,7 @@ export class BattleSessionsService {
       include: SESSION_INCLUDE,
     });
 
-    return this.toEntity(updated);
+    return this.toEntity(updated, now);
   }
 
   /**
@@ -287,14 +292,16 @@ export class BattleSessionsService {
   /**
    * Đổi một hàng BattleSession thành object trả về cho client.
    * @param row - Hàng đọc từ Prisma kèm `_count`
+   * @param now - Thời điểm dựng response, dùng để chốt cờ quá hạn
    * @returns Trận đánh đã dựng nhãn và đổi thời gian sang ISO string
    */
-  private toEntity(row: SessionRow) {
+  private toEntity(row: SessionRow, now: Date) {
     return {
       id: row.id,
       label: formatSessionLabel(row.dateTime, row.isGuildWar),
       dateTime: row.dateTime.toISOString(),
       deadline: row.deadline.toISOString(),
+      isDeadlinePassed: isDeadlinePassed(row.deadline, now),
       isGuildWar: row.isGuildWar,
       opponent: row.opponent,
       weekStart: row.weekStart.toISOString(),

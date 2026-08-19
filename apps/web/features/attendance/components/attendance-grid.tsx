@@ -24,7 +24,6 @@ import {
   STICKY_ACTION_COLUMN,
   STICKY_NAME_COLUMN,
 } from "../lib/sticky-columns";
-import { isDeadlinePassed } from "../api/attendance-api";
 import { useAttendanceBoard } from "../hooks/use-attendance-board";
 import { useDeadlineRefresh } from "../hooks/use-deadline-refresh";
 import {
@@ -78,7 +77,7 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
 
   // Ngày nào quá deadline thì khóa cột đó — dùng để hiển thị nhãn "Đã khóa" cho mọi người.
   const passedSessionIds = new Set(
-    battleSessions.filter((s) => isDeadlinePassed(s.deadline)).map((s) => s.id)
+    battleSessions.filter((s) => s.isDeadlinePassed).map((s) => s.id)
   );
   // Quản trị viên sửa được cả ngày đã quá hạn nên không khóa ô nào.
   const lockedSessionIds = isAdmin ? new Set<string>() : passedSessionIds;

@@ -25,16 +25,6 @@ export const attendanceKeys = {
 };
 
 /**
- * Kiểm tra đã quá hạn điểm danh (deadline) hay chưa.
- * Chỉ dùng để khóa cột trên UI — server mới là nơi chặn thật.
- * @param deadline - Hạn chót cần kiểm tra (ISO string)
- * @returns true nếu hiện tại đã quá deadline
- */
-export function isDeadlinePassed(deadline: string): boolean {
-  return Date.now() > new Date(deadline).getTime();
-}
-
-/**
  * Lấy danh sách nhân vật trong bang.
  * @returns Promise trả về mảng nhân vật
  */

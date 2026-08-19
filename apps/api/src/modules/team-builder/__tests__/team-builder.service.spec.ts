@@ -216,9 +216,23 @@ describe('TeamBuilderService.getWeeks', () => {
     const weeks = await service.getWeeks(WEDNESDAY);
 
     expect(weeks).toEqual([
-      { weekStart: WEEK_START.toISOString(), isActive: true },
-      { weekStart: vn('2026-07-13T00:00').toISOString(), isActive: false },
+      {
+        weekStart: WEEK_START.toISOString(),
+        weekEnd: vn('2026-07-25T23:59').toISOString(),
+        isActive: true,
+      },
+      {
+        weekStart: vn('2026-07-13T00:00').toISOString(),
+        weekEnd: vn('2026-07-18T23:59').toISOString(),
+        isActive: false,
+      },
     ]);
+  });
+
+  it('chốt tuần ở Thứ 7 23:59 giờ VN, không phải Chủ nhật', async () => {
+    const [week] = await service.getWeeks(WEDNESDAY);
+
+    expect(week.weekEnd).toBe(vn('2026-07-25T23:59').toISOString());
   });
 
   it('đánh dấu đúng tuần đang mở khi tuần kế đã có trận', async () => {
@@ -231,8 +245,16 @@ describe('TeamBuilderService.getWeeks', () => {
     const weeks = await service.getWeeks(WEDNESDAY);
 
     expect(weeks).toEqual([
-      { weekStart: nextWeek.toISOString(), isActive: false },
-      { weekStart: WEEK_START.toISOString(), isActive: true },
+      {
+        weekStart: nextWeek.toISOString(),
+        weekEnd: vn('2026-08-01T23:59').toISOString(),
+        isActive: false,
+      },
+      {
+        weekStart: WEEK_START.toISOString(),
+        weekEnd: vn('2026-07-25T23:59').toISOString(),
+        isActive: true,
+      },
     ]);
   });
 

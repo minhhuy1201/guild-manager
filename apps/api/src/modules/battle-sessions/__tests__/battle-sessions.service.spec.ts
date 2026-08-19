@@ -211,6 +211,24 @@ describe('BattleSessionsService', () => {
       expect(session.hasFormation).toBe(true);
     });
 
+    it('isDeadlinePassed theo thời điểm dựng response', async () => {
+      prisma.battleSession.findMany.mockResolvedValue([
+        row({ deadline: vn('2026-07-21T10:00') }),
+      ]);
+
+      const [before] = await service.listByWeek(
+        WEEK_START.toISOString(),
+        vn('2026-07-21T09:00'),
+      );
+      const [after] = await service.listByWeek(
+        WEEK_START.toISOString(),
+        vn('2026-07-21T11:00'),
+      );
+
+      expect(before.isDeadlinePassed).toBe(false);
+      expect(after.isDeadlinePassed).toBe(true);
+    });
+
     it('từ chối sửa trận thuộc tuần đã qua', async () => {
       prisma.battleSession.findUnique.mockResolvedValue(
         row({ weekStart: LAST_WEEK_START, dateTime: vn('2026-07-14T20:30') }),

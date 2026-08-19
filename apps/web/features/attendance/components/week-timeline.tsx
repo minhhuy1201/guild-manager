@@ -10,7 +10,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { formatDateTime } from "@/lib/format";
 import { getSessionSubtitle } from "../lib/session-subtitle";
-import { isDeadlinePassed } from "../api/attendance-api";
 import { useAttendanceBoard } from "../hooks/use-attendance-board";
 import { useBattleSessions, useCurrentWeek } from "../hooks/use-attendance";
 import { useDeadlineRefresh } from "../hooks/use-deadline-refresh";
@@ -77,7 +76,7 @@ export function WeekTimeline() {
 
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {battleSessions.map((session) => {
-            const closed = isDeadlinePassed(session.deadline);
+            const closed = session.isDeadlinePassed;
             const subtitle = getSessionSubtitle(session);
             return (
               <div

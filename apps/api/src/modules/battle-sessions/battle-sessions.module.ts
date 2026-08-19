@@ -8,7 +8,11 @@ import { BattleSessionsService } from './battle-sessions.service';
  * file nội bộ (luật no-restricted-imports trong eslint.config.mjs).
  */
 export { BattleSessionsService } from './battle-sessions.service';
-export { formatSessionLabel, isDeadlinePassed } from './session-schedule';
+export {
+  formatSessionLabel,
+  isDeadlinePassed,
+  weekEndOf,
+} from './session-schedule';
 
 /** Module lịch đánh: sở hữu bảng BattleSession, tự sinh Guild War và CRUD scrim. */
 @Module({

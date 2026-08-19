@@ -6,19 +6,26 @@ const PREVIOUS = "2026-07-26T17:00:00.000Z";
 const ACTIVE = "2026-08-02T17:00:00.000Z";
 const NEXT = "2026-08-09T17:00:00.000Z";
 
+/** Mốc Thứ 7 23:59 tương ứng — `findActiveWeekStart` không đọc, chỉ để đủ shape. */
+const PREVIOUS_END = "2026-08-01T16:59:00.000Z";
+const ACTIVE_END = "2026-08-08T16:59:00.000Z";
+const NEXT_END = "2026-08-15T16:59:00.000Z";
+
 describe("findActiveWeekStart", () => {
   it("lấy tuần mang cờ isActive, không phải tuần đầu mảng", () => {
     const weeks = [
-      { weekStart: NEXT, isActive: false },
-      { weekStart: ACTIVE, isActive: true },
-      { weekStart: PREVIOUS, isActive: false },
+      { weekStart: NEXT, weekEnd: NEXT_END, isActive: false },
+      { weekStart: ACTIVE, weekEnd: ACTIVE_END, isActive: true },
+      { weekStart: PREVIOUS, weekEnd: PREVIOUS_END, isActive: false },
     ];
 
     expect(findActiveWeekStart(weeks)).toBe(ACTIVE);
   });
 
   it("không có tuần nào đang mở thì lấy tuần mới nhất", () => {
-    const weeks = [{ weekStart: PREVIOUS, isActive: false }];
+    const weeks = [
+      { weekStart: PREVIOUS, weekEnd: PREVIOUS_END, isActive: false },
+    ];
 
     expect(findActiveWeekStart(weeks)).toBe(PREVIOUS);
   });

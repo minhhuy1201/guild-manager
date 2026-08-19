@@ -63,10 +63,16 @@ export function weekStartOf(dateTime: Date): Date {
  * @returns Tuần kèm mốc cuối Thứ 7 23:59
  */
 function toWeek(weekStart: Date): ScheduledWeek {
-  return {
-    weekStart,
-    weekEnd: shiftVnDate(weekStart, SATURDAY_OFFSET_FROM_MONDAY, 23, 59),
-  };
+  return { weekStart, weekEnd: weekEndOf(weekStart) };
+}
+
+/**
+ * Mốc cuối tuần điểm danh (Thứ 7 23:59 giờ VN) của một tuần.
+ * @param weekStart - Thứ 2 00:00 giờ VN
+ * @returns Mốc Thứ 7 23:59 của cùng tuần
+ */
+export function weekEndOf(weekStart: Date): Date {
+  return shiftVnDate(weekStart, SATURDAY_OFFSET_FROM_MONDAY, 23, 59);
 }
 
 /**

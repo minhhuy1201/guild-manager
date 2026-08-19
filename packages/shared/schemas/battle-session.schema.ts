@@ -47,6 +47,8 @@ export const battleSessionSchema = z.object({
   dateTime: isoDateTime,
   /** Hạn chót điểm danh do quản trị viên đặt. */
   deadline: isoDateTime,
+  /** Đã quá hạn điểm danh tại thời điểm server dựng response. */
+  isDeadlinePassed: z.boolean(),
   isGuildWar: z.boolean(),
   /** Tên bang đối thủ, null với Guild War hoặc scrim chưa chốt đối thủ. */
   opponent: z.string().nullable(),

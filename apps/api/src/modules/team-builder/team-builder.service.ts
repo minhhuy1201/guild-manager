@@ -14,6 +14,7 @@ import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import {
   BattleSessionsService,
   formatSessionLabel,
+  weekEndOf,
 } from '../battle-sessions/battle-sessions.module';
 
 /** Số ngày giữ lại đội hình cũ. Quá mốc này thì dọn. */
@@ -79,6 +80,7 @@ export class TeamBuilderService {
 
       return {
         weekStart,
+        weekEnd: weekEndOf(session.weekStart).toISOString(),
         isActive: weekStart === activeWeekStart,
       } satisfies FormationWeek;
     });

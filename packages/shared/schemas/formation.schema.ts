@@ -78,10 +78,17 @@ export const sessionFormationSchema = z.object({
   matches: z.array(matchFormationSchema),
 });
 
-/** Một tuần còn dữ liệu đội hình. */
+/**
+ * Một tuần còn dữ liệu đội hình.
+ * Trùng shape với `weekSchema` chỉ là tình cờ: `Week` mô tả tuần được phép
+ * thiết lập lịch, còn schema này mô tả tuần còn dữ liệu đội hình — hai tập khác
+ * nhau, đừng gộp làm một.
+ */
 export const formationWeekSchema = z.object({
   /** Mốc Thứ 2 00:00 của tuần (ISO string) */
   weekStart: z.string(),
+  /** Mốc Thứ 7 23:59 của tuần (ISO string) */
+  weekEnd: z.string(),
   /**
    * Tuần điểm danh đang mở. Danh sách còn có cả tuần kế tiếp — tuần đầu mảng
    * KHÔNG phải tuần đang mở, nên client phải đọc cờ này.
