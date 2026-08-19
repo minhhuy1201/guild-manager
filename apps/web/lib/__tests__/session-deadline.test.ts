@@ -5,6 +5,7 @@ import {
   deadlineCapFor,
   guildWarDeadline,
   isWithinDeadlineCap,
+  vnParts,
   vnWeekday,
 } from "@shared/lib";
 
@@ -109,5 +110,28 @@ describe("atVnTime", () => {
     expect(atVnTime(vn("2026-07-21T23:59"), 0, 0).toISOString()).toBe(
       vn("2026-07-21T00:00").toISOString()
     );
+  });
+});
+
+describe("vnParts", () => {
+  it("trả tháng 1-12, không phải 0-11 như getUTCMonth()", () => {
+    expect(vnParts(vn("2026-01-05T08:07"))).toEqual({
+      year: 2026,
+      month: 1,
+      day: 5,
+      hour: 8,
+      minute: 7,
+    });
+  });
+
+  it("đọc theo ngày VN chứ không theo ngày UTC", () => {
+    // 17:30 UTC ngày 20 = 00:30 ngày 21 giờ VN.
+    expect(vnParts(new Date("2026-07-20T17:30:00Z"))).toEqual({
+      year: 2026,
+      month: 7,
+      day: 21,
+      hour: 0,
+      minute: 30,
+    });
   });
 });

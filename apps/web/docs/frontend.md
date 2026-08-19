@@ -169,7 +169,7 @@ business** (`apps/api/src/modules/battle-sessions/session-schedule.ts`, summaris
 one the user sees would be the wrong one.
 
 The one rule the settings form does evaluate locally — the deadline cap in `session-form-dialog` —
-is not a second implementation: it calls `deadlineCapFor` from `@shared/lib/battle-session`, the same
+is not a second implementation: it calls `deadlineCapFor` from `@shared/lib`, the same
 function the API validates with. The server still decides; the local call only prefills the field and
 shows the error before a round-trip.
 
