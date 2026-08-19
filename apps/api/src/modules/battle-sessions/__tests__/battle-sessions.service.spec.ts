@@ -87,7 +87,15 @@ describe('BattleSessionsService', () => {
       expect(prisma.battleSession.upsert).toHaveBeenCalledTimes(2);
       expect(firstArg(prisma.battleSession.upsert, 0)).toMatchObject({
         where: { id: 'gw-2026-07-20' },
-        update: {},
+      });
+    });
+
+    it('ghi đè hạn chót 17:00 Thứ 5 cả khi tạo lẫn khi hàng đã tồn tại', async () => {
+      await service.listByWeek(undefined, WEDNESDAY);
+
+      expect(firstArg(prisma.battleSession.upsert, 0)).toMatchObject({
+        create: { deadline: vn('2026-07-23T17:00') },
+        update: { deadline: vn('2026-07-23T17:00') },
       });
     });
 
@@ -138,12 +146,36 @@ describe('BattleSessionsService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('từ chối hạn chót muộn hơn giờ đánh', async () => {
+    it('từ chối hạn chót muộn hơn 10:00 sáng ngày đánh', async () => {
       await expect(
         service.create(
           {
             dateTime: vn('2026-07-21T20:30').toISOString(),
-            deadline: vn('2026-07-21T21:00').toISOString(),
+            deadline: vn('2026-07-21T17:00').toISOString(),
+          },
+          WEDNESDAY,
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('chấp nhận hạn chót đúng bằng trần', async () => {
+      await service.create(
+        {
+          dateTime: vn('2026-07-21T20:30').toISOString(),
+          deadline: vn('2026-07-21T10:00').toISOString(),
+        },
+        WEDNESDAY,
+      );
+
+      expect(prisma.battleSession.create).toHaveBeenCalled();
+    });
+
+    it('trận trước 10:00 lấy giờ đánh làm trần', async () => {
+      await expect(
+        service.create(
+          {
+            dateTime: vn('2026-07-21T08:00').toISOString(),
+            deadline: vn('2026-07-21T09:00').toISOString(),
           },
           WEDNESDAY,
         ),
@@ -182,6 +214,63 @@ describe('BattleSessionsService', () => {
 
       await expect(
         service.update('gw-2026-07-20', { opponent: 'Ai đó' }, WEDNESDAY),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('từ chối sửa hạn chót của Guild War', async () => {
+      prisma.battleSession.findUnique.mockResolvedValue(
+        row({ id: 'gw-2026-07-20', isGuildWar: true, opponent: null }),
+      );
+
+      await expect(
+        service.update(
+          'gw-2026-07-20',
+          { deadline: vn('2026-07-23T10:00').toISOString() },
+          WEDNESDAY,
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('dời Guild War sang tuần khác thì hạn chót tính lại theo tuần mới', async () => {
+      prisma.battleSession.findUnique.mockResolvedValue(
+        row({
+          id: 'gw-2026-07-20',
+          isGuildWar: true,
+          opponent: null,
+          dateTime: vn('2026-07-25T20:00'),
+          deadline: vn('2026-07-23T17:00'),
+        }),
+      );
+
+      await service.update(
+        'gw-2026-07-20',
+        { dateTime: vn('2026-08-01T20:00').toISOString() },
+        WEDNESDAY,
+      );
+
+      expect(firstArg(prisma.battleSession.update, 0)).toMatchObject({
+        data: {
+          weekStart: NEXT_WEEK_START,
+          deadline: vn('2026-07-30T17:00'),
+        },
+      });
+    });
+
+    it('từ chối khi dời giờ đánh khiến hạn chót cũ vượt trần', async () => {
+      // Hàng cũ theo luật trước đây: trận Thứ 5 với hạn chót 17:00 Thứ 5.
+      prisma.battleSession.findUnique.mockResolvedValue(
+        row({
+          dateTime: vn('2026-07-23T20:30'),
+          deadline: vn('2026-07-23T17:00'),
+        }),
+      );
+
+      await expect(
+        service.update(
+          'session-tue',
+          { dateTime: vn('2026-07-21T20:30').toISOString() },
+          WEDNESDAY,
+        ),
       ).rejects.toThrow(BadRequestException);
     });
 

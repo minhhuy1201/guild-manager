@@ -33,6 +33,8 @@ interface DateTimeFieldProps {
   onChange: (value: string) => void;
   /** Giờ điền sẵn khi chưa có giá trị, dạng HH:mm */
   defaultTime?: string;
+  /** Dòng chú thích nhỏ dưới ô, ví dụ luật giới hạn giá trị */
+  description?: string;
 }
 
 /**
@@ -44,6 +46,7 @@ interface DateTimeFieldProps {
  * @param value - Giá trị dạng "YYYY-MM-DDTHH:mm"
  * @param onChange - Gọi với giá trị mới
  * @param defaultTime - Giờ điền sẵn khi chưa có giá trị
+ * @param description - Dòng chú thích nhỏ dưới ô
  * @returns Cặp ô nhập ngày giờ kèm nút mở lịch
  */
 export function DateTimeField({
@@ -52,6 +55,7 @@ export function DateTimeField({
   value,
   onChange,
   defaultTime,
+  description,
 }: DateTimeFieldProps) {
   const [parts, setParts] = useState(() => splitLocalValue(value, defaultTime));
   const [emitted, setEmitted] = useState(value);
@@ -146,10 +150,14 @@ export function DateTimeField({
           }
         />
       </div>
-      {isIncomplete && (
+      {isIncomplete ? (
         <p className="text-sm text-destructive">
           Ngày giờ không hợp lệ. Nhập theo dạng dd/mm/yyyy và HH:mm.
         </p>
+      ) : (
+        description && (
+          <p className="text-sm text-muted-foreground">{description}</p>
+        )
       )}
     </div>
   );

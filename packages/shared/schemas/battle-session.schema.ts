@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { isWithinDeadlineCap } from "../lib/battle-session";
+
 /** Chuỗi thời gian ISO — dùng cho mọi field giờ giấc đi trên dây. */
 const isoDateTime = z
   .string()
@@ -18,20 +20,35 @@ const opponent = z
   .nullable()
   .optional();
 
-/**
- * Body của POST /battle-sessions.
- * Dùng chung: FE validate form, BE validate request body (nestjs-zod).
- */
-export const createBattleSessionSchema = z.object({
+/** Thông báo khi hạn chót vượt trần — API và form dùng chung một câu chữ. */
+export const DEADLINE_CAP_MESSAGE =
+  "Hạn chót điểm danh không được muộn hơn 10:00 sáng ngày đánh.";
+
+/** Các field của một trận, chưa gắn luật cross-field. */
+const battleSessionFields = z.object({
   /** Thời điểm diễn ra trận đánh (ISO string) */
   dateTime: isoDateTime,
-  /** Hạn chót điểm danh do quản trị viên đặt (ISO string) */
+  /** Hạn chót điểm danh do quản trị viên đặt, tối đa 10:00 ngày đánh (ISO string) */
   deadline: isoDateTime,
   opponent,
 });
 
-/** Body của PATCH /battle-sessions/:id — sửa được từng phần. */
-export const updateBattleSessionSchema = createBattleSessionSchema.partial();
+/**
+ * Body của POST /battle-sessions.
+ * Dùng chung: FE validate form, BE validate request body (nestjs-zod).
+ */
+export const createBattleSessionSchema = battleSessionFields.refine(
+  ({ dateTime, deadline }) =>
+    isWithinDeadlineCap(new Date(deadline), new Date(dateTime)),
+  { path: ["deadline"], message: DEADLINE_CAP_MESSAGE }
+);
+
+/**
+ * Body của PATCH /battle-sessions/:id — sửa được từng phần.
+ * Không gắn luật trần ở đây: PATCH có thể chỉ gửi một trong hai field nên schema
+ * không đủ dữ liệu để kết luận. Service phán quyết trên cặp đã trộn với hàng cũ.
+ */
+export const updateBattleSessionSchema = battleSessionFields.partial();
 
 /** Kiểu body tạo trận đã validate. */
 export type CreateBattleSessionInput = z.infer<typeof createBattleSessionSchema>;

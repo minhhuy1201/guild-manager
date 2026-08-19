@@ -3,8 +3,11 @@
 import { useState } from "react";
 import { AlertCircle, LoaderCircle, Save } from "lucide-react";
 
-import { defaultDeadline } from "@shared/lib/battle-session";
-import type { BattleSession } from "@shared/schemas";
+import {
+  deadlineCapFor,
+  isWithinDeadlineCap,
+} from "@shared/lib/battle-session";
+import { DEADLINE_CAP_MESSAGE, type BattleSession } from "@shared/schemas";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -94,6 +97,7 @@ function SessionForm({ session, onDone }: SessionFormProps) {
 
   /**
    * Đổi giờ đánh, đồng thời điền sẵn hạn chót nếu người dùng chưa tự sửa ô đó.
+   * Giá trị điền sẵn chính là trần — muộn nhất có thể mà vẫn hợp lệ.
    * @param value - Giá trị mới của ô giờ đánh
    */
   function handleDateTimeChange(value: string) {
@@ -101,8 +105,8 @@ function SessionForm({ session, onDone }: SessionFormProps) {
 
     if (deadlineTouched || value === "") return;
 
-    const suggested = defaultDeadline(new Date(value));
-    setDeadline(toInputValue(suggested.toISOString()));
+    const cap = deadlineCapFor(new Date(value));
+    setDeadline(toInputValue(cap.toISOString()));
   }
 
   /**
@@ -115,22 +119,38 @@ function SessionForm({ session, onDone }: SessionFormProps) {
     setError(null);
 
     // Ô ngày giờ trả về rỗng khi người dùng gõ dở hoặc gõ ngày không có thật.
-    if (!dateTime || !deadline) {
+    if (!dateTime || (!isGuildWar && !deadline)) {
       setError("Ngày giờ chưa hợp lệ. Nhập theo dạng dd/mm/yyyy và HH:mm.");
       return;
     }
 
-    const input = {
-      dateTime: fromInputValue(dateTime),
-      deadline: fromInputValue(deadline),
-      opponent: isGuildWar ? null : opponent.trim() || null,
-    };
+    // Ô ngày giờ là hai input text có mask, không phải `datetime-local`, nên
+    // không có thuộc tính `max` để trình duyệt tự chặn — kiểm tra ở đây thay thế.
+    if (
+      !isGuildWar &&
+      !isWithinDeadlineCap(new Date(deadline), new Date(dateTime))
+    ) {
+      setError(DEADLINE_CAP_MESSAGE);
+      return;
+    }
 
     try {
-      if (session) {
-        await updateMutation.mutateAsync({ id: session.id, input });
+      if (!session) {
+        await createMutation.mutateAsync({
+          dateTime: fromInputValue(dateTime),
+          deadline: fromInputValue(deadline),
+          opponent: opponent.trim() || null,
+        });
       } else {
-        await createMutation.mutateAsync(input);
+        // Hạn chót của Guild War do hệ thống đặt; gửi lên là 400.
+        await updateMutation.mutateAsync({
+          id: session.id,
+          input: {
+            dateTime: fromInputValue(dateTime),
+            ...(isGuildWar ? {} : { deadline: fromInputValue(deadline) }),
+            opponent: isGuildWar ? null : opponent.trim() || null,
+          },
+        });
       }
       onDone();
     } catch (caught) {
@@ -169,16 +189,26 @@ function SessionForm({ session, onDone }: SessionFormProps) {
         </div>
       )}
 
-      <DateTimeField
-        id="session-deadline"
-        label="Hạn chót điểm danh"
-        value={deadline}
-        onChange={(value) => {
-          setDeadlineTouched(true);
-          setDeadline(value);
-        }}
-        defaultTime={DEFAULT_DEADLINE_TIME}
-      />
+      {isGuildWar ? (
+        <div className="flex flex-col gap-1.5">
+          <Label>Hạn chót điểm danh</Label>
+          <p className="text-sm text-muted-foreground">
+            17:00 Thứ 5 — cố định, không sửa được.
+          </p>
+        </div>
+      ) : (
+        <DateTimeField
+          id="session-deadline"
+          label="Hạn chót điểm danh"
+          value={deadline}
+          onChange={(value) => {
+            setDeadlineTouched(true);
+            setDeadline(value);
+          }}
+          defaultTime={DEFAULT_DEADLINE_TIME}
+          description="Muộn nhất 10:00 sáng ngày đánh."
+        />
+      )}
 
       {error && (
         <div className="flex items-start gap-1.5 text-sm text-destructive">

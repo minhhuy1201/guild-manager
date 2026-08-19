@@ -322,7 +322,8 @@ Both commands set `PRISMA_ENV_FILE=.env.production`, so they read `.env.producti
 `.env`. Any Prisma command accepts the same variable, including the seed:
 
 ```bash
-PRISMA_ENV_FILE=.env.production pnpm db:seed   # roster → production
+PRISMA_ENV_FILE=.env.production pnpm db:seed             # roster → production
+PRISMA_ENV_FILE=.env.production pnpm db:fix-deadlines    # one-off deadline cap migration
 ```
 
 Without it, commands target local. Read the datasource printed at the top of the output to be sure

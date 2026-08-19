@@ -151,6 +151,7 @@ pnpm --filter web dev    # http://localhost:3000
 | `prisma:studio` | Open Prisma Studio |
 | `db:up` / `db:down` / `db:reset` | Postgres container lifecycle |
 | `db:seed` | Load the roster from `seed-data.json` |
+| `db:fix-deadlines` | One-off: bring the open and next week's deadlines back under the cap |
 
 ### Frontend (`pnpm --filter web …`)
 

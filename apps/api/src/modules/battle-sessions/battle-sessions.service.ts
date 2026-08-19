@@ -3,7 +3,8 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { defaultDeadline } from '@guild/shared/lib';
+import { guildWarDeadline, isWithinDeadlineCap } from '@guild/shared/lib';
+import { DEADLINE_CAP_MESSAGE } from '@guild/shared/schemas';
 import type {
   BattleSession,
   CreateBattleSessionInput,
@@ -124,7 +125,7 @@ export class BattleSessionsService {
    * @param input - Giờ đánh, hạn chót và tên bang đối thủ
    * @param now - Thời điểm hiện tại (cho phép truyền vào để test)
    * @returns Trận vừa tạo
-   * @throws BadRequestException khi trận không thuộc tuần được thiết lập hoặc hạn chót muộn hơn giờ đánh
+   * @throws BadRequestException khi trận không thuộc tuần được thiết lập hoặc hạn chót vượt trần 10:00 ngày đánh
    */
   async create(
     input: CreateBattleSessionInput,
@@ -134,7 +135,7 @@ export class BattleSessionsService {
     const deadline = new Date(input.deadline);
 
     this.assertEditableWeek(weekStartOf(dateTime), now);
-    this.assertDeadlineBeforeBattle(deadline, dateTime);
+    this.assertDeadlineWithinCap(deadline, dateTime);
 
     const created = await this.prisma.battleSession.create({
       data: {
@@ -153,12 +154,15 @@ export class BattleSessionsService {
   /**
    * Sửa một trận. Dời giờ đánh sang tuần khác thì `weekStart` của trận và của
    * đội hình đi kèm được cập nhật trong cùng một transaction.
+   *
+   * Hạn chót của Guild War do hệ thống sở hữu: gửi lên là lỗi, và giá trị ghi
+   * xuống luôn được tính lại từ tuần chứa trận.
    * @param id - Id trận cần sửa
    * @param input - Các field cần đổi
    * @param now - Thời điểm hiện tại (cho phép truyền vào để test)
    * @returns Trận sau khi sửa
    * @throws NotFoundException khi trận không còn tồn tại
-   * @throws BadRequestException khi tuần không được thiết lập, hạn chót muộn hơn giờ đánh, hoặc đặt đối thủ cho Guild War
+   * @throws BadRequestException khi tuần không được thiết lập, hạn chót vượt trần, hoặc đặt đối thủ/hạn chót cho Guild War
    */
   async update(
     id: string,
@@ -182,17 +186,27 @@ export class BattleSessionsService {
     if (current.isGuildWar && opponent !== null) {
       throw new BadRequestException('Trận Guild War không có đối thủ.');
     }
+    if (current.isGuildWar && input.deadline !== undefined) {
+      throw new BadRequestException(
+        'Hạn chót của trận Guild War cố định 17:00 Thứ 5, không sửa được.',
+      );
+    }
 
     const dateTime = input.dateTime
       ? new Date(input.dateTime)
       : current.dateTime;
-    const deadline = input.deadline
-      ? new Date(input.deadline)
-      : current.deadline;
     const weekStart = weekStartOf(dateTime);
 
     this.assertEditableWeek(weekStart, now);
-    this.assertDeadlineBeforeBattle(deadline, dateTime);
+
+    // Guild War: hệ thống tính lại theo tuần đang chứa trận, kể cả khi trận vừa
+    // bị dời sang tuần khác. Scrim: trộn giá trị gửi lên với hàng hiện có.
+    let deadline = guildWarDeadline(weekStart);
+
+    if (!current.isGuildWar) {
+      deadline = input.deadline ? new Date(input.deadline) : current.deadline;
+      this.assertDeadlineWithinCap(deadline, dateTime);
+    }
 
     const updated = await this.prisma.battleSession.update({
       where: { id },
@@ -241,11 +255,12 @@ export class BattleSessionsService {
         id: guildWarSessionId(weekStart),
         weekStart,
         dateTime,
-        deadline: defaultDeadline(dateTime),
+        deadline: guildWarDeadline(weekStart),
         isGuildWar: true,
       },
-      // Đã có thì không đụng vào — quản trị viên có thể đã dời giờ đánh.
-      update: {},
+      // Giờ đánh không đụng vào — quản trị viên có thể đã dời. Hạn chót thì
+      // ngược lại: hệ thống sở hữu, nên hàng cũ lệch luật tự chỉnh về đúng.
+      update: { deadline: guildWarDeadline(weekStart) },
     });
   }
 
@@ -277,15 +292,15 @@ export class BattleSessionsService {
   }
 
   /**
-   * Chặn hạn chót muộn hơn giờ đánh.
+   * Chặn hạn chót vượt trần: 10:00 sáng ngày đánh, và không muộn hơn giờ đánh.
    * @param deadline - Hạn chót điểm danh
    * @param dateTime - Giờ đánh
    * @returns Không trả về gì khi hợp lệ
-   * @throws BadRequestException khi hạn chót muộn hơn giờ đánh
+   * @throws BadRequestException khi hạn chót muộn hơn trần
    */
-  private assertDeadlineBeforeBattle(deadline: Date, dateTime: Date): void {
-    if (deadline.getTime() > dateTime.getTime()) {
-      throw new BadRequestException('Hạn chót phải trước hoặc bằng giờ đánh.');
+  private assertDeadlineWithinCap(deadline: Date, dateTime: Date): void {
+    if (!isWithinDeadlineCap(deadline, dateTime)) {
+      throw new BadRequestException(DEADLINE_CAP_MESSAGE);
     }
   }
 

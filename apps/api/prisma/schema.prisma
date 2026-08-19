@@ -57,7 +57,9 @@ model BattleSession {
   id        String   @id @default(cuid())
   /// Thời điểm diễn ra trận đánh.
   dateTime  DateTime
-  /// Hạn chót điểm danh do quản trị viên đặt (không bị kẹp lại theo luật nào).
+  /// Hạn chót điểm danh. Scrim: quản trị viên đặt, tối đa 10:00 sáng ngày đánh
+  /// (vượt trần thì backend từ chối chứ không kẹp). Guild War: hệ thống đặt
+  /// 17:00 Thứ 5 cùng tuần, quản trị viên không sửa được.
   deadline  DateTime
   /// Tên bang đối thủ. null với Guild War và với scrim chưa chốt đối thủ.
   opponent  String?

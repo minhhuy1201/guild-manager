@@ -1,8 +1,9 @@
 /**
- * Luật hạn chót điểm danh gợi ý cho một trận.
+ * Luật hạn chót điểm danh của một trận.
  *
- * Đây chỉ là GIÁ TRỊ MẶC ĐỊNH điền sẵn vào form — quản trị viên sửa được và
- * backend lưu đúng giá trị cuối cùng, không kẹp lại theo luật này.
+ * Trần hạn chót là RÀNG BUỘC CỨNG, không phải gợi ý: backend từ chối request vi
+ * phạm thay vì kẹp lại giá trị, nên form và backend phải dùng chung phép tính ở
+ * đây.
  *
  * Mọi mốc giờ tính theo giờ Việt Nam (UTC+7) cố định, không phụ thuộc timezone
  * của máy đang chạy.
@@ -11,25 +12,14 @@
 /** Lệch múi giờ Việt Nam so với UTC (UTC+7, không có DST). */
 const VN_OFFSET_MS = 7 * 60 * 60 * 1000;
 
-/** Thứ 5 theo chuẩn ISO (Thứ 2 = 1 ... Chủ nhật = 7). */
-const THURSDAY = 4;
+/** Giờ muộn nhất được phép đặt hạn chót, tính trong chính ngày đánh. */
+const DEADLINE_CAP_HOUR = 10;
 
-/** Giờ chốt sổ cả tuần: 17:00 Thứ 5. */
-const WEEK_CUTOFF_HOUR = 17;
+/** Giờ chốt cố định của trận Guild War. */
+const GUILD_WAR_DEADLINE_HOUR = 17;
 
-/** Giờ chốt riêng của các trận diễn ra trước Thứ 5. */
-const EARLY_SESSION_DEADLINE_HOUR = 10;
-
-/**
- * Thứ trong tuần theo chuẩn ISO, tính theo giờ Việt Nam.
- * @param date - Thời điểm cần xét
- * @returns 1 = Thứ 2 ... 7 = Chủ nhật
- */
-function vnIsoWeekday(date: Date): number {
-  const day = new Date(date.getTime() + VN_OFFSET_MS).getUTCDay();
-
-  return day === 0 ? 7 : day;
-}
+/** Lệch ngày của Thứ 5 so với Thứ 2 đầu tuần. */
+const THURSDAY_OFFSET_FROM_MONDAY = 3;
 
 /**
  * Dịch một mốc thời gian đi `deltaDays` ngày rồi đặt về giờ/phút cụ thể theo giờ VN.
@@ -58,17 +48,43 @@ export function shiftVnDate(
 }
 
 /**
- * Hạn chót gợi ý cho một trận: 10:00 sáng chính ngày đánh nếu trận diễn ra
- * trước Thứ 5, ngược lại là 17:00 Thứ 5 của tuần chứa trận đó.
+ * Hạn chót muộn nhất được phép của một trận scrim: 10:00 sáng giờ VN của chính
+ * ngày đánh, và không bao giờ muộn hơn giờ đánh (trận trước 10:00 thì trần
+ * chính là giờ đánh).
+ *
+ * Đây vừa là trần backend kiểm tra, vừa là giá trị điền sẵn cho form — muộn
+ * nhất có thể cũng là lựa chọn hợp lý nhất trong đa số trường hợp.
  * @param dateTime - Thời điểm diễn ra trận đánh
- * @returns Hạn chót gợi ý
+ * @returns Hạn chót muộn nhất được phép
  */
-export function defaultDeadline(dateTime: Date): Date {
-  const weekday = vnIsoWeekday(dateTime);
+export function deadlineCapFor(dateTime: Date): Date {
+  const morning = shiftVnDate(dateTime, 0, DEADLINE_CAP_HOUR, 0);
 
-  if (weekday < THURSDAY) {
-    return shiftVnDate(dateTime, 0, EARLY_SESSION_DEADLINE_HOUR, 0);
-  }
+  return morning.getTime() < dateTime.getTime() ? morning : dateTime;
+}
 
-  return shiftVnDate(dateTime, THURSDAY - weekday, WEEK_CUTOFF_HOUR, 0);
+/**
+ * Hạn chót có nằm trong trần cho phép không — luật kiểm tra duy nhất, dùng
+ * chung cho schema, service và form.
+ * @param deadline - Hạn chót cần xét
+ * @param dateTime - Giờ đánh của trận
+ * @returns true nếu hợp lệ (đúng bằng trần vẫn hợp lệ)
+ */
+export function isWithinDeadlineCap(deadline: Date, dateTime: Date): boolean {
+  return deadline.getTime() <= deadlineCapFor(dateTime).getTime();
+}
+
+/**
+ * Hạn chót cố định của trận Guild War một tuần: 17:00 Thứ 5 của tuần đó.
+ * Giá trị này do hệ thống sở hữu, quản trị viên không sửa được.
+ * @param weekStart - Mốc Thứ 2 00:00 giờ VN của tuần chứa trận
+ * @returns Hạn chót 17:00 Thứ 5 cùng tuần
+ */
+export function guildWarDeadline(weekStart: Date): Date {
+  return shiftVnDate(
+    weekStart,
+    THURSDAY_OFFSET_FROM_MONDAY,
+    GUILD_WAR_DEADLINE_HOUR,
+    0
+  );
 }
