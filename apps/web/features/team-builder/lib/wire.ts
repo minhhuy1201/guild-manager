@@ -9,7 +9,7 @@ import type { Assignment, MatchDraft, Notes, Slot } from "../types/formation";
  * @param assignment - Assignment as the UI holds it, empty slots being null
  * @returns Assignment with only the filled slots
  */
-export function toWire(assignment: Assignment): MatchFormation["slots"] {
+function toWire(assignment: Assignment): MatchFormation["slots"] {
   const filled = Object.entries(assignment).filter(
     (entry): entry is [string, string] => entry[1] !== null
   );
@@ -46,7 +46,7 @@ export function fromWire(
  * @param notes - Notes as the UI holds them, possibly with blank entries
  * @returns Notes with only the non-blank ones, each trimmed
  */
-export function toWireNotes(notes: Notes): MatchFormation["notes"] {
+function toWireNotes(notes: Notes): MatchFormation["notes"] {
   const filled = Object.entries(notes)
     .map(([slotId, text]): [string, string] => [slotId, text.trim()])
     .filter(([, text]) => text !== "");

@@ -30,7 +30,7 @@ const SUGGESTED_CLASS_TEMPLATE: readonly (GuildClass | undefined)[] = [
  * @param position - Row inside the team, 1..SLOTS_PER_TEAM
  * @returns Slot id, e.g. "team-3-pos-2"
  */
-export function buildSlotId(team: number, position: number): string {
+function buildSlotId(team: number, position: number): string {
   return `team-${team}-pos-${position}`;
 }
 
@@ -56,3 +56,11 @@ export function createMockFormation(): Formation {
 
   return { id: "guild-war-default", name: "Đội hình bang chiến", slots };
 }
+
+/**
+ * The layout the screen renders. Static data, built once at module load so the
+ * memos that depend on `FORMATION.slots` never rerun. It lives here rather than
+ * inside one hook because both the draft and the pool measure themselves
+ * against the same slot list.
+ */
+export const FORMATION = createMockFormation();

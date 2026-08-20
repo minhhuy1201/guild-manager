@@ -5,9 +5,7 @@ import {
   fromWire,
   fromWireMatches,
   fromWireNotes,
-  toWire,
   toWireMatches,
-  toWireNotes,
 } from "../wire";
 
 const SLOTS: Slot[] = [
@@ -16,7 +14,26 @@ const SLOTS: Slot[] = [
   { id: "team-1-pos-3", team: 1, position: 3 },
 ];
 
-describe("toWire", () => {
+/**
+ * Chuyển một đội hình qua `toWireMatches` rồi lấy phần slot của trận đầu —
+ * đường duy nhất mà app dùng để đẩy đội hình lên server.
+ * @param assignment - Đội hình cần chuyển
+ * @returns Phần `slots` gửi đi
+ */
+function toWireSlots(assignment: Assignment) {
+  return toWireMatches([{ assignment, notes: {} }])[0].slots;
+}
+
+/**
+ * Chuyển ghi chú qua `toWireMatches` rồi lấy phần ghi chú của trận đầu.
+ * @param notes - Ghi chú cần chuyển
+ * @returns Phần `notes` gửi đi
+ */
+function toWireNotesOf(notes: Record<string, string>) {
+  return toWireMatches([{ assignment: {}, notes }])[0].notes;
+}
+
+describe("toWireMatches — phần đội hình", () => {
   it("bỏ mọi ô trống", () => {
     const assignment: Assignment = {
       "team-1-pos-1": "char-1",
@@ -24,14 +41,14 @@ describe("toWire", () => {
       "team-1-pos-3": "char-3",
     };
 
-    expect(toWire(assignment)).toEqual({
+    expect(toWireSlots(assignment)).toEqual({
       "team-1-pos-1": "char-1",
       "team-1-pos-3": "char-3",
     });
   });
 
   it("đội hình trống thành object rỗng", () => {
-    expect(toWire({ "team-1-pos-1": null })).toEqual({});
+    expect(toWireSlots({ "team-1-pos-1": null })).toEqual({});
   });
 });
 
@@ -51,21 +68,21 @@ describe("fromWire", () => {
     expect(Object.keys(result)).toHaveLength(SLOTS.length);
   });
 
-  it("đi vòng toWire → fromWire giữ nguyên nội dung", () => {
+  it("đi vòng lên server rồi về lại giữ nguyên nội dung", () => {
     const original: Assignment = {
       "team-1-pos-1": "char-1",
       "team-1-pos-2": null,
       "team-1-pos-3": "char-3",
     };
 
-    expect(fromWire(toWire(original), SLOTS)).toEqual(original);
+    expect(fromWire(toWireSlots(original), SLOTS)).toEqual(original);
   });
 });
 
-describe("toWireNotes", () => {
+describe("toWireMatches — phần ghi chú", () => {
   it("bỏ khoá của ghi chú rỗng và ghi chú chỉ có khoảng trắng", () => {
     expect(
-      toWireNotes({
+      toWireNotesOf({
         "team-1-pos-1": "giữ buồng",
         "team-1-pos-2": "",
         "team-1-pos-3": "   ",
@@ -74,7 +91,7 @@ describe("toWireNotes", () => {
   });
 
   it("cắt khoảng trắng thừa hai đầu", () => {
-    expect(toWireNotes({ "team-1-pos-1": "  vào sau  " })).toEqual({
+    expect(toWireNotesOf({ "team-1-pos-1": "  vào sau  " })).toEqual({
       "team-1-pos-1": "vào sau",
     });
   });

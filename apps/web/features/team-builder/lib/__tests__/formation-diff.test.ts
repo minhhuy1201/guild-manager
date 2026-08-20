@@ -1,41 +1,59 @@
 import { describe, expect, it } from "vitest";
 
 import type { Assignment, MatchDraft } from "../../types/formation";
-import { isDayDirty, isDirty } from "../formation-diff";
+import { isDayDirty } from "../formation-diff";
 
 const SAVED: Assignment = {
   "team-1-pos-1": "char-1",
   "team-1-pos-2": null,
 };
 
-describe("isDirty", () => {
+/**
+ * Bọc một đội hình thành ngày một trận, không ghi chú — dạng mà `isDayDirty`
+ * nhận vào.
+ * @param assignment - Đội hình của trận duy nhất
+ * @returns Ngày một trận
+ */
+function day(assignment: Assignment): MatchDraft[] {
+  return [{ assignment, notes: {} }];
+}
+
+describe("isDayDirty — phần đội hình", () => {
+  const savedDay = day(SAVED);
+
   it("chưa có nháp thì không coi là chưa lưu", () => {
-    expect(isDirty(undefined, SAVED)).toBe(false);
+    expect(isDayDirty(undefined, savedDay)).toBe(false);
   });
 
   it("nháp trùng bản đã lưu thì không coi là chưa lưu", () => {
-    expect(isDirty({ ...SAVED }, SAVED)).toBe(false);
+    expect(isDayDirty(day({ ...SAVED }), savedDay)).toBe(false);
   });
 
   it("đổi người ở một ô thì báo chưa lưu", () => {
-    expect(isDirty({ ...SAVED, "team-1-pos-1": "char-2" }, SAVED)).toBe(true);
+    expect(
+      isDayDirty(day({ ...SAVED, "team-1-pos-1": "char-2" }), savedDay)
+    ).toBe(true);
   });
 
   it("xếp thêm người vào ô trống thì báo chưa lưu", () => {
-    expect(isDirty({ ...SAVED, "team-1-pos-2": "char-9" }, SAVED)).toBe(true);
+    expect(
+      isDayDirty(day({ ...SAVED, "team-1-pos-2": "char-9" }), savedDay)
+    ).toBe(true);
   });
 
   it("gỡ người khỏi ô thì báo chưa lưu", () => {
-    expect(isDirty({ ...SAVED, "team-1-pos-1": null }, SAVED)).toBe(true);
+    expect(isDayDirty(day({ ...SAVED, "team-1-pos-1": null }), savedDay)).toBe(
+      true
+    );
   });
 
   it("nháp thiếu một ô ĐANG CÓ NGƯỜI thì báo chưa lưu", () => {
-    expect(isDirty({ "team-1-pos-2": null }, SAVED)).toBe(true);
+    expect(isDayDirty(day({ "team-1-pos-2": null }), savedDay)).toBe(true);
   });
 
   it("nháp thiếu một ô vốn đang trống thì vẫn coi là chưa đổi gì", () => {
     // Thiếu khoá và mang null là cùng một nghĩa: ô đó không có ai.
-    expect(isDirty({ "team-1-pos-1": "char-1" }, SAVED)).toBe(false);
+    expect(isDayDirty(day({ "team-1-pos-1": "char-1" }), savedDay)).toBe(false);
   });
 });
 

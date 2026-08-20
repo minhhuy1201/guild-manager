@@ -4,7 +4,6 @@ import { GuildClass } from "@shared/enums";
 import {
   SLOTS_PER_TEAM,
   TEAM_COUNT,
-  buildSlotId,
   createMockFormation,
 } from "../mock-formation";
 
@@ -52,9 +51,11 @@ describe("createMockFormation", () => {
     }
   });
 
-  it("buildSlotId khớp với id trong formation", () => {
+  it("id của slot mang đúng toạ độ team/vị trí của nó", () => {
     const formation = createMockFormation();
-    expect(formation.slots[0].id).toBe(buildSlotId(1, 1));
-    expect(formation.slots.at(-1)?.id).toBe(buildSlotId(TEAM_COUNT, SLOTS_PER_TEAM));
+    expect(formation.slots[0].id).toBe("team-1-pos-1");
+    expect(formation.slots.at(-1)?.id).toBe(
+      `team-${TEAM_COUNT}-pos-${SLOTS_PER_TEAM}`
+    );
   });
 });

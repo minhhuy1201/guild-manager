@@ -9,7 +9,7 @@ import type { Assignment, MatchDraft, Notes } from "../types/formation";
  * @param saved - Assignment as last read from the server
  * @returns true when the draft holds unsaved changes
  */
-export function isDirty(
+function isDirty(
   draft: Assignment | undefined,
   saved: Assignment
 ): boolean {

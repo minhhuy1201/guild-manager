@@ -1,12 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { Assignment } from "../../types/formation";
-import {
-  applyDrop,
-  createEmptyAssignment,
-  findSlotOf,
-} from "../assignment";
-import { SLOTS_PER_TEAM, TEAM_COUNT, createMockFormation } from "../mock-formation";
+import { applyDrop } from "../assignment";
 
 const SLOT_A = "team-1-pos-1";
 const SLOT_B = "team-1-pos-2";
@@ -16,22 +11,6 @@ const SLOT_C = "team-2-pos-1";
 function emptyThreeSlots(): Assignment {
   return { [SLOT_A]: null, [SLOT_B]: null, [SLOT_C]: null };
 }
-
-describe("createEmptyAssignment", () => {
-  it("sinh một khóa null cho mỗi slot của đội hình", () => {
-    const assignment = createEmptyAssignment(createMockFormation().slots);
-    expect(Object.keys(assignment)).toHaveLength(TEAM_COUNT * SLOTS_PER_TEAM);
-    expect(Object.values(assignment).every((value) => value === null)).toBe(true);
-  });
-});
-
-describe("findSlotOf", () => {
-  it("trả về ô đang giữ nhân vật, hoặc null khi nhân vật ở pool", () => {
-    const assignment = { ...emptyThreeSlots(), [SLOT_B]: "char-1" };
-    expect(findSlotOf(assignment, "char-1")).toBe(SLOT_B);
-    expect(findSlotOf(assignment, "char-2")).toBeNull();
-  });
-});
 
 describe("applyDrop", () => {
   it("case 1 — pool → ô trống: đặt nhân vật vào ô", () => {
@@ -55,7 +34,7 @@ describe("applyDrop", () => {
     );
 
     expect(result[SLOT_A]).toBe("char-new");
-    expect(findSlotOf(result, "char-old")).toBeNull();
+    expect(Object.values(result)).not.toContain("char-old");
   });
 
   it("case 3 — ô → ô trống: ô nguồn thành null, ô đích nhận người", () => {

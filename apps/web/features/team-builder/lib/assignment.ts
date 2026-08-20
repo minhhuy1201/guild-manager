@@ -1,13 +1,4 @@
-import type { Assignment, DragSource, DropTarget, Slot } from "../types/formation";
-
-/**
- * Build an assignment where every slot of the formation is empty.
- * @param slots - All slots of the formation
- * @returns Assignment mapping every slot id to null
- */
-export function createEmptyAssignment(slots: Slot[]): Assignment {
-  return Object.fromEntries(slots.map((slot) => [slot.id, null]));
-}
+import type { Assignment, DragSource, DropTarget } from "../types/formation";
 
 /**
  * Find which slot currently holds a character.
@@ -15,7 +6,7 @@ export function createEmptyAssignment(slots: Slot[]): Assignment {
  * @param characterId - Character to look for
  * @returns The slot id holding the character, or null when they are in the pool
  */
-export function findSlotOf(assignment: Assignment, characterId: string): string | null {
+function findSlotOf(assignment: Assignment, characterId: string): string | null {
   const entry = Object.entries(assignment).find(([, value]) => value === characterId);
   return entry ? entry[0] : null;
 }
@@ -29,7 +20,7 @@ export function findSlotOf(assignment: Assignment, characterId: string): string 
  * @param characterId - Character being placed
  * @returns A new assignment
  */
-export function assign(
+function assign(
   assignment: Assignment,
   slotId: string,
   characterId: string
@@ -50,7 +41,7 @@ export function assign(
  * @param slotId - Slot to clear
  * @returns A new assignment
  */
-export function unassign(assignment: Assignment, slotId: string): Assignment {
+function unassign(assignment: Assignment, slotId: string): Assignment {
   return { ...assignment, [slotId]: null };
 }
 
@@ -61,7 +52,7 @@ export function unassign(assignment: Assignment, slotId: string): Assignment {
  * @param slotIdB - Second slot
  * @returns A new assignment
  */
-export function swap(
+function swap(
   assignment: Assignment,
   slotIdA: string,
   slotIdB: string
