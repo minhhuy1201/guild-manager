@@ -280,13 +280,19 @@ declared once in `config/routes.ts` and referenced as `ROUTES.*`.
 ## 8. Tests
 
 Vitest, `pnpm test`. Tests live in `__tests__/` beside the folder they cover and run in the **node**
-environment — there are no component tests, so no jsdom. `vitest.config.ts` pins
-`TZ=Asia/Ho_Chi_Minh`, because half the logic under test is about Vietnamese-time boundaries and it
-must not depend on the machine running it.
+environment by default. There are no component tests; there are hook tests, and those need a DOM —
+a hook test file opts in with `// @vitest-environment jsdom` on its first line, so the rest of the
+suite stays on node. `vitest.config.ts` pins `TZ=Asia/Ho_Chi_Minh`, because half the logic under
+test is about Vietnamese-time boundaries and it must not depend on the machine running it.
 
 What is worth testing here is the pure `lib/` layer — `assignment`, `formation-diff`, `prefill`,
 `pool`, `session-status`, `date-parts`, `session-subtitle` — plus `lib/api-client.ts`. Extracting
 a derivation into `lib/` so it can be tested without rendering is the intended move.
+
+Above that layer sit the hooks that wire it together, where the real bugs live: the five hooks of
+`features/team-builder` are covered in `features/team-builder/hooks/__tests__/`, rendered with
+`@testing-library/react` through the shared `renderFormationHook` helper (fresh QueryClient, both
+Zustand stores reset).
 
 ---
 
