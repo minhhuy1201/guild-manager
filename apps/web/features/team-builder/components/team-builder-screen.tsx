@@ -37,7 +37,7 @@ export function TeamBuilderScreen() {
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   );
 
-  const hasUnsaved = screen.dirtySessionIds.size > 0;
+  const hasUnsaved = screen.draft.dirtySessionIds.size > 0;
 
   // Drafts live in memory, so leaving the page would silently drop them.
   useEffect(() => {
@@ -55,17 +55,20 @@ export function TeamBuilderScreen() {
     return () => window.removeEventListener("beforeunload", warn);
   }, [hasUnsaved]);
 
-  if (screen.isError) {
+  if (screen.week.isError) {
     return (
       <Card>
         <CardContent>
-          <ErrorState message={screen.errorMessage} onRetry={screen.refetch} />
+          <ErrorState
+            message={screen.week.errorMessage}
+            onRetry={screen.week.refetch}
+          />
         </CardContent>
       </Card>
     );
   }
 
-  if (screen.isPending) {
+  if (screen.week.isPending) {
     return (
       <div className="flex flex-col gap-4">
         <Skeleton className="h-16 w-full" />
@@ -77,7 +80,7 @@ export function TeamBuilderScreen() {
 
   // A week with no battles is empty, not broken — say so instead of rendering
   // an empty tab bar over an empty grid.
-  if (screen.sessions.length === 0) {
+  if (screen.selection.sessions.length === 0) {
     return (
       <Card>
         <CardContent className="py-8 text-center text-sm text-muted-foreground">
@@ -90,77 +93,77 @@ export function TeamBuilderScreen() {
   return (
     <DndContext
       sensors={sensors}
-      onDragStart={screen.handleDragStart}
-      onDragEnd={screen.handleDragEnd}
-      onDragCancel={screen.cancelDrag}
+      onDragStart={screen.dnd.handleDragStart}
+      onDragEnd={screen.dnd.handleDragEnd}
+      onDragCancel={screen.dnd.cancelDrag}
     >
       <div className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h1 className="text-lg font-semibold">Xếp đội hình bang chiến</h1>
           <WeekPicker
-            weeks={screen.weeks}
-            value={screen.weekStart}
-            onChange={screen.setWeek}
+            weeks={screen.week.weeks}
+            value={screen.week.weekStart}
+            onChange={screen.week.setWeek}
           />
         </div>
 
         <SessionTabs
-          sessions={screen.sessions}
-          activeSessionId={screen.activeSessionId}
-          dirtySessionIds={screen.dirtySessionIds}
-          onSelect={screen.setActiveSession}
-          slotCount={screen.slotCount}
+          sessions={screen.selection.sessions}
+          activeSessionId={screen.selection.activeSessionId}
+          dirtySessionIds={screen.draft.dirtySessionIds}
+          onSelect={screen.selection.setActiveSession}
+          slotCount={screen.draft.slotCount}
         />
 
         <MatchTabs
-          matchCount={screen.matchCount}
-          activeMatchIndex={screen.activeMatchIndex}
+          matchCount={screen.draft.matchCount}
+          activeMatchIndex={screen.draft.activeMatchIndex}
           secondMatchHasMembers={Object.values(
-            screen.matches[1]?.assignment ?? {}
+            screen.draft.matches[1]?.assignment ?? {}
           ).some(Boolean)}
-          canAddMatch={screen.canAddMatch}
-          onSelect={screen.setActiveMatch}
-          onAdd={screen.addMatch}
-          onRemove={screen.removeMatch}
+          canAddMatch={screen.draft.canAddMatch}
+          onSelect={screen.draft.setActiveMatch}
+          onAdd={screen.draft.addMatch}
+          onRemove={screen.draft.removeMatch}
         />
 
         <div className="flex flex-wrap items-center justify-between gap-2 mt-4">
-          <ClassShortage pool={screen.pool} />
+          <ClassShortage pool={screen.pool.pool} />
           <FormationToolbar
-            dirty={screen.dirty}
-            saving={screen.saving}
-            errorMessage={screen.saveErrorMessage}
-            editable={screen.editable}
-            onSave={screen.handleSave}
-            onReset={screen.resetActive}
+            dirty={screen.draft.dirty}
+            saving={screen.draft.saving}
+            errorMessage={screen.draft.saveErrorMessage}
+            editable={screen.selection.editable}
+            onSave={screen.draft.handleSave}
+            onReset={screen.draft.resetActive}
           />
         </div>
 
         <PrefillBanner
-          result={screen.prefill}
-          onClear={screen.clearActiveDraft}
+          result={screen.pool.prefill}
+          onClear={screen.draft.clearActiveDraft}
         />
 
         <FormationGrid
-          assignment={screen.assignment}
-          notes={screen.notes}
-          onNoteChange={screen.setNote}
-          charactersById={screen.charactersById}
-          readOnly={!screen.editable}
-          absentIds={screen.absentIds}
+          assignment={screen.draft.assignment}
+          notes={screen.draft.notes}
+          onNoteChange={screen.draft.setNote}
+          charactersById={screen.pool.charactersById}
+          readOnly={!screen.selection.editable}
+          absentIds={screen.pool.absentIds}
         />
         <MemberPool
-          pool={screen.pool}
-          readOnly={!screen.editable}
-          otherMatchIds={screen.otherMatchIds}
-          activeMatchIndex={screen.activeMatchIndex}
+          pool={screen.pool.pool}
+          readOnly={!screen.selection.editable}
+          otherMatchIds={screen.pool.otherMatchIds}
+          activeMatchIndex={screen.draft.activeMatchIndex}
         />
       </div>
 
       <DragOverlay>
-        {screen.activeCharacter ? (
+        {screen.dnd.activeCharacter ? (
           <MemberCard
-            character={screen.activeCharacter}
+            character={screen.dnd.activeCharacter}
             className="cursor-grabbing"
           />
         ) : null}
