@@ -5,7 +5,11 @@ import type { Character, SessionFormation } from "@shared/schemas";
 
 import { FORMATION } from "../lib/mock-formation";
 import { selectPoolCharacters } from "../lib/pool";
-import { buildPrefill, type PrefillResult } from "../lib/prefill";
+import {
+  buildPrefill,
+  isPrefillShowing,
+  type PrefillResult,
+} from "../lib/prefill";
 import {
   presentCharacterIds,
   selectPresentCharacters,
@@ -25,7 +29,7 @@ export interface FormationPoolState {
   absentIds: Set<string>;
   /** Members placed in the other match of the same day */
   otherMatchIds: Set<string>;
-  /** Line-up proposed for a day that has none yet, null when nothing was filled */
+  /** Line-up filled into a day that had none, null once it is edited or saved */
   prefill: PrefillResult | null;
 }
 
@@ -116,11 +120,11 @@ export function useFormationPool(
   );
   const hasDraft = Boolean(activeSessionId && drafts[activeSessionId]);
 
-  // Fill an untouched battle with the previous battle's line-up, as a draft.
-  // Self-limiting: clearing the proposal leaves an empty draft that still
-  // exists, so nothing refills it.
-  const prefill = useMemo(() => {
-    if (!activeSessionId || !editable || hasSaved || hasDraft) return null;
+  // What this day would be filled from. Computed whether or not the draft
+  // already exists, because the banner has to keep naming the source after the
+  // fill; the effect below is what decides whether anything gets written.
+  const proposal = useMemo(() => {
+    if (!activeSessionId || !editable || hasSaved) return null;
 
     return buildPrefill(
       sessions,
@@ -128,15 +132,27 @@ export function useFormationPool(
       presentIds,
       FORMATION.slots
     );
-  }, [sessions, activeSessionId, presentIds, editable, hasSaved, hasDraft]);
+  }, [sessions, activeSessionId, presentIds, editable, hasSaved]);
 
   useEffect(() => {
-    if (!activeSessionId || !prefill) return;
+    if (!activeSessionId || !proposal || hasDraft) return;
     // A fresh day starts with one match; match 2 is an explicit button press.
     setDraft(activeSessionId, [
-      { assignment: prefill.assignment, notes: prefill.notes },
+      { assignment: proposal.assignment, notes: proposal.notes },
     ]);
-  }, [activeSessionId, prefill, setDraft]);
+  }, [activeSessionId, proposal, hasDraft, setDraft]);
 
-  return { pool, charactersById, absentIds, otherMatchIds, prefill };
+  // The banner stands while the day still shows what was filled in.
+  const standing = isPrefillShowing(
+    activeSessionId ? drafts[activeSessionId] : undefined,
+    proposal
+  );
+
+  return {
+    pool,
+    charactersById,
+    absentIds,
+    otherMatchIds,
+    prefill: standing ? proposal : null,
+  };
 }

@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { act } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { AttendanceStatus, GuildClass } from "@shared/enums";
 import type { Character, SessionFormation } from "@shared/schemas";
@@ -186,9 +187,6 @@ describe("useFormationPool — trận kia", () => {
 });
 
 describe("useFormationPool — prefill", () => {
-  // Đề xuất được ghi thẳng thành nháp; ngay khi nháp tồn tại thì `prefill` trả
-  // về null (đã có nháp = không đề xuất lại). Nên thứ quan sát được sau khi
-  // render xong là nháp trong store, không phải giá trị trả về.
   it("ngày chưa xếp gì nhận đội hình của ngày trước làm nháp", () => {
     renderPool({ sessions: SESSIONS_WITH_SOURCE });
 
@@ -256,5 +254,64 @@ describe("useFormationPool — prefill", () => {
 
     expect(result.current.prefill).toBeNull();
     expect(useFormationStore.getState().drafts[SESSION_ID]).toBeUndefined();
+  });
+});
+
+describe("useFormationPool — thông báo điền sẵn", () => {
+  it("điền sẵn xong vẫn báo đã chép từ đâu", () => {
+    const { result } = renderPool({ sessions: SESSIONS_WITH_SOURCE });
+
+    expect(result.current.prefill?.sourceLabel).toBe("Trận thu-4");
+    expect(result.current.prefill?.droppedCount).toBe(0);
+  });
+
+  it("chép sang mà cả đội đều báo nghỉ thì vẫn phải báo — đó là lúc cần nhất", () => {
+    const { result } = renderPool({
+      sessions: SESSIONS_WITH_SOURCE,
+      records: [record("char-1", AttendanceStatus.ABSENT)],
+    });
+
+    expect(result.current.prefill?.droppedCount).toBe(1);
+    expect(
+      useFormationStore.getState().drafts[SESSION_ID][0].assignment[SLOT]
+    ).toBeNull();
+  });
+
+  it("bấm xoá hết thì thông báo tắt theo", () => {
+    const { result } = renderPool({ sessions: SESSIONS_WITH_SOURCE });
+
+    act(() => {
+      // Đúng thứ clearActiveDraft ghi: nháp vẫn còn, mọi ô đều rỗng.
+      useFormationStore
+        .getState()
+        .setDraft(SESSION_ID, [{ assignment: { [SLOT]: null }, notes: {} }]);
+    });
+
+    expect(result.current.prefill).toBeNull();
+  });
+
+  it("người dùng tự đổi một ô thì thông báo tắt", () => {
+    const { result } = renderPool({ sessions: SESSIONS_WITH_SOURCE });
+
+    act(() => {
+      useFormationStore
+        .getState()
+        .setDraft(SESSION_ID, [{ assignment: { [SLOT]: "char-2" }, notes: {} }]);
+    });
+
+    expect(result.current.prefill).toBeNull();
+  });
+
+  it("huỷ nháp là quay lại ngày trắng, nên đề xuất lại từ đầu và báo lại", () => {
+    const { result } = renderPool({ sessions: SESSIONS_WITH_SOURCE });
+
+    act(() => {
+      useFormationStore.getState().clearDraft(SESSION_ID);
+    });
+
+    expect(result.current.prefill?.sourceLabel).toBe("Trận thu-4");
+    expect(
+      useFormationStore.getState().drafts[SESSION_ID][0].assignment[SLOT]
+    ).toBe("char-1");
   });
 });

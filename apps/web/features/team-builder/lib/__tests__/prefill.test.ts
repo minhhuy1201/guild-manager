@@ -2,7 +2,7 @@ import type { SessionFormation } from "@shared/schemas";
 import { describe, expect, it } from "vitest";
 
 import type { Slot } from "../../types/formation";
-import { buildPrefill } from "../prefill";
+import { buildPrefill, isPrefillShowing, type PrefillResult } from "../prefill";
 
 const SLOTS: Slot[] = [
   { id: "team-1-pos-1", team: 1, position: 1 },
@@ -208,5 +208,60 @@ describe("buildPrefill", () => {
     );
 
     expect(result?.sourceLabel).toBe("Thứ 3 · 20:30");
+  });
+});
+
+/**
+ * Dựng một đề xuất đủ field, chỉ quan tâm phần đội hình.
+ * @param assignment - Đội hình được đề xuất
+ * @returns Đề xuất đầy đủ field
+ */
+function proposal(assignment: PrefillResult["assignment"]): PrefillResult {
+  return { assignment, notes: {}, sourceLabel: "Thứ 3 · 20:30", droppedCount: 0 };
+}
+
+const PROPOSED = proposal({
+  "team-1-pos-1": "char-1",
+  "team-1-pos-2": null,
+  "team-1-pos-3": null,
+});
+
+describe("isPrefillShowing", () => {
+  it("nháp đúng bằng đề xuất thì còn hiện", () => {
+    const draft = [{ assignment: { ...PROPOSED.assignment }, notes: {} }];
+
+    expect(isPrefillShowing(draft, PROPOSED)).toBe(true);
+  });
+
+  it("đề xuất bỏ hết người vì cả đội nghỉ thì vẫn hiện", () => {
+    const empty = proposal({ "team-1-pos-1": null });
+    const draft = [{ assignment: { "team-1-pos-1": null }, notes: {} }];
+
+    expect(isPrefillShowing(draft, empty)).toBe(true);
+  });
+
+  it("xoá hết ô thì tắt", () => {
+    const draft = [{ assignment: { "team-1-pos-1": null }, notes: {} }];
+
+    expect(isPrefillShowing(draft, PROPOSED)).toBe(false);
+  });
+
+  it("đổi người trong một ô thì tắt", () => {
+    const draft = [
+      { assignment: { ...PROPOSED.assignment, "team-1-pos-2": "char-9" }, notes: {} },
+    ];
+
+    expect(isPrefillShowing(draft, PROPOSED)).toBe(false);
+  });
+
+  it("thêm trận 2 thì tắt", () => {
+    const match = { assignment: { ...PROPOSED.assignment }, notes: {} };
+
+    expect(isPrefillShowing([match, match], PROPOSED)).toBe(false);
+  });
+
+  it("chưa có nháp, hoặc không có gì để chép, thì tắt", () => {
+    expect(isPrefillShowing(undefined, PROPOSED)).toBe(false);
+    expect(isPrefillShowing([{ assignment: {}, notes: {} }], null)).toBe(false);
   });
 });

@@ -1,6 +1,6 @@
 import type { SessionFormation } from "@shared/schemas";
 
-import type { Assignment, Notes, Slot } from "../types/formation";
+import type { Assignment, MatchDraft, Notes, Slot } from "../types/formation";
 import { fromWire, fromWireNotes } from "./wire";
 
 /** A formation proposed for a battle that has none yet. */
@@ -75,4 +75,28 @@ export function buildPrefill(
   }
 
   return { assignment, notes, sourceLabel, droppedCount };
+}
+
+/**
+ * Whether a day still shows the proposal untouched. The banner is written in
+ * the past tense — "đã điền sẵn từ X" — so it belongs on screen exactly as long
+ * as the draft is the one that was filled in, and goes the moment the user
+ * clears it, edits it, or adds a second match. Comparing content rather than
+ * counting placements matters: a proposal that dropped everyone for not
+ * attending is empty and is precisely the one worth announcing.
+ * @param draft - The open day's draft, undefined when it has none
+ * @param proposal - What this day would be filled from, null when nothing would
+ * @returns true while the draft matches the proposal slot for slot
+ */
+export function isPrefillShowing(
+  draft: MatchDraft[] | undefined,
+  proposal: PrefillResult | null
+): boolean {
+  if (!proposal || !draft || draft.length !== 1) return false;
+
+  const placed = draft[0].assignment;
+
+  return Object.entries(proposal.assignment).every(
+    ([slotId, characterId]) => (placed[slotId] ?? null) === characterId
+  );
 }
