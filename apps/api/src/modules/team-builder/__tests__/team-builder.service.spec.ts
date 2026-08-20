@@ -1,6 +1,6 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 
-import { BattleSessionsService } from '../../battle-sessions/battle-sessions.module';
+import { BattleSessionsService } from '../../battle-sessions/battle-sessions.public';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { TeamBuilderService } from '../team-builder.service';
 

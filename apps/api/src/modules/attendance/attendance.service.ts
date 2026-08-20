@@ -15,7 +15,7 @@ import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import {
   BattleSessionsService,
   isDeadlinePassed,
-} from '../battle-sessions/battle-sessions.module';
+} from '../battle-sessions/battle-sessions.public';
 
 @Injectable()
 export class AttendanceService {

@@ -109,7 +109,8 @@ modules/  ──►  infrastructure/  ──►  config/
 ```
 
 - `common/` and `config/` never import from `modules/` or `infrastructure/` — enforced by ESLint.
-- A module may import another module's `*.module` file only, never its internals — enforced by ESLint.
+- A module exposes its code through one `<domain>.public.ts` file; another module imports that, or
+  the `*.module` file for DI registration, never anything else inside — enforced by ESLint.
 - Request flow is **Controller → Service → (Repository) → Prisma**. Controllers never touch Prisma.
 - Services hold the business logic. DTOs only validate input. Never return a Prisma model from a
   controller — map it to the response shape from `@guild/shared/schemas`.
