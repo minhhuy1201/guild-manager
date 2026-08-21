@@ -302,6 +302,14 @@ What is worth testing here is the pure `lib/` layer — `assignment`, `formation
 `pool`, `session-status`, `date-parts`, `session-subtitle` — plus `lib/api-client.ts`. Extracting
 a derivation into `lib/` so it can be tested without rendering is the intended move.
 
+The session path is covered too, and deliberately: `features/auth/core/__tests__/jwt.test.ts` pins
+`verifyJwt` — a hand-written HS256 verifier — including the algorithm-confusion case (`alg: "none"`
+with a signature forged to match still returns `null`), and `__tests__/proxy.test.ts` builds a real
+`NextRequest` for the four branches that matter: valid access token, renewal (new cookies land on
+**both** request and response), a dead session redirected off an admin route with its stale cookies
+cleared, and a missing `AUTH_SECRET`, where public pages must still render. Tokens are signed with
+`core/__tests__/sign-token.ts` (Web Crypto, no new dependency).
+
 Above that layer sit the hooks that wire it together, where the real bugs live: the five hooks of
 `features/team-builder` are covered in `features/team-builder/hooks/__tests__/`, rendered with
 `@testing-library/react` through the shared `renderFormationHook` helper (fresh QueryClient, both
