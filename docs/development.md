@@ -183,8 +183,8 @@ pnpm dlx shadcn@latest add <component-name>
 
 Where new code belongs is documented in [`architecture.md`](architecture.md), section 7 "Where new
 behavior goes". Editing `packages/shared` updates the **types** in both apps as soon as you save, but
-the runtime loads `packages/shared/dist`, so rebuild it before expecting the API to behave
-differently:
+the runtime loads `packages/shared/dist`, so rebuild it before expecting **either app** to behave
+differently — a running `next dev` reads `dist` just as the API does:
 
 ```bash
 pnpm --filter @guild/shared build

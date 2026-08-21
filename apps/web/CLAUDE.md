@@ -33,6 +33,6 @@ The rules that get broken first, in the order they get broken:
   (`@guild/shared/enums|schemas|lib`), same as `apps/api`. The alias is declared **twice** —
   `tsconfig.json` and `vitest.config.ts` — so a new one missing from the second type-checks fine and
   fails in tests.
-- **Tests run against `packages/shared/dist`**, not its sources: the `exports` map resolves the node
-  condition to `dist/*.js`. `pretest` rebuilds the package so `pnpm --filter web test` is never one
-  compile behind.
+- **Tests run against `packages/shared/dist`**, not its sources — the `exports` map sends every
+  runtime to `dist/*.js`. `pretest` rebuilds the package first, in both apps. It does **not** cover
+  `test:watch` or `next dev` — keep `pnpm --filter @guild/shared build --watch` beside those.

@@ -20,6 +20,7 @@
     "lint": "eslint \"src/**/*.ts\"",
     "lint:fix": "eslint \"src/**/*.ts\" --fix",
     "typecheck": "tsc --noEmit -p tsconfig.json",
+    "pretest": "pnpm --filter @guild/shared build",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",

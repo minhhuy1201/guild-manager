@@ -49,8 +49,9 @@ before anything else happens.
 
 - **`packages/shared` owns every shape that crosses the network** — one Zod schema, wrapped as a DTO
   on the API and used to type fetch functions on the web. Never re-declare a shape, an enum or a
-  validation rule per app. After editing the package, `pnpm --filter @guild/shared build` before the
-  API picks the change up at runtime; types update immediately.
+  validation rule per app. Both apps import it by real package name and run off its `dist`, so after
+  editing it run `pnpm --filter @guild/shared build` before either picks the change up at runtime;
+  types update immediately. Each app's `test` script rebuilds it first.
 - **Validate at boundaries, trust TypeScript inside.** Zod belongs where untrusted data enters — HTTP
   bodies, env variables, JSON out of the database, third-party responses. Inside the process the type
   signature is the guarantee: no defensive re-checks, no `?? fallback` for a value that cannot be

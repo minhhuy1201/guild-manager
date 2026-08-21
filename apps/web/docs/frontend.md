@@ -123,8 +123,8 @@ entries in the package's `exports` map are importable; there is no path into its
 That means `apps/web` goes through the package's **build** like the API does: the `exports` map
 resolves the runtime condition to `dist/*.js`, so a change in `packages/shared` is invisible until
 `pnpm --filter @guild/shared build` runs. `prepare` covers `pnpm install` and `pretest` covers the
-test run; if you are editing the package while `next dev` is up, keep
-`pnpm --filter @guild/shared build --watch` running beside it.
+start of a test run — but nothing rebuilds mid-session, so while `next dev` or `vitest --watch` is
+up, keep `pnpm --filter @guild/shared build --watch` running beside it.
 
 `@/*` is the app's own alias and is unrelated. It is declared twice, in `tsconfig.json` and in
 `vitest.config.ts`; a new alias must be added in both or tests fail on imports that type-check fine.
