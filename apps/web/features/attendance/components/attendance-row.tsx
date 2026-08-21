@@ -1,12 +1,12 @@
 "use client";
 
 import { Check, X } from "lucide-react";
-import { AttendanceStatus } from "@shared/enums";
+import { AttendanceStatus } from "@guild/shared/enums";
 import type {
   AttendanceRecord,
   BattleSession,
   Character,
-} from "@shared/schemas";
+} from "@guild/shared/schemas";
 
 import {
   EditAction,

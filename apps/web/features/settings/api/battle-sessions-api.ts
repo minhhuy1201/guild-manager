@@ -5,7 +5,7 @@ import type {
   CreateBattleSessionInput,
   UpdateBattleSessionInput,
   Week,
-} from "@shared/schemas";
+} from "@guild/shared/schemas";
 
 import { getAccessToken } from "@/features/auth";
 import { ApiError, apiFetch } from "@/lib/api-client";

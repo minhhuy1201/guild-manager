@@ -194,10 +194,10 @@ Without it, Vercel installs all three workspace projects, which runs the `postin
 — `prisma generate` — inside the **web** build, where `DATABASE_URL` does not exist. That failed the
 build during setup.
 
-`@guild/shared` has to be named explicitly: `apps/web` reaches it through the `@shared/*` tsconfig
-alias (see [`apps/web/docs/frontend.md`](../apps/web/docs/frontend.md)), **not** as a declared
-dependency, so `--filter web...` would not pull it in. Next compiles its `.ts` sources directly, and
-those import `zod`, which resolves out of `packages/shared/node_modules`.
+`@guild/shared` is named explicitly because the filter is `--filter web`, not `--filter web...` —
+the dependency is declared (`"@guild/shared": "workspace:*"`), but that plain filter does not follow
+it. Its `prepare` script runs `tsc`, so this install is also what produces the `dist` the `exports`
+map points at. `zod` resolves out of `packages/shared/node_modules`.
 
 ### Why there are no preview deployments
 

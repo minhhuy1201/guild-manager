@@ -1,4 +1,4 @@
-import { AttendanceStatus } from "@shared/enums";
+import { AttendanceStatus } from "@guild/shared/enums";
 
 import type { PoolCandidate } from "./pool";
 

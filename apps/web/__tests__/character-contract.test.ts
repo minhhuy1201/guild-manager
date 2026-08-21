@@ -1,4 +1,4 @@
-import { characterSchema } from "@shared/schemas";
+import { characterSchema } from "@guild/shared/schemas";
 import { describe, expect, it } from "vitest";
 
 /**

@@ -4,7 +4,7 @@ import type {
   FormationWeek,
   MatchFormation,
   SessionFormation,
-} from "@shared/schemas";
+} from "@guild/shared/schemas";
 
 import { getAccessToken } from "@/features/auth";
 import { ApiError, apiFetch } from "@/lib/api-client";
@@ -12,7 +12,7 @@ import { ApiError, apiFetch } from "@/lib/api-client";
 /**
  * Tham số của `saveFormation`. Không phải body của request: `sessionId` đi trên
  * URL, chỉ `matches` được gửi lên — body ấy là `SaveFormationInput` ở
- * `@shared/schemas`.
+ * `@guild/shared/schemas`.
  */
 export interface SaveFormationArgs {
   /** ID ngày đánh cần lưu */

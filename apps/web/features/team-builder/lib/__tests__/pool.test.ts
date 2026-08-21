@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { GuildClass } from "@shared/enums";
+import { GuildClass } from "@guild/shared/enums";
 
 import type { Assignment } from "../../types/formation";
 import { selectPoolCharacters, type PoolCandidate } from "../pool";

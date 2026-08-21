@@ -1,7 +1,7 @@
 "use client";
 
 import { Lock, Swords } from "lucide-react";
-import type { MatchFormation, SessionFormation } from "@shared/schemas";
+import type { MatchFormation, SessionFormation } from "@guild/shared/schemas";
 
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getSessionSubtitle } from "@/features/attendance";

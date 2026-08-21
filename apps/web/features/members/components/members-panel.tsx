@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { UserPlus } from "lucide-react";
 
-import type { GuildClass } from "@shared/enums";
-import type { Character } from "@shared/schemas";
+import type { GuildClass } from "@guild/shared/enums";
+import type { Character } from "@guild/shared/schemas";
 
 import { CreateButton } from "@/components/shared/action-buttons";
 import { ErrorState } from "@/components/shared/error-state";

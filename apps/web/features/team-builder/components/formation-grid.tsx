@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 
-import type { Character } from "@shared/schemas";
+import type { Character } from "@guild/shared/schemas";
 import { createMockFormation } from "../lib/mock-formation";
 import type { Assignment, Notes, Slot } from "../types/formation";
 import { TeamColumn } from "./team-column";

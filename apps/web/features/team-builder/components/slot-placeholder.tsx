@@ -1,4 +1,4 @@
-import { GUILD_CLASS_LABEL } from "@shared/enums";
+import { GUILD_CLASS_LABEL } from "@guild/shared/enums";
 
 import type { Slot } from "../types/formation";
 

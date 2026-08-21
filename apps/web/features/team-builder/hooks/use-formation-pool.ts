@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
-import type { Character, SessionFormation } from "@shared/schemas";
+import type { Character, SessionFormation } from "@guild/shared/schemas";
 
 import { FORMATION } from "../lib/mock-formation";
 import { selectPoolCharacters } from "../lib/pool";

@@ -1,4 +1,4 @@
-import { AttendanceStatus } from "@shared/enums";
+import { AttendanceStatus } from "@guild/shared/enums";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { recordKey } from "../../lib/record-key";

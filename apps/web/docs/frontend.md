@@ -115,11 +115,19 @@ These are the rules that get broken first, in the order they get broken:
 6. **Prefer Server Components.** `"use client"` only where interactivity actually requires it.
 7. **Import with `@/`.** Route paths come from `config/routes.ts` (`ROUTES`), never string literals.
 
-Shared code from the workspace package is imported as `@shared/*` (→ `packages/shared`). These
-aliases exist in `apps/web` only — `apps/api` has none, it imports relatively and uses the real
-package name `@guild/shared/*` (see [`architecture.md`](../../../docs/architecture.md) §3.2). Both
-web aliases are declared twice, in `tsconfig.json` and in `vitest.config.ts`; a new alias must be
-added in both or tests fail on imports that type-check fine.
+Shared code comes in by its real package name — `@guild/shared/enums`, `@guild/shared/schemas`,
+`@guild/shared/lib` — declared as `"@guild/shared": "workspace:*"` in `package.json`, exactly as
+`apps/api` does it (see [`architecture.md`](../../../docs/architecture.md) §3.2). Only the three
+entries in the package's `exports` map are importable; there is no path into its internal files.
+
+That means `apps/web` goes through the package's **build** like the API does: the `exports` map
+resolves the runtime condition to `dist/*.js`, so a change in `packages/shared` is invisible until
+`pnpm --filter @guild/shared build` runs. `prepare` covers `pnpm install` and `pretest` covers the
+test run; if you are editing the package while `next dev` is up, keep
+`pnpm --filter @guild/shared build --watch` running beside it.
+
+`@/*` is the app's own alias and is unrelated. It is declared twice, in `tsconfig.json` and in
+`vitest.config.ts`; a new alias must be added in both or tests fail on imports that type-check fine.
 
 ### The API boundary
 
@@ -169,7 +177,7 @@ business** (`apps/api/src/modules/battle-sessions/session-schedule.ts`, summaris
 one the user sees would be the wrong one.
 
 The one rule the settings form does evaluate locally — the deadline cap in `session-form-dialog` —
-is not a second implementation: it calls `deadlineCapFor` from `@shared/lib`, the same
+is not a second implementation: it calls `deadlineCapFor` from `@guild/shared/lib`, the same
 function the API validates with. The server still decides; the local call only prefills the field and
 shows the error before a round-trip.
 
@@ -226,7 +234,7 @@ Class names are long and every table is narrow, so a character's class always re
 the image `alt`.
 
 The images live in `public/img/` and are mapped in `lib/guild-class.ts` — they are a web asset, so
-the mapping stays on the frontend while the enum itself comes from `@shared/enums`:
+the mapping stays on the frontend while the enum itself comes from `@guild/shared/enums`:
 
 | Class | Image |
 |---|---|

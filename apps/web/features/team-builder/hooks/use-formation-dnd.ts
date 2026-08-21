@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
-import type { Character } from "@shared/schemas";
+import type { Character } from "@guild/shared/schemas";
 
 import { isMemberDragData, toDragSource, toDropTarget } from "../lib/dnd-data";
 import type { DragSource, DropTarget } from "../types/formation";

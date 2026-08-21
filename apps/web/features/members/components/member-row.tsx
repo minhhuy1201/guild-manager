@@ -1,6 +1,6 @@
 "use client";
 
-import type { Character } from "@shared/schemas";
+import type { Character } from "@guild/shared/schemas";
 
 import {
   DeleteAction,

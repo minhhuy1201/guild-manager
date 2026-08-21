@@ -1,4 +1,4 @@
-import type { MatchFormation } from "@shared/schemas";
+import type { MatchFormation } from "@guild/shared/schemas";
 
 import type { Assignment, MatchDraft, Notes, Slot } from "../types/formation";
 

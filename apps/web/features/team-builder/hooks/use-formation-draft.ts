@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import type { SessionFormation } from "@shared/schemas";
+import type { SessionFormation } from "@guild/shared/schemas";
 
 import { ApiError } from "@/lib/api-client";
 import { resolveActiveMatchIndex } from "../lib/active-match";

@@ -4,7 +4,7 @@ import type {
   Character,
   MarkAttendanceInput,
   Week,
-} from "@shared/schemas";
+} from "@guild/shared/schemas";
 
 import { apiFetch } from "@/lib/api-client";
 import { recordKey } from "../lib/record-key";

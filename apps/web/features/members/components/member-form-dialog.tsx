@@ -8,8 +8,8 @@ import {
   GUILD_CLASS_LABEL,
   GUILD_CLASS_OPTIONS,
   type GuildClass,
-} from "@shared/enums";
-import type { Character } from "@shared/schemas";
+} from "@guild/shared/enums";
+import type { Character } from "@guild/shared/schemas";
 
 import { Button } from "@/components/ui/button";
 import {

@@ -1,4 +1,4 @@
-import type { SessionFormation } from "@shared/schemas";
+import type { SessionFormation } from "@guild/shared/schemas";
 
 import type { Assignment, MatchDraft, Notes, Slot } from "../types/formation";
 import { fromWire, fromWireNotes } from "./wire";

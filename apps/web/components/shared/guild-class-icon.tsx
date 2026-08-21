@@ -1,7 +1,7 @@
 "use client";
 
-import { GUILD_CLASS_LABEL } from "@shared/enums";
-import type { GuildClass } from "@shared/enums";
+import { GUILD_CLASS_LABEL } from "@guild/shared/enums";
+import type { GuildClass } from "@guild/shared/enums";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {

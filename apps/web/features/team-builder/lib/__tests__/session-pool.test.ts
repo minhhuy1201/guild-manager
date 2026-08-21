@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { AttendanceStatus, GuildClass } from "@shared/enums";
+import { AttendanceStatus, GuildClass } from "@guild/shared/enums";
 
 import type { PoolCandidate } from "../pool";
 import {

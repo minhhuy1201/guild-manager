@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import type { BattleSession } from "@shared/schemas";
+import type { BattleSession } from "@guild/shared/schemas";
 
 import { attendanceKeys } from "../api/attendance-api";
 

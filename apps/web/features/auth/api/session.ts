@@ -1,7 +1,7 @@
 import "server-only";
 
 import { cookies } from "next/headers";
-import type { AuthTokens } from "@shared/schemas";
+import type { AuthTokens } from "@guild/shared/schemas";
 
 import {
   ACCESS_TOKEN_COOKIE,

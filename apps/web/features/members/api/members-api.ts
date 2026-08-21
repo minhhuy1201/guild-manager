@@ -4,7 +4,7 @@ import type {
   Character,
   CreateCharacterInput,
   UpdateCharacterInput,
-} from "@shared/schemas";
+} from "@guild/shared/schemas";
 
 import { getAccessToken } from "@/features/auth";
 import { ApiError, apiFetch } from "@/lib/api-client";

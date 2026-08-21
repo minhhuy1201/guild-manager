@@ -6,8 +6,8 @@ import { AlertCircle, LoaderCircle, Save } from "lucide-react";
 import {
   deadlineCapFor,
   isWithinDeadlineCap,
-} from "@shared/lib";
-import { DEADLINE_CAP_MESSAGE, type BattleSession } from "@shared/schemas";
+} from "@guild/shared/lib";
+import { DEADLINE_CAP_MESSAGE, type BattleSession } from "@guild/shared/schemas";
 
 import { Button } from "@/components/ui/button";
 import {

@@ -1,4 +1,4 @@
-import type { SessionFormation } from "@shared/schemas";
+import type { SessionFormation } from "@guild/shared/schemas";
 
 /** The fields needed to pick a tab. */
 type SelectableSession = Pick<SessionFormation, "sessionId" | "isGuildWar">;

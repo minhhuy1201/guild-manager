@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { ATTENDANCE_STATUS_LABEL, AttendanceStatus } from "@shared/enums";
+import { ATTENDANCE_STATUS_LABEL, AttendanceStatus } from "@guild/shared/enums";
 
 import { ErrorState } from "@/components/shared/error-state";
 import { StatusIcon } from "@/components/shared/status-icon";

@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { GUILD_CLASS_LABEL } from "@shared/enums";
+import { GUILD_CLASS_LABEL } from "@guild/shared/enums";
 
 import { GUILD_CLASS_IMAGE } from "@/lib/guild-class";
 import { countByGuildClass } from "../lib/class-shortage";

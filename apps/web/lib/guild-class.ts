@@ -1,4 +1,4 @@
-import { GuildClass } from "@shared/enums";
+import { GuildClass } from "@guild/shared/enums";
 
 /**
  * Đường dẫn ảnh icon (trong `public/img`) cho từng lưu phái.

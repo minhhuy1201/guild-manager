@@ -1,5 +1,5 @@
-import { GUILD_CLASS_LABEL } from "@shared/enums";
-import type { Character } from "@shared/schemas";
+import { GUILD_CLASS_LABEL } from "@guild/shared/enums";
+import type { Character } from "@guild/shared/schemas";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {

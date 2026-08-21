@@ -1,6 +1,6 @@
 "use client";
 
-import type { SessionFormation } from "@shared/schemas";
+import type { SessionFormation } from "@guild/shared/schemas";
 
 import { resolveActiveSessionId } from "../lib/active-session";
 import { isSessionEditable } from "../lib/session-status";

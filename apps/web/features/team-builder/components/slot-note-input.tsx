@@ -1,6 +1,6 @@
 "use client";
 
-import { NOTE_MAX_LENGTH } from "@shared/schemas";
+import { NOTE_MAX_LENGTH } from "@guild/shared/schemas";
 
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";

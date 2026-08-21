@@ -29,5 +29,10 @@ The rules that get broken first, in the order they get broken:
   come from `ROUTES` in `config/routes.ts`, never string literals.
 - **A new admin route needs all three**: the prefix in `ADMIN_PATH_PREFIXES` (`proxy.ts`), a
   `getSession()` check in the page, and the guard on the API. Hiding the nav link is cosmetic.
-- Aliases `@/*` and `@shared/*` are declared **twice** — `tsconfig.json` and `vitest.config.ts`. A new
-  one missing from the second type-checks fine and fails in tests.
+- **`@/*` is the app's only alias**; shared code comes in by real package name
+  (`@guild/shared/enums|schemas|lib`), same as `apps/api`. The alias is declared **twice** —
+  `tsconfig.json` and `vitest.config.ts` — so a new one missing from the second type-checks fine and
+  fails in tests.
+- **Tests run against `packages/shared/dist`**, not its sources: the `exports` map resolves the node
+  condition to `dist/*.js`. `pretest` rebuilds the package so `pnpm --filter web test` is never one
+  compile behind.

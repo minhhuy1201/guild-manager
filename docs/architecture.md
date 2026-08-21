@@ -52,8 +52,8 @@ guild-manager/
 Typed from **TypeScript source** but executed from compiled JavaScript: the `exports` map points
 `types` at the `.ts` files and the runtime condition at `dist/*.js`. The `prepare` script runs `tsc`,
 so `pnpm install` produces `dist` and there is no build step to remember — but after editing the
-package you do need to rebuild it (`pnpm --filter @guild/shared build`) before the API picks the
-change up at runtime; types update immediately. Runtime cannot point at `.ts`, because Vercel deletes
+package you do need to rebuild it (`pnpm --filter @guild/shared build`) before **either app** picks
+the change up at runtime; types update immediately. Runtime cannot point at `.ts`, because Vercel deletes
 the sources after compiling — see [`production.md`](production.md) §4.
 
 | Import | Contents |
@@ -240,7 +240,8 @@ Rules, in the order they get broken:
   there comes from the shadcn CLI in its Base UI flavour (`style: "base-nova"`); no Radix, no
   hand-written primitives.
 - Prefer Server Components; `"use client"` only where interactivity requires it.
-- Import with `@/`. Route paths come from `config/routes.ts`, never string literals.
+- Import with `@/`; shared code by real package name (`@guild/shared/*`), never a path into the
+  package. Route paths come from `config/routes.ts`, never string literals.
 
 Display conventions (icons vs. badges, action buttons, tables) live in
 [`../apps/web/docs/frontend.md`](../apps/web/docs/frontend.md) §6, along with the reasoning behind

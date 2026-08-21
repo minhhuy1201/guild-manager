@@ -2,8 +2,8 @@
 import { act } from "@testing-library/react";
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
 import { describe, expect, it, vi } from "vitest";
-import { GuildClass } from "@shared/enums";
-import type { Character } from "@shared/schemas";
+import { GuildClass } from "@guild/shared/enums";
+import type { Character } from "@guild/shared/schemas";
 
 import { POOL_DROPPABLE_ID } from "../../lib/dnd-data";
 import { useFormationDnd } from "../use-formation-dnd";

@@ -1,4 +1,4 @@
-import type { Character } from "@shared/schemas";
+import type { Character } from "@guild/shared/schemas";
 
 import { GuildClassIcon } from "@/components/shared/guild-class-icon";
 

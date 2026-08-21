@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { BattleSession } from "@shared/schemas";
+import type { BattleSession } from "@guild/shared/schemas";
 
 import { ErrorState } from "@/components/shared/error-state";
 import { Card, CardContent } from "@/components/ui/card";

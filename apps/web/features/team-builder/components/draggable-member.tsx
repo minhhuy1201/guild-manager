@@ -1,7 +1,7 @@
 "use client";
 
 import { useDraggable } from "@dnd-kit/core";
-import type { Character } from "@shared/schemas";
+import type { Character } from "@guild/shared/schemas";
 
 import { cn } from "@/lib/utils";
 import type { MemberDragData } from "../lib/dnd-data";

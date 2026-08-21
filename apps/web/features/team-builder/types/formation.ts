@@ -1,4 +1,4 @@
-import type { GuildClass } from "@shared/enums";
+import type { GuildClass } from "@guild/shared/enums";
 
 /**
  * One cell of the war formation. Position is fixed layout data — users never edit it.

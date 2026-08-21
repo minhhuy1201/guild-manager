@@ -1,4 +1,4 @@
-import type { GuildClass } from "@shared/enums";
+import type { GuildClass } from "@guild/shared/enums";
 
 import type { Assignment } from "../types/formation";
 

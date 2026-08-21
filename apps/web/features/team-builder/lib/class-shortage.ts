@@ -1,4 +1,4 @@
-import { GUILD_CLASS_OPTIONS, type GuildClass } from "@shared/enums";
+import { GUILD_CLASS_OPTIONS, type GuildClass } from "@guild/shared/enums";
 
 import type { PoolCandidate } from "./pool";
 

@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { Swords } from "lucide-react";
-import { AttendanceStatus } from "@shared/enums";
-import type { Character } from "@shared/schemas";
+import { AttendanceStatus } from "@guild/shared/enums";
+import type { Character } from "@guild/shared/schemas";
 
 import { ErrorState } from "@/components/shared/error-state";
 import { TablePaginationBar } from "@/components/shared/table-pagination-bar";

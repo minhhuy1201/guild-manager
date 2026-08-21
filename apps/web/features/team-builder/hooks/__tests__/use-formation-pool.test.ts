@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { act } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { AttendanceStatus, GuildClass } from "@shared/enums";
-import type { Character, SessionFormation } from "@shared/schemas";
+import { AttendanceStatus, GuildClass } from "@guild/shared/enums";
+import type { Character, SessionFormation } from "@guild/shared/schemas";
 
 import type { AttendanceRecordLike } from "../../lib/session-pool";
 import { useFormationStore } from "../../store/formation-store";

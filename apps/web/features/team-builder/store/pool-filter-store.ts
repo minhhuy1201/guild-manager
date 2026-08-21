@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { GuildClass } from "@shared/enums";
+import type { GuildClass } from "@guild/shared/enums";
 
 interface PoolFilterState {
   /** Search keyword over character name and in-game id */

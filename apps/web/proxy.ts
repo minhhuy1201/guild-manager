@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import type { AuthTokens } from "@shared/schemas";
+import type { AuthTokens } from "@guild/shared/schemas";
 
 import { refreshRequest } from "@/features/auth/api/auth-api";
 import {

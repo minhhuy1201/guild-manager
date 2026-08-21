@@ -5,7 +5,7 @@ import {
   GUILD_CLASS_LABEL,
   GUILD_CLASS_OPTIONS,
   type GuildClass,
-} from "@shared/enums";
+} from "@guild/shared/enums";
 
 import {
   Select,

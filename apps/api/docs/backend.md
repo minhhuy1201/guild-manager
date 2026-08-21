@@ -261,8 +261,8 @@ moved to Vercel: Vercel compiles the TypeScript with its own `tsc` and does **no
 mappings, so `@/config` survived into the emitted JavaScript and the function died at runtime with
 `Cannot find module '@/config'`. See [`production.md`](../../../docs/production.md) §4.
 
-**Do not reintroduce an alias here.** `apps/web` keeps its own `@/*` and `@shared/*` — those are a
-Next.js build and unaffected.
+**Do not reintroduce an alias here.** `apps/web` keeps its own `@/*` — that one is a Next.js build
+and unaffected. It reaches the workspace package by real name too.
 
 Removing the alias also broke the `no-restricted-imports` rules, which matched `@/modules/*`. The
 module boundary no longer looks at import strings at all — it runs on resolved paths, so no alias

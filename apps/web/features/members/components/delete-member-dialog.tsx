@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { LoaderCircle, Trash2, X } from "lucide-react";
-import type { Character } from "@shared/schemas";
+import type { Character } from "@guild/shared/schemas";
 
 import { Button } from "@/components/ui/button";
 import {

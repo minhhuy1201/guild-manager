@@ -1,7 +1,7 @@
 "use client";
 
 import { CalendarCheck, CalendarClock } from "lucide-react";
-import type { Week } from "@shared/schemas";
+import type { Week } from "@guild/shared/schemas";
 
 import { DateRange } from "@/components/shared/date-range";
 import { Button } from "@/components/ui/button";

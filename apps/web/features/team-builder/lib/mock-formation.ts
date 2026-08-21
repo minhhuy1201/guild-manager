@@ -1,4 +1,4 @@
-import { GuildClass } from "@shared/enums";
+import { GuildClass } from "@guild/shared/enums";
 
 import type { Formation, Slot } from "../types/formation";
 

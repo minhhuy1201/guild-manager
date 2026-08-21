@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { act, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { AttendanceStatus } from "@shared/enums";
-import type { AttendanceRecord, FormationWeek } from "@shared/schemas";
+import { AttendanceStatus } from "@guild/shared/enums";
+import type { AttendanceRecord, FormationWeek } from "@guild/shared/schemas";
 
 import {
   fetchAttendanceRecords,

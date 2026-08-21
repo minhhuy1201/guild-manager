@@ -2,7 +2,7 @@ import { createElement, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, renderHook, type RenderHookResult } from "@testing-library/react";
 import { afterEach } from "vitest";
-import type { SessionFormation } from "@shared/schemas";
+import type { SessionFormation } from "@guild/shared/schemas";
 
 import { useFormationStore } from "../../store/formation-store";
 import { usePoolFilterStore } from "../../store/pool-filter-store";

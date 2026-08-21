@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { GuildClass } from "@shared/enums";
+import type { GuildClass } from "@guild/shared/enums";
 
 /** Màn đang dùng bộ lọc — mỗi màn giữ state riêng, không ảnh hưởng nhau. */
 export type AttendanceFilterScope = "attendance" | "history";

@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type {
   CreateBattleSessionInput,
   UpdateBattleSessionInput,
-} from "@shared/schemas";
+} from "@guild/shared/schemas";
 
 import { attendanceKeys } from "@/features/attendance";
 import { teamBuilderKeys } from "@/features/team-builder";

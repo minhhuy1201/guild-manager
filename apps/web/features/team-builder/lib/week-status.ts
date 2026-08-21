@@ -1,4 +1,4 @@
-import type { FormationWeek } from "@shared/schemas";
+import type { FormationWeek } from "@guild/shared/schemas";
 
 /**
  * Monday of the open attendance week among the weeks that still hold data.

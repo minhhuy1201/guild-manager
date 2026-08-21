@@ -1,6 +1,6 @@
 "use client";
 
-import type { FormationWeek } from "@shared/schemas";
+import type { FormationWeek } from "@guild/shared/schemas";
 
 import { DateRange } from "@/components/shared/date-range";
 import {

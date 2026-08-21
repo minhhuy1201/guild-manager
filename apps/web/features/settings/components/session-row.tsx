@@ -1,7 +1,7 @@
 "use client";
 
 import { Swords } from "lucide-react";
-import type { BattleSession } from "@shared/schemas";
+import type { BattleSession } from "@guild/shared/schemas";
 
 import {
   DeleteAction,

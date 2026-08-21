@@ -1,4 +1,4 @@
-import type { AuthTokens, LoginInput } from "@shared/schemas";
+import type { AuthTokens, LoginInput } from "@guild/shared/schemas";
 
 import { apiFetch } from "@/lib/api-client";
 

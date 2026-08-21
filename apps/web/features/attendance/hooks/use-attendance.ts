@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { Character } from "@shared/schemas";
+import type { Character } from "@guild/shared/schemas";
 
 import {
   attendanceKeys,

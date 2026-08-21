@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { GuildClass } from "@shared/enums";
+import { GuildClass } from "@guild/shared/enums";
 
 import type { PoolCandidate } from "../pool";
 import { countByGuildClass } from "../class-shortage";

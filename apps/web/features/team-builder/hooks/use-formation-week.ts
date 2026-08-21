@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import type { Character, FormationWeek, SessionFormation } from "@shared/schemas";
+import type { Character, FormationWeek, SessionFormation } from "@guild/shared/schemas";
 
 import { useAttendanceRecords, useCharacters } from "@/features/attendance";
 import type { AttendanceRecordLike } from "../lib/session-pool";

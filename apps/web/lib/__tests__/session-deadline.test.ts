@@ -7,7 +7,7 @@ import {
   isWithinDeadlineCap,
   vnParts,
   vnWeekday,
-} from "@shared/lib";
+} from "@guild/shared/lib";
 
 /**
  * Tạo Date từ giờ Việt Nam (UTC+7) cho dễ đọc trong test.

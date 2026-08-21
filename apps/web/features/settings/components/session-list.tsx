@@ -1,7 +1,7 @@
 "use client";
 
 import { CalendarPlus } from "lucide-react";
-import type { BattleSession } from "@shared/schemas";
+import type { BattleSession } from "@guild/shared/schemas";
 
 import { CreateButton } from "@/components/shared/action-buttons";
 import { SessionRow } from "./session-row";
