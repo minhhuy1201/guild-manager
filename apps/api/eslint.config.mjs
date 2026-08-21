@@ -1,68 +1,80 @@
 // @ts-check
 import eslint from '@eslint/js';
+import boundaries from 'eslint-plugin-boundaries';
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 const MODULE_BOUNDARY_MESSAGE =
-  'Import qua public API của module (file *.module hoặc provider được exports trong @Module), không import file nội bộ của module khác.';
+  'Import qua public API của module: file *.public (code) hoặc *.module (đăng ký DI). Không đụng file nội bộ của module khác.';
+
+/**
+ * Hai file vi phạm ranh giới module một cách cố ý, để `src/__tests__/module-boundary.spec.ts` khẳng
+ * định luật dưới đây vẫn báo lỗi. Liệt kê từng file chứ không dùng glob `__tests__/fixtures/**`:
+ * một fixture tương lai không nên tự động thoát khỏi lint chỉ vì nằm đúng thư mục.
+ */
+const BOUNDARY_FIXTURES = [
+  'src/__tests__/fixtures/outside-module-violation.ts',
+  'src/modules/attendance/__tests__/fixtures/module-boundary-violation.ts',
+];
 
 const LOWER_LAYER_MESSAGE =
   'common/ và config/ không được import từ modules/, shared/ hay infrastructure/.';
 
 /**
- * Dùng `regex` chứ không dùng `group`.
+ * Ranh giới module, kiểm trên **đường dẫn đã resolve** chứ không phải chuỗi import.
  *
- * `group` so khớp bằng thư viện `ignore` (ngữ nghĩa .gitignore), ở đó `*` khớp **cả `..`** — nên
- * `../*\/**` sẽ nuốt luôn `../../config`, tức chặn nhầm một import hoàn toàn hợp lệ. Class ký tự
- * không cứu được: `[!.]` bị hiểu là "ký tự `!` hoặc `.`", còn `[^.]` thì không khớp gì cả. `regex`
- * diễn đạt được đúng điều kiện "đoạn kế tiếp không phải `..`" bằng một lookahead.
+ * `no-restricted-imports` so khớp chuỗi, mà một chuỗi tương đối chỉ có nghĩa khi biết file đang
+ * đứng sâu bao nhiêu — nên bản cũ phải khai một block cho mỗi độ sâu, và thêm một cấp thư mục là
+ * luật im lặng ngừng kiểm tra ở cấp đó. `boundaries` biết khái niệm "cùng phần tử hay khác phần
+ * tử", nên một luật là đủ cho mọi độ sâu.
  *
- * @param segment - Đường đi tới `src/modules/` viết đúng như trong code, đã escape cho regex
+ * Mỗi thư mục trong `src/modules/` là một phần tử; cửa vào của nó là `*.public.ts` (code) và
+ * `*.module.ts` (class module cho `app.module.ts` và các `imports: [...]`). Mọi file khác là nội bộ.
+ *
+ * Phần tử `app` bắt phần `src/` còn lại. Nó không thừa: `boundaries` bỏ qua mọi phụ thuộc mà nó
+ * không phân loại được **cả hai đầu**, nên thiếu nó thì `app.module.ts`, `infrastructure/` và
+ * `common/` được import thẳng vào ruột module mà không ai kêu.
+ *
+ * @returns Các block cấu hình ESLint áp luật ranh giới module cho toàn bộ `src/`
  */
-function moduleInternalsPattern(prefix) {
-  return `^${prefix}(?!\\.\\.)[^/]+/(?!.*\\.module$)`;
-}
-
-/**
- * Chỉ cho phép import file `*.module` của module khác, không đụng file nội bộ.
- *
- * @param files - Nhóm file áp luật, khoá đúng một độ sâu
- * @param prefix - Đường đi từ file đang lint tới `src/modules/`, đã escape cho regex
- */
-function restrictModuleInternals(files, prefix) {
-  return {
-    files,
-    rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          patterns: [
-            {
-              regex: moduleInternalsPattern(prefix),
-              message: MODULE_BOUNDARY_MESSAGE,
-            },
-          ],
-        },
-      ],
-    },
-  };
-}
-
-/** Luật ranh giới module, khoá theo từng độ sâu file có thật trong `src/`. */
 function moduleBoundaryRules() {
   return [
-    // src/main.ts, src/app.module.ts
-    restrictModuleInternals(['src/*.ts'], '\\./modules/'),
-    // src/modules/<tên>/*.ts — module anh em nằm ngay cạnh
-    restrictModuleInternals(['src/modules/*/*.ts'], '\\.\\./'),
-    // src/modules/<tên>/{dto,entities,__tests__}/*.ts
-    restrictModuleInternals(['src/modules/*/*/*.ts'], '\\.\\./\\.\\./'),
-    // src/infrastructure/<tên>/*.ts
-    restrictModuleInternals(
-      ['src/infrastructure/*/*.ts'],
-      '\\.\\./\\.\\./modules/',
-    ),
+    {
+      files: ['src/**/*.ts'],
+      plugins: { boundaries },
+      settings: {
+        // Resolver mặc định của plugin chỉ biết `.js`; không khai `.ts` thì mọi import nội bộ
+        // resolve hụt và luật im lặng bỏ qua — đúng kiểu hỏng mà spec này muốn chấm dứt, nên
+        // `module-boundary.spec.ts` khoá lại bằng một fixture vi phạm.
+        'import/resolver': { node: { extensions: ['.ts', '.js', '.json'] } },
+        'boundaries/elements': [
+          { type: 'module', pattern: 'src/modules/*' },
+          { type: 'app', pattern: 'src' },
+        ],
+      },
+      rules: {
+        'boundaries/dependencies': [
+          'error',
+          {
+            default: 'allow',
+            policies: [
+              {
+                disallow: {
+                  to: {
+                    element: {
+                      type: 'module',
+                      fileInternalPath: '!(*.public.ts|*.module.ts)',
+                    },
+                  },
+                },
+                message: MODULE_BOUNDARY_MESSAGE,
+              },
+            ],
+          },
+        ],
+      },
+    },
   ];
 }
 
@@ -104,8 +116,14 @@ function lowerLayerRules() {
 
 export default tseslint.config(
   {
-    // Code do Prisma sinh ra — không lint.
-    ignores: ['eslint.config.mjs', 'src/generated/**', 'dist/**'],
+    // Code do Prisma sinh ra — không lint. Fixture ranh giới module bỏ khỏi lượt lint thường; bài
+    // test lint chúng riêng với `--no-ignore`.
+    ignores: [
+      'eslint.config.mjs',
+      'src/generated/**',
+      'dist/**',
+      ...BOUNDARY_FIXTURES,
+    ],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
@@ -134,13 +152,8 @@ export default tseslint.config(
 
   // Dependency rules — xem docs/backend.md mục 4.
   //
-  // `no-restricted-imports` so khớp glob với **chuỗi import viết trong code**, mà từ khi bỏ alias
-  // `@/` (2026-08-16, xem docs/backend.md mục 5) chuỗi đó là đường dẫn tương đối. Số lượng `../`
-  // phụ thuộc file nằm sâu bao nhiêu, nên mỗi luật phải gắn với một `files` khoá đúng độ sâu —
-  // cùng một pattern `../../*` mang nghĩa khác nhau ở hai độ sâu khác nhau.
-  //
-  // Flat config **thay thế** chứ không gộp rule cùng tên, nên mỗi block dưới đây phải khai đủ mọi
-  // luật áp cho nhóm file của nó.
+  // Flat config **thay thế** chứ không gộp rule cùng tên, nên mỗi block `no-restricted-imports`
+  // dưới đây phải khai đủ mọi pattern áp cho nhóm file của nó.
   ...moduleBoundaryRules(),
   ...lowerLayerRules(),
   {

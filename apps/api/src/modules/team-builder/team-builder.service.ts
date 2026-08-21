@@ -15,7 +15,7 @@ import {
   BattleSessionsService,
   formatSessionLabel,
   weekEndOf,
-} from '../battle-sessions/battle-sessions.module';
+} from '../battle-sessions/battle-sessions.public';
 
 /** Số ngày giữ lại đội hình cũ. Quá mốc này thì dọn. */
 const RETENTION_DAYS = 56;

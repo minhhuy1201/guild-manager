@@ -100,7 +100,7 @@ This is the important part. Each module is a self-contained mini-app:
 
 ```
 modules/characters/
-├── characters.module.ts
+├── characters.module.ts            # @Module metadata — DI registration, nothing else
 ├── characters.controller.ts        # HTTP layer — takes a request, returns a response
 ├── characters.service.ts           # business logic
 ├── characters.lib.ts               # pure helpers for this domain (id generation)
@@ -116,8 +116,21 @@ modules/characters/
 The response shape is **not** declared here: it is a Zod schema in `packages/shared/schemas`, and the
 object the service builds ends in `satisfies <Shape>`.
 
+Every other file in the folder is internal. What another module may import is one file:
+
+```
+modules/battle-sessions/
+└── battle-sessions.public.ts       # ⭐ the seam — re-exports what other modules may use
+```
+
+`battle-sessions` is the only module with one today, because it is the only one with an outside
+caller. It re-exports `BattleSessionsService` and the pure week/deadline helpers; the `*.module` file
+next to it went back to being DI metadata only. §4 has the rule that enforces this, §8 the reason
+this one file is not the barrel the naming table forbids.
+
 Optional pieces, added **only when a second caller appears**, never speculatively:
 
+- `<domain>.public.ts` — the moment a second module needs something from this one.
 - `<domain>.repository.ts` — see §6.
 - `guards/` — a guard used by this module alone. (Both current guards are shared, so they live in
   `common/guards/`.)
@@ -143,8 +156,9 @@ modules/  ──►  infrastructure/  ──►  config/
 **Hard rules:**
 
 1. `common/` and `config/` must **not** import from `modules/` or `infrastructure/`.
-2. Modules **may** import each other, but only through the module's public API — the `*.module` file
-   and the providers it `exports`. Never reach into another module's internal files.
+2. Modules **may** import each other, but only through two files: `<domain>.public.ts` for code, and
+   `<domain>.module.ts` for DI registration (`app.module.ts`, and `imports: [...]` in a sibling
+   module). Never reach into another module's internal files.
 3. If `A` needs `B` and `B` needs `A`, that logic belongs somewhere else — a third module, or a
    shared service. **`forwardRef()` is not the answer** (also stated in `AGENTS.md`).
 4. A controller **never** touches Prisma. The flow is Controller → Service → (Repository) → Prisma.
@@ -154,39 +168,78 @@ modules/  ──►  infrastructure/  ──►  config/
 
 ### Enforced by ESLint
 
-Both rules are real lint errors, not conventions (`eslint.config.mjs`). Two helpers generate the
-config blocks:
+Both rules are real lint errors, not conventions (`eslint.config.mjs`).
+
+**The module boundary is checked on resolved paths**, by `eslint-plugin-boundaries`. Each folder
+under `src/modules/` is one element; the only files that may be imported from outside it are
+`*.public.ts` and `*.module.ts`:
 
 ```js
-// only the *.module file of another module may be imported
-restrictModuleInternals(['src/modules/*/*.ts'], '\\.\\./')
-//   → regex: ^\.\./(?!\.\.)[^/]+/(?!.*\.module$)
+settings: {
+  'boundaries/elements': [
+    { type: 'module', pattern: 'src/modules/*' },
+    { type: 'app', pattern: 'src' },
+  ],
+},
+rules: {
+  'boundaries/dependencies': ['error', {
+    default: 'allow',
+    policies: [{
+      disallow: { to: { element: {
+        type: 'module',
+        fileInternalPath: '!(*.public.ts|*.module.ts)',
+      } } },
+    }],
+  }],
+}
+```
 
-// in src/common/** and src/config/**: no importing upward
+One block, every depth. This replaced four hand-written `no-restricted-imports` blocks, and the
+maintenance obligation that came with them. `no-restricted-imports` matches the **import string**,
+and a relative string only means something once you know how deep the importing file is: from
+`src/modules/auth/auth.service.ts`, `../health/…` is a sibling module, but from
+`src/modules/auth/dto/x.ts` the same string is its own module. So there was one block per depth that
+existed — and adding a directory level meant imports at that level were silently unchecked.
+`boundaries` knows whether two files belong to the same element, so the question of depth never
+arises.
+
+Three things the plugin needs to be told:
+
+- **The resolver must know about `.ts`** (`settings['import/resolver']`). Its default only resolves
+  `.js`, and an import it cannot resolve is an import it cannot classify — the rule would pass
+  everything, quietly.
+- **The `app` element is load-bearing, not decoration.** `boundaries` skips any dependency whose
+  **two ends** it cannot classify, so with `module` declared alone, `src/app.module.ts`,
+  `src/infrastructure/**` and `src/common/**` would be unknown-typed importers and reach into a
+  module's internals unchallenged. `{ type: 'app', pattern: 'src' }` catches everything under `src/`
+  that is not a module, which is what makes "importable from outside" mean *from anywhere*.
+- **Both entry points are allowed on purpose.** `*.public.ts` is the code seam; `*.module.ts` stays
+  importable because `app.module.ts` and every `imports: [SomeModule]` need the class. Since the
+  `@Module` file re-exports nothing, allowing it gives no way in.
+
+**A fence nobody checks is not a fence.** `src/__tests__/module-boundary.spec.ts` runs ESLint over
+two fixtures that violate the boundary on purpose: one module reaching into a sibling from
+`__tests__/fixtures/`, one directory deeper than any real file — exactly where the old rules stopped
+looking — and one file outside `modules/` reaching into a module, which is the case the `app` element
+covers. A third case asserts a legal `.public` import stays clean, so the rule cannot pass by
+rejecting everything. Both fixtures are listed by name in `eslint.config.mjs` (`BOUNDARY_FIXTURES`)
+and in `tsconfig.build.json`, so they leave `pnpm lint` and the build alone without a glob that a
+future fixture could hide behind.
+
+**`common/` and `config/` keep `no-restricted-imports`.** That rule bans whole directories rather
+than reaching into one, so the depth ambiguity above does not apply the same way:
+
+```js
 restrictUpwardImports(['src/common/*.ts', 'src/config/*.ts'], '\\.\\./')
 //   → regex: ^\.\./(modules|infrastructure|shared)/
 ```
 
-Two things make this less obvious than it looks, both a consequence of dropping the `@/` alias
-(§5) — the patterns now have to match **relative** import strings.
+It uses `regex`, not `group`: `group` matches through the `ignore` library (gitignore semantics),
+where `*` also matches `..`, and character classes do not help — `ignore` reads `[!.]` as "the
+character `!` or `.`", and `[^.]` matches nothing at all.
 
-**Each block is locked to one directory depth.** A relative specifier only means something once you
-know how deep the importing file is: from `src/modules/auth/auth.service.ts`, `../health/…` is a
-sibling module, but from `src/modules/auth/dto/x.ts` the same string is its own module. So the
-helper is called once per depth that actually exists — `src/*.ts`, `src/modules/*/*.ts`,
-`src/modules/*/*/*.ts`, `src/infrastructure/*/*.ts` — each with the prefix that reaches
-`src/modules/` from there. **Add a new depth and you must add a block**, or imports at that depth are
-silently unchecked.
-
-**They use `regex`, not `group`.** `group` matches through the `ignore` library (gitignore
-semantics), where `*` also matches `..` — so `../*/**` would swallow `../../config` and flag a
-perfectly legal import. Character classes do not help: `ignore` reads `[!.]` as "the character `!`
-or `.`", and `[^.]` matches nothing at all. The `(?!\.\.)` lookahead in a `regex` pattern says
-exactly what is meant.
-
-Because ESLint flat config **replaces** same-named rules instead of merging them, each block must
-declare everything that applies to its files. `common/` and `config/` get the upward-import ban
-only, which is the stronger of the two and subsumes the module-boundary rule.
+Because ESLint flat config **replaces** same-named rules instead of merging them, each
+`no-restricted-imports` block must declare everything that applies to its files.
 
 `prisma/**` and `prisma.config.ts` are exempt — they run outside the app, under the Prisma CLI.
 
@@ -211,9 +264,9 @@ mappings, so `@/config` survived into the emitted JavaScript and the function di
 **Do not reintroduce an alias here.** `apps/web` keeps its own `@/*` and `@shared/*` — those are a
 Next.js build and unaffected.
 
-Removing the alias also broke the `no-restricted-imports` rules, which matched `@/modules/*`. They
-have been rewritten against relative paths — see the ESLint subsection of §4 for how, and for the
-one maintenance obligation that came with it.
+Removing the alias also broke the `no-restricted-imports` rules, which matched `@/modules/*`. The
+module boundary no longer looks at import strings at all — it runs on resolved paths, so no alias
+decision can break it again. See the ESLint subsection of §4.
 
 ---
 
@@ -304,6 +357,11 @@ Consequences worth knowing:
 
 > ⚠️ Do not add barrels inside `modules/` — with NestJS DI they are a reliable way to create a
 > circular import.
+
+The one exception is `<domain>.public.ts`, and it is narrow enough to keep the warning true: exactly
+one per module, re-exports only, and it never imports from another module. Two `.public.ts` files
+needing each other is not a barrel problem, it is a real domain cycle — extract a third module
+(rule 3 in §4). What stays banned is an `index.ts` that gathers up a whole module.
 
 Two things the repo-wide conventions add: identifiers, comments and doc blocks are in Vietnamese
 where they already are, but **user-facing strings are always Vietnamese** (they are returned
