@@ -100,9 +100,9 @@ describe('AuthService', () => {
         password: PASSWORD,
       });
 
-      await expect(service.refresh({ refreshToken: accessToken })).rejects.toThrow(
-        UnauthorizedException,
-      );
+      await expect(
+        service.refresh({ refreshToken: accessToken }),
+      ).rejects.toThrow(UnauthorizedException);
     });
 
     it('từ chối refresh token đã hết hạn', async () => {

@@ -6,7 +6,7 @@ How to build, ship and operate Guild Manager in the real environment.
 > `ap-northeast-1`, free tier); both apps run on Vercel in **production**:
 >
 > - `apps/api` → `https://guild-manager-api.vercel.app`
-> - `apps/web` → `https://guild-manager-web.vercel.app`
+> - `apps/web` → `https://mmgh-nth.vercel.app`
 >
 > Pushing to `main` deploys both, but only after the tests pass — GitHub Actions drives the deploy.
 > See section 4.
@@ -109,7 +109,7 @@ Directory. The full reasoning is in the
 
 | Project | Root Directory | Domain |
 |---|---|---|
-| `guild-manager-web` | `apps/web` | `https://guild-manager-web.vercel.app` |
+| `guild-manager-web` | `apps/web` | `https://mmgh-nth.vercel.app` |
 | `guild-manager-api` | `apps/api` | `https://guild-manager-api.vercel.app` |
 
 `apps/api` runs as a Vercel Function, **not** as a long-lived process — an earlier version of this
@@ -251,15 +251,15 @@ not use our webpack `dist/main.js`, and a `"main"` field in `package.json` is ig
 1. `GET /api/health` returns `db: "up"`.
 2. CORS actually works from the real web origin:
    ```bash
-   curl -si -H "Origin: https://guild-manager-web.vercel.app" \
+   curl -si -H "Origin: https://mmgh-nth.vercel.app" \
      https://guild-manager-api.vercel.app/api/battle-sessions/weeks | grep -i allow-origin
    ```
 3. The deployed bundle really carries the API URL — this is what catches the `[SENSITIVE]` trap from
    section 3:
    ```bash
-   curl -s https://guild-manager-web.vercel.app/ \
+   curl -s https://mmgh-nth.vercel.app/ \
      | grep -o '/_next/static/chunks/[a-zA-Z0-9_./-]*\.js' | sort -u \
-     | while read c; do curl -s "https://guild-manager-web.vercel.app$c"; done \
+     | while read c; do curl -s "https://mmgh-nth.vercel.app$c"; done \
      | grep -o 'await fetch(`[^`]*`'
    ```
    Expected: ``await fetch(`https://guild-manager-api.vercel.app/api${e}` ``.
