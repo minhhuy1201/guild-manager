@@ -1,15 +1,15 @@
 import { NextResponse, type NextRequest } from "next/server";
 import type { AuthTokens } from "@guild/shared/schemas";
 
-import { refreshRequest } from "@/features/auth/api/auth-api";
 import {
   ACCESS_TOKEN_COOKIE,
   ACCESS_TOKEN_MAX_AGE,
   AUTH_COOKIE_OPTIONS,
   REFRESH_TOKEN_COOKIE,
   REFRESH_TOKEN_MAX_AGE,
-} from "@/features/auth/lib/auth-cookies";
-import { verifyJwt } from "@/features/auth/lib/jwt";
+  refreshRequest,
+  verifyJwt,
+} from "@/features/auth/core";
 import { ROUTES } from "@/config/routes";
 
 /** Các route chỉ dành cho quản trị viên. */

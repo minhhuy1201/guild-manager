@@ -9,8 +9,8 @@ import {
   AUTH_COOKIE_OPTIONS,
   REFRESH_TOKEN_COOKIE,
   REFRESH_TOKEN_MAX_AGE,
-} from "../lib/auth-cookies";
-import { verifyJwt } from "../lib/jwt";
+  verifyJwt,
+} from "../core";
 
 /** Thông tin quản trị viên đang đăng nhập, đọc từ access token. */
 export interface SessionUser {
@@ -23,6 +23,10 @@ export interface SessionUser {
 /**
  * Lấy AUTH_SECRET từ biến môi trường, ném lỗi sớm nếu chưa cấu hình.
  * Giá trị phải trùng AUTH_SECRET của apps/api vì backend là bên ký token.
+ *
+ * Ném là đúng ở đây: Server Component lỗi thì chỉ trang đó hỏng. `readAuthSecret()` trong
+ * `proxy.ts` cố ý làm ngược lại (chỉ log) vì proxy chạy trước mọi trang — đừng "sửa" cho
+ * hai hàm giống nhau.
  * @returns Chuỗi bí mật dùng verify JWT
  */
 export function getAuthSecret(): string {

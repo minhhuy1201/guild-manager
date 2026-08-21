@@ -1,7 +1,7 @@
 "use server";
 
 import { ApiError } from "@/lib/api-client";
-import { loginRequest } from "./auth-api";
+import { loginRequest } from "../core";
 import { clearSession, createSession } from "./session";
 
 /** Kết quả trả về của action đăng nhập. */
