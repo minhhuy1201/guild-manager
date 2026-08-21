@@ -74,7 +74,7 @@ by default, and each writes to whatever database it names.
 | `ADMIN_USERNAMES` | The real admin accounts |
 | `ADMIN_PASSWORD` | The real password, **not** `testne` |
 | `WEB_ORIGIN` | The web app's real origin (`https://…`) — CORS matches this value exactly |
-| `WEB_PREVIEW_PROJECT` | The web app's Vercel project name (`guild-manager-web`) — makes CORS also accept that project's preview domains. Optional; omit it and only `WEB_ORIGIN` is allowed |
+| `WEB_PREVIEW_PROJECT` | The web app's Vercel project name (`mmgh-nth`) — makes CORS also accept that project's preview domains. Optional; omit it and only `WEB_ORIGIN` is allowed |
 | `APP_TIMEZONE` | `Asia/Ho_Chi_Minh` |
 
 The `POSTGRES_*` variables are for `docker-compose.yml` in development only; production does not need
@@ -109,7 +109,7 @@ Directory. The full reasoning is in the
 
 | Project | Root Directory | Domain |
 |---|---|---|
-| `guild-manager-web` | `apps/web` | `https://mmgh-nth.vercel.app` |
+| `mmgh-nth` | `apps/web` | `https://mmgh-nth.vercel.app` |
 | `guild-manager-api` | `apps/api` | `https://guild-manager-api.vercel.app` |
 
 `apps/api` runs as a Vercel Function, **not** as a long-lived process — an earlier version of this
@@ -171,7 +171,7 @@ Deploying by hand still works and is the way to ship without a commit — or whe
 ```bash
 # from the repo root, not from apps/*
 vercel deploy --prod --yes --project guild-manager-api --scope <team>
-vercel deploy --prod --yes --project guild-manager-web --scope <team>
+vercel deploy --prod --yes --project mmgh-nth --scope <team>
 ```
 
 Note that a hand deploy **bypasses the tests**. It is a break-glass tool, not the normal path.
