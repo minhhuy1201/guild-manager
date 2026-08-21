@@ -21,7 +21,9 @@ const ADMIN_PATH_PREFIXES = [ROUTES.teamBuilder, ROUTES.settings];
  * Thiếu biến này thì mọi token đều không verify được, tức là quản trị viên đăng nhập xong vẫn bị
  * đá khỏi route quản trị — triệu chứng giống hệt phiên hết hạn nên rất dễ đi tìm nhầm chỗ. Không
  * ném lỗi vì proxy chạy trước **mọi** trang: ném là sập cả trang điểm danh công khai, trong khi
- * cấu hình sai chỉ ảnh hưởng phần quản trị.
+ * cấu hình sai chỉ ảnh hưởng phần quản trị. `getAuthSecret()` trong `features/auth/api/session.ts`
+ * cố ý làm ngược lại (ném) vì Server Component lỗi thì chỉ hỏng đúng trang đó — đừng "sửa" cho hai
+ * hàm giống nhau.
  *
  * @returns Khóa ký JWT, hoặc undefined khi chưa cấu hình
  */
