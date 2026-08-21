@@ -175,15 +175,23 @@ under `src/modules/` is one element; the only files that may be imported from ou
 `*.public.ts` and `*.module.ts`:
 
 ```js
-'boundaries/dependencies': ['error', {
-  default: 'allow',
-  policies: [{
-    disallow: { to: { element: {
-      type: 'module',
-      fileInternalPath: '!(*.public.ts|*.module.ts)',
-    } } },
+settings: {
+  'boundaries/elements': [
+    { type: 'module', pattern: 'src/modules/*' },
+    { type: 'app', pattern: 'src' },
+  ],
+},
+rules: {
+  'boundaries/dependencies': ['error', {
+    default: 'allow',
+    policies: [{
+      disallow: { to: { element: {
+        type: 'module',
+        fileInternalPath: '!(*.public.ts|*.module.ts)',
+      } } },
+    }],
   }],
-}]
+}
 ```
 
 One block, every depth. This replaced four hand-written `no-restricted-imports` blocks, and the
@@ -195,20 +203,28 @@ existed — and adding a directory level meant imports at that level were silent
 `boundaries` knows whether two files belong to the same element, so the question of depth never
 arises.
 
-Two things the plugin needs to be told:
+Three things the plugin needs to be told:
 
 - **The resolver must know about `.ts`** (`settings['import/resolver']`). Its default only resolves
   `.js`, and an import it cannot resolve is an import it cannot classify — the rule would pass
   everything, quietly.
+- **The `app` element is load-bearing, not decoration.** `boundaries` skips any dependency whose
+  **two ends** it cannot classify, so with `module` declared alone, `src/app.module.ts`,
+  `src/infrastructure/**` and `src/common/**` would be unknown-typed importers and reach into a
+  module's internals unchallenged. `{ type: 'app', pattern: 'src' }` catches everything under `src/`
+  that is not a module, which is what makes "importable from outside" mean *from anywhere*.
 - **Both entry points are allowed on purpose.** `*.public.ts` is the code seam; `*.module.ts` stays
   importable because `app.module.ts` and every `imports: [SomeModule]` need the class. Since the
   `@Module` file re-exports nothing, allowing it gives no way in.
 
-**A fence nobody checks is not a fence.** `modules/attendance/__tests__/module-boundary.spec.ts`
-runs ESLint over a fixture that violates the boundary on purpose, one directory deeper than any real
-file (`__tests__/fixtures/`) — exactly where the old rules stopped looking — and asserts the error is
-reported. A second case asserts a legal `.public` import stays clean, so the rule cannot pass by
-rejecting everything. The fixture is excluded from `pnpm lint` and from `tsconfig.build.json`.
+**A fence nobody checks is not a fence.** `src/__tests__/module-boundary.spec.ts` runs ESLint over
+two fixtures that violate the boundary on purpose: one module reaching into a sibling from
+`__tests__/fixtures/`, one directory deeper than any real file — exactly where the old rules stopped
+looking — and one file outside `modules/` reaching into a module, which is the case the `app` element
+covers. A third case asserts a legal `.public` import stays clean, so the rule cannot pass by
+rejecting everything. Both fixtures are listed by name in `eslint.config.mjs` (`BOUNDARY_FIXTURES`)
+and in `tsconfig.build.json`, so they leave `pnpm lint` and the build alone without a glob that a
+future fixture could hide behind.
 
 **`common/` and `config/` keep `no-restricted-imports`.** That rule bans whole directories rather
 than reaching into one, so the depth ambiguity above does not apply the same way:

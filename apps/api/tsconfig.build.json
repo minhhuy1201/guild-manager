@@ -4,6 +4,7 @@
     "node_modules",
     "dist",
     "**/*spec.ts",
-    "src/**/__tests__/fixtures/**"
+    "src/__tests__/fixtures/**",
+    "src/modules/attendance/__tests__/fixtures/**"
   ]
 }

@@ -8,6 +8,16 @@ import tseslint from 'typescript-eslint';
 const MODULE_BOUNDARY_MESSAGE =
   'Import qua public API của module: file *.public (code) hoặc *.module (đăng ký DI). Không đụng file nội bộ của module khác.';
 
+/**
+ * Hai file vi phạm ranh giới module một cách cố ý, để `src/__tests__/module-boundary.spec.ts` khẳng
+ * định luật dưới đây vẫn báo lỗi. Liệt kê từng file chứ không dùng glob `__tests__/fixtures/**`:
+ * một fixture tương lai không nên tự động thoát khỏi lint chỉ vì nằm đúng thư mục.
+ */
+const BOUNDARY_FIXTURES = [
+  'src/__tests__/fixtures/outside-module-violation.ts',
+  'src/modules/attendance/__tests__/fixtures/module-boundary-violation.ts',
+];
+
 const LOWER_LAYER_MESSAGE =
   'common/ và config/ không được import từ modules/, shared/ hay infrastructure/.';
 
@@ -21,6 +31,12 @@ const LOWER_LAYER_MESSAGE =
  *
  * Mỗi thư mục trong `src/modules/` là một phần tử; cửa vào của nó là `*.public.ts` (code) và
  * `*.module.ts` (class module cho `app.module.ts` và các `imports: [...]`). Mọi file khác là nội bộ.
+ *
+ * Phần tử `app` bắt phần `src/` còn lại. Nó không thừa: `boundaries` bỏ qua mọi phụ thuộc mà nó
+ * không phân loại được **cả hai đầu**, nên thiếu nó thì `app.module.ts`, `infrastructure/` và
+ * `common/` được import thẳng vào ruột module mà không ai kêu.
+ *
+ * @returns Các block cấu hình ESLint áp luật ranh giới module cho toàn bộ `src/`
  */
 function moduleBoundaryRules() {
   return [
@@ -32,7 +48,10 @@ function moduleBoundaryRules() {
         // resolve hụt và luật im lặng bỏ qua — đúng kiểu hỏng mà spec này muốn chấm dứt, nên
         // `module-boundary.spec.ts` khoá lại bằng một fixture vi phạm.
         'import/resolver': { node: { extensions: ['.ts', '.js', '.json'] } },
-        'boundaries/elements': [{ type: 'module', pattern: 'src/modules/*' }],
+        'boundaries/elements': [
+          { type: 'module', pattern: 'src/modules/*' },
+          { type: 'app', pattern: 'src' },
+        ],
       },
       rules: {
         'boundaries/dependencies': [
@@ -97,13 +116,13 @@ function lowerLayerRules() {
 
 export default tseslint.config(
   {
-    // Code do Prisma sinh ra — không lint. Fixture của `module-boundary.spec.ts` vi phạm ranh
-    // giới module một cách cố ý, nên bỏ khỏi lượt lint thường; bài test lint nó với `--no-ignore`.
+    // Code do Prisma sinh ra — không lint. Fixture ranh giới module bỏ khỏi lượt lint thường; bài
+    // test lint chúng riêng với `--no-ignore`.
     ignores: [
       'eslint.config.mjs',
       'src/generated/**',
       'dist/**',
-      'src/**/__tests__/fixtures/**',
+      ...BOUNDARY_FIXTURES,
     ],
   },
   eslint.configs.recommended,
