@@ -1,3 +1,5 @@
+import { BadRequestException } from '@nestjs/common';
+
 import {
   formatSessionLabel,
   getActiveWeek,
@@ -6,6 +8,7 @@ import {
   guildWarSessionId,
   isDeadlinePassed,
   isSameWeek,
+  parseWeekStart,
   weekStartOf,
 } from '../session-schedule';
 
@@ -136,6 +139,51 @@ describe('session-schedule', () => {
       // Đây là ca mà phép so chuỗi cũ sai: cùng thời điểm, hai chuỗi khác nhau.
       const asOffset = weekStartOf(new Date('2026-07-20T00:00:00+07:00'));
       const asUtc = weekStartOf(new Date('2026-07-19T17:00:00.000Z'));
+
+      expect(isSameWeek(asOffset, asUtc)).toBe(true);
+    });
+  });
+
+  describe('parseWeekStart', () => {
+    it('bỏ trống thì lấy tuần đang mở', () => {
+      expect(parseWeekStart(undefined, wednesday).toISOString()).toBe(
+        vn('2026-07-20T00:00').toISOString(),
+      );
+    });
+
+    it('chuỗi không phải mốc thời gian thì ném 400', () => {
+      expect(() => parseWeekStart('xyz', wednesday)).toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('thông báo lỗi là tiếng Việt', () => {
+      expect(() => parseWeekStart('xyz', wednesday)).toThrow(
+        'Tuần không hợp lệ.',
+      );
+    });
+
+    it('mốc giữa tuần quy về Thứ 2 của tuần chứa nó', () => {
+      expect(
+        parseWeekStart(
+          vn('2026-07-22T12:00').toISOString(),
+          wednesday,
+        ).toISOString(),
+      ).toBe(vn('2026-07-20T00:00').toISOString());
+    });
+
+    it('Chủ nhật vẫn thuộc tuần bắt đầu từ Thứ 2 trước đó', () => {
+      expect(
+        parseWeekStart(
+          vn('2026-07-26T23:00').toISOString(),
+          wednesday,
+        ).toISOString(),
+      ).toBe(vn('2026-07-20T00:00').toISOString());
+    });
+
+    it('cùng một mốc gửi bằng +07:00 và bằng Z cho cùng kết quả', () => {
+      const asOffset = parseWeekStart('2026-07-20T00:00:00+07:00', wednesday);
+      const asUtc = parseWeekStart('2026-07-19T17:00:00.000Z', wednesday);
 
       expect(isSameWeek(asOffset, asUtc)).toBe(true);
     });

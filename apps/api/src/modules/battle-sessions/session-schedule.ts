@@ -8,6 +8,8 @@
  * mốc tuần, trận Guild War cố định và cách dựng nhãn hiển thị.
  */
 import { shiftVnDate, vnParts, vnWeekday } from '@guild/shared/lib';
+import { INVALID_WEEK_MESSAGE } from '@guild/shared/schemas';
+import { BadRequestException } from '@nestjs/common';
 
 /** Thứ trong tuần theo chuẩn ISO của `vnWeekday()`: 1=T2, ..., 7=CN. */
 const MONDAY = 1;
@@ -115,6 +117,33 @@ export function getActiveWeek(now: Date): ScheduledWeek {
 
   // Thứ 7 mở tuần + 2 ngày = Thứ 2 đầu tuần mới.
   return toWeek(weekStartOf(shiftVnDate(anchorOpen, 2, 0, 0)));
+}
+
+/**
+ * Đọc một mốc tuần từ query string — chỗ duy nhất biến chuỗi client gửi lên
+ * thành mốc tuần.
+ *
+ * Chuỗi hợp lệ nhưng rơi vào giữa tuần thì quy về Thứ 2 của tuần chứa nó chứ
+ * không ném: client gửi giữa tuần thì ý định rõ ràng là "tuần chứa ngày này", và
+ * trả đúng tuần đó không hề âm thầm sai.
+ * @param input - Chuỗi ISO client gửi lên; bỏ trống = tuần đang mở
+ * @param now - Thời điểm hiện tại, dùng khi `input` bỏ trống
+ * @returns Mốc Thứ 2 00:00 giờ VN
+ * @throws BadRequestException khi chuỗi không phải một mốc thời gian hợp lệ
+ */
+export function parseWeekStart(
+  input: string | undefined,
+  now: Date,
+): WeekAnchor {
+  if (input === undefined) return getActiveWeek(now).weekStart;
+
+  const parsed = new Date(input);
+
+  if (Number.isNaN(parsed.getTime())) {
+    throw new BadRequestException(INVALID_WEEK_MESSAGE);
+  }
+
+  return weekStartOf(parsed);
 }
 
 /**
