@@ -151,9 +151,7 @@ export class TeamBuilderService {
     const grouped = new Map<string, MatchFormation[]>();
 
     for (const match of matches) {
-      const current = grouped.get(match.sessionId) ?? [];
-
-      current.push({
+      const formation: MatchFormation = {
         slots: Object.fromEntries(
           match.slots
             .filter((slot) => slot.characterId !== null)
@@ -164,8 +162,12 @@ export class TeamBuilderService {
             .filter((slot) => slot.note !== null)
             .map((slot) => [slot.slotId, slot.note as string]),
         ),
-      });
-      grouped.set(match.sessionId, current);
+      };
+
+      grouped.set(match.sessionId, [
+        ...(grouped.get(match.sessionId) ?? []),
+        formation,
+      ]);
     }
 
     return grouped;

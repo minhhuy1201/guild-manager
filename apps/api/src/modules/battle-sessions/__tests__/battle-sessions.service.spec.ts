@@ -111,12 +111,15 @@ describe('BattleSessionsService', () => {
       await service.ensureWeekMaterialized(WEEK_START.toISOString(), WEDNESDAY);
       await service.ensureWeekMaterialized(WEEK_START.toISOString(), WEDNESDAY);
 
+      // Cùng id ở cả `where` lẫn `create` nên lần gọi thứ hai rơi vào nhánh
+      // update của cùng một hàng, không thể sinh trận thứ hai.
       expect(firstArg(prisma.battleSession.upsert, 0)).toMatchObject({
         where: { id: 'gw-2026-07-20' },
+        create: { id: 'gw-2026-07-20' },
       });
-      expect(firstArg(prisma.battleSession.upsert, 1)).toMatchObject({
-        where: { id: 'gw-2026-07-20' },
-      });
+      expect(firstArg(prisma.battleSession.upsert, 1)).toEqual(
+        firstArg(prisma.battleSession.upsert, 0),
+      );
     });
 
     it('tuần đã qua là no-op', async () => {
