@@ -24,6 +24,29 @@ const opponent = z
 export const DEADLINE_CAP_MESSAGE =
   "Hạn chót điểm danh không được muộn hơn 10:00 sáng ngày đánh.";
 
+/** Thông báo khi mốc tuần trên query string không đọc được — Zod và API dùng chung. */
+export const INVALID_WEEK_MESSAGE = "Tuần không hợp lệ.";
+
+/**
+ * Query string của các endpoint đọc theo tuần (`?weekStart=`).
+ *
+ * `offset: true` vì client hợp lệ được gửi `+07:00` chứ không chỉ `Z`.
+ * `preprocess` đổi chuỗi rỗng thành `undefined`: `?weekStart=` là một thứ vô hại,
+ * nó phải cư xử như bỏ trống chứ không thành 400.
+ *
+ * Zod chỉ trả lời "có phải một mốc thời gian không"; "mốc đó thuộc tuần nào" là
+ * luật tuần, do `parseWeekStart` ở apps/api quyết định.
+ */
+export const weekStartQuerySchema = z.object({
+  weekStart: z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    z.iso.datetime({ offset: true, error: INVALID_WEEK_MESSAGE }).optional()
+  ),
+});
+
+/** Kiểu query string đọc theo tuần đã validate. */
+export type WeekStartQuery = z.infer<typeof weekStartQuerySchema>;
+
 /** Các field của một trận, chưa gắn luật cross-field. */
 const battleSessionFields = z.object({
   /** Thời điểm diễn ra trận đánh (ISO string) */
