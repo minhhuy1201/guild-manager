@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { BattleSessionsModule } from '../battle-sessions/battle-sessions.module';
+import { CharactersModule } from '../characters/characters.module';
 import { TeamBuilderController } from './team-builder.controller';
 import { TeamBuilderService } from './team-builder.service';
 
@@ -10,7 +11,7 @@ import { TeamBuilderService } from './team-builder.service';
  * lịch đánh là trách nhiệm của module lịch đánh, không chép lại ở đây.
  */
 @Module({
-  imports: [BattleSessionsModule],
+  imports: [BattleSessionsModule, CharactersModule],
   controllers: [TeamBuilderController],
   providers: [TeamBuilderService],
 })

@@ -1,7 +1,9 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
+import { GuildClass } from '@guild/shared/enums';
 
 import { FixedClock } from '../../../common';
 import { BattleSessionsService } from '../../battle-sessions/battle-sessions.public';
+import { CharactersService } from '../../characters/characters.public';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { TeamBuilderService } from '../team-builder.service';
 
@@ -62,7 +64,6 @@ const FORMATION_MATCH_ROWS = [
 describe('TeamBuilderService.getFormations', () => {
   let service: TeamBuilderService;
   let prisma: {
-    character: { findMany: jest.Mock };
     formationMatch: { findMany: jest.Mock; deleteMany: jest.Mock };
   };
   let battleSessions: {
@@ -70,10 +71,10 @@ describe('TeamBuilderService.getFormations', () => {
     ensureWeekMaterialized: jest.Mock;
     readWeekSessions: jest.Mock;
   };
+  let characters: { list: jest.Mock };
 
   beforeEach(() => {
     prisma = {
-      character: { findMany: jest.fn().mockResolvedValue([]) },
       formationMatch: {
         findMany: jest.fn().mockResolvedValue(FORMATION_MATCH_ROWS),
         deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
@@ -86,9 +87,12 @@ describe('TeamBuilderService.getFormations', () => {
       readWeekSessions: jest.fn().mockResolvedValue(SCHEDULED_SESSIONS),
     };
 
+    characters = { list: jest.fn().mockResolvedValue([]) };
+
     service = new TeamBuilderService(
       prisma as unknown as PrismaService,
       battleSessions as unknown as BattleSessionsService,
+      characters as unknown as CharactersService,
       new FixedClock(WEDNESDAY),
     );
   });
@@ -176,7 +180,6 @@ describe('TeamBuilderService.getFormations', () => {
 describe('TeamBuilderService.getWeeks', () => {
   let service: TeamBuilderService;
   let prisma: {
-    character: { findMany: jest.Mock };
     formationMatch: { deleteMany: jest.Mock };
   };
   let battleSessions: {
@@ -184,10 +187,10 @@ describe('TeamBuilderService.getWeeks', () => {
     ensureWeekMaterialized: jest.Mock;
     listWeekAnchors: jest.Mock;
   };
+  let characters: { list: jest.Mock };
 
   beforeEach(() => {
     prisma = {
-      character: { findMany: jest.fn().mockResolvedValue([]) },
       formationMatch: { deleteMany: jest.fn().mockResolvedValue({ count: 2 }) },
     };
     battleSessions = {
@@ -201,9 +204,12 @@ describe('TeamBuilderService.getWeeks', () => {
         ]),
     };
 
+    characters = { list: jest.fn().mockResolvedValue([]) };
+
     service = new TeamBuilderService(
       prisma as unknown as PrismaService,
       battleSessions as unknown as BattleSessionsService,
+      characters as unknown as CharactersService,
       new FixedClock(WEDNESDAY),
     );
   });
@@ -303,10 +309,10 @@ describe('TeamBuilderService.saveFormation', () => {
     };
   };
   let prisma: {
-    character: { findMany: jest.Mock };
     $transaction: jest.Mock;
   };
   let battleSessions: { findById: jest.Mock };
+  let characters: { list: jest.Mock };
 
   beforeEach(() => {
     tx = {
@@ -318,12 +324,13 @@ describe('TeamBuilderService.saveFormation', () => {
       },
     };
     prisma = {
-      character: {
-        findMany: jest
-          .fn()
-          .mockResolvedValue([{ id: 'char-1' }, { id: 'char-2' }]),
-      },
       $transaction: jest.fn((run: (client: typeof tx) => unknown) => run(tx)),
+    };
+    characters = {
+      list: jest.fn().mockResolvedValue([
+        { id: 'char-1', name: 'Huy', guildClass: GuildClass.THIET_Y },
+        { id: 'char-2', name: 'Lan', guildClass: GuildClass.TO_VAN },
+      ]),
     };
     battleSessions = {
       findById: jest.fn().mockResolvedValue({
@@ -339,6 +346,7 @@ describe('TeamBuilderService.saveFormation', () => {
     service = new TeamBuilderService(
       prisma as unknown as PrismaService,
       battleSessions as unknown as BattleSessionsService,
+      characters as unknown as CharactersService,
       new FixedClock(WEDNESDAY),
     );
   });

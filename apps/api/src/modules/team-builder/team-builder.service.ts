@@ -16,6 +16,7 @@ import {
   BattleSessionsService,
   weekEndOf,
 } from '../battle-sessions/battle-sessions.public';
+import { CharactersService } from '../characters/characters.public';
 
 /** Số ngày giữ lại đội hình cũ. Quá mốc này thì dọn. */
 const RETENTION_DAYS = 56;
@@ -55,6 +56,7 @@ export class TeamBuilderService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly battleSessions: BattleSessionsService,
+    private readonly characters: CharactersService,
     private readonly clock: Clock,
   ) {}
 
@@ -230,17 +232,16 @@ export class TeamBuilderService {
       isGuildWar: session.isGuildWar,
       locked: false,
       matches: cleaned,
-    };
+    } satisfies SessionFormation;
   }
 
   /**
    * Lấy id của mọi nhân vật còn trong bang.
+   * Bảng Character do module characters sở hữu — đọc qua service của nó, không tự truy vấn.
    * @returns Tập id nhân vật
    */
   private async loadCharacterIds(): Promise<Set<string>> {
-    const characters = await this.prisma.character.findMany({
-      select: { id: true },
-    });
+    const characters = await this.characters.list();
 
     return new Set(characters.map((character) => character.id));
   }
