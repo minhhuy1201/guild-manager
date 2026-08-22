@@ -14,7 +14,8 @@ riêng trong cùng thư mục này.
 [§ Rà soát lại A1–A6](#rà-soát-lại-a1a6-2026-08-23). W1–W6 chưa làm.
 
 Sau vòng rà soát đó (2026-08-23): **§4 của A3 được làm nốt**, **lỗi #4 của A4 đã đóng** —
-`parseWeekStart` ném `RangeError` nên `session-schedule.ts` hết biết framework — và **cả ba lỗi của A6 đã đóng** —
+`parseWeekStart` ném `RangeError` nên `session-schedule.ts` hết biết framework, **lỗi #5 của A4 đã đóng** —
+lỗi chỉ nằm trong spec, §4 nay chép đúng `weekStartQuerySchema` đang chạy — và **cả ba lỗi của A6 đã đóng** —
 `P2003` → 409 (`ea8d0ed`), rồi purge chuyển sang đường ghi nên `GET` thành chỉ đọc và controller trở
 lại mỏng. Chi tiết ở [§ Điều kiện hoàn thành cần sửa lại](#điều-kiện-hoàn-thành-cần-sửa-lại).
 
@@ -154,7 +155,7 @@ khi phải viết từng bước xuống.
   *(đúng tại `9820b5a` và cho tới khi §4 được làm nốt ngày 2026-08-23 — xem §Điều kiện hoàn thành
   cần sửa lại)*.
 - **A4** — `2026-07-22Z` đúng là Thứ 4; `2026-07-20T00:00:00+07:00` đúng là mốc Thứ 2 giờ VN;
-  `z.iso.datetime()` hợp lệ vì repo dùng zod v4.
+  `z.iso` là namespace hợp lệ vì repo dùng zod v4 (nhưng `z.iso.datetime()` trần thì sai — xem lỗi #5).
 - **A5** — `jwt-auth.guard.ts:13/:37-52`, `optional-jwt-auth.guard.ts:8`, `auth.service.ts:63-68`;
   `common/` thật sự không có file test nào.
 - **A6** — toàn bộ line ref (`:33-51`, `:144-155`, `:143/:183/:220`, `:190/:200`, `schema.prisma:111`).
@@ -167,7 +168,7 @@ khi phải viết từng bước xuống.
 | 2 | A6 §3 | **Đi ngược `architecture.md:114-115`** (*"Services hold the business logic"*, controller mỏng). Đưa trình tự "purge rồi mới đọc" lên controller là kéo nghiệp vụ lên một lớp. `architecture.md` là **binding** — spec phải trả lời luật này, không được lướt qua. *(**Đã đóng 2026-08-23** — trình tự và `Clock` cùng về service, controller còn một dòng.)* |
 | 3 | A6 §4 | **Luận điểm không đứng vững.** Chuyển `loadCharacterIds` vào `$transaction` **không** đóng được race: Prisma dùng isolation mặc định của Postgres (READ COMMITTED), `SELECT id FROM character` trong tx không khoá hàng, nên một `DELETE` commit sau lúc đọc vẫn làm vỡ khoá ngoại. Nó chỉ *thu hẹp* cửa sổ. Fix đúng: bắt `P2003` → 409 tiếng Việt, hoặc serializable isolation. *(**Đã đóng 2026-08-23** — `ea8d0ed`: `team-builder.service.ts:201-213` bắt `P2003` qua `isForeignKeyViolation` và ném `ConflictException('Có thành viên vừa bị xoá khỏi bang, vui lòng tải lại trang rồi lưu lại.')`, lỗi khác `throw` nguyên; hai test ở `team-builder.service.spec.ts:539/:555`. Phép đọc trong transaction vẫn giữ, nhưng comment tại chỗ nói đúng rằng nó chỉ thu hẹp cửa sổ.)* |
 | 4 | A4 §1 | **`parseWeekStart` ném `BadRequestException` đặt sai lớp** — nó nằm trong `session-schedule.ts`, đúng file mà overview khen là *"hàm thuần, tất định"* và A2 §4 khẳng định không được biết framework. Thêm nữa: sau khi §4 có DTO Zod thì `?weekStart=xyz` bị chặn ngay ở pipe, nhánh ném **không còn với tới được từ HTTP**, nên test "`battle-sessions.service.spec.ts`: `?weekStart=xyz` → `BadRequestException`" nằm sai tầng, và triệu chứng 500 ở §Bối cảnh #1 được §4 vá một mình. *(**Đã đóng 2026-08-23** — `session-schedule.ts` không còn import `@nestjs/common`; chuỗi hỏng ném `RangeError` như một lỗi hợp đồng nội bộ, còn 400 tiếng Việt do `weekStartQuerySchema` dựng ở biên. Xem [§ Điều kiện hoàn thành cần sửa lại](#điều-kiện-hoàn-thành-cần-sửa-lại).)* |
-| 5 | A4 §4 | **`z.iso.datetime()` loại chính ca test của spec.** Zod v4 mặc định `offset: false`, chỉ nhận hậu tố `Z`. Ca *"một mốc `+07:00` và cùng mốc đó dạng `Z` phải cho cùng kết quả"* sẽ ăn 400 ở controller. Phải là `z.iso.datetime({ offset: true })`. *(Kế hoạch A4 đã bắt được lỗi này trước khi hiện thực và kiểm chứng bằng Zod 4.4; bản hiện thực dùng `offset: true` — `battle-session.schema.ts:43`.)* |
+| 5 | A4 §4 | **`z.iso.datetime()` loại chính ca test của spec.** Zod v4 mặc định `offset: false`, chỉ nhận hậu tố `Z`. Ca *"một mốc `+07:00` và cùng mốc đó dạng `Z` phải cho cùng kết quả"* sẽ ăn 400 ở controller. Phải là `z.iso.datetime({ offset: true })`. *(**Đã đóng 2026-08-23** — chỉ spec sai: kế hoạch A4 đã bắt lỗi này trước khi hiện thực và kiểm chứng bằng Zod 4.4, bản hiện thực dùng `offset: true` (`battle-session.schema.ts:43`), ca test `+07:00` có thật ở `week-start-query.spec.ts:22` và `session-schedule.spec.ts:178`. A4 §4 nay chép đúng schema đang chạy.)* |
 | 6 | A5 | **§2 mâu thuẫn với §3.** Snippet §2 ném `'Phiên đăng nhập không hợp lệ.'`, còn §3 quyết định gộp về đúng một câu `'Bạn cần đăng nhập.'` |
 
 ### Lỗi nhỏ và chỗ nói quá

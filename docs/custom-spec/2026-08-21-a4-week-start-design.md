@@ -5,7 +5,8 @@
 > thuần và không biết framework; sau khi §4 có DTO Zod thì nhánh ném đó không còn với tới được từ
 > HTTP, nên ca test `?weekStart=xyz` nằm sai tầng — **đã sửa 2026-08-23**, §1 bên dưới là bản sau khi
 > sửa; (2) §4 dùng `z.iso.datetime()`, mà Zod v4 mặc định
-> `offset: false` nên **loại chính ca test `+07:00`** của spec — phải là `z.iso.datetime({ offset: true })`.
+> `offset: false` nên **loại chính ca test `+07:00`** của spec — phải là `z.iso.datetime({ offset: true })`
+> — **đã sửa 2026-08-23**, §4 bên dưới chép đúng schema đang chạy (bản hiện thực vốn đã đúng, chỉ spec sai).
 > Thêm một điểm nhỏ: §3 đặt tên `getActiveWeek` đụng hàm thuần cùng tên trong `session-schedule.ts`.
 > Chi tiết:
 > [§ Rà soát lại A1–A6](./2026-08-21-architecture-review-2-overview.md#rà-soát-lại-a1a6-2026-08-23).
@@ -126,8 +127,18 @@ Việc phơi ISO string ra khỏi service là nguồn của phép so chuỗi. Sa
 
 ```ts
 // packages/shared/schemas/battle-session.schema.ts
-export const weekStartQuerySchema = z.object({ weekStart: z.iso.datetime().optional() });
+export const weekStartQuerySchema = z.object({
+  weekStart: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.iso.datetime({ offset: true, error: INVALID_WEEK_MESSAGE }).optional()
+  ),
+});
 ```
+
+`offset: true` là **bắt buộc**, không phải tuỳ chọn: Zod v4 mặc định `offset: false`, chỉ nhận hậu
+tố `Z`, nên `z.iso.datetime()` trần sẽ trả 400 cho `2026-07-20T00:00:00+07:00` — đúng ca test ở
+§Kiểm thử và đúng dạng chuỗi một client giờ VN gửi lên tự nhiên nhất. `preprocess` xử lý chuỗi rỗng
+(xem §Edge case), và câu tiếng Việt lấy từ hằng `INVALID_WEEK_MESSAGE` cùng file.
 
 ```ts
 // battle-sessions.controller.ts
