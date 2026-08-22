@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { guildWarDeadline, isWithinDeadlineCap } from '@guild/shared/lib';
-import { DEADLINE_CAP_MESSAGE } from '@guild/shared/schemas';
+import { DEADLINE_CAP_MESSAGE, weekSchema } from '@guild/shared/schemas';
 import type {
   BattleSession,
   CreateBattleSessionInput,
@@ -13,6 +13,7 @@ import type {
 } from '@guild/shared/schemas';
 
 import { Clock } from '../../common';
+import { verifyResponse } from '../../config';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { toBattleSession } from './battle-sessions.codec';
 import {
@@ -80,13 +81,12 @@ export class BattleSessionsService {
    * @returns Mảng 2 tuần, tuần đang mở đứng trước
    */
   getEditableWeeks(): Week[] {
-    return getEditableWeeks(this.clock.now()).map(
-      (week, index) =>
-        ({
-          weekStart: week.weekStart.toISOString(),
-          weekEnd: week.weekEnd.toISOString(),
-          isActive: index === 0,
-        }) satisfies Week,
+    return getEditableWeeks(this.clock.now()).map((week, index) =>
+      verifyResponse(weekSchema, {
+        weekStart: week.weekStart.toISOString(),
+        weekEnd: week.weekEnd.toISOString(),
+        isActive: index === 0,
+      } satisfies Week),
     );
   }
 

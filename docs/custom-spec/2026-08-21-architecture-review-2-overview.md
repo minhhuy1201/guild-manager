@@ -13,6 +13,9 @@ riêng trong cùng thư mục này.
 **A1 → A2 → A3 → A4 → A6 → A5**, khác thứ tự đề xuất ở dưới. Kết quả rà soát lại các spec A1–A6 nằm ở
 [§ Rà soát lại A1–A6](#rà-soát-lại-a1a6-2026-08-23). W1–W6 chưa làm.
 
+Sau vòng rà soát đó, **§4 của A3 được làm nốt** (2026-08-23) để đóng đúng phần A3 còn thiếu; A6 vẫn
+còn hai việc mở, xem [§ Điều kiện hoàn thành cần sửa lại](#điều-kiện-hoàn-thành-cần-sửa-lại).
+
 Từ vựng dùng xuyên suốt (giống đợt 1): *module* (thứ có interface và implementation, ở mọi quy mô),
 *interface* (mọi thứ người gọi phải biết để dùng đúng), *seam* (nơi interface nằm), *adapter* (thứ
 cụ thể ngồi ở seam), *depth* (lượng hành vi trên một đơn vị interface), *leverage* (cái người gọi
@@ -145,7 +148,9 @@ khi phải viết từng bước xuống.
 - **A1** — ba chỗ `team-builder` truy vấn thẳng `prisma.battleSession` (`:72`, `:123`, `:176`); doc
   comment `battle-sessions.service.ts:42-46`; side effect ở `listByWeek:92-94`.
 - **A3** — `attendance:32-35/:37-45/:60-68/:118-123`, `team-builder:214-222` hụt `satisfies`; luật
-  `satisfies` ở `apps/api/docs/backend.md:117`; **không có `.parse()` nào chạy trên schema chiều ra**.
+  `satisfies` ở `apps/api/docs/backend.md:117`; **không có `.parse()` nào chạy trên schema chiều ra**
+  *(đúng tại `9820b5a` và cho tới khi §4 được làm nốt ngày 2026-08-23 — xem §Điều kiện hoàn thành
+  cần sửa lại)*.
 - **A4** — `2026-07-22Z` đúng là Thứ 4; `2026-07-20T00:00:00+07:00` đúng là mốc Thứ 2 giờ VN;
   `z.iso.datetime()` hợp lệ vì repo dùng zod v4.
 - **A5** — `jwt-auth.guard.ts:13/:37-52`, `optional-jwt-auth.guard.ts:8`, `auth.service.ts:63-68`;
@@ -206,7 +211,7 @@ A1 và A2 đã bị xoá (`b2a3d21`), nên hai spec đó không có gì để đ
 | # | Spec | Chỗ thiếu | Kế hoạch chốt thế nào |
 |---|---|---|---|
 | 7 | A3 §2 | **Sót một call site.** Spec chỉ nói `attendance` truy vấn thẳng `prisma.character`, nhưng `team-builder.service.ts` (`loadCharacterIds`) cũng vậy. Bỏ qua thì câu *"một bảng, một chủ"* vẫn còn đúng một ngoại lệ phải nhớ — đúng thứ spec viết ra để xoá. | Mở rộng phạm vi sang `team-builder` (Task 4), và khẳng định bằng `grep -rn "prisma.character"`. |
-| 8 | A3 §4 | **Cả một §bị bỏ, và lỗ hổng nó vá vẫn còn mở.** §4 (chạy `characterSchema.parse()` ngoài production) bị loại khi lập kế hoạch. Spec đã dự phòng chuyện này (*"bỏ nó không làm hỏng phần còn lại"*), nhưng phần §Bối cảnh chẩn đoán *"enum lệch trong database chảy thẳng ra client, fail lặng"* thì **không ai vá**. Đó là một vấn đề còn nguyên, không phải một mục đã đóng. | Bỏ §4, không thêm `SHOULD_VERIFY_RESPONSES`, không thêm nhánh rẽ theo môi trường. |
+| 8 | A3 §4 | **Cả một §bị bỏ, và lỗ hổng nó vá vẫn còn mở.** §4 (chạy `characterSchema.parse()` ngoài production) bị loại khi lập kế hoạch. Spec đã dự phòng chuyện này (*"bỏ nó không làm hỏng phần còn lại"*), nhưng phần §Bối cảnh chẩn đoán *"enum lệch trong database chảy thẳng ra client, fail lặng"* thì **không ai vá**. Đó là một vấn đề còn nguyên, không phải một mục đã đóng. | Bỏ §4, không thêm `SHOULD_VERIFY_RESPONSES`, không thêm nhánh rẽ theo môi trường. **Đã đảo lại 2026-08-23**: §4 hiện thực thành `config/response-verification.ts` (`verifyResponse`), phủ cả sáu shape chiều ra — xem [§Điều kiện hoàn thành cần sửa lại](#điều-kiện-hoàn-thành-cần-sửa-lại). |
 | 9 | A4 §4 | **Một DTO cho hai module là bất khả thi.** Bảng thay đổi chỉ ghi `battle-sessions/dto/battle-session.dto.ts`, nhưng `team-builder` không được import DTO của `battle-sessions` (luật ranh giới module), và đẩy một DTO class qua `battle-sessions.public.ts` là phơi chi tiết HTTP của module này ra module khác. | Hai file DTO một dòng, mỗi module một cái; shape vẫn khai báo đúng một lần ở `packages/shared`. Bản hiện thực đúng như vậy. |
 | 10 | A4 | **Không nói ai sở hữu câu `'Tuần không hợp lệ.'`** Sau §4 câu đó phải xuất hiện ở hai tầng — Zod (`packages/shared`) và `parseWeekStart` (`apps/api`) — nên nó là một chuỗi lặp giữa hai package. | Hằng `INVALID_WEEK_MESSAGE` ở `packages/shared`, theo đúng khuôn `DEADLINE_CAP_MESSAGE`. |
 | 11 | A5 §1 | **Chữ ký `VerifyToken` tự đánh bại mục đích của spec.** `VerifyToken = (token) => Promise<JwtPayload \| null>` (*"trả null thay vì ném"*) đẩy `.catch(() => null)` ngược về cả ba call site — đúng bản sao spec viết ra để xoá. | Đảo lại: `VerifyToken` **được phép ném**, `readToken` là chỗ duy nhất còn `.catch(() => null)`, khoá bằng `grep`. |
@@ -238,8 +243,21 @@ Ghi lại vì cả ba tài liệu (spec · kế hoạch · code) đang nói ba t
 
 ### Điều kiện hoàn thành cần sửa lại
 
-- **A3** chưa xong theo nghĩa spec đặt ra: §4 bị bỏ nên chẩn đoán *"schema chiều ra là type chết"* ở
-  §Bối cảnh vẫn đúng nguyên văn tại thời điểm này. Hoặc ghi nó thành một mục mới của đợt sau, hoặc
-  sửa §Bối cảnh của A3 để không còn hứa chuyện §4 không làm.
+- **A3 — đã đóng (2026-08-23).** Trước đó A3 chưa xong theo nghĩa spec đặt ra: §4 bị bỏ nên chẩn
+  đoán *"schema chiều ra là type chết"* ở §Bối cảnh vẫn đúng nguyên văn. Xử lý: **làm nốt §4** thay
+  vì hạ lời hứa của spec.
+  - `apps/api/src/config/response-verification.ts` — `SHOULD_VERIFY_RESPONSES`
+    (`NODE_ENV !== 'production'`) và `verifyResponse(schema, value)`: ngoài production thì chạy
+    `schema.parse`, trong production thì trả thẳng giá trị.
+  - Phủ **cả sáu** shape chiều ra, không chỉ ba shape có codec: `Character`, `AttendanceRecord`,
+    `BattleSession` gọi trong codec; `Week` gọi ở `battle-sessions.service.getEditableWeeks`;
+    `FormationWeek` và `SessionFormation` (2 chỗ) gọi ở `team-builder.service`. Phủ nửa vời thì câu
+    "type chết" vẫn đúng với nửa còn lại.
+  - Đây là chỗ **duy nhất** trong `src/` đọc thẳng `process.env`. Lý do (codec là hàm mức module,
+    ngoài cây DI nên không nhận được `ConfigService`) ghi ở chính file đó, ở `apps/api/docs/backend.md`
+    và ở `apps/api/CLAUDE.md` — hai chỗ đang phát biểu luật *"Nothing reads `process.env`"*.
+  - Test: `config/response-verification.spec.ts` khoá cả hai nhánh của cờ (nhánh production nạp lại
+    module trong `jest.isolateModules`); hai codec spec thêm bài "enum lạ trong database làm codec
+    ném". Spec A3 §4 và kế hoạch A3 Task 6 đã cập nhật theo.
 - **A6** còn hai việc chưa đóng: `P2003` → 409 (lỗi #3), và câu hỏi purge có nên rời đường `GET` thật
   không (lỗi #1, #2). Cả hai nên thành một mục riêng chứ không nằm im trong ghi chú của A6.

@@ -24,4 +24,10 @@ describe('toCharacter', () => {
 
     expect(Object.keys(entity)).toEqual(['id', 'name', 'guildClass']);
   });
+
+  it('ném khi lưu phái trong database không thuộc enum dùng chung', () => {
+    expect(() =>
+      toCharacter({ id: 'huy-a1', name: 'Huy', guildClass: 'PHAI_LA' }),
+    ).toThrow();
+  });
 });

@@ -122,6 +122,12 @@ object is built in `<domain>.codec.ts` — one pure function per shape, ending i
 living in the module that **owns the table**. A module that reads someone else's table calls that
 module's service and reuses its codec; it never writes the cast itself.
 
+`satisfies` is a compile-time check, so an `as` cast on a database value slips through it silently.
+Every built response therefore goes through `verifyResponse(<shape>Schema, { … } satisfies <Shape>)`
+(`config/response-verification.ts`): outside production the schema really runs, in production the
+value is passed straight through. A shape without a codec — `Week`, `SessionFormation`,
+`FormationWeek` — calls it at its single build site in the service.
+
 Every other file in the folder is internal. What another module may import is one file:
 
 ```
@@ -343,7 +349,9 @@ Consequences worth knowing:
   naming the field — far better than a failure halfway through a request.
 - Nothing reads `process.env` directly. Inject `ConfigService<Env, true>` (aliased as
   `AppConfigService`) and use `config.get('X', { infer: true })` so the value keeps its parsed type.
-  `PrismaService` gets `DATABASE_URL` this way too.
+  `PrismaService` gets `DATABASE_URL` this way too. The one exception is
+  `config/response-verification.ts`, and it is documented in the file: its consumers are the
+  `<domain>.codec.ts` functions, which are module-level and outside the DI graph.
 - `DIRECT_DATABASE_URL` is intentionally **not** in the schema: it is for the Prisma CLI only, never
   the runtime.
 - A new variable means: `env.validation.ts` + `.env.example` + the tables in
@@ -444,7 +452,7 @@ What a NestJS project should have on day one, and where this one stands:
 | `@Query('x')` as a bare string | A query shape is a request shape: declare it in `packages/shared`, wrap it with `createZodDto`, take it as `@Query() query: XDto` |
 | Returning a Prisma model straight from the API | Map to the shared response shape, so `password`/`deletedAt` cannot leak |
 | `any`, "I'll fix it later" | `unknown` + a type guard (`no-explicit-any` is an error here) |
-| Reading `process.env` inside a service | `ConfigService<Env, true>`, declared in `env.validation.ts` |
+| Reading `process.env` inside a service | `ConfigService<Env, true>`, declared in `env.validation.ts` (the single exception lives in `config/response-verification.ts`) |
 | Re-deriving a backend rule on the frontend | The rule stays in one place (`session-schedule.ts`) |
 | One `shared.module.ts` with 30 providers | Split by purpose — or don't create it until it's needed |
 

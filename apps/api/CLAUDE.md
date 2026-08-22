@@ -27,7 +27,10 @@ The rules that get broken first, in the order they get broken:
 - **No `forwardRef()`.** If `A` needs `B` and `B` needs `A`, extract a third module or use an event.
 - **Nothing reads `process.env`.** Declare the variable in `config/env.validation.ts` and inject
   `AppConfigService` (`config.get('X', { infer: true })`) so the value keeps its parsed type.
-  `DIRECT_DATABASE_URL` stays out of the schema on purpose: Prisma CLI only, never the runtime.
+  `DIRECT_DATABASE_URL` stays out of the schema on purpose: Prisma CLI only, never the runtime. The
+  single exception is `config/response-verification.ts` (codecs are module-level, outside DI).
+- **Every response object is built through `verifyResponse(<shape>Schema, { … } satisfies <Shape>)`**
+  — `satisfies` alone cannot see through the `as` cast on a database enum.
 - **Add a piece when a second caller appears** — `guards/`, `decorators/`, `<domain>.repository.ts`.
   Simple CRUD calls `PrismaService` straight from the service.
 - **Barrels live in `common/` and `config/` only.** Inside `modules/` they are a reliable way to

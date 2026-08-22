@@ -1,10 +1,13 @@
 # A3 — Codec response thành module, thay vì quy ước ở mỗi call site
 
-> **Đã hiện thực** (`cda3da9` → `abccaf5`). Rà soát lại 2026-08-23: bằng chứng chính xác (kể cả việc
-> không có `.parse()` nào chạy trên schema chiều ra), trừ hai điểm nhỏ — (1) `characters.service.ts`
-> lệch 1 dòng: `toEntity` ở `:118-126`, `satisfies` ở `:125`; (2) §Edge case về thứ tự sắp xếp là
-> thừa, `CharactersService.list()` đã dùng đúng `orderBy: { name: 'asc' }`. Chi tiết:
+> **Đã hiện thực** (`cda3da9` → `abccaf5`; §4 làm sau, 2026-08-23). Rà soát lại 2026-08-23: bằng
+> chứng chính xác, trừ hai điểm nhỏ — (1) `characters.service.ts` lệch 1 dòng: `toEntity` ở
+> `:118-126`, `satisfies` ở `:125`; (2) §Edge case về thứ tự sắp xếp là thừa,
+> `CharactersService.list()` đã dùng đúng `orderBy: { name: 'asc' }`. Chi tiết:
 > [§ Rà soát lại A1–A6](./2026-08-21-architecture-review-2-overview.md#rà-soát-lại-a1a6-2026-08-23).
+>
+> §4 từng bị bỏ khi lập kế hoạch, nên chẩn đoán *"schema chiều ra là type chết"* ở §Bối cảnh còn mở
+> thêm một thời gian. **Đã đóng**: §4 dưới đây mô tả đúng bản đang chạy.
 
 Ngày: 2026-08-21 · Phạm vi: `apps/api` + `packages/shared`.
 Bối cảnh chung: [tổng quan đợt 2](./2026-08-21-architecture-review-2-overview.md).
@@ -108,10 +111,20 @@ comment giải thích. Không call site nào khác được viết `as` cho enum
 
 ### 4. Chạy schema Zod ở chiều ra — chỉ ngoài production
 
+Một hàm duy nhất ở `config/`, mọi chỗ dựng response gọi nó:
+
+```ts
+// config/response-verification.ts
+export const SHOULD_VERIFY_RESPONSES = process.env.NODE_ENV !== 'production';
+
+export function verifyResponse<T>(schema: ZodType<T>, value: T): T {
+  return SHOULD_VERIFY_RESPONSES ? schema.parse(value) : value;
+}
+```
+
 ```ts
 // characters.codec.ts
-const value = { … } satisfies Character;
-return process.env.NODE_ENV === 'production' ? value : characterSchema.parse(value);
+return verifyResponse(characterSchema, { … } satisfies Character);
 ```
 
 Đây là điểm đánh đổi rõ nhất của spec, nên nói thẳng lý do:
@@ -123,10 +136,20 @@ return process.env.NODE_ENV === 'production' ? value : characterSchema.parse(val
   mọi response trong production là trả giá CPU cho một lớp lỗi đáng lẽ phải chết ở dev/CI.
 - Đọc `process.env` trực tiếp là ngoại lệ với luật *"Nothing reads `process.env`"*; để không phá
   luật, giá trị đến từ `AppConfigService` và codec nhận cờ qua tham số, hoặc dùng một hằng số dựng
-  một lần ở `config/`. Chọn hằng số ở `config/` — codec phải giữ được tính thuần.
+  một lần ở `config/`. Chọn hằng số ở `config/` — codec là hàm mức module, không nằm trong cây DI
+  nên không nhận được `ConfigService`, còn truyền cờ qua tham số thì bắt mọi call site mang theo
+  một thứ chẳng liên quan tới việc dựng response. Ngoại lệ này được ghi ở chính file đó, ở
+  `apps/api/docs/backend.md` §"config" và ở `apps/api/CLAUDE.md`.
+
+**Phạm vi: cả sáu shape chiều ra**, không chỉ ba shape có codec. `Character`, `AttendanceRecord`,
+`BattleSession` gọi `verifyResponse` bên trong codec; `Week`, `SessionFormation`, `FormationWeek`
+chưa có codec riêng nên gọi ngay tại chỗ dựng duy nhất của chúng trong service
+(`battle-sessions.service.ts`, `team-builder.service.ts`). Nếu bỏ sót nhóm sau thì câu *"schema
+chiều ra là type chết"* ở §Bối cảnh vẫn đúng với một nửa số shape.
 
 Nếu người review thấy §4 quá tay, bỏ nó **không làm hỏng** phần còn lại của spec: §1–§3 vẫn đứng
-độc lập. Ghi rõ ở đây để quyết định được tách ra khi grill.
+độc lập. Ghi rõ ở đây để quyết định được tách ra khi grill. *(Kế hoạch đã từng bỏ đúng như vậy;
+2026-08-23 quyết định làm nốt, vì §Bối cảnh chẩn đoán lỗ hổng này mà không §nào khác vá.)*
 
 ## Thay đổi cụ thể
 
@@ -141,7 +164,10 @@ Nếu người review thấy §4 quá tay, bỏ nó **không làm hỏng** phầ
 | `modules/attendance/attendance.module.ts` | import `CharactersModule` |
 | `modules/battle-sessions/battle-sessions.codec.ts` (mới) | `toBattleSession` (chuyển từ `private toEntity`, `:313-326`) |
 | `modules/team-builder/team-builder.service.ts:214-222` | thêm `satisfies SessionFormation` |
-| `config/` | hằng số `SHOULD_VERIFY_RESPONSES` (nếu giữ §4) |
+| `config/response-verification.ts` (mới) | `SHOULD_VERIFY_RESPONSES` + `verifyResponse` (§4), re-export qua `config/index.ts` |
+| `modules/battle-sessions/battle-sessions.service.ts` (`getEditableWeeks`) | dựng `Week` qua `verifyResponse` |
+| `modules/team-builder/team-builder.service.ts` (`getWeeks`, `readFormations`, `saveFormation`) | dựng `FormationWeek`/`SessionFormation` qua `verifyResponse` |
+| `apps/api/docs/backend.md` + `apps/api/CLAUDE.md` | ghi luật `verifyResponse` và ngoại lệ `process.env` |
 
 ## Edge case
 
@@ -162,7 +188,10 @@ Nếu người review thấy §4 quá tay, bỏ nó **không làm hỏng** phầ
 - `attendance.service.spec.ts` hiện **chỉ có** `describe('AttendanceService.mark')` — `getCharacters`
   và `getRecords` chưa có test nào. Sau khi tách codec, thêm test cho hai hàm đó ở mức service (mock
   `CharactersService`), phần dựng shape đã được codec test riêng.
-- Nếu giữ §4: một test khẳng định giá trị enum lạ **ném** ở môi trường test.
+- §4: `config/response-verification.spec.ts` khoá cả hai nhánh — ngoài production thì object sai
+  contract **ném** `ZodError`, ở production thì đi qua nguyên vẹn (nạp lại module trong
+  `jest.isolateModules` với `NODE_ENV=production`). Thêm ở `characters.codec.spec.ts` và
+  `attendance.codec.spec.ts` mỗi file một bài: giá trị enum lạ trong database làm codec ném.
 
 ## Rủi ro
 

@@ -1,5 +1,6 @@
-import type { BattleSession } from '@guild/shared/schemas';
+import { battleSessionSchema, type BattleSession } from '@guild/shared/schemas';
 
+import { verifyResponse } from '../../config';
 import { formatSessionLabel, isDeadlinePassed } from './session-schedule';
 
 /** Hàng BattleSession đọc kèm số liệu phụ cho entity. */
@@ -20,7 +21,7 @@ export type SessionRow = {
  * @returns Trận đánh đã dựng nhãn và đổi thời gian sang ISO string
  */
 export function toBattleSession(row: SessionRow, now: Date): BattleSession {
-  return {
+  return verifyResponse(battleSessionSchema, {
     id: row.id,
     label: formatSessionLabel(row.dateTime, row.isGuildWar),
     dateTime: row.dateTime.toISOString(),
@@ -31,5 +32,5 @@ export function toBattleSession(row: SessionRow, now: Date): BattleSession {
     weekStart: row.weekStart.toISOString(),
     attendanceCount: row._count.attendanceRecords,
     hasFormation: row._count.formationMatches > 0,
-  } satisfies BattleSession;
+  } satisfies BattleSession);
 }

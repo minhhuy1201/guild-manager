@@ -3,6 +3,10 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import {
+  formationWeekSchema,
+  sessionFormationSchema,
+} from '@guild/shared/schemas';
 import type {
   FormationWeek,
   MatchFormation,
@@ -11,6 +15,7 @@ import type {
 } from '@guild/shared/schemas';
 
 import { Clock } from '../../common';
+import { verifyResponse } from '../../config';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import {
   BattleSessionsService,
@@ -53,13 +58,12 @@ export class TeamBuilderService {
 
     const anchors = await this.battleSessions.listWeekAnchors();
 
-    return anchors.map(
-      (anchor) =>
-        ({
-          weekStart: anchor.toISOString(),
-          weekEnd: weekEndOf(anchor).toISOString(),
-          isActive: isSameWeek(anchor, activeWeek),
-        }) satisfies FormationWeek,
+    return anchors.map((anchor) =>
+      verifyResponse(formationWeekSchema, {
+        weekStart: anchor.toISOString(),
+        weekEnd: weekEndOf(anchor).toISOString(),
+        isActive: isSameWeek(anchor, activeWeek),
+      } satisfies FormationWeek),
     );
   }
 
@@ -98,17 +102,16 @@ export class TeamBuilderService {
       sessions.map((session) => session.id),
     );
 
-    return sessions.map(
-      (session) =>
-        ({
-          sessionId: session.id,
-          label: session.label,
-          opponent: session.opponent,
-          dateTime: session.dateTime.toISOString(),
-          isGuildWar: session.isGuildWar,
-          locked: isSessionLocked(session.dateTime, now),
-          matches: matchesBySession.get(session.id) ?? [],
-        }) satisfies SessionFormation,
+    return sessions.map((session) =>
+      verifyResponse(sessionFormationSchema, {
+        sessionId: session.id,
+        label: session.label,
+        opponent: session.opponent,
+        dateTime: session.dateTime.toISOString(),
+        isGuildWar: session.isGuildWar,
+        locked: isSessionLocked(session.dateTime, now),
+        matches: matchesBySession.get(session.id) ?? [],
+      } satisfies SessionFormation),
     );
   }
 
@@ -210,7 +213,7 @@ export class TeamBuilderService {
         throw error;
       });
 
-    return {
+    return verifyResponse(sessionFormationSchema, {
       sessionId: session.id,
       label: session.label,
       opponent: session.opponent,
@@ -218,7 +221,7 @@ export class TeamBuilderService {
       isGuildWar: session.isGuildWar,
       locked: isSessionLocked(dateTime, now),
       matches: savedMatches,
-    } satisfies SessionFormation;
+    } satisfies SessionFormation);
   }
 }
 
