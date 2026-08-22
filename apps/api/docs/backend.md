@@ -111,6 +111,7 @@ modules/characters/
 │
 └── __tests__/
     ├── characters.lib.spec.ts
+    ├── characters.codec.spec.ts
     └── characters.service.spec.ts
 ```
 
@@ -127,8 +128,9 @@ modules/battle-sessions/
 ```
 
 `battle-sessions` and `characters` have one today, because they are the modules with outside callers:
-`attendance` and `team-builder` read the schedule and the roster through them. It re-exports `BattleSessionsService` and the pure week/deadline helpers; the `*.module` file
-next to it went back to being DI metadata only. §4 has the rule that enforces this, §8 the reason
+`attendance` and `team-builder` read the schedule and the roster through them. They re-export
+`BattleSessionsService` and the pure week/deadline helpers, and `CharactersService`; the `*.module`
+files next to them went back to being DI metadata only. §4 has the rule that enforces this, §8 the reason
 this one file is not the barrel the naming table forbids.
 
 Optional pieces, added **only when a second caller appears**, never speculatively:
