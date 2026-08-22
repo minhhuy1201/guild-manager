@@ -6,7 +6,10 @@
 > `architecture.md:114-115` (*"Services hold the business logic"*), mà `architecture.md` là **binding**;
 > (3) §4 nói quá — đưa `loadCharacterIds` vào `$transaction` **không** đóng được race dưới READ
 > COMMITTED (isolation mặc định của Prisma/Postgres), chỉ thu hẹp cửa sổ; fix đúng là bắt `P2003` →
-> 409. Ngoài ra §2 lẫn ghi chú hậu-hiện-thực vào spec. Chi tiết:
+> 409. Ngoài ra §2 lẫn ghi chú hậu-hiện-thực vào spec.
+> **Trạng thái 2026-08-23: cả ba đã đóng.** Lỗi #3 đóng ở `ea8d0ed`; lỗi #1 và #2 đóng bằng việc
+> chuyển purge sang đường ghi (`saveFormation`), `GET` thành chỉ đọc và controller trở lại một dòng.
+> §3 và §4 dưới đây đã viết lại theo bản hiện thực — tiêu đề spec giờ đúng nghĩa đen. Chi tiết:
 > [§ Rà soát lại A1–A6](./2026-08-21-architecture-review-2-overview.md#rà-soát-lại-a1a6-2026-08-23).
 
 Ngày: 2026-08-21 · Phạm vi: `apps/api/src/modules/team-builder`.
@@ -151,18 +154,45 @@ async purgeExpiredFormations(now: Date): Promise<number>;
 
 `private` → `public`, trả về số hàng đã xoá (để gọi được từ chỗ khác và quan sát được).
 
-**`getWeeks` có còn gọi nó không?** Có — nhưng đó là quyết định của caller, không phải một bước bắt
-buộc chôn trong hàm đọc. Cụ thể: `TeamBuilderController.getWeeks` gọi purge rồi mới đọc, và điều đó
-**được ghi trong doc comment của controller**, không phải ẩn trong service.
+**`getWeeks` có còn gọi nó không?** Không. `GET` là chỉ đọc; retention đi theo **đường ghi** —
+`saveFormation` gọi `purgeExpiredFormations(now)` sau khi qua hai guard (404, 409) và **trước**
+`$transaction`. Controller không biết gì về retention và không cần `Clock`.
+
+Ba lý do cho đường ghi:
+
+- Dữ liệu chỉ phình ra khi có người lưu, nên dọn ở đúng chỗ làm nó phình.
+- Trình tự nghiệp vụ nằm trong service — `architecture.md:114-115` (*"Services hold the business
+  logic"*) là binding, controller phải mỏng.
+- Chạy trước `$transaction` để một `deleteMany` hỏng không biến một lượt lưu **đã thành công** thành
+  500. Hai tập không giao nhau (purge lọc tuần cũ hơn 56 ngày, `saveFormation` chỉ ghi cho trận chưa
+  đánh) nên thứ tự này không xoá mất thứ vừa ghi.
+
+Đánh đổi đã chấp nhận: retention chỉ tiến khi có người lưu đội hình. Không ai lưu suốt mấy tháng thì
+dữ liệu quá 56 ngày nằm lại — vô hại (đội hình cũ, không phải PII), và "56 ngày" thành "56 ngày *và*
+có người ghi". Thêm một `deleteMany` vào độ trễ của `PUT` cũng nằm trong đánh đổi này; chưa tối ưu
+(ví dụ chỉ purge khi ghi vào tuần đang mở) cho tới khi đo được là chậm.
 
 Vì sao không dựng cron thật: repo không có scheduler, `architecture.md` §8 ghi rõ những gì cố ý
 vắng mặt, và thêm `@nestjs/schedule` cho một `deleteMany` mỗi 56 ngày là thêm hạ tầng cho một nhu
-cầu chưa có. Spec này chỉ **đưa quyết định lên chỗ nhìn thấy được**, không đổi nó.
+cầu chưa có. `purgeExpiredFormations` vẫn public, nên khi có job thứ hai thì chỉ cần đổi caller.
 
-### 4. `loadCharacterIds` vào trong transaction
+### 4. Race "thành viên bị xoá đúng lúc ghi" thành 409, không phải 500
 
-`:190` chuyển vào trong `$transaction`, đọc bằng `tx.character.findMany`. Một round-trip thêm bên
-trong transaction, đổi lấy việc phép lọc thực sự bảo vệ được câu insert.
+Phép lọc theo `knownIds` chạy trước câu insert, nên một `DELETE` commit vào giữa vẫn làm vỡ khoá
+ngoại. Dưới READ COMMITTED — isolation mặc định của Prisma/Postgres — `SELECT id FROM character`
+không khoá hàng đã đọc, nên **không** cách nào đóng được race bằng cách dời phép đọc; chỉ có bắt
+lỗi hoặc serializable isolation.
+
+Chốt: **bắt lỗi**, vì đây là ca hiếm và người dùng có thao tác khắc phục rõ ràng.
+
+- Phép đọc chuyển vào trong `$transaction`, gọi `characters.listIds(tx)` — module khác sở hữu bảng
+  `character` nên đi qua service của nó, không `tx.character.findMany` (`apps/api/docs/backend.md:120`).
+  Việc này chỉ **thu hẹp** cửa sổ, và comment tại chỗ phải nói đúng như vậy.
+- `$transaction` được bọc `.catch()`: lỗi Prisma mã `P2003` thành
+  `ConflictException('Có thành viên vừa bị xoá khỏi bang, vui lòng tải lại trang rồi lưu lại.')`;
+  mọi lỗi khác `throw` nguyên để không nuốt mất lỗi thật.
+- Phép nhận diện tách thành hàm thuần `isForeignKeyViolation(error)`, mã `P2003` nằm ở một hằng
+  có tên.
 
 ## Thay đổi cụ thể
 
@@ -175,8 +205,9 @@ trong transaction, đổi lấy việc phép lọc thực sự bảo vệ đư�
 | `team-builder.service.ts:143, 183, 220` | dùng `isSessionLocked` |
 | `team-builder.service.ts:95-101` | `private` → `public`, trả `number` |
 | `team-builder.service.ts:67-68` | bỏ `purgeExpiredFormations` khỏi `getWeeks` |
-| `team-builder.controller.ts:27-31` | gọi purge rồi `getWeeks`, doc comment nói rõ |
-| `team-builder.service.ts:190-212` | `loadCharacterIds` vào trong `$transaction` |
+| `team-builder.service.ts` `saveFormation` | gọi `purgeExpiredFormations(now)` sau hai guard, trước `$transaction` |
+| `team-builder.controller.ts` | `getWeeks` còn một dòng; bỏ `Clock` khỏi constructor |
+| `team-builder.service.ts:190-212` | `loadCharacterIds` → `characters.listIds(tx)` trong `$transaction`; `.catch()` đổi `P2003` thành 409 |
 | `__tests__/formation-grid.spec.ts` (mới) | round-trip |
 
 ## Edge case
@@ -184,13 +215,17 @@ trong transaction, đổi lấy việc phép lọc thực sự bảo vệ đư�
 - **Ô chỉ có ghi chú, không có người** — ca mà `buildSlotRows` được viết ra để cứu. Phải là ca đầu
   tiên của test round-trip.
 - **Ô có người nhưng người đó vừa bị xoá** — `saveFormation` lọc trước khi encode; `decodeMatch`
-  không biết gì về việc đó và không cần biết.
+  không biết gì về việc đó và không cần biết. Nếu việc xoá xảy ra **sau** phép lọc thì khoá ngoại vỡ,
+  và §4 đổi nó thành 409 chứ không phải 500.
 - **Trận không có hàng nào** → `decodeMatch([])` cho `{ slots: {}, notes: {} }`, không phải
   `undefined`. Khoá lại bằng test: "không có slot 2" và "slot 2 rỗng" phải phân biệt được ở tầng
   trên, không phải ở codec.
 - **`matchIndex`** vẫn do service quản (`:203-211`); codec chỉ biết một trận, không biết thứ tự.
 - **Purge chạy song song với save.** `deleteMany` lọc theo `weekStart < cutoff` (56 ngày trước),
-  `saveFormation` chỉ ghi được cho trận chưa đánh — hai tập không giao nhau. Không cần khoá.
+  `saveFormation` chỉ ghi được cho trận chưa đánh — hai tập không giao nhau. Không cần khoá. Đây
+  cũng là lý do purge chạy được **trong chính** `saveFormation` mà không tự xoá mất thứ vừa ghi.
+- **Request bị từ chối thì không dọn.** Purge nằm **sau** hai guard (404 không có ngày đánh, 409 đã
+  qua giờ đánh): một request hỏng không được đụng vào dữ liệu.
 
 ## Kiểm thử
 
@@ -201,14 +236,22 @@ trong transaction, đổi lấy việc phép lọc thực sự bảo vệ đư�
 - `purgeExpiredFormations` test độc lập, không cần dựng cả một tuần lịch — hiện
   `team-builder.service.spec.ts` phải mock `deleteMany` chỉ để `getFormations` chạy được; mock đó
   biến mất.
-- Giữ nguyên các test hành vi của `saveFormation`.
+- Giữ nguyên các test hành vi của `saveFormation`, thêm hai ca cho §4: `$transaction` ném lỗi mã
+  `P2003` → `ConflictException`, và một lỗi database khác → **không** bị nuốt thành 409.
+- Ba ca cho §3 ở `saveFormation`: dọn theo mốc cắt của `Clock`; dọn **trước** transaction (khoá thứ
+  tự); ngày đã khoá thì `deleteMany` không được gọi.
+- Controller spec khoá chiều ngược lại: `GET /team-builder/weeks` **không** gọi
+  `purgeExpiredFormations`.
 
 ## Rủi ro
 
 - **`decodeMatch` viết lệch `encodeMatch`** là đúng rủi ro spec này sinh ra để đóng lại — nên viết
   test round-trip **trước** khi chuyển code, để nó chạy trên hành vi cũ trước.
-- **Đưa purge lên controller** làm nó dễ bị quên khi thêm endpoint. Chấp nhận: quên purge chỉ giữ
-  lại dữ liệu cũ lâu hơn, còn quên đúng thứ tự trong hàm đọc thì trả về sai dữ liệu.
+- **Retention treo vào đường ghi** nên nó ngừng chạy nếu không ai lưu đội hình nữa. Chấp nhận: hậu
+  quả duy nhất là dữ liệu cũ nằm lại lâu hơn 56 ngày. Nếu sau này cần bảo đảm theo lịch thật thì đổi
+  caller sang cron — `purgeExpiredFormations` đã public sẵn.
+- **`PUT` gánh thêm một `deleteMany`.** Chấp nhận cho tới khi đo được là chậm; lúc đó thu hẹp bằng
+  điều kiện (chỉ purge khi ghi vào tuần đang mở) chứ không quay lại đường `GET`.
 
 ## Ngoài phạm vi
 

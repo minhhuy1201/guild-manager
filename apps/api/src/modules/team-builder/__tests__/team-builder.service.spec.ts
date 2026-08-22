@@ -366,6 +366,7 @@ describe('TeamBuilderService.saveFormation', () => {
   };
   let prisma: {
     $transaction: jest.Mock;
+    formationMatch: { deleteMany: jest.Mock };
   };
   let battleSessions: { findById: jest.Mock };
   let characters: { listIds: jest.Mock };
@@ -381,6 +382,7 @@ describe('TeamBuilderService.saveFormation', () => {
     };
     prisma = {
       $transaction: jest.fn((run: (client: typeof tx) => unknown) => run(tx)),
+      formationMatch: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
     };
     characters = {
       listIds: jest.fn().mockResolvedValue(new Set(['char-1', 'char-2'])),
@@ -511,6 +513,48 @@ describe('TeamBuilderService.saveFormation', () => {
     ]);
 
     expect(result.locked).toBe(false);
+  });
+
+  it('dọn đội hình quá hạn trên đường ghi, theo đồng hồ ứng dụng', async () => {
+    await service.saveFormation('session-thu', [{ slots: {}, notes: {} }]);
+
+    expect(prisma.formationMatch.deleteMany).toHaveBeenCalledWith({
+      where: { session: { weekStart: { lt: vn('2026-05-27T12:00') } } },
+    });
+  });
+
+  it('dọn TRƯỚC transaction để lưu xong rồi mới hỏng thì không thành 500', async () => {
+    const order: string[] = [];
+    prisma.formationMatch.deleteMany.mockImplementation(() => {
+      order.push('purge');
+      return Promise.resolve({ count: 0 });
+    });
+    prisma.$transaction.mockImplementation(
+      (run: (client: typeof tx) => unknown) => {
+        order.push('write');
+        return run(tx);
+      },
+    );
+
+    await service.saveFormation('session-thu', [{ slots: {}, notes: {} }]);
+
+    expect(order).toEqual(['purge', 'write']);
+  });
+
+  it('ngày đã khoá thì không dọn gì cả — request bị từ chối là không đụng dữ liệu', async () => {
+    battleSessions.findById.mockResolvedValue({
+      id: 'session-tue',
+      label: 'Thứ 3 · 20:30',
+      dateTime: vn('2026-07-21T20:30').toISOString(),
+      opponent: null,
+      isGuildWar: false,
+      weekStart: WEEK_START.toISOString(),
+    });
+
+    await expect(
+      service.saveFormation('session-tue', [{ slots: {}, notes: {} }]),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(prisma.formationMatch.deleteMany).not.toHaveBeenCalled();
   });
 
   it('không tìm thấy ngày đánh thì ném NotFoundException', async () => {

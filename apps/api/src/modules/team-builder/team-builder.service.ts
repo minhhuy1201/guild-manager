@@ -47,7 +47,7 @@ export class TeamBuilderService {
 
   /**
    * Liệt kê các tuần còn dữ liệu đội hình, mới nhất trước.
-   * Chỉ đọc — việc dọn dữ liệu quá hạn là `purgeExpiredFormations`, do caller gọi.
+   * Chỉ đọc — retention chạy ở đường ghi (`saveFormation`), không ở đây.
    * @returns Mảng tuần, mới nhất trước, tuần đang mở mang cờ isActive
    */
   async getWeeks(): Promise<FormationWeek[]> {
@@ -70,6 +70,8 @@ export class TeamBuilderService {
   /**
    * Xoá các đội hình cũ hơn RETENTION_DAYS.
    * Chỉ xoá đội hình — BattleSession và điểm danh là dữ liệu của module khác.
+   * Repo không có scheduler nên `saveFormation` gọi hàm này; nó vẫn public để một cron
+   * hay một lệnh vận hành sau này gọi được mà không phải đi qua đường ghi.
    * @param now - Thời điểm hiện tại
    * @returns Số bản ghi đã xoá
    */
@@ -166,6 +168,12 @@ export class TeamBuilderService {
     if (isSessionLocked(dateTime, now)) {
       throw new ConflictException('Trận này đã đánh xong, không sửa được nữa.');
     }
+
+    // Retention đi theo đường GHI, không theo đường đọc: dữ liệu chỉ phình ra khi có người lưu,
+    // và `GET` phải là chỉ đọc. Chạy TRƯỚC transaction để một `deleteMany` hỏng không biến một
+    // lượt lưu đã thành công thành 500. Hai tập không giao nhau — purge lọc tuần cũ hơn 56 ngày,
+    // còn ở đây trận chắc chắn chưa đánh — nên thứ tự này không xoá mất thứ vừa ghi.
+    await this.purgeExpiredFormations(now);
 
     const savedMatches = await this.prisma
       .$transaction(async (tx) => {

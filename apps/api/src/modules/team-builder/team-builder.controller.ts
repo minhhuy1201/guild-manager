@@ -10,7 +10,7 @@ import {
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { FormationWeek, SessionFormation } from '@guild/shared/schemas';
 
-import { Clock, JwtAuthGuard } from '../../common';
+import { JwtAuthGuard } from '../../common';
 import { SaveFormationDto } from './dto/save-formation.dto';
 import { WeekStartQueryDto } from './dto/week-start-query.dto';
 import { TeamBuilderService } from './team-builder.service';
@@ -19,24 +19,15 @@ import { TeamBuilderService } from './team-builder.service';
 @Controller('team-builder')
 @UseGuards(JwtAuthGuard)
 export class TeamBuilderController {
-  constructor(
-    private readonly teamBuilder: TeamBuilderService,
-    private readonly clock: Clock,
-  ) {}
+  constructor(private readonly teamBuilder: TeamBuilderService) {}
 
   /**
    * Các tuần còn dữ liệu đội hình.
-   *
-   * Dọn đội hình quá hạn TRƯỚC khi liệt kê: repo không có scheduler, và màn hình xếp team luôn
-   * gọi endpoint này nên nó là chỗ rẻ nhất để chạy retention. Quyết định đó nằm ở đây, nhìn thấy
-   * được, chứ không chôn trong hàm đọc của service.
    * @returns Mảng tuần, mới nhất trước
    */
   @Get('weeks')
   @ApiOperation({ summary: 'Các tuần còn dữ liệu đội hình' })
-  async getWeeks(): Promise<FormationWeek[]> {
-    await this.teamBuilder.purgeExpiredFormations(this.clock.now());
-
+  getWeeks(): Promise<FormationWeek[]> {
     return this.teamBuilder.getWeeks();
   }
 

@@ -1,8 +1,5 @@
-import { FixedClock } from '../../../common';
 import { TeamBuilderController } from '../team-builder.controller';
 import { TeamBuilderService } from '../team-builder.service';
-
-const NOW = new Date('2026-07-22T05:00:00Z');
 
 describe('TeamBuilderController.getWeeks', () => {
   let controller: TeamBuilderController;
@@ -19,30 +16,13 @@ describe('TeamBuilderController.getWeeks', () => {
 
     controller = new TeamBuilderController(
       teamBuilder as unknown as TeamBuilderService,
-      new FixedClock(NOW),
     );
   });
 
-  it('dọn đội hình quá hạn trước khi liệt kê tuần', async () => {
-    const order: string[] = [];
-    teamBuilder.purgeExpiredFormations.mockImplementation(() => {
-      order.push('purge');
-      return Promise.resolve(0);
-    });
-    teamBuilder.getWeeks.mockImplementation(() => {
-      order.push('read');
-      return Promise.resolve([]);
-    });
-
+  it('không dọn dữ liệu trên đường GET', async () => {
     await controller.getWeeks();
 
-    expect(order).toEqual(['purge', 'read']);
-  });
-
-  it('dọn theo thời điểm của đồng hồ ứng dụng', async () => {
-    await controller.getWeeks();
-
-    expect(teamBuilder.purgeExpiredFormations).toHaveBeenCalledWith(NOW);
+    expect(teamBuilder.purgeExpiredFormations).not.toHaveBeenCalled();
   });
 
   it('trả về đúng danh sách tuần service đưa ra', async () => {
