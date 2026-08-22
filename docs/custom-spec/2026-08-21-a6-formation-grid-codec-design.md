@@ -9,7 +9,12 @@
 > 409. Ngoài ra §2 lẫn ghi chú hậu-hiện-thực vào spec.
 > **Trạng thái 2026-08-23: cả ba đã đóng.** Lỗi #3 đóng ở `ea8d0ed`; lỗi #1 và #2 đóng bằng việc
 > chuyển purge sang đường ghi (`saveFormation`), `GET` thành chỉ đọc và controller trở lại một dòng.
-> §3 và §4 dưới đây đã viết lại theo bản hiện thực — tiêu đề spec giờ đúng nghĩa đen. Chi tiết:
+> §3 và §4 dưới đây đã viết lại theo bản hiện thực — tiêu đề spec giờ đúng nghĩa đen.
+> Vòng đối chiếu với kế hoạch tìm thêm **một chỗ thiếu ở §4** (mục #13): bản gốc viết
+> `tx.character.findMany` ngay trong `team-builder`, đi ngược chính luật A3 vừa dựng. Phép đọc đã đi
+> qua `CharactersService.listIds(tx)` từ khi hiện thực; **§4, bảng thay đổi và §Rủi ro bổ sung
+> 2026-08-23** phần spec chưa nói: ai sở hữu chữ ký đó (A3, không phải A6) và cạnh module mà nó tạo ra.
+> Chi tiết:
 > [§ Rà soát lại A1–A6](./2026-08-21-architecture-review-2-overview.md#rà-soát-lại-a1a6-2026-08-23).
 
 Ngày: 2026-08-21 · Phạm vi: `apps/api/src/modules/team-builder`.
@@ -186,8 +191,18 @@ lỗi hoặc serializable isolation.
 Chốt: **bắt lỗi**, vì đây là ca hiếm và người dùng có thao tác khắc phục rõ ràng.
 
 - Phép đọc chuyển vào trong `$transaction`, gọi `characters.listIds(tx)` — module khác sở hữu bảng
-  `character` nên đi qua service của nó, không `tx.character.findMany` (`apps/api/docs/backend.md:120`).
-  Việc này chỉ **thu hẹp** cửa sổ, và comment tại chỗ phải nói đúng như vậy.
+  `character` nên đi qua service của nó, không `tx.character.findMany`
+  (`apps/api/docs/backend.md:122-123`, luật **binding**: *"A module that reads someone else's table
+  calls that module's service"*). Việc này chỉ **thu hẹp** cửa sổ, và comment tại chỗ phải nói đúng
+  như vậy.
+- Hàm `listIds` **không thuộc spec này**: chữ ký `CharactersService.listIds(client): Promise<Set<string>>`,
+  lý do `client` bắt buộc chứ không tuỳ chọn, và việc `loadCharacterIds` biến mất đều do
+  [A3](./2026-08-21-a3-response-codec-design.md) §2 sở hữu — A3 là spec dựng luật "một bảng, một chủ".
+  A6 chỉ là **người gọi**: nó truyền `tx` của mình vào và bắt lỗi còn lại. Ghi ở đây để hai spec
+  không cùng nửa-sở-hữu một chữ ký.
+- Hệ quả về module: `TeamBuilderModule` phải `imports: [CharactersModule]` và `TeamBuilderService`
+  inject `CharactersService` qua `characters.public.ts`. Không sinh chu trình — `characters` là
+  module lá, không import ngược `team-builder` hay `battle-sessions` — nên không cần `forwardRef()`.
 - `$transaction` được bọc `.catch()`: lỗi Prisma mã `P2003` thành
   `ConflictException('Có thành viên vừa bị xoá khỏi bang, vui lòng tải lại trang rồi lưu lại.')`;
   mọi lỗi khác `throw` nguyên để không nuốt mất lỗi thật.
@@ -208,6 +223,7 @@ Chốt: **bắt lỗi**, vì đây là ca hiếm và người dùng có thao tá
 | `team-builder.service.ts` `saveFormation` | gọi `purgeExpiredFormations(now)` sau hai guard, trước `$transaction` |
 | `team-builder.controller.ts` | `getWeeks` còn một dòng; bỏ `Clock` khỏi constructor |
 | `team-builder.service.ts:190-212` | `loadCharacterIds` → `characters.listIds(tx)` trong `$transaction`; `.catch()` đổi `P2003` thành 409 |
+| `team-builder.module.ts` | `imports: [CharactersModule]` — hệ quả của dòng trên (`listIds` do [A3](./2026-08-21-a3-response-codec-design.md) §2 thêm vào `CharactersService`, không phải spec này) |
 | `__tests__/formation-grid.spec.ts` (mới) | round-trip |
 
 ## Edge case
@@ -250,6 +266,10 @@ Chốt: **bắt lỗi**, vì đây là ca hiếm và người dùng có thao tá
 - **Retention treo vào đường ghi** nên nó ngừng chạy nếu không ai lưu đội hình nữa. Chấp nhận: hậu
   quả duy nhất là dữ liệu cũ nằm lại lâu hơn 56 ngày. Nếu sau này cần bảo đảm theo lịch thật thì đổi
   caller sang cron — `purgeExpiredFormations` đã public sẵn.
+- **`team-builder` phụ thuộc thêm một module.** Đọc qua `CharactersService` thay vì
+  `tx.character.findMany` đổi một truy vấn cục bộ thành một cạnh giữa hai module. Đây là cái giá đã
+  biết của luật "một bảng, một chủ" và rẻ hơn ngoại lệ phải nhớ: `characters` là module lá nên không
+  có chu trình, và `__tests__/module-boundary.spec.ts` giữ cho đường đi phải qua `characters.public.ts`.
 - **`PUT` gánh thêm một `deleteMany`.** Chấp nhận cho tới khi đo được là chậm; lúc đó thu hẹp bằng
   điều kiện (chỉ purge khi ghi vào tuần đang mở) chứ không quay lại đường `GET`.
 

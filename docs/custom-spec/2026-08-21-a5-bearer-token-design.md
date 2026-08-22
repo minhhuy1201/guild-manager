@@ -8,7 +8,8 @@
 > `Promise<JwtPayload | null>` (*"trả null thay vì ném"*), thứ đẩy `.catch(() => null)` ngược về cả ba
 > call site — đúng bản sao spec viết ra để xoá. Kế hoạch đã đảo lại trước khi hiện thực —
 > **§1 sửa 2026-08-23**, nay chép đúng chữ ký `Promise<JwtPayload>` đang chạy kèm lý do và câu `grep`
-> khoá bất biến. Chi tiết:
+> khoá bất biến. Và một **chỗ thiếu**: §Kiểm thử đòi test `describeException` nhưng không nói hàm đó
+> đang `private` nên phải `export` trước — **§Kiểm thử và bảng thay đổi bổ sung 2026-08-23**. Chi tiết:
 > [§ Rà soát lại A1–A6](./2026-08-21-architecture-review-2-overview.md#rà-soát-lại-a1a6-2026-08-23).
 
 Ngày: 2026-08-21 · Phạm vi: `apps/api/src/common`, `apps/api/src/modules/auth`.
@@ -170,7 +171,8 @@ cũng quy về cùng một `null`.
 | `common/guards/optional-jwt-auth.guard.ts` | như trên |
 | `modules/auth/auth.service.ts:63-68` | dùng `readToken` |
 | `common/auth/__tests__/read-bearer-token.spec.ts` (mới) | bộ test đầu tiên của `common/` |
-| `common/filters/__tests__/all-exceptions.filter.spec.ts` (mới) | test `describeException` (4 nhánh) |
+| `common/filters/all-exceptions.filter.ts` | `describeException` từ private thành `export`, kèm doc comment nói vì sao (xem §Kiểm thử) |
+| `common/filters/__tests__/all-exceptions.filter.spec.ts` (mới) | test `describeException` (4 nhánh + nhánh dự phòng) |
 
 `common/` vẫn không import từ `modules/`: `TOKEN_TYPE` và `JwtPayload` đã nằm ở
 `common/constants/auth.constant.ts`. Luật giữ nguyên.
@@ -201,7 +203,23 @@ cũng quy về cùng một `null`.
 | payload `type = refresh`, đợi `access` | `null` |
 | payload `type = access`, đợi `access` | payload |
 
-Thêm cho `describeException`: `HttpException` có message chuỗi, có mảng, lỗi Zod, lỗi lạ.
+Thêm cho `describeException`: `HttpException` có message chuỗi, có mảng, lỗi Zod, lỗi lạ. Cộng một
+ca dự phòng — payload object **không có** `message` thì lấy `exception.message`; nhánh đó cũng quyết
+định câu người dùng đọc nên không để trống.
+
+**`describeException` phải chuyển từ private thành `export`.** Hàm đang là hàm mức module không
+export trong `all-exceptions.filter.ts`, nên bốn ca trên không gọi tới được. Hai đường:
+
+- **Test qua `filter.catch()`**: phải dựng `ArgumentsHost` giả cùng `Request`/`Response` giả cho mỗi
+  ca — nhiều khung hơn phần được kiểm, và mỗi ca kiểm thêm cả việc chọn status lẫn việc ghi log,
+  thứ không phải điều đang hỏi.
+- **`export` hàm**: bốn ca thành bốn dòng, không cần Nest runtime.
+
+Chọn `export`. Đổi lại, `describeException` trở thành interface công khai của file, nên nó mang một
+câu doc comment nói rõ vì sao — *"Export để `__tests__` kiểm từng nhánh trực tiếp, không phải dựng
+`ArgumentsHost` giả"* — để lần sau không ai gọi nó như một helper dùng chung. `AllExceptionsFilter`
+vẫn là cửa vào thật và là chỗ duy nhất trong `src/` gọi hàm này; `common/index.ts` re-export cả file
+theo khuôn `export *` sẵn có, không thêm dòng nào.
 
 ## Rủi ro
 

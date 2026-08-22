@@ -68,7 +68,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
 /**
  * Tách message và chi tiết lỗi ra khỏi exception.
- * Export để `__tests__` kiểm bốn nhánh trực tiếp, không phải dựng `ArgumentsHost` giả.
+ * Export để `__tests__` kiểm từng nhánh trực tiếp, không phải dựng `ArgumentsHost` giả.
  * @param exception - Exception cần mô tả
  * @returns Message hiển thị được, kèm `errors` khi là lỗi validate nhiều trường
  */
