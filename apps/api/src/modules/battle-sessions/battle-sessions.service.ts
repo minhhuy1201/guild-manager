@@ -39,6 +39,18 @@ const SESSION_INCLUDE = {
   _count: { select: { attendanceRecords: true, formationMatches: true } },
 } as const;
 
+/**
+ * Mệnh đề lọc + sắp xếp dùng chung cho mọi truy vấn "các trận của một tuần",
+ * để thứ tự trả về không lệch nhau giữa các cách đọc.
+ * @param weekStart - Mốc Thứ 2 của tuần cần đọc
+ * @returns Phần `where` và `orderBy` cho `battleSession.findMany`
+ */
+const weekSessionQuery = (weekStart: Date) =>
+  ({
+    where: { weekStart },
+    orderBy: { dateTime: 'asc' },
+  }) as const;
+
 /** Một trận trong tuần, nhãn đã dựng, không kèm số liệu điểm danh/đội hình. */
 export interface ScheduledSession {
   id: string;
@@ -101,8 +113,7 @@ export class BattleSessionsService {
     await this.ensureWeekMaterialized(target.toISOString(), now);
 
     const rows = await this.prisma.battleSession.findMany({
-      where: { weekStart: target },
-      orderBy: { dateTime: 'asc' },
+      ...weekSessionQuery(target),
       include: SESSION_INCLUDE,
     });
 
@@ -135,8 +146,7 @@ export class BattleSessionsService {
    */
   async readWeekSessions(weekStart: string): Promise<ScheduledSession[]> {
     const rows = await this.prisma.battleSession.findMany({
-      where: { weekStart: new Date(weekStart) },
-      orderBy: { dateTime: 'asc' },
+      ...weekSessionQuery(new Date(weekStart)),
       select: {
         id: true,
         dateTime: true,
