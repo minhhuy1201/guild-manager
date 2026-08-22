@@ -21,6 +21,7 @@ import {
   getEditableWeeks,
   guildWarDateTime,
   guildWarSessionId,
+  isSameWeek,
   parseWeekStart,
   weekStartOf,
   type WeekAnchor,
@@ -37,7 +38,7 @@ const SESSION_INCLUDE = {
  * @param weekStart - Mốc Thứ 2 của tuần cần đọc
  * @returns Phần `where` và `orderBy` cho `battleSession.findMany`
  */
-const weekSessionQuery = (weekStart: Date) =>
+const weekSessionQuery = (weekStart: WeekAnchor) =>
   ({
     where: { weekStart },
     orderBy: { dateTime: 'asc' },
@@ -128,7 +129,7 @@ export class BattleSessionsService {
    * @param now - Thời điểm hiện tại
    * @returns Promise hoàn tất khi tuần đã sẵn sàng để đọc
    */
-  private async materializeWeek(week: Date, now: Date): Promise<void> {
+  private async materializeWeek(week: WeekAnchor, now: Date): Promise<void> {
     if (!this.isEditableWeek(week, now)) return;
 
     await this.ensureGuildWar(week);
@@ -245,7 +246,7 @@ export class BattleSessionsService {
       throw new NotFoundException('Không tìm thấy ngày đánh.');
     }
 
-    this.assertEditableWeek(current.weekStart, now);
+    this.assertEditableWeek(weekStartOf(current.weekStart), now);
 
     const opponent =
       input.opponent === undefined
@@ -304,7 +305,7 @@ export class BattleSessionsService {
       throw new BadRequestException('Không thể xoá trận Guild War.');
     }
 
-    this.assertEditableWeek(current.weekStart, now);
+    this.assertEditableWeek(weekStartOf(current.weekStart), now);
 
     await this.prisma.battleSession.delete({ where: { id } });
   }
@@ -314,7 +315,7 @@ export class BattleSessionsService {
    * @param weekStart - Mốc Thứ 2 00:00 của tuần
    * @returns Promise hoàn tất khi trận đã tồn tại
    */
-  private async ensureGuildWar(weekStart: Date): Promise<void> {
+  private async ensureGuildWar(weekStart: WeekAnchor): Promise<void> {
     const dateTime = guildWarDateTime(weekStart);
 
     await this.prisma.battleSession.upsert({
@@ -338,9 +339,9 @@ export class BattleSessionsService {
    * @param now - Thời điểm hiện tại
    * @returns true nếu là tuần đang mở hoặc tuần kế tiếp
    */
-  private isEditableWeek(weekStart: Date, now: Date): boolean {
-    return getEditableWeeks(now).some(
-      (week) => week.weekStart.getTime() === weekStart.getTime(),
+  private isEditableWeek(weekStart: WeekAnchor, now: Date): boolean {
+    return getEditableWeeks(now).some((week) =>
+      isSameWeek(week.weekStart, weekStart),
     );
   }
 
@@ -351,7 +352,7 @@ export class BattleSessionsService {
    * @returns Không trả về gì khi hợp lệ
    * @throws BadRequestException khi tuần đã qua hoặc quá xa ở tương lai
    */
-  private assertEditableWeek(weekStart: Date, now: Date): void {
+  private assertEditableWeek(weekStart: WeekAnchor, now: Date): void {
     if (!this.isEditableWeek(weekStart, now)) {
       throw new BadRequestException(
         'Chỉ thiết lập được lịch của tuần này và tuần sau.',
