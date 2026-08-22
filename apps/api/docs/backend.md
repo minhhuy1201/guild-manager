@@ -104,6 +104,7 @@ modules/characters/
 ├── characters.controller.ts        # HTTP layer — takes a request, returns a response
 ├── characters.service.ts           # business logic
 ├── characters.lib.ts               # pure helpers for this domain (id generation)
+├── characters.codec.ts             # builds the response shape from a Prisma row — the only enum cast
 │
 ├── dto/
 │   └── character.dto.ts            # createZodDto over @guild/shared/schemas
@@ -113,8 +114,10 @@ modules/characters/
     └── characters.service.spec.ts
 ```
 
-The response shape is **not** declared here: it is a Zod schema in `packages/shared/schemas`, and the
-object the service builds ends in `satisfies <Shape>`.
+The response shape is **not** declared here: it is a Zod schema in `packages/shared/schemas`. The
+object is built in `<domain>.codec.ts` — one pure function per shape, ending in `satisfies <Shape>`,
+living in the module that **owns the table**. A module that reads someone else's table calls that
+module's service and reuses its codec; it never writes the cast itself.
 
 Every other file in the folder is internal. What another module may import is one file:
 
@@ -123,14 +126,15 @@ modules/battle-sessions/
 └── battle-sessions.public.ts       # ⭐ the seam — re-exports what other modules may use
 ```
 
-`battle-sessions` is the only module with one today, because it is the only one with an outside
-caller. It re-exports `BattleSessionsService` and the pure week/deadline helpers; the `*.module` file
+`battle-sessions` and `characters` have one today, because they are the modules with outside callers:
+`attendance` and `team-builder` read the schedule and the roster through them. It re-exports `BattleSessionsService` and the pure week/deadline helpers; the `*.module` file
 next to it went back to being DI metadata only. §4 has the rule that enforces this, §8 the reason
 this one file is not the barrel the naming table forbids.
 
 Optional pieces, added **only when a second caller appears**, never speculatively:
 
 - `<domain>.public.ts` — the moment a second module needs something from this one.
+- `<domain>.codec.ts` — the moment this module's rows are turned into a response shape.
 - `<domain>.repository.ts` — see §6.
 - `guards/` — a guard used by this module alone. (Both current guards are shared, so they live in
   `common/guards/`.)
