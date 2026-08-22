@@ -14,6 +14,7 @@ import { Clock } from '../../common';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import {
   BattleSessionsService,
+  isSameWeek,
   parseWeekStart,
   weekEndOf,
 } from '../battle-sessions/battle-sessions.public';
@@ -75,14 +76,14 @@ export class TeamBuilderService {
     // Sinh trước, đọc sau: tuần đang mở phải có trận thì mới xuất hiện ở đây.
     await this.battleSessions.ensureWeekMaterialized(activeWeek);
 
-    const weekStarts = await this.battleSessions.listWeekAnchors();
+    const anchors = await this.battleSessions.listWeekAnchors();
 
-    return weekStarts.map(
-      (weekStart) =>
+    return anchors.map(
+      (anchor) =>
         ({
-          weekStart,
-          weekEnd: weekEndOf(new Date(weekStart)).toISOString(),
-          isActive: weekStart === activeWeek.toISOString(),
+          weekStart: anchor.toISOString(),
+          weekEnd: weekEndOf(anchor).toISOString(),
+          isActive: isSameWeek(anchor, activeWeek),
         }) satisfies FormationWeek,
     );
   }

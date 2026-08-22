@@ -223,10 +223,7 @@ describe('TeamBuilderService.getWeeks', () => {
       ensureWeekMaterialized: jest.fn().mockResolvedValue(undefined),
       listWeekAnchors: jest
         .fn()
-        .mockResolvedValue([
-          WEEK_START.toISOString(),
-          vn('2026-07-13T00:00').toISOString(),
-        ]),
+        .mockResolvedValue([WEEK_START, vn('2026-07-13T00:00')]),
     };
 
     characters = { list: jest.fn().mockResolvedValue([]) };
@@ -264,10 +261,7 @@ describe('TeamBuilderService.getWeeks', () => {
 
   it('đánh dấu đúng tuần đang mở khi tuần kế đã có trận', async () => {
     const nextWeek = vn('2026-07-27T00:00');
-    battleSessions.listWeekAnchors.mockResolvedValue([
-      nextWeek.toISOString(),
-      WEEK_START.toISOString(),
-    ]);
+    battleSessions.listWeekAnchors.mockResolvedValue([nextWeek, WEEK_START]);
 
     const weeks = await service.getWeeks();
 
@@ -283,6 +277,19 @@ describe('TeamBuilderService.getWeeks', () => {
         isActive: true,
       },
     ]);
+  });
+
+  it('nhận ra tuần đang mở kể cả khi mốc đến từ một Date khác instance', async () => {
+    // Phép so chuỗi cũ đúng vì tình cờ cả hai vế cùng đi qua toISOString();
+    // so bằng thời điểm thì không phụ thuộc vào cách viết chuỗi.
+    battleSessions.listWeekAnchors.mockResolvedValue([
+      new Date(WEEK_START.getTime()),
+    ]);
+
+    const [week] = await service.getWeeks();
+
+    expect(week.isActive).toBe(true);
+    expect(week.weekStart).toBe(WEEK_START.toISOString());
   });
 
   it('xoá đội hình cũ hơn 56 ngày trước khi đọc', async () => {

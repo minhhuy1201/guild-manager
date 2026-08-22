@@ -162,16 +162,19 @@ export class BattleSessionsService {
 
   /**
    * Các tuần còn dữ liệu lịch, mới nhất trước.
-   * @returns Mảng mốc Thứ 2 dạng ISO string
+   * Hàng trong database luôn là mốc Thứ 2 (mọi đường ghi đều đi qua `weekStartOf`),
+   * nhưng vẫn dựng lại qua `weekStartOf` — đó là hàm dựng hợp lệ duy nhất, và nó
+   * là phép đồng nhất trên một mốc đã đúng.
+   * @returns Mảng mốc Thứ 2, mới nhất trước
    */
-  async listWeekAnchors(): Promise<string[]> {
+  async listWeekAnchors(): Promise<WeekAnchor[]> {
     const rows = await this.prisma.battleSession.findMany({
       distinct: ['weekStart'],
       select: { weekStart: true },
       orderBy: { weekStart: 'desc' },
     });
 
-    return rows.map((row) => row.weekStart.toISOString());
+    return rows.map((row) => weekStartOf(row.weekStart));
   }
 
   /**

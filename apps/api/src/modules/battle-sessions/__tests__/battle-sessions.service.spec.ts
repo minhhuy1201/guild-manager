@@ -187,7 +187,7 @@ describe('BattleSessionsService', () => {
   });
 
   describe('listWeekAnchors', () => {
-    it('trả về mốc tuần dạng ISO string, mới nhất trước', async () => {
+    it('trả về mốc tuần có kiểu, mới nhất trước', async () => {
       prisma.battleSession.findMany.mockResolvedValue([
         { weekStart: NEXT_WEEK_START },
         { weekStart: WEEK_START },
@@ -195,10 +195,7 @@ describe('BattleSessionsService', () => {
 
       const anchors = await service.listWeekAnchors();
 
-      expect(anchors).toEqual([
-        NEXT_WEEK_START.toISOString(),
-        WEEK_START.toISOString(),
-      ]);
+      expect(anchors).toEqual([NEXT_WEEK_START, WEEK_START]);
     });
   });
 
