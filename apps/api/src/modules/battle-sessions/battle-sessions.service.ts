@@ -21,7 +21,9 @@ import {
   getEditableWeeks,
   guildWarDateTime,
   guildWarSessionId,
+  parseWeekStart,
   weekStartOf,
+  type WeekAnchor,
 } from './session-schedule';
 
 /** Những gì cần đọc thêm cùng mỗi trận để dựng entity. */
@@ -64,10 +66,12 @@ export class BattleSessionsService {
 
   /**
    * Mốc Thứ 2 của tuần điểm danh đang mở.
-   * @returns Mốc Thứ 2 00:00 dạng ISO string
+   * Trả về mốc có kiểu chứ không phải ISO string: so tuần là việc của
+   * `isSameWeek`, không phải của phép so chuỗi ở call site.
+   * @returns Mốc Thứ 2 00:00 giờ VN
    */
-  getActiveWeekStart(): string {
-    return getActiveWeek(this.clock.now()).weekStart.toISOString();
+  getActiveWeek(): WeekAnchor {
+    return getActiveWeek(this.clock.now()).weekStart;
   }
 
   /**
@@ -89,14 +93,13 @@ export class BattleSessionsService {
    * Các trận của một tuần, sắp theo thời gian đánh.
    * Tuần đang mở và tuần kế được đảm bảo đã có trận Guild War; tuần đã qua chỉ
    * đọc những gì còn lưu.
-   * @param weekStart - Mốc Thứ 2 của tuần cần xem (ISO string). Bỏ trống = tuần đang mở
+   * @param weekStart - Mốc ISO của tuần cần xem. Bỏ trống = tuần đang mở; mốc giữa tuần được quy về Thứ 2 của tuần đó
    * @returns Mảng trận đã sắp theo thời gian đánh
+   * @throws BadRequestException khi `weekStart` không phải một mốc thời gian hợp lệ
    */
   async listByWeek(weekStart?: string): Promise<BattleSession[]> {
     const now = this.clock.now();
-    const target = weekStart
-      ? new Date(weekStart)
-      : getActiveWeek(now).weekStart;
+    const target = parseWeekStart(weekStart, now);
 
     await this.materializeWeek(target, now);
 
@@ -111,11 +114,11 @@ export class BattleSessionsService {
   /**
    * Đảm bảo tuần đã có đủ các trận hệ thống sinh (hiện là Guild War).
    * Tuần ngoài phạm vi thiết lập là no-op, nên caller gọi được vô điều kiện.
-   * @param weekStart - Mốc Thứ 2 của tuần cần dựng (ISO string)
+   * @param week - Mốc Thứ 2 của tuần cần dựng
    * @returns Promise hoàn tất khi tuần đã sẵn sàng để đọc
    */
-  async ensureWeekMaterialized(weekStart: string): Promise<void> {
-    await this.materializeWeek(new Date(weekStart), this.clock.now());
+  async ensureWeekMaterialized(week: WeekAnchor): Promise<void> {
+    await this.materializeWeek(week, this.clock.now());
   }
 
   /**
@@ -134,12 +137,12 @@ export class BattleSessionsService {
   /**
    * Các trận của một tuần, sắp theo thời gian đánh, nhãn đã dựng.
    * Không tự sinh trận — gọi `ensureWeekMaterialized` trước nếu cần.
-   * @param weekStart - Mốc Thứ 2 của tuần cần đọc (ISO string)
+   * @param week - Mốc Thứ 2 của tuần cần đọc
    * @returns Mảng trận đã sắp theo giờ đánh
    */
-  async readWeekSessions(weekStart: string): Promise<ScheduledSession[]> {
+  async readWeekSessions(week: WeekAnchor): Promise<ScheduledSession[]> {
     const rows = await this.prisma.battleSession.findMany({
-      ...weekSessionQuery(new Date(weekStart)),
+      ...weekSessionQuery(week),
       select: {
         id: true,
         dateTime: true,

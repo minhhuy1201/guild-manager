@@ -74,7 +74,7 @@ describe('AttendanceService', () => {
   let battleSessions: {
     listByWeek: jest.Mock;
     findById: jest.Mock;
-    getActiveWeekStart: jest.Mock;
+    getActiveWeek: jest.Mock;
   };
   let characters: { list: jest.Mock; exists: jest.Mock };
 
@@ -131,9 +131,7 @@ describe('AttendanceService', () => {
     battleSessions = {
       listByWeek: jest.fn().mockResolvedValue(SESSIONS),
       findById: jest.fn(),
-      getActiveWeekStart: jest
-        .fn()
-        .mockReturnValue(vn('2026-07-20T00:00').toISOString()),
+      getActiveWeek: jest.fn().mockReturnValue(vn('2026-07-20T00:00')),
     };
 
     characters = {

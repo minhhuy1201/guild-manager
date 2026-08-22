@@ -73,8 +73,12 @@ export class AttendanceService {
     const session = await this.battleSessions.findById(sessionId);
     // Người thường chỉ điểm danh được cho tuần đang mở; quản trị viên sửa được
     // cả tuần khác để bù sai sót.
+    //
+    // TODO(A1): `findById` trả entity nên `weekStart` ở đây là ISO string, không
+    // phải WeekAnchor — đây là phép so tuần bằng chuỗi cuối cùng còn lại. Khi A1
+    // cho `findById` trả kèm mốc tuần thì đổi thành `isSameWeek(...)`.
     const inActiveWeek =
-      session?.weekStart === this.battleSessions.getActiveWeekStart();
+      session?.weekStart === this.battleSessions.getActiveWeek().toISOString();
     if (!session || (!isAdmin && !inActiveWeek)) {
       throw new NotFoundException('Không tìm thấy ngày đánh.');
     }

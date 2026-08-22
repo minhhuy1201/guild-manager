@@ -1,4 +1,8 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { GuildClass } from '@guild/shared/enums';
 
 import { FixedClock } from '../../../common';
@@ -67,7 +71,7 @@ describe('TeamBuilderService.getFormations', () => {
     formationMatch: { findMany: jest.Mock; deleteMany: jest.Mock };
   };
   let battleSessions: {
-    getActiveWeekStart: jest.Mock;
+    getActiveWeek: jest.Mock;
     ensureWeekMaterialized: jest.Mock;
     readWeekSessions: jest.Mock;
   };
@@ -82,7 +86,7 @@ describe('TeamBuilderService.getFormations', () => {
     };
 
     battleSessions = {
-      getActiveWeekStart: jest.fn().mockReturnValue(WEEK_START.toISOString()),
+      getActiveWeek: jest.fn().mockReturnValue(WEEK_START),
       ensureWeekMaterialized: jest.fn().mockResolvedValue(undefined),
       readWeekSessions: jest.fn().mockResolvedValue(SCHEDULED_SESSIONS),
     };
@@ -151,19 +155,40 @@ describe('TeamBuilderService.getFormations', () => {
 
     expect(battleSessions.ensureWeekMaterialized).toHaveBeenCalledTimes(1);
     expect(battleSessions.ensureWeekMaterialized).toHaveBeenCalledWith(
-      WEEK_START.toISOString(),
+      WEEK_START,
     );
   });
 
   it('tuần cũ cũng gọi ensureWeekMaterialized — module lịch tự no-op', async () => {
-    const lastWeek = vn('2026-07-13T00:00').toISOString();
+    const lastWeek = vn('2026-07-13T00:00');
 
-    await service.getFormations(lastWeek);
+    await service.getFormations(lastWeek.toISOString());
 
     expect(battleSessions.ensureWeekMaterialized).toHaveBeenCalledWith(
       lastWeek,
     );
     expect(battleSessions.readWeekSessions).toHaveBeenCalledWith(lastWeek);
+  });
+
+  it('mốc giữa tuần đọc đúng tuần chứa ngày đó, không trả rỗng', async () => {
+    // Hành vi đổi có chủ ý: trước đây chuỗi này không khớp hàng nào nên ra [].
+    const result = await service.getFormations(
+      vn('2026-07-22T12:00').toISOString(),
+    );
+
+    expect(battleSessions.readWeekSessions).toHaveBeenCalledWith(WEEK_START);
+    expect(result.map((item) => item.sessionId)).toEqual([
+      'session-tue',
+      'session-thu',
+      'session-sat',
+    ]);
+  });
+
+  it('mốc tuần hỏng thành 400, không gọi xuống module lịch', async () => {
+    await expect(service.getFormations('xyz')).rejects.toThrow(
+      BadRequestException,
+    );
+    expect(battleSessions.readWeekSessions).not.toHaveBeenCalled();
   });
 
   it('nhãn trận lấy từ lịch đánh, không tự dựng lại', async () => {
@@ -183,7 +208,7 @@ describe('TeamBuilderService.getWeeks', () => {
     formationMatch: { deleteMany: jest.Mock };
   };
   let battleSessions: {
-    getActiveWeekStart: jest.Mock;
+    getActiveWeek: jest.Mock;
     ensureWeekMaterialized: jest.Mock;
     listWeekAnchors: jest.Mock;
   };
@@ -194,7 +219,7 @@ describe('TeamBuilderService.getWeeks', () => {
       formationMatch: { deleteMany: jest.fn().mockResolvedValue({ count: 2 }) },
     };
     battleSessions = {
-      getActiveWeekStart: jest.fn().mockReturnValue(WEEK_START.toISOString()),
+      getActiveWeek: jest.fn().mockReturnValue(WEEK_START),
       ensureWeekMaterialized: jest.fn().mockResolvedValue(undefined),
       listWeekAnchors: jest
         .fn()

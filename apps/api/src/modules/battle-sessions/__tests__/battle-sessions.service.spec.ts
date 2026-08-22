@@ -3,6 +3,7 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { FixedClock } from '../../../common';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { BattleSessionsService } from '../battle-sessions.service';
+import { weekStartOf } from '../session-schedule';
 
 /**
  * Tạo Date từ giờ Việt Nam (UTC+7) cho dễ đọc trong test.
@@ -15,9 +16,9 @@ function vn(iso: string): Date {
 
 // Thứ 4 2026-07-22 → tuần đang mở bắt đầu Thứ 2 2026-07-20, tuần kế 2026-07-27.
 const WEDNESDAY = vn('2026-07-22T12:00');
-const WEEK_START = vn('2026-07-20T00:00');
-const NEXT_WEEK_START = vn('2026-07-27T00:00');
-const LAST_WEEK_START = vn('2026-07-13T00:00');
+const WEEK_START = weekStartOf(vn('2026-07-20T00:00'));
+const NEXT_WEEK_START = weekStartOf(vn('2026-07-27T00:00'));
+const LAST_WEEK_START = weekStartOf(vn('2026-07-13T00:00'));
 
 /**
  * Đọc tham số đầu tiên của lần gọi thứ `index` — jest.Mock không giữ kiểu nên
@@ -114,10 +115,41 @@ describe('BattleSessionsService', () => {
     });
   });
 
+  describe('listByWeek nhận mốc tuần từ query', () => {
+    it('chuỗi hỏng thành 400, không rơi xuống Prisma', async () => {
+      await expect(service.listByWeek('xyz')).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(prisma.battleSession.findMany).not.toHaveBeenCalled();
+    });
+
+    it('mốc giữa tuần quy về Thứ 2 trước khi truy vấn', async () => {
+      await service.listByWeek(vn('2026-07-22T12:00').toISOString());
+
+      expect(firstArg(prisma.battleSession.findMany, 0)).toMatchObject({
+        where: { weekStart: WEEK_START },
+      });
+    });
+
+    it('bỏ trống thì đọc tuần đang mở', async () => {
+      await service.listByWeek();
+
+      expect(firstArg(prisma.battleSession.findMany, 0)).toMatchObject({
+        where: { weekStart: WEEK_START },
+      });
+    });
+
+    it('getActiveWeek trả mốc Thứ 2 của tuần đang mở', () => {
+      expect(service.getActiveWeek().toISOString()).toBe(
+        WEEK_START.toISOString(),
+      );
+    });
+  });
+
   describe('ensureWeekMaterialized', () => {
     it('gọi hai lần cho cùng tuần chỉ upsert theo một id, không sinh trận trùng', async () => {
-      await service.ensureWeekMaterialized(WEEK_START.toISOString());
-      await service.ensureWeekMaterialized(WEEK_START.toISOString());
+      await service.ensureWeekMaterialized(WEEK_START);
+      await service.ensureWeekMaterialized(WEEK_START);
 
       // Cùng id ở cả `where` lẫn `create` nên lần gọi thứ hai rơi vào nhánh
       // update của cùng một hàng, không thể sinh trận thứ hai.
@@ -131,7 +163,7 @@ describe('BattleSessionsService', () => {
     });
 
     it('tuần đã qua là no-op', async () => {
-      await service.ensureWeekMaterialized(LAST_WEEK_START.toISOString());
+      await service.ensureWeekMaterialized(LAST_WEEK_START);
 
       expect(prisma.battleSession.upsert).not.toHaveBeenCalled();
     });
@@ -139,7 +171,7 @@ describe('BattleSessionsService', () => {
 
   describe('readWeekSessions', () => {
     it('trả về nhãn đã dựng và không tự sinh trận', async () => {
-      const sessions = await service.readWeekSessions(WEEK_START.toISOString());
+      const sessions = await service.readWeekSessions(WEEK_START);
 
       expect(prisma.battleSession.upsert).not.toHaveBeenCalled();
       expect(sessions).toEqual([

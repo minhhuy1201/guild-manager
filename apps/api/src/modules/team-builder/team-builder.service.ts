@@ -14,6 +14,7 @@ import { Clock } from '../../common';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import {
   BattleSessionsService,
+  parseWeekStart,
   weekEndOf,
 } from '../battle-sessions/battle-sessions.public';
 import { CharactersService } from '../characters/characters.public';
@@ -69,10 +70,10 @@ export class TeamBuilderService {
   async getWeeks(): Promise<FormationWeek[]> {
     await this.purgeExpiredFormations(this.clock.now());
 
-    const activeWeekStart = this.battleSessions.getActiveWeekStart();
+    const activeWeek = this.battleSessions.getActiveWeek();
 
     // Sinh trước, đọc sau: tuần đang mở phải có trận thì mới xuất hiện ở đây.
-    await this.battleSessions.ensureWeekMaterialized(activeWeekStart);
+    await this.battleSessions.ensureWeekMaterialized(activeWeek);
 
     const weekStarts = await this.battleSessions.listWeekAnchors();
 
@@ -81,7 +82,7 @@ export class TeamBuilderService {
         ({
           weekStart,
           weekEnd: weekEndOf(new Date(weekStart)).toISOString(),
-          isActive: weekStart === activeWeekStart,
+          isActive: weekStart === activeWeek.toISOString(),
         }) satisfies FormationWeek,
     );
   }
@@ -102,18 +103,17 @@ export class TeamBuilderService {
 
   /**
    * Lấy các trận của một tuần kèm đội hình đã lưu.
-   * @param weekStart - Mốc Thứ 2 của tuần cần xem (ISO string). Bỏ trống = tuần đang mở
+   * @param weekStart - Mốc ISO của tuần cần xem. Bỏ trống = tuần đang mở; mốc giữa tuần được quy về Thứ 2 của tuần đó
    * @returns Mảng ngày đánh sắp theo thời gian, mỗi ngày kèm đội hình từng trận và cờ locked
+   * @throws BadRequestException khi `weekStart` không phải một mốc thời gian hợp lệ
    */
   async getFormations(weekStart?: string): Promise<SessionFormation[]> {
     const now = this.clock.now();
-    const targetWeekStart =
-      weekStart ?? this.battleSessions.getActiveWeekStart();
+    const target = parseWeekStart(weekStart, now);
 
-    await this.battleSessions.ensureWeekMaterialized(targetWeekStart);
+    await this.battleSessions.ensureWeekMaterialized(target);
 
-    const sessions =
-      await this.battleSessions.readWeekSessions(targetWeekStart);
+    const sessions = await this.battleSessions.readWeekSessions(target);
     if (sessions.length === 0) return [];
 
     const matchesBySession = await this.loadMatchesBySession(
