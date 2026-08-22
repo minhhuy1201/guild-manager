@@ -14,26 +14,15 @@ import type {
 
 import { Clock } from '../../common';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
+import { toBattleSession } from './battle-sessions.codec';
 import {
   formatSessionLabel,
   getActiveWeek,
   getEditableWeeks,
   guildWarDateTime,
   guildWarSessionId,
-  isDeadlinePassed,
   weekStartOf,
 } from './session-schedule';
-
-/** Hàng BattleSession đọc kèm số liệu phụ cho entity. */
-type SessionRow = {
-  id: string;
-  dateTime: Date;
-  deadline: Date;
-  opponent: string | null;
-  isGuildWar: boolean;
-  weekStart: Date;
-  _count: { attendanceRecords: number; formationMatches: number };
-};
 
 /** Những gì cần đọc thêm cùng mỗi trận để dựng entity. */
 const SESSION_INCLUDE = {
@@ -116,7 +105,7 @@ export class BattleSessionsService {
       include: SESSION_INCLUDE,
     });
 
-    return rows.map((row) => this.toEntity(row, now));
+    return rows.map((row) => toBattleSession(row, now));
   }
 
   /**
@@ -194,7 +183,7 @@ export class BattleSessionsService {
       include: SESSION_INCLUDE,
     });
 
-    return row ? this.toEntity(row, now) : null;
+    return row ? toBattleSession(row, now) : null;
   }
 
   /**
@@ -222,7 +211,7 @@ export class BattleSessionsService {
       include: SESSION_INCLUDE,
     });
 
-    return this.toEntity(created, now);
+    return toBattleSession(created, now);
   }
 
   /**
@@ -287,7 +276,7 @@ export class BattleSessionsService {
       include: SESSION_INCLUDE,
     });
 
-    return this.toEntity(updated, now);
+    return toBattleSession(updated, now);
   }
 
   /**
@@ -375,27 +364,6 @@ export class BattleSessionsService {
     if (!isWithinDeadlineCap(deadline, dateTime)) {
       throw new BadRequestException(DEADLINE_CAP_MESSAGE);
     }
-  }
-
-  /**
-   * Đổi một hàng BattleSession thành object trả về cho client.
-   * @param row - Hàng đọc từ Prisma kèm `_count`
-   * @param now - Thời điểm dựng response, dùng để chốt cờ quá hạn
-   * @returns Trận đánh đã dựng nhãn và đổi thời gian sang ISO string
-   */
-  private toEntity(row: SessionRow, now: Date) {
-    return {
-      id: row.id,
-      label: formatSessionLabel(row.dateTime, row.isGuildWar),
-      dateTime: row.dateTime.toISOString(),
-      deadline: row.deadline.toISOString(),
-      isDeadlinePassed: isDeadlinePassed(row.deadline, now),
-      isGuildWar: row.isGuildWar,
-      opponent: row.opponent,
-      weekStart: row.weekStart.toISOString(),
-      attendanceCount: row._count.attendanceRecords,
-      hasFormation: row._count.formationMatches > 0,
-    } satisfies BattleSession;
   }
 }
 
