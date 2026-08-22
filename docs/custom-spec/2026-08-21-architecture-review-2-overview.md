@@ -9,6 +9,10 @@ riêng trong cùng thư mục này.
 Đợt trước: [C1–C7](./2026-08-18-architecture-review-overview.md) — **đã triển khai xong toàn bộ**.
 Đợt này chỉ liệt kê friction **còn lại**, và không mục nào đảo lại quyết định của C1–C7.
 
+**Trạng thái (2026-08-23):** A1–A6 **đã hiện thực xong** (`54372f9` → `f557e3a`), theo thứ tự thực tế
+**A1 → A2 → A3 → A4 → A6 → A5**, khác thứ tự đề xuất ở dưới. Kết quả rà soát lại các spec A1–A6 nằm ở
+[§ Rà soát lại A1–A6](#rà-soát-lại-a1a6-2026-08-23). W1–W6 chưa làm.
+
 Từ vựng dùng xuyên suốt (giống đợt 1): *module* (thứ có interface và implementation, ở mọi quy mô),
 *interface* (mọi thứ người gọi phải biết để dùng đúng), *seam* (nơi interface nằm), *adapter* (thứ
 cụ thể ngồi ở seam), *depth* (lượng hành vi trên một đơn vị interface), *leverage* (cái người gọi
@@ -124,3 +128,62 @@ Ghi lại để khỏi rà lại.
   vì `prisma/**` được miễn lint và đây là script một lần; nhưng đổi tên file kia thì script gãy im
   lặng.
 - `attendanceKeys.weeks()` không có call site nào (xem [W5](./2026-08-21-w5-cache-graph-design.md)).
+
+## Rà soát lại A1–A6 (2026-08-23)
+
+Đối chiếu từng `file:line` của sáu spec backend với code tại commit gốc `9820b5a`. Ghi lại ở đây để
+sau này không phải kiểm lại, và để biết chỗ nào trong spec **không được đọc như lời cuối**.
+
+### Phần đã kiểm và đúng
+
+- **A2** — đúng cả 15 chữ ký `now: Date = new Date()`, đúng từng dòng (7 `battle-sessions` + 2
+  `attendance` + 3 `team-builder` + 3 `session-schedule`).
+- **A1** — ba chỗ `team-builder` truy vấn thẳng `prisma.battleSession` (`:72`, `:123`, `:176`); doc
+  comment `battle-sessions.service.ts:42-46`; side effect ở `listByWeek:92-94`.
+- **A3** — `attendance:32-35/:37-45/:60-68/:118-123`, `team-builder:214-222` hụt `satisfies`; luật
+  `satisfies` ở `apps/api/docs/backend.md:117`; **không có `.parse()` nào chạy trên schema chiều ra**.
+- **A4** — `2026-07-22Z` đúng là Thứ 4; `2026-07-20T00:00:00+07:00` đúng là mốc Thứ 2 giờ VN;
+  `z.iso.datetime()` hợp lệ vì repo dùng zod v4.
+- **A5** — `jwt-auth.guard.ts:13/:37-52`, `optional-jwt-auth.guard.ts:8`, `auth.service.ts:63-68`;
+  `common/` thật sự không có file test nào.
+- **A6** — toàn bộ line ref (`:33-51`, `:144-155`, `:143/:183/:220`, `:190/:200`, `schema.prisma:111`).
+
+### Lỗi thật
+
+| # | Spec | Vấn đề |
+|---|---|---|
+| 1 | A6 | **Tiêu đề mâu thuẫn với §3.** Tiêu đề nói "đưa việc xoá ra khỏi đường `GET`" và dòng A6 ở bảng tóm tắt cũng vậy, nhưng §3 giữ purge trên đường `GET`, chỉ dời call site từ service lên controller. `deleteMany` vẫn chạy mỗi lần `GET` (bản hiện thực: `team-builder.controller.ts:38`). Đó là đổi chỗ, không phải xử lý vấn đề. |
+| 2 | A6 §3 | **Đi ngược `architecture.md:114-115`** (*"Services hold the business logic"*, controller mỏng). Đưa trình tự "purge rồi mới đọc" lên controller là kéo nghiệp vụ lên một lớp. `architecture.md` là **binding** — spec phải trả lời luật này, không được lướt qua. |
+| 3 | A6 §4 | **Luận điểm không đứng vững.** Chuyển `loadCharacterIds` vào `$transaction` **không** đóng được race: Prisma dùng isolation mặc định của Postgres (READ COMMITTED), `SELECT id FROM character` trong tx không khoá hàng, nên một `DELETE` commit sau lúc đọc vẫn làm vỡ khoá ngoại. Nó chỉ *thu hẹp* cửa sổ. Fix đúng: bắt `P2003` → 409 tiếng Việt, hoặc serializable isolation. |
+| 4 | A4 §1 | **`parseWeekStart` ném `BadRequestException` đặt sai lớp** — nó nằm trong `session-schedule.ts`, đúng file mà overview khen là *"hàm thuần, tất định"* và A2 §4 khẳng định không được biết framework. Thêm nữa: sau khi §4 có DTO Zod thì `?weekStart=xyz` bị chặn ngay ở pipe, nhánh ném **không còn với tới được từ HTTP**, nên test "`battle-sessions.service.spec.ts`: `?weekStart=xyz` → `BadRequestException`" nằm sai tầng, và triệu chứng 500 ở §Bối cảnh #1 được §4 vá một mình. |
+| 5 | A4 §4 | **`z.iso.datetime()` loại chính ca test của spec.** Zod v4 mặc định `offset: false`, chỉ nhận hậu tố `Z`. Ca *"một mốc `+07:00` và cùng mốc đó dạng `Z` phải cho cùng kết quả"* sẽ ăn 400 ở controller. Phải là `z.iso.datetime({ offset: true })`. |
+| 6 | A5 | **§2 mâu thuẫn với §3.** Snippet §2 ném `'Phiên đăng nhập không hợp lệ.'`, còn §3 quyết định gộp về đúng một câu `'Bạn cần đăng nhập.'` |
+
+### Lỗi nhỏ và chỗ nói quá
+
+- **A1 đếm sai số hàm** — dòng "Nếu chỉ làm được một việc" nói *"hai hàm thêm vào `.public.ts`"*,
+  nhưng A1 định nghĩa **ba** (`ensureWeekMaterialized`, `readWeekSessions`, `listWeekAnchors`) và bảng
+  thay đổi của chính nó ghi *"re-export ba hàm"*. (Đoạn "A4 trước A1" thì đúng — ở đó chỉ nói về hai
+  hàm nhận mốc tuần.)
+- **A1 §Edge case gọi "bỏ nhánh `if` ở :119" là no-op — không hẳn.** Nhánh đó giới hạn việc sinh trận
+  cho **tuần đang mở**; gọi vô điều kiện thì **tuần kế tiếp** (cũng editable) cũng bị sinh Guild War
+  qua `GET /team-builder/formations?weekStart=<tuần sau>`. Spec chỉ lập luận cho tuần quá khứ. Bản
+  hiện thực đúng như vậy (`team-builder.service.ts:89`) — một thay đổi hành vi nhỏ chưa được ghi.
+- **A2 — điều kiện hoàn thành không đạt được** bằng chính bảng thay đổi của nó: `grep -rn "new Date()"
+  src/modules` còn dính `modules/health/health.controller.ts:36` và `characters.service.spec.ts:12-13`,
+  cả hai không nằm trong bảng. Thực tế phải thêm commit riêng (`31e1632`) để đưa health qua `Clock`.
+- **A2 §4 sai kiểu trả về**: `getActiveWeek(now): Week` — thật ra là `ScheduledWeek`. Không vô hại, vì
+  `Week` là shape response ở `@guild/shared`.
+- **A2 nói quá về "hai đồng hồ"**: cả hai đều là `new Date()` cách nhau vài mili giây trong cùng một
+  request; sai lệch chỉ hiện ra nếu deadline rơi đúng khe đó. Vấn đề thật là **luật được đánh giá hai
+  lần rồi vứt một kết quả**, không phải output sai quan sát được.
+- **A4 §3 đặt tên đụng nhau**: method `getActiveWeek(): WeekAnchor` trùng tên hàm thuần
+  `getActiveWeek(now): ScheduledWeek` trong `session-schedule.ts` mà `.public.ts` re-export.
+- **A3 lệch 1 dòng ở `characters.service.ts`**: `toEntity` ở `:118-126`, `satisfies` ở `:125` (spec ghi
+  `:117-125` và "characters:124"). Mọi ref khác trong A3 chính xác.
+- **A3 §Edge case về thứ tự sắp xếp là thừa**: `CharactersService.list()` đã dùng đúng
+  `orderBy: { name: 'asc' }` như `attendance.getCharacters` — không có rủi ro "đổi thứ tự lặng".
+- **A5 lệch dải dòng**: khối `optional-jwt-auth.guard` là `:26-38` (trích dẫn có `return true` ở `:38`),
+  spec ghi `:26-36`.
+- **A6 §2** chứa đoạn *"Đã sửa khi hiện thực"* — tài liệu lẫn spec với ghi chú hậu-hiện-thực, lệch với
+  ngày tháng và giọng của các mục còn lại.

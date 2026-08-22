@@ -1,5 +1,14 @@
 # A6 — Codec lưới đội hình, và đưa việc xoá ra khỏi đường `GET`
 
+> **Đã hiện thực** (`4aae1f8`, `10df85a`). Rà soát lại 2026-08-23 tìm thấy **ba lỗi thật**:
+> (1) tiêu đề hứa "đưa việc xoá ra khỏi đường `GET`" nhưng §3 giữ nguyên purge trên đường đó, chỉ dời
+> call site lên controller — `deleteMany` vẫn chạy mỗi lần `GET`; (2) §3 đi ngược
+> `architecture.md:114-115` (*"Services hold the business logic"*), mà `architecture.md` là **binding**;
+> (3) §4 nói quá — đưa `loadCharacterIds` vào `$transaction` **không** đóng được race dưới READ
+> COMMITTED (isolation mặc định của Prisma/Postgres), chỉ thu hẹp cửa sổ; fix đúng là bắt `P2003` →
+> 409. Ngoài ra §2 lẫn ghi chú hậu-hiện-thực vào spec. Chi tiết:
+> [§ Rà soát lại A1–A6](./2026-08-21-architecture-review-2-overview.md#rà-soát-lại-a1a6-2026-08-23).
+
 Ngày: 2026-08-21 · Phạm vi: `apps/api/src/modules/team-builder`.
 Bối cảnh chung: [tổng quan đợt 2](./2026-08-21-architecture-review-2-overview.md).
 Nên làm **sau** [A1](./2026-08-21-a1-schedule-read-seam-design.md) — A1 dọn phần đọc lịch ra khỏi

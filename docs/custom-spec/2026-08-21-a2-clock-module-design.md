@@ -1,5 +1,12 @@
 # A2 — Một module `Clock` sau seam, thay cho `now` truyền tay
 
+> **Đã hiện thực** (`ebea747`, `31e1632`). Rà soát lại 2026-08-23: bảng 15 chữ ký chính xác, nhưng
+> (1) điều kiện hoàn thành `grep -rn "new Date()" src/modules` **không đạt được** bằng bảng thay đổi
+> của spec — thiếu `health.controller.ts:36` (phải thêm commit `31e1632`) và file spec của
+> `characters`; (2) §4 ghi sai kiểu trả về `getActiveWeek` (`ScheduledWeek`, không phải `Week`);
+> (3) "hai đồng hồ khác nhau" là nói quá — vấn đề thật là luật quá hạn được đánh giá hai lần. Chi tiết:
+> [§ Rà soát lại A1–A6](./2026-08-21-architecture-review-2-overview.md#rà-soát-lại-a1a6-2026-08-23).
+
 Ngày: 2026-08-21 · Phạm vi: `apps/api`.
 Bối cảnh chung: [tổng quan đợt 2](./2026-08-21-architecture-review-2-overview.md).
 Nên làm **trước** [A1](./2026-08-21-a1-schedule-read-seam-design.md),

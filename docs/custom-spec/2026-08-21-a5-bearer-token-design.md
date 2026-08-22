@@ -1,5 +1,11 @@
 # A5 — Hai guard thành hai adapter mỏng trên một hàm thuần
 
+> **Đã hiện thực** (`f557e3a`). Rà soát lại 2026-08-23 tìm thấy **một mâu thuẫn nội bộ**: snippet ở §2
+> ném `'Phiên đăng nhập không hợp lệ.'`, còn §3 quyết định gộp về đúng một câu `'Bạn cần đăng nhập.'`
+> — §3 là quyết định đúng, §2 chỉ là snippet chưa cập nhật. Điểm nhỏ: khối
+> `optional-jwt-auth.guard` được trích là `:26-38`, không phải `:26-36`. Chi tiết:
+> [§ Rà soát lại A1–A6](./2026-08-21-architecture-review-2-overview.md#rà-soát-lại-a1a6-2026-08-23).
+
 Ngày: 2026-08-21 · Phạm vi: `apps/api/src/common`, `apps/api/src/modules/auth`.
 Bối cảnh chung: [tổng quan đợt 2](./2026-08-21-architecture-review-2-overview.md).
 Độc lập với các spec khác — làm lúc nào cũng được.

@@ -1,5 +1,14 @@
 # A4 — `weekStart` thành một mốc tuần có kiểu, không còn là string trần
 
+> **Đã hiện thực** (`6d04d71` → `9b0a9a2`). Rà soát lại 2026-08-23 tìm thấy **hai lỗi thật**:
+> (1) §1 để `parseWeekStart` ném `BadRequestException` ngay trong `session-schedule.ts` — file phải
+> thuần và không biết framework; sau khi §4 có DTO Zod thì nhánh ném đó không còn với tới được từ
+> HTTP, nên ca test `?weekStart=xyz` nằm sai tầng; (2) §4 dùng `z.iso.datetime()`, mà Zod v4 mặc định
+> `offset: false` nên **loại chính ca test `+07:00`** của spec — phải là `z.iso.datetime({ offset: true })`.
+> Thêm một điểm nhỏ: §3 đặt tên `getActiveWeek` đụng hàm thuần cùng tên trong `session-schedule.ts`.
+> Chi tiết:
+> [§ Rà soát lại A1–A6](./2026-08-21-architecture-review-2-overview.md#rà-soát-lại-a1a6-2026-08-23).
+
 Ngày: 2026-08-21 · Phạm vi: `apps/api`.
 Bối cảnh chung: [tổng quan đợt 2](./2026-08-21-architecture-review-2-overview.md).
 Nên làm **sau** [A2](./2026-08-21-a2-clock-module-design.md) (chữ ký service đã sạch `now`) và

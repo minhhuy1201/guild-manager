@@ -1,5 +1,11 @@
 # A3 — Codec response thành module, thay vì quy ước ở mỗi call site
 
+> **Đã hiện thực** (`cda3da9` → `abccaf5`). Rà soát lại 2026-08-23: bằng chứng chính xác (kể cả việc
+> không có `.parse()` nào chạy trên schema chiều ra), trừ hai điểm nhỏ — (1) `characters.service.ts`
+> lệch 1 dòng: `toEntity` ở `:118-126`, `satisfies` ở `:125`; (2) §Edge case về thứ tự sắp xếp là
+> thừa, `CharactersService.list()` đã dùng đúng `orderBy: { name: 'asc' }`. Chi tiết:
+> [§ Rà soát lại A1–A6](./2026-08-21-architecture-review-2-overview.md#rà-soát-lại-a1a6-2026-08-23).
+
 Ngày: 2026-08-21 · Phạm vi: `apps/api` + `packages/shared`.
 Bối cảnh chung: [tổng quan đợt 2](./2026-08-21-architecture-review-2-overview.md).
 Tiếp nối [C1](./2026-08-18-c1-response-contract-design.md): C1 đưa **shape** chiều ra vào

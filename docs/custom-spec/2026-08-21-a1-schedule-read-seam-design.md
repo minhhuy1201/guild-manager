@@ -1,5 +1,11 @@
 # A1 — Gấp việc đọc lịch vào một interface của `battle-sessions`
 
+> **Đã hiện thực** (`54372f9`, `b4be826`, `d23bb23`). Rà soát lại 2026-08-23 tìm thấy hai chỗ đọc
+> spec này phải cẩn thận: (1) spec thêm **ba** hàm public chứ không phải hai như tổng quan ghi;
+> (2) §Edge case gọi "bỏ nhánh `if` ở `:119`" là no-op — chỉ đúng với tuần quá khứ, tuần **kế tiếp**
+> cũng editable nên bị sinh Guild War qua đường `GET`. Chi tiết:
+> [§ Rà soát lại A1–A6](./2026-08-21-architecture-review-2-overview.md#rà-soát-lại-a1a6-2026-08-23).
+
 Ngày: 2026-08-21 · Phạm vi: `apps/api`.
 Bối cảnh chung: [tổng quan đợt 2](./2026-08-21-architecture-review-2-overview.md).
 Nên làm **sau** [A2](./2026-08-21-a2-clock-module-design.md) và
