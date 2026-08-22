@@ -7,6 +7,9 @@
 > sửa; (2) §4 dùng `z.iso.datetime()`, mà Zod v4 mặc định
 > `offset: false` nên **loại chính ca test `+07:00`** của spec — phải là `z.iso.datetime({ offset: true })`
 > — **đã sửa 2026-08-23**, §4 bên dưới chép đúng schema đang chạy (bản hiện thực vốn đã đúng, chỉ spec sai).
+> Vòng đối chiếu với kế hoạch tìm thêm một **chỗ thiếu**: §4 chỉ ghi một file DTO cho cả hai module,
+> điều mà luật ranh giới module không cho phép — **đã sửa 2026-08-23**, §4 và bảng thay đổi nay chép
+> đúng hai file `dto/week-start-query.dto.ts` đang chạy kèm lý do.
 > Thêm một điểm nhỏ: §3 đặt tên `getActiveWeek` đụng hàm thuần cùng tên trong `session-schedule.ts`.
 > Chi tiết:
 > [§ Rà soát lại A1–A6](./2026-08-21-architecture-review-2-overview.md#rà-soát-lại-a1a6-2026-08-23).
@@ -147,10 +150,23 @@ list(@Query() query: WeekStartQueryDto): Promise<BattleSession[]> {
 }
 ```
 
+```ts
+// team-builder.controller.ts — cùng DTO tên, nhưng là file của chính module này
+getFormations(@Query() query: WeekStartQueryDto): Promise<SessionFormation[]> {
+  return this.teamBuilder.getFormations(query.weekStart);
+}
+```
+
 Schema ở `packages/shared` theo luật *"A request/response shape, an enum, a validation rule →
 `packages/shared`"*; DTO dựng bằng `createZodDto` như mọi DTO khác. Zod bắt được "không phải chuỗi
 ISO"; `parseWeekStart` bắt phần còn lại (mốc hợp lệ nhưng cần quy về Thứ 2). Hai tầng, hai việc khác
 nhau — không trùng.
+
+**Hai file DTO một dòng, mỗi module một cái** — không dùng chung một DTO. `team-builder` không được
+import `battle-sessions/dto/…` (luật ranh giới module, `apps/api/CLAUDE.md`), còn đẩy một DTO class
+qua `battle-sessions.public.ts` thì phơi chi tiết HTTP của module này ra module khác. Đây không phải
+chỗ lặp: shape vẫn khai báo **đúng một lần** ở `packages/shared`, hai file chỉ là điểm nối
+`createZodDto` cho hai controller, khác nhau đúng một câu doc comment nói endpoint nào dùng nó.
 
 ## Thay đổi cụ thể
 
@@ -158,10 +174,11 @@ nhau — không trùng.
 |---|---|
 | `session-schedule.ts` | thêm `WeekAnchor`, `parseWeekStart`, `isSameWeek`; `weekStartOf` đổi kiểu trả về |
 | `battle-sessions.public.ts` | re-export ba thứ trên |
-| `packages/shared/schemas/battle-session.schema.ts` | thêm `weekStartQuerySchema` |
-| `battle-sessions/dto/battle-session.dto.ts` | thêm `WeekStartQueryDto` |
-| `battle-sessions.controller.ts:45` | `@Query() query: WeekStartQueryDto` |
-| `team-builder.controller.ts:41` | như trên |
+| `packages/shared/schemas/battle-session.schema.ts` | thêm `INVALID_WEEK_MESSAGE`, `weekStartQuerySchema`, `WeekStartQuery` |
+| `battle-sessions/dto/week-start-query.dto.ts` | **file mới** — `WeekStartQueryDto` cho `GET /battle-sessions` |
+| `team-builder/dto/week-start-query.dto.ts` | **file mới** — `WeekStartQueryDto` cho `GET /team-builder/formations` |
+| `battle-sessions.controller.ts:46` | `@Query() query: WeekStartQueryDto` |
+| `team-builder.controller.ts:42` | như trên, lấy DTO từ `./dto/` của chính nó |
 | `battle-sessions.service.ts:56-58, 88-90` | bỏ `getActiveWeekStart(): string`; dùng `parseWeekStart` |
 | `team-builder.service.ts:115-124` | như trên; `where: { weekStart: anchor }`, bỏ `new Date(...)` |
 | `attendance.service.ts:102-103` | `isSameWeek(session.weekStartAnchor, activeWeek)` |
