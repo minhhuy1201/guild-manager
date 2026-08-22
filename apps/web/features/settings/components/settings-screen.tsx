@@ -3,17 +3,15 @@
 import { useState } from "react";
 import type { BattleSession } from "@guild/shared/schemas";
 
-import { ErrorState } from "@/components/shared/error-state";
+import { QueryBoundary } from "@/components/shared/query-boundary";
 import { Card, CardContent } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { combineQueries } from "@/lib/query-group";
 import { useSettingsWeeks, useWeekSessions } from "../hooks/use-week-sessions";
 import { DeleteSessionDialog } from "./delete-session-dialog";
 import { SessionFormDialog } from "./session-form-dialog";
 import { SessionList } from "./session-list";
+import { SettingsSkeleton } from "./settings-skeleton";
 import { WeekSelector } from "./week-selector";
-
-/** Số hàng khung xương hiện trong lúc chờ dữ liệu. */
-const SKELETON_ROWS = 3;
 
 /**
  * Màn Thiết lập lịch đánh: chọn tuần rồi thêm/sửa/xoá các trận của tuần đó.
@@ -32,64 +30,46 @@ export function SettingsScreen() {
   const [formOpen, setFormOpen] = useState(false);
   const [deleting, setDeleting] = useState<BattleSession | null>(null);
 
-  if (weeksQuery.isError || sessionsQuery.isError) {
-    return (
-      <Card>
-        <CardContent>
-          <ErrorState
-            message="Không tải được lịch đánh."
-            onRetry={() => {
-              void weeksQuery.refetch();
-              void sessionsQuery.refetch();
-            }}
-          />
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (weeksQuery.isPending || sessionsQuery.isPending || weekStart === null) {
-    return (
-      <Card>
-        <CardContent className="flex flex-col gap-3">
-          <Skeleton className="h-9 w-64" />
-          {Array.from({ length: SKELETON_ROWS }, (_, index) => (
-            <Skeleton key={index} className="h-20 w-full rounded-lg" />
-          ))}
-        </CardContent>
-      </Card>
-    );
-  }
+  const state = combineQueries(
+    [weeksQuery, sessionsQuery],
+    "Không tải được lịch đánh."
+  );
 
   return (
     <Card>
       <CardContent className="flex flex-col gap-4">
-        <div>
-          <h1 className="text-lg font-semibold">Thiết lập lịch đánh</h1>
-          <p className="text-sm text-muted-foreground">
-            Sửa được lịch của tuần này và tuần sau. Trận Guild War do hệ thống
-            tạo sẵn, chỉ đổi được giờ đánh.
-          </p>
-        </div>
+        <QueryBoundary state={state} skeleton={<SettingsSkeleton />}>
+          {weekStart !== null && (
+            <>
+              <div>
+                <h1 className="text-lg font-semibold">Thiết lập lịch đánh</h1>
+                <p className="text-sm text-muted-foreground">
+                  Sửa được lịch của tuần này và tuần sau. Trận Guild War do hệ
+                  thống tạo sẵn, chỉ đổi được giờ đánh.
+                </p>
+              </div>
 
-        <WeekSelector
-          weeks={weeks}
-          value={weekStart}
-          onChange={setSelectedWeek}
-        />
+              <WeekSelector
+                weeks={weeks}
+                value={weekStart}
+                onChange={setSelectedWeek}
+              />
 
-        <SessionList
-          sessions={sessionsQuery.data}
-          onEdit={(session) => {
-            setEditing(session);
-            setFormOpen(true);
-          }}
-          onDelete={setDeleting}
-          onAdd={() => {
-            setEditing(null);
-            setFormOpen(true);
-          }}
-        />
+              <SessionList
+                sessions={sessionsQuery.data ?? []}
+                onEdit={(session) => {
+                  setEditing(session);
+                  setFormOpen(true);
+                }}
+                onDelete={setDeleting}
+                onAdd={() => {
+                  setEditing(null);
+                  setFormOpen(true);
+                }}
+              />
+            </>
+          )}
+        </QueryBoundary>
       </CardContent>
 
       <SessionFormDialog
