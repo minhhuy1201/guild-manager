@@ -1,5 +1,4 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import type { GuildClass } from '@guild/shared/enums';
 import type {
   Character,
   CreateCharacterInput,
@@ -7,6 +6,7 @@ import type {
 } from '@guild/shared/schemas';
 
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
+import { toCharacter } from './characters.codec';
 import { generateId } from './characters.lib';
 
 /** Mã lỗi Prisma khi vi phạm ràng buộc duy nhất (ở đây là trùng khoá chính). */
@@ -29,7 +29,7 @@ export class CharactersService {
       orderBy: { name: 'asc' },
     });
 
-    return rows.map(toEntity);
+    return rows.map(toCharacter);
   }
 
   /**
@@ -63,7 +63,7 @@ export class CharactersService {
       data: input,
     });
 
-    return toEntity(row);
+    return toCharacter(row);
   }
 
   /**
@@ -76,6 +76,21 @@ export class CharactersService {
     await this.ensureExists(id);
 
     await this.prisma.character.delete({ where: { id } });
+  }
+
+  /**
+   * Thành viên này có còn trong bang không.
+   * Module khác dùng để kiểm tồn tại mà không phải chạm vào bảng Character.
+   * @param id - Id thành viên
+   * @returns true nếu thành viên tồn tại
+   */
+  async exists(id: string): Promise<boolean> {
+    const found = await this.prisma.character.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+
+    return found !== null;
   }
 
   /**
@@ -92,7 +107,7 @@ export class CharactersService {
       },
     });
 
-    return toEntity(row);
+    return toCharacter(row);
   }
 
   /**
@@ -102,27 +117,10 @@ export class CharactersService {
    * @throws NotFoundException khi không có thành viên đó
    */
   private async ensureExists(id: string): Promise<void> {
-    const existing = await this.prisma.character.findUnique({ where: { id } });
-
-    if (!existing) {
+    if (!(await this.exists(id))) {
       throw new NotFoundException(NOT_FOUND);
     }
   }
-}
-
-/**
- * Đổi một hàng Prisma thành object trả cho client.
- * @param row - Hàng Character đọc từ database
- * @returns Nhân vật đúng shape contract
- */
-function toEntity(row: { id: string; name: string; guildClass: string }) {
-  return {
-    id: row.id,
-    name: row.name,
-    // Prisma sinh ra union string literal, enum dùng chung là TS enum — cùng giá trị,
-    // ràng buộc bởi enum trong database nên cast ở đây là an toàn.
-    guildClass: row.guildClass as GuildClass,
-  } satisfies Character;
 }
 
 /**
