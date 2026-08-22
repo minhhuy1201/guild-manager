@@ -123,8 +123,11 @@ export function isSessionLocked(dateTime: Date, now: Date): boolean;
 Dùng ở cả `:143`, `:183`, và `:220` — chỗ hard-code `false` đổi thành `isSessionLocked(...)`, luôn
 cho `false` vì `:183` đã chặn, nhưng không còn là một hằng số đúng nhờ may mắn.
 
-Đặt ở đâu? Đây là luật thời gian nhưng **không** phải luật tuần/deadline, nên không thuộc
-`session-schedule.ts`. Giữ trong `team-builder`, cạnh codec.
+Đặt ở đâu? **Đã sửa khi hiện thực:** spec ban đầu định giữ nó trong `team-builder` cạnh codec, với lý
+do đây không phải luật tuần/deadline. Nhưng `architecture.md` §7 và `apps/api/CLAUDE.md` nói mọi luật
+thời gian của lịch đánh nằm ở `modules/battle-sessions/session-schedule.ts` "nowhere else", và hàm
+này trùng hình với `isDeadlinePassed` ngay cạnh. Nên nó nằm ở `session-schedule.ts`, ra ngoài qua
+`battle-sessions.public.ts`; `formation-grid.ts` chỉ còn là codec.
 
 ### 3. `purgeExpiredFormations` thành entry point riêng
 
@@ -156,7 +159,8 @@ trong transaction, đổi lấy việc phép lọc thực sự bảo vệ đư�
 
 | File | Thay đổi |
 |---|---|
-| `modules/team-builder/formation-grid.ts` (mới) | `SlotRow`, `encodeMatch`, `decodeMatch`, `isSessionLocked` |
+| `modules/team-builder/formation-grid.ts` (mới) | `SlotRow`, `encodeMatch`, `decodeMatch` |
+| `modules/battle-sessions/session-schedule.ts` | thêm `isSessionLocked`, export qua `battle-sessions.public.ts` |
 | `team-builder.service.ts:26-51` | bỏ `SlotRow`, `buildSlotRows` → import từ codec |
 | `team-builder.service.ts:144-155` | `matches: session.formationMatches.map(m => decodeMatch(m.slots))` |
 | `team-builder.service.ts:143, 183, 220` | dùng `isSessionLocked` |

@@ -15,11 +15,12 @@ import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import {
   BattleSessionsService,
   isSameWeek,
+  isSessionLocked,
   parseWeekStart,
   weekEndOf,
 } from '../battle-sessions/battle-sessions.public';
 import { CharactersService } from '../characters/characters.public';
-import { decodeMatch, encodeMatch, isSessionLocked } from './formation-grid';
+import { decodeMatch, encodeMatch } from './formation-grid';
 
 /** Số ngày giữ lại đội hình cũ. Quá mốc này thì dọn. */
 const RETENTION_DAYS = 56;

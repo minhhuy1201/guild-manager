@@ -63,17 +63,6 @@ export function decodeMatch(rows: SlotRow[]): MatchFormation {
 }
 
 /**
- * Trận đã qua giờ đánh thì khoá, không sửa đội hình được nữa.
- * Đúng giờ đánh vẫn chưa khoá — mốc so sánh là `<`, không phải `<=`.
- * @param dateTime - Thời điểm đánh của trận
- * @param now - Thời điểm hiện tại
- * @returns true khi trận đã đánh xong
- */
-export function isSessionLocked(dateTime: Date, now: Date): boolean {
-  return dateTime.getTime() < now.getTime();
-}
-
-/**
  * Hàng này có xếp người không.
  * @param row - Hàng cần kiểm
  * @returns true khi `characterId` không null, đồng thời thu hẹp kiểu của hàng

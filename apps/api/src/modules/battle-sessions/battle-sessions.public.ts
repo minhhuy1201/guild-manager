@@ -13,6 +13,7 @@ export type { ScheduledSession } from './battle-sessions.service';
 export {
   formatSessionLabel,
   isSameWeek,
+  isSessionLocked,
   parseWeekStart,
   weekEndOf,
   weekStartOf,

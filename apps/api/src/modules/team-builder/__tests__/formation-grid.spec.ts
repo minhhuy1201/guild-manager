@@ -1,6 +1,6 @@
 import type { MatchFormation } from '@guild/shared/schemas';
 
-import { decodeMatch, encodeMatch, isSessionLocked } from '../formation-grid';
+import { decodeMatch, encodeMatch } from '../formation-grid';
 
 /**
  * Sắp các hàng theo slotId để so sánh không phụ thuộc thứ tự duyệt của Set.
@@ -120,25 +120,5 @@ describe('round-trip decode → encode', () => {
     ];
 
     expect(bySlotId(encodeMatch(decodeMatch(rows)))).toEqual(bySlotId(rows));
-  });
-});
-
-describe('isSessionLocked', () => {
-  const dateTime = new Date('2026-07-23T13:30:00Z');
-
-  it('trước giờ đánh thì chưa khoá', () => {
-    expect(isSessionLocked(dateTime, new Date('2026-07-23T13:29:59Z'))).toBe(
-      false,
-    );
-  });
-
-  it('đúng giờ đánh vẫn chưa khoá', () => {
-    expect(isSessionLocked(dateTime, new Date(dateTime))).toBe(false);
-  });
-
-  it('sau giờ đánh thì khoá', () => {
-    expect(isSessionLocked(dateTime, new Date('2026-07-23T13:30:01Z'))).toBe(
-      true,
-    );
   });
 });

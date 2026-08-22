@@ -213,3 +213,15 @@ export function formatSessionLabel(
 export function isDeadlinePassed(deadline: Date, now: Date): boolean {
   return now.getTime() > deadline.getTime();
 }
+
+/**
+ * Trận đã qua giờ đánh thì khoá, không sửa đội hình được nữa.
+ * Khác `isDeadlinePassed` ở mốc so: hạn điểm danh là một thời điểm riêng trước giờ đánh, còn
+ * đây so thẳng với chính giờ đánh. Đúng giờ đánh vẫn chưa khoá.
+ * @param dateTime - Thời điểm đánh của trận
+ * @param now - Thời điểm hiện tại
+ * @returns true khi trận đã đánh xong
+ */
+export function isSessionLocked(dateTime: Date, now: Date): boolean {
+  return dateTime.getTime() < now.getTime();
+}

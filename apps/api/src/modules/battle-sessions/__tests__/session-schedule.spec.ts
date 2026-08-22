@@ -8,6 +8,7 @@ import {
   guildWarSessionId,
   isDeadlinePassed,
   isSameWeek,
+  isSessionLocked,
   parseWeekStart,
   weekStartOf,
 } from '../session-schedule';
@@ -195,6 +196,32 @@ describe('session-schedule', () => {
 
       expect(isDeadlinePassed(deadline, deadline)).toBe(false);
       expect(isDeadlinePassed(deadline, vn('2026-07-23T17:01'))).toBe(true);
+    });
+  });
+
+  describe('isSessionLocked', () => {
+    const dateTime = vn('2026-07-23T20:30');
+
+    it('trước giờ đánh thì chưa khoá', () => {
+      expect(isSessionLocked(dateTime, vn('2026-07-23T20:29'))).toBe(false);
+    });
+
+    it('đúng giờ đánh vẫn chưa khoá', () => {
+      expect(isSessionLocked(dateTime, new Date(dateTime))).toBe(false);
+    });
+
+    it('sau giờ đánh thì khoá', () => {
+      expect(isSessionLocked(dateTime, vn('2026-07-23T20:31'))).toBe(true);
+    });
+
+    it('khoá theo giờ đánh, không theo hạn điểm danh', () => {
+      // Hạn điểm danh nằm trước giờ đánh: quá hạn điểm danh nhưng chưa tới giờ đánh
+      // thì đội hình vẫn sửa được.
+      const deadline = vn('2026-07-23T17:00');
+      const afterDeadline = vn('2026-07-23T18:00');
+
+      expect(isDeadlinePassed(deadline, afterDeadline)).toBe(true);
+      expect(isSessionLocked(dateTime, afterDeadline)).toBe(false);
     });
   });
 });
