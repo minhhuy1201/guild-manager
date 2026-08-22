@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 
+import { ClockModule } from './common/clock/clock.module';
 import { validateEnv } from './config';
 import { PrismaModule } from './infrastructure/prisma/prisma.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
@@ -17,6 +18,7 @@ import { TeamBuilderModule } from './modules/team-builder/team-builder.module';
       validate: validateEnv,
       envFilePath: ['.env.local', '.env'],
     }),
+    ClockModule,
     PrismaModule,
     HealthModule,
     AuthModule,

@@ -34,7 +34,9 @@ async function main(): Promise<void> {
   });
 
   try {
-    const weekStarts = getEditableWeeks().map((week) => week.weekStart);
+    const weekStarts = getEditableWeeks(new Date()).map(
+      (week) => week.weekStart,
+    );
     const sessions = await prisma.battleSession.findMany({
       where: { weekStart: { in: weekStarts } },
     });

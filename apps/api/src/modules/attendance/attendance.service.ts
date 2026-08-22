@@ -10,18 +10,16 @@ import type {
   MarkAttendanceInput,
 } from '@guild/shared/schemas';
 
-import { ADMIN_ROLE, type JwtPayload } from '../../common';
+import { ADMIN_ROLE, Clock, type JwtPayload } from '../../common';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
-import {
-  BattleSessionsService,
-  isDeadlinePassed,
-} from '../battle-sessions/battle-sessions.public';
+import { BattleSessionsService } from '../battle-sessions/battle-sessions.public';
 
 @Injectable()
 export class AttendanceService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly battleSessions: BattleSessionsService,
+    private readonly clock: Clock,
   ) {}
 
   /**
@@ -47,11 +45,10 @@ export class AttendanceService {
 
   /**
    * Lấy toàn bộ lượt điểm danh của tuần đang mở.
-   * @param now - Thời điểm hiện tại (cho phép truyền vào để test)
    * @returns Mảng record của các trận trong tuần
    */
-  async getRecords(now: Date = new Date()): Promise<AttendanceRecord[]> {
-    const sessions = await this.battleSessions.listByWeek(undefined, now);
+  async getRecords(): Promise<AttendanceRecord[]> {
+    const sessions = await this.battleSessions.listByWeek();
     const records = await this.prisma.attendanceRecord.findMany({
       where: { sessionId: { in: sessions.map((session) => session.id) } },
       orderBy: { markedAt: 'desc' },
@@ -75,7 +72,6 @@ export class AttendanceService {
    * Quản trị viên: không bị chặn bởi deadline (dùng để sửa sai sót sau trận).
    * @param input - characterId, sessionId và status
    * @param actor - Payload JWT của người gọi, null khi request không đăng nhập
-   * @param now - Thời điểm hiện tại (cho phép truyền vào để test)
    * @returns Record vừa ghi
    * @throws NotFoundException khi không có nhân vật hoặc trận đó trong tuần đang mở
    * @throws ConflictException khi người thường điểm danh trận đã quá hạn
@@ -83,8 +79,8 @@ export class AttendanceService {
   async mark(
     input: MarkAttendanceInput,
     actor: JwtPayload | null = null,
-    now: Date = new Date(),
   ): Promise<AttendanceRecord> {
+    const now = this.clock.now();
     const { characterId, sessionId, status } = input;
     const isAdmin = actor?.role === ADMIN_ROLE;
 
@@ -100,12 +96,14 @@ export class AttendanceService {
     // Người thường chỉ điểm danh được cho tuần đang mở; quản trị viên sửa được
     // cả tuần khác để bù sai sót.
     const inActiveWeek =
-      session?.weekStart === this.battleSessions.getActiveWeekStart(now);
+      session?.weekStart === this.battleSessions.getActiveWeekStart();
     if (!session || (!isAdmin && !inActiveWeek)) {
       throw new NotFoundException('Không tìm thấy ngày đánh.');
     }
 
-    if (!isAdmin && isDeadlinePassed(new Date(session.deadline), now)) {
+    // Dùng lại cờ mà `findById` vừa dựng thay vì tính lại: cờ client nhận được và
+    // cờ chặn ghi phải là cùng một phép đánh giá, trên cùng một mốc thời gian.
+    if (!isAdmin && session.isDeadlinePassed) {
       throw new ConflictException('Đã quá hạn điểm danh ngày này.');
     }
 

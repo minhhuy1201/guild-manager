@@ -10,8 +10,4 @@
  */
 export { BattleSessionsService } from './battle-sessions.service';
 export type { ScheduledSession } from './battle-sessions.service';
-export {
-  formatSessionLabel,
-  isDeadlinePassed,
-  weekEndOf,
-} from './session-schedule';
+export { formatSessionLabel, weekEndOf } from './session-schedule';

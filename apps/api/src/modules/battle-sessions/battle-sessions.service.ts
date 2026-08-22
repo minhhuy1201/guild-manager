@@ -12,6 +12,7 @@ import type {
   Week,
 } from '@guild/shared/schemas';
 
+import { Clock } from '../../common';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import {
   formatSessionLabel,
@@ -67,24 +68,25 @@ export interface ScheduledSession {
  */
 @Injectable()
 export class BattleSessionsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly clock: Clock,
+  ) {}
 
   /**
    * Mốc Thứ 2 của tuần điểm danh đang mở.
-   * @param now - Thời điểm hiện tại (cho phép truyền vào để test)
    * @returns Mốc Thứ 2 00:00 dạng ISO string
    */
-  getActiveWeekStart(now: Date = new Date()): string {
-    return getActiveWeek(now).weekStart.toISOString();
+  getActiveWeekStart(): string {
+    return getActiveWeek(this.clock.now()).weekStart.toISOString();
   }
 
   /**
    * Các tuần quản trị viên được phép thiết lập: tuần đang mở và tuần kế tiếp.
-   * @param now - Thời điểm hiện tại (cho phép truyền vào để test)
    * @returns Mảng 2 tuần, tuần đang mở đứng trước
    */
-  getEditableWeeks(now: Date = new Date()): Week[] {
-    return getEditableWeeks(now).map(
+  getEditableWeeks(): Week[] {
+    return getEditableWeeks(this.clock.now()).map(
       (week, index) =>
         ({
           weekStart: week.weekStart.toISOString(),
@@ -99,18 +101,15 @@ export class BattleSessionsService {
    * Tuần đang mở và tuần kế được đảm bảo đã có trận Guild War; tuần đã qua chỉ
    * đọc những gì còn lưu.
    * @param weekStart - Mốc Thứ 2 của tuần cần xem (ISO string). Bỏ trống = tuần đang mở
-   * @param now - Thời điểm hiện tại (cho phép truyền vào để test)
    * @returns Mảng trận đã sắp theo thời gian đánh
    */
-  async listByWeek(
-    weekStart?: string,
-    now: Date = new Date(),
-  ): Promise<BattleSession[]> {
+  async listByWeek(weekStart?: string): Promise<BattleSession[]> {
+    const now = this.clock.now();
     const target = weekStart
       ? new Date(weekStart)
       : getActiveWeek(now).weekStart;
 
-    await this.ensureWeekMaterialized(target.toISOString(), now);
+    await this.materializeWeek(target, now);
 
     const rows = await this.prisma.battleSession.findMany({
       ...weekSessionQuery(target),
@@ -124,15 +123,20 @@ export class BattleSessionsService {
    * Đảm bảo tuần đã có đủ các trận hệ thống sinh (hiện là Guild War).
    * Tuần ngoài phạm vi thiết lập là no-op, nên caller gọi được vô điều kiện.
    * @param weekStart - Mốc Thứ 2 của tuần cần dựng (ISO string)
-   * @param now - Thời điểm hiện tại (cho phép truyền vào để test)
    * @returns Promise hoàn tất khi tuần đã sẵn sàng để đọc
    */
-  async ensureWeekMaterialized(
-    weekStart: string,
-    now: Date = new Date(),
-  ): Promise<void> {
-    const week = new Date(weekStart);
+  async ensureWeekMaterialized(weekStart: string): Promise<void> {
+    await this.materializeWeek(new Date(weekStart), this.clock.now());
+  }
 
+  /**
+   * Thân của `ensureWeekMaterialized`, tách ra để `listByWeek` dùng lại đúng mốc
+   * thời gian nó đã đọc thay vì đọc đồng hồ lần thứ hai.
+   * @param week - Mốc Thứ 2 00:00 của tuần cần dựng
+   * @param now - Thời điểm hiện tại
+   * @returns Promise hoàn tất khi tuần đã sẵn sàng để đọc
+   */
+  private async materializeWeek(week: Date, now: Date): Promise<void> {
     if (!this.isEditableWeek(week, now)) return;
 
     await this.ensureGuildWar(week);
@@ -181,13 +185,10 @@ export class BattleSessionsService {
   /**
    * Đọc một trận theo id.
    * @param id - Id trận cần đọc
-   * @param now - Thời điểm hiện tại (cho phép truyền vào để test)
    * @returns Trận tương ứng, null nếu không có
    */
-  async findById(
-    id: string,
-    now: Date = new Date(),
-  ): Promise<BattleSession | null> {
+  async findById(id: string): Promise<BattleSession | null> {
+    const now = this.clock.now();
     const row = await this.prisma.battleSession.findUnique({
       where: { id },
       include: SESSION_INCLUDE,
@@ -199,14 +200,11 @@ export class BattleSessionsService {
   /**
    * Tạo một trận scrim mới. Không tạo được Guild War — trận đó do hệ thống sinh.
    * @param input - Giờ đánh, hạn chót và tên bang đối thủ
-   * @param now - Thời điểm hiện tại (cho phép truyền vào để test)
    * @returns Trận vừa tạo
    * @throws BadRequestException khi trận không thuộc tuần được thiết lập hoặc hạn chót vượt trần 10:00 ngày đánh
    */
-  async create(
-    input: CreateBattleSessionInput,
-    now: Date = new Date(),
-  ): Promise<BattleSession> {
+  async create(input: CreateBattleSessionInput): Promise<BattleSession> {
+    const now = this.clock.now();
     const dateTime = new Date(input.dateTime);
     const deadline = new Date(input.deadline);
 
@@ -235,7 +233,6 @@ export class BattleSessionsService {
    * xuống luôn được tính lại từ tuần chứa trận.
    * @param id - Id trận cần sửa
    * @param input - Các field cần đổi
-   * @param now - Thời điểm hiện tại (cho phép truyền vào để test)
    * @returns Trận sau khi sửa
    * @throws NotFoundException khi trận không còn tồn tại
    * @throws BadRequestException khi tuần không được thiết lập, hạn chót vượt trần, hoặc đặt đối thủ/hạn chót cho Guild War
@@ -243,8 +240,8 @@ export class BattleSessionsService {
   async update(
     id: string,
     input: UpdateBattleSessionInput,
-    now: Date = new Date(),
   ): Promise<BattleSession> {
+    const now = this.clock.now();
     const current = await this.prisma.battleSession.findUnique({
       where: { id },
       include: SESSION_INCLUDE,
@@ -296,12 +293,12 @@ export class BattleSessionsService {
   /**
    * Xoá một trận scrim. Điểm danh và đội hình của trận bị xoá theo (cascade).
    * @param id - Id trận cần xoá
-   * @param now - Thời điểm hiện tại (cho phép truyền vào để test)
    * @returns Promise hoàn tất khi đã xoá
    * @throws NotFoundException khi trận không còn tồn tại
    * @throws BadRequestException khi là Guild War hoặc thuộc tuần đã qua
    */
-  async remove(id: string, now: Date = new Date()): Promise<void> {
+  async remove(id: string): Promise<void> {
+    const now = this.clock.now();
     const current = await this.prisma.battleSession.findUnique({
       where: { id },
     });

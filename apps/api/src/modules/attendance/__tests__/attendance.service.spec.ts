@@ -1,7 +1,12 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { AttendanceStatus } from '@guild/shared/enums';
 
-import { ADMIN_ROLE, TOKEN_TYPE, type JwtPayload } from '../../../common';
+import {
+  ADMIN_ROLE,
+  FixedClock,
+  TOKEN_TYPE,
+  type JwtPayload,
+} from '../../../common';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { BattleSessionsService } from '../../battle-sessions/battle-sessions.public';
 import { AttendanceService } from '../attendance.service';
@@ -60,6 +65,8 @@ const SESSIONS = [
 
 describe('AttendanceService.mark', () => {
   let service: AttendanceService;
+  /** Dựng service với một mốc thời gian cố định — vài test cần mốc khác WEDNESDAY. */
+  let makeService: (now: Date) => AttendanceService;
   let prisma: {
     character: { findUnique: jest.Mock };
     attendanceRecord: { upsert: jest.Mock; findMany: jest.Mock };
@@ -71,6 +78,30 @@ describe('AttendanceService.mark', () => {
   };
 
   beforeEach(() => {
+    makeService = (now: Date) => {
+      battleSessions.findById.mockImplementation((id: string) => {
+        const found = SESSIONS.find((item) => item.id === id);
+
+        return Promise.resolve(
+          found
+            ? {
+                ...found,
+                // Cờ do BattleSessionsService dựng ở cùng mốc thời gian này —
+                // AttendanceService dùng lại chứ không tính lại.
+                isDeadlinePassed:
+                  now.getTime() > new Date(found.deadline).getTime(),
+              }
+            : null,
+        );
+      });
+
+      return new AttendanceService(
+        prisma as unknown as PrismaService,
+        battleSessions as unknown as BattleSessionsService,
+        new FixedClock(now),
+      );
+    };
+
     prisma = {
       character: {
         findUnique: jest.fn().mockResolvedValue({ id: CHARACTER_ID }),
@@ -96,20 +127,13 @@ describe('AttendanceService.mark', () => {
 
     battleSessions = {
       listByWeek: jest.fn().mockResolvedValue(SESSIONS),
-      findById: jest
-        .fn()
-        .mockImplementation((id: string) =>
-          Promise.resolve(SESSIONS.find((item) => item.id === id) ?? null),
-        ),
+      findById: jest.fn(),
       getActiveWeekStart: jest
         .fn()
         .mockReturnValue(vn('2026-07-20T00:00').toISOString()),
     };
 
-    service = new AttendanceService(
-      prisma as unknown as PrismaService,
-      battleSessions as unknown as BattleSessionsService,
-    );
+    service = makeService(WEDNESDAY);
   });
 
   it('ghi nhận điểm danh khi còn hạn', async () => {
@@ -120,7 +144,6 @@ describe('AttendanceService.mark', () => {
         status: AttendanceStatus.PRESENT,
       },
       null,
-      WEDNESDAY,
     );
 
     expect(record).toEqual({
@@ -139,7 +162,6 @@ describe('AttendanceService.mark', () => {
         status: AttendanceStatus.PRESENT,
       },
       null,
-      WEDNESDAY,
     );
     const changed = await service.mark(
       {
@@ -148,7 +170,6 @@ describe('AttendanceService.mark', () => {
         status: AttendanceStatus.ABSENT,
       },
       null,
-      WEDNESDAY,
     );
 
     expect(changed.status).toBe(AttendanceStatus.ABSENT);
@@ -175,7 +196,6 @@ describe('AttendanceService.mark', () => {
           status: AttendanceStatus.PRESENT,
         },
         null,
-        WEDNESDAY,
       ),
     ).rejects.toThrow(NotFoundException);
   });
@@ -189,7 +209,6 @@ describe('AttendanceService.mark', () => {
           status: AttendanceStatus.PRESENT,
         },
         null,
-        WEDNESDAY,
       ),
     ).rejects.toThrow(NotFoundException);
   });
@@ -203,7 +222,6 @@ describe('AttendanceService.mark', () => {
           status: AttendanceStatus.PRESENT,
         },
         null,
-        WEDNESDAY,
       ),
     ).rejects.toThrow(ConflictException);
   });
@@ -216,7 +234,6 @@ describe('AttendanceService.mark', () => {
         status: AttendanceStatus.PRESENT,
       },
       ADMIN,
-      WEDNESDAY,
     );
 
     expect(record.status).toBe(AttendanceStatus.PRESENT);
@@ -231,7 +248,6 @@ describe('AttendanceService.mark', () => {
         status: AttendanceStatus.ABSENT,
       },
       ADMIN,
-      WEDNESDAY,
     );
 
     expect(record.status).toBe(AttendanceStatus.ABSENT);
@@ -240,15 +256,37 @@ describe('AttendanceService.mark', () => {
 
   it('sau 17:00 Thứ 5 thì khóa cả Guild War Thứ 7', async () => {
     await expect(
-      service.mark(
+      makeService(vn('2026-07-23T17:01')).mark(
         {
           characterId: CHARACTER_ID,
           sessionId: SESSION_IDS['Thứ 7 · Guild War'],
           status: AttendanceStatus.PRESENT,
         },
         null,
-        vn('2026-07-23T17:01'),
       ),
     ).rejects.toThrow(ConflictException);
+  });
+
+  it('trận vừa qua hạn: cờ trả về client và cờ chặn ghi là cùng một mốc', async () => {
+    // Một phút sau hạn 17:00 Thứ 5 của Guild War — mốc mà trước đây hai đồng hồ
+    // khác nhau có thể cho hai câu trả lời khác nhau.
+    const justPast = makeService(vn('2026-07-23T17:01'));
+    const sessionId = SESSION_IDS['Thứ 7 · Guild War'];
+
+    await expect(
+      justPast.mark(
+        {
+          characterId: CHARACTER_ID,
+          sessionId,
+          status: AttendanceStatus.PRESENT,
+        },
+        null,
+      ),
+    ).rejects.toThrow(ConflictException);
+
+    const session = (await battleSessions.findById(sessionId)) as {
+      isDeadlinePassed: boolean;
+    };
+    expect(session.isDeadlinePassed).toBe(true);
   });
 });

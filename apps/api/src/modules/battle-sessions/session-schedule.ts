@@ -73,10 +73,10 @@ export function weekEndOf(weekStart: Date): Date {
 /**
  * Xác định tuần điểm danh đang mở tại thời điểm `now`.
  * Tuần mở lúc 22:00 Thứ 7 và mở cho tuần KẾ TIẾP.
- * @param now - Thời điểm hiện tại (mặc định là bây giờ)
+ * @param now - Thời điểm hiện tại
  * @returns Tuần đang mở
  */
-export function getActiveWeek(now: Date = new Date()): ScheduledWeek {
+export function getActiveWeek(now: Date): ScheduledWeek {
   // Chủ nhật (ISO 7) đồng dư 0 mod 7 nên vẫn ra 1 ngày kể từ Thứ 7.
   const daysSinceSaturday = (vnWeekday(now) - SATURDAY + 7) % 7;
 
@@ -94,10 +94,10 @@ export function getActiveWeek(now: Date = new Date()): ScheduledWeek {
 /**
  * Các tuần quản trị viên được phép thiết lập lịch: tuần đang mở và tuần kế tiếp.
  * Tuần đã qua chỉ đọc.
- * @param now - Thời điểm hiện tại (mặc định là bây giờ)
+ * @param now - Thời điểm hiện tại
  * @returns Mảng 2 tuần, tuần đang mở đứng trước
  */
-export function getEditableWeeks(now: Date = new Date()): ScheduledWeek[] {
+export function getEditableWeeks(now: Date): ScheduledWeek[] {
   const active = getActiveWeek(now);
 
   return [active, toWeek(shiftVnDate(active.weekStart, 7, 0, 0))];
@@ -152,12 +152,9 @@ export function formatSessionLabel(
 /**
  * Kiểm tra đã quá hạn điểm danh hay chưa.
  * @param deadline - Hạn chót của trận
- * @param now - Thời điểm hiện tại (mặc định là bây giờ)
+ * @param now - Thời điểm hiện tại
  * @returns true nếu đã quá hạn, không cho ghi nhận điểm danh nữa
  */
-export function isDeadlinePassed(
-  deadline: Date,
-  now: Date = new Date(),
-): boolean {
+export function isDeadlinePassed(deadline: Date, now: Date): boolean {
   return now.getTime() > deadline.getTime();
 }

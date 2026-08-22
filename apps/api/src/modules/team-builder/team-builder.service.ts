@@ -10,6 +10,7 @@ import type {
   SessionFormation,
 } from '@guild/shared/schemas';
 
+import { Clock } from '../../common';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import {
   BattleSessionsService,
@@ -54,22 +55,22 @@ export class TeamBuilderService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly battleSessions: BattleSessionsService,
+    private readonly clock: Clock,
   ) {}
 
   /**
    * Liệt kê các tuần còn dữ liệu đội hình, mới nhất trước.
    * Dọn dữ liệu quá hạn trước khi đọc — màn hình xếp team luôn gọi endpoint này
    * nên không cần cron riêng.
-   * @param now - Thời điểm hiện tại (cho phép truyền vào để test)
    * @returns Mảng tuần, mới nhất trước, tuần đang mở mang cờ isActive
    */
-  async getWeeks(now: Date = new Date()): Promise<FormationWeek[]> {
-    await this.purgeExpiredFormations(now);
+  async getWeeks(): Promise<FormationWeek[]> {
+    await this.purgeExpiredFormations(this.clock.now());
 
-    const activeWeekStart = this.battleSessions.getActiveWeekStart(now);
+    const activeWeekStart = this.battleSessions.getActiveWeekStart();
 
     // Sinh trước, đọc sau: tuần đang mở phải có trận thì mới xuất hiện ở đây.
-    await this.battleSessions.ensureWeekMaterialized(activeWeekStart, now);
+    await this.battleSessions.ensureWeekMaterialized(activeWeekStart);
 
     const weekStarts = await this.battleSessions.listWeekAnchors();
 
@@ -100,17 +101,14 @@ export class TeamBuilderService {
   /**
    * Lấy các trận của một tuần kèm đội hình đã lưu.
    * @param weekStart - Mốc Thứ 2 của tuần cần xem (ISO string). Bỏ trống = tuần đang mở
-   * @param now - Thời điểm hiện tại (cho phép truyền vào để test)
    * @returns Mảng ngày đánh sắp theo thời gian, mỗi ngày kèm đội hình từng trận và cờ locked
    */
-  async getFormations(
-    weekStart?: string,
-    now: Date = new Date(),
-  ): Promise<SessionFormation[]> {
+  async getFormations(weekStart?: string): Promise<SessionFormation[]> {
+    const now = this.clock.now();
     const targetWeekStart =
-      weekStart ?? this.battleSessions.getActiveWeekStart(now);
+      weekStart ?? this.battleSessions.getActiveWeekStart();
 
-    await this.battleSessions.ensureWeekMaterialized(targetWeekStart, now);
+    await this.battleSessions.ensureWeekMaterialized(targetWeekStart);
 
     const sessions =
       await this.battleSessions.readWeekSessions(targetWeekStart);
@@ -179,7 +177,6 @@ export class TeamBuilderService {
    * "bỏ trận 2" chỉ là gửi mảng một phần tử, không cần endpoint riêng.
    * @param sessionId - ID ngày đánh cần lưu đội hình
    * @param matches - Đội hình và ghi chú từng trận, theo thứ tự trận 1 → trận 2
-   * @param now - Thời điểm hiện tại (cho phép truyền vào để test)
    * @returns Ngày đánh kèm đội hình vừa ghi
    * @throws NotFoundException khi không có ngày đánh nào mang sessionId đó
    * @throws ConflictException khi ngày đánh đã qua giờ đánh
@@ -187,9 +184,9 @@ export class TeamBuilderService {
   async saveFormation(
     sessionId: string,
     matches: MatchInput[],
-    now: Date = new Date(),
   ): Promise<SessionFormation> {
-    const session = await this.battleSessions.findById(sessionId, now);
+    const now = this.clock.now();
+    const session = await this.battleSessions.findById(sessionId);
     if (!session) {
       throw new NotFoundException('Không tìm thấy ngày đánh.');
     }

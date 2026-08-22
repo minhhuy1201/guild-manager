@@ -1,3 +1,4 @@
+export * from './clock/clock';
 export * from './constants/auth.constant';
 export * from './constants/http.constant';
 export * from './decorators/current-user.decorator';
