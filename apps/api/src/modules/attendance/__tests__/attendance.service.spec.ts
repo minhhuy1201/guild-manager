@@ -1,5 +1,5 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
-import { AttendanceStatus } from '@guild/shared/enums';
+import { AttendanceStatus, GuildClass } from '@guild/shared/enums';
 
 import {
   ADMIN_ROLE,
@@ -9,6 +9,7 @@ import {
 } from '../../../common';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { BattleSessionsService } from '../../battle-sessions/battle-sessions.public';
+import { CharactersService } from '../../characters/characters.public';
 import { AttendanceService } from '../attendance.service';
 
 /**
@@ -63,12 +64,11 @@ const SESSIONS = [
   },
 ];
 
-describe('AttendanceService.mark', () => {
+describe('AttendanceService', () => {
   let service: AttendanceService;
   /** Dựng service với một mốc thời gian cố định — vài test cần mốc khác WEDNESDAY. */
   let makeService: (now: Date) => AttendanceService;
   let prisma: {
-    character: { findUnique: jest.Mock };
     attendanceRecord: { upsert: jest.Mock; findMany: jest.Mock };
   };
   let battleSessions: {
@@ -76,6 +76,7 @@ describe('AttendanceService.mark', () => {
     findById: jest.Mock;
     getActiveWeekStart: jest.Mock;
   };
+  let characters: { list: jest.Mock; exists: jest.Mock };
 
   /**
    * Cho `findById` trả lịch giả lập kèm cờ quá hạn dựng ở mốc `now`, đúng như
@@ -103,13 +104,11 @@ describe('AttendanceService.mark', () => {
       new AttendanceService(
         prisma as unknown as PrismaService,
         battleSessions as unknown as BattleSessionsService,
+        characters as unknown as CharactersService,
         new FixedClock(now),
       );
 
     prisma = {
-      character: {
-        findUnique: jest.fn().mockResolvedValue({ id: CHARACTER_ID }),
-      },
       attendanceRecord: {
         upsert: jest
           .fn()
@@ -137,162 +136,214 @@ describe('AttendanceService.mark', () => {
         .mockReturnValue(vn('2026-07-20T00:00').toISOString()),
     };
 
+    characters = {
+      list: jest.fn().mockResolvedValue([]),
+      exists: jest.fn().mockResolvedValue(true),
+    };
+
     stubSchedule(WEDNESDAY);
     service = makeService(WEDNESDAY);
   });
 
-  it('ghi nhận điểm danh khi còn hạn', async () => {
-    const record = await service.mark(
-      {
-        characterId: CHARACTER_ID,
-        sessionId: SESSION_IDS['Thứ 7 · Guild War'],
-        status: AttendanceStatus.PRESENT,
-      },
-      null,
-    );
-
-    expect(record).toEqual({
-      characterId: CHARACTER_ID,
-      sessionId: SESSION_IDS['Thứ 7 · Guild War'],
-      status: AttendanceStatus.PRESENT,
-      markedAt: WEDNESDAY.toISOString(),
-    });
-  });
-
-  it('cho đổi Có ⇄ Không khi còn hạn (upsert theo cặp nhân vật + trận)', async () => {
-    await service.mark(
-      {
-        characterId: CHARACTER_ID,
-        sessionId: SESSION_IDS['Thứ 7 · Guild War'],
-        status: AttendanceStatus.PRESENT,
-      },
-      null,
-    );
-    const changed = await service.mark(
-      {
-        characterId: CHARACTER_ID,
-        sessionId: SESSION_IDS['Thứ 7 · Guild War'],
-        status: AttendanceStatus.ABSENT,
-      },
-      null,
-    );
-
-    expect(changed.status).toBe(AttendanceStatus.ABSENT);
-    expect(prisma.attendanceRecord.upsert).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        where: {
-          characterId_sessionId: {
-            characterId: CHARACTER_ID,
-            sessionId: SESSION_IDS['Thứ 7 · Guild War'],
-          },
-        },
-      }),
-    );
-  });
-
-  it('từ chối khi không có nhân vật', async () => {
-    prisma.character.findUnique.mockResolvedValue(null);
-
-    await expect(
-      service.mark(
+  describe('mark', () => {
+    it('ghi nhận điểm danh khi còn hạn', async () => {
+      const record = await service.mark(
         {
-          characterId: 'khong-ton-tai',
+          characterId: CHARACTER_ID,
           sessionId: SESSION_IDS['Thứ 7 · Guild War'],
           status: AttendanceStatus.PRESENT,
         },
         null,
-      ),
-    ).rejects.toThrow(NotFoundException);
-  });
+      );
 
-  it('từ chối khi trận không còn tồn tại', async () => {
-    await expect(
-      service.mark(
+      expect(record).toEqual({
+        characterId: CHARACTER_ID,
+        sessionId: SESSION_IDS['Thứ 7 · Guild War'],
+        status: AttendanceStatus.PRESENT,
+        markedAt: WEDNESDAY.toISOString(),
+      });
+    });
+
+    it('cho đổi Có ⇄ Không khi còn hạn (upsert theo cặp nhân vật + trận)', async () => {
+      await service.mark(
         {
           characterId: CHARACTER_ID,
-          sessionId: 'session-da-xoa',
+          sessionId: SESSION_IDS['Thứ 7 · Guild War'],
           status: AttendanceStatus.PRESENT,
         },
         null,
-      ),
-    ).rejects.toThrow(NotFoundException);
-  });
+      );
+      const changed = await service.mark(
+        {
+          characterId: CHARACTER_ID,
+          sessionId: SESSION_IDS['Thứ 7 · Guild War'],
+          status: AttendanceStatus.ABSENT,
+        },
+        null,
+      );
 
-  it('khóa trận đã quá hạn — Thứ 4 thì trận Thứ 3 không sửa được nữa', async () => {
-    await expect(
-      service.mark(
+      expect(changed.status).toBe(AttendanceStatus.ABSENT);
+      expect(prisma.attendanceRecord.upsert).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          where: {
+            characterId_sessionId: {
+              characterId: CHARACTER_ID,
+              sessionId: SESSION_IDS['Thứ 7 · Guild War'],
+            },
+          },
+        }),
+      );
+    });
+
+    it('từ chối khi không có nhân vật', async () => {
+      characters.exists.mockResolvedValue(false);
+
+      await expect(
+        service.mark(
+          {
+            characterId: 'khong-ton-tai',
+            sessionId: SESSION_IDS['Thứ 7 · Guild War'],
+            status: AttendanceStatus.PRESENT,
+          },
+          null,
+        ),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('từ chối khi trận không còn tồn tại', async () => {
+      await expect(
+        service.mark(
+          {
+            characterId: CHARACTER_ID,
+            sessionId: 'session-da-xoa',
+            status: AttendanceStatus.PRESENT,
+          },
+          null,
+        ),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('khóa trận đã quá hạn — Thứ 4 thì trận Thứ 3 không sửa được nữa', async () => {
+      await expect(
+        service.mark(
+          {
+            characterId: CHARACTER_ID,
+            sessionId: SESSION_IDS['Thứ 3 · 20:30'],
+            status: AttendanceStatus.PRESENT,
+          },
+          null,
+        ),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('quản trị viên điểm danh hộ được', async () => {
+      const record = await service.mark(
+        {
+          characterId: CHARACTER_ID,
+          sessionId: SESSION_IDS['Thứ 7 · Guild War'],
+          status: AttendanceStatus.PRESENT,
+        },
+        ADMIN,
+      );
+
+      expect(record.status).toBe(AttendanceStatus.PRESENT);
+      expect(prisma.attendanceRecord.upsert).toHaveBeenCalled();
+    });
+
+    it('quản trị viên sửa được cả trận đã quá hạn', async () => {
+      const record = await service.mark(
+        {
+          characterId: CHARACTER_ID,
+          sessionId: SESSION_IDS['Thứ 3 · 20:30'],
+          status: AttendanceStatus.ABSENT,
+        },
+        ADMIN,
+      );
+
+      expect(record.status).toBe(AttendanceStatus.ABSENT);
+      expect(record.sessionId).toBe(SESSION_IDS['Thứ 3 · 20:30']);
+    });
+
+    it('sau 17:00 Thứ 5 thì khóa cả Guild War Thứ 7', async () => {
+      const justPastDeadline = vn('2026-07-23T17:01');
+      stubSchedule(justPastDeadline);
+
+      await expect(
+        makeService(justPastDeadline).mark(
+          {
+            characterId: CHARACTER_ID,
+            sessionId: SESSION_IDS['Thứ 7 · Guild War'],
+            status: AttendanceStatus.PRESENT,
+          },
+          null,
+        ),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('quyết định theo cờ của lịch đánh, không tự tính lại từ hạn chót', async () => {
+      // Lịch nói "chưa quá hạn" trong khi hạn chót đã lùi vào quá khứ. Hai giá trị
+      // này chỉ lệch được khi có hai đồng hồ — đúng thứ code cũ tạo ra. Còn một chỗ
+      // đánh giá luật thì cờ thắng, nên lượt điểm danh phải đi qua.
+      battleSessions.findById.mockResolvedValue({
+        ...SESSIONS[0],
+        isDeadlinePassed: false,
+      });
+
+      const record = await service.mark(
         {
           characterId: CHARACTER_ID,
           sessionId: SESSION_IDS['Thứ 3 · 20:30'],
           status: AttendanceStatus.PRESENT,
         },
         null,
-      ),
-    ).rejects.toThrow(ConflictException);
+      );
+
+      expect(record.status).toBe(AttendanceStatus.PRESENT);
+    });
   });
 
-  it('quản trị viên điểm danh hộ được', async () => {
-    const record = await service.mark(
-      {
-        characterId: CHARACTER_ID,
-        sessionId: SESSION_IDS['Thứ 7 · Guild War'],
-        status: AttendanceStatus.PRESENT,
-      },
-      ADMIN,
-    );
+  describe('getCharacters', () => {
+    it('trả thẳng danh sách của CharactersService, không tự truy vấn bảng', async () => {
+      const roster = [
+        { id: CHARACTER_ID, name: 'Huy', guildClass: GuildClass.THIET_Y },
+      ];
+      characters.list.mockResolvedValue(roster);
 
-    expect(record.status).toBe(AttendanceStatus.PRESENT);
-    expect(prisma.attendanceRecord.upsert).toHaveBeenCalled();
+      await expect(service.getCharacters()).resolves.toEqual(roster);
+    });
   });
 
-  it('quản trị viên sửa được cả trận đã quá hạn', async () => {
-    const record = await service.mark(
-      {
-        characterId: CHARACTER_ID,
-        sessionId: SESSION_IDS['Thứ 3 · 20:30'],
-        status: AttendanceStatus.ABSENT,
-      },
-      ADMIN,
-    );
+  describe('getRecords', () => {
+    it('chỉ đọc record của các trận trong tuần đang mở', async () => {
+      prisma.attendanceRecord.findMany.mockResolvedValue([]);
 
-    expect(record.status).toBe(AttendanceStatus.ABSENT);
-    expect(record.sessionId).toBe(SESSION_IDS['Thứ 3 · 20:30']);
-  });
+      await service.getRecords();
 
-  it('sau 17:00 Thứ 5 thì khóa cả Guild War Thứ 7', async () => {
-    const justPastDeadline = vn('2026-07-23T17:01');
-    stubSchedule(justPastDeadline);
-
-    await expect(
-      makeService(justPastDeadline).mark(
-        {
-          characterId: CHARACTER_ID,
-          sessionId: SESSION_IDS['Thứ 7 · Guild War'],
-          status: AttendanceStatus.PRESENT,
-        },
-        null,
-      ),
-    ).rejects.toThrow(ConflictException);
-  });
-
-  it('quyết định theo cờ của lịch đánh, không tự tính lại từ hạn chót', async () => {
-    // Lịch nói "chưa quá hạn" trong khi hạn chót đã lùi vào quá khứ. Hai giá trị
-    // này chỉ lệch được khi có hai đồng hồ — đúng thứ code cũ tạo ra. Còn một chỗ
-    // đánh giá luật thì cờ thắng, nên lượt điểm danh phải đi qua.
-    battleSessions.findById.mockResolvedValue({
-      ...SESSIONS[0],
-      isDeadlinePassed: false,
+      expect(prisma.attendanceRecord.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { sessionId: { in: ['session-tue', 'session-sat'] } },
+        }),
+      );
     });
 
-    const record = await service.mark(
-      {
-        characterId: CHARACTER_ID,
-        sessionId: SESSION_IDS['Thứ 3 · 20:30'],
-        status: AttendanceStatus.PRESENT,
-      },
-      null,
-    );
+    it('dựng record qua codec — markedAt ra ISO string', async () => {
+      prisma.attendanceRecord.findMany.mockResolvedValue([
+        {
+          characterId: CHARACTER_ID,
+          sessionId: 'session-sat',
+          status: AttendanceStatus.PRESENT,
+          markedAt: WEDNESDAY,
+        },
+      ]);
 
-    expect(record.status).toBe(AttendanceStatus.PRESENT);
+      await expect(service.getRecords()).resolves.toEqual([
+        {
+          characterId: CHARACTER_ID,
+          sessionId: 'session-sat',
+          status: AttendanceStatus.PRESENT,
+          markedAt: WEDNESDAY.toISOString(),
+        },
+      ]);
+    });
   });
 });

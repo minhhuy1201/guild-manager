@@ -3,7 +3,6 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import type { AttendanceStatus, GuildClass } from '@guild/shared/enums';
 import type {
   AttendanceRecord,
   Character,
@@ -13,34 +12,25 @@ import type {
 import { ADMIN_ROLE, Clock, type JwtPayload } from '../../common';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { BattleSessionsService } from '../battle-sessions/battle-sessions.public';
+import { CharactersService } from '../characters/characters.public';
+import { toAttendanceRecord } from './attendance.codec';
 
 @Injectable()
 export class AttendanceService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly battleSessions: BattleSessionsService,
+    private readonly characters: CharactersService,
     private readonly clock: Clock,
   ) {}
 
   /**
    * Lấy danh sách nhân vật trong bang, sắp xếp theo tên.
+   * Bảng Character do module characters sở hữu — đọc qua service của nó, không tự truy vấn.
    * @returns Mảng nhân vật
    */
   async getCharacters(): Promise<Character[]> {
-    const characters = await this.prisma.character.findMany({
-      select: { id: true, name: true, guildClass: true },
-      orderBy: { name: 'asc' },
-    });
-
-    return characters.map(
-      (character) =>
-        ({
-          ...character,
-          // Prisma sinh ra union string literal, enum dùng chung là TS enum — cùng giá trị,
-          // ràng buộc bởi enum trong database nên cast ở đây là an toàn.
-          guildClass: character.guildClass as GuildClass,
-        }) satisfies Character,
-    );
+    return this.characters.list();
   }
 
   /**
@@ -54,15 +44,7 @@ export class AttendanceService {
       orderBy: { markedAt: 'desc' },
     });
 
-    return records.map(
-      (record) =>
-        ({
-          characterId: record.characterId,
-          sessionId: record.sessionId,
-          status: record.status as AttendanceStatus,
-          markedAt: record.markedAt.toISOString(),
-        }) satisfies AttendanceRecord,
-    );
+    return records.map(toAttendanceRecord);
   }
 
   /**
@@ -84,11 +66,7 @@ export class AttendanceService {
     const { characterId, sessionId, status } = input;
     const isAdmin = actor?.role === ADMIN_ROLE;
 
-    const character = await this.prisma.character.findUnique({
-      where: { id: characterId },
-      select: { id: true },
-    });
-    if (!character) {
+    if (!(await this.characters.exists(characterId))) {
       throw new NotFoundException('Không tìm thấy thành viên.');
     }
 
@@ -113,11 +91,6 @@ export class AttendanceService {
       update: { status, markedAt: now },
     });
 
-    return {
-      characterId: record.characterId,
-      sessionId: record.sessionId,
-      status: record.status as AttendanceStatus,
-      markedAt: record.markedAt.toISOString(),
-    } satisfies AttendanceRecord;
+    return toAttendanceRecord(record);
   }
 }
