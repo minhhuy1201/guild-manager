@@ -13,7 +13,8 @@ riêng trong cùng thư mục này.
 **A1 → A2 → A3 → A4 → A6 → A5**, khác thứ tự đề xuất ở dưới. Kết quả rà soát lại các spec A1–A6 nằm ở
 [§ Rà soát lại A1–A6](#rà-soát-lại-a1a6-2026-08-23). W1–W6 chưa làm.
 
-Sau vòng rà soát đó (2026-08-23): **§4 của A3 được làm nốt**, và **cả ba lỗi của A6 đã đóng** —
+Sau vòng rà soát đó (2026-08-23): **§4 của A3 được làm nốt**, **lỗi #4 của A4 đã đóng** —
+`parseWeekStart` ném `RangeError` nên `session-schedule.ts` hết biết framework — và **cả ba lỗi của A6 đã đóng** —
 `P2003` → 409 (`ea8d0ed`), rồi purge chuyển sang đường ghi nên `GET` thành chỉ đọc và controller trở
 lại mỏng. Chi tiết ở [§ Điều kiện hoàn thành cần sửa lại](#điều-kiện-hoàn-thành-cần-sửa-lại).
 
@@ -165,7 +166,7 @@ khi phải viết từng bước xuống.
 | 1 | A6 | **Tiêu đề mâu thuẫn với §3.** Tiêu đề nói "đưa việc xoá ra khỏi đường `GET`" và dòng A6 ở bảng tóm tắt cũng vậy, nhưng §3 giữ purge trên đường `GET`, chỉ dời call site từ service lên controller. `deleteMany` vẫn chạy mỗi lần `GET` (bản hiện thực: `team-builder.controller.ts:38`). Đó là đổi chỗ, không phải xử lý vấn đề. *(**Đã đóng 2026-08-23** — purge chuyển sang `saveFormation`; `GET` chỉ đọc, tiêu đề spec giờ đúng nghĩa đen.)* |
 | 2 | A6 §3 | **Đi ngược `architecture.md:114-115`** (*"Services hold the business logic"*, controller mỏng). Đưa trình tự "purge rồi mới đọc" lên controller là kéo nghiệp vụ lên một lớp. `architecture.md` là **binding** — spec phải trả lời luật này, không được lướt qua. *(**Đã đóng 2026-08-23** — trình tự và `Clock` cùng về service, controller còn một dòng.)* |
 | 3 | A6 §4 | **Luận điểm không đứng vững.** Chuyển `loadCharacterIds` vào `$transaction` **không** đóng được race: Prisma dùng isolation mặc định của Postgres (READ COMMITTED), `SELECT id FROM character` trong tx không khoá hàng, nên một `DELETE` commit sau lúc đọc vẫn làm vỡ khoá ngoại. Nó chỉ *thu hẹp* cửa sổ. Fix đúng: bắt `P2003` → 409 tiếng Việt, hoặc serializable isolation. *(**Đã đóng 2026-08-23** — `ea8d0ed`: `team-builder.service.ts:201-213` bắt `P2003` qua `isForeignKeyViolation` và ném `ConflictException('Có thành viên vừa bị xoá khỏi bang, vui lòng tải lại trang rồi lưu lại.')`, lỗi khác `throw` nguyên; hai test ở `team-builder.service.spec.ts:539/:555`. Phép đọc trong transaction vẫn giữ, nhưng comment tại chỗ nói đúng rằng nó chỉ thu hẹp cửa sổ.)* |
-| 4 | A4 §1 | **`parseWeekStart` ném `BadRequestException` đặt sai lớp** — nó nằm trong `session-schedule.ts`, đúng file mà overview khen là *"hàm thuần, tất định"* và A2 §4 khẳng định không được biết framework. Thêm nữa: sau khi §4 có DTO Zod thì `?weekStart=xyz` bị chặn ngay ở pipe, nhánh ném **không còn với tới được từ HTTP**, nên test "`battle-sessions.service.spec.ts`: `?weekStart=xyz` → `BadRequestException`" nằm sai tầng, và triệu chứng 500 ở §Bối cảnh #1 được §4 vá một mình. |
+| 4 | A4 §1 | **`parseWeekStart` ném `BadRequestException` đặt sai lớp** — nó nằm trong `session-schedule.ts`, đúng file mà overview khen là *"hàm thuần, tất định"* và A2 §4 khẳng định không được biết framework. Thêm nữa: sau khi §4 có DTO Zod thì `?weekStart=xyz` bị chặn ngay ở pipe, nhánh ném **không còn với tới được từ HTTP**, nên test "`battle-sessions.service.spec.ts`: `?weekStart=xyz` → `BadRequestException`" nằm sai tầng, và triệu chứng 500 ở §Bối cảnh #1 được §4 vá một mình. *(**Đã đóng 2026-08-23** — `session-schedule.ts` không còn import `@nestjs/common`; chuỗi hỏng ném `RangeError` như một lỗi hợp đồng nội bộ, còn 400 tiếng Việt do `weekStartQuerySchema` dựng ở biên. Xem [§ Điều kiện hoàn thành cần sửa lại](#điều-kiện-hoàn-thành-cần-sửa-lại).)* |
 | 5 | A4 §4 | **`z.iso.datetime()` loại chính ca test của spec.** Zod v4 mặc định `offset: false`, chỉ nhận hậu tố `Z`. Ca *"một mốc `+07:00` và cùng mốc đó dạng `Z` phải cho cùng kết quả"* sẽ ăn 400 ở controller. Phải là `z.iso.datetime({ offset: true })`. *(Kế hoạch A4 đã bắt được lỗi này trước khi hiện thực và kiểm chứng bằng Zod 4.4; bản hiện thực dùng `offset: true` — `battle-session.schema.ts:43`.)* |
 | 6 | A5 | **§2 mâu thuẫn với §3.** Snippet §2 ném `'Phiên đăng nhập không hợp lệ.'`, còn §3 quyết định gộp về đúng một câu `'Bạn cần đăng nhập.'` |
 
@@ -274,6 +275,18 @@ Ghi lại vì cả ba tài liệu (spec · kế hoạch · code) đang nói ba t
     đóng race — hết phần "nói quá" mà lỗi #3 chỉ ra.
   - Test: `team-builder.service.spec.ts:539` ("thành viên bị xoá đúng lúc ghi thành 409, không phải
     500") và `:555` ("lỗi database khác không bị nuốt thành 409"). Spec A6 §4 đã cập nhật theo.
+- **A4 lỗi #4 — đã đóng (2026-08-23).** `session-schedule.ts` trở lại thuần: bỏ import
+  `BadRequestException` và `INVALID_WEEK_MESSAGE`, nhánh chuỗi hỏng ném
+  `RangeError('parseWeekStart received a non-ISO string: …')`. Đó là phân vai đúng sau khi §4 có DTO
+  — `weekStartQuerySchema` là tầng duy nhất dựng câu `'Tuần không hợp lệ.'` và status 400, nên chuỗi
+  hỏng tới được `parseWeekStart` chỉ có thể là caller trong process gọi sai hợp đồng;
+  `AllExceptionsFilter` biến nó thành 500 kèm stack trong log và **không** rò message ra client.
+  - `INVALID_WEEK_MESSAGE` giờ có đúng một người đọc (schema ở `packages/shared`), nên chỗ lặp giữa
+    hai package mà mục #10 nêu cũng tự hết.
+  - Test đổi tầng theo: ca 400 + câu tiếng Việt đã nằm sẵn ở `week-start-query.spec.ts:30-35`; ba ca
+    ở tầng dưới (`session-schedule.spec.ts`, `battle-sessions.service.spec.ts`,
+    `team-builder.service.spec.ts`) đổi sang `RangeError` và giữ nguyên phần thật sự thuộc tầng đó —
+    "ném ngay, không rơi xuống Prisma / module lịch". Spec A4 §1 và kế hoạch A4 Task 3 đã cập nhật.
 - **A6 lỗi #1, #2 — đã đóng (2026-08-23).** Chốt sau khi cân ba phương án (giữ purge trên `GET` nhưng
   đưa trình tự xuống service · chuyển sang đường ghi · dựng đường riêng/cron): chọn **đường ghi**, vì
   nó đóng cả hai lỗi mà không thêm hạ tầng nào — `architecture.md` §8 vẫn đúng nguyên văn.

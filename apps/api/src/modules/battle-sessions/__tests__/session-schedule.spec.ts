@@ -1,5 +1,3 @@
-import { BadRequestException } from '@nestjs/common';
-
 import {
   formatSessionLabel,
   getActiveWeek,
@@ -152,16 +150,11 @@ describe('session-schedule', () => {
       );
     });
 
-    it('chuỗi không phải mốc thời gian thì ném 400', () => {
-      expect(() => parseWeekStart('xyz', wednesday)).toThrow(
-        BadRequestException,
-      );
-    });
-
-    it('thông báo lỗi là tiếng Việt', () => {
-      expect(() => parseWeekStart('xyz', wednesday)).toThrow(
-        'Tuần không hợp lệ.',
-      );
+    // Chuỗi hỏng là lỗi lập trình, không phải lỗi người dùng: `weekStartQuerySchema`
+    // chặn nó ở biên HTTP (week-start-query.spec.ts), nên tầng này chỉ ném lỗi
+    // thuần chứ không dựng response 400.
+    it('chuỗi không phải mốc thời gian thì ném RangeError', () => {
+      expect(() => parseWeekStart('xyz', wednesday)).toThrow(RangeError);
     });
 
     it('mốc giữa tuần quy về Thứ 2 của tuần chứa nó', () => {

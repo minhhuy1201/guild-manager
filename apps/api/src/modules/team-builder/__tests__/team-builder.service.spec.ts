@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  ConflictException,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 
 import { FixedClock } from '../../../common';
 import { BattleSessionsService } from '../../battle-sessions/battle-sessions.public';
@@ -197,10 +193,10 @@ describe('TeamBuilderService.getFormations', () => {
     ]);
   });
 
-  it('mốc tuần hỏng thành 400, không gọi xuống module lịch', async () => {
-    await expect(service.getFormations('xyz')).rejects.toThrow(
-      BadRequestException,
-    );
+  // 400 cho người dùng là việc của `weekStartQuerySchema` ở biên HTTP; ở đây chỉ
+  // cần chắc chuỗi hỏng dừng lại trước khi chạm module lịch.
+  it('mốc tuần hỏng thì ném ngay, không gọi xuống module lịch', async () => {
+    await expect(service.getFormations('xyz')).rejects.toThrow(RangeError);
     expect(battleSessions.readWeekSessions).not.toHaveBeenCalled();
   });
 

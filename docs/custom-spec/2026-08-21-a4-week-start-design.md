@@ -3,7 +3,8 @@
 > **Đã hiện thực** (`6d04d71` → `9b0a9a2`). Rà soát lại 2026-08-23 tìm thấy **hai lỗi thật**:
 > (1) §1 để `parseWeekStart` ném `BadRequestException` ngay trong `session-schedule.ts` — file phải
 > thuần và không biết framework; sau khi §4 có DTO Zod thì nhánh ném đó không còn với tới được từ
-> HTTP, nên ca test `?weekStart=xyz` nằm sai tầng; (2) §4 dùng `z.iso.datetime()`, mà Zod v4 mặc định
+> HTTP, nên ca test `?weekStart=xyz` nằm sai tầng — **đã sửa 2026-08-23**, §1 bên dưới là bản sau khi
+> sửa; (2) §4 dùng `z.iso.datetime()`, mà Zod v4 mặc định
 > `offset: false` nên **loại chính ca test `+07:00`** của spec — phải là `z.iso.datetime({ offset: true })`.
 > Thêm một điểm nhỏ: §3 đặt tên `getActiveWeek` đụng hàm thuần cùng tên trong `session-schedule.ts`.
 > Chi tiết:
@@ -85,7 +86,7 @@ export type WeekAnchor = Date & { readonly __weekAnchor: unique symbol };
  * @param input - Chuỗi ISO client gửi lên; bỏ trống = tuần đang mở
  * @param now - Thời điểm hiện tại, dùng khi input bỏ trống
  * @returns Mốc Thứ 2 00:00 giờ VN
- * @throws BadRequestException khi chuỗi không phải một mốc thời gian hợp lệ
+ * @throws RangeError khi chuỗi không phải một mốc thời gian hợp lệ
  */
 export function parseWeekStart(input: string | undefined, now: Date): WeekAnchor;
 
@@ -95,8 +96,11 @@ export function isSameWeek(a: WeekAnchor, b: WeekAnchor): boolean;
 
 Ba quyết định nằm trong đó:
 
-- **Chuỗi hỏng → `BadRequestException`** với message tiếng Việt (`'Tuần không hợp lệ.'`), thay vì để
-  `Invalid Date` rơi xuống Prisma.
+- **Chuỗi hỏng → `RangeError`**, thay vì để `Invalid Date` rơi xuống Prisma. Câu tiếng Việt cho người
+  dùng (`'Tuần không hợp lệ.'`) là việc của tầng biên ở §4: `weekStartQuerySchema` chặn chuỗi hỏng
+  trước khi nó tới được đây, nên tới tầng này thì đó là **lỗi lập trình** — một caller trong process
+  gọi sai hợp đồng. Vì vậy `session-schedule.ts` không import `@nestjs/common`: file giữ thuần, và
+  `AllExceptionsFilter` biến `RangeError` thành 500 kèm stack trong log, đúng loại lỗi đó.
 - **Chuỗi hợp lệ nhưng lệch ngày → quy về `weekStartOf(date)`**, không ném. Client gửi giữa tuần thì
   ý định rõ ràng là "tuần chứa ngày này"; ném ở đây chỉ tạo lỗi cho một thao tác vô hại. Đây là chỗ
   duy nhất trong spec chọn khoan dung, và lý do là **nó không âm thầm trả sai** — nó trả đúng tuần
@@ -173,8 +177,10 @@ kèm mốc tuần. Chọn cách thứ hai khi làm A1; trước đó giữ nguy�
 - `session-schedule.spec.ts`: `parseWeekStart` với chuỗi rỗng, `'xyz'`, một Thứ 4, một Chủ nhật,
   một mốc `+07:00` và cùng mốc đó dạng `Z` (phải cho cùng kết quả — đây là ca mà phép so chuỗi cũ
   sai).
-- `battle-sessions.service.spec.ts`: `?weekStart=xyz` → `BadRequestException`, **không** phải lỗi
-  Prisma.
+- `week-start-query.spec.ts`: `?weekStart=xyz` → 400 với câu `'Tuần không hợp lệ.'`. Đây là tầng duy
+  nhất quyết định status code, nên ca test đó ở đây chứ không ở service.
+- `battle-sessions.service.spec.ts` / `team-builder.service.spec.ts`: chuỗi hỏng thì ném ngay
+  (`RangeError`), **không** rơi xuống Prisma hay module lịch.
 - `team-builder.service.spec.ts`: `getFormations('<một Thứ 4>')` trả về đúng dữ liệu của tuần chứa
   ngày đó, không phải `[]`.
 

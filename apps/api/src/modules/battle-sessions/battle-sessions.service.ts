@@ -96,7 +96,7 @@ export class BattleSessionsService {
    * đọc những gì còn lưu.
    * @param weekStart - Mốc ISO của tuần cần xem. Bỏ trống = tuần đang mở; mốc giữa tuần được quy về Thứ 2 của tuần đó
    * @returns Mảng trận đã sắp theo thời gian đánh
-   * @throws BadRequestException khi `weekStart` không phải một mốc thời gian hợp lệ
+   * @throws RangeError khi `weekStart` không phải một mốc thời gian hợp lệ — biên HTTP đã chặn ở DTO, nên chỉ xảy ra khi gọi từ trong process
    */
   async listByWeek(weekStart?: string): Promise<BattleSession[]> {
     const now = this.clock.now();

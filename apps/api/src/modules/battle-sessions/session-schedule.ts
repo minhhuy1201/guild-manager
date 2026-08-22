@@ -8,8 +8,6 @@
  * mốc tuần, trận Guild War cố định và cách dựng nhãn hiển thị.
  */
 import { shiftVnDate, vnParts, vnWeekday } from '@guild/shared/lib';
-import { INVALID_WEEK_MESSAGE } from '@guild/shared/schemas';
-import { BadRequestException } from '@nestjs/common';
 
 /** Thứ trong tuần theo chuẩn ISO của `vnWeekday()`: 1=T2, ..., 7=CN. */
 const MONDAY = 1;
@@ -126,10 +124,14 @@ export function getActiveWeek(now: Date): ScheduledWeek {
  * Chuỗi hợp lệ nhưng rơi vào giữa tuần thì quy về Thứ 2 của tuần chứa nó chứ
  * không ném: client gửi giữa tuần thì ý định rõ ràng là "tuần chứa ngày này", và
  * trả đúng tuần đó không hề âm thầm sai.
- * @param input - Chuỗi ISO client gửi lên; bỏ trống = tuần đang mở
+ * Chuỗi không đọc được là **lỗi lập trình**, không phải lỗi người dùng: biên HTTP
+ * đã chặn nó ở `weekStartQuerySchema` trước khi tới đây. Vì vậy hàm ném
+ * `RangeError` chứ không phải exception của framework — file này giữ thuần, và
+ * `AllExceptionsFilter` biến nó thành 500 kèm stack trong log, đúng loại lỗi đó.
+ * @param input - Chuỗi ISO đã qua `weekStartQuerySchema`; bỏ trống = tuần đang mở
  * @param now - Thời điểm hiện tại, dùng khi `input` bỏ trống
  * @returns Mốc Thứ 2 00:00 giờ VN
- * @throws BadRequestException khi chuỗi không phải một mốc thời gian hợp lệ
+ * @throws RangeError khi chuỗi không phải một mốc thời gian hợp lệ
  */
 export function parseWeekStart(
   input: string | undefined,
@@ -140,7 +142,7 @@ export function parseWeekStart(
   const parsed = new Date(input);
 
   if (Number.isNaN(parsed.getTime())) {
-    throw new BadRequestException(INVALID_WEEK_MESSAGE);
+    throw new RangeError(`parseWeekStart received a non-ISO string: ${input}`);
   }
 
   return weekStartOf(parsed);

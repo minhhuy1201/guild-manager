@@ -89,7 +89,7 @@ export class TeamBuilderService {
    * Lấy các trận của một tuần kèm đội hình đã lưu.
    * @param weekStart - Mốc ISO của tuần cần xem. Bỏ trống = tuần đang mở; mốc giữa tuần được quy về Thứ 2 của tuần đó
    * @returns Mảng ngày đánh sắp theo thời gian, mỗi ngày kèm đội hình từng trận và cờ locked
-   * @throws BadRequestException khi `weekStart` không phải một mốc thời gian hợp lệ
+   * @throws RangeError khi `weekStart` không phải một mốc thời gian hợp lệ — biên HTTP đã chặn ở DTO, nên chỉ xảy ra khi gọi từ trong process
    */
   async getFormations(weekStart?: string): Promise<SessionFormation[]> {
     const now = this.clock.now();

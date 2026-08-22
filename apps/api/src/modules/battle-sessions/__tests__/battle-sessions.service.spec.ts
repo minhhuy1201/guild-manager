@@ -116,10 +116,10 @@ describe('BattleSessionsService', () => {
   });
 
   describe('listByWeek nhận mốc tuần từ query', () => {
-    it('chuỗi hỏng thành 400, không rơi xuống Prisma', async () => {
-      await expect(service.listByWeek('xyz')).rejects.toThrow(
-        BadRequestException,
-      );
+    // 400 cho người dùng là việc của `weekStartQuerySchema` ở biên HTTP; tầng
+    // service chỉ phải ném ngay thay vì để `Invalid Date` rơi xuống Prisma.
+    it('chuỗi hỏng thì ném ngay, không rơi xuống Prisma', async () => {
+      await expect(service.listByWeek('xyz')).rejects.toThrow(RangeError);
       expect(prisma.battleSession.findMany).not.toHaveBeenCalled();
     });
 
