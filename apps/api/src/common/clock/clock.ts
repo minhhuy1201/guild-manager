@@ -1,6 +1,7 @@
 /**
- * The application's source of time. Every "now" inside a request comes from here,
- * so a single request evaluates time-based rules against a single instant.
+ * The application's single source of time: nothing outside this seam calls
+ * `new Date()` to find out what "now" is. Each read still returns the instant of
+ * the call, so a method that needs one instant reads once and passes it down.
  *
  * Declared as an abstract class rather than an interface plus a symbol token:
  * NestJS uses the class itself as the DI token, so nothing extra is needed at the

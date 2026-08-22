@@ -1,6 +1,7 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 
+import { Clock } from '../../common';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 
 /** Kết quả health check của API. */
@@ -17,7 +18,10 @@ export interface HealthStatus {
 @ApiTags('health')
 @Controller('health')
 export class HealthController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly clock: Clock,
+  ) {}
 
   /**
    * Kiểm tra API và kết nối database.
@@ -33,7 +37,7 @@ export class HealthController {
       status: 'ok',
       uptime: Math.round(process.uptime()),
       db: isDbUp ? 'up' : 'down',
-      timestamp: new Date().toISOString(),
+      timestamp: this.clock.now().toISOString(),
     };
   }
 }

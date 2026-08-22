@@ -77,30 +77,34 @@ describe('AttendanceService.mark', () => {
     getActiveWeekStart: jest.Mock;
   };
 
+  /**
+   * Cho `findById` trả lịch giả lập kèm cờ quá hạn dựng ở mốc `now`, đúng như
+   * BattleSessionsService thật làm.
+   * @param now - Mốc thời gian dùng để dựng cờ `isDeadlinePassed`
+   */
+  const stubSchedule = (now: Date): void => {
+    battleSessions.findById.mockImplementation((id: string) => {
+      const found = SESSIONS.find((item) => item.id === id);
+
+      return Promise.resolve(
+        found
+          ? {
+              ...found,
+              isDeadlinePassed:
+                now.getTime() > new Date(found.deadline).getTime(),
+            }
+          : null,
+      );
+    });
+  };
+
   beforeEach(() => {
-    makeService = (now: Date) => {
-      battleSessions.findById.mockImplementation((id: string) => {
-        const found = SESSIONS.find((item) => item.id === id);
-
-        return Promise.resolve(
-          found
-            ? {
-                ...found,
-                // Cờ do BattleSessionsService dựng ở cùng mốc thời gian này —
-                // AttendanceService dùng lại chứ không tính lại.
-                isDeadlinePassed:
-                  now.getTime() > new Date(found.deadline).getTime(),
-              }
-            : null,
-        );
-      });
-
-      return new AttendanceService(
+    makeService = (now: Date) =>
+      new AttendanceService(
         prisma as unknown as PrismaService,
         battleSessions as unknown as BattleSessionsService,
         new FixedClock(now),
       );
-    };
 
     prisma = {
       character: {
@@ -133,6 +137,7 @@ describe('AttendanceService.mark', () => {
         .mockReturnValue(vn('2026-07-20T00:00').toISOString()),
     };
 
+    stubSchedule(WEDNESDAY);
     service = makeService(WEDNESDAY);
   });
 
@@ -255,8 +260,11 @@ describe('AttendanceService.mark', () => {
   });
 
   it('sau 17:00 Thứ 5 thì khóa cả Guild War Thứ 7', async () => {
+    const justPastDeadline = vn('2026-07-23T17:01');
+    stubSchedule(justPastDeadline);
+
     await expect(
-      makeService(vn('2026-07-23T17:01')).mark(
+      makeService(justPastDeadline).mark(
         {
           characterId: CHARACTER_ID,
           sessionId: SESSION_IDS['Thứ 7 · Guild War'],
@@ -267,26 +275,24 @@ describe('AttendanceService.mark', () => {
     ).rejects.toThrow(ConflictException);
   });
 
-  it('trận vừa qua hạn: cờ trả về client và cờ chặn ghi là cùng một mốc', async () => {
-    // Một phút sau hạn 17:00 Thứ 5 của Guild War — mốc mà trước đây hai đồng hồ
-    // khác nhau có thể cho hai câu trả lời khác nhau.
-    const justPast = makeService(vn('2026-07-23T17:01'));
-    const sessionId = SESSION_IDS['Thứ 7 · Guild War'];
+  it('quyết định theo cờ của lịch đánh, không tự tính lại từ hạn chót', async () => {
+    // Lịch nói "chưa quá hạn" trong khi hạn chót đã lùi vào quá khứ. Hai giá trị
+    // này chỉ lệch được khi có hai đồng hồ — đúng thứ code cũ tạo ra. Còn một chỗ
+    // đánh giá luật thì cờ thắng, nên lượt điểm danh phải đi qua.
+    battleSessions.findById.mockResolvedValue({
+      ...SESSIONS[0],
+      isDeadlinePassed: false,
+    });
 
-    await expect(
-      justPast.mark(
-        {
-          characterId: CHARACTER_ID,
-          sessionId,
-          status: AttendanceStatus.PRESENT,
-        },
-        null,
-      ),
-    ).rejects.toThrow(ConflictException);
+    const record = await service.mark(
+      {
+        characterId: CHARACTER_ID,
+        sessionId: SESSION_IDS['Thứ 3 · 20:30'],
+        status: AttendanceStatus.PRESENT,
+      },
+      null,
+    );
 
-    const session = (await battleSessions.findById(sessionId)) as {
-      isDeadlinePassed: boolean;
-    };
-    expect(session.isDeadlinePassed).toBe(true);
+    expect(record.status).toBe(AttendanceStatus.PRESENT);
   });
 });

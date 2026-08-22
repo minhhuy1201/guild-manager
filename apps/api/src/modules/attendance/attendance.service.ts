@@ -101,8 +101,8 @@ export class AttendanceService {
       throw new NotFoundException('Không tìm thấy ngày đánh.');
     }
 
-    // Dùng lại cờ mà `findById` vừa dựng thay vì tính lại: cờ client nhận được và
-    // cờ chặn ghi phải là cùng một phép đánh giá, trên cùng một mốc thời gian.
+    // Dùng lại cờ mà `findById` vừa dựng thay vì tính lại: luật quá hạn chỉ được
+    // đánh giá ở một chỗ, nên cờ client nhận được và cờ chặn ghi không thể lệch.
     if (!isAdmin && session.isDeadlinePassed) {
       throw new ConflictException('Đã quá hạn điểm danh ngày này.');
     }
