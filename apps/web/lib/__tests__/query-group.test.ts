@@ -64,6 +64,13 @@ describe("combineQueries", () => {
     expect(state.errorMessage).toBe(FALLBACK);
   });
 
+  it("query hỏng mà không mang error thì vẫn báo lỗi, kèm câu fallback", () => {
+    const state = combineQueries([query({ isError: true })], FALLBACK);
+
+    expect(state.isError).toBe(true);
+    expect(state.errorMessage).toBe(FALLBACK);
+  });
+
   it("refetch chạm mọi query trong nhóm", () => {
     const queries = [query(), query(), query()];
 

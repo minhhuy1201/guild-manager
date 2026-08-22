@@ -74,10 +74,10 @@ export function useFormationWeek(): FormationWeekState {
     [recordsQuery.data]
   );
 
-  // recordsQuery không vào nhóm: điểm danh chỉ tô màu gợi ý trong pool, thiếu nó
-  // màn vẫn dùng được — nó không được phép chặn cả màn bằng skeleton hay khối lỗi.
+  // recordsQuery stays out of the group: attendance only tints suggestions in the
+  // pool, so the screen works without it and it may not block it with a skeleton.
   const state = combineQueries(
-    // formationsQuery đứng đầu: hỏng nó là hỏng đúng thứ màn này tồn tại để hiện.
+    // formationsQuery goes first: losing it loses what this screen exists to show.
     [formationsQuery, weeksQuery, charactersQuery],
     "Không tải được dữ liệu đội hình."
   );

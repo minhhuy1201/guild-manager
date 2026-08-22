@@ -211,10 +211,11 @@ Current shared building blocks: `action-buttons`, `date-range`, `error-state`,
 
 ### The query group of a screen
 
-A screen that waits on more than one query does **not** combine them by hand. `combineQueries`
-(`lib/query-group.ts`) is the one place that says the three rules: `isPending` is `some`, the error
-shown belongs to the **first** failing query in the array, and retry refetches **all** of them. Put
-the query the screen exists to show first in the array — it is the one blamed when several fail.
+A screen does **not** combine its queries by hand. `combineQueries` (`lib/query-group.ts`) is the one
+place that says the three rules: `isPending` is `some`, the error shown belongs to the **first**
+failing query in the array, and retry refetches **all** of them. Put the query the screen exists to
+show first in the array — it is the one blamed when several fail. A group of one is fine
+(`members-panel`): it costs nothing and keeps every screen branching on the same shape.
 
 The fallback sentence stays per screen (`"Không tải được lịch đánh."`), because each one names what
 actually broke. It only ever appears for a failure that carries no message meant for a user — an

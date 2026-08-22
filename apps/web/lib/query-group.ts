@@ -41,12 +41,17 @@ export function combineQueries(
   queries: readonly CombinableQuery[],
   fallbackMessage: string
 ): QueryGroupState {
-  const firstError = queries.find((query) => query.isError)?.error ?? null;
+  // The failing query itself, not its error: a query can report isError while
+  // carrying nothing usable in `error`, and that still has to show as an error.
+  const failing = queries.find((query) => query.isError);
 
   return {
     isPending: queries.some((query) => query.isPending),
-    isError: firstError !== null,
-    errorMessage: readErrorMessage(firstError, fallbackMessage),
+    isError: failing !== undefined,
+    errorMessage:
+      failing === undefined
+        ? ""
+        : readErrorMessage(failing.error, fallbackMessage),
     // Refetch tất cả cùng lúc — không await tuần tự từng query.
     refetch: () => {
       void Promise.all(queries.map((query) => query.refetch()));
@@ -56,12 +61,10 @@ export function combineQueries(
 
 /**
  * Reads a display message out of a failing query's error.
- * @param error - Error of the first failing query, or null when nothing failed
+ * @param error - Error the first failing query threw
  * @param fallbackMessage - Text to use when the error is not an `ApiError`
- * @returns Backend message for an `ApiError`, the fallback otherwise, "" when no error
+ * @returns Backend message for an `ApiError`, the fallback otherwise
  */
 function readErrorMessage(error: unknown, fallbackMessage: string): string {
-  if (error === null) return "";
-
   return error instanceof ApiError ? error.message : fallbackMessage;
 }

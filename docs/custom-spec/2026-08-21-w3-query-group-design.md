@@ -182,7 +182,8 @@ khi lưu đội hình, khác với refetch-all của nút thử lại. Không g�
 ## Edge case
 
 - **`weekStart === null` ở `settings-screen.tsx:52`** không phải trạng thái query — nó là "chưa chọn
-  tuần". Giữ nguyên như một điều kiện riêng bên ngoài `QueryBoundary`, đừng nhét vào `isPending`.
+  tuần". Giữ nó là một điều kiện riêng, đừng nhét vào `isPending`. (Chỗ đặt cụ thể: xem gạch đầu
+  dòng cuối mục này.)
 - **Lỗi không phải `ApiError`** (mất mạng, lỗi parse): `error.message` vẫn có nhưng là tiếng Anh của
   trình duyệt. Đây là lý do `fallbackMessage` tồn tại — `combineQueries` chỉ đọc `message` khi lỗi
   là `ApiError`, đúng như `useAttendanceBoard` đang làm.
@@ -195,8 +196,10 @@ khi lưu đội hình, khác với refetch-all của nút thử lại. Không g�
 - **`recordsQuery` không vào nhóm của `use-formation-week`** — giữ nguyên hành vi hiện tại: điểm
   danh chỉ tô màu gợi ý trong pool, thiếu nó màn vẫn dùng được, nên nó không được phép chặn cả màn
   bằng skeleton hay khối lỗi.
-- **`weekStart === null` ở màn Thiết lập** nằm bên trong nhánh nội dung của `QueryBoundary` (nó cũng
-  chính là chỗ narrow `weekStart` về `string` cho `WeekSelector`), không nhét vào `isPending`.
+- **`weekStart === null` ở màn Thiết lập** nằm bên trong nhánh nội dung của `QueryBoundary` — đó là
+  chỗ duy nhất narrow được `weekStart` về `string` cho `WeekSelector`. Nó vẫn là một điều kiện riêng,
+  không nhập vào `isPending`, và nhánh nội dung không bao giờ render rỗng vì `useWeekSessions` bị
+  `enabled: false` lúc `weekStart === null` nên cả nhóm còn pending.
 
 ## Kiểm thử
 
@@ -204,6 +207,8 @@ khi lưu đội hình, khác với refetch-all của nút thử lại. Không g�
   - không query nào hỏng → `errorMessage` rỗng
   - query thứ hai hỏng với `ApiError` → lấy đúng message của nó (**ca vá lỗi hiện tại**)
   - query hỏng với `Error` thường → `fallbackMessage`
+  - query báo `isError` mà `error` rỗng → vẫn `isError`, message là `fallbackMessage` (`isError`
+    đọc từ chính cờ `isError`, không suy ra từ việc có `error` hay không)
   - `refetch()` gọi đủ **tất cả** query (ca vá lỗi thứ hai)
 - `use-formation-week.test.ts` (đã có): thêm ca `charactersQuery` hỏng → message của nó hiện ra, và
   `refetch` chạm cả ba. Ca `"query đội hình lỗi thì hiện thông báo của backend"` đổi fixture từ

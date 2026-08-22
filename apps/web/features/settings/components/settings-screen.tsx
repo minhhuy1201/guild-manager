@@ -39,6 +39,8 @@ export function SettingsScreen() {
     <Card>
       <CardContent className="flex flex-col gap-4">
         <QueryBoundary state={state} skeleton={<SettingsSkeleton />}>
+          {/* Narrowing only: useWeekSessions is disabled while weekStart is null,
+              so the group stays pending and this branch never renders empty. */}
           {weekStart !== null && (
             <>
               <div>
