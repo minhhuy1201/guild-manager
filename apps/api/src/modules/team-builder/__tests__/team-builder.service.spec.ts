@@ -535,4 +535,31 @@ describe('TeamBuilderService.saveFormation', () => {
       service.saveFormation('session-tue', [{ slots: {}, notes: {} }]),
     ).rejects.toBeInstanceOf(ConflictException);
   });
+
+  it('thành viên bị xoá đúng lúc ghi thành 409, không phải 500', async () => {
+    // Phép lọc đọc trong transaction nhưng READ COMMITTED không khoá hàng đã đọc, nên một DELETE
+    // commit sau `listIds` vẫn làm câu insert vỡ khoá ngoại.
+    tx.formationMatch.create.mockRejectedValue(
+      Object.assign(new Error('Foreign key constraint failed'), {
+        code: 'P2003',
+      }),
+    );
+
+    await expect(
+      service.saveFormation('session-thu', [
+        { slots: { 'team-1-pos-1': 'char-1' }, notes: {} },
+      ]),
+    ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('lỗi database khác không bị nuốt thành 409', async () => {
+    const failure = new Error('connection terminated');
+    tx.formationMatch.create.mockRejectedValue(failure);
+
+    await expect(
+      service.saveFormation('session-thu', [
+        { slots: { 'team-1-pos-1': 'char-1' }, notes: {} },
+      ]),
+    ).rejects.toBe(failure);
+  });
 });

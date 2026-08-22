@@ -22,6 +22,9 @@ import {
 import { CharactersService } from '../characters/characters.public';
 import { decodeMatch, encodeMatch } from './formation-grid';
 
+/** Mã lỗi Prisma khi vi phạm khoá ngoại (ở đây là ô trỏ tới thành viên không còn tồn tại). */
+const FOREIGN_KEY_VIOLATION = 'P2003';
+
 /** Số ngày giữ lại đội hình cũ. Quá mốc này thì dọn. */
 const RETENTION_DAYS = 56;
 
@@ -143,7 +146,8 @@ export class TeamBuilderService {
    * @param matches - Đội hình và ghi chú từng trận, theo thứ tự trận 1 → trận 2
    * @returns Ngày đánh kèm đội hình vừa ghi
    * @throws NotFoundException khi không có ngày đánh nào mang sessionId đó
-   * @throws ConflictException khi ngày đánh đã qua giờ đánh
+   * @throws ConflictException khi ngày đánh đã qua giờ đánh, hoặc khi một thành viên bị xoá đúng
+   *   lúc đang ghi nên khoá ngoại vỡ
    */
   async saveFormation(
     sessionId: string,
@@ -160,38 +164,51 @@ export class TeamBuilderService {
       throw new ConflictException('Trận này đã đánh xong, không sửa được nữa.');
     }
 
-    const savedMatches = await this.prisma.$transaction(async (tx) => {
-      // Lọc TRƯỚC khi ghi: một nhân vật vừa bị xoá khỏi bang mà còn trong nháp sẽ
-      // làm cả câu insert vỡ vì khoá ngoại. Ghi chú của ô đó thì giữ nguyên —
-      // ghi chú mô tả vị trí, không mô tả người.
-      // Đọc bằng `tx` chứ không phải client ngoài: thu hẹp khoảng hở giữa phép lọc và câu insert
-      // xuống còn trong một transaction. READ COMMITTED nên đây không phải bảo đảm tuyệt đối —
-      // một DELETE commit đúng vào giữa vẫn làm vỡ khoá ngoại — nhưng đọc ngoài transaction thì
-      // khoảng hở đó rộng bằng cả request.
-      const knownIds = await this.characters.listIds(tx);
-      const cleaned: MatchFormation[] = matches.map((match) => ({
-        slots: Object.fromEntries(
-          Object.entries(match.slots).filter(([, characterId]) =>
-            knownIds.has(characterId),
+    const savedMatches = await this.prisma
+      .$transaction(async (tx) => {
+        // Lọc TRƯỚC khi ghi: một nhân vật vừa bị xoá khỏi bang mà còn trong nháp sẽ
+        // làm cả câu insert vỡ vì khoá ngoại. Ghi chú của ô đó thì giữ nguyên —
+        // ghi chú mô tả vị trí, không mô tả người.
+        // Đọc bằng `tx` chứ không phải client ngoài: thu hẹp khoảng hở giữa phép lọc và câu insert
+        // xuống còn trong một transaction. READ COMMITTED nên đây không phải bảo đảm tuyệt đối —
+        // một DELETE commit đúng vào giữa vẫn làm vỡ khoá ngoại — nhưng đọc ngoài transaction thì
+        // khoảng hở đó rộng bằng cả request.
+        const knownIds = await this.characters.listIds(tx);
+        const cleaned: MatchFormation[] = matches.map((match) => ({
+          slots: Object.fromEntries(
+            Object.entries(match.slots).filter(([, characterId]) =>
+              knownIds.has(characterId),
+            ),
           ),
-        ),
-        notes: match.notes,
-      }));
+          notes: match.notes,
+        }));
 
-      await tx.formationMatch.deleteMany({ where: { sessionId } });
+        await tx.formationMatch.deleteMany({ where: { sessionId } });
 
-      for (const [index, match] of cleaned.entries()) {
-        await tx.formationMatch.create({
-          data: {
-            sessionId,
-            matchIndex: index + 1,
-            slots: { create: encodeMatch(match) },
-          },
-        });
-      }
+        for (const [index, match] of cleaned.entries()) {
+          await tx.formationMatch.create({
+            data: {
+              sessionId,
+              matchIndex: index + 1,
+              slots: { create: encodeMatch(match) },
+            },
+          });
+        }
 
-      return cleaned;
-    });
+        return cleaned;
+      })
+      .catch((error: unknown) => {
+        // Phép lọc ở trên thu hẹp khoảng hở nhưng không đóng được: READ COMMITTED không khoá hàng
+        // đã đọc, nên một DELETE commit sau `listIds` vẫn làm câu insert vỡ khoá ngoại. Đổi nó thành
+        // câu tiếng Việt người dùng đọc được, thay vì 500 — thao tác đúng là tải lại rồi lưu lại.
+        if (isForeignKeyViolation(error)) {
+          throw new ConflictException(
+            'Có thành viên vừa bị xoá khỏi bang, vui lòng tải lại trang rồi lưu lại.',
+          );
+        }
+
+        throw error;
+      });
 
     return {
       sessionId: session.id,
@@ -203,4 +220,18 @@ export class TeamBuilderService {
       matches: savedMatches,
     } satisfies SessionFormation;
   }
+}
+
+/**
+ * Lỗi này có phải vi phạm khoá ngoại của Prisma không.
+ * @param error - Lỗi bắt được
+ * @returns true nếu là P2003
+ */
+function isForeignKeyViolation(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    error.code === FOREIGN_KEY_VIOLATION
+  );
 }
