@@ -206,8 +206,30 @@ regenerating a component never eats a local change.
 
 Current shared building blocks: `action-buttons`, `date-range`, `error-state`,
 `guild-class-filter-select`, `guild-class-icon`, `main-nav`, `page-size-select`, `password-input`,
-`site-header`, `status-badge`, `status-icon`, `table-pagination`, `table-pagination-bar`,
-`table-skeleton`.
+`query-boundary`, `site-header`, `status-badge`, `status-icon`, `table-pagination`,
+`table-pagination-bar`, `table-skeleton`.
+
+### The query group of a screen
+
+A screen that waits on more than one query does **not** combine them by hand. `combineQueries`
+(`lib/query-group.ts`) is the one place that says the three rules: `isPending` is `some`, the error
+shown belongs to the **first** failing query in the array, and retry refetches **all** of them. Put
+the query the screen exists to show first in the array — it is the one blamed when several fail.
+
+The fallback sentence stays per screen (`"Không tải được lịch đánh."`), because each one names what
+actually broke. It only ever appears for a failure that carries no message meant for a user — an
+`ApiError` always wins, and its Vietnamese message renders verbatim.
+
+The branch order is fixed: **error → loading → content**. A group where one query failed while
+another is still running must show the failure, not a skeleton that will never finish.
+`QueryBoundary` (`components/shared/query-boundary.tsx`) is where that order is written down; it is
+presentational only, so each screen keeps its own Card or table chrome around it.
+
+Use `QueryBoundary` when the content does **not** need TypeScript narrowing out of the pending
+branch — its children are built even while the skeleton shows, so data is read as `?? []` at the
+query boundary (`members-panel`, `settings-screen`). When the content downstream relies on that
+narrowing, keep the early returns and use `combineQueries` alone (`team-builder-screen`, the three
+attendance components) — the alternative is `?? []` scattered through the component.
 
 ---
 

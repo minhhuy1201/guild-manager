@@ -85,7 +85,15 @@ Bốn nơi · bốn câu fallback · ba cách gộp `isPending` · hai nơi bỏ
 ### 1. `combineQueries` — một hàm thuần trên mảng query
 
 ```ts
-// hooks/use-combined-queries.ts  (hoặc lib/query-group.ts)
+// lib/query-group.ts
+
+/** Bốn field `combineQueries` đọc từ một query của TanStack. */
+export interface CombinableQuery {
+  isPending: boolean;
+  isError: boolean;
+  error: unknown;
+  refetch: () => Promise<unknown>;
+}
 
 /** Trạng thái tải/lỗi gộp của một nhóm query. */
 export interface QueryGroupState {
@@ -105,7 +113,7 @@ export interface QueryGroupState {
  * @returns Trạng thái gộp kèm refetch-all
  */
 export function combineQueries(
-  queries: readonly Pick<UseQueryResult, "isPending" | "isError" | "error" | "refetch">[],
+  queries: readonly CombinableQuery[],
   fallbackMessage: string,
 ): QueryGroupState;
 ```
@@ -113,8 +121,14 @@ export function combineQueries(
 Ba luật được nói **một lần** ở đây: gộp `isPending` bằng `some`, lấy lỗi của query hỏng **đầu tiên**,
 refetch **tất cả**. `useAttendanceBoard` trở thành một caller ba dòng.
 
-Nhận `readonly Pick<…>` chứ không `UseQueryResult` đầy đủ: hàm thuần, test không phải dựng
-`QueryClient`, và bất kỳ object nào có bốn field đó đều truyền vào được.
+Đặt ở `lib/` chứ không `hooks/`: `combineQueries` **không phải hook** — nó không gọi hook nào bên
+trong, và `architecture.md:222` dành `hooks/` cho cross-feature hooks.
+
+Nhận một interface riêng (`CombinableQuery`) chứ không `Pick<UseQueryResult, …>`: `UseQueryResult`
+mặc định generic `<unknown, Error>` và `refetch` của nó trả `Promise<QueryObserverResult<…>>`, buộc
+mọi caller phải khớp generic. Khai báo `error: unknown` và `refetch: () => Promise<unknown>` giữ
+đúng lời hứa "hàm thuần, test không phải dựng `QueryClient`", và bất kỳ object nào có bốn field đó
+đều truyền vào được.
 
 ### 2. `QueryBoundary` — thứ tự branch nói một lần
 
@@ -147,12 +161,20 @@ chung. Không gom về một câu duy nhất: bốn câu hiện tại nói đún
 
 | File | Thay đổi |
 |---|---|
-| `hooks/use-combined-queries.ts` (mới) | `QueryGroupState`, `combineQueries` |
+| `lib/query-group.ts` (mới) | `CombinableQuery`, `QueryGroupState`, `combineQueries` |
+| `lib/__tests__/query-group.test.ts` (mới) | test bảng cho `combineQueries` |
 | `components/shared/query-boundary.tsx` (mới) | `QueryBoundary` |
 | `features/attendance/hooks/use-attendance-board.ts` | dùng `combineQueries`; interface public không đổi |
-| `features/team-builder/hooks/use-formation-week.ts:76-99` | dùng `combineQueries([weeksQuery, formationsQuery, charactersQuery], …)` — **sửa cả hai lỗi** |
-| `features/settings/components/settings-screen.tsx:35-58` | `combineQueries` + `QueryBoundary` |
-| `features/members/components/members-panel.tsx:60-80` | như trên |
+| `features/team-builder/hooks/use-formation-week.ts:76-99` | dùng `combineQueries([formationsQuery, weeksQuery, charactersQuery], …)` — **sửa cả hai lỗi** |
+| `features/settings/components/settings-screen.tsx:35-58` | `combineQueries` + `QueryBoundary`, skeleton tách ra `settings-skeleton.tsx` |
+| `features/members/components/members-panel.tsx:60-80` | như trên, skeleton tách ra `members-skeleton.tsx` |
+| `apps/web/docs/frontend.md` §5 | ghi lại quy ước nhóm query |
+
+**Khi nào dùng `QueryBoundary`:** khi phần nội dung **không cần** TypeScript narrowing từ nhánh
+`isPending` — children của nó vẫn được dựng trong lượt render đang pending, nên dữ liệu đọc qua
+`?? []` ngay tại biên query (`members-panel`, `settings-screen`). Màn nào có nội dung dựa vào
+narrowing đó thì giữ early-return và chỉ dùng `combineQueries` (`team-builder-screen`, ba component
+của `attendance`) — đổi chúng sẽ kéo `?? []` rải khắp component.
 
 `useFormationWeek` vẫn phải giữ `refetchFormations` riêng (`:96-98`) — đó là refetch có chủ đích sau
 khi lưu đội hình, khác với refetch-all của nút thử lại. Không gộp hai thứ đó.
@@ -166,9 +188,15 @@ khi lưu đội hình, khác với refetch-all của nút thử lại. Không g�
   là `ApiError`, đúng như `useAttendanceBoard` đang làm.
 - **Nhiều query cùng hỏng**: lấy cái đầu tiên theo thứ tự mảng. Nên đặt query "quan trọng nhất" của
   màn lên trước — với team-builder là `formationsQuery`, giữ nguyên ưu tiên hiện tại.
-- **`isPending` với query bị `enabled: false`** (team-builder chờ `weekStart`): TanStack cho
-  `isPending` = true mãi. Kiểm lại `use-formation-week` sau khi đổi — nếu có query như vậy thì dùng
-  `isLoading` cho query đó, đừng để màn kẹt skeleton.
+- **`isPending` với query bị `enabled: false`**: TanStack cho `isPending` = true mãi. Đã rà lại —
+  chỉ `features/settings/hooks/use-week-sessions.ts` có `enabled`, và ở màn Thiết lập điều đó không
+  đổi gì (hôm nay `weekStart === null` cũng đang cho skeleton). `useFormations` của team-builder
+  **không** có `enabled`, nên `use-formation-week` không dính bẫy này và không cần `isLoading`.
+- **`recordsQuery` không vào nhóm của `use-formation-week`** — giữ nguyên hành vi hiện tại: điểm
+  danh chỉ tô màu gợi ý trong pool, thiếu nó màn vẫn dùng được, nên nó không được phép chặn cả màn
+  bằng skeleton hay khối lỗi.
+- **`weekStart === null` ở màn Thiết lập** nằm bên trong nhánh nội dung của `QueryBoundary` (nó cũng
+  chính là chỗ narrow `weekStart` về `string` cho `WeekSelector`), không nhét vào `isPending`.
 
 ## Kiểm thử
 
@@ -178,7 +206,10 @@ khi lưu đội hình, khác với refetch-all của nút thử lại. Không g�
   - query hỏng với `Error` thường → `fallbackMessage`
   - `refetch()` gọi đủ **tất cả** query (ca vá lỗi thứ hai)
 - `use-formation-week.test.ts` (đã có): thêm ca `charactersQuery` hỏng → message của nó hiện ra, và
-  `refetch` chạm cả ba.
+  `refetch` chạm cả ba. Ca `"query đội hình lỗi thì hiện thông báo của backend"` đổi fixture từ
+  `Error` sang `ApiError` — **thay đổi test có chủ ý**: luật mới là chỉ `ApiError.message` mới được
+  hiển thị nguyên văn, một `Error` tiếng Anh của trình duyệt không được rơi ra màn hình
+  (`architecture.md` §4.2).
 - `use-attendance-board` không đổi hành vi → test hiện có phải xanh nguyên.
 
 ## Rủi ro
