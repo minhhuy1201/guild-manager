@@ -11,7 +11,11 @@ import type {
 
 import { ADMIN_ROLE, Clock, type JwtPayload } from '../../common';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
-import { BattleSessionsService } from '../battle-sessions/battle-sessions.public';
+import {
+  BattleSessionsService,
+  isSameWeek,
+  weekStartOf,
+} from '../battle-sessions/battle-sessions.public';
 import { CharactersService } from '../characters/characters.public';
 import { toAttendanceRecord } from './attendance.codec';
 
@@ -74,11 +78,14 @@ export class AttendanceService {
     // Người thường chỉ điểm danh được cho tuần đang mở; quản trị viên sửa được
     // cả tuần khác để bù sai sót.
     //
-    // TODO(A1): `findById` trả entity nên `weekStart` ở đây là ISO string, không
-    // phải WeekAnchor — đây là phép so tuần bằng chuỗi cuối cùng còn lại. Khi A1
-    // cho `findById` trả kèm mốc tuần thì đổi thành `isSameWeek(...)`.
+    // `findById` trả entity nên `weekStart` là ISO string; bọc lại qua
+    // `weekStartOf` để phép so đi qua đúng một đường như mọi chỗ khác.
     const inActiveWeek =
-      session?.weekStart === this.battleSessions.getActiveWeek().toISOString();
+      session !== null &&
+      isSameWeek(
+        weekStartOf(new Date(session.weekStart)),
+        this.battleSessions.getActiveWeek(),
+      );
     if (!session || (!isAdmin && !inActiveWeek)) {
       throw new NotFoundException('Không tìm thấy ngày đánh.');
     }
