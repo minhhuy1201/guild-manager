@@ -9,6 +9,7 @@
  * một cycle nghiệp vụ thật và cách xử lý là tách module thứ ba, không phải `forwardRef()`.
  */
 export { BattleSessionsService } from './battle-sessions.service';
+export type { ScheduledSession } from './battle-sessions.service';
 export {
   formatSessionLabel,
   isDeadlinePassed,

@@ -106,6 +106,62 @@ describe('BattleSessionsService', () => {
     });
   });
 
+  describe('ensureWeekMaterialized', () => {
+    it('gọi hai lần cho cùng tuần chỉ upsert theo một id, không sinh trận trùng', async () => {
+      await service.ensureWeekMaterialized(WEEK_START.toISOString(), WEDNESDAY);
+      await service.ensureWeekMaterialized(WEEK_START.toISOString(), WEDNESDAY);
+
+      expect(firstArg(prisma.battleSession.upsert, 0)).toMatchObject({
+        where: { id: 'gw-2026-07-20' },
+      });
+      expect(firstArg(prisma.battleSession.upsert, 1)).toMatchObject({
+        where: { id: 'gw-2026-07-20' },
+      });
+    });
+
+    it('tuần đã qua là no-op', async () => {
+      await service.ensureWeekMaterialized(
+        LAST_WEEK_START.toISOString(),
+        WEDNESDAY,
+      );
+
+      expect(prisma.battleSession.upsert).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('readWeekSessions', () => {
+    it('trả về nhãn đã dựng và không tự sinh trận', async () => {
+      const sessions = await service.readWeekSessions(WEEK_START.toISOString());
+
+      expect(prisma.battleSession.upsert).not.toHaveBeenCalled();
+      expect(sessions).toEqual([
+        {
+          id: 'session-tue',
+          label: 'Thứ 3 · 20:30',
+          dateTime: vn('2026-07-21T20:30'),
+          isGuildWar: false,
+          opponent: 'Hắc Long Đường',
+        },
+      ]);
+    });
+  });
+
+  describe('listWeekAnchors', () => {
+    it('trả về mốc tuần dạng ISO string, mới nhất trước', async () => {
+      prisma.battleSession.findMany.mockResolvedValue([
+        { weekStart: NEXT_WEEK_START },
+        { weekStart: WEEK_START },
+      ]);
+
+      const anchors = await service.listWeekAnchors();
+
+      expect(anchors).toEqual([
+        NEXT_WEEK_START.toISOString(),
+        WEEK_START.toISOString(),
+      ]);
+    });
+  });
+
   describe('create', () => {
     it('tạo được trận cho tuần đang mở và tuần kế tiếp', async () => {
       await service.create(

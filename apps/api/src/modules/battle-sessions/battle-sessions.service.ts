@@ -39,6 +39,15 @@ const SESSION_INCLUDE = {
   _count: { select: { attendanceRecords: true, formationMatches: true } },
 } as const;
 
+/** Một trận trong tuần, nhãn đã dựng, không kèm số liệu điểm danh/đội hình. */
+export interface ScheduledSession {
+  id: string;
+  label: string;
+  dateTime: Date;
+  isGuildWar: boolean;
+  opponent: string | null;
+}
+
 /**
  * Sở hữu vòng đời của lịch đánh: tự sinh Guild War cho tuần đang mở và tuần kế,
  * đồng thời phục vụ CRUD scrim cho quản trị viên.
@@ -89,9 +98,7 @@ export class BattleSessionsService {
       ? new Date(weekStart)
       : getActiveWeek(now).weekStart;
 
-    if (this.isEditableWeek(target, now)) {
-      await this.ensureGuildWar(target);
-    }
+    await this.ensureWeekMaterialized(target.toISOString(), now);
 
     const rows = await this.prisma.battleSession.findMany({
       where: { weekStart: target },
@@ -100,6 +107,65 @@ export class BattleSessionsService {
     });
 
     return rows.map((row) => this.toEntity(row, now));
+  }
+
+  /**
+   * Đảm bảo tuần đã có đủ các trận hệ thống sinh (hiện là Guild War).
+   * Tuần ngoài phạm vi thiết lập là no-op, nên caller gọi được vô điều kiện.
+   * @param weekStart - Mốc Thứ 2 của tuần cần dựng (ISO string)
+   * @param now - Thời điểm hiện tại (cho phép truyền vào để test)
+   * @returns Promise hoàn tất khi tuần đã sẵn sàng để đọc
+   */
+  async ensureWeekMaterialized(
+    weekStart: string,
+    now: Date = new Date(),
+  ): Promise<void> {
+    const week = new Date(weekStart);
+
+    if (!this.isEditableWeek(week, now)) return;
+
+    await this.ensureGuildWar(week);
+  }
+
+  /**
+   * Các trận của một tuần, sắp theo thời gian đánh, nhãn đã dựng.
+   * Không tự sinh trận — gọi `ensureWeekMaterialized` trước nếu cần.
+   * @param weekStart - Mốc Thứ 2 của tuần cần đọc (ISO string)
+   * @returns Mảng trận đã sắp theo giờ đánh
+   */
+  async readWeekSessions(weekStart: string): Promise<ScheduledSession[]> {
+    const rows = await this.prisma.battleSession.findMany({
+      where: { weekStart: new Date(weekStart) },
+      orderBy: { dateTime: 'asc' },
+      select: {
+        id: true,
+        dateTime: true,
+        isGuildWar: true,
+        opponent: true,
+      },
+    });
+
+    return rows.map((row) => ({
+      id: row.id,
+      label: formatSessionLabel(row.dateTime, row.isGuildWar),
+      dateTime: row.dateTime,
+      isGuildWar: row.isGuildWar,
+      opponent: row.opponent,
+    }));
+  }
+
+  /**
+   * Các tuần còn dữ liệu lịch, mới nhất trước.
+   * @returns Mảng mốc Thứ 2 dạng ISO string
+   */
+  async listWeekAnchors(): Promise<string[]> {
+    const rows = await this.prisma.battleSession.findMany({
+      distinct: ['weekStart'],
+      select: { weekStart: true },
+      orderBy: { weekStart: 'desc' },
+    });
+
+    return rows.map((row) => row.weekStart.toISOString());
   }
 
   /**

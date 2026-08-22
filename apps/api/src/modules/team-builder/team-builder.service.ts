@@ -13,7 +13,6 @@ import type {
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import {
   BattleSessionsService,
-  formatSessionLabel,
   weekEndOf,
 } from '../battle-sessions/battle-sessions.public';
 
@@ -66,24 +65,22 @@ export class TeamBuilderService {
    */
   async getWeeks(now: Date = new Date()): Promise<FormationWeek[]> {
     await this.purgeExpiredFormations(now);
-    await this.battleSessions.listByWeek(undefined, now);
 
     const activeWeekStart = this.battleSessions.getActiveWeekStart(now);
-    const sessions = await this.prisma.battleSession.findMany({
-      distinct: ['weekStart'],
-      select: { weekStart: true },
-      orderBy: { weekStart: 'desc' },
-    });
 
-    return sessions.map((session) => {
-      const weekStart = session.weekStart.toISOString();
+    // Sinh trước, đọc sau: tuần đang mở phải có trận thì mới xuất hiện ở đây.
+    await this.battleSessions.ensureWeekMaterialized(activeWeekStart, now);
 
-      return {
-        weekStart,
-        weekEnd: weekEndOf(session.weekStart).toISOString(),
-        isActive: weekStart === activeWeekStart,
-      } satisfies FormationWeek;
-    });
+    const weekStarts = await this.battleSessions.listWeekAnchors();
+
+    return weekStarts.map(
+      (weekStart) =>
+        ({
+          weekStart,
+          weekEnd: weekEndOf(new Date(weekStart)).toISOString(),
+          isActive: weekStart === activeWeekStart,
+        }) satisfies FormationWeek,
+    );
   }
 
   /**
@@ -102,8 +99,6 @@ export class TeamBuilderService {
 
   /**
    * Lấy các trận của một tuần kèm đội hình đã lưu.
-   * Tuần đang mở thì gọi qua BattleSessionsService để chắc chắn các trận đã có
-   * trong database; tuần cũ chỉ đọc những gì còn lưu.
    * @param weekStart - Mốc Thứ 2 của tuần cần xem (ISO string). Bỏ trống = tuần đang mở
    * @param now - Thời điểm hiện tại (cho phép truyền vào để test)
    * @returns Mảng ngày đánh sắp theo thời gian, mỗi ngày kèm đội hình từng trận và cờ locked
@@ -112,49 +107,68 @@ export class TeamBuilderService {
     weekStart?: string,
     now: Date = new Date(),
   ): Promise<SessionFormation[]> {
-    const activeWeekStart = this.battleSessions.getActiveWeekStart(now);
-    const targetWeekStart = weekStart ?? activeWeekStart;
+    const targetWeekStart =
+      weekStart ?? this.battleSessions.getActiveWeekStart(now);
 
-    // Tuần đang mở có thể chưa được sinh trận — để module lịch đánh lo việc đó.
-    if (targetWeekStart === activeWeekStart) {
-      await this.battleSessions.listByWeek(undefined, now);
-    }
+    await this.battleSessions.ensureWeekMaterialized(targetWeekStart, now);
 
-    const sessions = await this.prisma.battleSession.findMany({
-      where: { weekStart: new Date(targetWeekStart) },
-      orderBy: { dateTime: 'asc' },
-      include: {
-        formationMatches: {
-          orderBy: { matchIndex: 'asc' },
-          include: { slots: true },
-        },
-      },
-    });
+    const sessions =
+      await this.battleSessions.readWeekSessions(targetWeekStart);
     if (sessions.length === 0) return [];
+
+    const matchesBySession = await this.loadMatchesBySession(
+      sessions.map((session) => session.id),
+    );
 
     return sessions.map(
       (session) =>
         ({
           sessionId: session.id,
-          label: formatSessionLabel(session.dateTime, session.isGuildWar),
+          label: session.label,
           opponent: session.opponent,
           dateTime: session.dateTime.toISOString(),
           isGuildWar: session.isGuildWar,
           locked: session.dateTime.getTime() < now.getTime(),
-          matches: session.formationMatches.map((match) => ({
-            slots: Object.fromEntries(
-              match.slots
-                .filter((slot) => slot.characterId !== null)
-                .map((slot) => [slot.slotId, slot.characterId as string]),
-            ),
-            notes: Object.fromEntries(
-              match.slots
-                .filter((slot) => slot.note !== null)
-                .map((slot) => [slot.slotId, slot.note as string]),
-            ),
-          })),
+          matches: matchesBySession.get(session.id) ?? [],
         }) satisfies SessionFormation,
     );
+  }
+
+  /**
+   * Đọc đội hình đã lưu của nhiều ngày đánh, gom theo sessionId.
+   * @param sessionIds - Id các ngày đánh cần đọc
+   * @returns Map từ sessionId sang mảng đội hình theo thứ tự trận 1 → trận 2
+   */
+  private async loadMatchesBySession(
+    sessionIds: string[],
+  ): Promise<Map<string, MatchFormation[]>> {
+    const matches = await this.prisma.formationMatch.findMany({
+      where: { sessionId: { in: sessionIds } },
+      orderBy: { matchIndex: 'asc' },
+      include: { slots: true },
+    });
+
+    const grouped = new Map<string, MatchFormation[]>();
+
+    for (const match of matches) {
+      const current = grouped.get(match.sessionId) ?? [];
+
+      current.push({
+        slots: Object.fromEntries(
+          match.slots
+            .filter((slot) => slot.characterId !== null)
+            .map((slot) => [slot.slotId, slot.characterId as string]),
+        ),
+        notes: Object.fromEntries(
+          match.slots
+            .filter((slot) => slot.note !== null)
+            .map((slot) => [slot.slotId, slot.note as string]),
+        ),
+      });
+      grouped.set(match.sessionId, current);
+    }
+
+    return grouped;
   }
 
   /**
@@ -173,14 +187,12 @@ export class TeamBuilderService {
     matches: MatchInput[],
     now: Date = new Date(),
   ): Promise<SessionFormation> {
-    const session = await this.prisma.battleSession.findUnique({
-      where: { id: sessionId },
-    });
+    const session = await this.battleSessions.findById(sessionId, now);
     if (!session) {
       throw new NotFoundException('Không tìm thấy ngày đánh.');
     }
 
-    if (session.dateTime.getTime() < now.getTime()) {
+    if (new Date(session.dateTime).getTime() < now.getTime()) {
       throw new ConflictException('Trận này đã đánh xong, không sửa được nữa.');
     }
 
@@ -213,9 +225,9 @@ export class TeamBuilderService {
 
     return {
       sessionId: session.id,
-      label: formatSessionLabel(session.dateTime, session.isGuildWar),
+      label: session.label,
       opponent: session.opponent,
-      dateTime: session.dateTime.toISOString(),
+      dateTime: session.dateTime,
       isGuildWar: session.isGuildWar,
       locked: false,
       matches: cleaned,
