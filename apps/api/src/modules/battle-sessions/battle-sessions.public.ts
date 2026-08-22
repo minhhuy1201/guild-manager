@@ -10,4 +10,10 @@
  */
 export { BattleSessionsService } from './battle-sessions.service';
 export type { ScheduledSession } from './battle-sessions.service';
-export { formatSessionLabel, weekEndOf } from './session-schedule';
+export {
+  formatSessionLabel,
+  isSameWeek,
+  weekEndOf,
+  weekStartOf,
+} from './session-schedule';
+export type { WeekAnchor } from './session-schedule';

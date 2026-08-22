@@ -5,6 +5,7 @@ import {
   guildWarDateTime,
   guildWarSessionId,
   isDeadlinePassed,
+  isSameWeek,
   weekStartOf,
 } from '../session-schedule';
 
@@ -115,6 +116,28 @@ describe('session-schedule', () => {
       expect(formatSessionLabel(vn('2026-07-25T20:00'), true)).toBe(
         'Thứ 7 · Guild War',
       );
+    });
+  });
+
+  describe('isSameWeek', () => {
+    it('cùng mốc thì cùng tuần', () => {
+      expect(
+        isSameWeek(weekStartOf(vn('2026-07-20T00:00')), weekStartOf(wednesday)),
+      ).toBe(true);
+    });
+
+    it('hai tuần kề nhau thì khác tuần', () => {
+      expect(
+        isSameWeek(weekStartOf(wednesday), weekStartOf(vn('2026-07-27T09:00'))),
+      ).toBe(false);
+    });
+
+    it('cùng mốc viết bằng hai múi giờ khác nhau vẫn cùng tuần', () => {
+      // Đây là ca mà phép so chuỗi cũ sai: cùng thời điểm, hai chuỗi khác nhau.
+      const asOffset = weekStartOf(new Date('2026-07-20T00:00:00+07:00'));
+      const asUtc = weekStartOf(new Date('2026-07-19T17:00:00.000Z'));
+
+      expect(isSameWeek(asOffset, asUtc)).toBe(true);
     });
   });
 

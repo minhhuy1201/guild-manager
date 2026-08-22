@@ -35,10 +35,19 @@ const WEEKDAY_NAMES = [
   'Chủ nhật',
 ];
 
+/**
+ * Mốc Thứ 2 00:00 giờ VN của một tuần điểm danh.
+ *
+ * Nhãn `__weekAnchor` chỉ tồn tại lúc biên dịch: một `Date` bất kỳ không gán được
+ * vào đây, nên không ai lỡ truyền giờ đánh của một trận vào chỗ đợi mốc tuần.
+ * Chỉ dựng được qua `weekStartOf` hoặc `parseWeekStart`.
+ */
+export type WeekAnchor = Date & { readonly __weekAnchor: unique symbol };
+
 /** Một tuần điểm danh: mốc đầu và cuối. */
 export interface ScheduledWeek {
   /** Thứ 2 00:00 — cũng là khóa gom trận theo tuần trong database. */
-  weekStart: Date;
+  weekStart: WeekAnchor;
   /** Thứ 7 23:59 — mốc cuối để hiển thị timeline. */
   weekEnd: Date;
 }
@@ -48,8 +57,25 @@ export interface ScheduledWeek {
  * @param dateTime - Thời điểm bất kỳ
  * @returns Mốc Thứ 2 00:00 của tuần chứa `dateTime`
  */
-export function weekStartOf(dateTime: Date): Date {
-  return shiftVnDate(dateTime, -(vnWeekday(dateTime) - MONDAY), 0, 0);
+export function weekStartOf(dateTime: Date): WeekAnchor {
+  return shiftVnDate(
+    dateTime,
+    -(vnWeekday(dateTime) - MONDAY),
+    0,
+    0,
+  ) as WeekAnchor;
+}
+
+/**
+ * Hai mốc tuần có chỉ cùng một tuần không.
+ * So bằng thời điểm chứ không bằng chuỗi: cùng một mốc viết ở hai múi giờ khác
+ * nhau vẫn phải cho `true`.
+ * @param a - Mốc tuần thứ nhất
+ * @param b - Mốc tuần thứ hai
+ * @returns true nếu hai mốc trỏ cùng một tuần
+ */
+export function isSameWeek(a: WeekAnchor, b: WeekAnchor): boolean {
+  return a.getTime() === b.getTime();
 }
 
 /**
@@ -57,7 +83,7 @@ export function weekStartOf(dateTime: Date): Date {
  * @param weekStart - Thứ 2 00:00 giờ VN
  * @returns Tuần kèm mốc cuối Thứ 7 23:59
  */
-function toWeek(weekStart: Date): ScheduledWeek {
+function toWeek(weekStart: WeekAnchor): ScheduledWeek {
   return { weekStart, weekEnd: weekEndOf(weekStart) };
 }
 
@@ -88,7 +114,7 @@ export function getActiveWeek(now: Date): ScheduledWeek {
   }
 
   // Thứ 7 mở tuần + 2 ngày = Thứ 2 đầu tuần mới.
-  return toWeek(shiftVnDate(anchorOpen, 2, 0, 0));
+  return toWeek(weekStartOf(shiftVnDate(anchorOpen, 2, 0, 0)));
 }
 
 /**
@@ -100,7 +126,7 @@ export function getActiveWeek(now: Date): ScheduledWeek {
 export function getEditableWeeks(now: Date): ScheduledWeek[] {
   const active = getActiveWeek(now);
 
-  return [active, toWeek(shiftVnDate(active.weekStart, 7, 0, 0))];
+  return [active, toWeek(weekStartOf(shiftVnDate(active.weekStart, 7, 0, 0)))];
 }
 
 /**
