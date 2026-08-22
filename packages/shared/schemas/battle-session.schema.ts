@@ -24,7 +24,13 @@ const opponent = z
 export const DEADLINE_CAP_MESSAGE =
   "Hạn chót điểm danh không được muộn hơn 10:00 sáng ngày đánh.";
 
-/** Thông báo khi mốc tuần trên query string không đọc được — Zod và API dùng chung. */
+/**
+ * Thông báo khi mốc tuần trên query string không đọc được.
+ *
+ * Người đọc duy nhất là `weekStartQuerySchema` ngay dưới đây — tầng duy nhất
+ * dựng câu tiếng Việt và status 400 cho `?weekStart=`. Vẫn tách thành hằng để
+ * web import được khi cần hiện lại đúng câu chữ, giống `DEADLINE_CAP_MESSAGE`.
+ */
 export const INVALID_WEEK_MESSAGE = "Tuần không hợp lệ.";
 
 /**

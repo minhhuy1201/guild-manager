@@ -7,9 +7,11 @@
 > sửa; (2) §4 dùng `z.iso.datetime()`, mà Zod v4 mặc định
 > `offset: false` nên **loại chính ca test `+07:00`** của spec — phải là `z.iso.datetime({ offset: true })`
 > — **đã sửa 2026-08-23**, §4 bên dưới chép đúng schema đang chạy (bản hiện thực vốn đã đúng, chỉ spec sai).
-> Vòng đối chiếu với kế hoạch tìm thêm một **chỗ thiếu**: §4 chỉ ghi một file DTO cho cả hai module,
-> điều mà luật ranh giới module không cho phép — **đã sửa 2026-08-23**, §4 và bảng thay đổi nay chép
-> đúng hai file `dto/week-start-query.dto.ts` đang chạy kèm lý do.
+> Vòng đối chiếu với kế hoạch tìm thêm **hai chỗ thiếu**: (a) §4 chỉ ghi một file DTO cho cả hai
+> module, điều mà luật ranh giới module không cho phép — **đã sửa 2026-08-23**, §4 và bảng thay đổi
+> nay chép đúng hai file `dto/week-start-query.dto.ts` đang chạy kèm lý do; (b) spec không nói **ai
+> sở hữu** câu `'Tuần không hợp lệ.'` — **đã sửa 2026-08-23**, §4 có một đoạn riêng đặt quyền sở hữu
+> ở `packages/shared` và chốt rằng hằng đó chỉ có một người đọc.
 > Thêm một điểm nhỏ: §3 đặt tên `getActiveWeek` đụng hàm thuần cùng tên trong `session-schedule.ts`.
 > Chi tiết:
 > [§ Rà soát lại A1–A6](./2026-08-21-architecture-review-2-overview.md#rà-soát-lại-a1a6-2026-08-23).
@@ -101,7 +103,7 @@ export function isSameWeek(a: WeekAnchor, b: WeekAnchor): boolean;
 Ba quyết định nằm trong đó:
 
 - **Chuỗi hỏng → `RangeError`**, thay vì để `Invalid Date` rơi xuống Prisma. Câu tiếng Việt cho người
-  dùng (`'Tuần không hợp lệ.'`) là việc của tầng biên ở §4: `weekStartQuerySchema` chặn chuỗi hỏng
+  dùng (`INVALID_WEEK_MESSAGE`) là việc của tầng biên ở §4: `weekStartQuerySchema` chặn chuỗi hỏng
   trước khi nó tới được đây, nên tới tầng này thì đó là **lỗi lập trình** — một caller trong process
   gọi sai hợp đồng. Vì vậy `session-schedule.ts` không import `@nestjs/common`: file giữ thuần, và
   `AllExceptionsFilter` biến `RangeError` thành 500 kèm stack trong log, đúng loại lỗi đó.
@@ -141,7 +143,18 @@ export const weekStartQuerySchema = z.object({
 `offset: true` là **bắt buộc**, không phải tuỳ chọn: Zod v4 mặc định `offset: false`, chỉ nhận hậu
 tố `Z`, nên `z.iso.datetime()` trần sẽ trả 400 cho `2026-07-20T00:00:00+07:00` — đúng ca test ở
 §Kiểm thử và đúng dạng chuỗi một client giờ VN gửi lên tự nhiên nhất. `preprocess` xử lý chuỗi rỗng
-(xem §Edge case), và câu tiếng Việt lấy từ hằng `INVALID_WEEK_MESSAGE` cùng file.
+(xem §Edge case).
+
+**Câu `'Tuần không hợp lệ.'` thuộc về `packages/shared`**, dưới dạng hằng `INVALID_WEEK_MESSAGE` đặt
+ngay cạnh `DEADLINE_CAP_MESSAGE`. Nó đi cùng luật validation sinh ra nó, mà luật đó ở
+`packages/shared` theo `architecture.md` §7 (*"a validation rule → `packages/shared`"*) — không phải
+ở `apps/api`, cũng không rải hai bản.
+
+Sau khi §1 chốt cho `parseWeekStart` ném `RangeError`, hằng này có **đúng một người đọc**:
+`weekStartQuerySchema` ngay dưới nó, tầng duy nhất dựng cả câu chữ lẫn status 400. Nó vẫn là một
+hằng export chứ không phải chuỗi trần vì `apps/web` phải hiện lại đúng câu chữ đó được — cùng lý do
+`DEADLINE_CAP_MESSAGE` tồn tại. `apps/api` **không** đọc nó: một `grep` ra hai package là dấu hiệu
+`parseWeekStart` lại biết chuyện của tầng biên.
 
 ```ts
 // battle-sessions.controller.ts

@@ -3,7 +3,12 @@
 > **Đã hiện thực** (`f557e3a`). Mâu thuẫn nội bộ mà vòng rà soát 2026-08-23 nêu (snippet §2 ném
 > `'Phiên đăng nhập không hợp lệ.'` trong khi §3 gộp về `'Bạn cần đăng nhập.'`) **đã đóng**: §3 là
 > quyết định đúng và cũng là câu đang chạy trong `jwt-auth.guard.ts`, nên §2 chép lại đúng câu đó.
-> Dải dòng `optional-jwt-auth.guard` cũng sửa thành `:26-38`. Chi tiết:
+> Dải dòng `optional-jwt-auth.guard` cũng sửa thành `:26-38`.
+> Vòng đối chiếu với kế hoạch tìm thêm một **chỗ sai hướng**: §1 khai `VerifyToken` trả
+> `Promise<JwtPayload | null>` (*"trả null thay vì ném"*), thứ đẩy `.catch(() => null)` ngược về cả ba
+> call site — đúng bản sao spec viết ra để xoá. Kế hoạch đã đảo lại trước khi hiện thực —
+> **§1 sửa 2026-08-23**, nay chép đúng chữ ký `Promise<JwtPayload>` đang chạy kèm lý do và câu `grep`
+> khoá bất biến. Chi tiết:
 > [§ Rà soát lại A1–A6](./2026-08-21-architecture-review-2-overview.md#rà-soát-lại-a1a6-2026-08-23).
 
 Ngày: 2026-08-21 · Phạm vi: `apps/api/src/common`, `apps/api/src/modules/auth`.
@@ -66,15 +71,18 @@ implementation (12 dòng). Shallow.
 ```ts
 // common/auth/read-bearer-token.ts
 
-/** Verify một JWT, trả null thay vì ném. */
-type VerifyToken = (token: string) => Promise<JwtPayload | null>;
+/**
+ * Verify chữ ký và hạn của một JWT.
+ * Được phép ném — `readToken` là chỗ duy nhất bắt lỗi đó.
+ */
+export type VerifyToken = (token: string) => Promise<JwtPayload>;
 
 /**
  * Đọc và verify token trong header Authorization.
  * Thiếu header, sai prefix, token hỏng/hết hạn, hoặc sai loại token đều cho null —
  * người gọi quyết định null nghĩa là "chặn" hay "khách ẩn danh".
  * @param header - Giá trị header Authorization, undefined khi không có
- * @param verify - Hàm verify JWT (adapter quanh JwtService)
+ * @param verify - Hàm verify JWT; được phép ném
  * @param expectedType - Loại token bắt buộc phải khớp
  * @returns Payload đã verify, hoặc null
  */
@@ -87,6 +95,17 @@ export async function readBearerToken(
 
 Nhận `verify` chứ không nhận `JwtService`: hàm giữ được tính thuần, test không cần dựng module Nest,
 và đây đúng là *"accept dependencies, don't create them"*.
+
+**`VerifyToken` được phép ném, và `readToken` (§4) là chỗ duy nhất bắt.** Đây là quyết định nằm ở
+tâm của spec, không phải chi tiết chữ ký: nếu `VerifyToken` tự trả `null` thì mỗi call site lại phải
+tự viết `.catch(() => null)` quanh `jwt.verifyAsync` — đúng ba bản sao mà §Bối cảnh liệt kê và spec
+này viết ra để xoá. Đảo chiều thì call site rút về đúng một biểu thức không có xử lý lỗi
+(`(token) => this.jwt.verifyAsync<JwtPayload>(token)`), còn việc "mọi kiểu hỏng đều là `null`" quy
+về một dòng duy nhất trong repo.
+
+Bất biến đó khoá được bằng `grep`: `grep -rn "catch(() => null)" apps/api/src` phải ra **đúng một
+dòng**, trong `read-bearer-token.ts`. Ra nhiều hơn nghĩa là một call site đã lấy lại việc mà hàm này
+nhận làm.
 
 `BEARER_PREFIX` sống trong file này, không export — ai cần nó thì đang cần chính hàm này.
 
@@ -138,11 +157,14 @@ export async function readToken(token: string, verify: VerifyToken, expectedType
 `readBearerToken` = bóc prefix + `readToken`. `auth.service.refresh` gọi `readToken(..., refresh)`.
 Một module, hai hàm, hàm ngoài dựng trên hàm trong.
 
+Đây cũng là hàm giữ `.catch(() => null)` của §1 — cả ba call site đi qua nó, nên `verify` ném ở đâu
+cũng quy về cùng một `null`.
+
 ## Thay đổi cụ thể
 
 | File | Thay đổi |
 |---|---|
-| `common/auth/read-bearer-token.ts` (mới) | `readToken`, `readBearerToken`, `BEARER_PREFIX` (private) |
+| `common/auth/read-bearer-token.ts` (mới) | `VerifyToken`, `readToken`, `readBearerToken`, `BEARER_PREFIX` (private) |
 | `common/index.ts` | re-export |
 | `common/guards/jwt-auth.guard.ts` | rút gọn còn ~10 dòng; bỏ `BEARER_PREFIX` |
 | `common/guards/optional-jwt-auth.guard.ts` | như trên |
