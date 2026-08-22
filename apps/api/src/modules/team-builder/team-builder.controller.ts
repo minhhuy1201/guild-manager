@@ -12,6 +12,7 @@ import type { FormationWeek, SessionFormation } from '@guild/shared/schemas';
 
 import { JwtAuthGuard } from '../../common';
 import { SaveFormationDto } from './dto/save-formation.dto';
+import { WeekStartQueryDto } from './dto/week-start-query.dto';
 import { TeamBuilderService } from './team-builder.service';
 
 @ApiTags('team-builder')
@@ -32,15 +33,15 @@ export class TeamBuilderController {
 
   /**
    * Các trận của một tuần kèm đội hình đã lưu.
-   * @param weekStart - Mốc Thứ 2 của tuần (ISO string); bỏ trống = tuần đang mở
+   * @param query - `weekStart`: mốc ISO của tuần; bỏ trống = tuần đang mở
    * @returns Mảng trận sắp theo thời gian đánh
    */
   @Get('formations')
   @ApiOperation({ summary: 'Đội hình của các trận trong một tuần' })
   getFormations(
-    @Query('weekStart') weekStart?: string,
+    @Query() query: WeekStartQueryDto,
   ): Promise<SessionFormation[]> {
-    return this.teamBuilder.getFormations(weekStart);
+    return this.teamBuilder.getFormations(query.weekStart);
   }
 
   /**

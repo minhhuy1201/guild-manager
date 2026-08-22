@@ -19,6 +19,7 @@ import {
   CreateBattleSessionDto,
   UpdateBattleSessionDto,
 } from './dto/battle-session.dto';
+import { WeekStartQueryDto } from './dto/week-start-query.dto';
 
 @ApiTags('battle-sessions')
 @Controller('battle-sessions')
@@ -37,13 +38,13 @@ export class BattleSessionsController {
 
   /**
    * Các trận của một tuần.
-   * @param weekStart - Mốc Thứ 2 của tuần (ISO string); bỏ trống = tuần đang mở
+   * @param query - `weekStart`: mốc ISO của tuần; bỏ trống = tuần đang mở
    * @returns Mảng trận sắp theo thời gian đánh
    */
   @Get()
   @ApiOperation({ summary: 'Các trận đánh của một tuần' })
-  list(@Query('weekStart') weekStart?: string): Promise<BattleSession[]> {
-    return this.battleSessions.listByWeek(weekStart);
+  list(@Query() query: WeekStartQueryDto): Promise<BattleSession[]> {
+    return this.battleSessions.listByWeek(query.weekStart);
   }
 
   /**
