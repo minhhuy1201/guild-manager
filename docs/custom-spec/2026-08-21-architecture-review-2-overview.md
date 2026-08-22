@@ -134,6 +134,10 @@ Ghi lại để khỏi rà lại.
 Đối chiếu từng `file:line` của sáu spec backend với code tại commit gốc `9820b5a`. Ghi lại ở đây để
 sau này không phải kiểm lại, và để biết chỗ nào trong spec **không được đọc như lời cuối**.
 
+Vòng rà soát này chỉ đọc spec. Vòng thứ hai — [§ Đối chiếu với kế hoạch](#đối-chiếu-với-kế-hoạch-2026-08-23)
+— đọc thêm `docs/custom-plan/` và tìm ra bảy chỗ spec **thiếu**, không phải sai: những thứ chỉ lộ ra
+khi phải viết từng bước xuống.
+
 ### Phần đã kiểm và đúng
 
 - **A2** — đúng cả 15 chữ ký `now: Date = new Date()`, đúng từng dòng (7 `battle-sessions` + 2
@@ -156,7 +160,7 @@ sau này không phải kiểm lại, và để biết chỗ nào trong spec **kh
 | 2 | A6 §3 | **Đi ngược `architecture.md:114-115`** (*"Services hold the business logic"*, controller mỏng). Đưa trình tự "purge rồi mới đọc" lên controller là kéo nghiệp vụ lên một lớp. `architecture.md` là **binding** — spec phải trả lời luật này, không được lướt qua. |
 | 3 | A6 §4 | **Luận điểm không đứng vững.** Chuyển `loadCharacterIds` vào `$transaction` **không** đóng được race: Prisma dùng isolation mặc định của Postgres (READ COMMITTED), `SELECT id FROM character` trong tx không khoá hàng, nên một `DELETE` commit sau lúc đọc vẫn làm vỡ khoá ngoại. Nó chỉ *thu hẹp* cửa sổ. Fix đúng: bắt `P2003` → 409 tiếng Việt, hoặc serializable isolation. |
 | 4 | A4 §1 | **`parseWeekStart` ném `BadRequestException` đặt sai lớp** — nó nằm trong `session-schedule.ts`, đúng file mà overview khen là *"hàm thuần, tất định"* và A2 §4 khẳng định không được biết framework. Thêm nữa: sau khi §4 có DTO Zod thì `?weekStart=xyz` bị chặn ngay ở pipe, nhánh ném **không còn với tới được từ HTTP**, nên test "`battle-sessions.service.spec.ts`: `?weekStart=xyz` → `BadRequestException`" nằm sai tầng, và triệu chứng 500 ở §Bối cảnh #1 được §4 vá một mình. |
-| 5 | A4 §4 | **`z.iso.datetime()` loại chính ca test của spec.** Zod v4 mặc định `offset: false`, chỉ nhận hậu tố `Z`. Ca *"một mốc `+07:00` và cùng mốc đó dạng `Z` phải cho cùng kết quả"* sẽ ăn 400 ở controller. Phải là `z.iso.datetime({ offset: true })`. |
+| 5 | A4 §4 | **`z.iso.datetime()` loại chính ca test của spec.** Zod v4 mặc định `offset: false`, chỉ nhận hậu tố `Z`. Ca *"một mốc `+07:00` và cùng mốc đó dạng `Z` phải cho cùng kết quả"* sẽ ăn 400 ở controller. Phải là `z.iso.datetime({ offset: true })`. *(Kế hoạch A4 đã bắt được lỗi này trước khi hiện thực và kiểm chứng bằng Zod 4.4; bản hiện thực dùng `offset: true` — `battle-session.schema.ts:43`.)* |
 | 6 | A5 | **§2 mâu thuẫn với §3.** Snippet §2 ném `'Phiên đăng nhập không hợp lệ.'`, còn §3 quyết định gộp về đúng một câu `'Bạn cần đăng nhập.'` |
 
 ### Lỗi nhỏ và chỗ nói quá
@@ -187,3 +191,55 @@ sau này không phải kiểm lại, và để biết chỗ nào trong spec **kh
   spec ghi `:26-36`.
 - **A6 §2** chứa đoạn *"Đã sửa khi hiện thực"* — tài liệu lẫn spec với ghi chú hậu-hiện-thực, lệch với
   ngày tháng và giọng của các mục còn lại.
+
+## Đối chiếu với kế hoạch (2026-08-23)
+
+Vòng trên chỉ đọc spec, nên chỉ tìm được **lỗi**. Vòng này đọc `docs/custom-plan/` cạnh spec và tìm
+thêm bảy chỗ spec **thiếu** — thứ chỉ lộ ra khi phải viết từng bước xuống, và mỗi chỗ đều buộc kế
+hoạch phải tự chốt một quyết định spec không nói.
+
+**Phạm vi:** chỉ có bốn kế hoạch tồn tại — `a3`, `a4`, `a5`, `a6` (cộng `c1` của đợt trước). Kế hoạch
+A1 và A2 đã bị xoá (`b2a3d21`), nên hai spec đó không có gì để đối chiếu.
+
+### Chỗ spec thiếu, kế hoạch phải tự chốt
+
+| # | Spec | Chỗ thiếu | Kế hoạch chốt thế nào |
+|---|---|---|---|
+| 7 | A3 §2 | **Sót một call site.** Spec chỉ nói `attendance` truy vấn thẳng `prisma.character`, nhưng `team-builder.service.ts` (`loadCharacterIds`) cũng vậy. Bỏ qua thì câu *"một bảng, một chủ"* vẫn còn đúng một ngoại lệ phải nhớ — đúng thứ spec viết ra để xoá. | Mở rộng phạm vi sang `team-builder` (Task 4), và khẳng định bằng `grep -rn "prisma.character"`. |
+| 8 | A3 §4 | **Cả một §bị bỏ, và lỗ hổng nó vá vẫn còn mở.** §4 (chạy `characterSchema.parse()` ngoài production) bị loại khi lập kế hoạch. Spec đã dự phòng chuyện này (*"bỏ nó không làm hỏng phần còn lại"*), nhưng phần §Bối cảnh chẩn đoán *"enum lệch trong database chảy thẳng ra client, fail lặng"* thì **không ai vá**. Đó là một vấn đề còn nguyên, không phải một mục đã đóng. | Bỏ §4, không thêm `SHOULD_VERIFY_RESPONSES`, không thêm nhánh rẽ theo môi trường. |
+| 9 | A4 §4 | **Một DTO cho hai module là bất khả thi.** Bảng thay đổi chỉ ghi `battle-sessions/dto/battle-session.dto.ts`, nhưng `team-builder` không được import DTO của `battle-sessions` (luật ranh giới module), và đẩy một DTO class qua `battle-sessions.public.ts` là phơi chi tiết HTTP của module này ra module khác. | Hai file DTO một dòng, mỗi module một cái; shape vẫn khai báo đúng một lần ở `packages/shared`. Bản hiện thực đúng như vậy. |
+| 10 | A4 | **Không nói ai sở hữu câu `'Tuần không hợp lệ.'`** Sau §4 câu đó phải xuất hiện ở hai tầng — Zod (`packages/shared`) và `parseWeekStart` (`apps/api`) — nên nó là một chuỗi lặp giữa hai package. | Hằng `INVALID_WEEK_MESSAGE` ở `packages/shared`, theo đúng khuôn `DEADLINE_CAP_MESSAGE`. |
+| 11 | A5 §1 | **Chữ ký `VerifyToken` tự đánh bại mục đích của spec.** `VerifyToken = (token) => Promise<JwtPayload \| null>` (*"trả null thay vì ném"*) đẩy `.catch(() => null)` ngược về cả ba call site — đúng bản sao spec viết ra để xoá. | Đảo lại: `VerifyToken` **được phép ném**, `readToken` là chỗ duy nhất còn `.catch(() => null)`, khoá bằng `grep`. |
+| 12 | A5 | **Test §Kiểm thử yêu cầu không chạy được.** Spec đòi test 4 nhánh của `describeException`, nhưng hàm đang `private` trong `all-exceptions.filter.ts` và spec không nói phải mở nó. | `export` hàm, kèm một câu doc comment nói vì sao nó public. |
+| 13 | A6 §4 | **Fix của spec vi phạm chính luật A3 vừa dựng.** Spec viết `tx.character.findMany` ngay trong `team-builder` — đi ngược `apps/api/docs/backend.md:120` (*"module đọc bảng của người khác thì gọi service của module đó"*). Đây là lỗi thứ hai của §4, tách khỏi lỗi #3 ở trên. | `CharactersService.listIds(client)` nhận transaction client của caller. **Lỗi #3 vẫn chưa được xử lý**: không có nhánh bắt `P2003` → 409, nên race vẫn thành 500. |
+
+### Chỗ kế hoạch lệch spec, rồi bản hiện thực lệch tiếp
+
+Ghi lại vì cả ba tài liệu (spec · kế hoạch · code) đang nói ba thứ khác nhau ở cùng một chỗ.
+
+- **`isSessionLocked` — kế hoạch A6 đã lỗi thời.** Kế hoạch đặt nó trong `formation-grid.ts` và nói
+  thẳng ở §Kiến trúc *"đây không phải luật tuần/deadline nên nó không thuộc `session-schedule.ts`"*.
+  Spec (sau khi sửa) và bản hiện thực làm ngược lại: `session-schedule.ts:225`, ra ngoài qua
+  `battle-sessions.public.ts`. Kế hoạch A6 chưa được cập nhật sau khi hiện thực.
+- **`purgeExpiredFormations(now)` — kế hoạch chốt một đằng, code làm một nẻo.** Kế hoạch A6 §2 chốt
+  hàm **không** nhận `now` vì *"controller không có `Clock`"*. Bản hiện thực cho controller inject
+  `Clock` và gọi `purgeExpiredFormations(this.clock.now())` (`team-builder.controller.ts:38`). Hệ quả:
+  controller giờ giữ **cả** trình tự nghiệp vụ **lẫn** đồng hồ — làm lỗi #2 (đi ngược
+  `architecture.md:114-115`) nặng thêm chứ không nhẹ đi.
+- **`listIds` đổi chữ ký so với kế hoạch.** Kế hoạch: `listIds(client?): Promise<string[]>` (client tuỳ
+  chọn). Code: `listIds(client): Promise<Set<string>>` — client **bắt buộc**, trả `Set`. Chữ ký code tốt
+  hơn (không có đường đọc ngoài transaction để lỡ tay chọn), nhưng không tài liệu nào ghi lại lựa chọn đó.
+- **Món nợ `TODO(A1)` của A4 không bao giờ tồn tại.** Spec A4 và kế hoạch đều giả định A4 đi **trước**
+  A1, nên chốt *"giữ phép so chuỗi ở `attendance` và ghi `// TODO(A1)`"*. Thứ tự thực tế là A1 trước,
+  nên phép so được đóng ngay bằng `isSameWeek` (`3e96ebd`) — không có `TODO(A1)` nào trong code.
+- **Kế hoạch A4 thiếu một task so với thực tế.** Ngoài 7 task của kế hoạch còn có `9b0a9a2`
+  (*"let the write path speak week anchors too"*) — đường **ghi** (`create`/`update` trận) cũng phải
+  nói `WeekAnchor`, thứ mà cả spec lẫn kế hoạch chỉ nói cho đường đọc.
+
+### Điều kiện hoàn thành cần sửa lại
+
+- **A3** chưa xong theo nghĩa spec đặt ra: §4 bị bỏ nên chẩn đoán *"schema chiều ra là type chết"* ở
+  §Bối cảnh vẫn đúng nguyên văn tại thời điểm này. Hoặc ghi nó thành một mục mới của đợt sau, hoặc
+  sửa §Bối cảnh của A3 để không còn hứa chuyện §4 không làm.
+- **A6** còn hai việc chưa đóng: `P2003` → 409 (lỗi #3), và câu hỏi purge có nên rời đường `GET` thật
+  không (lỗi #1, #2). Cả hai nên thành một mục riêng chứ không nằm im trong ghi chú của A6.
