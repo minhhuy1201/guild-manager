@@ -8,6 +8,7 @@ import {
   fetchAttendanceRecords,
   fetchCharacters,
 } from "@/features/attendance/api/attendance-api";
+import { ApiError } from "@/lib/api-client";
 import {
   fetchFormations,
   fetchFormationWeeks,
@@ -122,7 +123,9 @@ describe("useFormationWeek", () => {
   });
 
   it("query đội hình lỗi thì hiện thông báo của backend", async () => {
-    fetchFormationsMock.mockRejectedValue(new Error("Tuần này đã bị khoá."));
+    fetchFormationsMock.mockRejectedValue(
+      new ApiError("Tuần này đã bị khoá.", 409)
+    );
 
     const { result } = renderFormationHook(() => useFormationWeek());
 
@@ -137,5 +140,33 @@ describe("useFormationWeek", () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(result.current.errorMessage).toBe("Không tải được dữ liệu đội hình.");
+  });
+
+  it("query nhân vật lỗi thì vẫn hiện thông báo của backend, không rơi về câu chung", async () => {
+    fetchCharactersMock.mockRejectedValue(
+      new ApiError("Phiên đăng nhập đã hết hạn.", 401)
+    );
+
+    const { result } = renderFormationHook(() => useFormationWeek());
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.errorMessage).toBe("Phiên đăng nhập đã hết hạn.");
+  });
+
+  it("thử lại thì tải lại cả ba query, kể cả query nhân vật", async () => {
+    const { result } = renderFormationHook(() => useFormationWeek());
+
+    await waitFor(() => expect(result.current.isPending).toBe(false));
+    const before = fetchCharactersMock.mock.calls.length;
+
+    act(() => {
+      result.current.refetch();
+    });
+
+    await waitFor(() =>
+      expect(fetchCharactersMock.mock.calls.length).toBe(before + 1)
+    );
+    expect(fetchWeeksMock.mock.calls.length).toBeGreaterThan(1);
+    expect(fetchFormationsMock.mock.calls.length).toBeGreaterThan(1);
   });
 });

@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import type { Character, FormationWeek, SessionFormation } from "@guild/shared/schemas";
 
 import { useAttendanceRecords, useCharacters } from "@/features/attendance";
+import { combineQueries } from "@/lib/query-group";
 import type { AttendanceRecordLike } from "../lib/session-pool";
 import { findActiveWeekStart, isWeekEditable } from "../lib/week-status";
 import { useFormationStore } from "../store/formation-store";
@@ -24,9 +25,9 @@ export interface FormationWeekState {
   isPending: boolean;
   /** True when any of the three source queries failed */
   isError: boolean;
-  /** Message to show for that failure */
+  /** Message of the first failing query — empty string when there is no error */
   errorMessage: string;
-  /** Reload the week list and the formations of the week on screen */
+  /** Reload all three source queries at once */
   refetch: () => void;
   /** Battles of the week on screen, ordered by battle time */
   sessions: SessionFormation[];
@@ -73,23 +74,23 @@ export function useFormationWeek(): FormationWeekState {
     [recordsQuery.data]
   );
 
+  // recordsQuery không vào nhóm: điểm danh chỉ tô màu gợi ý trong pool, thiếu nó
+  // màn vẫn dùng được — nó không được phép chặn cả màn bằng skeleton hay khối lỗi.
+  const state = combineQueries(
+    // formationsQuery đứng đầu: hỏng nó là hỏng đúng thứ màn này tồn tại để hiện.
+    [formationsQuery, weeksQuery, charactersQuery],
+    "Không tải được dữ liệu đội hình."
+  );
+
   return {
     weeks: weeksQuery.data ?? [],
     weekStart: weekStart ?? "",
     isEditableWeek,
     setWeek,
-    isPending:
-      weeksQuery.isPending ||
-      formationsQuery.isPending ||
-      charactersQuery.isPending,
-    isError:
-      weeksQuery.isError || formationsQuery.isError || charactersQuery.isError,
-    errorMessage:
-      formationsQuery.error?.message ?? "Không tải được dữ liệu đội hình.",
-    refetch: () => {
-      void weeksQuery.refetch();
-      void formationsQuery.refetch();
-    },
+    isPending: state.isPending,
+    isError: state.isError,
+    errorMessage: state.errorMessage,
+    refetch: state.refetch,
     sessions,
     characters,
     records,
