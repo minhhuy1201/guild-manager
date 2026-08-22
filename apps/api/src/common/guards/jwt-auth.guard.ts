@@ -7,10 +7,8 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import type { Request } from 'express';
 
+import { readBearerToken } from '../auth/read-bearer-token';
 import { TOKEN_TYPE, type JwtPayload } from '../constants/auth.constant';
-
-/** Prefix của header Authorization theo chuẩn Bearer. */
-const BEARER_PREFIX = 'Bearer ';
 
 /** Request đã qua guard thì có thêm thông tin người dùng. */
 export interface AuthenticatedRequest extends Request {
@@ -34,19 +32,16 @@ export class JwtAuthGuard implements CanActivate {
    */
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
-    const header = request.headers.authorization;
 
-    if (!header?.startsWith(BEARER_PREFIX)) {
-      throw new UnauthorizedException('Bạn cần đăng nhập.');
-    }
+    const payload = await readBearerToken(
+      request.headers.authorization,
+      (token) => this.jwt.verifyAsync<JwtPayload>(token),
+      TOKEN_TYPE.access,
+    );
 
-    const payload = await this.jwt
-      .verifyAsync<JwtPayload>(header.slice(BEARER_PREFIX.length))
-      .catch(() => null);
-
-    if (payload?.type !== TOKEN_TYPE.access) {
-      throw new UnauthorizedException('Phiên đăng nhập không hợp lệ.');
-    }
+    // Một câu cho mọi trường hợp: với người dùng, thiếu token và token hỏng dẫn tới cùng một hành
+    // động; với kẻ dò, phân biệt hai ca là thông tin thừa.
+    if (!payload) throw new UnauthorizedException('Bạn cần đăng nhập.');
 
     request.user = payload;
     return true;

@@ -41,6 +41,8 @@ apps/api/
 │   │   └── team-builder/
 │   │
 │   ├── common/                     # ⭐ Cross-cutting concerns — NO business logic
+│   │   ├── auth/                   # read-bearer-token.ts — pure, no Nest
+│   │   ├── clock/                  # clock.ts — the Vietnam-time seam
 │   │   ├── constants/              # REQUEST_ID_HEADER, auth constants
 │   │   ├── decorators/             # current-user.decorator.ts
 │   │   ├── filters/                # all-exceptions.filter.ts

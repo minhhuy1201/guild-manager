@@ -1,11 +1,9 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 
+import { readBearerToken } from '../auth/read-bearer-token';
 import { TOKEN_TYPE, type JwtPayload } from '../constants/auth.constant';
 import type { AuthenticatedRequest } from './jwt-auth.guard';
-
-/** Prefix của header Authorization theo chuẩn Bearer. */
-const BEARER_PREFIX = 'Bearer ';
 
 /**
  * Nhận diện người dùng nếu request có access token hợp lệ, nhưng không bao giờ chặn.
@@ -23,17 +21,14 @@ export class OptionalJwtAuthGuard implements CanActivate {
    */
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
-    const header = request.headers.authorization;
 
-    if (!header?.startsWith(BEARER_PREFIX)) return true;
+    const payload = await readBearerToken(
+      request.headers.authorization,
+      (token) => this.jwt.verifyAsync<JwtPayload>(token),
+      TOKEN_TYPE.access,
+    );
 
-    const payload = await this.jwt
-      .verifyAsync<JwtPayload>(header.slice(BEARER_PREFIX.length))
-      .catch(() => null);
-
-    if (payload?.type === TOKEN_TYPE.access) {
-      request.user = payload;
-    }
+    if (payload) request.user = payload;
 
     return true;
   }

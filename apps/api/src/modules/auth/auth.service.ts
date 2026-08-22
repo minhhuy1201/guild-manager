@@ -9,7 +9,12 @@ import type {
   RefreshTokenInput,
 } from '@guild/shared/schemas';
 
-import { ADMIN_ROLE, TOKEN_TYPE, type JwtPayload } from '../../common';
+import {
+  ADMIN_ROLE,
+  TOKEN_TYPE,
+  readToken,
+  type JwtPayload,
+} from '../../common';
 import type { AppConfigService } from '../../config';
 import { ACCESS_TOKEN_TTL, REFRESH_TOKEN_TTL } from './auth.constant';
 
@@ -60,11 +65,13 @@ export class AuthService {
    * hoặc tài khoản đã bị bỏ khỏi danh sách admin
    */
   async refresh(input: RefreshTokenInput): Promise<AuthTokens> {
-    const payload = await this.jwt
-      .verifyAsync<JwtPayload>(input.refreshToken)
-      .catch(() => null);
+    const payload = await readToken(
+      input.refreshToken,
+      (token) => this.jwt.verifyAsync<JwtPayload>(token),
+      TOKEN_TYPE.refresh,
+    );
 
-    if (payload?.type !== TOKEN_TYPE.refresh) {
+    if (!payload) {
       throw new UnauthorizedException(SESSION_EXPIRED);
     }
     if (!this.adminUsernames.includes(payload.sub)) {

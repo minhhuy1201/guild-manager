@@ -1,3 +1,4 @@
+export * from './auth/read-bearer-token';
 export * from './clock/clock';
 export * from './constants/auth.constant';
 export * from './constants/http.constant';

@@ -152,7 +152,7 @@ Một module, hai hàm, hàm ngoài dựng trên hàm trong.
   `.catch(() => null)` → null. Đúng, và phải có test khoá lại.
 - **Prefix sai hoa/thường** (`'bearer '`): hiện `startsWith` phân biệt hoa thường nên bị từ chối.
   Giữ nguyên hành vi — RFC 7235 nói scheme là case-insensitive, nhưng đổi ở đây là mở rộng phạm vi
-  ngoài spec này; ghi lại như một câu hỏi riêng.
+  ngoài spec này; ghi lại như một câu hỏi riêng — xem "Câu hỏi còn mở" ở cuối.
 - **`request.user` khi payload null** ở guard optional: không gán, giữ `undefined`. `@CurrentUser()`
   đã xử lý `undefined` (`attendance.controller.ts` truyền `user ?? null`).
 - **Token đúng chữ ký nhưng `type` là `refresh`** gửi vào route admin: `null` → chặn. Đây là ca bảo
@@ -184,3 +184,10 @@ Thêm cho `describeException`: `HttpException` có message chuỗi, có mảng, 
 
 - Đổi sang cookie-based auth cho API (web đã dùng cookie httpOnly ở tầng của nó).
 - Thêm role thứ hai / phân quyền chi tiết — hàm mới sẵn sàng cho việc đó, spec này không làm.
+
+## Câu hỏi còn mở
+
+- **Có nên chấp nhận prefix `bearer` viết thường?** RFC 7235 nói auth scheme là case-insensitive,
+  nhưng `readBearerToken` dùng `startsWith('Bearer ')` nên hiện từ chối. Chưa có client nào gửi chữ
+  thường, nên chưa đổi; nếu đổi thì chỗ sửa là đúng một dòng trong
+  `apps/api/src/common/auth/read-bearer-token.ts` cùng một ca test.
