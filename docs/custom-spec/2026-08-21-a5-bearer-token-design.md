@@ -1,9 +1,9 @@
 # A5 — Hai guard thành hai adapter mỏng trên một hàm thuần
 
-> **Đã hiện thực** (`f557e3a`). Rà soát lại 2026-08-23 tìm thấy **một mâu thuẫn nội bộ**: snippet ở §2
-> ném `'Phiên đăng nhập không hợp lệ.'`, còn §3 quyết định gộp về đúng một câu `'Bạn cần đăng nhập.'`
-> — §3 là quyết định đúng, §2 chỉ là snippet chưa cập nhật. Điểm nhỏ: khối
-> `optional-jwt-auth.guard` được trích là `:26-38`, không phải `:26-36`. Chi tiết:
+> **Đã hiện thực** (`f557e3a`). Mâu thuẫn nội bộ mà vòng rà soát 2026-08-23 nêu (snippet §2 ném
+> `'Phiên đăng nhập không hợp lệ.'` trong khi §3 gộp về `'Bạn cần đăng nhập.'`) **đã đóng**: §3 là
+> quyết định đúng và cũng là câu đang chạy trong `jwt-auth.guard.ts`, nên §2 chép lại đúng câu đó.
+> Dải dòng `optional-jwt-auth.guard` cũng sửa thành `:26-38`. Chi tiết:
 > [§ Rà soát lại A1–A6](./2026-08-21-architecture-review-2-overview.md#rà-soát-lại-a1a6-2026-08-23).
 
 Ngày: 2026-08-21 · Phạm vi: `apps/api/src/common`, `apps/api/src/modules/auth`.
@@ -34,7 +34,7 @@ request.user = payload;
 ```ts
 // common/guards/optional-jwt-auth.guard.ts:8   ← khai lại y hệt hằng số
 const BEARER_PREFIX = 'Bearer ';
-// :26-36
+// :26-38
 const header = request.headers.authorization;
 if (!header?.startsWith(BEARER_PREFIX)) return true;
 const payload = await this.jwt
@@ -95,7 +95,8 @@ và đây đúng là *"accept dependencies, don't create them"*.
 ```ts
 // jwt-auth.guard.ts
 const payload = await readBearerToken(request.headers.authorization, this.verify, TOKEN_TYPE.access);
-if (!payload) throw new UnauthorizedException('Phiên đăng nhập không hợp lệ.');
+// Một câu duy nhất cho mọi trường hợp — quyết định ở §3.
+if (!payload) throw new UnauthorizedException('Bạn cần đăng nhập.');
 request.user = payload;
 return true;
 ```
