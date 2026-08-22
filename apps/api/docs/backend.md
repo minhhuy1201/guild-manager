@@ -439,6 +439,7 @@ What a NestJS project should have on day one, and where this one stands:
 | Controller calling Prisma directly | Controller → Service → (Repository) → Prisma |
 | `forwardRef()` everywhere | Restructure: extract a third module, or use an event |
 | Business logic in a DTO | A DTO validates shape only; logic lives in the service |
+| `@Query('x')` as a bare string | A query shape is a request shape: declare it in `packages/shared`, wrap it with `createZodDto`, take it as `@Query() query: XDto` |
 | Returning a Prisma model straight from the API | Map to the shared response shape, so `password`/`deletedAt` cannot leak |
 | `any`, "I'll fix it later" | `unknown` + a type guard (`no-explicit-any` is an error here) |
 | Reading `process.env` inside a service | `ConfigService<Env, true>`, declared in `env.validation.ts` |
