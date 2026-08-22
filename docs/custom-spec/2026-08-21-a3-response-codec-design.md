@@ -8,6 +8,10 @@
 >
 > §4 từng bị bỏ khi lập kế hoạch, nên chẩn đoán *"schema chiều ra là type chết"* ở §Bối cảnh còn mở
 > thêm một thời gian. **Đã đóng**: §4 dưới đây mô tả đúng bản đang chạy.
+>
+> §2 từng chỉ nói tới `attendance`, dù `team-builder.loadCharacterIds` cũng truy vấn thẳng
+> `prisma.character` (mục #7 của đợt rà soát). **Đã đóng 2026-08-23**: §2 nay phủ cả hai call site và
+> chép đúng chữ ký `CharactersService.listIds(client)` đang chạy.
 
 Ngày: 2026-08-21 · Phạm vi: `apps/api` + `packages/shared`.
 Bối cảnh chung: [tổng quan đợt 2](./2026-08-21-architecture-review-2-overview.md).
@@ -50,6 +54,11 @@ return characters.map(
 Hai comment giống nhau từng ký tự là bằng chứng copy-paste không cần suy luận. Kèm theo,
 `attendance.service.ts:32-35` truy vấn thẳng `prisma.character` — bảng do module `characters` sở
 hữu, đúng lớp vi phạm mà [A1](./2026-08-21-a1-schedule-read-seam-design.md) xử lý cho bảng lịch.
+
+**Và không chỉ `attendance`:** `team-builder.service.ts:229-235` (`loadCharacterIds`, gọi ở `:190`)
+cũng `prisma.character.findMany({ select: { id: true } })`. Hai module đọc bảng của người thứ ba là
+hai ngoại lệ phải nhớ, nên phạm vi "một bảng, một chủ" ở §2 phải phủ **cả hai** — bỏ sót một chỗ thì
+câu đó vẫn còn ngoại lệ, đúng thứ spec này viết ra để xoá.
 
 **`AttendanceRecord` dựng hai lần trong cùng một file:** `:60-68` (trong `getRecords`) và `:118-123`
 (cuối `mark`) — cùng bốn field, cùng `status as AttendanceStatus`, cùng `markedAt.toISOString()`.
@@ -95,14 +104,27 @@ Re-export qua `characters.public.ts`. Cùng khuôn cho `toAttendanceRecord` (mod
 Quy tắc chọn chỗ đặt: **codec thuộc module sở hữu bảng**, không thuộc module đọc. Nên
 `toCharacter` ở `characters`, và `attendance` là caller.
 
-### 2. `attendance` thôi truy vấn bảng `character`
+### 2. `attendance` và `team-builder` thôi truy vấn bảng `character`
 
-`:31-46` (`getCharacters`) đổi thành gọi `CharactersService.list()`. Cùng lý do và cùng hình dạng
-với A1: một bảng, một chủ.
+`attendance.service.ts:31-46` (`getCharacters`) đổi thành gọi `CharactersService.list()`. Cùng lý do
+và cùng hình dạng với A1: một bảng, một chủ.
 
 `mark` ở `:91-94` chỉ kiểm tồn tại (`select: { id: true }`) — đổi thành
 `charactersService.exists(characterId)`, hoặc giữ nếu muốn tránh đọc thừa; chọn **đổi**, để câu
 "module khác không tự truy vấn bảng" đúng không có ngoại lệ nào phải nhớ.
+
+`team-builder.service.ts` (`loadCharacterIds`) đọc cùng bảng để lọc ô đội hình trỏ vào thành viên đã
+bị xoá. Nó cần đúng tập id, không cần shape `Character`, nên seam là một hàm đọc riêng thay vì
+`list()`: **`CharactersService.listIds(client)`**, trả `Set<string>`.
+
+Chữ ký nhận `client` là bắt buộc chứ không tuỳ chọn, vì call site duy nhất nằm trong `$transaction`
+của `saveFormation` và phải đọc bằng chính `tx` đó — một tham số tuỳ chọn sẽ mở đường đọc ngoài
+transaction để lỡ tay chọn nhầm. Đây không phải bảo đảm tuyệt đối (Postgres chạy READ COMMITTED nên
+`DELETE` commit sau lúc đọc vẫn làm vỡ khoá ngoại — [A6](./2026-08-21-a6-formation-grid-codec-design.md)
+§4 đóng phần còn lại bằng `P2003` → 409), nhưng nó thu hẹp khoảng hở từ cả request xuống một
+transaction.
+
+`loadCharacterIds` biến mất cùng lúc: sau khi có `listIds`, nó chỉ còn là một lớp gọi lại.
 
 ### 3. Codec là chỗ duy nhất cast enum
 
@@ -156,7 +178,8 @@ Nếu người review thấy §4 quá tay, bỏ nó **không làm hỏng** phầ
 | File | Thay đổi |
 |---|---|
 | `modules/characters/characters.codec.ts` (mới) | `toCharacter`, `CharacterRow` |
-| `modules/characters/characters.public.ts` | re-export codec + `CharactersService.list/exists` |
+| `modules/characters/characters.public.ts` | re-export codec + `CharactersService.list/exists/listIds` |
+| `modules/characters/characters.service.ts` | thêm `listIds(client: PrismaTransactionClient): Promise<Set<string>>` |
 | `modules/characters/characters.service.ts:117-125` | bỏ `toEntity` cục bộ, dùng codec |
 | `modules/attendance/attendance.codec.ts` (mới) | `toAttendanceRecord` |
 | `modules/attendance/attendance.service.ts:31-46` | gọi `CharactersService.list()`, bỏ truy vấn `prisma.character` |
@@ -164,6 +187,8 @@ Nếu người review thấy §4 quá tay, bỏ nó **không làm hỏng** phầ
 | `modules/attendance/attendance.module.ts` | import `CharactersModule` |
 | `modules/battle-sessions/battle-sessions.codec.ts` (mới) | `toBattleSession` (chuyển từ `private toEntity`, `:313-326`) |
 | `modules/team-builder/team-builder.service.ts:214-222` | thêm `satisfies SessionFormation` |
+| `modules/team-builder/team-builder.service.ts:229-235` | bỏ `loadCharacterIds`, gọi `characters.listIds(tx)` trong `$transaction` |
+| `modules/team-builder/team-builder.module.ts` | import `CharactersModule` |
 | `config/response-verification.ts` (mới) | `SHOULD_VERIFY_RESPONSES` + `verifyResponse` (§4), re-export qua `config/index.ts` |
 | `modules/battle-sessions/battle-sessions.service.ts` (`getEditableWeeks`) | dựng `Week` qua `verifyResponse` |
 | `modules/team-builder/team-builder.service.ts` (`getWeeks`, `readFormations`, `saveFormation`) | dựng `FormationWeek`/`SessionFormation` qua `verifyResponse` |
@@ -195,9 +220,13 @@ Nếu người review thấy §4 quá tay, bỏ nó **không làm hỏng** phầ
 
 ## Rủi ro
 
-- **`attendance` phụ thuộc `characters` là quan hệ module mới.** Kiểm bằng
-  `module-boundary.spec.ts` sau khi thêm, và đảm bảo import đi qua `characters.public.ts` chứ không
-  vào thẳng file.
+- **`attendance` → `characters` và `team-builder` → `characters` đều là quan hệ module mới.** Kiểm
+  bằng `module-boundary.spec.ts` sau khi thêm, và đảm bảo import đi qua `characters.public.ts` chứ
+  không vào thẳng file. `characters` không import ngược lại module nào nên không có cycle.
+- **`listIds` phơi `PrismaTransactionClient` ra interface công khai của `characters`.** Đó là kiểu
+  của `infrastructure/prisma`, không phải kiểu của module gọi — chấp nhận được vì nó là điều kiện để
+  phép đọc nằm cùng transaction với câu ghi, nhưng đừng nhân bản khuôn này cho hàm đọc không có ràng
+  buộc đó.
 - **§4 đổi hành vi ở môi trường dev/test**: dữ liệu seed lệch enum sẽ bắt đầu ném. Đó là mục đích,
   nhưng phải chạy `db:seed` lại một lần để chắc dữ liệu mẫu sạch.
 
