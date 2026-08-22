@@ -3,7 +3,6 @@ import {
   ConflictException,
   NotFoundException,
 } from '@nestjs/common';
-import { GuildClass } from '@guild/shared/enums';
 
 import { FixedClock } from '../../../common';
 import { BattleSessionsService } from '../../battle-sessions/battle-sessions.public';
@@ -68,20 +67,19 @@ const FORMATION_MATCH_ROWS = [
 describe('TeamBuilderService.getFormations', () => {
   let service: TeamBuilderService;
   let prisma: {
-    formationMatch: { findMany: jest.Mock; deleteMany: jest.Mock };
+    formationMatch: { findMany: jest.Mock };
   };
   let battleSessions: {
     getActiveWeek: jest.Mock;
     ensureWeekMaterialized: jest.Mock;
     readWeekSessions: jest.Mock;
   };
-  let characters: { list: jest.Mock };
+  let characters: { listIds: jest.Mock };
 
   beforeEach(() => {
     prisma = {
       formationMatch: {
         findMany: jest.fn().mockResolvedValue(FORMATION_MATCH_ROWS),
-        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
       },
     };
 
@@ -91,7 +89,7 @@ describe('TeamBuilderService.getFormations', () => {
       readWeekSessions: jest.fn().mockResolvedValue(SCHEDULED_SESSIONS),
     };
 
-    characters = { list: jest.fn().mockResolvedValue([]) };
+    characters = { listIds: jest.fn().mockResolvedValue(new Set<string>()) };
 
     service = new TeamBuilderService(
       prisma as unknown as PrismaService,
@@ -150,6 +148,21 @@ describe('TeamBuilderService.getFormations', () => {
     expect(saturday?.matches[0].notes['team-1-pos-4']).toBe('chừa cho X');
   });
 
+  it('trận đã lưu nhưng không còn ô nào vẫn là một phần tử trong matches', async () => {
+    // "Không có trận 2" và "trận 2 rỗng" phân biệt ở tầng này, không phải ở codec:
+    // codec chỉ thấy mảng hàng rỗng, service mới biết hàng FormationMatch có tồn tại hay không.
+    prisma.formationMatch.findMany.mockResolvedValue([
+      { sessionId: 'session-sat', matchIndex: 1, slots: [] },
+    ]);
+
+    const result = await service.getFormations();
+    const saturday = result.find((item) => item.sessionId === 'session-sat');
+    const thursday = result.find((item) => item.sessionId === 'session-thu');
+
+    expect(saturday?.matches).toEqual([{ slots: {}, notes: {} }]);
+    expect(thursday?.matches).toEqual([]);
+  });
+
   it('đảm bảo trận của tuần đang mở tồn tại trước khi đọc', async () => {
     await service.getFormations();
 
@@ -204,20 +217,17 @@ describe('TeamBuilderService.getFormations', () => {
 
 describe('TeamBuilderService.getWeeks', () => {
   let service: TeamBuilderService;
-  let prisma: {
-    formationMatch: { deleteMany: jest.Mock };
-  };
+  // Không có mock Prisma nào: getWeeks chỉ đọc qua module lịch, và không còn tự dọn dữ liệu.
+  let prisma: Record<string, never>;
   let battleSessions: {
     getActiveWeek: jest.Mock;
     ensureWeekMaterialized: jest.Mock;
     listWeekAnchors: jest.Mock;
   };
-  let characters: { list: jest.Mock };
+  let characters: { listIds: jest.Mock };
 
   beforeEach(() => {
-    prisma = {
-      formationMatch: { deleteMany: jest.fn().mockResolvedValue({ count: 2 }) },
-    };
+    prisma = {};
     battleSessions = {
       getActiveWeek: jest.fn().mockReturnValue(WEEK_START),
       ensureWeekMaterialized: jest.fn().mockResolvedValue(undefined),
@@ -226,7 +236,7 @@ describe('TeamBuilderService.getWeeks', () => {
         .mockResolvedValue([WEEK_START, vn('2026-07-13T00:00')]),
     };
 
-    characters = { list: jest.fn().mockResolvedValue([]) };
+    characters = { listIds: jest.fn().mockResolvedValue(new Set<string>()) };
 
     service = new TeamBuilderService(
       prisma as unknown as PrismaService,
@@ -291,29 +301,43 @@ describe('TeamBuilderService.getWeeks', () => {
     expect(week.isActive).toBe(true);
     expect(week.weekStart).toBe(WEEK_START.toISOString());
   });
+});
 
-  it('xoá đội hình cũ hơn 56 ngày trước khi đọc', async () => {
-    await service.getWeeks();
+describe('TeamBuilderService.purgeExpiredFormations', () => {
+  let service: TeamBuilderService;
+  let prisma: { formationMatch: { deleteMany: jest.Mock } };
+
+  beforeEach(() => {
+    prisma = {
+      formationMatch: { deleteMany: jest.fn().mockResolvedValue({ count: 2 }) },
+    };
+
+    service = new TeamBuilderService(
+      prisma as unknown as PrismaService,
+      {} as unknown as BattleSessionsService,
+      {} as unknown as CharactersService,
+      new FixedClock(WEDNESDAY),
+    );
+  });
+
+  it('xoá đội hình của tuần bắt đầu sớm hơn 56 ngày trước', async () => {
+    await service.purgeExpiredFormations(WEDNESDAY);
 
     expect(prisma.formationMatch.deleteMany).toHaveBeenCalledWith({
       where: { session: { weekStart: { lt: vn('2026-05-27T12:00') } } },
     });
   });
 
-  it('dọn dữ liệu chạy trước khi liệt kê tuần', async () => {
-    const order: string[] = [];
-    prisma.formationMatch.deleteMany.mockImplementation(() => {
-      order.push('delete');
-      return Promise.resolve({ count: 0 });
-    });
-    battleSessions.listWeekAnchors.mockImplementation(() => {
-      order.push('read');
-      return Promise.resolve([]);
-    });
+  it('chạy được độc lập, không cần dựng cả một tuần lịch', async () => {
+    await expect(service.purgeExpiredFormations(WEDNESDAY)).resolves.toBe(2);
+  });
 
-    await service.getWeeks();
+  it('mốc cắt đi theo tham số now, không theo đồng hồ của service', async () => {
+    await service.purgeExpiredFormations(vn('2026-08-22T12:00'));
 
-    expect(order).toEqual(['delete', 'read']);
+    expect(prisma.formationMatch.deleteMany).toHaveBeenCalledWith({
+      where: { session: { weekStart: { lt: vn('2026-06-27T12:00') } } },
+    });
   });
 });
 
@@ -344,7 +368,7 @@ describe('TeamBuilderService.saveFormation', () => {
     $transaction: jest.Mock;
   };
   let battleSessions: { findById: jest.Mock };
-  let characters: { list: jest.Mock };
+  let characters: { listIds: jest.Mock };
 
   beforeEach(() => {
     tx = {
@@ -359,10 +383,7 @@ describe('TeamBuilderService.saveFormation', () => {
       $transaction: jest.fn((run: (client: typeof tx) => unknown) => run(tx)),
     };
     characters = {
-      list: jest.fn().mockResolvedValue([
-        { id: 'char-1', name: 'Huy', guildClass: GuildClass.THIET_Y },
-        { id: 'char-2', name: 'Lan', guildClass: GuildClass.TO_VAN },
-      ]),
+      listIds: jest.fn().mockResolvedValue(new Set(['char-1', 'char-2'])),
     };
     battleSessions = {
       findById: jest.fn().mockResolvedValue({
@@ -476,6 +497,20 @@ describe('TeamBuilderService.saveFormation', () => {
     const second = await service.saveFormation('session-thu', matches);
 
     expect(second).toEqual(first);
+  });
+
+  it('đọc danh sách nhân vật bằng chính client của transaction', async () => {
+    await service.saveFormation('session-thu', [{ slots: {}, notes: {} }]);
+
+    expect(characters.listIds).toHaveBeenCalledWith(tx);
+  });
+
+  it('trận vừa lưu chưa khoá — giờ đánh còn ở tương lai', async () => {
+    const result = await service.saveFormation('session-thu', [
+      { slots: {}, notes: {} },
+    ]);
+
+    expect(result.locked).toBe(false);
   });
 
   it('không tìm thấy ngày đánh thì ném NotFoundException', async () => {

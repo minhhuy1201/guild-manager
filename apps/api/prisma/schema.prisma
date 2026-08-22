@@ -109,6 +109,7 @@ model FormationMatch {
 }
 
 /// Một ô có người HOẶC có ghi chú. Ô vừa trống vừa không ghi gì thì KHÔNG có hàng.
+/// Luật đó thành code ở `src/modules/team-builder/formation-grid.ts` — cả hai chiều đọc/ghi.
 model FormationSlot {
   matchId     String
   /// "team-1-pos-1" — bố cục lưới vẫn nằm hẳn ở frontend.

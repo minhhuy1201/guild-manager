@@ -5,7 +5,10 @@ import type {
   UpdateCharacterInput,
 } from '@guild/shared/schemas';
 
-import { PrismaService } from '../../infrastructure/prisma/prisma.service';
+import {
+  PrismaService,
+  type PrismaTransactionClient,
+} from '../../infrastructure/prisma/prisma.service';
 import { toCharacter } from './characters.codec';
 import { generateId } from './characters.lib';
 
@@ -30,6 +33,19 @@ export class CharactersService {
     });
 
     return rows.map(toCharacter);
+  }
+
+  /**
+   * Id của mọi thành viên còn trong bang.
+   * Nhận client vào để caller đang ở trong transaction đọc bằng chính client đó, thay vì mở một
+   * kết nối thứ hai nhìn dữ liệu ở thời điểm khác.
+   * @param client - Prisma client dùng để đọc; `PrismaService` khi ngoài transaction, `tx` khi trong
+   * @returns Tập id thành viên
+   */
+  async listIds(client: PrismaTransactionClient): Promise<Set<string>> {
+    const rows = await client.character.findMany({ select: { id: true } });
+
+    return new Set(rows.map((row) => row.id));
   }
 
   /**

@@ -19,39 +19,13 @@ import {
   weekEndOf,
 } from '../battle-sessions/battle-sessions.public';
 import { CharactersService } from '../characters/characters.public';
+import { decodeMatch, encodeMatch, isSessionLocked } from './formation-grid';
 
 /** Số ngày giữ lại đội hình cũ. Quá mốc này thì dọn. */
 const RETENTION_DAYS = 56;
 
 /** Số mili giây trong một ngày. */
 const DAY_MS = 24 * 60 * 60 * 1000;
-
-/** Một hàng FormationSlot sắp ghi xuống. */
-interface SlotRow {
-  slotId: string;
-  characterId: string | null;
-  note: string | null;
-}
-
-/**
- * Dựng các hàng FormationSlot của một trận.
- * Một hàng tồn tại khi ô CÓ NGƯỜI hoặc CÓ GHI CHÚ, nên phải lấy hợp của hai tập
- * khoá — duyệt riêng slots sẽ đánh rơi ô chỉ có ghi chú.
- * @param match - Đội hình và ghi chú của một trận, characterId đã lọc sạch
- * @returns Mảng hàng để đưa vào nested create của Prisma
- */
-function buildSlotRows(match: MatchFormation): SlotRow[] {
-  const slotIds = new Set([
-    ...Object.keys(match.slots),
-    ...Object.keys(match.notes),
-  ]);
-
-  return [...slotIds].map((slotId) => ({
-    slotId,
-    characterId: match.slots[slotId] ?? null,
-    note: match.notes[slotId] ?? null,
-  }));
-}
 
 @Injectable()
 export class TeamBuilderService {
@@ -64,13 +38,10 @@ export class TeamBuilderService {
 
   /**
    * Liệt kê các tuần còn dữ liệu đội hình, mới nhất trước.
-   * Dọn dữ liệu quá hạn trước khi đọc — màn hình xếp team luôn gọi endpoint này
-   * nên không cần cron riêng.
+   * Chỉ đọc — việc dọn dữ liệu quá hạn là `purgeExpiredFormations`, do caller gọi.
    * @returns Mảng tuần, mới nhất trước, tuần đang mở mang cờ isActive
    */
   async getWeeks(): Promise<FormationWeek[]> {
-    await this.purgeExpiredFormations(this.clock.now());
-
     const activeWeek = this.battleSessions.getActiveWeek();
 
     // Sinh trước, đọc sau: tuần đang mở phải có trận thì mới xuất hiện ở đây.
@@ -92,14 +63,16 @@ export class TeamBuilderService {
    * Xoá các đội hình cũ hơn RETENTION_DAYS.
    * Chỉ xoá đội hình — BattleSession và điểm danh là dữ liệu của module khác.
    * @param now - Thời điểm hiện tại
-   * @returns Promise hoàn tất khi đã dọn
+   * @returns Số bản ghi đã xoá
    */
-  private async purgeExpiredFormations(now: Date): Promise<void> {
+  async purgeExpiredFormations(now: Date): Promise<number> {
     const cutoff = new Date(now.getTime() - RETENTION_DAYS * DAY_MS);
 
-    await this.prisma.formationMatch.deleteMany({
+    const { count } = await this.prisma.formationMatch.deleteMany({
       where: { session: { weekStart: { lt: cutoff } } },
     });
+
+    return count;
   }
 
   /**
@@ -129,7 +102,7 @@ export class TeamBuilderService {
           opponent: session.opponent,
           dateTime: session.dateTime.toISOString(),
           isGuildWar: session.isGuildWar,
-          locked: session.dateTime.getTime() < now.getTime(),
+          locked: isSessionLocked(session.dateTime, now),
           matches: matchesBySession.get(session.id) ?? [],
         }) satisfies SessionFormation,
     );
@@ -152,22 +125,9 @@ export class TeamBuilderService {
     const grouped = new Map<string, MatchFormation[]>();
 
     for (const match of matches) {
-      const formation: MatchFormation = {
-        slots: Object.fromEntries(
-          match.slots
-            .filter((slot) => slot.characterId !== null)
-            .map((slot) => [slot.slotId, slot.characterId as string]),
-        ),
-        notes: Object.fromEntries(
-          match.slots
-            .filter((slot) => slot.note !== null)
-            .map((slot) => [slot.slotId, slot.note as string]),
-        ),
-      };
-
       grouped.set(match.sessionId, [
         ...(grouped.get(match.sessionId) ?? []),
-        formation,
+        decodeMatch(match.slots),
       ]);
     }
 
@@ -194,24 +154,29 @@ export class TeamBuilderService {
       throw new NotFoundException('Không tìm thấy ngày đánh.');
     }
 
-    if (new Date(session.dateTime).getTime() < now.getTime()) {
+    const dateTime = new Date(session.dateTime);
+    if (isSessionLocked(dateTime, now)) {
       throw new ConflictException('Trận này đã đánh xong, không sửa được nữa.');
     }
 
-    // Lọc TRƯỚC khi ghi: một nhân vật vừa bị xoá khỏi bang mà còn trong nháp sẽ
-    // làm cả câu insert vỡ vì khoá ngoại. Ghi chú của ô đó thì giữ nguyên —
-    // ghi chú mô tả vị trí, không mô tả người.
-    const knownIds = await this.loadCharacterIds();
-    const cleaned: MatchFormation[] = matches.map((match) => ({
-      slots: Object.fromEntries(
-        Object.entries(match.slots).filter(([, characterId]) =>
-          knownIds.has(characterId),
+    const savedMatches = await this.prisma.$transaction(async (tx) => {
+      // Lọc TRƯỚC khi ghi: một nhân vật vừa bị xoá khỏi bang mà còn trong nháp sẽ
+      // làm cả câu insert vỡ vì khoá ngoại. Ghi chú của ô đó thì giữ nguyên —
+      // ghi chú mô tả vị trí, không mô tả người.
+      // Đọc bằng `tx` chứ không phải client ngoài: thu hẹp khoảng hở giữa phép lọc và câu insert
+      // xuống còn trong một transaction. READ COMMITTED nên đây không phải bảo đảm tuyệt đối —
+      // một DELETE commit đúng vào giữa vẫn làm vỡ khoá ngoại — nhưng đọc ngoài transaction thì
+      // khoảng hở đó rộng bằng cả request.
+      const knownIds = await this.characters.listIds(tx);
+      const cleaned: MatchFormation[] = matches.map((match) => ({
+        slots: Object.fromEntries(
+          Object.entries(match.slots).filter(([, characterId]) =>
+            knownIds.has(characterId),
+          ),
         ),
-      ),
-      notes: match.notes,
-    }));
+        notes: match.notes,
+      }));
 
-    await this.prisma.$transaction(async (tx) => {
       await tx.formationMatch.deleteMany({ where: { sessionId } });
 
       for (const [index, match] of cleaned.entries()) {
@@ -219,10 +184,12 @@ export class TeamBuilderService {
           data: {
             sessionId,
             matchIndex: index + 1,
-            slots: { create: buildSlotRows(match) },
+            slots: { create: encodeMatch(match) },
           },
         });
       }
+
+      return cleaned;
     });
 
     return {
@@ -231,19 +198,8 @@ export class TeamBuilderService {
       opponent: session.opponent,
       dateTime: session.dateTime,
       isGuildWar: session.isGuildWar,
-      locked: false,
-      matches: cleaned,
+      locked: isSessionLocked(dateTime, now),
+      matches: savedMatches,
     } satisfies SessionFormation;
-  }
-
-  /**
-   * Lấy id của mọi nhân vật còn trong bang.
-   * Bảng Character do module characters sở hữu — đọc qua service của nó, không tự truy vấn.
-   * @returns Tập id nhân vật
-   */
-  private async loadCharacterIds(): Promise<Set<string>> {
-    const characters = await this.characters.list();
-
-    return new Set(characters.map((character) => character.id));
   }
 }

@@ -5,7 +5,16 @@ import { attachDatabasePool } from '@vercel/functions';
 import { Pool } from 'pg';
 
 import { DATABASE_POOL_OPTIONS, type Env } from '../../config';
-import { PrismaClient } from '../../generated/prisma/client';
+import { Prisma, PrismaClient } from '../../generated/prisma/client';
+
+/**
+ * Client bên trong một `$transaction`: cùng bề mặt model như `PrismaService`, không có
+ * `$transaction` lồng. Khai báo ở đây vì `src/generated/prisma` chỉ được import từ infrastructure.
+ *
+ * `PrismaService` gán được vào kiểu này, nên một hàm nhận nó chạy được cả trong lẫn ngoài
+ * transaction.
+ */
+export type PrismaTransactionClient = Prisma.TransactionClient;
 
 /**
  * PrismaClient dùng chung cho toàn app.
