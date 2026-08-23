@@ -27,13 +27,13 @@ async function handleDelete() {
 }
 ```
 
-`features/settings/components/delete-session-dialog.tsx:60-73` là **cùng năm bước, cùng thứ tự**,
+`features/settings/components/delete-session-dialog.tsx:57-73` là **cùng năm bước, cùng thứ tự**,
 khác đúng câu fallback (`"Không xoá được trận này."`).
 
 Hai form dialog cũng vậy, và ở đây bằng chứng chép tay là chuỗi trùng từng chữ:
 
 ```tsx
-// member-form-dialog.tsx:314-343 và session-form-dialog.tsx:92-161
+// member-form-dialog.tsx:90-115 và session-form-dialog.tsx:96-161
 const saving = createMutation.isPending || updateMutation.isPending;
 …
 : "Không lưu được thay đổi."     // ← cùng một câu, hai file
@@ -57,7 +57,7 @@ Luật thật sự đang được chép — không nằm ở đâu cả — là:
 5. đang chạy thì khoá nút và đổi nhãn
 
 Và không có chỗ nào kiểm được năm luật đó: `find apps/web -name "*.test.tsx"` cho **0 kết quả** —
-29 file test hiện có đều là `.ts` (hook và hàm thuần), không có test render nào.
+31 file test hiện có đều là `.ts` (hook và hàm thuần), không có test render nào.
 
 ## Quyết định thiết kế
 
@@ -103,7 +103,7 @@ thì `await` tiếp trong chính `run` — thứ tự rõ ràng, không có call
 
 Module giữ cờ chạy của **chính nó** (`useState` quanh `await run()`), không nhận `isPending` từ
 ngoài. Lý do: `member-form-dialog` phải gộp hai mutation (`createMutation.isPending ||
-updateMutation.isPending`, `:314`); nếu module nhận cờ từ ngoài thì phép gộp đó lại là thứ mỗi caller
+updateMutation.isPending`, `:90`); nếu module nhận cờ từ ngoài thì phép gộp đó lại là thứ mỗi caller
 tự làm — đúng cái đang muốn xoá.
 
 ### 4. Biến thể xoá là adapter mỏng
@@ -115,16 +115,34 @@ export function ConfirmDeleteDialog(props): ReactNode  // MutationDialog + varia
 Không thêm luật mới, chỉ đặt sẵn ba prop. Nếu chỉ có một dialog xoá thì không đáng; ở đây có hai
 (`delete-member`, `delete-session`), nên có adapter thật.
 
+### 5. Vỏ và giao thức là hai component
+
+`MutationForm` giữ năm luật và **không** biết tới `Dialog`. `MutationDialogShell` giữ
+`Dialog`/`DialogContent`, chỉ mount thân khi `open`, và chặn yêu cầu đóng lúc đang chạy.
+`MutationDialog` là hai cái ghép lại.
+
+Lý do tách: state các ô nhập của hai form dialog nằm ở component con để tự reset mỗi lần mở lại,
+trong khi `<Dialog>` phải luôn mounted thì animation đóng mới chạy. Nếu module ôm cả hai vai thì
+`run` — vốn phải đọc state đó — bị đẩy ra ngoài vỏ, kéo state lên theo và mất cơ chế reset. Hai form
+dialog vì vậy tự dựng vỏ bằng `MutationDialogShell` và đặt `MutationForm` ở component con.
+
+Cờ chạy đi từ thân lên vỏ qua `MutationPendingContext`. Vỏ là chỗ duy nhất cầm `onOpenChange`, nên
+luật "đang chạy thì bỏ qua yêu cầu đóng" áp cho cả bốn dialog chứ không riêng hai cái xoá.
+
 ## Thay đổi cụ thể
 
 | File | Thay đổi |
 |---|---|
-| `components/shared/mutation-dialog.tsx` (mới) | `MutationDialog`, `ConfirmDeleteDialog` |
+| `components/shared/mutation-pending.ts` (mới) | context để thân báo cờ chạy lên vỏ |
+| `components/shared/mutation-form.tsx` (mới) | `MutationForm` — năm luật, không có `Dialog` |
+| `components/shared/mutation-dialog.tsx` (mới) | `MutationDialogShell`, `MutationDialog` |
+| `components/shared/confirm-delete-dialog.tsx` (mới) | `ConfirmDeleteDialog` |
+| `lib/error-message.ts` (mới) | `errorMessageOf` — luật 4, tách ra để test ở môi trường node |
 | `features/members/components/delete-member-dialog.tsx` | bỏ `useState` lỗi, `try/catch`, khối lỗi, nút — còn phần cảnh báo + `run` |
 | `features/settings/components/delete-session-dialog.tsx` | như trên (giữ `describeLoss`) |
-| `features/members/components/member-form-dialog.tsx:314-398` | bỏ 5 mẩu; giữ 2 ô nhập và validate phía client |
-| `features/settings/components/session-form-dialog.tsx:92-225` | như trên; giữ luật trần deadline |
-| `vitest.config.ts` + `package.json` | thêm `@testing-library/react` + `jsdom` để test render được |
+| `features/members/components/member-form-dialog.tsx` | bỏ 5 mẩu; giữ 2 ô nhập |
+| `features/settings/components/session-form-dialog.tsx` | như trên; giữ luật trần deadline, validate client `throw` thay vì `setError` |
+| `vitest.config.ts` | `include` bắt thêm `*.test.tsx` — dependency test đã có sẵn |
 
 Bốn dialog sau khi đổi chỉ còn phần thân riêng của chúng — ước lượng ~15 dòng nội dung mỗi cái.
 
@@ -158,12 +176,11 @@ Sáu ca này hiện **không thể viết** cho bất kỳ dialog nào trong b�
 
 ## Rủi ro
 
-- **Thêm dependency test** (`@testing-library/react`, `jsdom`) là quyết định cần được duyệt trước —
-  `CLAUDE.md` cho phép *"Prefer a maintained dependency when it genuinely removes code we would
-  otherwise own and test"*, và ở đây nó mở ra một lớp test đang trống hoàn toàn. Nếu bị từ chối,
-  phần §1–§4 vẫn làm được, chỉ mất phần kiểm chứng.
 - **Gộp UI dễ đánh rơi khác biệt nhỏ** giữa bốn dialog (khoảng cách, thứ tự nút). So từng cái trước
-  khi chuyển; khác biệt nào có lý do thì để lại ở `children`.
+  khi chuyển; khác biệt nào có lý do thì để lại ở `children` hoặc thành một prop tường minh — nút
+  "Huỷ" của hai dialog xoá là một khác biệt thật, nên nó thành `onCancel?` chứ không bị nuốt.
+- **`MutationDialogShell` chỉ mount thân khi mở**, nên lỗi cũ và giá trị ô nhập cũ chết theo lần
+  đóng trước. Đây là điều kiện để hai form dialog giữ nguyên được cấu trúc hai lớp của chúng.
 
 ## Ngoài phạm vi
 
