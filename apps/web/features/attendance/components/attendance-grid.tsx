@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Swords } from "lucide-react";
 import { AttendanceStatus } from "@guild/shared/enums";
 import type { Character } from "@guild/shared/schemas";
 
 import { ErrorState } from "@/components/shared/error-state";
+import { SessionLabel } from "@/components/shared/session-label";
 import { TablePaginationBar } from "@/components/shared/table-pagination-bar";
 import { TableSkeleton } from "@/components/shared/table-skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +18,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useTablePagination } from "@/hooks/use-table-pagination";
-import { cn } from "@/lib/utils";
 import { getSessionSubtitle } from "../lib/session-subtitle";
 import {
   STICKY_ACTION_COLUMN,
@@ -170,17 +169,8 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
               {battleSessions.map((session) => {
                 const subtitle = getSessionSubtitle(session);
                 return (
-                  <TableHead
-                    key={session.id}
-                    className={cn(
-                      "text-center",
-                      session.isGuildWar && "text-primary"
-                    )}
-                  >
-                    <span className="inline-flex items-center justify-center gap-1.5">
-                      {session.isGuildWar && <Swords className="size-3.5" />}
-                      {session.label}
-                    </span>
+                  <TableHead key={session.id} className="text-center">
+                    <SessionLabel session={session} size="sm" />
                     <span className="block text-xs font-normal text-muted-foreground">
                       {subtitle}
                     </span>
