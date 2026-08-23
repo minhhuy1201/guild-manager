@@ -207,8 +207,8 @@ regenerating a component never eats a local change.
 Current shared building blocks: `action-buttons`, `confirm-delete-dialog`, `date-range`,
 `error-state`, `guild-class-filter-select`, `guild-class-icon`, `main-nav`, `mutation-dialog`,
 `mutation-form`, `mutation-pending`, `page-size-select`, `password-input`, `query-boundary`,
-`roster-filter-bar`, `site-header`, `status-badge`, `status-icon`, `table-pagination`,
-`table-pagination-bar`, `table-skeleton`.
+`roster-filter-bar`, `session-label`, `site-header`, `status-badge`, `status-icon`,
+`table-pagination`, `table-pagination-bar`, `table-skeleton`.
 
 ### The query group of a screen
 
@@ -321,6 +321,32 @@ the mapping stays on the frontend while the enum itself comes from `@guild/share
 | Toái Mộng | `/img/toaiMong.png` |
 | Tố Vấn | `/img/toVan.png` |
 
+### A battle → the swords icon and the primary colour
+
+Four screens show a battle by name, and all four recognise the Guild War the same way:
+`components/shared/session-label.tsx` is where that is written.
+
+- `SessionLabel` is **one inline row** — the `Swords` icon when `isGuildWar`, `text-primary`, the
+  backend-built `label`, in that order. `size` is `"sm"` (`size-3.5`, a narrow cell: the attendance
+  column head, a team builder tab) or `"md"` (`size-4`, a list row: the week timeline, the settings
+  schedule). Two named values, not a free `className` — a third size means adding a value here, not
+  a class at the call site.
+- `SessionDeadline` is the whole `Hạn chót: …` line, wrapper class included. Only the week timeline
+  and the settings row show it.
+- `sessionTintClass(isGuildWar)` returns `border-primary/40 bg-primary/5` for the Guild War, to be
+  merged into whatever frame the screen already draws.
+
+What the module deliberately does **not** hold: the frame, the spacing, and the subtitle. The four
+screens stack a battle four different ways, so the subtitle stays with each of them and keeps its own
+typography; the text itself is shared through `getSessionSubtitle`
+(`features/attendance/lib/session-subtitle.ts`), which is attendance domain logic and stays there.
+
+Marks that belong to **one** screen go through `children`, rendered after the label in the same row:
+the settings row's "Guild War" badge, the team builder tab's lock icon and unsaved-changes dot.
+
+`label` is built by the API (`architecture.md` §5 — never stored). Never assemble a battle's name on
+the frontend.
+
 ### Actions
 
 From `components/shared/action-buttons.tsx`:
@@ -364,11 +390,12 @@ declared once in `config/routes.ts` and referenced as `ROUTES.*`.
 
 Vitest, `pnpm test`. Tests live in `__tests__/` beside the folder they cover and run in the **node**
 environment by default. Most files here are `.test.ts` on node. Anything needing a DOM — a hook
-test, and the one component test — opts in with `// @vitest-environment jsdom` on its first line, so
+test, and the component tests — opts in with `// @vitest-environment jsdom` on its first line, so
 the rest of the suite stays on node; the include glob is `**/__tests__/**/*.test.ts?(x)`, so a
-`.tsx` test is picked up too. Component tests are the exception, not the rule: the one that exists
-covers `components/shared/mutation-dialog.tsx`, because the five write rules it holds have no pure
-function to test them through. `@testing-library/react` has no `jest-dom` beside it — assert with
+`.tsx` test is picked up too. Component tests are the exception, not the rule: the two that exist cover
+`components/shared/mutation-dialog.tsx`, because the five write rules it holds have no pure function
+to test them through, and `components/shared/session-label.tsx`, because a convention about which
+icon and which colour appear can only be checked by rendering it. `@testing-library/react` has no `jest-dom` beside it — assert with
 Vitest's own matchers. `vitest.config.ts` pins `TZ=Asia/Ho_Chi_Minh`, because half the logic under
 test is about Vietnamese-time boundaries and it must not depend on the machine running it.
 
