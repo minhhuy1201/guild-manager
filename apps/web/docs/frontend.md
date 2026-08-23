@@ -204,10 +204,11 @@ primitives. Need a variant? **Wrap it in `components/shared/`** instead of editi
 file, the way `status-badge.tsx` composes the stock `Badge` with semantic tones. That way
 regenerating a component never eats a local change.
 
-Current shared building blocks: `action-buttons`, `date-range`, `error-state`,
-`guild-class-filter-select`, `guild-class-icon`, `main-nav`, `page-size-select`, `password-input`,
-`query-boundary`, `roster-filter-bar`, `site-header`, `status-badge`, `status-icon`,
-`table-pagination`, `table-pagination-bar`, `table-skeleton`.
+Current shared building blocks: `action-buttons`, `confirm-delete-dialog`, `date-range`,
+`error-state`, `guild-class-filter-select`, `guild-class-icon`, `main-nav`, `mutation-dialog`,
+`mutation-form`, `mutation-pending`, `page-size-select`, `password-input`, `query-boundary`,
+`roster-filter-bar`, `site-header`, `status-badge`, `status-icon`, `table-pagination`,
+`table-pagination-bar`, `table-skeleton`.
 
 ### The query group of a screen
 
@@ -249,6 +250,34 @@ because the three filters have different lifetimes. Do **not** merge them into o
 whose filter row looks genuinely different (members: no labels, inline with the create button)
 keeps its own JSX and calls the predicate directly — a prop added to swallow a real difference is
 worse than two rows.
+
+### Writing through a dialog
+
+A dialog whose job is one write does **not** spell the protocol out again. Five rules live in
+`MutationForm` (`components/shared/mutation-form.tsx`): the error resets before sending, the caller
+is told to close only on success, a failure keeps the dialog up, the sentence shown is the thrown
+`Error`'s own `message` — an `ApiError` carries the backend's, a client-side check throws its own —
+with the per-dialog `fallbackError` left for what carries no sentence, and the confirm button locks
+and swaps to `pendingLabel` while the write runs. The form holds its **own** pending flag rather
+than taking one, because a screen with two mutations would otherwise fold them per caller.
+
+Two more rules are the dialog's, not the form's, and live in `MutationDialogShell`
+(`components/shared/mutation-dialog.tsx`): a close requested while the write is in flight is
+ignored, and the body mounts only while open. The form reports its pending flag up through
+`MutationPendingContext` — the shell is the only piece holding `onOpenChange`.
+
+Which of the two you reach for depends on the body:
+
+- Body with no state of its own → `MutationDialog` (shell + form in one), or `ConfirmDeleteDialog`
+  for a deletion, which is the same thing with the destructive button, the bin icon and a "Huỷ"
+  button beside it.
+- Body holding state that must be clean on every visit (the member and session forms) → build the
+  two halves yourself: `MutationDialogShell` outside, `MutationForm` in a child component. The
+  child remounts on every open, so its fields reset without a line of code saying so.
+
+The caller says *what* is written (`run`, an `async` function) and what it *looks like*
+(`children`, the labels). `run` returns a promise and takes no callbacks: work that must follow a
+successful write is `await`ed inside `run` itself, in plain order.
 
 ---
 
@@ -334,9 +363,13 @@ declared once in `config/routes.ts` and referenced as `ROUTES.*`.
 ## 8. Tests
 
 Vitest, `pnpm test`. Tests live in `__tests__/` beside the folder they cover and run in the **node**
-environment by default. There are no component tests; there are hook tests, and those need a DOM —
-a hook test file opts in with `// @vitest-environment jsdom` on its first line, so the rest of the
-suite stays on node. `vitest.config.ts` pins `TZ=Asia/Ho_Chi_Minh`, because half the logic under
+environment by default. Most files here are `.test.ts` on node. Anything needing a DOM — a hook
+test, and the one component test — opts in with `// @vitest-environment jsdom` on its first line, so
+the rest of the suite stays on node; the include glob is `**/__tests__/**/*.test.ts?(x)`, so a
+`.tsx` test is picked up too. Component tests are the exception, not the rule: the one that exists
+covers `components/shared/mutation-dialog.tsx`, because the five write rules it holds have no pure
+function to test them through. `@testing-library/react` has no `jest-dom` beside it — assert with
+Vitest's own matchers. `vitest.config.ts` pins `TZ=Asia/Ho_Chi_Minh`, because half the logic under
 test is about Vietnamese-time boundaries and it must not depend on the machine running it.
 
 What is worth testing here is the pure `lib/` layer — `assignment`, `formation-diff`, `prefill`,
