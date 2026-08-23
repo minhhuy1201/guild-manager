@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Character } from "@guild/shared/schemas";
 
+import { matchesRosterFilter } from "@/lib/roster-filter";
 import {
   attendanceKeys,
   fetchAttendanceRecords,
@@ -77,19 +78,13 @@ export function useFilteredCharacters(
     (s) => s.filters[scope].guildClasses
   );
 
-  return useMemo(() => {
-    const keyword = search.trim().toLowerCase();
-    return (characters ?? []).filter((character) => {
-      const matchKeyword =
-        keyword === "" ||
-        character.name.toLowerCase().includes(keyword) ||
-        character.id.toLowerCase().includes(keyword);
-      const matchClass =
-        guildClasses.length === 0 ||
-        guildClasses.includes(character.guildClass);
-      return matchKeyword && matchClass;
-    });
-  }, [characters, search, guildClasses]);
+  return useMemo(
+    () =>
+      (characters ?? []).filter((character) =>
+        matchesRosterFilter(character, { search, guildClasses })
+      ),
+    [characters, search, guildClasses]
+  );
 }
 
 /**
