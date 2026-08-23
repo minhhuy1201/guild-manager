@@ -1,14 +1,18 @@
 "use client";
 
-import { CalendarRange, Clock, Lock, Swords } from "lucide-react";
+import { CalendarRange, Clock, Lock } from "lucide-react";
 
 import { DateRange } from "@/components/shared/date-range";
 import { ErrorState } from "@/components/shared/error-state";
+import {
+  SessionDeadline,
+  SessionLabel,
+  sessionTintClass,
+} from "@/components/shared/session-label";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { formatDateTime } from "@/lib/format";
 import { getSessionSubtitle } from "../lib/session-subtitle";
 import { useAttendanceBoard } from "../hooks/use-attendance-board";
 import { useBattleSessions, useCurrentWeek } from "../hooks/use-attendance";
@@ -83,24 +87,14 @@ export function WeekTimeline() {
                 key={session.id}
                 className={cn(
                   "flex flex-col gap-1.5 rounded-lg border p-3",
-                  session.isGuildWar && "border-primary/40 bg-primary/5"
+                  sessionTintClass(session.isGuildWar)
                 )}
               >
-                <div
-                  className={cn(
-                    "flex items-center gap-1.5 font-medium",
-                    session.isGuildWar && "text-primary"
-                  )}
-                >
-                  {session.isGuildWar && <Swords className="size-4" />}
-                  {session.label}
-                </div>
+                <SessionLabel session={session} />
                 <div className="text-xs font-medium text-muted-foreground">
                   {subtitle}
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  Hạn chót: {formatDateTime(session.deadline)}
-                </div>
+                <SessionDeadline session={session} />
                 {closed ? (
                   <StatusBadge tone="danger">
                     <Lock className="size-3.5" />
