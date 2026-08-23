@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/table";
 import { useTablePagination } from "@/hooks/use-table-pagination";
 import { combineQueries } from "@/lib/query-group";
+import { matchesRosterFilter } from "@/lib/roster-filter";
 import { useMembers } from "../hooks/use-members";
 import { DeleteMemberDialog } from "./delete-member-dialog";
 import { MemberFormDialog } from "./member-form-dialog";
@@ -27,7 +28,7 @@ import { MemberRow } from "./member-row";
 import { MembersSkeleton } from "./members-skeleton";
 
 /**
- * Bảng quản lý thành viên: tìm theo tên, lọc lưu phái, thêm/sửa/xoá.
+ * Bảng quản lý thành viên: tìm theo tên hoặc ID, lọc lưu phái, thêm/sửa/xoá.
  * Cả bang chỉ vài chục người nên lọc và phân trang ngay ở client.
  * @returns Panel quản lý thành viên
  */
@@ -42,12 +43,9 @@ export function MembersPanel() {
   const normalized = keyword.trim().toLowerCase();
   const allMembers = membersQuery.data ?? [];
   const isFiltering = normalized.length > 0 || guildClasses.length > 0;
-  const members = allMembers.filter((member) => {
-    if (guildClasses.length > 0 && !guildClasses.includes(member.guildClass)) {
-      return false;
-    }
-    return member.name.toLowerCase().includes(normalized);
-  });
+  const members = allMembers.filter((member) =>
+    matchesRosterFilter(member, { search: keyword, guildClasses })
+  );
 
   const pagination = useTablePagination({
     items: members,
@@ -67,7 +65,7 @@ export function MembersPanel() {
           <div className="flex flex-wrap items-center gap-2">
             <Input
               className="w-64"
-              placeholder="Tìm theo tên…"
+              placeholder="Tên thành viên hoặc ID..."
               value={keyword}
               onChange={(event) => setKeyword(event.target.value)}
             />
