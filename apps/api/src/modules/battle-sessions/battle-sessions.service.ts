@@ -253,11 +253,11 @@ export class BattleSessionsService {
         ? current.opponent
         : normalizeOpponent(input.opponent);
     if (current.isGuildWar && opponent !== null) {
-      throw new BadRequestException('Trận Guild War không có đối thủ.');
+      throw new BadRequestException('Trận Bang Chiến không có đối thủ.');
     }
     if (current.isGuildWar && input.deadline !== undefined) {
       throw new BadRequestException(
-        'Hạn chót của trận Guild War cố định 17:00 Thứ 5, không sửa được.',
+        'Hạn chót của trận Bang Chiến cố định 17:00 Thứ 5, không sửa được.',
       );
     }
 
@@ -302,7 +302,7 @@ export class BattleSessionsService {
       throw new NotFoundException('Không tìm thấy ngày đánh.');
     }
     if (current.isGuildWar) {
-      throw new BadRequestException('Không thể xoá trận Guild War.');
+      throw new BadRequestException('Không thể xoá trận Bang Chiến.');
     }
 
     this.assertEditableWeek(weekStartOf(current.weekStart), now);

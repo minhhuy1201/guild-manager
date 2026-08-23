@@ -61,7 +61,7 @@ export const matchFormationSchema = z.object({
 export const sessionFormationSchema = z.object({
   /** ID trận đánh */
   sessionId: z.string(),
-  /** Nhãn hiển thị của trận, ví dụ "Thứ 7 · Guild War" */
+  /** Nhãn hiển thị của trận, ví dụ "Thứ 7 · Bang Chiến" */
   label: z.string(),
   /** Thời điểm đánh (ISO string) */
   dateTime: z.string(),

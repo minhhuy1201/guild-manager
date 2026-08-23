@@ -44,7 +44,7 @@ export function SessionRow({ session, onEdit, onDelete }: SessionRowProps) {
     >
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <SessionLabel session={session}>
-          {session.isGuildWar && <Badge variant="secondary">Guild War</Badge>}
+          {session.isGuildWar && <Badge variant="secondary">Bang Chiến</Badge>}
         </SessionLabel>
         <div className="text-xs text-muted-foreground">
           {getSessionSubtitle(session)}

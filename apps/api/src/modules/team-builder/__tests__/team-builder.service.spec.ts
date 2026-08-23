@@ -37,7 +37,7 @@ const SCHEDULED_SESSIONS = [
   },
   {
     id: 'session-sat',
-    label: 'Thứ 7 · Guild War',
+    label: 'Thứ 7 · Bang Chiến',
     dateTime: vn('2026-07-25T20:00'),
     opponent: null,
     isGuildWar: true,
@@ -206,7 +206,7 @@ describe('TeamBuilderService.getFormations', () => {
     expect(result.map((item) => item.label)).toEqual([
       'Thứ 3 · 20:30',
       'Thứ 5 · 20:30',
-      'Thứ 7 · Guild War',
+      'Thứ 7 · Bang Chiến',
     ]);
   });
 });

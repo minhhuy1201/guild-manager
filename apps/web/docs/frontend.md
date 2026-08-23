@@ -358,7 +358,7 @@ typography; the text itself is shared through `getSessionSubtitle`
 (`features/attendance/lib/session-subtitle.ts`), which is attendance domain logic and stays there.
 
 Marks that belong to **one** screen go through `children`, rendered after the label in the same row:
-the settings row's "Guild War" badge, the team builder tab's lock icon and unsaved-changes dot.
+the settings row's "Bang Chiến" badge, the team builder tab's lock icon and unsaved-changes dot.
 
 `label` is built by the API (`architecture.md` §5 — never stored). Never assemble a battle's name on
 the frontend.

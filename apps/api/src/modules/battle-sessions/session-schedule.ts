@@ -191,7 +191,7 @@ export function guildWarSessionId(weekStart: Date): string {
  * nên đổi giờ đánh là nhãn tự đúng theo.
  * @param dateTime - Thời điểm đánh
  * @param isGuildWar - Có phải trận Guild War không
- * @returns Nhãn dạng "Thứ 3 · 20:30" hoặc "Thứ 7 · Guild War"
+ * @returns Nhãn dạng "Thứ 3 · 20:30" hoặc "Thứ 7 · Bang Chiến"
  */
 export function formatSessionLabel(
   dateTime: Date,
@@ -199,7 +199,7 @@ export function formatSessionLabel(
 ): string {
   const weekday = WEEKDAY_NAMES[vnWeekday(dateTime)];
 
-  if (isGuildWar) return `${weekday} · Guild War`;
+  if (isGuildWar) return `${weekday} · Bang Chiến`;
 
   const { hour, minute } = vnParts(dateTime);
 

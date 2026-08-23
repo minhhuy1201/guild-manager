@@ -35,7 +35,7 @@ const ADMIN: JwtPayload = {
 /** Id trận trong lịch giả lập, tra theo nhãn cho dễ đọc. */
 const SESSION_IDS: Record<string, string> = {
   'Thứ 3 · 20:30': 'session-tue',
-  'Thứ 7 · Guild War': 'session-sat',
+  'Thứ 7 · Bang Chiến': 'session-sat',
 };
 
 /** Lịch của tuần đang mở mà BattleSessionsService trả về. */
@@ -53,7 +53,7 @@ const SESSIONS = [
   },
   {
     id: 'session-sat',
-    label: 'Thứ 7 · Guild War',
+    label: 'Thứ 7 · Bang Chiến',
     dateTime: vn('2026-07-25T20:00').toISOString(),
     deadline: vn('2026-07-23T17:00').toISOString(),
     isGuildWar: true,
@@ -148,7 +148,7 @@ describe('AttendanceService', () => {
       const record = await service.mark(
         {
           characterId: CHARACTER_ID,
-          sessionId: SESSION_IDS['Thứ 7 · Guild War'],
+          sessionId: SESSION_IDS['Thứ 7 · Bang Chiến'],
           status: AttendanceStatus.PRESENT,
         },
         null,
@@ -156,7 +156,7 @@ describe('AttendanceService', () => {
 
       expect(record).toEqual({
         characterId: CHARACTER_ID,
-        sessionId: SESSION_IDS['Thứ 7 · Guild War'],
+        sessionId: SESSION_IDS['Thứ 7 · Bang Chiến'],
         status: AttendanceStatus.PRESENT,
         markedAt: WEDNESDAY.toISOString(),
       });
@@ -166,7 +166,7 @@ describe('AttendanceService', () => {
       await service.mark(
         {
           characterId: CHARACTER_ID,
-          sessionId: SESSION_IDS['Thứ 7 · Guild War'],
+          sessionId: SESSION_IDS['Thứ 7 · Bang Chiến'],
           status: AttendanceStatus.PRESENT,
         },
         null,
@@ -174,7 +174,7 @@ describe('AttendanceService', () => {
       const changed = await service.mark(
         {
           characterId: CHARACTER_ID,
-          sessionId: SESSION_IDS['Thứ 7 · Guild War'],
+          sessionId: SESSION_IDS['Thứ 7 · Bang Chiến'],
           status: AttendanceStatus.ABSENT,
         },
         null,
@@ -186,7 +186,7 @@ describe('AttendanceService', () => {
           where: {
             characterId_sessionId: {
               characterId: CHARACTER_ID,
-              sessionId: SESSION_IDS['Thứ 7 · Guild War'],
+              sessionId: SESSION_IDS['Thứ 7 · Bang Chiến'],
             },
           },
         }),
@@ -200,7 +200,7 @@ describe('AttendanceService', () => {
         service.mark(
           {
             characterId: 'khong-ton-tai',
-            sessionId: SESSION_IDS['Thứ 7 · Guild War'],
+            sessionId: SESSION_IDS['Thứ 7 · Bang Chiến'],
             status: AttendanceStatus.PRESENT,
           },
           null,
@@ -238,7 +238,7 @@ describe('AttendanceService', () => {
       const record = await service.mark(
         {
           characterId: CHARACTER_ID,
-          sessionId: SESSION_IDS['Thứ 7 · Guild War'],
+          sessionId: SESSION_IDS['Thứ 7 · Bang Chiến'],
           status: AttendanceStatus.PRESENT,
         },
         ADMIN,
@@ -270,7 +270,7 @@ describe('AttendanceService', () => {
         makeService(justPastDeadline).mark(
           {
             characterId: CHARACTER_ID,
-            sessionId: SESSION_IDS['Thứ 7 · Guild War'],
+            sessionId: SESSION_IDS['Thứ 7 · Bang Chiến'],
             status: AttendanceStatus.PRESENT,
           },
           null,

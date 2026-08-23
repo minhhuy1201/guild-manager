@@ -16,7 +16,7 @@ afterEach(cleanup);
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
   true;
 
-const GUILD_WAR = { label: "Thứ 7 · Guild War", isGuildWar: true };
+const GUILD_WAR = { label: "Thứ 7 · Bang Chiến", isGuildWar: true };
 const SCRIM = { label: "Thứ 3 · 20:30", isGuildWar: false };
 
 /**
@@ -46,7 +46,7 @@ describe("SessionLabel", () => {
 
     expect(row.querySelector("svg")).not.toBeNull();
     expect(row.className).toContain("text-primary");
-    expect(row.textContent).toBe("Thứ 7 · Guild War");
+    expect(row.textContent).toBe("Thứ 7 · Bang Chiến");
   });
 
   it("trận thường không có icon và không đổi màu chữ", () => {
@@ -77,7 +77,7 @@ describe("SessionLabel", () => {
       </SessionLabel>
     );
 
-    expect(row.textContent).toBe("Thứ 7 · Guild WarĐã khoá");
+    expect(row.textContent).toBe("Thứ 7 · Bang ChiếnĐã khoá");
   });
 });
 

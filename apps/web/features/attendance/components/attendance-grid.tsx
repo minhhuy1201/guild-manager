@@ -182,7 +182,7 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
                   </TableHead>
                 );
               })}
-              <TableHead className={STICKY_ACTION_COLUMN}>Thao tác</TableHead>
+              <TableHead className={STICKY_ACTION_COLUMN}>Điểm danh</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

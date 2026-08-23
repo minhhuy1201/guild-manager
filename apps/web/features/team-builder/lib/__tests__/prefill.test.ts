@@ -53,7 +53,7 @@ const THURSDAY = session({
 
 const SATURDAY = session({
   sessionId: "sat",
-  label: "Thứ 7 · Guild War",
+  label: "Thứ 7 · Bang Chiến",
   dateTime: "2026-07-25T13:00:00.000Z",
 });
 
