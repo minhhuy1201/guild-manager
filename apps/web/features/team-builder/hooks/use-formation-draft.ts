@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import type { SessionFormation } from "@guild/shared/schemas";
 
 import { ApiError } from "@/lib/api-client";
@@ -59,6 +59,8 @@ export interface FormationDraftState {
   clearActiveDraft: () => void;
   /** Discard the open day's draft, falling back to the saved copy */
   resetActive: () => void;
+  /** Fill a day that has no draft yet with a proposed line-up */
+  seedFrom: (proposal: MatchDraft[]) => void;
   /** Resolve one finished drag gesture into the open match */
   applyDrop: (
     source: DragSource,
@@ -76,8 +78,9 @@ export interface FormationDraftState {
 /**
  * The draft layer: merges the saved formations from TanStack Query with the
  * per-battle drafts held in Zustand, and owns every edit the user makes to
- * them, so the rules about what a draft edit means live in one file. The pool
- * hook writes the store too, but only to seed a day that has no draft yet.
+ * them, so the rules about what a draft edit means live in one file. It is the
+ * only writer of `drafts`: the pool proposes a line-up for an empty day and
+ * hands it here through `seedFrom`, rather than reaching into the store.
  * @param sessions - Battles of the week on screen, with their saved formations
  * @param activeSessionId - Battle whose tab is open, null when there is none
  * @param editable - Whether the open battle still accepts edits
@@ -91,6 +94,7 @@ export function useFormationDraft(
   refetchFormations: () => void
 ): FormationDraftState {
   const drafts = useFormationStore((s) => s.drafts);
+  const ensureDraft = useFormationStore((s) => s.ensureDraft);
   const setDraft = useFormationStore((s) => s.setDraft);
   const clearDraft = useFormationStore((s) => s.clearDraft);
   const drop = useFormationStore((s) => s.drop);
@@ -150,6 +154,22 @@ export function useFormationDraft(
   const activeMatch = matches[activeMatchIndex] ?? EMPTY_MATCHES[0];
 
   /**
+   * Run one edit against the open day, making sure the day has a draft to edit
+   * first. This is the single place the saved copy turns into a draft: every
+   * writer below goes through here, so no caller has to hold the saved copy or
+   * know which day it belongs to.
+   * @param write - The store call to run, given the open day's id
+   */
+  function editActiveDraft(write: (sessionId: string) => void) {
+    if (!activeSessionId) return;
+
+    // Zustand's `set` is synchronous, so the write below already sees the draft
+    // this line put in place.
+    ensureDraft(activeSessionId, matches);
+    write(activeSessionId);
+  }
+
+  /**
    * Hand one finished gesture to the store as a draft edit.
    * @param source - Where the drag started
    * @param characterId - Character being dragged
@@ -160,9 +180,9 @@ export function useFormationDraft(
     characterId: string,
     target: DropTarget
   ) {
-    if (!activeSessionId) return;
-
-    drop(activeSessionId, activeMatchIndex, matches, source, characterId, target);
+    editActiveDraft((sessionId) =>
+      drop(sessionId, activeMatchIndex, source, characterId, target)
+    );
   }
 
   /**
@@ -171,10 +191,27 @@ export function useFormationDraft(
    * @param text - New text, raw as typed
    */
   function setNote(slotId: string, text: string) {
-    if (!activeSessionId) return;
-
-    setNoteInStore(activeSessionId, activeMatchIndex, matches, slotId, text);
+    editActiveDraft((sessionId) =>
+      setNoteInStore(sessionId, activeMatchIndex, slotId, text)
+    );
   }
+
+  /**
+   * Fill the open day with a proposed line-up, but only while it has no draft
+   * of its own — a proposal never overwrites something the user typed. The
+   * pool computes the proposal and calls this; deciding whether it lands is
+   * this hook's, because this hook owns the drafts. Memoised because the pool
+   * holds it as an effect dependency.
+   * @param proposal - Matches to start the day from
+   */
+  const seedFrom = useCallback(
+    (proposal: MatchDraft[]) => {
+      if (!activeSessionId) return;
+
+      ensureDraft(activeSessionId, proposal);
+    },
+    [activeSessionId, ensureDraft]
+  );
 
   /** Clone match 1 into a new match 2 and open it. */
   function addMatch() {
@@ -256,6 +293,7 @@ export function useFormationDraft(
     removeMatch,
     clearActiveDraft,
     resetActive,
+    seedFrom,
     applyDrop,
     handleSave,
     saving: saveMutation.isPending,

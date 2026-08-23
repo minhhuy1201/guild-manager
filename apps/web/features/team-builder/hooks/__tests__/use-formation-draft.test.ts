@@ -235,3 +235,52 @@ describe("useFormationDraft — lưu", () => {
     expect(saveFormationMock).not.toHaveBeenCalled();
   });
 });
+
+describe("useFormationDraft — nạp đề xuất và nền của lần ghi đầu", () => {
+  it("seedFrom nạp đề xuất vào ngày chưa có nháp", () => {
+    const { result } = renderFormationHook(() =>
+      useFormationDraft([makeSession(SESSION_ID)], SESSION_ID, true, vi.fn())
+    );
+
+    act(() =>
+      result.current.seedFrom([
+        { assignment: { [SLOT]: "char-7" }, notes: { [SLOT]: "chép sang" } },
+      ])
+    );
+
+    expect(result.current.assignment[SLOT]).toBe("char-7");
+    expect(result.current.notes[SLOT]).toBe("chép sang");
+  });
+
+  it("seedFrom KHÔNG đè lên ngày người dùng đã sửa", () => {
+    const { result } = renderDraft();
+
+    act(() => result.current.setNote(SLOT, "vào sau"));
+    act(() =>
+      result.current.seedFrom([{ assignment: { [SLOT]: "char-7" }, notes: {} }])
+    );
+
+    expect(result.current.assignment[SLOT]).toBe("char-1");
+    expect(result.current.notes[SLOT]).toBe("vào sau");
+  });
+
+  it("ghi chú đầu tiên dựng nháp từ bản đã lưu, không xoá đội hình đã lưu", () => {
+    const { result } = renderDraft();
+
+    act(() => result.current.setNote(SLOT, "vào sau"));
+
+    expect(result.current.assignment[SLOT]).toBe("char-1");
+    expect(result.current.notes[SLOT]).toBe("vào sau");
+  });
+
+  it("thả ra ngoài mọi vùng thì ngày vẫn không dirty", () => {
+    const { result } = renderDraft();
+
+    act(() =>
+      result.current.applyDrop({ kind: "slot", slotId: SLOT }, "char-1", null)
+    );
+
+    expect(result.current.dirty).toBe(false);
+    expect(result.current.assignment[SLOT]).toBe("char-1");
+  });
+});
