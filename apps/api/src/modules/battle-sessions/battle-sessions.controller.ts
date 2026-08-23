@@ -10,10 +10,10 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { BattleSession, Week } from '@guild/shared/schemas';
 
-import { JwtAuthGuard } from '../../common';
+import { AdminGuard, JwtAuthGuard } from '../../common';
 import { BattleSessionsService } from './battle-sessions.service';
 import {
   CreateBattleSessionDto,
@@ -21,8 +21,14 @@ import {
 } from './dto/battle-session.dto';
 import { WeekStartQueryDto } from './dto/week-start-query.dto';
 
+/**
+ * Lịch đánh — đọc thì chỉ cần một phiên đăng nhập, sửa thì phải là quản trị viên,
+ * nên guard đăng nhập đặt ở cấp controller còn `AdminGuard` gắn lẻ từng route ghi.
+ */
 @ApiTags('battle-sessions')
+@ApiBearerAuth()
 @Controller('battle-sessions')
+@UseGuards(JwtAuthGuard)
 export class BattleSessionsController {
   constructor(private readonly battleSessions: BattleSessionsService) {}
 
@@ -31,6 +37,7 @@ export class BattleSessionsController {
    * @returns Tuần đang mở và tuần kế tiếp
    */
   @Get('weeks')
+  @UseGuards(AdminGuard)
   @ApiOperation({ summary: 'Tuần đang mở và tuần kế tiếp' })
   getWeeks(): Week[] {
     return this.battleSessions.getEditableWeeks();
@@ -53,7 +60,7 @@ export class BattleSessionsController {
    * @returns Trận vừa tạo
    */
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AdminGuard)
   @ApiOperation({ summary: 'Thêm một trận scrim' })
   create(@Body() body: CreateBattleSessionDto): Promise<BattleSession> {
     return this.battleSessions.create(body);
@@ -66,7 +73,7 @@ export class BattleSessionsController {
    * @returns Trận sau khi sửa
    */
   @Patch(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AdminGuard)
   @ApiOperation({ summary: 'Sửa một trận' })
   update(
     @Param('id') id: string,
@@ -82,7 +89,7 @@ export class BattleSessionsController {
    */
   @Delete(':id')
   @HttpCode(204)
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AdminGuard)
   @ApiOperation({ summary: 'Xoá một trận scrim' })
   remove(@Param('id') id: string): Promise<void> {
     return this.battleSessions.remove(id);

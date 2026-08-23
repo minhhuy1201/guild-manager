@@ -10,14 +10,14 @@ import {
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { FormationWeek, SessionFormation } from '@guild/shared/schemas';
 
-import { JwtAuthGuard } from '../../common';
+import { AdminGuard, JwtAuthGuard } from '../../common';
 import { SaveFormationDto } from './dto/save-formation.dto';
 import { WeekStartQueryDto } from './dto/week-start-query.dto';
 import { TeamBuilderService } from './team-builder.service';
 
 @ApiTags('team-builder')
 @Controller('team-builder')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, AdminGuard)
 export class TeamBuilderController {
   constructor(private readonly teamBuilder: TeamBuilderService) {}
 

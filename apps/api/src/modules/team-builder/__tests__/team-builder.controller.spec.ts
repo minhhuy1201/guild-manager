@@ -1,5 +1,13 @@
+import { AdminGuard, JwtAuthGuard } from '../../../common';
+import { guardsOf } from '../../../__tests__/guards-of';
 import { TeamBuilderController } from '../team-builder.controller';
 import { TeamBuilderService } from '../team-builder.service';
+
+describe('TeamBuilderController', () => {
+  it('khoá toàn bộ endpoint cho quản trị viên ở cấp controller', () => {
+    expect(guardsOf(TeamBuilderController)).toEqual([JwtAuthGuard, AdminGuard]);
+  });
+});
 
 describe('TeamBuilderController.getWeeks', () => {
   let controller: TeamBuilderController;
