@@ -55,9 +55,9 @@ apps/web/
 │   ├── shared/                     # cross-feature wrappers and the app shell
 │   └── providers.tsx               # QueryClientProvider + TooltipProvider
 │
-├── hooks/                          # cross-feature hooks (use-table-pagination)
+├── hooks/                          # cross-feature hooks (use-table-pagination, use-invalidate)
 ├── config/                         # routes.ts (ROUTES), api.ts (API_BASE_URL)
-├── lib/                            # api-client.ts, format.ts, guild-class.ts, utils.ts
+├── lib/                            # api-client.ts, cache-graph.ts, format.ts, guild-class.ts, utils.ts
 ├── components.json                 # shadcn config (style: base-nova, lucide icons)
 ├── vitest.config.ts
 └── tsconfig.json
@@ -117,6 +117,15 @@ These are the rules that get broken first, in the order they get broken:
    runtimes: `index.ts` for UI and Server Components (`getSession` pulls in `next/headers` and
    `server-only`), `core/` for everything the Edge runtime can load. `proxy.ts` runs at the Edge, so
    it imports `@/features/auth/core` and nothing deeper.
+
+   Ngoại lệ **duy nhất**: `lib/cache-graph.ts` import `features/<feature>/api/*-keys.ts` của cả bốn
+   feature. "Ghi dữ liệu nào thì màn nào cũ đi" là kiến thức xuyên feature — không feature nào sở
+   hữu nó, nên nhét nó vào feature ghi là đặt sai chỗ. Đi thẳng vào file key, **không** qua barrel:
+   barrel của attendance kéo theo `"server-only"`, và bốn feature đều import ngược lại
+   `useInvalidate` nên qua barrel là tạo vòng. File `*-keys.ts` không import gì cả nên cả hai vấn đề
+   biến mất. Chỗ ghi không được tự liệt kê key: nó gọi `useInvalidate("<topic>")` và chỉ nói mình
+   vừa đổi cái gì. Thêm một chủ đề nghĩa là thêm một dòng vào `CACHE_TOPICS` — thiếu mục phụ thuộc
+   là lỗi biên dịch.
 6. **Prefer Server Components.** `"use client"` only where interactivity actually requires it.
 7. **Import with `@/`.** Route paths come from `config/routes.ts` (`ROUTES`), never string literals.
 
@@ -426,6 +435,7 @@ Zustand stores reset).
 | `fetch` inside a component or a hook | The feature's `api/` function, over `apiFetch` |
 | API data in a Zustand store | TanStack Query owns server state; Zustand owns UI state |
 | Two hooks writing the same store slice | One hook owns the slice; the others hand it a value through that hook's handler |
+| A mutation listing another feature's query keys | `useInvalidate("<topic>")`; the graph lives in `lib/cache-graph.ts` |
 | Logic in `app/<route>/page.tsx` | A thin page rendering one feature component |
 | `import { X } from "@/features/other/lib/x"` | Import from the feature's `index.ts` |
 | Editing `components/ui/button.tsx` | Wrap it in `components/shared/` |
