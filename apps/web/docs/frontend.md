@@ -425,6 +425,7 @@ Zustand stores reset).
 |---|---|
 | `fetch` inside a component or a hook | The feature's `api/` function, over `apiFetch` |
 | API data in a Zustand store | TanStack Query owns server state; Zustand owns UI state |
+| Two hooks writing the same store slice | One hook owns the slice; the others hand it a value through that hook's handler |
 | Logic in `app/<route>/page.tsx` | A thin page rendering one feature component |
 | `import { X } from "@/features/other/lib/x"` | Import from the feature's `index.ts` |
 | Editing `components/ui/button.tsx` | Wrap it in `components/shared/` |
