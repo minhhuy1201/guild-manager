@@ -2,8 +2,9 @@ import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
 /**
- * Cấu hình Vitest cho tầng data (api client, hàm gọi API).
- * Chạy ở môi trường node — không test component nên không cần jsdom.
+ * Cấu hình Vitest cho apps/web.
+ * Mặc định chạy ở môi trường node — hàm thuần và tầng data không cần DOM. File
+ * nào cần DOM (hook, component) tự khai `// @vitest-environment jsdom` ở dòng đầu.
  */
 export default defineConfig({
   test: {
@@ -11,7 +12,7 @@ export default defineConfig({
     // Mọi mốc giờ trong app tính theo giờ Việt Nam; cố định TZ để test không đổi
     // kết quả theo máy chạy.
     env: { TZ: "Asia/Ho_Chi_Minh" },
-    include: ["**/__tests__/**/*.test.ts"],
+    include: ["**/__tests__/**/*.test.ts?(x)"],
     exclude: ["node_modules/**", ".next/**"],
   },
   resolve: {
