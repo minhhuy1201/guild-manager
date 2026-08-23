@@ -4,7 +4,6 @@ import { GuildClass } from "@guild/shared/enums";
 import { matchesRosterFilter, type RosterCandidate } from "../roster-filter";
 
 const MEO: RosterCandidate = {
-  id: "MeoMap01",
   name: "Mèo Mập",
   guildClass: GuildClass.THIET_Y,
 };
@@ -18,11 +17,12 @@ describe("matchesRosterFilter", () => {
     expect(matchesRosterFilter(MEO, { search: "mÈo", guildClasses: [] })).toBe(true);
   });
 
-  it("khớp ID trong game, không phân biệt hoa thường", () => {
-    expect(matchesRosterFilter(MEO, { search: "meomap", guildClasses: [] })).toBe(true);
+  it("không tìm theo ID trong game: từ khoá chỉ khớp id thì loại", () => {
+    // "meomap" là id của MEO trước đây; nay chỉ tên mới được so khớp.
+    expect(matchesRosterFilter(MEO, { search: "meomap", guildClasses: [] })).toBe(false);
   });
 
-  it("không khớp tên lẫn ID thì loại", () => {
+  it("không khớp tên thì loại", () => {
     expect(matchesRosterFilter(MEO, { search: "long", guildClasses: [] })).toBe(false);
   });
 

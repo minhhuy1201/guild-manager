@@ -66,7 +66,7 @@ export function useAttendanceRecords() {
 
 /**
  * Danh sách nhân vật đã lọc theo bộ lọc của một màn (tìm kiếm + lưu phái).
- * So khớp tên/ID trong game không phân biệt hoa/thường.
+ * So khớp tên nhân vật, không phân biệt hoa/thường.
  * @param scope - Màn đang đọc bộ lọc; mỗi màn có state lọc riêng
  * @returns Mảng nhân vật khớp bộ lọc (rỗng khi query chưa có data)
  */

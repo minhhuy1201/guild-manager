@@ -44,7 +44,7 @@ cụ thể ngồi ở seam), *depth* (lượng hành vi trên một đơn vị i
 | | Vấn đề | Mức | Spec |
 |---|---|---|---|
 | **W1** | Giao thức "dialog gọi mutation" chép tay ở 4 dialog (20 mẩu lặp); 0 file `.test.tsx` | Strong | [w1](./2026-08-21-w1-mutation-dialog-design.md) |
-| **W2** | Luật lọc roster 3 bản, bản ở màn Quản lý thành viên **đã lệch** (mất vế tìm theo ID) | Strong | [w2](./2026-08-21-w2-roster-filter-design.md) |
+| **W2** | Luật lọc roster 3 bản, bản ở màn Quản lý thành viên **đã lệch** (mất vế tìm theo ID) — vế `id` sau đó bị bỏ hẳn, xem addendum 2026-08-23 trong spec | Strong | [w2](./2026-08-21-w2-roster-filter-design.md) |
 | **W3** | Gộp query dựng lại 4 lần; `use-formation-week` vứt message backend của 2/3 query và refetch thiếu | Strong | [w3](./2026-08-21-w3-query-group-design.md) |
 | **W4** | Store bắt caller truyền `base`; ba người cùng ghi vào `drafts` | Worth exploring | [w4](./2026-08-21-w4-formation-draft-seam-design.md) |
 | **W5** | Đồ thị invalidate cache nêu 3 lần; key factory lọt ra khỏi feature sở hữu | Worth exploring | [w5](./2026-08-21-w5-cache-graph-design.md) |

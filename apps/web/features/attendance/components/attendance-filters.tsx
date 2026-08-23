@@ -13,7 +13,7 @@ interface AttendanceFiltersProps {
 }
 
 /**
- * Thanh lọc: tìm kiếm theo tên/ID trong game và chọn lưu phái.
+ * Thanh lọc: tìm kiếm theo tên nhân vật và chọn lưu phái.
  * Đọc/ghi vào phần store ứng với `scope`, nên hai màn không dùng chung giá trị lọc.
  * @param scope - Màn đang dùng bộ lọc
  * @returns Card chứa các bộ lọc

@@ -192,3 +192,19 @@ Thêm ở `pool.test.ts`: người đã xếp thì không hiện, kể cả khi 
 
 - Gộp ba store bộ lọc (đã loại ở §3).
 - Bỏ dấu tiếng Việt khi tìm (đã nói ở Edge case).
+
+## Cập nhật 2026-08-23 — bỏ tìm theo ID, thêm variant `inline`
+
+Spec trên vẫn đúng về phần "một vị từ, một chỗ"; **hai quyết định bị đảo ngược**:
+
+1. **Vế `id` bị bỏ.** `matchesRosterFilter` nay chỉ so khớp `name`, và `RosterCandidate` co lại còn
+   `Pick<Character, "name" | "guildClass">`. Lý do: người dùng yêu cầu ô tìm chỉ theo tên. Lập luận
+   ở §Edge case ("id là slug tiếng Việt nên tìm theo ID hữu ích khi trùng tên") không đứng vững
+   trong thực tế vì **không bảng nào hiển thị id** — người gõ thấy kết quả nhảy ra mà không biết
+   nó khớp ở đâu. Kéo theo: placeholder ba màn nay là `"Tên thành viên..."`, và ca test `khớp id`
+   trong `roster-filter.test.ts` đảo thành ca khẳng định *không* khớp.
+2. **Màn Thành viên dùng chung `RosterFilterBar`.** §Rủi ro khuyên "đừng nhét prop vào" — khuyến
+   nghị đó nhắm vào khác biệt về *nội dung* (nút, nhãn riêng), và vẫn giữ: nút "Thêm thành viên" ở
+   ngoài component. Khác biệt duy nhất còn lại là *bố cục*, nay là prop `layout`:
+   `stacked` (mặc định, hai cột có nhãn) và `inline` (một hàng gọn, nhãn `sr-only`). Đổi lại,
+   `members-panel.tsx` hết cây JSX song song và bộ lọc gom về một `useState<RosterFilter>`.

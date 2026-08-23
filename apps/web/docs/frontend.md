@@ -247,20 +247,25 @@ attendance components) — the alternative is `?? []` scattered through the comp
 ### Filtering a roster list
 
 "Tìm theo từ khoá và lưu phái" is said once, in `matchesRosterFilter`
-(`lib/roster-filter.ts`). The keyword matches on **name or in-game id** — both sides lowercased,
-Vietnamese diacritics left alone — and an empty `guildClasses` array means every class. Three
+(`lib/roster-filter.ts`). The keyword matches on the **name only** — both sides lowercased,
+Vietnamese diacritics left alone — and an empty `guildClasses` array means every class. The in-game
+id is deliberately not searched: no list displays it, so a match on it looks random to the person
+typing. Three
 screens use it and none of them owns it, which is why it sits in `lib/` and not in a feature. It
 stays out of `packages/shared`: that package holds shapes that cross the network, and this filter
 never leaves the client.
 
 A screen that also needs the *widget* uses `RosterFilterBar`
-(`components/shared/roster-filter-bar.tsx`). It is controlled — `value` / `onChange` / `idPrefix` —
-and deliberately knows nothing about where the state lives: a scoped Zustand store (attendance), an
-unscoped one (team builder) and a plain `useState` (members) are all adapters at the call site,
-because the three filters have different lifetimes. Do **not** merge them into one store. A screen
-whose filter row looks genuinely different (members: no labels, inline with the create button)
-keeps its own JSX and calls the predicate directly — a prop added to swallow a real difference is
-worse than two rows.
+(`components/shared/roster-filter-bar.tsx`) — all three of them do. It is controlled — `value` /
+`onChange` / `idPrefix` — and deliberately knows nothing about where the state lives: a scoped
+Zustand store (attendance), an unscoped one (team builder) and a plain `useState` (members) are all
+adapters at the call site, because the three filters have different lifetimes. Do **not** merge them
+into one store.
+
+`layout` is the one prop that varies the rendering, and it varies *only* the arrangement: `stacked`
+(default) is the two-column row with visible labels, `inline` is the compact row members puts beside
+its create button, with the same labels turned `sr-only`. A real difference in *content* still stays
+outside the component — the create button is members' own JSX, not a prop.
 
 ### Writing through a dialog
 
