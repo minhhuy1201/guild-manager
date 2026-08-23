@@ -94,8 +94,10 @@ features/members/
 has both (a formation store, a pool filter store, and a dozen pure `lib/` modules with their own
 tests). **Don't create empty folders to match the template.**
 
-A query key factory lives in its own file (`*-keys.ts`) whenever the API file is `"use server"`: a
-`"use server"` module may only export async functions, so a plain `const` object cannot live there.
+A query key factory always lives in its own file (`*-keys.ts`), for two reasons. A `"use server"` API
+module may only export async functions, so a plain `const` object cannot live there at all. And
+`lib/cache-graph.ts` reads every feature's keys (§4 rule 5): a leaf file that imports nothing lets it
+do so without dragging `apiFetch` — or a `"server-only"` barrel — along.
 
 ---
 
@@ -118,14 +120,14 @@ These are the rules that get broken first, in the order they get broken:
    `server-only`), `core/` for everything the Edge runtime can load. `proxy.ts` runs at the Edge, so
    it imports `@/features/auth/core` and nothing deeper.
 
-   Ngoại lệ **duy nhất**: `lib/cache-graph.ts` import `features/<feature>/api/*-keys.ts` của cả bốn
-   feature. "Ghi dữ liệu nào thì màn nào cũ đi" là kiến thức xuyên feature — không feature nào sở
-   hữu nó, nên nhét nó vào feature ghi là đặt sai chỗ. Đi thẳng vào file key, **không** qua barrel:
-   barrel của attendance kéo theo `"server-only"`, và bốn feature đều import ngược lại
-   `useInvalidate` nên qua barrel là tạo vòng. File `*-keys.ts` không import gì cả nên cả hai vấn đề
-   biến mất. Chỗ ghi không được tự liệt kê key: nó gọi `useInvalidate("<topic>")` và chỉ nói mình
-   vừa đổi cái gì. Thêm một chủ đề nghĩa là thêm một dòng vào `CACHE_TOPICS` — thiếu mục phụ thuộc
-   là lỗi biên dịch.
+   The **only** exception: `lib/cache-graph.ts` imports `features/<feature>/api/*-keys.ts` from all
+   four features. "Writing this data makes that screen stale" is cross-feature knowledge — no single
+   feature owns it, so burying it in the writing feature puts it in the wrong place. Import the key
+   file directly, **not** the barrel: attendance's barrel drags in `"server-only"`, and since all
+   four features import `useInvalidate` back, going through barrels would create import cycles. A
+   `*-keys.ts` file imports nothing, so both problems disappear. A write site never lists keys
+   itself: it calls `useInvalidate("<topic>")` and only names what it just changed. Adding a topic
+   means adding a line to `CACHE_TOPICS` — a missing dependents entry is a compile error.
 6. **Prefer Server Components.** `"use client"` only where interactivity actually requires it.
 7. **Import with `@/`.** Route paths come from `config/routes.ts` (`ROUTES`), never string literals.
 
