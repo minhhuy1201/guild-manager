@@ -14,8 +14,7 @@ const config = {
       WEB_ORIGIN: 'http://localhost:3000',
       DISCORD_CLIENT_ID: 'app-id',
       DISCORD_CLIENT_SECRET: 'app-secret',
-      DISCORD_REDIRECT_URI:
-        'http://localhost:3001/api/auth/discord/callback',
+      DISCORD_REDIRECT_URI: 'http://localhost:3001/api/auth/discord/callback',
       DISCORD_ADMIN_IDS: RESCUE_ID,
     })[key],
 } as never;
@@ -101,7 +100,10 @@ describe('AuthService.authorizeUrl', () => {
     const url = await service.authorizeUrl('//evil.example');
 
     expect(new URL(url).searchParams.get('state')).toBe('signed-token');
-    expect(jwt.signAsync.mock.calls[0][0]).toMatchObject({
+    const [statePayload] = jwt.signAsync.mock.calls[0] as [
+      Record<string, unknown>,
+    ];
+    expect(statePayload).toMatchObject({
       type: 'oauth_state',
       redirect: '/',
     });
@@ -164,7 +166,9 @@ describe('AuthService.handleCallback', () => {
     });
     mockDiscord({ id: '123456789012345678', username: 'meobeo' });
 
-    const url = new URL(await service.handleCallback({ code: 'c', state: 's' }));
+    const url = new URL(
+      await service.handleCallback({ code: 'c', state: 's' }),
+    );
 
     expect(url.pathname).toBe('/dang-nhap/discord');
     expect(url.searchParams.get('redirect')).toBe('/lich-su-diem-danh');
@@ -222,9 +226,9 @@ describe('AuthService.refresh', () => {
       type: 'refresh',
     });
 
-    await expect(
-      service.refresh({ refreshToken: 'r' }),
-    ).rejects.toThrow(UnauthorizedException);
+    await expect(service.refresh({ refreshToken: 'r' })).rejects.toThrow(
+      UnauthorizedException,
+    );
   });
 
   it('phát cặp token mới với vai đọc lại từ database', async () => {

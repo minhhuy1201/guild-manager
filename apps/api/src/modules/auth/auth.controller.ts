@@ -29,7 +29,9 @@ export class AuthController {
   @Get('discord')
   @Redirect()
   @ApiOperation({ summary: 'Mở đăng nhập bằng Discord' })
-  async discord(@Query('redirect') redirect?: string): Promise<{ url: string }> {
+  async discord(
+    @Query('redirect') redirect?: string,
+  ): Promise<{ url: string }> {
     return { url: await this.auth.authorizeUrl(redirect) };
   }
 
@@ -96,6 +98,8 @@ export class AuthController {
     deprecated: true,
   })
   login(): never {
-    throw new GoneException('Cách đăng nhập đã thay đổi, vui lòng tải lại trang.');
+    throw new GoneException(
+      'Cách đăng nhập đã thay đổi, vui lòng tải lại trang.',
+    );
   }
 }

@@ -1,12 +1,11 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
-import { AttendanceStatus, GuildClass } from '@guild/shared/enums';
-
 import {
-  ADMIN_ROLE,
-  FixedClock,
-  TOKEN_TYPE,
-  type JwtPayload,
-} from '../../../common';
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
+import { AttendanceStatus, GuildClass, GuildRole } from '@guild/shared/enums';
+
+import { FixedClock, TOKEN_TYPE, type JwtPayload } from '../../../common';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { BattleSessionsService } from '../../battle-sessions/battle-sessions.public';
 import { CharactersService } from '../../characters/characters.public';
@@ -25,10 +24,34 @@ function vn(iso: string): Date {
 const WEDNESDAY = vn('2026-07-22T12:00');
 const CHARACTER_ID = 'char-1';
 
-/** Quản trị viên đang đăng nhập — sửa được cả trận đã quá hạn. */
+/** Hàng Character của người đang đăng nhập, như `findById` trả về. */
+const OWN_ROW = {
+  id: CHARACTER_ID,
+  name: 'Huy',
+  guildClass: GuildClass.THIET_Y,
+};
+
+/** Nhân vật của người khác — dùng để thử điểm danh hộ. */
+const OTHER_CHARACTER_ID = 'char-2';
+
+/** Quản trị viên đang đăng nhập — sửa được cả trận đã quá hạn và điểm danh hộ người khác. */
 const ADMIN: JwtPayload = {
-  sub: 'huy',
-  role: ADMIN_ROLE,
+  sub: '999888777666555444',
+  role: GuildRole.ADMIN,
+  type: TOKEN_TYPE.access,
+};
+
+/** Bang chúng đang đăng nhập, gắn với CHARACTER_ID. */
+const MEMBER: JwtPayload = {
+  sub: '123456789012345678',
+  role: GuildRole.MEMBER,
+  type: TOKEN_TYPE.access,
+};
+
+/** Cán bộ đang đăng nhập, cũng gắn với CHARACTER_ID. */
+const LEADER: JwtPayload = {
+  sub: '123456789012345678',
+  role: GuildRole.LEADER,
   type: TOKEN_TYPE.access,
 };
 
@@ -69,14 +92,23 @@ describe('AttendanceService', () => {
   /** Dựng service với một mốc thời gian cố định — vài test cần mốc khác WEDNESDAY. */
   let makeService: (now: Date) => AttendanceService;
   let prisma: {
-    attendanceRecord: { upsert: jest.Mock; findMany: jest.Mock };
+    attendanceRecord: {
+      upsert: jest.Mock;
+      findMany: jest.Mock;
+      groupBy: jest.Mock;
+    };
   };
   let battleSessions: {
     listByWeek: jest.Mock;
     findById: jest.Mock;
     getActiveWeek: jest.Mock;
   };
-  let characters: { list: jest.Mock; exists: jest.Mock };
+  let characters: {
+    list: jest.Mock;
+    exists: jest.Mock;
+    findByDiscordId: jest.Mock;
+    findById: jest.Mock;
+  };
 
   /**
    * Cho `findById` trả lịch giả lập kèm cờ quá hạn dựng ở mốc `now`, đúng như
@@ -125,6 +157,7 @@ describe('AttendanceService', () => {
               }),
           ),
         findMany: jest.fn().mockResolvedValue([]),
+        groupBy: jest.fn().mockResolvedValue([]),
       },
     };
 
@@ -137,6 +170,10 @@ describe('AttendanceService', () => {
     characters = {
       list: jest.fn().mockResolvedValue([]),
       exists: jest.fn().mockResolvedValue(true),
+      findByDiscordId: jest
+        .fn()
+        .mockResolvedValue({ id: CHARACTER_ID, role: GuildRole.MEMBER }),
+      findById: jest.fn().mockResolvedValue(OWN_ROW),
     };
 
     stubSchedule(WEDNESDAY);
@@ -151,7 +188,7 @@ describe('AttendanceService', () => {
           sessionId: SESSION_IDS['Thứ 7 · Bang Chiến'],
           status: AttendanceStatus.PRESENT,
         },
-        null,
+        MEMBER,
       );
 
       expect(record).toEqual({
@@ -169,7 +206,7 @@ describe('AttendanceService', () => {
           sessionId: SESSION_IDS['Thứ 7 · Bang Chiến'],
           status: AttendanceStatus.PRESENT,
         },
-        null,
+        MEMBER,
       );
       const changed = await service.mark(
         {
@@ -177,7 +214,7 @@ describe('AttendanceService', () => {
           sessionId: SESSION_IDS['Thứ 7 · Bang Chiến'],
           status: AttendanceStatus.ABSENT,
         },
-        null,
+        MEMBER,
       );
 
       expect(changed.status).toBe(AttendanceStatus.ABSENT);
@@ -203,7 +240,7 @@ describe('AttendanceService', () => {
             sessionId: SESSION_IDS['Thứ 7 · Bang Chiến'],
             status: AttendanceStatus.PRESENT,
           },
-          null,
+          MEMBER,
         ),
       ).rejects.toThrow(NotFoundException);
     });
@@ -216,7 +253,7 @@ describe('AttendanceService', () => {
             sessionId: 'session-da-xoa',
             status: AttendanceStatus.PRESENT,
           },
-          null,
+          MEMBER,
         ),
       ).rejects.toThrow(NotFoundException);
     });
@@ -229,7 +266,7 @@ describe('AttendanceService', () => {
             sessionId: SESSION_IDS['Thứ 3 · 20:30'],
             status: AttendanceStatus.PRESENT,
           },
-          null,
+          MEMBER,
         ),
       ).rejects.toThrow(ConflictException);
     });
@@ -273,7 +310,7 @@ describe('AttendanceService', () => {
             sessionId: SESSION_IDS['Thứ 7 · Bang Chiến'],
             status: AttendanceStatus.PRESENT,
           },
-          null,
+          MEMBER,
         ),
       ).rejects.toThrow(ConflictException);
     });
@@ -293,7 +330,7 @@ describe('AttendanceService', () => {
           sessionId: SESSION_IDS['Thứ 3 · 20:30'],
           status: AttendanceStatus.PRESENT,
         },
-        null,
+        MEMBER,
       );
 
       expect(record.status).toBe(AttendanceStatus.PRESENT);
@@ -301,13 +338,101 @@ describe('AttendanceService', () => {
   });
 
   describe('getCharacters', () => {
-    it('trả thẳng danh sách của CharactersService, không tự truy vấn bảng', async () => {
+    it('cán bộ nhận cả bang, thẳng từ CharactersService', async () => {
       const roster = [
-        { id: CHARACTER_ID, name: 'Huy', guildClass: GuildClass.THIET_Y },
+        OWN_ROW,
+        { id: OTHER_CHARACTER_ID, name: 'Mèo', guildClass: GuildClass.TO_VAN },
       ];
       characters.list.mockResolvedValue(roster);
 
-      await expect(service.getCharacters()).resolves.toEqual(roster);
+      await expect(service.getCharacters(LEADER)).resolves.toEqual(roster);
+    });
+
+    it('bang chúng chỉ nhận nhân vật của chính mình', async () => {
+      await expect(service.getCharacters(MEMBER)).resolves.toEqual([OWN_ROW]);
+      expect(characters.list).not.toHaveBeenCalled();
+    });
+
+    it('tài khoản chưa gắn nhân vật thì nhận danh sách rỗng', async () => {
+      characters.findByDiscordId.mockResolvedValue(null);
+
+      await expect(service.getCharacters(MEMBER)).resolves.toEqual([]);
+    });
+  });
+
+  describe('điểm danh theo vai', () => {
+    it('cán bộ điểm danh hộ người khác thì bị chặn', async () => {
+      await expect(
+        service.mark(
+          {
+            characterId: OTHER_CHARACTER_ID,
+            sessionId: SESSION_IDS['Thứ 7 · Bang Chiến'],
+            status: AttendanceStatus.PRESENT,
+          },
+          LEADER,
+        ),
+      ).rejects.toThrow(ForbiddenException);
+      expect(prisma.attendanceRecord.upsert).not.toHaveBeenCalled();
+    });
+
+    it('quản trị viên điểm danh hộ được và ghi lại người bấm', async () => {
+      characters.findByDiscordId.mockResolvedValue(null);
+
+      await service.mark(
+        {
+          characterId: OTHER_CHARACTER_ID,
+          sessionId: SESSION_IDS['Thứ 7 · Bang Chiến'],
+          status: AttendanceStatus.PRESENT,
+        },
+        ADMIN,
+      );
+
+      const [args] = prisma.attendanceRecord.upsert.mock.calls[0] as [
+        {
+          create: { markedByCharacterId: string | null };
+          update: { markedByCharacterId: string | null };
+        },
+      ];
+      expect(args.create.markedByCharacterId).toBeNull();
+      expect(args.update.markedByCharacterId).toBeNull();
+    });
+
+    it('bang chúng chỉ đọc lượt điểm danh của chính mình', async () => {
+      await service.getRecords(MEMBER);
+
+      const [args] = prisma.attendanceRecord.findMany.mock.calls[0] as [
+        { where: { characterId?: string } },
+      ];
+      expect(args.where.characterId).toBe(CHARACTER_ID);
+    });
+
+    it('bang chúng chưa gắn nhân vật thì không đọc được lượt nào', async () => {
+      characters.findByDiscordId.mockResolvedValue(null);
+
+      await expect(service.getRecords(MEMBER)).resolves.toEqual([]);
+      expect(prisma.attendanceRecord.findMany).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getSummary', () => {
+    it('đếm Có/Không theo từng trận, không kèm danh tính', async () => {
+      prisma.attendanceRecord.groupBy.mockResolvedValue([
+        {
+          sessionId: 'session-sat',
+          status: AttendanceStatus.PRESENT,
+          _count: { _all: 3 },
+        },
+        {
+          sessionId: 'session-sat',
+          status: AttendanceStatus.ABSENT,
+          _count: { _all: 1 },
+        },
+      ]);
+
+      await expect(service.getSummary()).resolves.toEqual([
+        { sessionId: 'session-tue', coCount: 0, khongCount: 0 },
+        { sessionId: 'session-sat', coCount: 3, khongCount: 1 },
+      ]);
     });
   });
 
@@ -315,7 +440,7 @@ describe('AttendanceService', () => {
     it('chỉ đọc record của các trận trong tuần đang mở', async () => {
       prisma.attendanceRecord.findMany.mockResolvedValue([]);
 
-      await service.getRecords();
+      await service.getRecords(LEADER);
 
       expect(prisma.attendanceRecord.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -334,7 +459,7 @@ describe('AttendanceService', () => {
         },
       ]);
 
-      await expect(service.getRecords()).resolves.toEqual([
+      await expect(service.getRecords(LEADER)).resolves.toEqual([
         {
           characterId: CHARACTER_ID,
           sessionId: 'session-sat',

@@ -32,3 +32,20 @@ export const attendanceRecordSchema = z.object({
 
 /** Kiểu một lượt điểm danh API trả về. */
 export type AttendanceRecord = z.infer<typeof attendanceRecordSchema>;
+
+/**
+ * Số lượt điểm danh của một trận, không kèm danh tính.
+ * Bang chúng chỉ thấy hàng của chính mình nên mất cảm giác "trận này thiếu người";
+ * con số này bù lại mà không lộ ai đăng ký trận nào.
+ */
+export const attendanceSummarySchema = z.object({
+  /** ID buổi đánh */
+  sessionId: z.string(),
+  /** Số người trả lời Có */
+  coCount: z.number().int().nonnegative(),
+  /** Số người trả lời Không */
+  khongCount: z.number().int().nonnegative(),
+});
+
+/** Kiểu số đếm điểm danh API trả về. */
+export type AttendanceSummary = z.infer<typeof attendanceSummarySchema>;

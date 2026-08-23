@@ -84,7 +84,9 @@ export async function exchangeCodeForProfile(
   });
 
   if (!profileResponse.ok) {
-    throw new Error(`Không đọc được hồ sơ Discord (${profileResponse.status}).`);
+    throw new Error(
+      `Không đọc được hồ sơ Discord (${profileResponse.status}).`,
+    );
   }
 
   const profile = (await profileResponse.json()) as {

@@ -10,7 +10,8 @@ const DEFAULT_REDIRECT = '/';
  * @returns Đường dẫn an toàn để redirect sau khi đăng nhập
  */
 export function safeRedirect(value: string | undefined): string {
-  if (!value?.startsWith('/') || value.startsWith('//')) return DEFAULT_REDIRECT;
+  if (!value?.startsWith('/') || value.startsWith('//'))
+    return DEFAULT_REDIRECT;
 
   return value;
 }

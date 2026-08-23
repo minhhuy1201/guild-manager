@@ -1,4 +1,4 @@
-import { ADMIN_ROLE } from '@guild/shared/enums';
+import { GuildRole } from '@guild/shared/enums';
 
 import { TOKEN_TYPE, type JwtPayload } from '../../constants/auth.constant';
 import { readBearerToken, readToken } from '../read-bearer-token';
@@ -6,7 +6,7 @@ import { readBearerToken, readToken } from '../read-bearer-token';
 /** Payload access token hợp lệ dùng chung cho mọi ca. */
 const ACCESS: JwtPayload = {
   sub: 'admin',
-  role: ADMIN_ROLE,
+  role: GuildRole.ADMIN,
   type: TOKEN_TYPE.access,
 };
 
@@ -79,7 +79,7 @@ describe('readToken', () => {
   });
 
   it('payload thiếu type thì null', async () => {
-    const noType = { sub: 'admin', role: ADMIN_ROLE } as JwtPayload;
+    const noType = { sub: 'admin', role: GuildRole.ADMIN } as JwtPayload;
 
     await expect(
       readToken('abc', verifiesAs(noType), TOKEN_TYPE.access),

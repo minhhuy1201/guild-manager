@@ -28,7 +28,9 @@ export class AdminGuard implements CanActivate {
     const role = request.user?.role;
 
     if (!role || !canManageGuild(role)) {
-      throw new ForbiddenException('Bạn không có quyền thực hiện thao tác này.');
+      throw new ForbiddenException(
+        'Bạn không có quyền thực hiện thao tác này.',
+      );
     }
 
     return true;

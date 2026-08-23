@@ -92,7 +92,8 @@ export class CharactersService {
       return toGuildMember(row);
     } catch (error) {
       // Ràng buộc duy nhất duy nhất có thể vỡ ở đây là discordId — id không nằm trong `data`.
-      if (isUniqueViolation(error)) throw new ConflictException(DISCORD_ID_TAKEN);
+      if (isUniqueViolation(error))
+        throw new ConflictException(DISCORD_ID_TAKEN);
       throw error;
     }
   }

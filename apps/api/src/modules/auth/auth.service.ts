@@ -15,7 +15,10 @@ import {
 import { Clock, TOKEN_TYPE, readToken, type JwtPayload } from '../../common';
 import { verifyResponse, type AppConfigService } from '../../config';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
-import { CharactersService, toCharacter } from '../characters/characters.public';
+import {
+  CharactersService,
+  toCharacter,
+} from '../characters/characters.public';
 import {
   ACCESS_TOKEN_TTL,
   AUTH_ERROR,
@@ -276,12 +279,18 @@ export class AuthService {
     const base = { sub: discordId, role: user.role } as const;
 
     const [accessToken, refreshToken] = await Promise.all([
-      this.jwt.signAsync({ ...base, type: TOKEN_TYPE.access } satisfies JwtPayload, {
-        expiresIn: ACCESS_TOKEN_TTL,
-      }),
-      this.jwt.signAsync({ ...base, type: TOKEN_TYPE.refresh } satisfies JwtPayload, {
-        expiresIn: REFRESH_TOKEN_TTL,
-      }),
+      this.jwt.signAsync(
+        { ...base, type: TOKEN_TYPE.access } satisfies JwtPayload,
+        {
+          expiresIn: ACCESS_TOKEN_TTL,
+        },
+      ),
+      this.jwt.signAsync(
+        { ...base, type: TOKEN_TYPE.refresh } satisfies JwtPayload,
+        {
+          expiresIn: REFRESH_TOKEN_TTL,
+        },
+      ),
     ]);
 
     return { accessToken, refreshToken, user };

@@ -18,7 +18,8 @@ describe('validateEnv', () => {
   });
 
   it('chết ngay khi thiếu DISCORD_CLIENT_SECRET', () => {
-    const { DISCORD_CLIENT_SECRET: _omitted, ...withoutSecret } = base;
+    const withoutSecret: Partial<typeof base> = { ...base };
+    delete withoutSecret.DISCORD_CLIENT_SECRET;
 
     expect(() => validateEnv(withoutSecret)).toThrow(
       /Biến môi trường không hợp lệ/,
