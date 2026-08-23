@@ -4,6 +4,7 @@ export * from './constants/auth.constant';
 export * from './constants/http.constant';
 export * from './decorators/current-user.decorator';
 export * from './filters/all-exceptions.filter';
+export * from './guards/admin.guard';
 export * from './guards/jwt-auth.guard';
 export * from './guards/optional-jwt-auth.guard';
 export * from './interceptors/logging.interceptor';
