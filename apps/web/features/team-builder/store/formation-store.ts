@@ -18,7 +18,18 @@ interface FormationState {
   setActiveMatch: (index: number) => void;
   /** Switch to another week; drafts of the previous week are dropped */
   setWeek: (weekStart: string | null) => void;
-  /** Replace a day's draft outright — used by the prefill and by add/remove match */
+  /**
+   * Start a day's draft from `initial`, or leave the draft it already has.
+   * This is the only door the saved copy comes through, and it comes as a
+   * starting value the caller already holds: the store never fetches it and
+   * never keeps a second copy of it beside the draft.
+   */
+  ensureDraft: (sessionId: string, initial: MatchDraft[]) => void;
+  /**
+   * Replace a day's draft outright. `useFormationDraft` owns this — nothing
+   * else may write `drafts` wholesale, or two hooks end up deciding what a
+   * day contains.
+   */
   setDraft: (sessionId: string, matches: MatchDraft[]) => void;
   /** Discard a day's draft, falling back to the saved copy */
   clearDraft: (sessionId: string) => void;
@@ -26,20 +37,14 @@ interface FormationState {
   drop: (
     sessionId: string,
     matchIndex: number,
-    base: MatchDraft[],
     source: DragSource,
     characterId: string,
     target: DropTarget
   ) => void;
-  /**
-   * Write the note of one slot in one match.
-   * Takes `base` for the same reason `drop` does: the day may have no draft yet,
-   * and the first note typed has to build one from the saved copy.
-   */
+  /** Write the note of one slot in one match of the day's draft */
   setNote: (
     sessionId: string,
     matchIndex: number,
-    base: MatchDraft[],
     slotId: string,
     text: string
   ) => void;
@@ -66,6 +71,12 @@ export const useFormationStore = create<FormationState>((set) => ({
       activeSessionId: null,
       activeMatchIndex: 0,
     }),
+  ensureDraft: (sessionId, initial) =>
+    set((state) =>
+      state.drafts[sessionId]
+        ? state
+        : { drafts: { ...state.drafts, [sessionId]: initial } }
+    ),
   setDraft: (sessionId, matches) =>
     set((state) => ({ drafts: { ...state.drafts, [sessionId]: matches } })),
   clearDraft: (sessionId) =>
@@ -74,11 +85,14 @@ export const useFormationStore = create<FormationState>((set) => ({
       delete next[sessionId];
       return { drafts: next };
     }),
-  drop: (sessionId, matchIndex, base, source, characterId, target) =>
+  drop: (sessionId, matchIndex, source, characterId, target) =>
     set((state) => {
-      const current = state.drafts[sessionId] ?? base;
-      const match = current[matchIndex];
-      if (!match) return state;
+      const current = state.drafts[sessionId];
+      const match = current?.[matchIndex];
+      // No draft means the caller skipped `ensureDraft`; there is nothing here
+      // to edit, and guessing the saved copy is exactly what this store must
+      // not do.
+      if (!current || !match) return state;
 
       const next = applyDrop(match.assignment, source, characterId, target);
 
@@ -91,11 +105,11 @@ export const useFormationStore = create<FormationState>((set) => ({
 
       return { drafts: { ...state.drafts, [sessionId]: matches } };
     }),
-  setNote: (sessionId, matchIndex, base, slotId, text) =>
+  setNote: (sessionId, matchIndex, slotId, text) =>
     set((state) => {
-      const current = state.drafts[sessionId] ?? base;
-      const match = current[matchIndex];
-      if (!match) return state;
+      const current = state.drafts[sessionId];
+      const match = current?.[matchIndex];
+      if (!current || !match) return state;
 
       const notes = { ...match.notes };
       // A slot cleared back to blank loses its key, the same way an empty slot
