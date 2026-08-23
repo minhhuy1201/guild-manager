@@ -104,7 +104,7 @@ export function AttendanceRow({
               onClick={onCancel}
             />
             <RowActionButton
-              label="Xác nhận"
+              label="Xác nhận điểm danh"
               icon={<Check className="size-4" />}
               variant="default"
               onClick={() => onConfirm(character)}
@@ -112,7 +112,7 @@ export function AttendanceRow({
           </RowActions>
         ) : (
           <EditAction
-            label="Chỉnh sửa"
+            label="Điểm danh"
             disabled={allLocked}
             onClick={() => onStartEdit(character)}
           />

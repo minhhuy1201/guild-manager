@@ -251,9 +251,9 @@ trong `mock-formation.ts`:
  * `undefined` = ô trống hiện nhãn trung tính.
  */
 const SUGGESTED_CLASS_TEMPLATE: readonly (GuildClass | undefined)[] = [
-  undefined,             // vị trí 1 — "Ô trống"
+  GuildClass.TO_VAN,     // vị trí 1 — "Tố Vấn"
   GuildClass.TO_VAN,     // vị trí 2 — "Tố Vấn"
-  GuildClass.TO_VAN,     // vị trí 3 — "Tố Vấn"
+  undefined,             // vị trí 3 — "Ô trống"
   undefined,             // vị trí 4 — "Ô trống"
   undefined,             // vị trí 5 — "Ô trống"
   undefined,             // vị trí 6 — "Ô trống"

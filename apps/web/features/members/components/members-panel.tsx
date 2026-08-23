@@ -83,7 +83,7 @@ export function MembersPanel() {
             <TableRow>
               <TableHead>Tên</TableHead>
               <TableHead>Lưu phái</TableHead>
-              <TableHead className="text-right">Thao tác</TableHead>
+              <TableHead>Điểm danh</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

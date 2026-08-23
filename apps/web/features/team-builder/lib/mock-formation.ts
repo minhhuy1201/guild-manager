@@ -16,9 +16,9 @@ export const SLOTS_PER_TEAM = 6;
  * array is enough; nothing else depends on the specific classes.
  */
 const SUGGESTED_CLASS_TEMPLATE: readonly (GuildClass | undefined)[] = [
+  GuildClass.TO_VAN,
+  GuildClass.TO_VAN,
   undefined,
-  GuildClass.TO_VAN,
-  GuildClass.TO_VAN,
   undefined,
   undefined,
   undefined,
