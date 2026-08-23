@@ -1,9 +1,9 @@
 "use client";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 
+import { useInvalidate } from "@/hooks/use-invalidate";
 import { saveFormation } from "../api/team-builder-api";
-import { teamBuilderKeys } from "../api/team-builder-keys";
 
 /**
  * Persist one session's formation.
@@ -12,12 +12,10 @@ import { teamBuilderKeys } from "../api/team-builder-keys";
  * @returns TanStack mutation; use mutateAsync to catch backend errors
  */
 export function useSaveFormation() {
-  const queryClient = useQueryClient();
+  const invalidate = useInvalidate("formation");
 
   return useMutation({
     mutationFn: saveFormation,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: teamBuilderKeys.all });
-    },
+    onSuccess: invalidate,
   });
 }

@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import type { BattleSession } from "@guild/shared/schemas";
 
-import { attendanceKeys } from "../api/attendance-keys";
+import { useInvalidate } from "@/hooks/use-invalidate";
 
 /**
  * Schedules a refresh exactly when the next attendance deadline passes, so the
@@ -15,23 +14,16 @@ import { attendanceKeys } from "../api/attendance-keys";
  * @returns Nothing — the hook only schedules a cache invalidation
  */
 export function useDeadlineRefresh(sessions: BattleSession[]): void {
-  const queryClient = useQueryClient();
+  const invalidate = useInvalidate("attendance-window");
   const nextDeadline = findNextDeadline(sessions);
 
   useEffect(() => {
     if (nextDeadline === null) return;
 
-    const timer = setTimeout(() => {
-      void queryClient.invalidateQueries({
-        queryKey: attendanceKeys.sessions(),
-      });
-      void queryClient.invalidateQueries({
-        queryKey: attendanceKeys.records(),
-      });
-    }, nextDeadline - Date.now());
+    const timer = setTimeout(invalidate, nextDeadline - Date.now());
 
     return () => clearTimeout(timer);
-  }, [nextDeadline, queryClient]);
+  }, [nextDeadline, invalidate]);
 }
 
 /**

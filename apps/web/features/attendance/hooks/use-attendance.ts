@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type { Character } from "@guild/shared/schemas";
 
+import { useInvalidate } from "@/hooks/use-invalidate";
 import { matchesRosterFilter } from "@/lib/roster-filter";
 import { attendanceKeys } from "../api/attendance-keys";
 import {
@@ -89,12 +90,11 @@ export function useFilteredCharacters(
  * @returns Mutation TanStack (dùng mutateAsync để bắt lỗi validation)
  */
 export function useMarkAttendance() {
-  const queryClient = useQueryClient();
+  const invalidate = useInvalidate("attendance");
+
   return useMutation({
     mutationFn: markAttendance,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: attendanceKeys.records() });
-    },
+    onSuccess: invalidate,
   });
 }
 
@@ -104,11 +104,10 @@ export function useMarkAttendance() {
  * @returns Mutation TanStack (dùng mutateAsync để bắt lỗi từ backend)
  */
 export function useMarkAttendanceAsAdmin() {
-  const queryClient = useQueryClient();
+  const invalidate = useInvalidate("attendance");
+
   return useMutation({
     mutationFn: markAttendanceAsAdmin,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: attendanceKeys.records() });
-    },
+    onSuccess: invalidate,
   });
 }
