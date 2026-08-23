@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { AlertCircle, LoaderCircle, Save } from "lucide-react";
+import { Save } from "lucide-react";
 
 import {
   GUILD_CLASS_LABEL,
@@ -11,14 +11,8 @@ import {
 } from "@guild/shared/enums";
 import type { Character } from "@guild/shared/schemas";
 
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { MutationDialogShell } from "@/components/shared/mutation-dialog";
+import { MutationForm } from "@/components/shared/mutation-form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -28,7 +22,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ApiError } from "@/lib/api-client";
 import { GUILD_CLASS_IMAGE } from "@/lib/guild-class";
 import { useCreateMember, useUpdateMember } from "../hooks/use-member-mutations";
 
@@ -54,14 +47,10 @@ export function MemberFormDialog({
   onOpenChange,
 }: MemberFormDialogProps) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        {/* Form nằm ở component con nên state tự reset mỗi lần mở lại. */}
-        {open && (
-          <MemberForm member={member} onDone={() => onOpenChange(false)} />
-        )}
-      </DialogContent>
-    </Dialog>
+    // Vỏ chỉ mount thân khi mở, nên state của form tự reset mỗi lần mở lại.
+    <MutationDialogShell open={open} onOpenChange={onOpenChange}>
+      <MemberForm member={member} onDone={() => onOpenChange(false)} />
+    </MutationDialogShell>
   );
 }
 
@@ -83,45 +72,28 @@ function MemberForm({ member, onDone }: MemberFormProps) {
   const [guildClass, setGuildClass] = useState<GuildClass>(
     member?.guildClass ?? GUILD_CLASS_OPTIONS[0]
   );
-  const [error, setError] = useState<string | null>(null);
 
   const createMutation = useCreateMember();
   const updateMutation = useUpdateMember();
-  const saving = createMutation.isPending || updateMutation.isPending;
-
-  /**
-   * Gửi form: tạo mới hoặc cập nhật tuỳ theo đang sửa ai.
-   * @param event - Sự kiện submit form
-   * @returns Promise hoàn tất khi đã lưu xong hoặc đã hiển thị lỗi
-   */
-  async function handleSubmit(event: React.FormEvent) {
-    event.preventDefault();
-    setError(null);
-
-    const input = { name: name.trim(), guildClass };
-
-    try {
-      if (member) {
-        await updateMutation.mutateAsync({ id: member.id, input });
-      } else {
-        await createMutation.mutateAsync(input);
-      }
-      onDone();
-    } catch (caught) {
-      setError(
-        caught instanceof ApiError ? caught.message : "Không lưu được thay đổi."
-      );
-    }
-  }
 
   return (
-    <form onSubmit={handleSubmit} className="grid gap-4">
-      <DialogHeader>
-        <DialogTitle>
-          {member ? "Sửa thành viên" : "Thêm thành viên"}
-        </DialogTitle>
-      </DialogHeader>
+    <MutationForm
+      title={member ? "Sửa thành viên" : "Thêm thành viên"}
+      submitLabel="Lưu"
+      pendingLabel="Đang lưu…"
+      submitIcon={<Save />}
+      fallbackError="Không lưu được thay đổi."
+      onDone={onDone}
+      run={async () => {
+        const input = { name: name.trim(), guildClass };
 
+        if (member) {
+          await updateMutation.mutateAsync({ id: member.id, input });
+          return;
+        }
+        await createMutation.mutateAsync(input);
+      }}
+    >
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="member-name">Tên</Label>
         <Input
@@ -154,21 +126,7 @@ function MemberForm({ member, onDone }: MemberFormProps) {
           </SelectContent>
         </Select>
       </div>
-
-      {error && (
-        <div className="flex items-start gap-1.5 text-sm text-destructive">
-          <AlertCircle className="mt-0.5 size-4 shrink-0" />
-          {error}
-        </div>
-      )}
-
-      <DialogFooter>
-        <Button type="submit" disabled={saving}>
-          {saving ? <LoaderCircle className="animate-spin" /> : <Save />}
-          {saving ? "Đang lưu…" : "Lưu"}
-        </Button>
-      </DialogFooter>
-    </form>
+    </MutationForm>
   );
 }
 
