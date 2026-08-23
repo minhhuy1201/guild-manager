@@ -1,25 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { AlertCircle, LoaderCircle, Save } from "lucide-react";
+import { Save } from "lucide-react";
 
-import {
-  deadlineCapFor,
-  isWithinDeadlineCap,
-} from "@guild/shared/lib";
+import { deadlineCapFor, isWithinDeadlineCap } from "@guild/shared/lib";
 import { DEADLINE_CAP_MESSAGE, type BattleSession } from "@guild/shared/schemas";
 
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { MutationDialogShell } from "@/components/shared/mutation-dialog";
+import { MutationForm } from "@/components/shared/mutation-form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ApiError } from "@/lib/api-client";
 import {
   useCreateSession,
   useUpdateSession,
@@ -54,14 +44,10 @@ export function SessionFormDialog({
   onOpenChange,
 }: SessionFormDialogProps) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        {/* Form nằm ở component con nên state tự reset mỗi lần mở lại. */}
-        {open && (
-          <SessionForm session={session} onDone={() => onOpenChange(false)} />
-        )}
-      </DialogContent>
-    </Dialog>
+    // Vỏ chỉ mount thân khi mở, nên state của form tự reset mỗi lần mở lại.
+    <MutationDialogShell open={open} onOpenChange={onOpenChange}>
+      <SessionForm session={session} onDone={() => onOpenChange(false)} />
+    </MutationDialogShell>
   );
 }
 
@@ -89,11 +75,9 @@ function SessionForm({ session, onDone }: SessionFormProps) {
   );
   const [opponent, setOpponent] = useState(session?.opponent ?? "");
   const [deadlineTouched, setDeadlineTouched] = useState(Boolean(session));
-  const [error, setError] = useState<string | null>(null);
 
   const createMutation = useCreateSession();
   const updateMutation = useUpdateSession();
-  const saving = createMutation.isPending || updateMutation.isPending;
 
   /**
    * Đổi giờ đánh, đồng thời điền sẵn hạn chót nếu người dùng chưa tự sửa ô đó.
@@ -110,18 +94,16 @@ function SessionForm({ session, onDone }: SessionFormProps) {
   }
 
   /**
-   * Gửi form: tạo mới hoặc cập nhật tuỳ theo đang sửa trận nào.
-   * @param event - Sự kiện submit form
-   * @returns Promise hoàn tất khi đã lưu xong hoặc đã hiển thị lỗi
+   * Kiểm tra hai ô ngày giờ rồi tạo mới hoặc cập nhật tuỳ theo đang sửa trận nào.
+   * Ném lỗi thì `MutationForm` giữ dialog lại và hiện đúng câu đã ném.
+   * @returns Promise hoàn tất khi đã lưu xong
    */
-  async function handleSubmit(event: React.FormEvent) {
-    event.preventDefault();
-    setError(null);
-
+  async function submitSession() {
     // Ô ngày giờ trả về rỗng khi người dùng gõ dở hoặc gõ ngày không có thật.
     if (!dateTime || (!isGuildWar && !deadline)) {
-      setError("Ngày giờ chưa hợp lệ. Nhập theo dạng dd/mm/yyyy và HH:mm.");
-      return;
+      throw new Error(
+        "Ngày giờ chưa hợp lệ. Nhập theo dạng dd/mm/yyyy và HH:mm."
+      );
     }
 
     // Ô ngày giờ là hai input text có mask, không phải `datetime-local`, nên
@@ -130,44 +112,39 @@ function SessionForm({ session, onDone }: SessionFormProps) {
       !isGuildWar &&
       !isWithinDeadlineCap(new Date(deadline), new Date(dateTime))
     ) {
-      setError(DEADLINE_CAP_MESSAGE);
+      throw new Error(DEADLINE_CAP_MESSAGE);
+    }
+
+    if (!session) {
+      await createMutation.mutateAsync({
+        dateTime: fromInputValue(dateTime),
+        deadline: fromInputValue(deadline),
+        opponent: opponent.trim() || null,
+      });
       return;
     }
 
-    try {
-      if (!session) {
-        await createMutation.mutateAsync({
-          dateTime: fromInputValue(dateTime),
-          deadline: fromInputValue(deadline),
-          opponent: opponent.trim() || null,
-        });
-      } else {
-        // Hạn chót của Guild War do hệ thống đặt; gửi lên là 400.
-        await updateMutation.mutateAsync({
-          id: session.id,
-          input: {
-            dateTime: fromInputValue(dateTime),
-            ...(isGuildWar ? {} : { deadline: fromInputValue(deadline) }),
-            opponent: isGuildWar ? null : opponent.trim() || null,
-          },
-        });
-      }
-      onDone();
-    } catch (caught) {
-      setError(
-        caught instanceof ApiError ? caught.message : "Không lưu được thay đổi."
-      );
-    }
+    // Hạn chót của Guild War do hệ thống đặt; gửi lên là 400.
+    await updateMutation.mutateAsync({
+      id: session.id,
+      input: {
+        dateTime: fromInputValue(dateTime),
+        ...(isGuildWar ? {} : { deadline: fromInputValue(deadline) }),
+        opponent: isGuildWar ? null : opponent.trim() || null,
+      },
+    });
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid gap-4">
-      <DialogHeader>
-        <DialogTitle>
-          {session ? "Sửa ngày đánh" : "Thêm trận scrim"}
-        </DialogTitle>
-      </DialogHeader>
-
+    <MutationForm
+      title={session ? "Sửa ngày đánh" : "Thêm trận scrim"}
+      submitLabel="Lưu"
+      pendingLabel="Đang lưu…"
+      submitIcon={<Save />}
+      fallbackError="Không lưu được thay đổi."
+      onDone={onDone}
+      run={submitSession}
+    >
       <DateTimeField
         id="session-date-time"
         label="Ngày giờ đánh"
@@ -209,20 +186,6 @@ function SessionForm({ session, onDone }: SessionFormProps) {
           description="Muộn nhất 10:00 sáng ngày đánh."
         />
       )}
-
-      {error && (
-        <div className="flex items-start gap-1.5 text-sm text-destructive">
-          <AlertCircle className="mt-0.5 size-4 shrink-0" />
-          {error}
-        </div>
-      )}
-
-      <DialogFooter>
-        <Button type="submit" disabled={saving}>
-          {saving ? <LoaderCircle className="animate-spin" /> : <Save />}
-          {saving ? "Đang lưu…" : "Lưu"}
-        </Button>
-      </DialogFooter>
-    </form>
+    </MutationForm>
   );
 }
