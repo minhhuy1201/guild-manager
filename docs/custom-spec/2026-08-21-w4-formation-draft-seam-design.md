@@ -67,22 +67,18 @@ tên.
 
 ### 1. `useFormationDraft` là người duy nhất chạm store
 
-Interface phơi ra thao tác **theo ý nghĩa**, không theo cơ chế:
+Hook đã phơi ra thao tác **theo ý nghĩa** chứ không theo cơ chế — `applyDrop`, `setNote`, `addMatch`,
+`removeMatch`, `clearActiveDraft`, `resetActive` — và **không** thao tác nào trong số đó nhận `base`:
+`use-formation-draft.ts:165,176` tự bơm `matches` vào trước khi gọi store. Rò `base` là rò giữa hook
+và store, không phải giữa hook và UI, nên không component nào phải đổi và không tên nào phải đổi.
+
+Thứ còn thiếu là **một** thao tác: chỗ để pool nạp đề xuất vào một ngày chưa có nháp.
 
 ```ts
-export interface FormationDraftActions {
-  /** Đặt một người vào ô, hoặc đổi chỗ hai người */
-  placeCharacter: (source: DragSource, characterId: string, target: DropTarget) => void;
-  /** Ghi chú của một ô */
-  writeNote: (slotId: string, text: string) => void;
-  /** Thêm trận 2 vào ngày đang mở */
-  addMatch: () => void;
-  /** Bỏ trận 2 */
-  removeMatch: () => void;
-  /** Nạp một đề xuất đội hình vào ngày chưa có nháp */
+export interface FormationDraftState {
+  // … 22 khoá hiện có, giữ nguyên tên …
+  /** Nạp một đề xuất đội hình vào ngày chưa có nháp; ngày đã có thì không đụng */
   seedFrom: (proposal: MatchDraft[]) => void;
-  /** Bỏ nháp, quay về bản đã lưu */
-  discard: () => void;
 }
 ```
 
@@ -91,13 +87,29 @@ Không thao tác nào nhận `base`, `sessionId` hay `matchIndex` — hook đã 
 
 ### 2. Store thu hẹp interface
 
-`drop` và `setNote` bỏ tham số `base`. Chúng vẫn cần biết "chưa có nháp thì bắt đầu từ đâu", nhưng
-câu trả lời đến từ một chỗ: hook gọi `ensureDraft(sessionId, saved)` một lần trước khi ghi, hoặc
-truyền bản đã lưu vào store một lần khi ngày được mở. Chọn **cách một** — nó giữ store không biết gì
-về server data, đúng luật §4.2.
+`drop` và `setNote` bỏ tham số `base` và chỉ ghi vào nháp **đã có sẵn**. Câu trả lời cho "chưa có nháp
+thì bắt đầu từ đâu" đến từ đúng một chỗ: store nhận một action mới,
 
-`setDraft` chuyển thành `private` theo quy ước (không export ra ngoài module store, chỉ
-`useFormationDraft` import), và comment `:21` liệt kê người dùng biến mất vì chỉ còn một người dùng.
+```ts
+/** Ngày này chưa có nháp thì bắt đầu từ `initial`; đã có thì không đụng gì */
+ensureDraft: (sessionId: string, initial: MatchDraft[]) => void;
+```
+
+và `useFormationDraft` gọi nó **một lần ngay trước** mỗi lần ghi, trong cùng một lần xử lý sự kiện —
+`set` của Zustand là đồng bộ nên lần ghi thứ hai đọc được state vừa cập nhật. Store vẫn không **giữ**
+dữ liệu server: bản đã lưu đi vào như một giá trị khởi đầu và từ giây đó nó là nháp, tức UI state,
+đúng luật §4.2.
+
+`ensureDraft` phục vụ luôn ca thứ hai: nạp đề xuất điền sẵn khác ca thứ nhất đúng ở giá trị truyền
+vào. Vì thế store nhận **một** action mới chứ không phải hai đường, và `seedFrom` của hook là một dòng
+gọi lại nó. `seedFrom` là dependency của `useEffect` bên pool nên nó được bọc `useCallback` — chỉ
+`activeSessionId` và `ensureDraft` làm dependency, cả hai đều ổn định, nên effect không chạy lại sau
+mỗi thao tác kéo thả.
+
+`setDraft` **không** thể thành `private`: `useFormationStore` là một hook được export và mọi khoá của
+state đi cùng nó. Cái đạt được là số người gọi rơi từ ba xuống một (`useFormationDraft`, cho
+`addMatch`/`removeMatch`/`clearActiveDraft`), và doc comment `:21` đổi từ liệt kê người dùng thành
+nêu luật: nó là của hook draft, không của ai khác.
 
 ### 3. `useFormationPool` gọi `seedFrom`, không gọi store
 
@@ -114,42 +126,52 @@ Chúng khác việc: pool tính đề xuất, draft giữ chỉnh sửa. C4 tác
 
 | File | Thay đổi |
 |---|---|
-| `store/formation-store.ts:25-43` | `drop`/`setNote` bỏ `base`; thêm `ensureDraft`; `setDraft` thôi export |
-| `store/formation-store.ts:78, 95` | bỏ `?? base` |
-| `hooks/use-formation-draft.ts` | thêm 6 thao tác §1; tự bơm `base`/`sessionId`/`matchIndex` |
-| `hooks/use-formation-pool.ts:137-143` | `setDraft` → `draft.seedFrom` |
-| `hooks/use-formation-screen.ts:39-40` | comment cơ chế bỏ, comment domain giữ |
-| `components/*` | gọi `placeCharacter`/`writeNote` thay vì truyền `base` xuống |
+| `store/formation-store.ts:25-45` | `drop`/`setNote` bỏ `base`; thêm `ensureDraft`; doc comment `setDraft` |
+| `store/formation-store.ts:79, 96` | `?? base` → đọc thẳng `state.drafts[sessionId]`, không có thì thôi |
+| `hooks/use-formation-draft.ts` | `editActiveDraft` bơm `ensureDraft` + `sessionId`; thêm `seedFrom` |
+| `hooks/use-formation-pool.ts:64, 121, 137-143` | `setDraft` → tham số `seedFrom`; bỏ `hasDraft` |
+| `hooks/use-formation-screen.ts:39-40, 52-61` | truyền `draft.seedFrom` vào pool; comment cơ chế đổi thành dây nối có tên |
 
-`FormationDraftState` hiện là **22 khoá** (`use-formation-draft.ts:31-74`). Sau spec nó không nhỏ đi
-nhiều — phần lớn là handler mà UI thật sự cần. Đó là chấp nhận được: spec này nhắm vào *hằng số bị
-rò*, không nhắm vào số lượng khoá.
+**Không component nào đổi**, và không thao tác nào của hook đổi tên: `base` chưa bao giờ ra khỏi
+`use-formation-draft.ts`.
+
+`FormationDraftState` hiện là **22 khoá** (`use-formation-draft.ts:31-74`) và sau spec là **23** —
+`seedFrom`. Spec này nhắm vào *hằng số bị rò*, không nhắm vào số lượng khoá.
 
 ## Edge case
 
 - **Ngày chưa có nháp, người dùng gõ ghi chú đầu tiên** — chính ca mà `base` sinh ra để phục vụ.
-  `ensureDraft` phải chạy trước khi `setNote` ghi, trong cùng một lần xử lý sự kiện.
+  `ensureDraft` chạy trước `setNote` trong cùng một lần xử lý sự kiện.
+- **Thả ra ngoài mọi vùng, trên ngày chưa có nháp.** Đây là thay đổi hành vi duy nhất của spec, và nó
+  vô hình: `ensureDraft` chạy trước nên ngày giờ có một nháp **y hệt bản đã lưu**, chỗ trước đây không
+  có nháp nào. `dirty` so nội dung (`isDayDirty`) nên vẫn `false`; banner điền sẵn so nội dung với đề
+  xuất nên vẫn đúng. Hai test của store đang khẳng định "không tạo nháp" phải đổi theo, cùng commit.
 - **Đổi tuần** (`setWeek`, `:62-68`) xoá sạch `drafts`. Giữ nguyên; `seedFrom` sau đó gặp ngày trống
   là đúng.
-- **Prefill chạy trong `useEffect`** — thứ tự giữa "server data về" và "seed" phải giữ nguyên, nếu
-  không prefill ghi đè lên nháp người dùng vừa sửa. Điều kiện "chỉ seed khi ngày **chưa** có nháp"
-  phải nằm trong `seedFrom`, không phải ở caller (hiện nó ở caller).
+- **Prefill chạy trong `useEffect`** — điều kiện "chỉ seed khi ngày **chưa** có nháp" chuyển từ caller
+  vào `ensureDraft` của store, tức là vào chính phép ghi. Không còn khoảng nào giữa lúc kiểm tra và
+  lúc ghi.
 - **`applyDrop` trả cùng tham chiếu cho drop ngoài vùng** (`:83-84`) — luật đó ở `lib/assignment.ts`
   và không đổi.
 
 ## Kiểm thử
 
-- `use-formation-draft.test.ts` đã có → mở rộng: `seedFrom` trên ngày đã có nháp **không** ghi đè;
-  `writeNote` trên ngày chưa có nháp dựng nháp từ bản đã lưu; `discard` quay về bản đã lưu.
-- Ca hiện khó test: seed prefill. Sau spec nó chạy qua `useFormationDraft` nên test được ở đó, không
-  cần dựng `useEffect` của pool.
-- `use-formation-pool.test.ts` giữ phần tính đề xuất; phần ghi chuyển sang test của draft.
+- `formation-store.test.ts`: mọi lời gọi `drop`/`setNote` bỏ `base` và có `ensureDraft` đứng trước.
+  Hai ca "không tạo nháp" đổi thành "không đổi nháp". Ba ca mới: `ensureDraft` dựng nháp khi thiếu;
+  `ensureDraft` không đè nháp đã có; `drop` khi chưa có nháp thì không ghi gì.
+- `use-formation-draft.test.ts` mở rộng: `seedFrom` trên ngày chưa có nháp thì nạp; `seedFrom` trên
+  ngày đã có nháp **không** ghi đè; `setNote` đầu tiên trên ngày chưa có nháp dựng nháp từ bản đã lưu
+  (đội hình đã lưu còn nguyên); thả ra ngoài vùng thì ngày không dirty.
+- `use-formation-pool.test.ts` giữ phần tính đề xuất và phần banner, nhận thêm `seedFrom`; thêm một ca
+  khẳng định pool **không** tự ghi store — ngày đã có nháp thì `seedFrom` được gọi nhưng nháp không
+  đổi.
 
 ## Rủi ro
 
 - **Thứ tự effect.** Đây là phần dễ sai nhất: gom phép ghi lại có thể đổi thời điểm nháp được dựng.
   Chuyển từng thao tác một, chạy `pnpm --filter web test` sau mỗi thao tác.
-- **Interface store đổi kéo theo component.** TypeScript chỉ ra hết; không có sai lặng.
+- **Interface store đổi kéo theo hook.** Không component nào chạm tới, và TypeScript chỉ ra hết những
+  chỗ còn lại; không có sai lặng.
 
 ## Ngoài phạm vi
 
