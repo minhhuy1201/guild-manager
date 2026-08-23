@@ -1,19 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { LoaderCircle, Trash2, X } from "lucide-react";
 import type { BattleSession } from "@guild/shared/schemas";
 
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ConfirmDeleteDialog } from "@/components/shared/confirm-delete-dialog";
 import { getSessionSubtitle } from "@/features/attendance";
-import { ApiError } from "@/lib/api-client";
 import { useDeleteSession } from "../hooks/use-session-mutations";
 
 interface DeleteSessionDialogProps {
@@ -54,68 +44,31 @@ export function DeleteSessionDialog({
   onClose,
 }: DeleteSessionDialogProps) {
   const deleteMutation = useDeleteSession();
-  const [error, setError] = useState<string | null>(null);
-
-  /**
-   * Xoá trận rồi đóng dialog; thất bại thì giữ dialog và hiện lỗi.
-   * @returns Promise hoàn tất khi đã xoá xong hoặc đã hiển thị lỗi
-   */
-  async function handleDelete() {
-    if (!session) return;
-    setError(null);
-
-    try {
-      await deleteMutation.mutateAsync(session.id);
-      onClose();
-    } catch (caught) {
-      setError(
-        caught instanceof ApiError ? caught.message : "Không xoá được trận này."
-      );
-    }
-  }
 
   return (
-    <Dialog
+    <ConfirmDeleteDialog
       open={session !== null}
       onOpenChange={(open) => {
-        if (!open) {
-          setError(null);
-          onClose();
-        }
+        if (!open) onClose();
+      }}
+      // Tiêu đề dựng ở ngoài phần thân, nên vẫn phải phòng lúc dialog đã đóng.
+      title={session ? `Xoá trận ${session.label}?` : ""}
+      description={
+        session && (
+          <div className="text-sm text-muted-foreground">
+            {getSessionSubtitle(session)}
+          </div>
+        )
+      }
+      submitLabel="Xoá trận"
+      pendingLabel="Đang xoá…"
+      fallbackError="Không xoá được trận này."
+      run={async () => {
+        if (!session) return;
+        await deleteMutation.mutateAsync(session.id);
       }}
     >
-      <DialogContent>
-        {session && (
-          <div className="grid gap-3">
-            <DialogHeader>
-              <DialogTitle>Xoá trận {session.label}?</DialogTitle>
-            </DialogHeader>
-            <div className="text-sm text-muted-foreground">
-              {getSessionSubtitle(session)}
-            </div>
-            <div className="text-sm">{describeLoss(session)}</div>
-            {error && <div className="text-sm text-destructive">{error}</div>}
-            <DialogFooter>
-              <Button variant="ghost" onClick={onClose}>
-                <X />
-                Huỷ
-              </Button>
-              <Button
-                variant="destructive"
-                disabled={deleteMutation.isPending}
-                onClick={handleDelete}
-              >
-                {deleteMutation.isPending ? (
-                  <LoaderCircle className="animate-spin" />
-                ) : (
-                  <Trash2 />
-                )}
-                {deleteMutation.isPending ? "Đang xoá…" : "Xoá trận"}
-              </Button>
-            </DialogFooter>
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
+      <div className="text-sm">{session && describeLoss(session)}</div>
+    </ConfirmDeleteDialog>
   );
 }
