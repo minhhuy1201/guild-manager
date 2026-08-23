@@ -12,19 +12,6 @@ import { recordKey } from "../lib/record-key";
 export type { MarkAttendanceInput };
 
 /**
- * Query key factory cho domain điểm danh.
- * Dùng chung cho mọi useQuery/invalidateQueries của feature này.
- */
-export const attendanceKeys = {
-  all: ["attendance"] as const,
-  characters: () => [...attendanceKeys.all, "characters"] as const,
-  sessions: () => [...attendanceKeys.all, "sessions"] as const,
-  weeks: () => [...attendanceKeys.all, "weeks"] as const,
-  week: () => [...attendanceKeys.all, "week"] as const,
-  records: () => [...attendanceKeys.all, "records"] as const,
-};
-
-/**
  * Lấy danh sách nhân vật trong bang.
  * @returns Promise trả về mảng nhân vật
  */

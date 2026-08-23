@@ -5,8 +5,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Character } from "@guild/shared/schemas";
 
 import { matchesRosterFilter } from "@/lib/roster-filter";
+import { attendanceKeys } from "../api/attendance-keys";
 import {
-  attendanceKeys,
   fetchAttendanceRecords,
   fetchBattleSessions,
   fetchCharacters,
