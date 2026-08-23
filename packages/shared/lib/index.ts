@@ -3,4 +3,5 @@
  * điểm danh mà cả hai app dùng chung.
  */
 export * from './battle-session';
+export * from './permissions';
 export * from './vn-time';
