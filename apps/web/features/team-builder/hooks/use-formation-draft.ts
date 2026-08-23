@@ -163,10 +163,22 @@ export function useFormationDraft(
   function editActiveDraft(write: (sessionId: string) => void) {
     if (!activeSessionId) return;
 
+    const sessionId = activeSessionId;
+    const readDraft = () => useFormationStore.getState().drafts[sessionId];
+    const hadDraft = Boolean(readDraft());
+
     // Zustand's `set` is synchronous, so the write below already sees the draft
     // this line put in place.
-    ensureDraft(activeSessionId, matches);
-    write(activeSessionId);
+    ensureDraft(sessionId, matches);
+    write(sessionId);
+
+    // The write changed nothing — a drag released outside every droppable, say.
+    // Put the day back the way it was found: a draft equal to the saved copy
+    // would shadow the next refetch, could not be discarded (Đặt lại is
+    // disabled while the day is clean), and would block a prefill that only
+    // becomes eligible later. Reference equality is the test because every
+    // write that does change something builds a new array.
+    if (!hadDraft && readDraft() === matches) clearDraft(sessionId);
   }
 
   /**

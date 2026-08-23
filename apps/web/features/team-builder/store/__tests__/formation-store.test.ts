@@ -8,14 +8,14 @@ const SAVED: Assignment = {
   "team-1-pos-2": null,
 };
 
-/** Ngày một trận, dùng làm bản đã lưu trong hầu hết các test. */
+/** A one-match day, standing in for the saved copy in most of these tests. */
 const ONE_MATCH: MatchDraft[] = [{ assignment: SAVED, notes: {} }];
 
 /**
- * Đặt nháp của một ngày vào đúng chỗ bản đã lưu, như hook draft làm trước mỗi
- * lần ghi.
- * @param sessionId - Ngày cần có nháp
- * @param initial - Bản đã lưu của ngày đó
+ * Put a day's draft in place from its saved copy, the way the draft hook does
+ * before every write.
+ * @param sessionId - Day that needs a draft
+ * @param initial - Saved copy of that day
  */
 function openDraft(sessionId: string, initial: MatchDraft[] = ONE_MATCH) {
   useFormationStore.getState().ensureDraft(sessionId, initial);

@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ApiError } from "@/lib/api-client";
 import { saveFormation } from "../../api/team-builder-api";
+import { useFormationStore } from "../../store/formation-store";
 import { useFormationDraft } from "../use-formation-draft";
 import { makeSession, renderFormationHook } from "./render-formation-hook";
 
@@ -282,5 +283,29 @@ describe("useFormationDraft — nạp đề xuất và nền của lần ghi đ�
 
     expect(result.current.dirty).toBe(false);
     expect(result.current.assignment[SLOT]).toBe("char-1");
+  });
+
+  it("thao tác không đổi gì thì không để lại nháp nào cho ngày chưa sửa", () => {
+    const { result } = renderDraft();
+
+    act(() =>
+      result.current.applyDrop({ kind: "slot", slotId: SLOT }, "char-1", null)
+    );
+
+    // Một nháp bằng y bản đã lưu sẽ che mất lần tải lại sau, và không có nút
+    // nào bỏ được nó vì ngày vẫn sạch.
+    expect(useFormationStore.getState().drafts[SESSION_ID]).toBeUndefined();
+  });
+
+  it("thao tác không đổi gì KHÔNG vứt mất nháp người dùng đang sửa dở", () => {
+    const { result } = renderDraft();
+
+    act(() => result.current.setNote(SLOT, "vào sau"));
+    act(() =>
+      result.current.applyDrop({ kind: "slot", slotId: SLOT }, "char-1", null)
+    );
+
+    expect(result.current.notes[SLOT]).toBe("vào sau");
+    expect(result.current.dirty).toBe(true);
   });
 });

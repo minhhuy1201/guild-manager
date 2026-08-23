@@ -76,7 +76,7 @@ Thứ còn thiếu là **một** thao tác: chỗ để pool nạp đề xuất 
 
 ```ts
 export interface FormationDraftState {
-  // … 22 khoá hiện có, giữ nguyên tên …
+  // … 19 khoá hiện có, giữ nguyên tên …
   /** Nạp một đề xuất đội hình vào ngày chưa có nháp; ngày đã có thì không đụng */
   seedFrom: (proposal: MatchDraft[]) => void;
 }
@@ -128,24 +128,37 @@ Chúng khác việc: pool tính đề xuất, draft giữ chỉnh sửa. C4 tác
 |---|---|
 | `store/formation-store.ts:25-45` | `drop`/`setNote` bỏ `base`; thêm `ensureDraft`; doc comment `setDraft` |
 | `store/formation-store.ts:79, 96` | `?? base` → đọc thẳng `state.drafts[sessionId]`, không có thì thôi |
-| `hooks/use-formation-draft.ts` | `editActiveDraft` bơm `ensureDraft` + `sessionId`; thêm `seedFrom` |
+| `hooks/use-formation-draft.ts` | `editActiveDraft` bơm `ensureDraft` + `sessionId` và hoàn lại hạt giống khi phép ghi không đổi gì; thêm `seedFrom` |
 | `hooks/use-formation-pool.ts:64, 121, 137-143` | `setDraft` → tham số `seedFrom`; `hasDraft` → `activeDraft`, chỉ còn là nhịp kích lại effect |
 | `hooks/use-formation-screen.ts:39-40, 52-61` | truyền `draft.seedFrom` vào pool; comment cơ chế đổi thành dây nối có tên |
+| `apps/web/docs/frontend.md` §9 | một dòng anti-pattern: hai hook cùng ghi một slice của store |
 
 **Không component nào đổi**, và không thao tác nào của hook đổi tên: `base` chưa bao giờ ra khỏi
 `use-formation-draft.ts`.
 
-`FormationDraftState` hiện là **22 khoá** (`use-formation-draft.ts:31-74`) và sau spec là **23** —
+`FormationDraftState` hiện là **19 khoá** (`use-formation-draft.ts:31-74`) và sau spec là **20** —
 `seedFrom`. Spec này nhắm vào *hằng số bị rò*, không nhắm vào số lượng khoá.
 
 ## Edge case
 
 - **Ngày chưa có nháp, người dùng gõ ghi chú đầu tiên** — chính ca mà `base` sinh ra để phục vụ.
   `ensureDraft` chạy trước `setNote` trong cùng một lần xử lý sự kiện.
-- **Thả ra ngoài mọi vùng, trên ngày chưa có nháp.** Đây là thay đổi hành vi duy nhất của spec, và nó
-  vô hình: `ensureDraft` chạy trước nên ngày giờ có một nháp **y hệt bản đã lưu**, chỗ trước đây không
-  có nháp nào. `dirty` so nội dung (`isDayDirty`) nên vẫn `false`; banner điền sẵn so nội dung với đề
-  xuất nên vẫn đúng. Hai test của store đang khẳng định "không tạo nháp" phải đổi theo, cùng commit.
+- **Thao tác không đổi gì, trên ngày chưa có nháp** — thả ra ngoài mọi vùng, kéo trong pool rồi thả
+  lại vào pool, thả một người về đúng ô họ đang đứng. `applyDrop` trả đúng tham chiếu cũ cho cả ba, và
+  vì `ensureDraft` chạy **trước** phép ghi, ngày sẽ đọng lại một nháp **y hệt bản đã lưu** ở chỗ trước
+  đây không có nháp nào. Nháp đó **không** vô hình:
+  - `matchesBySession` ưu tiên `drafts` hơn `savedBySession`, nên lần refetch sau của ngày đó không
+    lên được màn hình nữa;
+  - không nút nào bỏ được nó — "Đặt lại" là `disabled={!dirty}` và `isDayDirty` so nội dung nên ngày
+    vẫn sạch;
+  - nó **chặn điền sẵn**: guard của pool là `!proposal || activeDraft`, nên một ngày trắng lỡ dính
+    thao tác hụt sẽ không bao giờ được điền khi một ngày trước đó có đội hình về sau.
+
+  Vì vậy `editActiveDraft` **hoàn lại** hạt giống của chính nó khi phép ghi không đổi gì: nhớ ngày đó
+  vốn có nháp hay chưa, và nếu chưa mà nháp sau khi ghi vẫn đúng tham chiếu vừa gieo thì `clearDraft`.
+  So sánh bằng tham chiếu là đủ vì mọi phép ghi có tác dụng đều dựng mảng mới. Kết quả: **không có
+  thay đổi hành vi nào nhìn thấy được** trên màn hình. Ở tầng store thì có: hai test đang khẳng định
+  "không tạo nháp" đổi thành "không đổi nháp", vì store một mình không còn tự dựng nháp nữa.
 - **Đổi tuần** (`setWeek`, `:62-68`) xoá sạch `drafts`. Giữ nguyên; `seedFrom` sau đó gặp ngày trống
   là đúng.
 - **Prefill chạy trong `useEffect`** — điều kiện "chỉ seed khi ngày **chưa** có nháp" chuyển từ caller
@@ -163,7 +176,8 @@ Chúng khác việc: pool tính đề xuất, draft giữ chỉnh sửa. C4 tác
   `ensureDraft` không đè nháp đã có; `drop` khi chưa có nháp thì không ghi gì.
 - `use-formation-draft.test.ts` mở rộng: `seedFrom` trên ngày chưa có nháp thì nạp; `seedFrom` trên
   ngày đã có nháp **không** ghi đè; `setNote` đầu tiên trên ngày chưa có nháp dựng nháp từ bản đã lưu
-  (đội hình đã lưu còn nguyên); thả ra ngoài vùng thì ngày không dirty.
+  (đội hình đã lưu còn nguyên); thả ra ngoài vùng thì ngày không dirty **và không đọng lại nháp nào**;
+  cùng thao tác hụt đó **không** vứt mất nháp người dùng đang sửa dở.
 - `use-formation-pool.test.ts` giữ phần tính đề xuất và phần banner, nhận thêm `seedFrom`; thêm một ca
   khẳng định pool **không** tự ghi store — đưa cho nó một `seedFrom` rỗng thì đề xuất vẫn được giao
   đủ nhưng `drafts` không hề có ngày đó.
@@ -178,5 +192,5 @@ Chúng khác việc: pool tính đề xuất, draft giữ chỉnh sửa. C4 tác
 ## Ngoài phạm vi
 
 - Gộp pool vào draft (đã loại ở §4).
-- Thu nhỏ `FormationDraftState` từ 22 khoá — việc riêng, và chưa chắc đáng.
+- Thu nhỏ `FormationDraftState` từ 19 khoá — việc riêng, và chưa chắc đáng.
 - Đưa nháp vào `sessionStorage` để không mất khi reload — chưa ai yêu cầu.
