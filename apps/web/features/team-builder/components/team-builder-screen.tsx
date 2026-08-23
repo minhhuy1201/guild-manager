@@ -13,7 +13,6 @@ import { ErrorState } from "@/components/shared/error-state";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFormationScreen } from "../hooks/use-formation-screen";
-import { ClassShortage } from "./class-shortage";
 import { FormationGrid } from "./formation-grid";
 import { FormationToolbar } from "./formation-toolbar";
 import { MemberCard } from "./member-card";
@@ -127,8 +126,7 @@ export function TeamBuilderScreen() {
           onRemove={screen.draft.removeMatch}
         />
 
-        <div className="flex flex-wrap items-center justify-between gap-2 mt-4">
-          <ClassShortage pool={screen.pool.pool} />
+        <div className="flex flex-wrap items-center justify-end gap-2 mt-4">
           <FormationToolbar
             dirty={screen.draft.dirty}
             saving={screen.draft.saving}

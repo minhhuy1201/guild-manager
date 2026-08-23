@@ -43,7 +43,7 @@ có test nào. Coverage đang bám theo *"có nằm trong `lib/` không"*, khôn
 | `useFormationWeek` | tuần đang xem, quyền sửa tuần | `week-status` | 4 khoá |
 | `useSessionSelection` | ngày đánh đang mở, quyền sửa ngày | `active-session`, `session-status` | 4 khoá |
 | `useFormationDraft` | bản nháp, trận 1/trận 2, lưu/huỷ | `wire`, `formation-diff`, `active-match`, `mock-formation`, `assignment` (qua store) | 12 khoá |
-| `useFormationPool` | danh sách người xếp được | `pool`, `session-pool`, `class-shortage`, `prefill` | 6 khoá |
+| `useFormationPool` | danh sách người xếp được | `pool`, `session-pool`, `prefill` | 6 khoá |
 | `useFormationDnd` | cử chỉ kéo thả | `dnd-data` | 3 khoá |
 
 `useFormationScreen` vẫn còn, nhưng chỉ còn là **phép ghép**: gọi năm hook, trả về object **năm
