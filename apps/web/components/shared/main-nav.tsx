@@ -61,14 +61,11 @@ export function MainNav({ isAdmin }: MainNavProps) {
               variant={isActive ? "secondary" : "ghost"}
               size="lg"
               aria-current={isActive ? "page" : undefined}
-              className={cn(
-                "h-10 gap-2 px-3.5 text-sm",
-                !isActive && "text-muted-foreground"
-              )}
+              className={cn(!isActive && "text-muted-foreground")}
               nativeButton={false}
               render={<Link href={href} />}
             >
-              <Icon className="size-5" />
+              <Icon />
               <span className="hidden sm:inline">{label}</span>
             </Button>
           );

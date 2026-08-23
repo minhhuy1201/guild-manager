@@ -15,13 +15,13 @@ export async function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-10 border-b bg-background">
-      <div className="mx-auto flex h-18 max-w-[100rem] items-center gap-3 px-4 sm:px-6">
+      <div className="mx-auto flex h-14 max-w-[1600px] items-center gap-3 px-4 sm:px-6">
         <Link
           href={ROUTES.attendance}
           className="flex min-w-0 items-center gap-3 rounded-lg outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
         >
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <Cat className="size-7" />
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <Cat className="size-6" />
           </span>
           <span className="truncate text-lg font-bold tracking-tight sm:text-xl">
             Mèo Mập Giang Hồ

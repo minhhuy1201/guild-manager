@@ -194,6 +194,11 @@
     }
   html {
     @apply font-sans;
+    /* Scales the whole UI up ~20%: every size in the app is expressed in rem
+       (text, control heights, --spacing, --radius), so the root font size is the
+       single control point. A percentage keeps the user's browser font-size
+       preference intact, unlike a hard px value. */
+    font-size: 120%;
     }
 }
 

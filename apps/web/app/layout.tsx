@@ -31,7 +31,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <Providers>
           <SiteHeader />
-          <main className="mx-auto flex w-full max-w-[100rem] flex-col gap-4 px-4 py-6">
+          <main className="mx-auto flex w-full max-w-[1600px] flex-col gap-4 px-4 py-6">
             {children}
           </main>
         </Providers>

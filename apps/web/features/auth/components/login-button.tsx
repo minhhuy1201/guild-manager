@@ -48,13 +48,12 @@ export function LoginButton({ username }: LoginButtonProps) {
               <Button
                 variant="ghost"
                 size="icon-lg"
-                className="size-10"
                 onClick={handleLogout}
                 disabled={isPending}
               />
             }
           >
-            <LogOut className="size-5" />
+            <LogOut />
             <span className="sr-only">Đăng xuất</span>
           </TooltipTrigger>
           <TooltipContent>Đăng xuất</TooltipContent>
@@ -71,12 +70,11 @@ export function LoginButton({ username }: LoginButtonProps) {
             <Button
               variant="outline"
               size="icon-lg"
-              className="size-10"
               onClick={() => setDialogOpen(true)}
             />
           }
         >
-          <LogIn className="size-5" />
+          <LogIn />
           <span className="sr-only">Đăng nhập</span>
         </TooltipTrigger>
         <TooltipContent>Đăng nhập</TooltipContent>
