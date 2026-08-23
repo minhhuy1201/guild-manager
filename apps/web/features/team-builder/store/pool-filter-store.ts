@@ -1,13 +1,14 @@
 import { create } from "zustand";
 import type { GuildClass } from "@guild/shared/enums";
 
+import type { RosterFilter } from "@/lib/roster-filter";
+
 interface PoolFilterState {
   /** Search keyword over character name and in-game id */
   search: string;
   /** Guild classes being filtered. An empty array means every class. */
   guildClasses: GuildClass[];
-  setSearch: (value: string) => void;
-  setGuildClasses: (value: GuildClass[]) => void;
+  setFilter: (value: RosterFilter) => void;
 }
 
 /**
@@ -17,6 +18,6 @@ interface PoolFilterState {
 export const usePoolFilterStore = create<PoolFilterState>((set) => ({
   search: "",
   guildClasses: [],
-  setSearch: (value) => set({ search: value }),
-  setGuildClasses: (value) => set({ guildClasses: value }),
+  setFilter: (value) =>
+    set({ search: value.search, guildClasses: value.guildClasses }),
 }));
