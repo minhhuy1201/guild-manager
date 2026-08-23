@@ -1,15 +1,13 @@
 "use client";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import type {
   CreateCharacterInput,
   UpdateCharacterInput,
 } from "@guild/shared/schemas";
 
-import { attendanceKeys } from "@/features/attendance";
-import { teamBuilderKeys } from "@/features/team-builder";
+import { useInvalidate } from "@/hooks/use-invalidate";
 import { createMember, deleteMember, updateMember } from "../api/members-api";
-import { memberKeys } from "../api/members-keys";
 
 /** Payload sửa một thành viên. */
 export interface UpdateMemberVariables {
@@ -20,30 +18,11 @@ export interface UpdateMemberVariables {
 }
 
 /**
- * Làm mới mọi màn phụ thuộc danh sách thành viên sau khi thêm/sửa/xoá.
- * Bảng điểm danh và trang Xếp team đều liệt kê nhân vật, thiếu chỗ nào là
- * các màn lệch nhau cho tới lần tải lại trang.
- * @returns Hàm invalidate dùng trong onSuccess của mutation
- */
-function useInvalidateMembers() {
-  const queryClient = useQueryClient();
-
-  return () => {
-    void queryClient.invalidateQueries({ queryKey: memberKeys.all });
-    void queryClient.invalidateQueries({
-      queryKey: attendanceKeys.characters(),
-    });
-    void queryClient.invalidateQueries({ queryKey: attendanceKeys.records() });
-    void queryClient.invalidateQueries({ queryKey: teamBuilderKeys.all });
-  };
-}
-
-/**
  * Mutation thêm thành viên.
  * @returns Mutation TanStack (dùng mutateAsync để bắt lỗi backend)
  */
 export function useCreateMember() {
-  const invalidate = useInvalidateMembers();
+  const invalidate = useInvalidate("roster");
 
   return useMutation({
     mutationFn: (input: CreateCharacterInput) => createMember(input),
@@ -56,7 +35,7 @@ export function useCreateMember() {
  * @returns Mutation TanStack (dùng mutateAsync để bắt lỗi backend)
  */
 export function useUpdateMember() {
-  const invalidate = useInvalidateMembers();
+  const invalidate = useInvalidate("roster");
 
   return useMutation({
     mutationFn: ({ id, input }: UpdateMemberVariables) =>
@@ -71,7 +50,7 @@ export function useUpdateMember() {
  * @returns Mutation TanStack (dùng mutateAsync để bắt lỗi backend)
  */
 export function useDeleteMember() {
-  const invalidate = useInvalidateMembers();
+  const invalidate = useInvalidate("roster");
 
   return useMutation({
     mutationFn: (id: string) => deleteMember(id),
