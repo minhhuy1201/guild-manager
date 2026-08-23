@@ -31,7 +31,8 @@ export function DeleteMemberDialog({
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
-      // Tiêu đề dựng ở ngoài phần thân, nên vẫn phải phòng lúc dialog đã đóng.
+      // Vỏ không mount thân khi đóng nên nhánh rỗng không bao giờ hiện ra;
+      // nó có mặt vì `title` là chuỗi bắt buộc còn `member` thì nullable.
       title={member ? `Xoá ${member.name}?` : ""}
       submitLabel="Xoá thành viên"
       pendingLabel="Đang xoá…"

@@ -51,7 +51,8 @@ export function DeleteSessionDialog({
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
-      // Tiêu đề dựng ở ngoài phần thân, nên vẫn phải phòng lúc dialog đã đóng.
+      // Vỏ không mount thân khi đóng nên các nhánh rỗng ở đây không bao giờ
+      // hiện ra; chúng có mặt vì `session` nullable còn `title` là chuỗi bắt buộc.
       title={session ? `Xoá trận ${session.label}?` : ""}
       description={
         session && (

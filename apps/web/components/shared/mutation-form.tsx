@@ -96,8 +96,8 @@ export function MutationForm({
       setError(errorMessageOf(caught, fallbackError));
       return;
     } finally {
-      // Cleared before onDone so the flag is down by the time the shell is
-      // asked to close — a closing dialog must not still look busy.
+      // Both flags drop however the write ended. The shell's copy matters most
+      // on the failure path: the form stays up, and its X must work again.
       setIsPending(false);
       reportPending(false);
     }

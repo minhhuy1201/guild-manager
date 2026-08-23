@@ -66,9 +66,8 @@ Và không có chỗ nào kiểm được năm luật đó: `find apps/web -name
 ```tsx
 // components/shared/mutation-dialog.tsx
 
-export interface MutationDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+// Chín khoá của giao thức ghi, dùng chung cho cả MutationForm.
+export interface MutationFormProps {
   title: string;
   description?: ReactNode;
   /** Nhãn nút xác nhận lúc rảnh và lúc đang chạy */
@@ -76,22 +75,38 @@ export interface MutationDialogProps {
   pendingLabel: string;
   /** Icon nút xác nhận (Save, Trash2…) */
   submitIcon: ReactNode;
-  /** Câu hiện khi lỗi không phải ApiError */
+  /** Câu hiện khi lỗi không mang message nào */
   fallbackError: string;
   /** Kiểu nút xác nhận */
   variant?: "default" | "destructive";
   /** Thao tác ghi. Ném thì dialog giữ nguyên và hiện lỗi; xong êm thì dialog đóng. */
   run: () => Promise<unknown>;
+  /** Gọi sau khi ghi xong êm */
+  onDone: () => void;
+  /** Nút "Huỷ". Không truyền thì không có nút — X ở góc vẫn còn. */
+  onCancel?: () => void;
   /** Thân dialog: các ô nhập, hoặc câu cảnh báo xoá */
   children?: ReactNode;
+}
+
+// Bản ghép vỏ + giao thức tự nối onDone/onCancel vào onOpenChange, nên nó
+// không nhận hai khoá đó mà nhận một cờ bật/tắt nút "Huỷ".
+export interface MutationDialogProps
+  extends Omit<MutationFormProps, "onDone" | "onCancel"> {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  /** Hiện nút "Huỷ" cạnh nút xác nhận */
+  showCancel?: boolean;
 }
 ```
 
 Toàn bộ năm luật ở trên nằm **bên trong** module này. Người gọi chỉ nói *cái gì được ghi* (`run`) và
 *trông thế nào* (`children`, nhãn).
 
-Interface 9 khoá nhưng 6 trong số đó là chuỗi/nhãn thuần — phần *hành vi* người gọi phải hiểu chỉ có
-`run` và hợp đồng "ném = giữ dialog". Đó là chỗ độ sâu nằm.
+`MutationDialogProps` 12 khoá, nhưng 7 trong số đó chỉ nói *trông thế nào* (6 nhãn/icon +
+`children`), 2 là cờ (`variant`, `showCancel`), 2 là cặp mở/đóng quen thuộc của mọi dialog
+(`open`, `onOpenChange`) — phần *hành vi* người gọi phải hiểu chỉ có `run` và hợp đồng
+"ném = giữ dialog". Đó là chỗ độ sâu nằm.
 
 ### 2. `run` trả `Promise`, không nhận callback
 
