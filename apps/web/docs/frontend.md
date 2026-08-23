@@ -392,10 +392,11 @@ Vitest, `pnpm test`. Tests live in `__tests__/` beside the folder they cover and
 environment by default. Most files here are `.test.ts` on node. Anything needing a DOM — a hook
 test, and the component tests — opts in with `// @vitest-environment jsdom` on its first line, so
 the rest of the suite stays on node; the include glob is `**/__tests__/**/*.test.ts?(x)`, so a
-`.tsx` test is picked up too. Component tests are the exception, not the rule: the two that exist cover
-`components/shared/mutation-dialog.tsx`, because the five write rules it holds have no pure function
-to test them through, and `components/shared/session-label.tsx`, because a convention about which
-icon and which colour appear can only be checked by rendering it. `@testing-library/react` has no `jest-dom` beside it — assert with
+`.tsx` test is picked up too. Component tests are the exception, not the rule: the two that exist
+cover `components/shared/mutation-dialog.tsx`, because the five write rules it holds have no pure
+function to test them through, and `components/shared/session-label.tsx`, because a convention about
+which icon and which colour appear can only be checked by rendering it.
+`@testing-library/react` has no `jest-dom` beside it — assert with
 Vitest's own matchers. `vitest.config.ts` pins `TZ=Asia/Ho_Chi_Minh`, because half the logic under
 test is about Vietnamese-time boundaries and it must not depend on the machine running it.
 

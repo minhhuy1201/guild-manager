@@ -1,5 +1,3 @@
-"use client";
-
 import type { ReactNode } from "react";
 import { Swords } from "lucide-react";
 
@@ -64,6 +62,11 @@ export function SessionLabel({
   );
 }
 
+export interface SessionDeadlineProps {
+  /** Battle whose deadline is shown; only its deadline is read */
+  session: Pick<BattleSession, "deadline">;
+}
+
 /**
  * The "Hạn chót: …" line of a battle.
  *
@@ -73,11 +76,7 @@ export function SessionLabel({
  * @param session - Battle whose deadline is shown
  * @returns The deadline line
  */
-export function SessionDeadline({
-  session,
-}: {
-  session: Pick<BattleSession, "deadline">;
-}) {
+export function SessionDeadline({ session }: SessionDeadlineProps) {
   return (
     <div className="text-xs text-muted-foreground">
       Hạn chót: {formatDateTime(session.deadline)}

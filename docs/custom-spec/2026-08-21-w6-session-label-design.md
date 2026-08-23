@@ -47,8 +47,10 @@ export interface SessionLabelProps {
 }
 ```
 
-Module giữ: chọn icon, màu chữ, cỡ icon theo `size`, và thứ tự icon–nhãn. Nó **không** giữ khung
-ngoài (viền, nền, khoảng cách) — mỗi màn có layout riêng và ép chung là làm hỏng cả bốn. Vì cùng lý
+Module giữ: chọn icon, màu chữ, cỡ icon theo `size`, thứ tự icon–nhãn, và khoảng hở **bên trong**
+hàng nhãn (`gap-1.5`, `font-medium` — cả bốn màn đang có sẵn cả hai). Nó **không** giữ khung ngoài
+(viền, nền, và khoảng cách giữa hàng nhãn với những dòng khác của màn) — mỗi màn có layout riêng và
+ép chung là làm hỏng cả bốn. Vì cùng lý
 do đó, **dòng phụ ở lại từng màn**: bốn màn xếp nó bốn kiểu (`gap-1.5`, `gap-1`, `block` trong `<th>`,
 `gap-0.5` trong `TabsTrigger`) với bốn kiểu chữ khác nhau, nên xếp nó ở đây là giữ khoảng cách hộ
 caller.
@@ -57,14 +59,19 @@ Cái thật sự cần một chỗ cắm là **bên trong hàng nhãn**: `sessio
 `session-tabs` gắn icon `Lock` và chấm dirty — cả ba nằm cùng hàng với nhãn. Đó là `children`.
 
 `size` là hai giá trị cố định chứ không phải một prop `className` tự do: đó là điểm khác biệt giữa
-một module có quy ước và một `div` có thêm chỗ để lệch. Nó chỉ điều khiển **cỡ icon**; cỡ chữ thừa
-hưởng từ cha (`<th>`, `TabsTrigger`, `CardContent`) và module không đè lên.
+một module có quy ước và một `div` có thêm chỗ để lệch. Nó chỉ điều khiển **cỡ icon**; **cỡ** chữ
+thừa hưởng từ cha (`<th>`, `TabsTrigger`, `CardContent`) và module không đè lên.
 
 ### 2. `SessionDeadline` tách riêng
 
 ```tsx
+export interface SessionDeadlineProps {
+  /** Trận cần hiển thị; chỉ đọc deadline */
+  session: Pick<BattleSession, "deadline">;
+}
+
 /** Dòng "Hạn chót: …" của một trận. */
-export function SessionDeadline({ session }: { session: Pick<BattleSession, "deadline"> }): ReactNode;
+export function SessionDeadline(props: SessionDeadlineProps): ReactNode;
 ```
 
 Chỉ **hai** trong bốn màn hiện dòng này — `week-timeline` và `session-row`; `attendance-grid` hiện

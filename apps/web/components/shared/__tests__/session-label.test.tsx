@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import type { ReactElement } from "react";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { formatDateTime } from "@/lib/format";
@@ -87,6 +87,5 @@ describe("SessionDeadline", () => {
     const { container } = render(<SessionDeadline session={{ deadline }} />);
 
     expect(container.textContent).toBe(`Hạn chót: ${formatDateTime(deadline)}`);
-    expect(screen.getByText(/^Hạn chót:/)).toBeDefined();
   });
 });
