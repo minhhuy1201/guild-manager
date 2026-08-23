@@ -51,7 +51,7 @@ export function MainNav({ isAdmin }: MainNavProps) {
   const pathname = usePathname();
 
   return (
-    <nav aria-label="Điều hướng chính" className="flex items-center gap-1">
+    <nav aria-label="Điều hướng chính" className="flex items-center gap-1.5">
       {NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin).map(
         ({ href, label, icon: Icon }) => {
           const isActive = pathname === href;
@@ -59,13 +59,16 @@ export function MainNav({ isAdmin }: MainNavProps) {
             <Button
               key={href}
               variant={isActive ? "secondary" : "ghost"}
-              size="sm"
+              size="lg"
               aria-current={isActive ? "page" : undefined}
-              className={cn(!isActive && "text-muted-foreground")}
+              className={cn(
+                "h-10 gap-2 px-3.5 text-sm",
+                !isActive && "text-muted-foreground"
+              )}
               nativeButton={false}
               render={<Link href={href} />}
             >
-              <Icon />
+              <Icon className="size-5" />
               <span className="hidden sm:inline">{label}</span>
             </Button>
           );

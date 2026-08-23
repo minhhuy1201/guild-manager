@@ -15,19 +15,19 @@ export async function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-10 border-b bg-background/80 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-[100rem] items-center gap-2.5 px-4">
+      <div className="mx-auto flex h-18 max-w-[100rem] items-center gap-3 px-4 sm:px-6">
         <Link
           href={ROUTES.attendance}
-          className="flex min-w-0 items-center gap-2.5 rounded-lg outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="flex min-w-0 items-center gap-3 rounded-lg outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
         >
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <Cat className="size-5" />
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <Cat className="size-7" />
           </span>
-          <span className="truncate text-base font-bold tracking-tight sm:text-lg">
+          <span className="truncate text-lg font-bold tracking-tight sm:text-xl">
             Mèo Mập Giang Hồ
           </span>
         </Link>
-        <div className="ml-auto flex shrink-0 items-center gap-2">
+        <div className="ml-auto flex shrink-0 items-center gap-2.5">
           <MainNav isAdmin={Boolean(session)} />
           <LoginButton username={session?.username ?? null} />
         </div>

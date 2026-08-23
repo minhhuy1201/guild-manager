@@ -40,20 +40,21 @@ export function LoginButton({ username }: LoginButtonProps) {
 
   if (username) {
     return (
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1.5">
         <span className="hidden text-sm font-medium sm:inline">{username}</span>
         <Tooltip>
           <TooltipTrigger
             render={
               <Button
                 variant="ghost"
-                size="icon-sm"
+                size="icon-lg"
+                className="size-10"
                 onClick={handleLogout}
                 disabled={isPending}
               />
             }
           >
-            <LogOut />
+            <LogOut className="size-5" />
             <span className="sr-only">Đăng xuất</span>
           </TooltipTrigger>
           <TooltipContent>Đăng xuất</TooltipContent>
@@ -69,12 +70,13 @@ export function LoginButton({ username }: LoginButtonProps) {
           render={
             <Button
               variant="outline"
-              size="icon-sm"
+              size="icon-lg"
+              className="size-10"
               onClick={() => setDialogOpen(true)}
             />
           }
         >
-          <LogIn />
+          <LogIn className="size-5" />
           <span className="sr-only">Đăng nhập</span>
         </TooltipTrigger>
         <TooltipContent>Đăng nhập</TooltipContent>
