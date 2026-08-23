@@ -4,10 +4,10 @@
 // App chạy CommonJS (NestJS) nên client phải sinh ra ở dạng cjs,
 // nếu không jest/ts-node sẽ vỡ vì `import.meta` trong code generate.
 generator client {
-  provider     = "prisma-client"
-  output       = "../src/generated/prisma"
-  moduleFormat = "cjs"
-  runtime      = "nodejs"
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  moduleFormat        = "cjs"
+  runtime             = "nodejs"
   // Import không đuôi để ts-node (seed script) resolve được, không chỉ webpack/jest.
   importFileExtension = ""
 }
@@ -34,15 +34,31 @@ enum AttendanceStatus {
   KHONG
 }
 
+/// Vai trò trong bang. Giá trị phải khớp enum GuildRole ở packages/shared/enums.
+enum GuildRole {
+  ADMIN
+  LEADER
+  MEMBER
+}
+
 /// Nhân vật trong bang hội.
 model Character {
   /// Khoá chính do hệ thống sinh: slug tên + hậu tố ngẫu nhiên ("meo-beo-k7ma3x").
-  id         String     @id
+  id              String     @id
   /// Tên hiển thị của nhân vật.
-  name       String
-  guildClass GuildClass
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
+  name            String
+  guildClass      GuildClass
+  /// Discord ID (snowflake) do quản trị viên nhập tay. Null = thành viên chưa đăng nhập được.
+  /// Nullable + @unique: Postgres cho nhiều NULL cùng tồn tại, nên "nhiều người chưa gán" là hợp lệ,
+  /// còn "hai người cùng một ID" thì không.
+  discordId       String?    @unique
+  /// Tên Discord đọc lúc đăng nhập gần nhất — để quản trị viên xác nhận đã gán đúng người.
+  discordUsername String?
+  /// Null = chưa từng đăng nhập lần nào.
+  lastLoginAt     DateTime?
+  role            GuildRole  @default(MEMBER)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
 
   attendanceRecords AttendanceRecord[]
   formationSlots    FormationSlot[]
@@ -54,21 +70,21 @@ model Character {
 model BattleSession {
   /// Guild War dùng id tất định `gw-<YYYY-MM-DD của weekStart>` để upsert idempotent;
   /// scrim do quản trị viên tạo dùng cuid() mặc định.
-  id        String   @id @default(cuid())
+  id         String   @id @default(cuid())
   /// Thời điểm diễn ra trận đánh.
-  dateTime  DateTime
+  dateTime   DateTime
   /// Hạn chót điểm danh. Scrim: quản trị viên đặt, tối đa 10:00 sáng ngày đánh
   /// (vượt trần thì backend từ chối chứ không kẹp). Guild War: hệ thống đặt
   /// 17:00 Thứ 5 cùng tuần, quản trị viên không sửa được.
-  deadline  DateTime
+  deadline   DateTime
   /// Tên bang đối thủ. null với Guild War và với scrim chưa chốt đối thủ.
-  opponent  String?
+  opponent   String?
   /// Trận Guild War — do hệ thống sinh, không xoá được.
-  isGuildWar Boolean @default(false)
+  isGuildWar Boolean  @default(false)
   /// Mốc Thứ 2 00:00 của tuần chứa trận này — dùng để gom trận theo tuần.
-  weekStart DateTime
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  weekStart  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   attendanceRecords AttendanceRecord[]
   /// Các trận trong ngày này (1 hoặc 2), mỗi trận một đội hình.
@@ -79,18 +95,35 @@ model BattleSession {
 
 /// Một lượt điểm danh của nhân vật cho một trận đánh.
 model AttendanceRecord {
-  id          String           @id @default(cuid())
-  characterId String
-  sessionId   String
-  status      AttendanceStatus
+  id                  String           @id @default(cuid())
+  characterId         String
+  sessionId           String
+  status              AttendanceStatus
   /// Thời điểm điểm danh gần nhất (đổi Có ⇄ Không trong hạn thì cập nhật lại).
-  markedAt    DateTime         @default(now())
+  markedAt            DateTime         @default(now())
+  /// Ai bấm lượt điểm danh này. Null với dữ liệu ghi trước khi có đăng nhập.
+  /// Không đặt quan hệ: xoá người bấm không được phép làm mất lượt điểm danh của người khác.
+  markedByCharacterId String?
 
   character Character     @relation(fields: [characterId], references: [id], onDelete: Cascade)
   session   BattleSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@unique([characterId, sessionId])
   @@index([sessionId])
+}
+
+/// Mã dùng một lần để web đổi lấy cặp JWT sau khi API xử lý xong OAuth callback.
+/// Sống 60 giây; hàng hết hạn được dọn ngay trong lần đổi mã kế tiếp.
+model AuthExchange {
+  /// 32 byte ngẫu nhiên base64url — chính là giá trị gửi cho web qua URL.
+  id        String    @id
+  /// Lưu discordId chứ không phải khoá ngoại: admin cứu hộ có thể không ứng với Character nào.
+  discordId String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([expiresAt])
 }
 
 /// Một trận trong ngày đánh (tối đa 2 — trần đặt ở Zod, không ở đây).
