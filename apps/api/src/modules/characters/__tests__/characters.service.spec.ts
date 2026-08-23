@@ -1,5 +1,5 @@
-import { NotFoundException } from '@nestjs/common';
-import { GuildClass } from '@guild/shared/enums';
+import { ConflictException, NotFoundException } from '@nestjs/common';
+import { GuildClass, GuildRole } from '@guild/shared/enums';
 
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { CharactersService } from '../characters.service';
@@ -9,8 +9,23 @@ const ROW = {
   id: 'meo-beo-k7ma3x',
   name: 'Mèo Béo',
   guildClass: GuildClass.CUU_LINH,
+  discordId: null,
+  discordUsername: null,
+  lastLoginAt: null,
+  role: GuildRole.MEMBER,
   createdAt: new Date(),
   updatedAt: new Date(),
+};
+
+/** Thành viên như màn quản trị nhìn thấy — shape mà list/create/update trả về. */
+const MEMBER = {
+  id: ROW.id,
+  name: ROW.name,
+  guildClass: ROW.guildClass,
+  discordId: null,
+  discordUsername: null,
+  lastLoginAt: null,
+  role: GuildRole.MEMBER,
 };
 
 /** Lỗi trùng khoá chính của Prisma. */
@@ -74,9 +89,7 @@ describe('CharactersService', () => {
       expect(prisma.character.findMany).toHaveBeenCalledWith({
         orderBy: { name: 'asc' },
       });
-      expect(members).toEqual([
-        { id: ROW.id, name: ROW.name, guildClass: ROW.guildClass },
-      ]);
+      expect(members).toEqual([MEMBER]);
     });
   });
 
@@ -137,6 +150,56 @@ describe('CharactersService', () => {
         NotFoundException,
       );
       expect(prisma.character.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('gán Discord ID', () => {
+    it('trả 409 khi Discord ID đã thuộc thành viên khác', async () => {
+      prisma.character.update.mockRejectedValue(UNIQUE_VIOLATION);
+
+      await expect(
+        service.update(ROW.id, { discordId: '123456789012345678' }),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('không nuốt lỗi Prisma khác khi sửa', async () => {
+      prisma.character.update.mockRejectedValue(OTHER_ERROR);
+
+      await expect(service.update(ROW.id, { name: 'X' })).rejects.toThrow(
+        'Connection lost',
+      );
+    });
+
+    it('tra được thành viên theo Discord ID', async () => {
+      prisma.character.findUnique.mockResolvedValue({
+        id: ROW.id,
+        role: GuildRole.LEADER,
+      });
+
+      await expect(
+        service.findByDiscordId('123456789012345678'),
+      ).resolves.toEqual({ id: ROW.id, role: GuildRole.LEADER });
+      expect(prisma.character.findUnique).toHaveBeenCalledWith({
+        where: { discordId: '123456789012345678' },
+        select: { id: true, role: true },
+      });
+    });
+
+    it('trả null khi chưa ai được gán Discord ID đó', async () => {
+      prisma.character.findUnique.mockResolvedValue(null);
+
+      await expect(service.findByDiscordId('111')).resolves.toBeNull();
+    });
+
+    it('ghi lại tên Discord và thời điểm đăng nhập gần nhất', async () => {
+      const at = new Date('2026-08-24T10:00:00.000Z');
+
+      await service.touchLogin(ROW.id, 'meobeo', at);
+
+      expect(prisma.character.update).toHaveBeenCalledWith({
+        where: { id: ROW.id },
+        data: { discordUsername: 'meobeo', lastLoginAt: at },
+      });
     });
   });
 

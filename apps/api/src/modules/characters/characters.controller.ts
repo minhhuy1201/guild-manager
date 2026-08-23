@@ -10,9 +10,9 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import type { Character } from '@guild/shared/schemas';
+import type { GuildMember } from '@guild/shared/schemas';
 
-import { JwtAuthGuard } from '../../common';
+import { AdminGuard, JwtAuthGuard } from '../../common';
 import { CharactersService } from './characters.service';
 import { CreateCharacterDto, UpdateCharacterDto } from './dto/character.dto';
 
@@ -22,7 +22,7 @@ import { CreateCharacterDto, UpdateCharacterDto } from './dto/character.dto';
  */
 @ApiTags('characters')
 @Controller('characters')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, AdminGuard)
 export class CharactersController {
   constructor(private readonly characters: CharactersService) {}
 
@@ -32,7 +32,7 @@ export class CharactersController {
    */
   @Get()
   @ApiOperation({ summary: 'Danh sách thành viên' })
-  list(): Promise<Character[]> {
+  list(): Promise<GuildMember[]> {
     return this.characters.list();
   }
 
@@ -43,7 +43,7 @@ export class CharactersController {
    */
   @Post()
   @ApiOperation({ summary: 'Thêm một thành viên' })
-  create(@Body() body: CreateCharacterDto): Promise<Character> {
+  create(@Body() body: CreateCharacterDto): Promise<GuildMember> {
     return this.characters.create(body);
   }
 
@@ -58,7 +58,7 @@ export class CharactersController {
   update(
     @Param('id') id: string,
     @Body() body: UpdateCharacterDto,
-  ): Promise<Character> {
+  ): Promise<GuildMember> {
     return this.characters.update(id, body);
   }
 

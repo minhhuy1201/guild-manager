@@ -1,7 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import type { GuildRole } from '@guild/shared/enums';
 import type {
-  Character,
   CreateCharacterInput,
+  GuildMember,
   UpdateCharacterInput,
 } from '@guild/shared/schemas';
 
@@ -9,7 +14,7 @@ import {
   PrismaService,
   type PrismaTransactionClient,
 } from '../../infrastructure/prisma/prisma.service';
-import { toCharacter } from './characters.codec';
+import { toGuildMember, type GuildMemberRow } from './characters.codec';
 import { generateId } from './characters.lib';
 
 /** Mã lỗi Prisma khi vi phạm ràng buộc duy nhất (ở đây là trùng khoá chính). */
@@ -17,6 +22,9 @@ const UNIQUE_VIOLATION = 'P2002';
 
 /** Thông báo dùng chung khi id không tồn tại. */
 const NOT_FOUND = 'Không tìm thấy thành viên.';
+
+/** Thông báo khi Discord ID đã thuộc về thành viên khác. */
+const DISCORD_ID_TAKEN = 'Discord ID này đã được gán cho thành viên khác.';
 
 /** CRUD thành viên cho quản trị viên — controller khoá toàn bộ endpoint bằng JwtAuthGuard. */
 @Injectable()
@@ -27,12 +35,12 @@ export class CharactersService {
    * Danh sách toàn bộ thành viên.
    * @returns Mảng thành viên sắp theo tên
    */
-  async list(): Promise<Character[]> {
+  async list(): Promise<GuildMember[]> {
     const rows = await this.prisma.character.findMany({
       orderBy: { name: 'asc' },
     });
 
-    return rows.map(toCharacter);
+    return rows.map(toGuildMember);
   }
 
   /**
@@ -53,7 +61,7 @@ export class CharactersService {
    * @param input - Tên và lưu phái
    * @returns Thành viên vừa tạo
    */
-  async create(input: CreateCharacterInput): Promise<Character> {
+  async create(input: CreateCharacterInput): Promise<GuildMember> {
     try {
       return await this.insert(input);
     } catch (error) {
@@ -65,21 +73,72 @@ export class CharactersService {
   }
 
   /**
-   * Sửa tên và/hoặc lưu phái. Id không đổi vì các bảng khác đang trỏ vào nó.
+   * Sửa tên, lưu phái, Discord ID và/hoặc vai. Id không đổi vì bảng khác đang trỏ vào nó.
    * @param id - Id thành viên
    * @param input - Các field cần đổi
    * @returns Thành viên sau khi sửa
    * @throws NotFoundException khi không có thành viên đó
+   * @throws ConflictException khi Discord ID đã thuộc thành viên khác
    */
-  async update(id: string, input: UpdateCharacterInput): Promise<Character> {
+  async update(id: string, input: UpdateCharacterInput): Promise<GuildMember> {
     await this.ensureExists(id);
 
-    const row = await this.prisma.character.update({
-      where: { id },
-      data: input,
+    try {
+      const row = await this.prisma.character.update({
+        where: { id },
+        data: input,
+      });
+
+      return toGuildMember(row);
+    } catch (error) {
+      // Ràng buộc duy nhất duy nhất có thể vỡ ở đây là discordId — id không nằm trong `data`.
+      if (isUniqueViolation(error)) throw new ConflictException(DISCORD_ID_TAKEN);
+      throw error;
+    }
+  }
+
+  /**
+   * Tra thành viên theo Discord ID — đường vào của luồng đăng nhập.
+   * @param discordId - Discord ID đọc từ hồ sơ OAuth
+   * @returns Id và vai của thành viên, hoặc null khi chưa ai được gán ID này
+   */
+  async findByDiscordId(
+    discordId: string,
+  ): Promise<{ id: string; role: GuildRole } | null> {
+    const row = await this.prisma.character.findUnique({
+      where: { discordId },
+      select: { id: true, role: true },
     });
 
-    return toCharacter(row);
+    return row === null ? null : { id: row.id, role: row.role as GuildRole };
+  }
+
+  /**
+   * Đọc nguyên một hàng thành viên theo id.
+   * @param id - Id thành viên
+   * @returns Hàng Character, hoặc null khi không tồn tại
+   */
+  async findById(id: string): Promise<GuildMemberRow | null> {
+    return this.prisma.character.findUnique({ where: { id } });
+  }
+
+  /**
+   * Ghi lại tên Discord và thời điểm đăng nhập gần nhất.
+   * Quản trị viên đọc hai giá trị này ở màn Thành viên để xác nhận đã gán đúng người.
+   * @param id - Id thành viên
+   * @param discordUsername - Tên Discord vừa đọc được
+   * @param at - Thời điểm đăng nhập
+   * @returns Promise hoàn tất khi đã ghi
+   */
+  async touchLogin(
+    id: string,
+    discordUsername: string,
+    at: Date,
+  ): Promise<void> {
+    await this.prisma.character.update({
+      where: { id },
+      data: { discordUsername, lastLoginAt: at },
+    });
   }
 
   /**
@@ -114,7 +173,7 @@ export class CharactersService {
    * @param input - Tên và lưu phái
    * @returns Thành viên vừa tạo
    */
-  private async insert(input: CreateCharacterInput): Promise<Character> {
+  private async insert(input: CreateCharacterInput): Promise<GuildMember> {
     const row = await this.prisma.character.create({
       data: {
         id: generateId(input.name),
@@ -123,7 +182,7 @@ export class CharactersService {
       },
     });
 
-    return toCharacter(row);
+    return toGuildMember(row);
   }
 
   /**
