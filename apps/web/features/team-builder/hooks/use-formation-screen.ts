@@ -36,8 +36,9 @@ export interface FormationScreenState {
  * Assemble the formation screen out of its five branches. This hook adds no
  * logic of its own — it only wires them in dependency order
  * (week → selection → draft → pool → dnd), which is one-way by design: no
- * branch returns data into an earlier one. The one exception is deliberate —
- * the pool seeds an empty day's draft through the store, never through here.
+ * branch returns data into an earlier one. The prefill is no exception: the
+ * pool computes a proposal and hands it forward through `draft.seedFrom`,
+ * which the draft branch alone decides what to do with.
  * @returns The five branches, each with its own small interface
  */
 export function useFormationScreen(): FormationScreenState {
@@ -57,7 +58,8 @@ export function useFormationScreen(): FormationScreenState {
     week.records,
     draft.assignment,
     draft.matches,
-    draft.activeMatchIndex
+    draft.activeMatchIndex,
+    draft.seedFrom
   );
   const dnd = useFormationDnd(draft.applyDrop, pool.charactersById);
 

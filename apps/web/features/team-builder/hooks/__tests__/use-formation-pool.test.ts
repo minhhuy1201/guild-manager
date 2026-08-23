@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { act } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { AttendanceStatus, GuildClass } from "@guild/shared/enums";
 import type { Character, SessionFormation } from "@guild/shared/schemas";
 
@@ -58,10 +58,24 @@ interface PoolArgs {
   assignment: Assignment;
   matches: MatchDraft[];
   activeMatchIndex: number;
+  seedFrom: (proposal: MatchDraft[]) => void;
+}
+
+/**
+ * A `seedFrom` that behaves the way `useFormationDraft` implements it: the
+ * proposal lands only while the battle under test has no draft. The contract
+ * itself is pinned in `use-formation-draft.test.ts`; here it exists so the
+ * banner cases can see a draft appear, and so a case can count the calls.
+ * @returns A spy wrapping the seed
+ */
+function makeSeedFrom() {
+  return vi.fn((proposal: MatchDraft[]) => {
+    useFormationStore.getState().ensureDraft(SESSION_ID, proposal);
+  });
 }
 
 /** Fixtures shared by most cases: the lone battle, nobody placed, all present. */
-const DEFAULT_ARGS: PoolArgs = {
+const DEFAULT_ARGS: Omit<PoolArgs, "seedFrom"> = {
   sessions: LONE_SESSION,
   activeSessionId: SESSION_ID,
   editable: true,
@@ -74,18 +88,20 @@ const DEFAULT_ARGS: PoolArgs = {
 /**
  * Render `useFormationPool` over the default fixtures with a few fields changed.
  * Every argument object is built once here, before render, because the hook
- * writes a draft in an effect — a fixture rebuilt per render would loop.
+ * seeds a draft in an effect — a fixture rebuilt per render would loop.
  * @param overrides - Arguments to change from the defaults
  * @param seed - Store state to put in place before the first render
- * @returns The testing-library render result
+ * @param seedFrom - Draft handler to hand the hook, defaulting to a real seed
+ * @returns The testing-library render result plus the seedFrom spy it was given
  */
 function renderPool(
-  overrides: Partial<PoolArgs> = {},
-  seed: Parameters<typeof renderFormationHook>[1] = {}
+  overrides: Partial<Omit<PoolArgs, "seedFrom">> = {},
+  seed: Parameters<typeof renderFormationHook>[1] = {},
+  seedFrom = makeSeedFrom()
 ) {
-  const args: PoolArgs = { ...DEFAULT_ARGS, ...overrides };
+  const args = { ...DEFAULT_ARGS, ...overrides };
 
-  return renderFormationHook(
+  const rendered = renderFormationHook(
     () =>
       useFormationPool(
         args.sessions,
@@ -95,10 +111,13 @@ function renderPool(
         args.records,
         args.assignment,
         args.matches,
-        args.activeMatchIndex
+        args.activeMatchIndex,
+        seedFrom
       ),
     seed
   );
+
+  return { ...rendered, seedFrom };
 }
 
 describe("useFormationPool — pool", () => {
@@ -229,6 +248,16 @@ describe("useFormationPool — prefill", () => {
 
     expect(result.current.prefill).toBeNull();
     expect(useFormationStore.getState().drafts[SESSION_ID]).toBe(emptyDraft);
+  });
+
+  it("pool không tự ghi store: nó chỉ đưa đề xuất sang cho hook draft", () => {
+    const inertSeed = vi.fn<(proposal: MatchDraft[]) => void>();
+
+    renderPool({ sessions: SESSIONS_WITH_SOURCE }, {}, inertSeed);
+
+    expect(inertSeed).toHaveBeenCalledOnce();
+    expect(inertSeed.mock.calls[0][0][0].assignment[SLOT]).toBe("char-1");
+    expect(useFormationStore.getState().drafts[SESSION_ID]).toBeUndefined();
   });
 
   it("ngày đã có đội hình lưu sẵn thì không đề xuất", () => {

@@ -129,7 +129,7 @@ Chúng khác việc: pool tính đề xuất, draft giữ chỉnh sửa. C4 tác
 | `store/formation-store.ts:25-45` | `drop`/`setNote` bỏ `base`; thêm `ensureDraft`; doc comment `setDraft` |
 | `store/formation-store.ts:79, 96` | `?? base` → đọc thẳng `state.drafts[sessionId]`, không có thì thôi |
 | `hooks/use-formation-draft.ts` | `editActiveDraft` bơm `ensureDraft` + `sessionId`; thêm `seedFrom` |
-| `hooks/use-formation-pool.ts:64, 121, 137-143` | `setDraft` → tham số `seedFrom`; bỏ `hasDraft` |
+| `hooks/use-formation-pool.ts:64, 121, 137-143` | `setDraft` → tham số `seedFrom`; `hasDraft` → `activeDraft`, chỉ còn là nhịp kích lại effect |
 | `hooks/use-formation-screen.ts:39-40, 52-61` | truyền `draft.seedFrom` vào pool; comment cơ chế đổi thành dây nối có tên |
 
 **Không component nào đổi**, và không thao tác nào của hook đổi tên: `base` chưa bao giờ ra khỏi
@@ -149,8 +149,10 @@ Chúng khác việc: pool tính đề xuất, draft giữ chỉnh sửa. C4 tác
 - **Đổi tuần** (`setWeek`, `:62-68`) xoá sạch `drafts`. Giữ nguyên; `seedFrom` sau đó gặp ngày trống
   là đúng.
 - **Prefill chạy trong `useEffect`** — điều kiện "chỉ seed khi ngày **chưa** có nháp" chuyển từ caller
-  vào `ensureDraft` của store, tức là vào chính phép ghi. Không còn khoảng nào giữa lúc kiểm tra và
-  lúc ghi.
+  vào `ensureDraft` của store, tức là vào chính phép ghi: dù effect có gọi nhầm, store cũng không đè.
+  Pool **vẫn** đọc nháp của ngày đang mở, nhưng để trả lời một câu khác — *khi nào* đề xuất lại. Bấm
+  "Hoàn tác" xoá nháp, và đó là biến duy nhất báo cho effect biết ngày vừa trắng trở lại; bỏ nó khỏi
+  dependency thì ngày vốn trắng không bao giờ được điền lần hai.
 - **`applyDrop` trả cùng tham chiếu cho drop ngoài vùng** (`:83-84`) — luật đó ở `lib/assignment.ts`
   và không đổi.
 
@@ -163,8 +165,8 @@ Chúng khác việc: pool tính đề xuất, draft giữ chỉnh sửa. C4 tác
   ngày đã có nháp **không** ghi đè; `setNote` đầu tiên trên ngày chưa có nháp dựng nháp từ bản đã lưu
   (đội hình đã lưu còn nguyên); thả ra ngoài vùng thì ngày không dirty.
 - `use-formation-pool.test.ts` giữ phần tính đề xuất và phần banner, nhận thêm `seedFrom`; thêm một ca
-  khẳng định pool **không** tự ghi store — ngày đã có nháp thì `seedFrom` được gọi nhưng nháp không
-  đổi.
+  khẳng định pool **không** tự ghi store — đưa cho nó một `seedFrom` rỗng thì đề xuất vẫn được giao
+  đủ nhưng `drafts` không hề có ngày đó.
 
 ## Rủi ro
 

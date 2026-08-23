@@ -46,6 +46,7 @@ export interface FormationPoolState {
  * @param assignment - Assignment currently shown for the open match
  * @param matches - Every match of the open day
  * @param activeMatchIndex - Which of those matches is open
+ * @param seedFrom - Draft handler that fills a day having no draft of its own
  * @returns The filtered pool plus the marks the cards need
  */
 export function useFormationPool(
@@ -56,12 +57,12 @@ export function useFormationPool(
   records: AttendanceRecordLike[],
   assignment: Assignment,
   matches: MatchDraft[],
-  activeMatchIndex: number
+  activeMatchIndex: number,
+  seedFrom: (proposal: MatchDraft[]) => void
 ): FormationPoolState {
   const search = usePoolFilterStore((state) => state.search);
   const guildClasses = usePoolFilterStore((state) => state.guildClasses);
   const drafts = useFormationStore((state) => state.drafts);
-  const setDraft = useFormationStore((state) => state.setDraft);
 
   const presentIds = useMemo(
     () =>
@@ -118,7 +119,7 @@ export function useFormationPool(
           Object.keys(match.notes).length > 0
       )
   );
-  const hasDraft = Boolean(activeSessionId && drafts[activeSessionId]);
+  const activeDraft = activeSessionId ? drafts[activeSessionId] : undefined;
 
   // What this day would be filled from. Computed whether or not the draft
   // already exists, because the banner has to keep naming the source after the
@@ -135,12 +136,14 @@ export function useFormationPool(
   }, [sessions, activeSessionId, presentIds, editable, hasSaved]);
 
   useEffect(() => {
-    if (!activeSessionId || !proposal || hasDraft) return;
+    // Whether the proposal may land is `seedFrom`'s call, not this hook's.
+    // `activeDraft` is read for the other half of the question — *when* to
+    // offer again: discarding a draft empties the day, and that is the one
+    // event after which an untouched day should be filled a second time.
+    if (!proposal || activeDraft) return;
     // A fresh day starts with one match; match 2 is an explicit button press.
-    setDraft(activeSessionId, [
-      { assignment: proposal.assignment, notes: proposal.notes },
-    ]);
-  }, [activeSessionId, proposal, hasDraft, setDraft]);
+    seedFrom([{ assignment: proposal.assignment, notes: proposal.notes }]);
+  }, [proposal, activeDraft, seedFrom]);
 
   // The banner stands while the day still shows what was filled in.
   const standing = isPrefillShowing(
