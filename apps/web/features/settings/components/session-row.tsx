@@ -1,6 +1,5 @@
 "use client";
 
-import { Swords } from "lucide-react";
 import type { BattleSession } from "@guild/shared/schemas";
 
 import {
@@ -8,9 +7,13 @@ import {
   EditAction,
   RowActions,
 } from "@/components/shared/action-buttons";
+import {
+  SessionDeadline,
+  SessionLabel,
+  sessionTintClass,
+} from "@/components/shared/session-label";
 import { Badge } from "@/components/ui/badge";
 import { getSessionSubtitle } from "@/features/attendance";
-import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 interface SessionRowProps {
@@ -36,26 +39,17 @@ export function SessionRow({ session, onEdit, onDelete }: SessionRowProps) {
     <div
       className={cn(
         "flex flex-wrap items-center gap-3 rounded-lg border p-3",
-        session.isGuildWar && "border-primary/40 bg-primary/5"
+        sessionTintClass(session.isGuildWar)
       )}
     >
       <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <div
-          className={cn(
-            "flex items-center gap-1.5 font-medium",
-            session.isGuildWar && "text-primary"
-          )}
-        >
-          {session.isGuildWar && <Swords className="size-4" />}
-          {session.label}
+        <SessionLabel session={session}>
           {session.isGuildWar && <Badge variant="secondary">Guild War</Badge>}
-        </div>
+        </SessionLabel>
         <div className="text-xs text-muted-foreground">
           {getSessionSubtitle(session)}
         </div>
-        <div className="text-xs text-muted-foreground">
-          Hạn chót: {formatDateTime(session.deadline)}
-        </div>
+        <SessionDeadline session={session} />
       </div>
 
       {!session.isGuildWar && (
