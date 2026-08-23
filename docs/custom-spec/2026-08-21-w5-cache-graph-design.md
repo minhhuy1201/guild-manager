@@ -66,29 +66,48 @@ Thêm một feature thứ sáu đọc danh sách nhân vật nghĩa là đi sử
 ```ts
 // lib/cache-graph.ts
 
+/** Mọi chủ đề dữ liệu mà một thao tác ghi có thể làm cũ đi. */
+export const CACHE_TOPICS = [
+  "roster",
+  "schedule",
+  "attendance",
+  "attendance-window",
+  "formation",
+] as const;
+
 /** Loại dữ liệu có thể bị một thao tác ghi làm cũ đi. */
-export type CacheTopic = "roster" | "schedule" | "attendance" | "formation";
+export type CacheTopic = (typeof CACHE_TOPICS)[number];
 
 /**
  * Query key nào phải invalidate khi một chủ đề bị ghi.
  * Đọc như một câu domain: "đổi lịch đánh thì lịch, điểm danh và đội hình đều cũ".
+ * Giá trị là thunk để key factory chỉ chạy lúc invalidate, không lúc import.
  */
 export const CACHE_DEPENDENTS: Record<CacheTopic, () => QueryKey[]> = {
-  roster:     () => [memberKeys.all, attendanceKeys.characters(), attendanceKeys.records(), teamBuilderKeys.all],
-  schedule:   () => [settingsKeys.all, attendanceKeys.sessions(), attendanceKeys.records(), teamBuilderKeys.all],
-  attendance: () => [attendanceKeys.records()],
-  formation:  () => [teamBuilderKeys.all],
+  roster:               () => [memberKeys.all, attendanceKeys.characters(), attendanceKeys.records(), teamBuilderKeys.all],
+  schedule:             () => [settingsKeys.all, attendanceKeys.sessions(), attendanceKeys.records(), teamBuilderKeys.all],
+  attendance:           () => [attendanceKeys.records()],
+  "attendance-window":  () => [attendanceKeys.sessions(), attendanceKeys.records()],
+  formation:            () => [teamBuilderKeys.all],
 };
 ```
 
 ```ts
+// hooks/use-invalidate.ts
+
 /**
  * Invalidate mọi query phụ thuộc một chủ đề vừa bị ghi.
+ * Hàm trả về ổn định qua các lần render, vì `use-deadline-refresh` đặt nó vào
+ * dependency của `useEffect`.
  * @param topic - Chủ đề dữ liệu vừa thay đổi
  * @returns Hàm gọi trong onSuccess của mutation
  */
 export function useInvalidate(topic: CacheTopic): () => void;
 ```
+
+Đồ thị là dữ liệu thuần (không React) nên ở `lib/cache-graph.ts`; hook đọc nó ở
+`hooks/use-invalidate.ts` — đúng chỗ `frontend.md` §2 dành cho cross-feature hook, và đúng luật
+một-hook-một-file.
 
 Feature ghi chỉ nói **mình vừa đổi cái gì**; nó không liệt kê ai bị ảnh hưởng nữa.
 
@@ -105,6 +124,12 @@ không feature nào sở hữu nó. Hiện nó đang bị nhét vào feature ghi
 Vì sao không dùng chuỗi khoá thô (`["attendance", "records"]`) để tránh import: nó sao chép cấu trúc
 key ra ngoài feature — tệ hơn, vì lệch thì không có lỗi biên dịch.
 
+Đường import là file key lá của từng feature (`features/<feature>/api/*-keys.ts`), **không** phải
+`index.ts`. Barrel của attendance kéo theo một server action import `"server-only"`, và vì bốn
+feature đều import ngược lại `useInvalidate` nên đi qua barrel là tạo bốn vòng import. File
+`*-keys.ts` không import gì cả nên cả hai vấn đề biến mất. `attendanceKeys` vì thế tách khỏi
+`attendance-api.ts` ra `features/attendance/api/attendance-keys.ts`, cho khớp ba feature kia.
+
 ### 3. Key factory rút về sau `index.ts`
 
 Sau spec, `features/attendance/index.ts` và `features/team-builder/index.ts` bỏ export
@@ -113,21 +138,32 @@ export nhưng đổi tên rõ ràng (`attendanceCacheKeys`) để nhìn thấy n
 
 ### 4. `use-deadline-refresh` cũng đi qua đồ thị
 
-`:25-30` đổi thành `invalidate("attendance-window")` — hoặc dùng luôn `schedule` nếu cùng tập. Kiểm
-trước khi gộp: nếu tập trùng thì gộp, nếu không thì thêm một topic. Đừng ép hai thứ khác nhau vào
-một tên.
+Đã kiểm: tập của nó là `{sessions, records}`, tập của `schedule` là
+`{settingsKeys.all, sessions, records, teamBuilderKeys.all}` — **khác nhau**, nên không gộp.
+`:25-30` đổi thành `useInvalidate("attendance-window")`.
+
+### 5. Ba chỗ ghi còn lại cũng đi qua đồ thị
+
+`attendance` và `formation` không phải topic dự phòng — chúng có call site sẵn:
+`use-attendance.ts:96` và `:111` (điểm danh và điểm danh hộ) là `attendance`,
+`use-save-formation.ts:20` là `formation`. Chuyển cả ba, nếu không đồ thị có mục chết ngay từ đầu.
 
 ## Thay đổi cụ thể
 
 | File | Thay đổi |
 |---|---|
-| `lib/cache-graph.ts` (mới) | `CacheTopic`, `CACHE_DEPENDENTS`, `useInvalidate` |
+| `lib/cache-graph.ts` (mới) | `CACHE_TOPICS`, `CacheTopic`, `CACHE_DEPENDENTS` |
 | `lib/__tests__/cache-graph.test.ts` (mới) | test đồ thị là dữ liệu thuần |
+| `hooks/use-invalidate.ts` (mới) | `useInvalidate` |
+| `hooks/__tests__/use-invalidate.test.ts` (mới) | test hook |
+| `features/attendance/api/attendance-keys.ts` (mới) | `attendanceKeys`, không còn `weeks()` |
 | `features/members/hooks/use-member-mutations.ts:21-40` | `useInvalidate("roster")` |
 | `features/settings/hooks/use-session-mutations.ts:32-40` | `useInvalidate("schedule")` |
-| `features/attendance/hooks/use-deadline-refresh.ts:25-30` | dùng đồ thị |
+| `features/attendance/hooks/use-deadline-refresh.ts:25-30` | `useInvalidate("attendance-window")` |
+| `features/attendance/hooks/use-attendance.ts:96,111` | `useInvalidate("attendance")` |
+| `features/team-builder/hooks/use-save-formation.ts:20` | `useInvalidate("formation")` |
 | `features/attendance/index.ts`, `features/team-builder/index.ts` | bỏ export key ra ngoài |
-| `features/attendance/api/attendance-api.ts` | xoá `attendanceKeys.weeks()` nếu vẫn không call site |
+| `features/attendance/api/attendance-api.ts` | `attendanceKeys` dọn sang `attendance-keys.ts`; `weeks()` không có call site nên bị xoá |
 
 Hai doc comment mô tả hậu quả (`use-member-mutations.ts:15-20`,
 `use-session-mutations.ts:26-31`) **chuyển vào** `cache-graph.ts`, đặt cạnh đúng dòng chúng mô tả.
@@ -153,15 +189,18 @@ Chúng là phần có giá trị nhất của code hiện tại; đừng để m
   - `roster` phải chạm `teamBuilderKeys.all`
   - mọi `CacheTopic` đều có mục trong `CACHE_DEPENDENTS` (`Record` đã ép ở mức kiểu, test khoá thêm
     ở runtime cho trường hợp key được dựng động)
-- Test cho `useInvalidate` gọi `invalidateQueries` đúng số lần, với một `queryClient` giả.
+- Test cho `useInvalidate` (`hooks/__tests__/use-invalidate.test.ts`, môi trường jsdom): gọi
+  `invalidateQueries` đúng số lần và đúng từng key, **và** trả về cùng một hàm qua hai lần render.
 
 ## Rủi ro
 
 - **Thiếu một key khi chuyển** làm hai màn lệch nhau cho tới khi tải lại trang — đúng hậu quả mà
   comment hiện tại cảnh báo. Chuyển bằng cách **copy nguyên danh sách** vào `CACHE_DEPENDENTS`
   trước, rồi mới xoá code cũ; không gõ lại từ trí nhớ.
-- **`lib/` import từ `features/`** là hướng phụ thuộc mới trong app này. Kiểm xem có luật lint nào
-  cấm không trước khi làm; nếu có, đặt file ở `features/shared-cache/` hoặc `config/` thay vì `lib/`.
+- **`lib/` import từ `features/`** là hướng phụ thuộc mới trong app này. Đã kiểm
+  `apps/web/eslint.config.mjs`: không có `no-restricted-imports` hay `import/no-restricted-paths`,
+  nên file ở lại `lib/`. Bù lại, ngoại lệ với luật 5 của `frontend.md` §4 phải được ghi xuống thành
+  luật, không để là một lần phá lệ không ai biết.
 
 ## Ngoài phạm vi
 
