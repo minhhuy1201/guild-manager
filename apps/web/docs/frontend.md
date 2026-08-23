@@ -206,7 +206,8 @@ regenerating a component never eats a local change.
 
 Current shared building blocks: `action-buttons`, `date-range`, `error-state`,
 `guild-class-filter-select`, `guild-class-icon`, `main-nav`, `page-size-select`, `password-input`,
-`query-boundary`, `site-header`, `status-badge`, `status-icon`, `table-pagination`,
+`query-boundary`, `roster-filter-bar`, `site-header`, `status-badge`, `status-icon`,
+`table-pagination`,
 `table-pagination-bar`, `table-skeleton`.
 
 ### The query group of a screen
@@ -231,6 +232,24 @@ branch — its children are built even while the skeleton shows, so data is read
 query boundary (`members-panel`, `settings-screen`). When the content downstream relies on that
 narrowing, keep the early returns and use `combineQueries` alone (`team-builder-screen`, the three
 attendance components) — the alternative is `?? []` scattered through the component.
+
+### Filtering a roster list
+
+"Tìm theo từ khoá và lưu phái" is said once, in `matchesRosterFilter`
+(`lib/roster-filter.ts`). The keyword matches on **name or in-game id** — both sides lowercased,
+Vietnamese diacritics left alone — and an empty `guildClasses` array means every class. Three
+screens use it and none of them owns it, which is why it sits in `lib/` and not in a feature. It
+stays out of `packages/shared`: that package holds shapes that cross the network, and this filter
+never leaves the client.
+
+A screen that also needs the *widget* uses `RosterFilterBar`
+(`components/shared/roster-filter-bar.tsx`). It is controlled — `value` / `onChange` / `idPrefix` —
+and deliberately knows nothing about where the state lives: a scoped Zustand store (attendance), an
+unscoped one (team builder) and a plain `useState` (members) are all adapters at the call site,
+because the three filters have different lifetimes. Do **not** merge them into one store. A screen
+whose filter row looks genuinely different (members: no labels, inline with the create button)
+keeps its own JSX and calls the predicate directly — a prop added to swallow a real difference is
+worse than two rows.
 
 ---
 
