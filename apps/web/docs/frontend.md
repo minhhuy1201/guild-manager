@@ -207,8 +207,7 @@ regenerating a component never eats a local change.
 Current shared building blocks: `action-buttons`, `date-range`, `error-state`,
 `guild-class-filter-select`, `guild-class-icon`, `main-nav`, `page-size-select`, `password-input`,
 `query-boundary`, `roster-filter-bar`, `site-header`, `status-badge`, `status-icon`,
-`table-pagination`,
-`table-pagination-bar`, `table-skeleton`.
+`table-pagination`, `table-pagination-bar`, `table-skeleton`.
 
 ### The query group of a screen
 

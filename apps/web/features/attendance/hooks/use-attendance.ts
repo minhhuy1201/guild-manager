@@ -73,17 +73,14 @@ export function useFilteredCharacters(
   scope: AttendanceFilterScope
 ): Character[] {
   const { data: characters } = useCharacters();
-  const search = useAttendanceFilterStore((s) => s.filters[scope].search);
-  const guildClasses = useAttendanceFilterStore(
-    (s) => s.filters[scope].guildClasses
-  );
+  const filter = useAttendanceFilterStore((s) => s.filters[scope]);
 
   return useMemo(
     () =>
       (characters ?? []).filter((character) =>
-        matchesRosterFilter(character, { search, guildClasses })
+        matchesRosterFilter(character, filter)
       ),
-    [characters, search, guildClasses]
+    [characters, filter]
   );
 }
 

@@ -9,7 +9,7 @@ import type { Character } from "@guild/shared/schemas";
  */
 export type RosterCandidate = Pick<Character, "id" | "name" | "guildClass">;
 
-/** Bộ lọc danh sách nhân vật: từ khoá và lưu phái. */
+/** Roster filter: a keyword and a set of guild classes. */
 export interface RosterFilter {
   /** Raw keyword as typed; the predicate trims and lowercases it itself. */
   search: string;

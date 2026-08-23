@@ -145,12 +145,13 @@ team reset theo tuần) và gộp lại là làm hỏng cả ba.
 | `features/attendance/hooks/use-attendance.ts:80-92` | `.filter((c) => matchesRosterFilter(c, filter))` |
 | `features/team-builder/lib/pool.ts:40-58` | co lại như §2 |
 | `features/members/components/members-panel.tsx:44-52` | dùng vị từ chung — **hành vi đổi: tìm được theo ID** |
+| `features/members/components/members-panel.tsx:70` | placeholder `"Tên thành viên hoặc ID..."` — cùng lời hứa với hai màn kia |
 | `features/attendance/components/attendance-filters.tsx:106-132` | dùng `RosterFilterBar` |
 | `features/team-builder/components/pool-filters.tsx:155-179` | như trên |
 | `features/team-builder/lib/__tests__/pool.test.ts` | tách ca lọc sang file mới |
 
-`PoolFilter` trong `team-builder/types` và `RosterFilter` cùng shape → gộp về `RosterFilter`, bỏ
-kiểu trùng.
+`PoolFilter` trong `team-builder/lib/pool.ts` và `RosterFilter` cùng shape → gộp về `RosterFilter`,
+bỏ kiểu trùng.
 
 ## Edge case
 
