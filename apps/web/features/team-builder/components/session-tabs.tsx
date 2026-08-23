@@ -1,8 +1,9 @@
 "use client";
 
-import { Lock, Swords } from "lucide-react";
+import { Lock } from "lucide-react";
 import type { MatchFormation, SessionFormation } from "@guild/shared/schemas";
 
+import { SessionLabel } from "@/components/shared/session-label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getSessionSubtitle } from "@/features/attendance";
 
@@ -76,9 +77,7 @@ export function SessionTabs({
               value={session.sessionId}
               className="h-auto cursor-pointer flex-col items-center justify-center gap-0.5 rounded-lg border border-muted-foreground/40 px-3 py-3 text-sm font-medium hover:bg-muted/50 hover:border-primary/60 data-active:border-primary data-active:bg-primary/10 data-active:text-primary dark:data-active:border-primary dark:data-active:bg-primary/10 dark:data-active:text-primary"
             >
-              <span className="inline-flex items-center justify-center gap-1.5">
-                {session.isGuildWar ? <Swords className="size-3.5" /> : null}
-                {session.label}
+              <SessionLabel session={session} size="sm">
                 {session.locked ? <Lock className="size-3 opacity-70" /> : null}
                 {dirtySessionIds.has(session.sessionId) ? (
                   <span
@@ -86,7 +85,7 @@ export function SessionTabs({
                     aria-label="Còn thay đổi chưa lưu"
                   />
                 ) : null}
-              </span>
+              </SessionLabel>
               <span className="text-xs font-normal opacity-80">
                 {progress ? `${subtitle} · ${progress}` : subtitle}
               </span>
