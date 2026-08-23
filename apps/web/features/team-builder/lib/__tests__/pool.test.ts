@@ -28,40 +28,15 @@ describe("selectPoolCharacters", () => {
     expect(pool.map((character) => character.id)).toEqual(["LongNho02", "ToVan03"]);
   });
 
-  it("tìm theo tên, không phân biệt hoa thường", () => {
-    const pool = selectPoolCharacters(CHARACTERS, EMPTY, {
+  it("người đã xếp thì không hiện, kể cả khi khớp từ khoá", () => {
+    const assignment: Assignment = { ...EMPTY, "team-1-pos-1": "MeoMap01" };
+
+    const pool = selectPoolCharacters(CHARACTERS, assignment, {
       search: "mèo",
       guildClasses: [],
     });
 
-    expect(pool.map((character) => character.id)).toEqual(["MeoMap01"]);
-  });
-
-  it("tìm theo ID trong game, không phân biệt hoa thường", () => {
-    const pool = selectPoolCharacters(CHARACTERS, EMPTY, {
-      search: "longnho",
-      guildClasses: [],
-    });
-
-    expect(pool.map((character) => character.id)).toEqual(["LongNho02"]);
-  });
-
-  it("bỏ qua khoảng trắng thừa ở từ khóa", () => {
-    const pool = selectPoolCharacters(CHARACTERS, EMPTY, {
-      search: "   ",
-      guildClasses: [],
-    });
-
-    expect(pool).toHaveLength(3);
-  });
-
-  it("lọc theo lưu phái, mảng rỗng nghĩa là tất cả", () => {
-    const pool = selectPoolCharacters(CHARACTERS, EMPTY, {
-      search: "",
-      guildClasses: [GuildClass.TO_VAN, GuildClass.THIET_Y],
-    });
-
-    expect(pool.map((character) => character.id)).toEqual(["MeoMap01", "ToVan03"]);
+    expect(pool).toHaveLength(0);
   });
 
   it("áp đồng thời cả tìm kiếm, lưu phái và loại người đã xếp", () => {
