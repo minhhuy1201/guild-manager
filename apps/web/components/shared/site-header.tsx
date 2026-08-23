@@ -14,7 +14,7 @@ export async function SiteHeader() {
   const session = await getSession();
 
   return (
-    <header className="sticky top-0 z-10 border-b bg-background/80 backdrop-blur">
+    <header className="sticky top-0 z-10 border-b bg-background">
       <div className="mx-auto flex h-18 max-w-[100rem] items-center gap-3 px-4 sm:px-6">
         <Link
           href={ROUTES.attendance}
