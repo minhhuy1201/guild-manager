@@ -1,29 +1,27 @@
-import type { AuthTokens, LoginInput } from "@guild/shared/schemas";
+import type { AuthTokens } from "@guild/shared/schemas";
 
 import { apiFetch } from "@/lib/api-client";
 
 /**
- * Gọi API đăng nhập để lấy cặp token.
- * @param input - Tên đăng nhập và mật khẩu
- * @returns Access token, refresh token và thông tin tài khoản
- * @throws ApiError khi sai thông tin đăng nhập (message tiếng Việt của backend)
+ * Đổi mã dùng-một-lần (API gắn vào URL sau khi xử lý xong OAuth callback) lấy cặp token.
+ * @param code - Giá trị `?exchange=` trên URL callback
+ * @returns Cặp token và thông tin phiên
+ * @throws ApiError khi mã sai, đã dùng hoặc đã quá hạn
  */
-export function loginRequest(input: LoginInput): Promise<AuthTokens> {
-  return apiFetch<AuthTokens>("/auth/login", {
+export function exchangeRequest(code: string): Promise<AuthTokens> {
+  return apiFetch<AuthTokens>("/auth/discord/exchange", {
     method: "POST",
-    body: JSON.stringify(input),
+    body: JSON.stringify({ code }),
   });
 }
 
 /**
  * Đổi refresh token còn hạn thành cặp token mới.
  * @param refreshToken - Refresh token hiện tại
- * @returns Cặp token mới và thông tin tài khoản
+ * @returns Cặp token mới và thông tin phiên
  * @throws ApiError khi refresh token hỏng hoặc đã hết hạn
  */
-export function refreshRequest(
-  refreshToken: string
-): Promise<AuthTokens> {
+export function refreshRequest(refreshToken: string): Promise<AuthTokens> {
   return apiFetch<AuthTokens>("/auth/refresh", {
     method: "POST",
     body: JSON.stringify({ refreshToken }),

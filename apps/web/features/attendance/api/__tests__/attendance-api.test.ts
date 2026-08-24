@@ -2,7 +2,19 @@ import { AttendanceStatus } from "@guild/shared/enums";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { recordKey } from "../../lib/record-key";
-import { fetchAttendanceRecords, markAttendance } from "../attendance-api";
+
+/**
+ * `attendance-api.ts` là file "use server" và đọc cookie phiên qua `@/features/auth`,
+ * vốn kéo theo `server-only` — không nạp được trong môi trường test. Mock lại đúng
+ * hàm nó cần, và cũng nhờ đó khẳng định được mọi request đều mang Bearer token.
+ */
+vi.mock("@/features/auth", () => ({
+  getAccessToken: () => Promise.resolve(ACCESS_TOKEN),
+}));
+
+const { fetchAttendanceRecords, markAttendance } = await import(
+  "../attendance-api"
+);
 
 /**
  * Tạo fetch giả trả về một response cụ thể.
@@ -19,6 +31,9 @@ function mockFetch(options: { status: number; body: unknown }) {
 
   return fetchMock;
 }
+
+/** Access token giả mà mock của `@/features/auth` trả về. */
+const ACCESS_TOKEN = "access-token-gia";
 
 const RECORD = {
   characterId: "c1",
@@ -52,6 +67,21 @@ describe("attendance-api", () => {
     expect(records[recordKey("c1", "s2")].status).toBe(AttendanceStatus.ABSENT);
   });
 
+  it("gắn Bearer token vào mọi request đọc dữ liệu", async () => {
+    const fetchMock = mockFetch({ status: 200, body: { data: [] } });
+
+    await fetchAttendanceRecords();
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:3001/api/attendance/records",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: `Bearer ${ACCESS_TOKEN}`,
+        }),
+      })
+    );
+  });
+
   it("gửi đúng body khi điểm danh và trả về record vừa ghi", async () => {
     const fetchMock = mockFetch({ status: 201, body: { data: RECORD } });
     const input = {
@@ -63,7 +93,13 @@ describe("attendance-api", () => {
     await expect(markAttendance(input)).resolves.toEqual(RECORD);
     expect(fetchMock).toHaveBeenCalledWith(
       "http://localhost:3001/api/attendance",
-      expect.objectContaining({ method: "POST", body: JSON.stringify(input) })
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify(input),
+        headers: expect.objectContaining({
+          Authorization: `Bearer ${ACCESS_TOKEN}`,
+        }),
+      })
     );
   });
 

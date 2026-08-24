@@ -5,7 +5,8 @@
  * không theo public/private.
  */
 export { verifyJwt, type JwtPayload } from "./jwt";
-export { refreshRequest, loginRequest } from "./auth-api";
+export { decideAccess, type AccessDecision } from "./access";
+export { exchangeRequest, refreshRequest } from "./auth-api";
 export {
   ACCESS_TOKEN_COOKIE,
   ACCESS_TOKEN_MAX_AGE,

@@ -1,26 +1,38 @@
 "use client";
 
+import type { GuildRole } from "@guild/shared/enums";
+import { canManageGuild, canViewAllAttendance } from "@guild/shared/lib";
+
 import { WeekTimeline } from "./week-timeline";
 import { AttendanceFilters } from "./attendance-filters";
 import { AttendanceGrid } from "./attendance-grid";
+import { MemberAttendanceCard } from "./member-attendance-card";
 
 interface AttendanceScreenProps {
-  /** Người đang xem là quản trị viên — không bị khóa theo deadline. */
-  isAdmin: boolean;
+  /** Vai của người đang xem, quyết định thấy cả bang hay chỉ mình */
+  role: GuildRole;
 }
 
 /**
- * Màn hình điểm danh bang hội "Mèo Mập Giang Hồ".
- * Chỉ compose các phần; mỗi phần con tự lấy dữ liệu qua hook/store.
- * @param isAdmin - Người đang xem có phải quản trị viên hay không
+ * Màn hình điểm danh. Bang chúng thấy đúng nhân vật của mình; cán bộ và quản trị thấy cả bang.
+ * @param props.role - Vai của người đang xem
  * @returns Nội dung trang điểm danh
  */
-export function AttendanceScreen({ isAdmin }: AttendanceScreenProps) {
+export function AttendanceScreen({ role }: AttendanceScreenProps) {
+  if (!canViewAllAttendance(role)) {
+    return (
+      <>
+        <WeekTimeline />
+        <MemberAttendanceCard />
+      </>
+    );
+  }
+
   return (
     <>
       <WeekTimeline />
       <AttendanceFilters scope="attendance" />
-      <AttendanceGrid isAdmin={isAdmin} />
+      <AttendanceGrid isAdmin={canManageGuild(role)} />
     </>
   );
 }

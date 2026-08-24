@@ -3,16 +3,17 @@
  * File này nằm trong `core/` nên không dùng API riêng của Node hay `next/headers`,
  * chạy được cả ở proxy (Edge runtime) lẫn server action.
  */
+import type { GuildRole } from "@guild/shared/enums";
 
 /** Thuật toán duy nhất được chấp nhận — trùng với thuật toán mặc định của @nestjs/jwt. */
 const EXPECTED_ALG = "HS256";
 
 /** Nội dung payload mà backend ký trong access/refresh token. */
 export interface JwtPayload {
-  /** Tên đăng nhập (chữ thường) */
+  /** Discord ID của người đăng nhập */
   sub: string;
-  /** Quyền của tài khoản */
-  role: string;
+  /** Vai trong bang */
+  role: GuildRole;
   /** Token này là "access" hay "refresh" */
   type: string;
   /** Thời điểm hết hạn (epoch giây) */

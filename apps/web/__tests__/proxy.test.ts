@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { ADMIN_ROLE } from "@guild/shared/enums";
+import { GuildClass, GuildRole } from "@guild/shared/enums";
 import type { AuthTokens } from "@guild/shared/schemas";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -9,6 +9,7 @@ import {
 } from "@/features/auth/core";
 import {
   DEFAULT_PAYLOAD,
+  MEMBER_PAYLOAD,
   expiresIn,
   signToken,
 } from "@/features/auth/core/__tests__/sign-token";
@@ -28,7 +29,16 @@ vi.mock("@/features/auth/core", async (importOriginal) => ({
 const RENEWED: AuthTokens = {
   accessToken: "access-moi",
   refreshToken: "refresh-moi",
-  user: { username: "admin", role: ADMIN_ROLE },
+  user: {
+    discordId: "999888777666555444",
+    discordUsername: "meobeo",
+    role: GuildRole.ADMIN,
+    character: {
+      id: "meo-beo-k7ma3x",
+      name: "Mèo Béo",
+      guildClass: GuildClass.THIET_Y,
+    },
+  },
 };
 
 /**
@@ -49,10 +59,18 @@ function request(
   return req;
 }
 
-/** Ký một token còn hạn/hết hạn bằng SECRET. */
-function token(secondsToExpiry: number): Promise<string> {
+/**
+ * Ký một token còn hạn/hết hạn bằng SECRET.
+ * @param secondsToExpiry - Số giây tới hạn; âm nghĩa là token đã hết hạn
+ * @param payload - Payload nền, mặc định là quản trị viên
+ * @returns Token ba đoạn
+ */
+function token(
+  secondsToExpiry: number,
+  payload: Record<string, unknown> = DEFAULT_PAYLOAD
+): Promise<string> {
   return signToken({
-    payload: { ...DEFAULT_PAYLOAD, exp: expiresIn(secondsToExpiry) },
+    payload: { ...payload, exp: expiresIn(secondsToExpiry) },
     secret: SECRET,
   });
 }
@@ -105,7 +123,30 @@ describe("proxy", () => {
     );
   });
 
-  it("đẩy về trang điểm danh và xoá cookie hỏng khi cả hai token hết hạn", async () => {
+  it("đá bang chúng khỏi route quản trị", async () => {
+    const response = await proxy(
+      request(ROUTES.teamBuilder, {
+        access: await token(3600, MEMBER_PAYLOAD),
+      })
+    );
+
+    expect(response.status).toBe(307);
+    expect(new URL(response.headers.get("location") ?? "").pathname).toBe(
+      ROUTES.attendance
+    );
+  });
+
+  it("cho bang chúng vào trang điểm danh", async () => {
+    const response = await proxy(
+      request(ROUTES.attendance, {
+        access: await token(3600, MEMBER_PAYLOAD),
+      })
+    );
+
+    expect(response.status).toBe(200);
+  });
+
+  it("đẩy về trang đăng nhập và xoá cookie hỏng khi cả hai token hết hạn", async () => {
     const response = await proxy(
       request(ROUTES.teamBuilder, {
         access: await token(-10),
@@ -114,18 +155,27 @@ describe("proxy", () => {
     );
 
     expect(response.status).toBe(307);
-    expect(new URL(response.headers.get("location") ?? "").pathname).toBe(
-      ROUTES.attendance
-    );
+    const location = new URL(response.headers.get("location") ?? "");
+    expect(location.pathname).toBe(ROUTES.login);
+    expect(location.searchParams.get("redirect")).toBe(ROUTES.teamBuilder);
     expect(response.cookies.get(ACCESS_TOKEN_COOKIE)?.value).toBe("");
     expect(response.cookies.get(REFRESH_TOKEN_COOKIE)?.value).toBe("");
     expect(refreshRequest).not.toHaveBeenCalled();
   });
 
-  it("vẫn cho vào trang công khai khi phiên đã chết", async () => {
+  it("đá cả trang điểm danh về đăng nhập khi phiên đã chết", async () => {
     const response = await proxy(
       request(ROUTES.attendance, { access: await token(-10) })
     );
+
+    expect(response.status).toBe(307);
+    expect(new URL(response.headers.get("location") ?? "").pathname).toBe(
+      ROUTES.login
+    );
+  });
+
+  it("vẫn cho khách vào trang đăng nhập", async () => {
+    const response = await proxy(request(ROUTES.login));
 
     expect(response.status).toBe(200);
     expect(response.headers.get("location")).toBeNull();
@@ -136,12 +186,15 @@ describe("proxy", () => {
       delete process.env.AUTH_SECRET;
     });
 
-    it("không ném và vẫn cho vào trang công khai", async () => {
+    it("không ném, chỉ đá về trang đăng nhập", async () => {
       const response = await proxy(
         request(ROUTES.attendance, { access: await token(3600) })
       );
 
-      expect(response.status).toBe(200);
+      expect(response.status).toBe(307);
+      expect(new URL(response.headers.get("location") ?? "").pathname).toBe(
+        ROUTES.login
+      );
     });
 
     it("chặn route quản trị", async () => {

@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { Cat } from "lucide-react";
 
+import { canManageGuild } from "@guild/shared/lib";
+
 import { MainNav } from "@/components/shared/main-nav";
 import { ROUTES } from "@/config/routes";
-import { getSession, LoginButton } from "@/features/auth";
+import { fetchMe, getSession, LoginButton } from "@/features/auth";
 
 /**
  * Thanh header trên cùng của ứng dụng: tên bang "Mèo Mập Giang Hồ" và nav chính.
@@ -12,6 +14,8 @@ import { getSession, LoginButton } from "@/features/auth";
  */
 export async function SiteHeader() {
   const session = await getSession();
+  // Trang đăng nhập cũng dựng header này, nên phiên hỏng chỉ có nghĩa "chưa đăng nhập".
+  const me = session ? await fetchMe().catch(() => null) : null;
 
   return (
     <header className="sticky top-0 z-10 border-b bg-background">
@@ -28,8 +32,12 @@ export async function SiteHeader() {
           </span>
         </Link>
         <div className="ml-auto flex shrink-0 items-center gap-2.5">
-          <MainNav isAdmin={Boolean(session)} />
-          <LoginButton username={session?.username ?? null} />
+          <MainNav isAdmin={session ? canManageGuild(session.role) : false} />
+          {session && (
+            <LoginButton
+              label={me?.character?.name ?? me?.discordUsername ?? null}
+            />
+          )}
         </div>
       </div>
     </header>

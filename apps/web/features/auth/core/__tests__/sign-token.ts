@@ -4,7 +4,7 @@
  * Không có đuôi `.test.ts` nên Vitest không thu file này như một suite.
  */
 
-import { ADMIN_ROLE } from "@guild/shared/enums";
+import { GuildRole } from "@guild/shared/enums";
 
 const encoder = new TextEncoder();
 
@@ -27,10 +27,17 @@ export function expiresIn(seconds: number): number {
   return Math.floor(Date.now() / 1000) + seconds;
 }
 
-/** Payload mặc định của một access token hợp lệ. */
+/** Payload mặc định của một access token hợp lệ — quản trị viên. */
 export const DEFAULT_PAYLOAD: Record<string, unknown> = {
-  sub: "admin",
-  role: ADMIN_ROLE,
+  sub: "999888777666555444",
+  role: GuildRole.ADMIN,
+  type: "access",
+};
+
+/** Payload của một access token hợp lệ thuộc bang chúng. */
+export const MEMBER_PAYLOAD: Record<string, unknown> = {
+  sub: "123456789012345678",
+  role: GuildRole.MEMBER,
   type: "access",
 };
 

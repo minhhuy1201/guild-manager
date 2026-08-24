@@ -1,6 +1,7 @@
 import "server-only";
 
 import { cookies } from "next/headers";
+import type { GuildRole } from "@guild/shared/enums";
 import type { AuthTokens } from "@guild/shared/schemas";
 
 import {
@@ -12,12 +13,15 @@ import {
   verifyJwt,
 } from "../core";
 
-/** Thông tin quản trị viên đang đăng nhập, đọc từ access token. */
+/**
+ * Người đang đăng nhập, đọc từ access token.
+ * Chỉ có danh tính và vai — nhân vật gắn với tài khoản phải hỏi `/auth/me` (xem `api/me.ts`).
+ */
 export interface SessionUser {
-  /** Tên đăng nhập */
-  username: string;
-  /** Quyền của tài khoản */
-  role: string;
+  /** Discord ID */
+  discordId: string;
+  /** Vai trong bang */
+  role: GuildRole;
 }
 
 /**
@@ -59,7 +63,7 @@ export async function createSession(tokens: AuthTokens): Promise<void> {
  * Đọc phiên đăng nhập hiện tại từ access token trong cookie.
  * Không tự gia hạn ở đây vì Server Component không ghi được cookie —
  * việc refresh do `proxy.ts` đảm nhiệm.
- * @returns Thông tin tài khoản nếu access token còn hợp lệ, ngược lại null
+ * @returns Discord ID và vai nếu access token còn hợp lệ, ngược lại null
  */
 export async function getSession(): Promise<SessionUser | null> {
   const cookieStore = await cookies();
@@ -70,7 +74,7 @@ export async function getSession(): Promise<SessionUser | null> {
 
   if (!payload) return null;
 
-  return { username: payload.sub, role: payload.role };
+  return { discordId: payload.sub, role: payload.role };
 }
 
 /**

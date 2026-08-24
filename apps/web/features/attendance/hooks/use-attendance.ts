@@ -9,12 +9,12 @@ import { matchesRosterFilter } from "@/lib/roster-filter";
 import { attendanceKeys } from "../api/attendance-keys";
 import {
   fetchAttendanceRecords,
+  fetchAttendanceSummary,
   fetchBattleSessions,
   fetchCharacters,
   fetchCurrentWeek,
   markAttendance,
 } from "../api/attendance-api";
-import { markAttendanceAsAdmin } from "../api/mark-attendance-action";
 import {
   useAttendanceFilterStore,
   type AttendanceFilterScope,
@@ -86,6 +86,18 @@ export function useFilteredCharacters(
 }
 
 /**
+ * Query số người đã điểm danh mỗi trận — dùng cho màn của bang chúng,
+ * nơi không thấy hàng của người khác.
+ * @returns Kết quả query TanStack (data là mảng số đếm theo trận)
+ */
+export function useAttendanceSummary() {
+  return useQuery({
+    queryKey: attendanceKeys.summary(),
+    queryFn: fetchAttendanceSummary,
+  });
+}
+
+/**
  * Mutation điểm danh; thành công thì invalidate lại danh sách record.
  * @returns Mutation TanStack (dùng mutateAsync để bắt lỗi validation)
  */
@@ -94,20 +106,6 @@ export function useMarkAttendance() {
 
   return useMutation({
     mutationFn: markAttendance,
-    onSuccess: invalidate,
-  });
-}
-
-/**
- * Mutation điểm danh hộ dành cho quản trị viên — đi qua Server Action để gắn được
- * access token, nhờ đó server cho bỏ qua deadline.
- * @returns Mutation TanStack (dùng mutateAsync để bắt lỗi từ backend)
- */
-export function useMarkAttendanceAsAdmin() {
-  const invalidate = useInvalidate("attendance");
-
-  return useMutation({
-    mutationFn: markAttendanceAsAdmin,
     onSuccess: invalidate,
   });
 }

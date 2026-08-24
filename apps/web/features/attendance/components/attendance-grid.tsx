@@ -30,7 +30,6 @@ import {
   useBattleSessions,
   useFilteredCharacters,
   useMarkAttendance,
-  useMarkAttendanceAsAdmin,
 } from "../hooks/use-attendance";
 import { recordKey } from "../lib/record-key";
 import { AttendanceRow, type AttendanceDraft } from "./attendance-row";
@@ -54,8 +53,6 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
   const { data: sessions } = useBattleSessions();
   const { data: records } = useAttendanceRecords();
   const { mutateAsync: mark, error: markError } = useMarkAttendance();
-  const { mutateAsync: markAsAdmin, error: adminError } =
-    useMarkAttendanceAsAdmin();
   const { isPending, isError, errorMessage, refetch } = useAttendanceBoard();
 
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -69,8 +66,6 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
 
   const battleSessions = sessions ?? [];
   const recordMap = records ?? {};
-  // Quản trị viên đi qua Server Action, người thường gọi thẳng API — mỗi đường một mutation.
-  const saveError = isAdmin ? adminError : markError;
 
   useDeadlineRefresh(battleSessions);
 
@@ -139,11 +134,11 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
       return;
     }
 
-    // Lỗi hiển thị qua `saveError` của mutation nên nuốt ở đây, tránh promise văng ra ngoài.
+    // Lỗi hiển thị qua `markError` của mutation nên nuốt ở đây, tránh promise văng ra ngoài.
     const saved = await Promise.all(
       changes.map(({ sessionId, status }) => {
         const input = { characterId: character.id, sessionId, status };
-        return isAdmin ? markAsAdmin(input) : mark(input);
+        return mark(input);
       })
     ).catch(() => null);
 
@@ -227,9 +222,9 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
           </TableBody>
         </Table>
 
-        {saveError && (
+        {markError && (
           <p className="mt-4 text-center text-sm text-destructive">
-            {saveError.message}
+            {markError.message}
           </p>
         )}
 

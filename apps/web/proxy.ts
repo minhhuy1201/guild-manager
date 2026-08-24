@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import type { GuildRole } from "@guild/shared/enums";
 import type { AuthTokens } from "@guild/shared/schemas";
 
 import {
@@ -7,13 +8,12 @@ import {
   AUTH_COOKIE_OPTIONS,
   REFRESH_TOKEN_COOKIE,
   REFRESH_TOKEN_MAX_AGE,
+  decideAccess,
   refreshRequest,
   verifyJwt,
+  type AccessDecision,
 } from "@/features/auth/core";
 import { ROUTES } from "@/config/routes";
-
-/** Các route chỉ dành cho quản trị viên. */
-const ADMIN_PATH_PREFIXES = [ROUTES.teamBuilder, ROUTES.settings];
 
 /**
  * Đọc AUTH_SECRET, kêu to khi thiếu.
@@ -44,9 +44,10 @@ function readAuthSecret(): string | undefined {
  * 1. Tự gia hạn phiên — access token hết hạn mà refresh token còn hạn thì đổi cặp token mới.
  *    Proxy là chỗ duy nhất trong Next ghi được cookie cho mọi request, nên việc refresh
  *    phải nằm ở đây thay vì trong Server Component.
- * 2. Chặn truy cập trực tiếp (gõ/copy URL) vào route chỉ dành cho quản trị.
+ * 2. Quyết định request được đi tiếp hay bị đá đi đâu — mặc định là **cần đăng nhập**:
+ *    ngoài `/dang-nhap` thì không còn trang công khai nào.
  * @param request - Request đang được xử lý
- * @returns Response tiếp tục xử lý (kèm cookie mới nếu vừa gia hạn), hoặc redirect về trang chủ
+ * @returns Response tiếp tục xử lý (kèm cookie mới nếu vừa gia hạn), hoặc redirect
  */
 export async function proxy(request: NextRequest) {
   const secret = readAuthSecret();
@@ -55,30 +56,63 @@ export async function proxy(request: NextRequest) {
 
   if (secret) {
     const access = await verifyJwt(accessToken, secret);
-    if (access) return NextResponse.next();
+    if (access) return decide(request, access.role, NextResponse.next());
 
     const refresh = refreshToken ? await verifyJwt(refreshToken, secret) : null;
 
     if (refresh && refreshToken) {
       const tokens = await refreshRequest(refreshToken).catch(() => null);
-      if (tokens) return renewSession(request, tokens);
+      if (tokens) {
+        return decide(request, tokens.user.role, renewSession(request, tokens));
+      }
     }
   }
 
-  // Chưa đăng nhập (hoặc phiên đã hết hạn hẳn): trang công khai vẫn vào được,
-  // chỉ route quản trị mới bị đẩy về trang điểm danh.
-  const isAdminPath = ADMIN_PATH_PREFIXES.some((prefix) =>
-    request.nextUrl.pathname.startsWith(prefix)
-  );
-  const response = isAdminPath
-    ? NextResponse.redirect(new URL(ROUTES.attendance, request.url))
-    : NextResponse.next();
+  // Đến đây nghĩa là không có access token dùng được và cũng không gia hạn được.
+  const response =
+    decideAccess({ pathname: request.nextUrl.pathname, role: null }) === "allow"
+      ? NextResponse.next()
+      : NextResponse.redirect(loginUrl(request));
 
   // Xóa cookie hỏng/hết hạn để tránh gửi lại ở các request sau.
   if (accessToken) response.cookies.delete(ACCESS_TOKEN_COOKIE);
   if (refreshToken) response.cookies.delete(REFRESH_TOKEN_COOKIE);
 
   return response;
+}
+
+/**
+ * Áp kết luận của `decideAccess` cho một phiên còn dùng được.
+ * @param request - Request đang được xử lý
+ * @param role - Vai đọc từ access token
+ * @param allowed - Response dùng khi request được đi tiếp (có thể mang cookie vừa gia hạn)
+ * @returns Response đi tiếp, hoặc redirect về trang điểm danh khi thiếu quyền
+ */
+function decide(
+  request: NextRequest,
+  role: GuildRole,
+  allowed: NextResponse
+): NextResponse {
+  const decision: AccessDecision = decideAccess({
+    pathname: request.nextUrl.pathname,
+    role,
+  });
+
+  return decision === "home"
+    ? NextResponse.redirect(new URL(ROUTES.attendance, request.url))
+    : allowed;
+}
+
+/**
+ * URL trang đăng nhập, mang theo đường dẫn người dùng đang định vào.
+ * @param request - Request đang xử lý
+ * @returns URL tuyệt đối của trang đăng nhập
+ */
+function loginUrl(request: NextRequest): URL {
+  const url = new URL(ROUTES.login, request.url);
+  url.searchParams.set("redirect", request.nextUrl.pathname);
+
+  return url;
 }
 
 /**
