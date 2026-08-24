@@ -4,7 +4,7 @@ Ngày: 2026-08-24 · Phạm vi: `apps/api` (module `auth` viết lại, `charact
 `battle-sessions`, `team-builder`), `apps/web` (feature `auth`, `attendance`, `members`, `proxy.ts`),
 `packages/shared`, `prisma/schema.prisma`, biến môi trường hai môi trường.
 
-**Chưa triển khai.** Đây là thiết kế đã được duyệt, chưa có dòng code nào.
+**Đã triển khai xong 2026-08-24.**
 
 ## Bối cảnh
 
@@ -435,3 +435,17 @@ deploy, web bản cũ gọi `POST /auth/login` đã biến mất, nên API giữ
 - **Độ trễ tối đa 1 ngày khi hạ quyền** — đã nêu ở mục 4, chấp nhận có ý thức.
 - **Người ngoài không tự xin vào được.** Cố ý; nếu số lượng thành viên mới tăng đến mức việc nhập tay
   thành gánh nặng, lúc đó mới tính tới hàng chờ.
+
+---
+
+## Những chỗ thực tế lệch thiết kế
+
+- **Test guard của các endpoint quản trị nằm trong từng module**, không gom vào một file
+  `src/modules/__tests__/admin-endpoints.spec.ts` như plan đề xuất: luật `boundaries` cấm test của
+  module này import controller của module kia. Helper dùng chung là `src/__tests__/guards-of.ts`.
+- **`GET /battle-sessions` nay cần đăng nhập** (guard đặt ở cấp controller) chứ không còn công khai —
+  hệ quả trực tiếp của việc proxy đảo mặc định, mọi trang đều cần phiên.
+- **`packages/shared/schemas/auth.schema.ts` được viết lại ngay ở bước đầu** thay vì ở Task 7: bỏ
+  `ADMIN_ROLE` làm package không build được, mà mọi test đều chạy trên `dist` của nó.
+- **Nhãn tài khoản trên header lấy từ `/auth/me`** (tên nhân vật, lùi về tên Discord) chứ không lấy từ
+  access token — token chỉ mang Discord ID và vai.

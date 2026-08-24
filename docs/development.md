@@ -59,8 +59,10 @@ the app dies immediately with a Vietnamese error message instead of half-running
 | `DIRECT_DATABASE_URL` | | empty | Read by the Prisma CLI only (`migrate:prod`, `db:seed`). Leave empty locally |
 | `WEB_ORIGIN` | | `http://localhost:3000` | Origin allowed through CORS |
 | `AUTH_SECRET` | ✅ | — | JWT signing key, at least 32 characters — **must match `apps/web`** |
-| `ADMIN_USERNAMES` | ✅ | — | Admin accounts, comma-separated |
-| `ADMIN_PASSWORD` | ✅ | — | Shared password for those accounts |
+| `DISCORD_CLIENT_ID` | ✅ | — | Discord Application client id (Developer Portal → OAuth2) |
+| `DISCORD_CLIENT_SECRET` | ✅ | — | Discord Application client secret — API only, never the web app |
+| `DISCORD_REDIRECT_URI` | ✅ | — | Must match a Redirect declared in the Developer Portal **character for character**; locally `http://localhost:3001/api/auth/discord/callback` |
+| `DISCORD_ADMIN_IDS` | | empty | Rescue Discord IDs, comma-separated. They always sign in as `ADMIN`, even with no matching `Character` — the only way in before anyone has been linked |
 | `APP_TIMEZONE` | | `Asia/Ho_Chi_Minh` | Timezone used to compute attendance deadlines |
 | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` / `POSTGRES_PORT` | | postgres/postgres/guild_manager/5432 | Read by `docker-compose.yml` only — **must match `DATABASE_URL`** |
 
@@ -134,7 +136,10 @@ pnpm --filter web dev    # http://localhost:3000
 
 - Health check: `curl http://localhost:3001/api/health` → `{"status":"ok","db":"up",...}`
 - Swagger UI: <http://localhost:3001/docs> (JSON spec at `/docs-json`) — disabled when `NODE_ENV=production`
-- Admin login: an account from `ADMIN_USERNAMES` with `ADMIN_PASSWORD`
+- Sign in: <http://localhost:3000/dang-nhap> → **Đăng nhập bằng Discord**. Create an application at
+  <https://discord.com/developers/applications>, add `http://localhost:3001/api/auth/discord/callback`
+  under OAuth2 → Redirects, and put your own Discord ID in `DISCORD_ADMIN_IDS` so you can get in
+  before any `Character` has a `discordId`
 
 ## 6. Common commands
 

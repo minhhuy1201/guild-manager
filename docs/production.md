@@ -71,8 +71,10 @@ by default, and each writes to whatever database it names.
 | `DATABASE_URL` | Supabase session pooler, port `5432` |
 | `DIRECT_DATABASE_URL` | Same value, **plus `?connect_timeout=30`** — read by the Prisma CLI only |
 | `AUTH_SECRET` | `openssl rand -hex 32`, completely different from the dev key, identical to the web one |
-| `ADMIN_USERNAMES` | The real admin accounts |
-| `ADMIN_PASSWORD` | The real password, **not** `testne` |
+| `DISCORD_CLIENT_ID` | Client id of the production Discord Application |
+| `DISCORD_CLIENT_SECRET` | Its client secret — mark Sensitive |
+| `DISCORD_REDIRECT_URI` | `https://<api-domain>/api/auth/discord/callback`, declared character for character under OAuth2 → Redirects in the Developer Portal |
+| `DISCORD_ADMIN_IDS` | The guild leader's Discord ID. **Forget this and nobody can sign in**, because no `Character` has a `discordId` yet |
 | `WEB_ORIGIN` | The web app's real origin (`https://…`) — CORS matches this value exactly |
 | `WEB_PREVIEW_PROJECT` | The web app's Vercel project name (`mmgh-nth`) — makes CORS also accept that project's preview domains. Optional; omit it and only `WEB_ORIGIN` is allowed |
 | `APP_TIMEZONE` | `Asia/Ho_Chi_Minh` |
@@ -98,7 +100,7 @@ them.
 ### Secrets to rotate before opening this up to outsiders
 
 - [ ] A fresh `AUTH_SECRET` (both apps)
-- [ ] A fresh `ADMIN_PASSWORD`
+- [ ] A `DISCORD_CLIENT_SECRET` from a Discord Application used only by production
 - [ ] A Supabase database password not reused anywhere else
 
 ## 4. Deploying the apps
@@ -363,7 +365,8 @@ Migration `20260802185500_chan_data_api_truy_cap_bang` enables RLS (no policies 
 revokes the existing grants and sets `ALTER DEFAULT PRIVILEGES` for future tables. The app is
 unaffected because the `postgres` role has `rolbypassrls`.
 
-After adding any new table, re-check:
+`AuthExchange` is one of those later tables — it holds live single-use login codes, so it must be
+covered by the same revoke. After adding any new table, re-check:
 
 ```sql
 select grantee, table_name from information_schema.role_table_grants

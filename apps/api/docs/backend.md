@@ -326,8 +326,8 @@ export const envSchema = z.object({
   DATABASE_URL: z.url(),
   WEB_ORIGIN: z.url().default('http://localhost:3000'),
   AUTH_SECRET: z.string().min(32),
-  ADMIN_USERNAMES: z.string().min(1),
-  ADMIN_PASSWORD: z.string().min(1),
+  DISCORD_CLIENT_ID: z.string().min(1),
+  DISCORD_CLIENT_SECRET: z.string().min(1),
   APP_TIMEZONE: z.string().default('Asia/Ho_Chi_Minh'),
 });
 

@@ -137,9 +137,9 @@ Each is `<domain>.module.ts` + `<domain>.controller.ts` + `<domain>.service.ts`,
 |---|---|---|
 | `health` | Liveness + a database ping | Public |
 | `auth` | Admin login, refresh, `me` | Public except `me` |
-| `characters` | Member CRUD | Admin (`JwtAuthGuard` on the controller) |
-| `battle-sessions` | The week's schedule, deadlines, the Guild War session, time rules | Read public, writes admin |
-| `attendance` | Marking attendance and reading records | Public, admin bypasses the deadline |
+| `characters` | Member CRUD, Discord identity and guild role | Admin (`JwtAuthGuard, AdminGuard` on the controller) |
+| `battle-sessions` | The week's schedule, deadlines, the Guild War session, time rules | Reads signed-in, writes admin |
+| `attendance` | Marking attendance and reading records, filtered by role | Bearer required, admin bypasses the deadline and marks for others |
 | `team-builder` | Per-match formations | Admin |
 
 Endpoints, all behind the `/api` prefix:
@@ -147,24 +147,27 @@ Endpoints, all behind the `/api` prefix:
 | Method | Path | Purpose | Access |
 |---|---|---|---|
 | `GET` | `/health` | API + database status | Public |
-| `POST` | `/auth/login` | Admin login | Public |
+| `GET` | `/auth/discord` | Start the Discord OAuth2 flow (redirects) | Public |
+| `GET` | `/auth/discord/callback` | Discord callback; redirects back to the web app | Public |
+| `POST` | `/auth/discord/exchange` | Trade the one-time code for a token pair | Public |
 | `POST` | `/auth/refresh` | Exchange a refresh token for a new pair | Public |
-| `GET` | `/auth/me` | Account behind the current access token | Bearer |
+| `GET` | `/auth/me` | Session behind the current access token | Bearer |
 | `GET` | `/characters` | Member list | Bearer |
 | `POST` | `/characters` | Create a member | Bearer |
 | `PATCH` | `/characters/:id` | Update a member | Bearer |
 | `DELETE` | `/characters/:id` | Delete a member | Bearer |
-| `GET` | `/battle-sessions/weeks` | Weeks an admin may edit | Bearer |
-| `GET` | `/battle-sessions` | Matches of a week with their deadlines | Public |
-| `POST` | `/battle-sessions` | Add a scrim | Bearer |
-| `PATCH` | `/battle-sessions/:id` | Edit a match | Bearer |
-| `DELETE` | `/battle-sessions/:id` | Delete a scrim (Guild War cannot be deleted) | Bearer |
-| `GET` | `/attendance/characters` | Characters for the attendance board | Public |
-| `GET` | `/attendance/records` | Attendance entries of the open week | Public |
-| `POST` | `/attendance` | Mark one character for one match | Public (Bearer bypasses the deadline) |
+| `GET` | `/battle-sessions/weeks` | Weeks an admin may edit | Admin |
+| `GET` | `/battle-sessions` | Matches of a week with their deadlines | Bearer |
+| `POST` | `/battle-sessions` | Add a scrim | Admin |
+| `PATCH` | `/battle-sessions/:id` | Edit a match | Admin |
+| `DELETE` | `/battle-sessions/:id` | Delete a scrim (Guild War cannot be deleted) | Admin |
+| `GET` | `/attendance/characters` | Characters for the attendance board (own only for MEMBER) | Bearer |
+| `GET` | `/attendance/records` | Attendance entries of the open week (own only for MEMBER) | Bearer |
+| `GET` | `/attendance/summary` | Yes/no counts per match, no identities | Bearer |
+| `POST` | `/attendance` | Mark one character for one match | Bearer (own character; admin marks for anyone and bypasses the deadline) |
 | `GET` | `/team-builder/weeks` | Weeks that still have roster data | Bearer |
 | `GET` | `/team-builder/formations?weekStart=` | Match rosters of a week | Bearer |
-| `PUT` | `/team-builder/formations/:sessionId` | Overwrite one match's roster | Bearer |
+| `PUT` | `/team-builder/formations/:sessionId` | Overwrite one match's roster | Admin |
 
 ### 3.4 Cross-cutting contracts
 
@@ -176,8 +179,12 @@ Endpoints, all behind the `/api` prefix:
 - **Env.** Validated by a Zod schema at boot; anything missing or malformed kills the process with a
   Vietnamese message instead of failing halfway through. `DIRECT_DATABASE_URL` is deliberately absent
   from the schema — only the Prisma CLI may read it, never the runtime.
-- **Auth.** `JwtAuthGuard` for admin-only routes, `OptionalJwtAuthGuard` where a token merely grants
-  extra rights (marking attendance past the deadline). Passwords are never stored in plaintext.
+- **Auth.** Identity comes from Discord OAuth2; the API owns the whole flow and is the only side that
+  talks to Discord. A login is a lookup of `Character.discordId`, a column an admin fills in by hand —
+  no match means no access, except for the rescue IDs in `DISCORD_ADMIN_IDS`, which always sign in as
+  `ADMIN`. `JwtAuthGuard` requires a session; `AdminGuard` (always after it) requires the `ADMIN`
+  role. No password is stored anywhere. Because the two apps live on different domains, the API hands
+  the token pair over through a single-use code (`AuthExchange`, 60-second TTL) rather than a cookie.
 
 ### 3.5 Build notes
 
@@ -249,13 +256,19 @@ this layout.
 
 ### 4.3 The session
 
+Signing in starts at `/dang-nhap`, the only page a visitor without a session can reach. The button
+there navigates to the API, which drives the Discord OAuth2 flow and finally redirects back to
+`/dang-nhap/discord` with a single-use code. That route is a **Route Handler**, not a page, because a
+Server Component cannot write cookies: it trades the code for the token pair and stores it.
+
 The API signs an access token (1 day) and a refresh token (1 week). The web app keeps both in
-**httpOnly cookies**; nothing about the session is readable by client JavaScript.
+**httpOnly cookies**; nothing about the session is readable by client JavaScript. The access token
+carries the Discord ID (`sub`) and the guild role.
 
 `proxy.ts` runs before every page request and does two things: it renews the pair when the access
 token has expired but the refresh token has not (the proxy is the only place in Next.js that can
-write cookies for any request), and it redirects anonymous visitors away from admin routes
-(`/xep-team`, `/thiet-lap`).
+write cookies for any request), and it applies `decideAccess` — **every page needs a session** except
+`/dang-nhap`, and admin routes (`/xep-team`, `/thiet-lap`) additionally need the `ADMIN` role.
 
 Hiding nav links is cosmetic. Real enforcement is the proxy plus a `getSession()` check inside each
 admin page's server component — and, ultimately, the guards on the API.
@@ -271,9 +284,10 @@ Character ──< AttendanceRecord >── BattleSession ──< FormationMatch 
 
 | Model | Notes |
 |---|---|
-| `Character` | Member. Id is a slug of the name plus a random suffix (`meo-beo-k7ma3x`), not a game id. |
+| `Character` | Member. Id is a slug of the name plus a random suffix (`meo-beo-k7ma3x`), not a game id. `discordId` is nullable and unique — an admin types it in, and it is what a login resolves against; `role` (`GuildRole`) defaults to `MEMBER`; `discordUsername` and `lastLoginAt` are written on each sign-in so an admin can confirm the right person was linked. |
 | `BattleSession` | One match in a week. `weekStart` (Monday 00:00 VN) groups matches into weeks. Guild War uses the deterministic id `gw-<YYYY-MM-DD>` so it can be upserted idempotently; scrims get a `cuid()`. `deadline` is the admin's value for a scrim, capped at 10:00 on the match day; for Guild War it is system-owned (17:00 Thursday). |
-| `AttendanceRecord` | One `(character, session)` pair, unique. `markedAt` updates whenever the answer flips. |
+| `AttendanceRecord` | One `(character, session)` pair, unique. `markedAt` updates whenever the answer flips. `markedByCharacterId` records who pressed the button — no relation on purpose, so deleting that person cannot take someone else's entry with them. |
+| `AuthExchange` | A single-use code the web app trades for a JWT pair after the API finishes the OAuth callback. Lives 60 seconds; expired rows are swept during the next exchange. Holds `discordId`, not a foreign key, because a rescue admin may match no `Character`. |
 | `FormationSlot` | One cell of the roster grid: a person, a note, or both. A cell that is empty *and* unannotated has no row — that is how "slot 2 is empty" differs from "there is no slot 2". |
 
 The label of a match ("Thứ 3 · 20:30") is **derived from `dateTime`**, never stored, so changing the

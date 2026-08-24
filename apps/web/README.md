@@ -21,7 +21,7 @@ Requires `apps/api` to already be running at `http://localhost:3001/api` (see [`
 | `NEXT_PUBLIC_API_URL` | Backend base URL, defaults to `http://localhost:3001/api` |
 
 The web app never connects to the database and holds no admin accounts — those live in the backend
-(`ADMIN_USERNAMES` / `ADMIN_PASSWORD`); the web app only verifies the token it receives.
+(`DISCORD_CLIENT_ID` / `DISCORD_CLIENT_SECRET`); the web app only verifies the token it receives.
 
 ## Commands
 
