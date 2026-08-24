@@ -128,17 +128,19 @@ export class CharactersService {
    * Quản trị viên đọc hai giá trị này ở màn Thành viên để xác nhận đã gán đúng người.
    * @param id - Id thành viên
    * @param discordUsername - Tên Discord vừa đọc được
+   * @param discordAvatar - Hash avatar vừa đọc được, null khi để ảnh mặc định
    * @param at - Thời điểm đăng nhập
    * @returns Promise hoàn tất khi đã ghi
    */
   async touchLogin(
     id: string,
     discordUsername: string,
+    discordAvatar: string | null,
     at: Date,
   ): Promise<void> {
     await this.prisma.character.update({
       where: { id },
-      data: { discordUsername, lastLoginAt: at },
+      data: { discordUsername, discordAvatar, lastLoginAt: at },
     });
   }
 

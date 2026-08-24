@@ -22,6 +22,11 @@ export interface DiscordProfile {
   id: string;
   /** Tên hiển thị, chỉ dùng để quản trị viên xác nhận gán đúng người */
   username: string;
+  /**
+   * Hash avatar — chỉ phần hash, không phải URL. null khi người dùng để avatar mặc định.
+   * Lưu hash chứ không lưu URL vì định dạng URL CDN là chuyện của Discord.
+   */
+  avatar: string | null;
 }
 
 /**
@@ -92,10 +97,16 @@ export async function exchangeCodeForProfile(
   const profile = (await profileResponse.json()) as {
     id?: string;
     username?: string;
+    avatar?: string | null;
   };
   if (!profile.id || !profile.username) {
     throw new Error('Hồ sơ Discord thiếu id hoặc username.');
   }
 
-  return { id: profile.id, username: profile.username };
+  // `avatar` được phép vắng mặt: tài khoản để ảnh mặc định không có hash nào cả.
+  return {
+    id: profile.id,
+    username: profile.username,
+    avatar: profile.avatar ?? null,
+  };
 }

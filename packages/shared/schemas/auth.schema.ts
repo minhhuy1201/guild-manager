@@ -27,6 +27,11 @@ export const sessionUserSchema = z.object({
   discordId: z.string(),
   /** Tên Discord đọc được ở lần đăng nhập gần nhất */
   discordUsername: z.string().nullable(),
+  /**
+   * Hash avatar Discord đọc ở lần đăng nhập gần nhất — chỉ phần hash, không phải URL đầy đủ.
+   * Web tự dựng URL CDN từ hash và `discordId`; null = chưa đọc được hoặc người dùng để avatar mặc định.
+   */
+  discordAvatar: z.string().nullable(),
   /** Vai trong bang */
   role: z.enum(GuildRole),
   /** Nhân vật gắn với tài khoản này; null chỉ xảy ra với quản trị viên cứu hộ */

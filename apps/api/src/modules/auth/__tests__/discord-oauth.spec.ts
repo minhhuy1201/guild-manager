@@ -33,7 +33,11 @@ describe('exchangeCodeForProfile', () => {
       )
       .mockResolvedValueOnce(
         new Response(
-          JSON.stringify({ id: '123456789012345678', username: 'meobeo' }),
+          JSON.stringify({
+            id: '123456789012345678',
+            username: 'meobeo',
+            avatar: 'a1b2c3d4e5f6',
+          }),
           { status: 200 },
         ),
       );
@@ -41,8 +45,36 @@ describe('exchangeCodeForProfile', () => {
     await expect(exchangeCodeForProfile(config, 'auth-code')).resolves.toEqual({
       id: '123456789012345678',
       username: 'meobeo',
+      avatar: 'a1b2c3d4e5f6',
     });
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('nhận hồ sơ không có avatar — người dùng để ảnh mặc định của Discord', async () => {
+    jest
+      .spyOn(global, 'fetch')
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ access_token: 'discord-token' }), {
+          status: 200,
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            id: '123456789012345678',
+            username: 'meobeo',
+            avatar: null,
+          }),
+          { status: 200 },
+        ),
+      );
+
+    // Thiếu avatar không được coi là hồ sơ hỏng: chỉ `id` và `username` mới bắt buộc.
+    await expect(exchangeCodeForProfile(config, 'auth-code')).resolves.toEqual({
+      id: '123456789012345678',
+      username: 'meobeo',
+      avatar: null,
+    });
   });
 
   it('ném lỗi khi Discord từ chối đổi code', async () => {

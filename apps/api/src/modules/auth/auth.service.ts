@@ -113,6 +113,7 @@ export class AuthService {
       await this.characters.touchLogin(
         member.id,
         profile.username,
+        profile.avatar,
         this.clock.now(),
       );
     }
@@ -263,6 +264,7 @@ export class AuthService {
     return verifyResponse(sessionUserSchema, {
       discordId,
       discordUsername: row?.discordUsername ?? null,
+      discordAvatar: row?.discordAvatar ?? null,
       // Danh sách cứu hộ thắng giá trị trong database: quản trị viên không tự khoá mình ra ngoài.
       role: isRescue ? GuildRole.ADMIN : (member?.role ?? GuildRole.MEMBER),
       character: row ? toCharacter(row) : null,

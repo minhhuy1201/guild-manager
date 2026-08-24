@@ -164,7 +164,11 @@ describe('AuthService.handleCallback', () => {
       ...validState,
       redirect: '/lich-su-diem-danh',
     });
-    mockDiscord({ id: '123456789012345678', username: 'meobeo' });
+    mockDiscord({
+      id: '123456789012345678',
+      username: 'meobeo',
+      avatar: 'a1b2c3d4e5f6',
+    });
 
     const url = new URL(
       await service.handleCallback({ code: 'c', state: 's' }),
@@ -173,7 +177,12 @@ describe('AuthService.handleCallback', () => {
     expect(url.pathname).toBe('/dang-nhap/discord');
     expect(url.searchParams.get('redirect')).toBe('/lich-su-diem-danh');
     expect(url.searchParams.get('exchange')).toBeTruthy();
-    expect(characters.touchLogin).toHaveBeenCalledWith(ROW.id, 'meobeo', now);
+    expect(characters.touchLogin).toHaveBeenCalledWith(
+      ROW.id,
+      'meobeo',
+      'a1b2c3d4e5f6',
+      now,
+    );
     expect(prisma.authExchange.create).toHaveBeenCalledTimes(1);
   });
 });

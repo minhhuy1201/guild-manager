@@ -191,14 +191,33 @@ describe('CharactersService', () => {
       await expect(service.findByDiscordId('111')).resolves.toBeNull();
     });
 
-    it('ghi lại tên Discord và thời điểm đăng nhập gần nhất', async () => {
+    it('ghi lại tên Discord, avatar và thời điểm đăng nhập gần nhất', async () => {
       const at = new Date('2026-08-24T10:00:00.000Z');
 
-      await service.touchLogin(ROW.id, 'meobeo', at);
+      await service.touchLogin(ROW.id, 'meobeo', 'a1b2c3d4e5f6', at);
 
       expect(prisma.character.update).toHaveBeenCalledWith({
         where: { id: ROW.id },
-        data: { discordUsername: 'meobeo', lastLoginAt: at },
+        data: {
+          discordUsername: 'meobeo',
+          discordAvatar: 'a1b2c3d4e5f6',
+          lastLoginAt: at,
+        },
+      });
+    });
+
+    it('ghi null khi tài khoản Discord để ảnh mặc định', async () => {
+      const at = new Date('2026-08-24T10:00:00.000Z');
+
+      await service.touchLogin(ROW.id, 'meobeo', null, at);
+
+      expect(prisma.character.update).toHaveBeenCalledWith({
+        where: { id: ROW.id },
+        data: {
+          discordUsername: 'meobeo',
+          discordAvatar: null,
+          lastLoginAt: at,
+        },
       });
     });
   });

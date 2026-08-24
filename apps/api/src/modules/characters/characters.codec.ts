@@ -35,6 +35,8 @@ export function toCharacter(row: CharacterRow): Character {
 export type GuildMemberRow = CharacterRow & {
   discordId: string | null;
   discordUsername: string | null;
+  /** Hash avatar Discord. Không nằm trong `guildMemberSchema`: màn quản trị không hiện ảnh. */
+  discordAvatar: string | null;
   lastLoginAt: Date | null;
   role: string;
 };

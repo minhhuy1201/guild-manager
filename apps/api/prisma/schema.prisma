@@ -54,6 +54,9 @@ model Character {
   discordId       String?    @unique
   /// Tên Discord đọc lúc đăng nhập gần nhất — để quản trị viên xác nhận đã gán đúng người.
   discordUsername String?
+  /// Hash avatar Discord đọc lúc đăng nhập gần nhất (chỉ hash, không phải URL).
+  /// Lưu hash chứ không lưu URL: định dạng URL CDN là chuyện của Discord, đổi lúc nào không báo.
+  discordAvatar   String?
   /// Null = chưa từng đăng nhập lần nào.
   lastLoginAt     DateTime?
   role            GuildRole  @default(MEMBER)
