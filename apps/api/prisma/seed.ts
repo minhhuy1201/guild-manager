@@ -48,10 +48,14 @@ function readSeedCharacters(): SeedCharacter[] {
     );
   }
 
-  const parsed = seedCharactersSchema.safeParse(JSON.parse(readFileSync(SEED_FILE, 'utf8')));
+  const parsed = seedCharactersSchema.safeParse(
+    JSON.parse(readFileSync(SEED_FILE, 'utf8')),
+  );
 
   if (!parsed.success) {
-    throw new Error(`File seed "${SEED_FILE}" sai định dạng:\n${z.prettifyError(parsed.error)}`);
+    throw new Error(
+      `File seed "${SEED_FILE}" sai định dạng:\n${z.prettifyError(parsed.error)}`,
+    );
   }
 
   return parsed.data;
@@ -69,22 +73,33 @@ async function main(): Promise<void> {
   const characters = readSeedCharacters();
 
   // Cùng thứ tự ưu tiên với prisma.config.ts: seed là thao tác CLI nên đi đường direct nếu có.
-  const connectionString = process.env.DIRECT_DATABASE_URL || process.env.DATABASE_URL;
+  const connectionString =
+    process.env.DIRECT_DATABASE_URL || process.env.DATABASE_URL;
 
   if (!connectionString) {
-    throw new Error(`Thiếu DATABASE_URL — kiểm tra file "${envFile}" của apps/api.`);
+    throw new Error(
+      `Thiếu DATABASE_URL — kiểm tra file "${envFile}" của apps/api.`,
+    );
   }
 
-  const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
+  const prisma = new PrismaClient({
+    adapter: new PrismaPg({ connectionString }),
+  });
 
   try {
-    const existing = await prisma.character.findMany({ select: { id: true, name: true } });
+    const existing = await prisma.character.findMany({
+      select: { id: true, name: true },
+    });
     const existingIdByName = new Map(existing.map((row) => [row.name, row.id]));
 
     // Gom thành ít truy vấn nhất có thể: database ở xa nên mỗi round-trip đắt,
     // upsert từng nhân vật một sẽ vượt hạn mức của transaction.
-    const created = characters.filter((character) => !existingIdByName.has(character.name));
-    const updated = characters.filter((character) => existingIdByName.has(character.name));
+    const created = characters.filter(
+      (character) => !existingIdByName.has(character.name),
+    );
+    const updated = characters.filter((character) =>
+      existingIdByName.has(character.name),
+    );
 
     await prisma.$transaction(
       [
