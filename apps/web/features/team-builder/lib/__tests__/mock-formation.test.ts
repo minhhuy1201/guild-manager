@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { GuildClass } from "@guild/shared/enums";
 
 import {
   SLOTS_PER_TEAM,
+  SUGGESTED_CLASS_TEMPLATE,
   TEAM_COUNT,
   createMockFormation,
 } from "../mock-formation";
@@ -29,26 +29,30 @@ describe("createMockFormation", () => {
     }
   });
 
-  it("gợi ý Tố Vấn ở vị trí 2 và 3 của mọi team", () => {
+  // Đọc kỳ vọng từ chính template thay vì ghi số cứng: mảng gợi ý là "display hint only",
+  // sửa nó là chuyện thường ngày và không được làm đỏ test. Cái đáng khẳng định là template
+  // được áp đúng offset và giống nhau ở cả 10 team.
+  it("áp gợi ý lưu phái theo template, giống nhau ở mọi team", () => {
     const formation = createMockFormation();
-    const suggested = formation.slots.filter(
-      (slot) => slot.position === 2 || slot.position === 3
-    );
-    expect(suggested).toHaveLength(TEAM_COUNT * 2);
-    for (const slot of suggested) {
-      expect(slot.suggestedClass).toBe(GuildClass.TO_VAN);
+
+    for (const slot of formation.slots) {
+      expect(slot.suggestedClass).toBe(
+        SUGGESTED_CLASS_TEMPLATE[slot.position - 1]
+      );
     }
   });
 
-  it("bốn vị trí còn lại không gợi ý lưu phái nào", () => {
+  it("vị trí nào template để trống thì slot không mang suggestedClass", () => {
     const formation = createMockFormation();
+    const freePositions = SUGGESTED_CLASS_TEMPLATE.filter(
+      (suggested) => suggested === undefined
+    ).length;
+
     const free = formation.slots.filter(
-      (slot) => slot.position !== 2 && slot.position !== 3
+      (slot) => !("suggestedClass" in slot)
     );
-    expect(free).toHaveLength(TEAM_COUNT * 4);
-    for (const slot of free) {
-      expect(slot.suggestedClass).toBeUndefined();
-    }
+
+    expect(free).toHaveLength(TEAM_COUNT * freePositions);
   });
 
   it("id của slot mang đúng toạ độ team/vị trí của nó", () => {

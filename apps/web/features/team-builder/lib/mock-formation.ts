@@ -15,7 +15,7 @@ export const SLOTS_PER_TEAM = 6;
  * This is a display hint only — no slot ever rejects a character. Editing this
  * array is enough; nothing else depends on the specific classes.
  */
-const SUGGESTED_CLASS_TEMPLATE: readonly (GuildClass | undefined)[] = [
+export const SUGGESTED_CLASS_TEMPLATE: readonly (GuildClass | undefined)[] = [
   GuildClass.TO_VAN,
   GuildClass.TO_VAN,
   undefined,
