@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { ROUTES } from "@/config/routes";
-import { createSession } from "@/features/auth/api/session";
+import { createSession } from "@/features/auth/server";
 import { exchangeRequest } from "@/features/auth/core";
 
 /** Mã lỗi gắn vào `/dang-nhap` khi không đổi được mã lấy token. */

@@ -19,7 +19,12 @@ The rules that get broken first, in the order they get broken:
 - **`lib/api-client.ts` is the only place that calls `fetch` against the backend.** Feature request
   functions wrap `apiFetch` in `features/<feature>/api/`; components call the feature's hook, never
   `useQuery` directly.
-- **Cross-feature imports go through the feature's `index.ts`**, never an internal file.
+- **Cross-feature imports go through the feature's `index.ts`**, never an internal file. A feature
+  holding server-only code splits that entry in two: `index.ts` stays client-safe and `server.ts`
+  (starting with `import "server-only"`) carries everything touching `next/headers` or cookies —
+  `features/auth` is the worked example. Re-exporting a `next/headers` module from the client-safe
+  barrel breaks the whole app the moment any `"use client"` file imports the barrel, even for an
+  unrelated hook, and the error names the Pages Router rather than the real culprit.
 - **`components/ui/` is shadcn CLI output.** Need a variant? Wrap it in `components/shared/`.
 - **Render `ApiError.message` verbatim** — the backend already writes the Vietnamese text meant for
   the user.

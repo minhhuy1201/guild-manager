@@ -9,7 +9,7 @@ import type {
   Week,
 } from "@guild/shared/schemas";
 
-import { getAccessToken } from "@/features/auth";
+import { getAccessToken } from "@/features/auth/server";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import { recordKey } from "../lib/record-key";
 

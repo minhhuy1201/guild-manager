@@ -5,7 +5,8 @@ import { canManageGuild } from "@guild/shared/lib";
 
 import { MainNav } from "@/components/shared/main-nav";
 import { ROUTES } from "@/config/routes";
-import { fetchMe, getSession, LoginButton } from "@/features/auth";
+import { LoginButton } from "@/features/auth";
+import { fetchMe, getSession } from "@/features/auth/server";
 
 /**
  * Thanh header trên cùng của ứng dụng: tên bang "Mèo Mập Giang Hồ" và nav chính.

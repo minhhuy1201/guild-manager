@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { ROUTES } from "@/config/routes";
-import { getSession } from "@/features/auth";
+import { getSession } from "@/features/auth/server";
 import { TeamBuilderScreen } from "@/features/team-builder";
 
 export const metadata: Metadata = {

@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { ROUTES } from "@/config/routes";
 import { AttendanceScreen } from "@/features/attendance";
-import { getSession } from "@/features/auth";
+import { getSession } from "@/features/auth/server";
 
 /**
  * Route gốc "/" — chỉ compose màn hình điểm danh của feature attendance.

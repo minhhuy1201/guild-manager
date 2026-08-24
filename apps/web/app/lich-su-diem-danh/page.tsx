@@ -4,7 +4,7 @@ import { canViewAllAttendance } from "@guild/shared/lib";
 
 import { ROUTES } from "@/config/routes";
 import { AttendanceFilters, AttendanceLogTable } from "@/features/attendance";
-import { getSession } from "@/features/auth";
+import { getSession } from "@/features/auth/server";
 
 export const metadata: Metadata = {
   title: "Lịch sử điểm danh — Mèo Mập Giang Hồ",

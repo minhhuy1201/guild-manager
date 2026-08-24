@@ -8,7 +8,7 @@ import { recordKey } from "../../lib/record-key";
  * vốn kéo theo `server-only` — không nạp được trong môi trường test. Mock lại đúng
  * hàm nó cần, và cũng nhờ đó khẳng định được mọi request đều mang Bearer token.
  */
-vi.mock("@/features/auth", () => ({
+vi.mock("@/features/auth/server", () => ({
   getAccessToken: () => Promise.resolve(ACCESS_TOKEN),
 }));
 
