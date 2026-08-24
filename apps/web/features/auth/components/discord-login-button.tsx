@@ -19,7 +19,7 @@ export function DiscordLoginButton({
   const href = `${API_BASE_URL}/auth/discord?redirect=${encodeURIComponent(redirect)}`;
 
   return (
-    <Button render={<a href={href} />} size="lg">
+    <Button size="lg" nativeButton={false} render={<a href={href} />}>
       Đăng nhập bằng Discord
     </Button>
   );
