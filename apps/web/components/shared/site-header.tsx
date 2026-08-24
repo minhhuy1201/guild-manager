@@ -5,7 +5,7 @@ import { canManageGuild } from "@guild/shared/lib";
 
 import { MainNav } from "@/components/shared/main-nav";
 import { ROUTES } from "@/config/routes";
-import { LoginButton } from "@/features/auth";
+import { UserMenu } from "@/features/auth";
 import { fetchMe, getSession } from "@/features/auth/server";
 
 /**
@@ -35,8 +35,10 @@ export async function SiteHeader() {
         <div className="ml-auto flex shrink-0 items-center gap-2.5">
           <MainNav isAdmin={session ? canManageGuild(session.role) : false} />
           {session && (
-            <LoginButton
+            <UserMenu
               label={me?.character?.name ?? me?.discordUsername ?? null}
+              discordId={session.discordId}
+              avatarHash={me?.discordAvatar ?? null}
             />
           )}
         </div>

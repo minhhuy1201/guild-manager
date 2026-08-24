@@ -7,6 +7,6 @@
  * next/headers". Trước khi tách, `members-panel.tsx` chỉ cần `useSession` cũng đủ làm chết app.
  */
 export { DiscordLoginButton } from "./components/discord-login-button";
-export { LoginButton } from "./components/login-button";
+export { UserMenu } from "./components/user-menu";
 export { useSession, sessionKeys } from "./hooks/use-session";
 export { loginErrorMessage } from "./lib/login-error";
