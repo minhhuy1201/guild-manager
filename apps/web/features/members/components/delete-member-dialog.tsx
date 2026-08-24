@@ -1,13 +1,13 @@
 "use client";
 
-import type { Character } from "@guild/shared/schemas";
+import type { GuildMember } from "@guild/shared/schemas";
 
 import { ConfirmDeleteDialog } from "@/components/shared/confirm-delete-dialog";
 import { useDeleteMember } from "../hooks/use-member-mutations";
 
 interface DeleteMemberDialogProps {
   /** Thành viên sắp xoá; null thì dialog đóng */
-  member: Character | null;
+  member: GuildMember | null;
   /** Gọi khi dialog đóng lại */
   onClose: () => void;
 }

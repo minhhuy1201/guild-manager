@@ -9,7 +9,7 @@ import {
   GUILD_CLASS_OPTIONS,
   type GuildClass,
 } from "@guild/shared/enums";
-import type { Character } from "@guild/shared/schemas";
+import type { GuildMember } from "@guild/shared/schemas";
 
 import { MutationDialogShell } from "@/components/shared/mutation-dialog";
 import { MutationForm } from "@/components/shared/mutation-form";
@@ -29,7 +29,7 @@ interface MemberFormDialogProps {
   /** Dialog đang mở hay không */
   open: boolean;
   /** Thành viên đang sửa; null nghĩa là đang thêm mới */
-  member: Character | null;
+  member: GuildMember | null;
   /** Gọi khi dialog đóng lại */
   onOpenChange: (open: boolean) => void;
 }
@@ -56,13 +56,13 @@ export function MemberFormDialog({
 
 interface MemberFormProps {
   /** Thành viên đang sửa; null nghĩa là thêm mới */
-  member: Character | null;
+  member: GuildMember | null;
   /** Gọi khi đóng dialog */
   onDone: () => void;
 }
 
 /**
- * Hai ô nhập của một thành viên: tên và lưu phái.
+ * Các ô nhập của một thành viên: tên, lưu phái và Discord ID.
  * @param member - Thành viên đang sửa; null nghĩa là thêm mới
  * @param onDone - Gọi khi đóng dialog
  * @returns Form thêm/sửa thành viên
@@ -72,6 +72,7 @@ function MemberForm({ member, onDone }: MemberFormProps) {
   const [guildClass, setGuildClass] = useState<GuildClass>(
     member?.guildClass ?? GUILD_CLASS_OPTIONS[0]
   );
+  const [discordId, setDiscordId] = useState(member?.discordId ?? "");
 
   const createMutation = useCreateMember();
   const updateMutation = useUpdateMember();
@@ -88,7 +89,11 @@ function MemberForm({ member, onDone }: MemberFormProps) {
         const input = { name: name.trim(), guildClass };
 
         if (member) {
-          await updateMutation.mutateAsync({ id: member.id, input });
+          // `discordId` chỉ sửa được ở thành viên đã có; backend nhận null để gỡ liên kết.
+          await updateMutation.mutateAsync({
+            id: member.id,
+            input: { ...input, discordId: discordId.trim() || null },
+          });
           return;
         }
         await createMutation.mutateAsync(input);
@@ -104,6 +109,19 @@ function MemberForm({ member, onDone }: MemberFormProps) {
           onChange={(event) => setName(event.target.value)}
         />
       </div>
+
+      {member && (
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="member-discord-id">Discord ID</Label>
+          <Input
+            id="member-discord-id"
+            inputMode="numeric"
+            placeholder="17–19 chữ số, để trống nếu chưa gán"
+            value={discordId}
+            onChange={(event) => setDiscordId(event.target.value)}
+          />
+        </div>
+      )}
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="member-class">Lưu phái</Label>

@@ -48,8 +48,7 @@ export function SettingsTabs() {
             <div>
               <h1 className="text-lg font-semibold">Quản lý thành viên</h1>
               <p className="text-sm text-muted-foreground">
-                Thêm thành viên mới, sửa lưu phái, xem và cấp lại mật khẩu điểm
-                danh.
+                Thêm thành viên, sửa lưu phái, gán Discord ID và phân quyền.
               </p>
             </div>
             <MembersPanel />

@@ -1,8 +1,8 @@
 "use server";
 
 import type {
-  Character,
   CreateCharacterInput,
+  GuildMember,
   UpdateCharacterInput,
 } from "@guild/shared/schemas";
 
@@ -33,8 +33,8 @@ async function authHeader(): Promise<Record<string, string>> {
  * Lấy danh sách thành viên.
  * @returns Mảng thành viên sắp theo tên
  */
-export async function fetchMembers(): Promise<Character[]> {
-  return apiFetch<Character[]>("/characters", { headers: await authHeader() });
+export async function fetchMembers(): Promise<GuildMember[]> {
+  return apiFetch<GuildMember[]>("/characters", { headers: await authHeader() });
 }
 
 /**
@@ -45,8 +45,8 @@ export async function fetchMembers(): Promise<Character[]> {
  */
 export async function createMember(
   input: CreateCharacterInput
-): Promise<Character> {
-  return apiFetch<Character>("/characters", {
+): Promise<GuildMember> {
+  return apiFetch<GuildMember>("/characters", {
     method: "POST",
     body: JSON.stringify(input),
     headers: await authHeader(),
@@ -54,17 +54,17 @@ export async function createMember(
 }
 
 /**
- * Sửa tên hoặc lưu phái của một thành viên.
+ * Sửa tên, lưu phái, Discord ID hoặc vai của một thành viên.
  * @param id - Id thành viên
  * @param input - Các field cần đổi
  * @returns Thành viên sau khi sửa
- * @throws ApiError khi thành viên đã bị xoá (404) hoặc backend từ chối
+ * @throws ApiError khi thành viên đã bị xoá (404) hoặc Discord ID đã thuộc người khác (409)
  */
 export async function updateMember(
   id: string,
   input: UpdateCharacterInput
-): Promise<Character> {
-  return apiFetch<Character>(`/characters/${encodeURIComponent(id)}`, {
+): Promise<GuildMember> {
+  return apiFetch<GuildMember>(`/characters/${encodeURIComponent(id)}`, {
     method: "PATCH",
     body: JSON.stringify(input),
     headers: await authHeader(),
