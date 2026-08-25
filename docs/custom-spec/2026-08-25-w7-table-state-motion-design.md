@@ -94,11 +94,13 @@ function getPageSlots(page: number, pageCount: number, siblings: number): PageSl
 ```
 
 `BLANK` render ra `<span className="size-8" aria-hidden />` — cùng kích thước ô nhưng không có nội
-dung, không vào tab order. Đệm ở **đầu hay cuối** thì theo phía đang thiếu: trang 1 thiếu ở giữa-phải
-nên chèn trước ô cuối, trang cuối thì ngược lại; như vậy ô trang hiện tại cũng không trượt.
+dung, không vào tab order. Đệm ở **đầu hay cuối** thì theo phía đang thiếu, và chèn **sát phía trong
+của dấu `…` đang có**: thiếu ở phải (trang đầu) thì chèn ngay *trước* `…` cuối, thiếu ở trái (trang
+cuối) thì chèn ngay *sau* `…` đầu. Như vậy cả số trang lẫn dấu `…` đều giữ nguyên chỉ số ô.
 
-Đây là biến thể thứ ba của cùng một union đã có, nên vẫn `switch` trên discriminant và kết bằng
-`assertNever` (quy ước ở `CLAUDE.md` gốc).
+Đây là biến thể thứ ba của cùng một union đã có, nên vẫn `switch` trên giá trị. Không có
+`assertNever`: union `number | typeof ELLIPSIS | typeof BLANK` có một nhánh mở (`number`) nên
+exhaustiveness không kiểm được — nhánh `default` chính là số trang.
 
 **`pageCount <= 1` không còn `return null`.** Nó render dải với đúng một số trang và bốn nút đều
 `aria-disabled` — thanh phân trang giữ nguyên chiều cao, lọc còn 0/1 trang thì không có gì nhảy. Hệ
@@ -134,6 +136,10 @@ Module giữ toàn bộ: thứ tự nhánh (lỗi trước, đang tải sau — 
 
 `components/shared/table-skeleton.tsx` **bị xoá**; `SKELETON_COLUMN_CLASSES` ở
 `attendance-log-table.tsx:36-41` chuyển thành prop `columnClassNames`.
+
+`features/members/components/members-skeleton.tsx` **cũng bị xoá**: `MembersPanel` là chỗ dùng duy
+nhất, và khi phần bảng chuyển sang `TableBodyState` thì `QueryBoundary` bọc ngoài không còn lý do tồn
+tại — bộ lọc và nút "Thêm thành viên" render ngay từ lúc đang tải, bớt thêm một cú dựng lại layout.
 
 Ba chỗ gọi rút gọn từ ~35 dòng thang điều kiện xuống một thẻ. `attendance-grid.tsx` bỏ được luôn
 `isError`/`isPending` khỏi thân JSX; `attendance-log-table.tsx` bỏ được cả `ErrorState` import.
@@ -197,6 +203,10 @@ Dùng ở cả tám chỗ; trong bảng thì đi qua `TableBodyState` (§2), ngo
     }
 }
 ```
+
+Cách tiêu thụ: Tailwind 4 có namespace `--ease-*` nên `--ease-out-soft` sinh ra class `ease-out-soft`;
+**không** có namespace `--duration-*`, nên thời lượng viết bằng arbitrary value
+`duration-[var(--duration-base)]`.
 
 Quy tắc: **chuyển động chỉ được đổi độ mờ và màu, không đổi hình học.** Không `translate`, không
 `height`, không `scale` trên nội dung bảng — vì mục tiêu của cả spec này là ngăn layout xê dịch, và
