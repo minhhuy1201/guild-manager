@@ -149,7 +149,11 @@ Ba chỗ gọi rút gọn từ ~35 dòng thang điều kiện xuống một th�
 Trong `attendance-grid.tsx`, thay `SKELETON_COLUMNS = 5` bằng một giá trị dẫn xuất:
 
 ```ts
-/** Một tuần có tối đa 4 trận (architecture.md §6) — số cột ngày lúc chưa biết lịch. */
+/**
+ * Số cột ngày vẽ tạm khi chưa biết lịch tuần. Đây là **ước lượng**, không phải quy tắc —
+ * `architecture.md` không chốt số trận tối đa của một tuần; chỉ cần một con số hợp lý để
+ * header không co giãn thấy rõ khi dữ liệu về.
+ */
 const PLACEHOLDER_DAY_COLUMNS = 4;
 
 const dayColumns = isPending ? PLACEHOLDER_DAY_COLUMNS : battleSessions.length;
@@ -291,8 +295,10 @@ Mỗi bước tự kiểm và tự commit theo bảng ở mục *Kiểm chứng*
 
 - `apps/web/docs/frontend.md` §6 "Tables": thay `table-skeleton` bằng `table-body-state` trong ba
   gạch đầu dòng Loading/Failure/Paging.
-- `apps/web/docs/frontend.md` §6: thêm mục **"Trạng thái rỗng"** (`empty-state.tsx`) và mục
-  **"Chuyển động"** (token, `Spinner`, quy tắc spinner-hay-skeleton, quy tắc không đổi hình học).
+- `apps/web/docs/frontend.md` §6: thêm mục **"Empty state"** (`empty-state.tsx`) và mục **"Motion"**
+  (token, `Spinner`, quy tắc spinner-hay-skeleton, quy tắc không đổi hình học, và quy ước ô giữ chỗ
+  cho lỗi mutation ở §7). Tài liệu này viết bằng **tiếng Anh** — tiếng Việt chỉ dùng trong
+  `docs/superpowers`, `docs/custom-plan`, `docs/custom-spec`.
 - `docs/architecture.md` không đổi — không thêm endpoint, cột, page hay biến môi trường nào.
 
 ## Kiểm chứng
