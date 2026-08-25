@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, type FormEvent, type ReactNode } from "react";
-import { AlertCircle, LoaderCircle, X } from "lucide-react";
+import { AlertCircle, X } from "lucide-react";
 
+import { Spinner } from "@/components/shared/spinner";
 import { Button } from "@/components/ui/button";
 import {
   DialogFooter,
@@ -136,7 +137,7 @@ export function MutationForm({
           </Button>
         )}
         <Button type="submit" variant={variant} disabled={isPending}>
-          {isPending ? <LoaderCircle className="animate-spin" /> : submitIcon}
+          {isPending ? <Spinner /> : submitIcon}
           {isPending ? pendingLabel : submitLabel}
         </Button>
       </DialogFooter>

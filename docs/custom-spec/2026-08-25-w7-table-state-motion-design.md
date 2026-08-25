@@ -220,8 +220,12 @@ một transition dịch chuyển chính là thứ đang gây ra nó.
 interface SpinnerProps {
   /** "sm" (size-3.5) trong nút và ô bảng, "md" (size-4) là mặc định. */
   size?: "sm" | "md";
-  /** Nhãn cho trình đọc màn hình; bắt buộc vì spinner không có chữ. */
-  label: string;
+  /**
+   * Nhãn cho trình đọc màn hình. Bỏ trống khi chỗ đặt spinner đã tự có tên
+   * (nút có chữ hiển thị, `RowActionButton` đã kèm `sr-only`) — thêm nữa chỉ
+   * làm tên khả truy cập bị lặp.
+   */
+  label?: string;
 }
 ```
 

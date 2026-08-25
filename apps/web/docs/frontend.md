@@ -374,6 +374,38 @@ From `components/shared/action-buttons.tsx`:
 - **Destructive actions get a confirm dialog** — see `delete-member-dialog`, `delete-session-dialog`,
   `delete-match-dialog`.
 
+### Chuyển động
+
+Bốn token trong `app/globals.css` là toàn bộ từ vựng chuyển động của app:
+
+| Token | Giá trị | Dùng cho |
+|---|---|---|
+| `--duration-fast` | 120ms | đổi màu, hover, nhấn |
+| `--duration-base` | 200ms | hiện/ẩn nội dung trong khung có sẵn |
+| `--duration-slow` | 320ms | skeleton ⇄ dữ liệu |
+| `--ease-out-soft` | `cubic-bezier(0.16, 1, 0.3, 1)` | mọi easing |
+
+Tailwind 4 có namespace `--ease-*` nên `--ease-out-soft` sinh ra class `ease-out-soft`; **không** có
+namespace `--duration-*`, nên thời lượng viết là `duration-[var(--duration-base)]`.
+
+**Chuyển động chỉ được đổi độ mờ và màu, không đổi hình học** — không `translate`, không `height`,
+không `scale` trên nội dung bảng. Một transition dịch chuyển chính là thứ gây ra layout nhảy.
+
+`prefers-reduced-motion: reduce` được trả lời **một lần** ở cuối `globals.css` cho cả app, không lặp
+ở từng chỗ gọi.
+
+**Spinner hay skeleton?**
+
+| Tình huống | Dùng |
+|---|---|
+| Chưa biết dữ liệu có bao nhiêu hàng — lần tải đầu | **Skeleton** đúng hình bảng |
+| Đã có khung, đang chờ một thao tác của người dùng | **Spinner** trong chính nút/ô đó |
+| Đang tải lại nền, dữ liệu cũ vẫn đúng | **Không gì cả** — giữ dữ liệu cũ |
+
+Spinner duy nhất của app là `components/shared/spinner.tsx`: `size` là `"sm"` (`size-3.5`) hoặc
+`"md"` (`size-4`). `label` chỉ truyền khi chỗ đặt spinner chưa tự có tên; nút đã có chữ hiển thị hay
+`RowActionButton` (đã kèm `sr-only`) thì bỏ trống, thêm nữa chỉ làm tên khả truy cập bị lặp.
+
 ### Tables
 
 - Loading → `table-skeleton` inside `<TableBody>`, with the same column count as the header.

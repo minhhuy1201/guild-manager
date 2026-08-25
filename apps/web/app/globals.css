@@ -5,6 +5,14 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+    /* Motion vocabulary. Three durations, no fourth without editing this file.
+       Tailwind 4 has an `--ease-*` namespace (giving the `ease-out-soft` class)
+       but no `--duration-*` one, so durations are used as
+       `duration-[var(--duration-base)]`. */
+    --duration-fast: 120ms;
+    --duration-base: 200ms;
+    --duration-slow: 320ms;
+    --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
     --font-heading: var(--font-sans);
     --font-sans: var(--font-be-vietnam-pro), ui-sans-serif, system-ui, sans-serif;
     --color-sidebar-ring: var(--sidebar-ring);
@@ -206,4 +214,15 @@
   body {
     background-color: var(--background);
   }
+}
+
+/* Answered once for the whole app, never repeated at a call site. */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
 }
