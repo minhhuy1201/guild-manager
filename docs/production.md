@@ -365,15 +365,24 @@ Migration `20260802185500_chan_data_api_truy_cap_bang` enables RLS (no policies 
 revokes the existing grants and sets `ALTER DEFAULT PRIVILEGES` for future tables. The app is
 unaffected because the `postgres` role has `rolbypassrls`.
 
-`AuthExchange` is one of those later tables — it holds live single-use login codes, so it must be
-covered by the same revoke. After adding any new table, re-check:
+`ALTER DEFAULT PRIVILEGES` carries the **revoke** to later tables, but it does not enable RLS on them
+— that stays per-table and must be done by hand. `20260825071500_bat_rls_cho_bang_moi` catches up the
+three tables created since (`AuthExchange`, `FormationMatch`, `FormationSlot`); `AuthExchange` is the
+one that matters most, because it holds live single-use login codes and reading one inside its 60s
+TTL is enough to take over a session. **Every new table needs its own `ENABLE ROW LEVEL SECURITY`
+line in the migration that creates it.**
+
+After adding any new table, re-check both layers:
 
 ```sql
+-- Layer 1: no grants. An empty result is correct.
 select grantee, table_name from information_schema.role_table_grants
 where table_schema = 'public' and grantee in ('anon', 'authenticated');
-```
 
-An empty result is correct. **Still open:** turn the Data API off entirely in the dashboard
+-- Layer 2: RLS on. Every row must read `t` except `_prisma_migrations`.
+select relname, relrowsecurity from pg_class
+where relkind = 'r' and relnamespace = 'public'::regnamespace order by relname;
+``` **Still open:** turn the Data API off entirely in the dashboard
 (Settings → API) — RLS already blocks it, but disabling what you do not use is better.
 
 ### Free-tier limits
