@@ -374,62 +374,67 @@ From `components/shared/action-buttons.tsx`:
 - **Destructive actions get a confirm dialog** — see `delete-member-dialog`, `delete-session-dialog`,
   `delete-match-dialog`.
 
-### Trạng thái rỗng
+### Empty state
 
-`components/shared/empty-state.tsx` (`<EmptyState message icon? action? />`) là **cách duy nhất** để
-nói "tải xong nhưng không có gì". Cùng khung, cùng khoảng cách, cùng cỡ chữ với
-`components/shared/error-state.tsx` — hai nhánh của cùng một câu chuyện thì phải trông như nhau.
+`components/shared/empty-state.tsx` (`<EmptyState message icon? action? />`) is the **only** way to
+say "loaded fine, holds nothing". Same frame, same spacing, same type scale as
+`components/shared/error-state.tsx` — two branches of one story should look alike.
 
-Một phương ngữ duy nhất: `flex flex-col items-center gap-3 py-8 text-center`. Không còn bản viền đứt
-`rounded-lg border border-dashed p-4`. Trong bảng thì đi qua `table-body-state`; ngoài bảng thì gọi
-thẳng.
+One dialect: `flex flex-col items-center gap-3 py-8 text-center`. The dashed-border variant
+(`rounded-lg border border-dashed p-4`) is gone. Inside a table it arrives through `table-body-state`;
+outside one, call it directly.
 
-`border-dashed` còn lại trong app là viền vùng thả của kéo-thả (`member-pool`, `slot-cell`,
-`prefill-banner`), không phải trạng thái rỗng.
+The `border-dashed` left in the app is the drag-and-drop drop-zone border (`member-pool`, `slot-cell`,
+`prefill-banner`), not an empty state.
 
-### Chuyển động
+### Motion
 
-Bốn token trong `app/globals.css` là toàn bộ từ vựng chuyển động của app:
+Four tokens in `app/globals.css` are the app's whole motion vocabulary:
 
-| Token | Giá trị | Dùng cho |
+| Token | Value | Used for |
 |---|---|---|
-| `--duration-fast` | 120ms | đổi màu, hover, nhấn |
-| `--duration-base` | 200ms | hiện/ẩn nội dung trong khung có sẵn |
-| `--duration-slow` | 320ms | skeleton ⇄ dữ liệu |
-| `--ease-out-soft` | `cubic-bezier(0.16, 1, 0.3, 1)` | mọi easing |
+| `--duration-fast` | 120ms | colour changes, hover, press |
+| `--duration-base` | 200ms | showing/hiding content inside a frame that already exists |
+| `--duration-slow` | 320ms | skeleton ⇄ data |
+| `--ease-out-soft` | `cubic-bezier(0.16, 1, 0.3, 1)` | every easing |
 
-Tailwind 4 có namespace `--ease-*` nên `--ease-out-soft` sinh ra class `ease-out-soft`; **không** có
-namespace `--duration-*`, nên thời lượng viết là `duration-[var(--duration-base)]`.
+Tailwind 4 has an `--ease-*` namespace, so `--ease-out-soft` gives the `ease-out-soft` class; it has
+**no** `--duration-*` namespace, so a duration is written `duration-[var(--duration-base)]`.
 
-**Chuyển động chỉ được đổi độ mờ và màu, không đổi hình học** — không `translate`, không `height`,
-không `scale` trên nội dung bảng. Một transition dịch chuyển chính là thứ gây ra layout nhảy.
+**Motion may change opacity and colour only, never geometry** — no `translate`, no `height`, no
+`scale` on table content. A transition that moves something is exactly what makes the layout jump.
 
-`prefers-reduced-motion: reduce` được trả lời **một lần** ở cuối `globals.css` cho cả app, không lặp
-ở từng chỗ gọi.
+`prefers-reduced-motion: reduce` is answered **once**, at the end of `globals.css`, for the whole app —
+never repeated at a call site.
 
-**Spinner hay skeleton?**
+**Spinner or skeleton?**
 
-| Tình huống | Dùng |
+| Situation | Use |
 |---|---|
-| Chưa biết dữ liệu có bao nhiêu hàng — lần tải đầu | **Skeleton** đúng hình bảng |
-| Đã có khung, đang chờ một thao tác của người dùng | **Spinner** trong chính nút/ô đó |
-| Đang tải lại nền, dữ liệu cũ vẫn đúng | **Không gì cả** — giữ dữ liệu cũ |
+| Row count still unknown — the first load | **Skeleton** shaped like the table |
+| The frame is there, waiting on something the user just did | **Spinner** in that button or cell |
+| Background refetch, the old data is still correct | **Nothing** — keep the old data |
 
-Spinner duy nhất của app là `components/shared/spinner.tsx`: `size` là `"sm"` (`size-3.5`) hoặc
-`"md"` (`size-4`). `label` chỉ truyền khi chỗ đặt spinner chưa tự có tên; nút đã có chữ hiển thị hay
-`RowActionButton` (đã kèm `sr-only`) thì bỏ trống, thêm nữa chỉ làm tên khả truy cập bị lặp.
+The app's only spinner is `components/shared/spinner.tsx`: `size` is `"sm"` (`size-3.5`) or `"md"`
+(`size-4`). Pass `label` only where the spinner sits somewhere that has no name of its own; a button
+with visible text, or `RowActionButton` (which adds its own `sr-only`), leaves it out — a second label
+there only duplicates the accessible name.
+
+**A mutation error keeps its slot.** An error line rendered above or below a table lives inside a
+wrapper with a fixed minimum height (`min-h-*`), so the error appearing does not push the table or the
+pagination bar down — see `members-panel` and `attendance-grid`.
 
 ### Tables
 
-- Loading / Failure / Empty / Data → **`table-body-state`** đặt trong `<TableBody>`. Nó giữ cả bốn
-  nhánh và thứ tự của chúng (lỗi trước, đang tải sau — cùng quy ước với `query-boundary`), suy
-  `colSpan` **một lần** từ prop `columns`, và chuyển cảnh bằng độ mờ. Chỗ gọi chỉ nói hàng *trông thế
-  nào* qua `renderRow`, không nói nhánh nào thắng.
-- `columns` phải đúng bằng số `<th>` của header. Bảng có số cột thay đổi theo dữ liệu thì phải chốt
-  số cột ở **một** biến dùng chung cho cả header lẫn thân — xem `attendance-grid`.
-- Paging → `use-table-pagination` (client-side, reset về trang 1 khi bộ lọc đổi) render bằng
-  `table-pagination-bar` / `page-size-select`. Thanh phân trang **luôn** render, kể cả khi chỉ còn
-  một trang, để lọc không làm layout nhảy.
+- Loading / Failure / Empty / Data → **`table-body-state`**, placed inside `<TableBody>`. It owns all
+  four branches and their order (failure before loading — the same convention as `query-boundary`),
+  derives `colSpan` **once** from the `columns` prop, and crosses between branches with opacity. The
+  call site only says what a row *looks like*, through `renderRow`, never which branch wins.
+- `columns` must equal the header's `<th>` count. A table whose column count follows the data must
+  pin that count in **one** variable shared by header and body — see `attendance-grid`.
+- Paging → `use-table-pagination` (client-side, resets to page 1 when the filter changes) rendered
+  with `table-pagination-bar` / `page-size-select`. The pagination bar **always** renders, even at one
+  page, so filtering does not move the layout.
 
 ---
 
