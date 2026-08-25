@@ -7,8 +7,8 @@ import type { GuildRole } from "@guild/shared/enums";
 import type { GuildMember } from "@guild/shared/schemas";
 
 import { CreateButton } from "@/components/shared/action-buttons";
-import { QueryBoundary } from "@/components/shared/query-boundary";
 import { RosterFilterBar } from "@/components/shared/roster-filter-bar";
+import { TableBodyState } from "@/components/shared/table-body-state";
 import { TablePaginationBar } from "@/components/shared/table-pagination-bar";
 import {
   Table,
@@ -26,10 +26,12 @@ import { useUpdateMember } from "../hooks/use-member-mutations";
 import { DeleteMemberDialog } from "./delete-member-dialog";
 import { MemberFormDialog } from "./member-form-dialog";
 import { MemberRow } from "./member-row";
-import { MembersSkeleton } from "./members-skeleton";
 
 /** The empty filter the screen opens with — this screen keeps its filters in its own state. */
 const EMPTY_FILTER: RosterFilter = { search: "", guildClasses: [] };
+
+/** Header column count: name, class, Discord, role, actions. */
+const COLUMN_COUNT = 5;
 
 /**
  * The member management table: search by name, filter by class, create/edit/delete.
@@ -74,43 +76,51 @@ export function MembersPanel() {
   };
 
   return (
-    <QueryBoundary state={state} skeleton={<MembersSkeleton />}>
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <RosterFilterBar
-            layout="inline"
-            idPrefix="members"
-            value={filter}
-            onChange={setFilter}
-          />
-          <CreateButton
-            label="Thêm thành viên"
-            icon={<UserPlus className="size-4" />}
-            onClick={() => {
-              setEditing(null);
-              setFormOpen(true);
-            }}
-          />
-        </div>
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <RosterFilterBar
+          layout="inline"
+          idPrefix="members"
+          value={filter}
+          onChange={setFilter}
+        />
+        <CreateButton
+          label="Thêm thành viên"
+          icon={<UserPlus className="size-4" />}
+          onClick={() => {
+            setEditing(null);
+            setFormOpen(true);
+          }}
+        />
+      </div>
 
-        {updateMutation.error && (
-          <p className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            {updateMutation.error.message}
-          </p>
-        )}
+      {updateMutation.error && (
+        <p className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {updateMutation.error.message}
+        </p>
+      )}
 
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Tên</TableHead>
-              <TableHead>Lưu phái</TableHead>
-              <TableHead>Discord</TableHead>
-              <TableHead>Quyền</TableHead>
-              <TableHead>Thao tác</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {pagination.pagedItems.map((member) => (
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Tên</TableHead>
+            <TableHead>Lưu phái</TableHead>
+            <TableHead>Discord</TableHead>
+            <TableHead>Quyền</TableHead>
+            <TableHead>Thao tác</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableBodyState
+            state={state}
+            columns={COLUMN_COUNT}
+            rows={pagination.pagedItems}
+            emptyMessage={
+              isFiltering
+                ? "Không có thành viên nào khớp."
+                : "Bang chưa có thành viên nào."
+            }
+            renderRow={(member) => (
               <MemberRow
                 key={member.id}
                 member={member}
@@ -122,39 +132,28 @@ export function MembersPanel() {
                 onDelete={setDeleting}
                 onRoleChange={handleRoleChange}
               />
-            ))}
-          </TableBody>
-        </Table>
+            )}
+          />
+        </TableBody>
+      </Table>
 
-        {members.length === 0 && (
-          <div className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
-            {isFiltering
-              ? "Không có thành viên nào khớp."
-              : "Bang chưa có thành viên nào."}
-          </div>
-        )}
+      <TablePaginationBar
+        page={pagination.page}
+        pageCount={pagination.pageCount}
+        pageSize={pagination.pageSize}
+        total={pagination.total}
+        onPageChange={pagination.setPage}
+        onPageSizeChange={pagination.setPageSize}
+        itemLabel="thành viên"
+        pageSizeId="members-page-size"
+      />
 
-        <TablePaginationBar
-          page={pagination.page}
-          pageCount={pagination.pageCount}
-          pageSize={pagination.pageSize}
-          total={pagination.total}
-          onPageChange={pagination.setPage}
-          onPageSizeChange={pagination.setPageSize}
-          itemLabel="thành viên"
-          pageSizeId="members-page-size"
-        />
-
-        <MemberFormDialog
-          open={formOpen}
-          member={editing}
-          onOpenChange={setFormOpen}
-        />
-        <DeleteMemberDialog
-          member={deleting}
-          onClose={() => setDeleting(null)}
-        />
-      </div>
-    </QueryBoundary>
+      <MemberFormDialog
+        open={formOpen}
+        member={editing}
+        onOpenChange={setFormOpen}
+      />
+      <DeleteMemberDialog member={deleting} onClose={() => setDeleting(null)} />
+    </div>
   );
 }

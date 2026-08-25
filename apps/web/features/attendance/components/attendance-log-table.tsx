@@ -3,9 +3,8 @@
 import { useMemo } from "react";
 import { ATTENDANCE_STATUS_LABEL, AttendanceStatus } from "@guild/shared/enums";
 
-import { ErrorState } from "@/components/shared/error-state";
 import { StatusIcon } from "@/components/shared/status-icon";
-import { TableSkeleton } from "@/components/shared/table-skeleton";
+import { TableBodyState } from "@/components/shared/table-body-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -32,8 +31,11 @@ import { CharacterName } from "./character-name";
  */
 const MARKED_AT_COLUMN = "hidden md:table-cell";
 
-/** Per-column CSS classes for the skeleton, so it hides the same column as the header. */
-const SKELETON_COLUMN_CLASSES = [
+/** Header column count: member, session, status, marked-at. */
+const COLUMN_COUNT = 4;
+
+/** Per-column CSS classes, so the skeleton hides the same column as the header. */
+const COLUMN_CLASSES = [
   undefined,
   undefined,
   undefined,
@@ -49,7 +51,7 @@ export function AttendanceLogTable() {
   const { data: records } = useAttendanceRecords();
   const { data: characters } = useCharacters();
   const { data: sessions } = useBattleSessions();
-  const { isPending, isError, errorMessage, refetch } = useAttendanceBoard();
+  const state = useAttendanceBoard();
 
   const characterMap = useMemo(
     () => new Map((characters ?? []).map((c) => [c.id, c])),
@@ -83,7 +85,8 @@ export function AttendanceLogTable() {
     <Card>
       <CardHeader>
         <CardTitle>
-          Lịch sử điểm danh{!isPending && !isError && ` (${rows.length})`}
+          Lịch sử điểm danh
+          {!state.isPending && !state.isError && ` (${rows.length})`}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -99,35 +102,17 @@ export function AttendanceLogTable() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isError && (
-              <TableRow>
-                <TableCell colSpan={4}>
-                  <ErrorState message={errorMessage} onRetry={refetch} />
-                </TableCell>
-              </TableRow>
-            )}
-            {!isError && isPending && (
-              <TableSkeleton
-                rows={5}
-                columns={4}
-                columnClassNames={SKELETON_COLUMN_CLASSES}
-              />
-            )}
-            {!isError && !isPending && rows.length === 0 && (
-              <TableRow>
-                <TableCell
-                  colSpan={4}
-                  className="py-8 text-center text-muted-foreground"
-                >
-                  {allRecords.length === 0
-                    ? "Chưa có ai điểm danh."
-                    : "Không có lượt điểm danh phù hợp."}
-                </TableCell>
-              </TableRow>
-            )}
-            {!isError &&
-              !isPending &&
-              rows.map((record) => {
+            <TableBodyState
+              state={state}
+              columns={COLUMN_COUNT}
+              columnClassNames={COLUMN_CLASSES}
+              rows={rows}
+              emptyMessage={
+                allRecords.length === 0
+                  ? "Chưa có ai điểm danh."
+                  : "Không có lượt điểm danh phù hợp."
+              }
+              renderRow={(record) => {
                 const character = characterMap.get(record.characterId);
                 const session = sessionMap.get(record.sessionId);
                 const present = record.status === AttendanceStatus.PRESENT;
@@ -154,7 +139,8 @@ export function AttendanceLogTable() {
                     </TableCell>
                   </TableRow>
                 );
-              })}
+              }}
+            />
           </TableBody>
         </Table>
       </CardContent>

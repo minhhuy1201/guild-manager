@@ -4,15 +4,13 @@ import { useState } from "react";
 import { AttendanceStatus } from "@guild/shared/enums";
 import type { Character } from "@guild/shared/schemas";
 
-import { ErrorState } from "@/components/shared/error-state";
 import { SessionLabel } from "@/components/shared/session-label";
+import { TableBodyState } from "@/components/shared/table-body-state";
 import { TablePaginationBar } from "@/components/shared/table-pagination-bar";
-import { TableSkeleton } from "@/components/shared/table-skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
@@ -53,7 +51,7 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
   const { data: sessions } = useBattleSessions();
   const { data: records } = useAttendanceRecords();
   const { mutateAsync: mark, error: markError } = useMarkAttendance();
-  const { isPending, isError, errorMessage, refetch } = useAttendanceBoard();
+  const state = useAttendanceBoard();
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<AttendanceDraft>({});
@@ -151,7 +149,7 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
         <CardTitle>Điểm danh theo ngày đánh</CardTitle>
       </CardHeader>
       <CardContent>
-        {!isError && !isPending && battleSessions.length > 0 && (
+        {!state.isError && !state.isPending && battleSessions.length > 0 && (
           <p className="mb-2 text-xs text-muted-foreground md:hidden">
             Vuốt ngang để xem các ngày đánh khác — cột tên và cột thao tác luôn
             hiện.
@@ -181,29 +179,12 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isError && (
-              <TableRow>
-                <TableCell colSpan={SKELETON_COLUMNS}>
-                  <ErrorState message={errorMessage} onRetry={refetch} />
-                </TableCell>
-              </TableRow>
-            )}
-            {!isError && isPending && (
-              <TableSkeleton rows={5} columns={SKELETON_COLUMNS} />
-            )}
-            {!isError && !isPending && characters.length === 0 && (
-              <TableRow>
-                <TableCell
-                  colSpan={battleSessions.length + 2}
-                  className="py-8 text-center text-muted-foreground"
-                >
-                  Không tìm thấy thành viên phù hợp.
-                </TableCell>
-              </TableRow>
-            )}
-            {!isError &&
-              !isPending &&
-              pagination.pagedItems.map((character) => (
+            <TableBodyState
+              state={state}
+              columns={SKELETON_COLUMNS}
+              rows={pagination.pagedItems}
+              emptyMessage="Không tìm thấy thành viên phù hợp."
+              renderRow={(character) => (
                 <AttendanceRow
                   key={character.id}
                   character={character}
@@ -218,7 +199,8 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
                   onCancel={handleCancel}
                   onConfirm={handleConfirm}
                 />
-              ))}
+              )}
+            />
           </TableBody>
         </Table>
 

@@ -421,10 +421,15 @@ Spinner duy nhất của app là `components/shared/spinner.tsx`: `size` là `"s
 
 ### Tables
 
-- Loading → `table-skeleton` inside `<TableBody>`, with the same column count as the header.
-- Failure → `error-state` in place of the content, showing `ApiError.message` and a retry button.
-- Paging → `use-table-pagination` (client-side, resets to page 1 when the filter changes) rendered
-  with `table-pagination-bar` / `page-size-select`.
+- Loading / Failure / Empty / Data → **`table-body-state`** đặt trong `<TableBody>`. Nó giữ cả bốn
+  nhánh và thứ tự của chúng (lỗi trước, đang tải sau — cùng quy ước với `query-boundary`), suy
+  `colSpan` **một lần** từ prop `columns`, và chuyển cảnh bằng độ mờ. Chỗ gọi chỉ nói hàng *trông thế
+  nào* qua `renderRow`, không nói nhánh nào thắng.
+- `columns` phải đúng bằng số `<th>` của header. Bảng có số cột thay đổi theo dữ liệu thì phải chốt
+  số cột ở **một** biến dùng chung cho cả header lẫn thân — xem `attendance-grid`.
+- Paging → `use-table-pagination` (client-side, reset về trang 1 khi bộ lọc đổi) render bằng
+  `table-pagination-bar` / `page-size-select`. Thanh phân trang **luôn** render, kể cả khi chỉ còn
+  một trang, để lọc không làm layout nhảy.
 
 ---
 
