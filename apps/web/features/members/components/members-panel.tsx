@@ -134,18 +134,16 @@ export function MembersPanel() {
           </div>
         )}
 
-        {members.length > 0 && (
-          <TablePaginationBar
-            page={pagination.page}
-            pageCount={pagination.pageCount}
-            pageSize={pagination.pageSize}
-            total={pagination.total}
-            onPageChange={pagination.setPage}
-            onPageSizeChange={pagination.setPageSize}
-            itemLabel="thành viên"
-            pageSizeId="members-page-size"
-          />
-        )}
+        <TablePaginationBar
+          page={pagination.page}
+          pageCount={pagination.pageCount}
+          pageSize={pagination.pageSize}
+          total={pagination.total}
+          onPageChange={pagination.setPage}
+          onPageSizeChange={pagination.setPageSize}
+          itemLabel="thành viên"
+          pageSizeId="members-page-size"
+        />
 
         <MemberFormDialog
           open={formOpen}

@@ -20,35 +20,77 @@ import {
 /** Sentinel marking a "..." position in the page list. */
 const ELLIPSIS = "ellipsis" as const;
 
+/** Sentinel marking a blank filler cell, so the strip keeps a constant width. */
+const BLANK = "blank" as const;
+
+/** One cell of the page strip: a page number, an ellipsis, or a blank filler. */
+export type PageSlot = number | typeof ELLIPSIS | typeof BLANK;
+
 /**
- * Compute the page numbers shown around the current page, inserting "..." when there are too many.
- * The first and last page are always kept, plus a window around the current one.
+ * Insert blank fillers at one position so the strip reaches its fixed length.
+ * @param slots - The slots built so far
+ * @param totalSlots - The length every strip must have
+ * @param at - Index the fillers are inserted at
+ * @returns A new array padded to `totalSlots`
+ */
+function padSlots(
+  slots: readonly PageSlot[],
+  totalSlots: number,
+  at: number
+): PageSlot[] {
+  const missing = totalSlots - slots.length;
+  if (missing <= 0) return [...slots];
+
+  return [
+    ...slots.slice(0, at),
+    ...Array.from({ length: missing }, () => BLANK),
+    ...slots.slice(at),
+  ];
+}
+
+/**
+ * The cells of the page strip. Always returns exactly `siblings * 2 + 5` items —
+ * whatever is missing is padded with BLANK — so the strip's width does not depend
+ * on the current page and the button pairs on both ends stay put.
+ * Padding goes on the side that is short, right next to the ellipsis that is there,
+ * which keeps every page number and every ellipsis at a stable index too.
  * @param page - Current page (1-based)
  * @param pageCount - Total number of pages
  * @param siblings - Pages kept on each side of the current one
- * @returns Page numbers, or the ELLIPSIS sentinel
+ * @returns Exactly `siblings * 2 + 5` slots
  */
-function getPageItems(
+export function getPageSlots(
   page: number,
   pageCount: number,
   siblings = 1
-): (number | typeof ELLIPSIS)[] {
-  // Few enough pages to just show them all.
+): PageSlot[] {
   const totalSlots = siblings * 2 + 5;
-  if (pageCount <= totalSlots) {
-    return Array.from({ length: pageCount }, (_, i) => i + 1);
+  // A table with nothing in it still shows page 1 of 1.
+  const safeCount = Math.max(1, pageCount);
+
+  // Few enough pages to just show them all, left-aligned.
+  if (safeCount <= totalSlots) {
+    const pages: PageSlot[] = Array.from(
+      { length: safeCount },
+      (_, index) => index + 1
+    );
+    return padSlots(pages, totalSlots, pages.length);
   }
 
   const left = Math.max(page - siblings, 2);
-  const right = Math.min(page + siblings, pageCount - 1);
-  const items: (number | typeof ELLIPSIS)[] = [1];
+  const right = Math.min(page + siblings, safeCount - 1);
+  const hasLeadingGap = left > 2;
 
-  if (left > 2) items.push(ELLIPSIS);
-  for (let i = left; i <= right; i++) items.push(i);
-  if (right < pageCount - 1) items.push(ELLIPSIS);
+  const slots: PageSlot[] = [1];
+  if (hasLeadingGap) slots.push(ELLIPSIS);
+  for (let i = left; i <= right; i++) slots.push(i);
+  if (right < safeCount - 1) slots.push(ELLIPSIS);
+  slots.push(safeCount);
 
-  items.push(pageCount);
-  return items;
+  // Short on the left → pad just after the leading ellipsis (index 1).
+  // Short on the right → pad just before the trailing ellipsis (last index - 1).
+  const at = hasLeadingGap ? 2 : slots.length - 2;
+  return padSlots(slots, totalSlots, at);
 }
 
 interface TablePaginationProps {
@@ -68,7 +110,7 @@ interface TablePaginationProps {
  * Wraps shadcn Pagination: its links render as <a>, so onClick is intercepted and default-prevented to
  * change page through state instead of navigating.
  * @param props - page, pageCount, onPageChange, siblings
- * @returns The pagination bar, or null when there is at most one page
+ * @returns The pagination bar — always rendered, so filtering down to one page moves nothing
  */
 export function TablePagination({
   page,
@@ -76,8 +118,6 @@ export function TablePagination({
   onPageChange,
   siblings = 1,
 }: TablePaginationProps) {
-  if (pageCount <= 1) return null;
-
   const isFirst = page <= 1;
   const isLast = page >= pageCount;
 
@@ -118,23 +158,36 @@ export function TablePagination({
           </PaginationLink>
         </PaginationItem>
 
-        {getPageItems(page, pageCount, siblings).map((item, index) =>
-          item === ELLIPSIS ? (
-            <PaginationItem key={`ellipsis-${index}`}>
-              <PaginationEllipsis />
-            </PaginationItem>
-          ) : (
-            <PaginationItem key={item}>
-              <PaginationLink
-                href="#"
-                isActive={item === page}
-                onClick={(e) => goTo(item, e)}
-              >
-                {item}
-              </PaginationLink>
-            </PaginationItem>
-          )
-        )}
+        {getPageSlots(page, pageCount, siblings).map((slot, index) => {
+          switch (slot) {
+            case ELLIPSIS:
+              return (
+                <PaginationItem key={`ellipsis-${index}`}>
+                  <PaginationEllipsis />
+                </PaginationItem>
+              );
+            case BLANK:
+              // Same footprint as a page cell, no content and no tab stop:
+              // this is what keeps the strip's width constant.
+              return (
+                <PaginationItem key={`blank-${index}`}>
+                  <span className="block size-8" aria-hidden />
+                </PaginationItem>
+              );
+            default:
+              return (
+                <PaginationItem key={slot}>
+                  <PaginationLink
+                    href="#"
+                    isActive={slot === page}
+                    onClick={(e) => goTo(slot, e)}
+                  >
+                    {slot}
+                  </PaginationLink>
+                </PaginationItem>
+              );
+          }
+        })}
 
         <PaginationItem>
           <PaginationLink

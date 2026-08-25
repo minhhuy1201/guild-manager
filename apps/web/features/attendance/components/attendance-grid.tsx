@@ -228,20 +228,18 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
           </p>
         )}
 
-        {!isError && !isPending && characters.length > 0 && (
-          <div className="mt-4">
-            <TablePaginationBar
-              page={pagination.page}
-              pageCount={pagination.pageCount}
-              pageSize={pagination.pageSize}
-              total={pagination.total}
-              onPageChange={pagination.setPage}
-              onPageSizeChange={pagination.setPageSize}
-              itemLabel="thành viên"
-              pageSizeId="attendance-page-size"
-            />
-          </div>
-        )}
+        <div className="mt-4">
+          <TablePaginationBar
+            page={pagination.page}
+            pageCount={pagination.pageCount}
+            pageSize={pagination.pageSize}
+            total={pagination.total}
+            onPageChange={pagination.setPage}
+            onPageSizeChange={pagination.setPageSize}
+            itemLabel="thành viên"
+            pageSizeId="attendance-page-size"
+          />
+        </div>
       </CardContent>
     </Card>
   );
