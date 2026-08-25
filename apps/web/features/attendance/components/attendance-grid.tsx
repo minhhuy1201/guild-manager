@@ -8,6 +8,7 @@ import { SessionLabel } from "@/components/shared/session-label";
 import { TableBodyState } from "@/components/shared/table-body-state";
 import { TablePaginationBar } from "@/components/shared/table-pagination-bar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -32,8 +33,12 @@ import {
 import { recordKey } from "../lib/record-key";
 import { AttendanceRow, type AttendanceDraft } from "./attendance-row";
 
-/** Skeleton column count before the battle days are known: Member + 3 days + Actions. */
-const SKELETON_COLUMNS = 5;
+/**
+ * Day columns drawn while the week's schedule is still loading. A guess, not a rule —
+ * it only has to be a plausible week so the header does not visibly resize when the
+ * real sessions land.
+ */
+const PLACEHOLDER_DAY_COLUMNS = 4;
 
 interface AttendanceGridProps {
   /** The viewer is an admin — not locked by the deadline. */
@@ -64,6 +69,13 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
 
   const battleSessions = sessions ?? [];
   const recordMap = records ?? {};
+
+  // One source for the table's geometry: the header and the body must never disagree
+  // about how many columns there are, or the whole width recomputes when data lands.
+  const dayColumns = state.isPending
+    ? PLACEHOLDER_DAY_COLUMNS
+    : battleSessions.length;
+  const columns = dayColumns + 2; // name + days + actions
 
   useDeadlineRefresh(battleSessions);
 
@@ -159,29 +171,35 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
           <TableHeader>
             <TableRow>
               <TableHead className={STICKY_NAME_COLUMN}>Thành viên</TableHead>
-              {battleSessions.map((session) => {
-                const subtitle = getSessionSubtitle(session);
-                return (
-                  <TableHead key={session.id} className="text-center">
-                    <SessionLabel session={session} size="sm" />
-                    <span className="block text-xs font-normal text-muted-foreground">
-                      {subtitle}
-                    </span>
-                    {passedSessionIds.has(session.id) && (
-                      <span className="block text-xs font-normal text-muted-foreground">
-                        Đã khóa
-                      </span>
-                    )}
-                  </TableHead>
-                );
-              })}
+              {state.isPending
+                ? Array.from({ length: dayColumns }, (_, index) => (
+                    <TableHead key={index} className="text-center">
+                      <Skeleton className="mx-auto h-5 w-20" />
+                    </TableHead>
+                  ))
+                : battleSessions.map((session) => {
+                    const subtitle = getSessionSubtitle(session);
+                    return (
+                      <TableHead key={session.id} className="text-center">
+                        <SessionLabel session={session} size="sm" />
+                        <span className="block text-xs font-normal text-muted-foreground">
+                          {subtitle}
+                        </span>
+                        {passedSessionIds.has(session.id) && (
+                          <span className="block text-xs font-normal text-muted-foreground">
+                            Đã khóa
+                          </span>
+                        )}
+                      </TableHead>
+                    );
+                  })}
               <TableHead className={STICKY_ACTION_COLUMN}>Điểm danh</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             <TableBodyState
               state={state}
-              columns={SKELETON_COLUMNS}
+              columns={columns}
               rows={pagination.pagedItems}
               emptyMessage="Không tìm thấy thành viên phù hợp."
               renderRow={(character) => (
