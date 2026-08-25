@@ -59,6 +59,9 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
   const state = useAttendanceBoard();
 
   const [editingId, setEditingId] = useState<string | null>(null);
+  // The row id being written. Not `mutation.isPending`: one confirm fires several
+  // parallel `mark` calls, so the mutation cannot say which row they belong to.
+  const [savingId, setSavingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<AttendanceDraft>({});
 
   // Reset to page 1 whenever the filter result changes, so it cannot get stuck on an empty page.
@@ -144,6 +147,7 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
       return;
     }
 
+    setSavingId(character.id);
     // The error surfaces through the mutation's `markError`, so swallow it here to avoid a stray promise.
     const saved = await Promise.all(
       changes.map(({ sessionId, status }) => {
@@ -151,6 +155,7 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
         return mark(input);
       })
     ).catch(() => null);
+    setSavingId(null);
 
     if (saved) handleCancel();
   };
@@ -211,6 +216,7 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
                   lockedSessionIds={lockedSessionIds}
                   allLocked={allLocked}
                   isEditing={editingId === character.id}
+                  isSaving={savingId === character.id}
                   draft={editingId === character.id ? draft : {}}
                   onStartEdit={handleStartEdit}
                   onDraftChange={handleDraftChange}
@@ -222,11 +228,14 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
           </TableBody>
         </Table>
 
-        {markError && (
-          <p className="mt-4 text-center text-sm text-destructive">
-            {markError.message}
-          </p>
-        )}
+        {/* Always occupies its slot, so the pagination bar below never moves. */}
+        <div className="mt-4 min-h-5">
+          {markError && (
+            <p className="animate-in text-center text-sm text-destructive fade-in duration-[var(--duration-base)] ease-out-soft">
+              {markError.message}
+            </p>
+          )}
+        </div>
 
         <div className="mt-4">
           <TablePaginationBar

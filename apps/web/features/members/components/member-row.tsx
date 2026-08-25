@@ -13,6 +13,7 @@ import {
   RowActions,
 } from "@/components/shared/action-buttons";
 import { GuildClassIcon } from "@/components/shared/guild-class-icon";
+import { Spinner } from "@/components/shared/spinner";
 import {
   Select,
   SelectContent,
@@ -28,6 +29,8 @@ interface MemberRowProps {
   member: GuildMember;
   /** Discord ID of the signed-in user — used to lock the role dropdown on their own row */
   currentDiscordId: string;
+  /** This row's role write is in flight — lock the dropdown and show a spinner */
+  isSavingRole: boolean;
   /** Called on Edit */
   onEdit: (member: GuildMember) => void;
   /** Called on Delete */
@@ -40,6 +43,7 @@ interface MemberRowProps {
  * One member row in the management table.
  * @param props.member - Member of this row
  * @param props.currentDiscordId - Discord ID of the signed-in user
+ * @param props.isSavingRole - Whether this row's role write is in flight
  * @param props.onEdit - Called on Edit
  * @param props.onDelete - Called on Delete
  * @param props.onRoleChange - Called when the role changes
@@ -48,6 +52,7 @@ interface MemberRowProps {
 export function MemberRow({
   member,
   currentDiscordId,
+  isSavingRole,
   onEdit,
   onDelete,
   onRoleChange,
@@ -79,25 +84,30 @@ export function MemberRow({
         )}
       </TableCell>
       <TableCell>
-        <Select
-          value={member.role}
-          disabled={isRoleLocked}
-          onValueChange={(next) => onRoleChange(member, String(next) as GuildRole)}
-        >
-          <SelectTrigger
-            aria-label={`Quyền của ${member.name}`}
-            className="w-36"
+        <div className="flex items-center gap-2">
+          <Select
+            value={member.role}
+            disabled={isRoleLocked || isSavingRole}
+            onValueChange={(next) =>
+              onRoleChange(member, String(next) as GuildRole)
+            }
           >
-            <SelectValue>{() => GUILD_ROLE_LABEL[member.role]}</SelectValue>
-          </SelectTrigger>
-          <SelectContent alignItemWithTrigger={false}>
-            {GUILD_ROLE_OPTIONS.map((option) => (
-              <SelectItem key={option} value={option}>
-                {GUILD_ROLE_LABEL[option]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+            <SelectTrigger
+              aria-label={`Quyền của ${member.name}`}
+              className="w-36"
+            >
+              <SelectValue>{() => GUILD_ROLE_LABEL[member.role]}</SelectValue>
+            </SelectTrigger>
+            <SelectContent alignItemWithTrigger={false}>
+              {GUILD_ROLE_OPTIONS.map((option) => (
+                <SelectItem key={option} value={option}>
+                  {GUILD_ROLE_LABEL[option]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {isSavingRole && <Spinner size="sm" label="Đang lưu quyền" />}
+        </div>
       </TableCell>
       <TableCell className="text-right">
         <RowActions>

@@ -94,11 +94,14 @@ export function MembersPanel() {
         />
       </div>
 
-      {updateMutation.error && (
-        <p className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {updateMutation.error.message}
-        </p>
-      )}
+      {/* Always occupies its slot: an error appearing must not push the table down. */}
+      <div className="min-h-10">
+        {updateMutation.error && (
+          <p className="animate-in rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive fade-in duration-[var(--duration-base)] ease-out-soft">
+            {updateMutation.error.message}
+          </p>
+        )}
+      </div>
 
       <Table>
         <TableHeader>
@@ -125,6 +128,10 @@ export function MembersPanel() {
                 key={member.id}
                 member={member}
                 currentDiscordId={session?.discordId ?? ""}
+                isSavingRole={
+                  updateMutation.isPending &&
+                  updateMutation.variables?.id === member.id
+                }
                 onEdit={(target) => {
                   setEditing(target);
                   setFormOpen(true);

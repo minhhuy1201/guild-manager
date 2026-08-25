@@ -13,6 +13,7 @@ import {
   RowActionButton,
   RowActions,
 } from "@/components/shared/action-buttons";
+import { Spinner } from "@/components/shared/spinner";
 import { StatusIcon } from "@/components/shared/status-icon";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
@@ -39,6 +40,8 @@ interface AttendanceRowProps {
   allLocked: boolean;
   /** Whether this row is in editing mode */
   isEditing: boolean;
+  /** This row's attendance write is in flight — show a spinner instead of the tick */
+  isSaving: boolean;
   /** Draft state (only used while isEditing) */
   draft: AttendanceDraft;
   /** Start editing this row */
@@ -63,6 +66,7 @@ export function AttendanceRow({
   lockedSessionIds,
   allLocked,
   isEditing,
+  isSaving,
   draft,
   onStartEdit,
   onDraftChange,
@@ -101,12 +105,14 @@ export function AttendanceRow({
             <RowActionButton
               label="Huỷ"
               icon={<X className="size-4" />}
+              disabled={isSaving}
               onClick={onCancel}
             />
             <RowActionButton
               label="Xác nhận điểm danh"
-              icon={<Check className="size-4" />}
+              icon={isSaving ? <Spinner size="sm" /> : <Check className="size-4" />}
               variant="default"
+              disabled={isSaving}
               onClick={() => onConfirm(character)}
             />
           </RowActions>
