@@ -17,23 +17,23 @@ import {
 import { toGuildMember, type GuildMemberRow } from './characters.codec';
 import { generateId } from './characters.lib';
 
-/** Mã lỗi Prisma khi vi phạm ràng buộc duy nhất (ở đây là trùng khoá chính). */
+/** Prisma error code for a unique constraint violation (here, a primary key collision). */
 const UNIQUE_VIOLATION = 'P2002';
 
-/** Thông báo dùng chung khi id không tồn tại. */
+/** Shared message for a missing id. */
 const NOT_FOUND = 'Không tìm thấy thành viên.';
 
-/** Thông báo khi Discord ID đã thuộc về thành viên khác. */
+/** Message when the Discord ID already belongs to another member. */
 const DISCORD_ID_TAKEN = 'Discord ID này đã được gán cho thành viên khác.';
 
-/** CRUD thành viên cho quản trị viên — controller khoá toàn bộ endpoint bằng JwtAuthGuard. */
+/** Member CRUD for admins — the controller locks every endpoint behind JwtAuthGuard. */
 @Injectable()
 export class CharactersService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Danh sách toàn bộ thành viên.
-   * @returns Mảng thành viên sắp theo tên
+   * List every member.
+   * @returns Members ordered by name
    */
   async list(): Promise<GuildMember[]> {
     const rows = await this.prisma.character.findMany({
@@ -44,11 +44,11 @@ export class CharactersService {
   }
 
   /**
-   * Id của mọi thành viên còn trong bang.
-   * Nhận client vào để caller đang ở trong transaction đọc bằng chính client đó, thay vì mở một
-   * kết nối thứ hai nhìn dữ liệu ở thời điểm khác.
-   * @param client - Prisma client dùng để đọc; `PrismaService` khi ngoài transaction, `tx` khi trong
-   * @returns Tập id thành viên
+   * Ids of every member still in the guild.
+   * Takes a client so a caller inside a transaction reads through that same client, instead of
+   * opening a second connection seeing data from another moment.
+   * @param client - Prisma client to read through; `PrismaService` outside a transaction, `tx` inside
+   * @returns The set of member ids
    */
   async listIds(client: PrismaTransactionClient): Promise<Set<string>> {
     const rows = await client.character.findMany({ select: { id: true } });
@@ -57,15 +57,15 @@ export class CharactersService {
   }
 
   /**
-   * Thêm một thành viên: id do hệ thống sinh.
-   * @param input - Tên và lưu phái
-   * @returns Thành viên vừa tạo
+   * Add a member; the id is system-generated.
+   * @param input - Name and class
+   * @returns The created member
    */
   async create(input: CreateCharacterInput): Promise<GuildMember> {
     try {
       return await this.insert(input);
     } catch (error) {
-      // Hậu tố ngẫu nhiên đụng id đã có — sinh lại một lần nữa là đủ.
+      // The random suffix collided with an existing id — regenerating once is enough.
       if (!isUniqueViolation(error)) throw error;
 
       return this.insert(input);
@@ -73,12 +73,12 @@ export class CharactersService {
   }
 
   /**
-   * Sửa tên, lưu phái, Discord ID và/hoặc vai. Id không đổi vì bảng khác đang trỏ vào nó.
-   * @param id - Id thành viên
-   * @param input - Các field cần đổi
-   * @returns Thành viên sau khi sửa
-   * @throws NotFoundException khi không có thành viên đó
-   * @throws ConflictException khi Discord ID đã thuộc thành viên khác
+   * Edit the name, class, Discord ID and/or role. The id never changes because other tables point at it.
+   * @param id - Member id
+   * @param input - Fields to change
+   * @returns The updated member
+   * @throws NotFoundException when no such member exists
+   * @throws ConflictException when the Discord ID already belongs to another member
    */
   async update(id: string, input: UpdateCharacterInput): Promise<GuildMember> {
     await this.ensureExists(id);
@@ -91,7 +91,7 @@ export class CharactersService {
 
       return toGuildMember(row);
     } catch (error) {
-      // Ràng buộc duy nhất duy nhất có thể vỡ ở đây là discordId — id không nằm trong `data`.
+      // The only unique constraint that can break here is discordId — the id is not in `data`.
       if (isUniqueViolation(error))
         throw new ConflictException(DISCORD_ID_TAKEN);
       throw error;
@@ -99,9 +99,9 @@ export class CharactersService {
   }
 
   /**
-   * Tra thành viên theo Discord ID — đường vào của luồng đăng nhập.
-   * @param discordId - Discord ID đọc từ hồ sơ OAuth
-   * @returns Id và vai của thành viên, hoặc null khi chưa ai được gán ID này
+   * Look a member up by Discord ID — the entry point of the login flow.
+   * @param discordId - Discord ID read from the OAuth profile
+   * @returns The member's id and role, or null when nobody has this ID assigned
    */
   async findByDiscordId(
     discordId: string,
@@ -115,22 +115,22 @@ export class CharactersService {
   }
 
   /**
-   * Đọc nguyên một hàng thành viên theo id.
-   * @param id - Id thành viên
-   * @returns Hàng Character, hoặc null khi không tồn tại
+   * Read a whole member row by id.
+   * @param id - Member id
+   * @returns The Character row, or null when it does not exist
    */
   async findById(id: string): Promise<GuildMemberRow | null> {
     return this.prisma.character.findUnique({ where: { id } });
   }
 
   /**
-   * Ghi lại tên Discord và thời điểm đăng nhập gần nhất.
-   * Quản trị viên đọc hai giá trị này ở màn Thành viên để xác nhận đã gán đúng người.
-   * @param id - Id thành viên
-   * @param discordUsername - Tên Discord vừa đọc được
-   * @param discordAvatar - Hash avatar vừa đọc được, null khi để ảnh mặc định
-   * @param at - Thời điểm đăng nhập
-   * @returns Promise hoàn tất khi đã ghi
+   * Record the Discord name and the last login time.
+   * Admins read both on the Members screen to confirm the right person was assigned.
+   * @param id - Member id
+   * @param discordUsername - Discord name just read
+   * @param discordAvatar - Avatar hash just read, null on the default picture
+   * @param at - Login time
+   * @returns A promise resolving once written
    */
   async touchLogin(
     id: string,
@@ -145,10 +145,10 @@ export class CharactersService {
   }
 
   /**
-   * Xoá một thành viên cùng toàn bộ điểm danh và ô đội hình của họ (cascade ở database).
-   * @param id - Id thành viên
-   * @returns Promise hoàn tất khi đã xoá
-   * @throws NotFoundException khi không có thành viên đó
+   * Delete a member along with all their attendance and formation slots (cascade in the database).
+   * @param id - Member id
+   * @returns A promise resolving once they are deleted
+   * @throws NotFoundException when no such member exists
    */
   async remove(id: string): Promise<void> {
     await this.ensureExists(id);
@@ -157,10 +157,10 @@ export class CharactersService {
   }
 
   /**
-   * Thành viên này có còn trong bang không.
-   * Module khác dùng để kiểm tồn tại mà không phải chạm vào bảng Character.
-   * @param id - Id thành viên
-   * @returns true nếu thành viên tồn tại
+   * Whether this member is still in the guild.
+   * Used by other modules to check existence without touching the Character table.
+   * @param id - Member id
+   * @returns true when the member exists
    */
   async exists(id: string): Promise<boolean> {
     const found = await this.prisma.character.findUnique({
@@ -172,9 +172,9 @@ export class CharactersService {
   }
 
   /**
-   * Ghi một hàng Character mới với id vừa sinh.
-   * @param input - Tên và lưu phái
-   * @returns Thành viên vừa tạo
+   * Insert a new Character row with the generated id.
+   * @param input - Name and class
+   * @returns The created member
    */
   private async insert(input: CreateCharacterInput): Promise<GuildMember> {
     const row = await this.prisma.character.create({
@@ -189,10 +189,10 @@ export class CharactersService {
   }
 
   /**
-   * Kiểm tra thành viên có tồn tại không.
-   * @param id - Id thành viên
-   * @returns Promise hoàn tất khi thành viên tồn tại
-   * @throws NotFoundException khi không có thành viên đó
+   * Assert that a member exists.
+   * @param id - Member id
+   * @returns A promise resolving when the member exists
+   * @throws NotFoundException when no such member exists
    */
   private async ensureExists(id: string): Promise<void> {
     if (!(await this.exists(id))) {
@@ -202,9 +202,9 @@ export class CharactersService {
 }
 
 /**
- * Lỗi này có phải vi phạm ràng buộc duy nhất của Prisma không.
- * @param error - Lỗi bắt được
- * @returns true nếu là P2002
+ * Whether this error is a Prisma unique constraint violation.
+ * @param error - The caught error
+ * @returns true for P2002
  */
 function isUniqueViolation(error: unknown): boolean {
   return (

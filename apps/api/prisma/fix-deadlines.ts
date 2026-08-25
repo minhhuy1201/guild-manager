@@ -7,16 +7,16 @@ import { getEditableWeeks } from '../src/modules/battle-sessions/session-schedul
 import { loadPrismaEnv } from './load-env';
 
 /**
- * Script chạy tay MỘT LẦN, đưa hạn chót của dữ liệu cũ về đúng luật trần
- * (xem docs/custom-spec/2026-08-18-deadline-cap-design.md):
+ * ONE-OFF manual script bringing legacy deadlines back within the cap rule
+ * (see docs/custom-spec/2026-08-18-deadline-cap-design.md):
  *
  *   PRISMA_ENV_FILE=.env.production pnpm --filter api db:fix-deadlines
  *
- * Chỉ đụng vào tuần đang mở và tuần kế — tuần đã qua là bản ghi lịch sử, quản
- * trị viên không sửa được nữa và hạn chót ở đó chỉ còn tác dụng hiển thị.
+ * Touches only the open week and the next one — past weeks are history, no longer editable, and
+ * their deadlines are display-only.
  *
- * Đây là lần duy nhất dự án kẹp giá trị hạn chót; luật chạy thường trực thì từ
- * chối request chứ không sửa ngầm.
+ * This is the only place the project clamps a deadline; the standing rule rejects the request
+ * instead of silently fixing it.
  */
 async function main(): Promise<void> {
   const envFile = loadPrismaEnv();
@@ -70,10 +70,10 @@ async function main(): Promise<void> {
 }
 
 /**
- * Mốc sớm hơn trong hai mốc.
- * @param a - Mốc thứ nhất
- * @param b - Mốc thứ hai
- * @returns Mốc có thời điểm nhỏ hơn
+ * The earlier of two instants.
+ * @param a - First instant
+ * @param b - Second instant
+ * @returns The smaller of the two
  */
 function earliest(a: Date, b: Date): Date {
   return a.getTime() <= b.getTime() ? a : b;

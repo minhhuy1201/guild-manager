@@ -3,9 +3,9 @@ import type { MatchFormation } from '@guild/shared/schemas';
 import { decodeMatch, encodeMatch } from '../formation-grid';
 
 /**
- * Sắp các hàng theo slotId để so sánh không phụ thuộc thứ tự duyệt của Set.
- * @param rows - Các hàng cần sắp
- * @returns Bản sao đã sắp theo slotId tăng dần
+ * Sort rows by slotId so comparisons do not depend on Set iteration order.
+ * @param rows - Rows to sort
+ * @returns A copy sorted by ascending slotId
  */
 function bySlotId<T extends { slotId: string }>(rows: T[]): T[] {
   return [...rows].sort((left, right) =>
@@ -67,7 +67,7 @@ describe('decodeMatch', () => {
   });
 
   it('bỏ qua field thừa của hàng đọc từ database', () => {
-    // Hàng Prisma mang thêm matchId; codec chỉ đọc ba cột nó quan tâm.
+    // A Prisma row also carries matchId; the codec reads only the three columns it cares about.
     const row = {
       slotId: 'team-1-pos-1',
       characterId: 'char-1',
@@ -83,7 +83,7 @@ describe('decodeMatch', () => {
 
 describe('round-trip encode → decode', () => {
   const cases: [string, MatchFormation][] = [
-    // Ca đầu tiên là ca mà việc lấy hợp hai tập khoá sinh ra để cứu.
+    // The first case is exactly the one the key-set union exists to rescue.
     [
       'ô chỉ có ghi chú',
       { slots: {}, notes: { 'team-1-pos-4': 'chừa cho X' } },

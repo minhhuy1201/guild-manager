@@ -34,19 +34,19 @@ import {
 import { recordKey } from "../lib/record-key";
 import { AttendanceRow, type AttendanceDraft } from "./attendance-row";
 
-/** Số cột skeleton khi chưa biết có bao nhiêu ngày đánh: Thành viên + 3 ngày + Thao tác. */
+/** Skeleton column count before the battle days are known: Member + 3 days + Actions. */
 const SKELETON_COLUMNS = 5;
 
 interface AttendanceGridProps {
-  /** Người đang xem là quản trị viên — không bị khóa theo deadline. */
+  /** The viewer is an admin — not locked by the deadline. */
   isAdmin: boolean;
 }
 
 /**
- * Lưới điểm danh: mỗi nhân vật một hàng, mặc định read-only.
- * Bấm nút chỉnh sửa ở cột cuối để sửa một dòng rồi xác nhận là lưu thẳng.
- * @param isAdmin - Người đang xem có phải quản trị viên hay không
- * @returns Card chứa bảng điểm danh
+ * The attendance grid: one row per character, read-only by default.
+ * The edit button in the last column switches a row to editing; confirming saves it straight away.
+ * @param isAdmin - Whether the viewer is an admin
+ * @returns The attendance table card
  */
 export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
   const characters = useFilteredCharacters("attendance");
@@ -58,7 +58,7 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<AttendanceDraft>({});
 
-  // Kết quả lọc (tìm kiếm/lưu phái) đổi thì về trang 1 để không kẹt ở trang trống.
+  // Reset to page 1 whenever the filter result changes, so it cannot get stuck on an empty page.
   const pagination = useTablePagination({
     items: characters,
     resetKey: characters,
@@ -69,20 +69,20 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
 
   useDeadlineRefresh(battleSessions);
 
-  // Ngày nào quá deadline thì khóa cột đó — dùng để hiển thị nhãn "Đã khóa" cho mọi người.
+  // Lock the column of any day past its deadline — used to show everyone the "Đã khóa" label.
   const passedSessionIds = new Set(
     battleSessions.filter((s) => s.isDeadlinePassed).map((s) => s.id)
   );
-  // Quản trị viên sửa được cả ngày đã quá hạn nên không khóa ô nào.
+  // Admins may edit past-deadline days, so no cell is locked for them.
   const lockedSessionIds = isAdmin ? new Set<string>() : passedSessionIds;
   const allLocked =
     battleSessions.length > 0 &&
     lockedSessionIds.size === battleSessions.length;
 
   /**
-   * Bắt đầu chỉnh sửa một dòng: khởi tạo nháp từ record hiện có.
-   * Mở dòng khác sẽ tự thay dòng đang chỉnh (chỉ 1 dòng 1 lúc).
-   * @param character - Nhân vật cần chỉnh
+   * Start editing a row: seed the draft from the existing records.
+   * Opening another row replaces the one being edited (only one at a time).
+   * @param character - Character to edit
    */
   const handleStartEdit = (character: Character) => {
     const initial: AttendanceDraft = {};
@@ -94,24 +94,24 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
   };
 
   /**
-   * Đổi trạng thái nháp của một ô trong dòng đang chỉnh.
-   * @param sessionId - ID buổi đánh
-   * @param status - Trạng thái mới
+   * Change one cell's draft status in the row being edited.
+   * @param sessionId - Battle session id
+   * @param status - New status
    */
   const handleDraftChange = (sessionId: string, status: AttendanceStatus) => {
     setDraft((prev) => ({ ...prev, [sessionId]: status }));
   };
 
-  /** Huỷ chỉnh sửa và reset nháp. */
+  /** Cancel editing and reset the draft. */
   const handleCancel = () => {
     setEditingId(null);
     setDraft({});
   };
 
   /**
-   * Lấy các ô đã thay đổi so với record hiện tại của một nhân vật.
-   * @param character - Nhân vật đang chỉnh
-   * @returns Mảng { sessionId, status } cần lưu
+   * The cells that changed relative to a character's current records.
+   * @param character - Character being edited
+   * @returns The { sessionId, status } entries to save
    */
   const getChangedCells = (character: Character) =>
     battleSessions.flatMap((session) => {
@@ -123,9 +123,9 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
     });
 
   /**
-   * Lưu các ô đã thay đổi của một nhân vật.
-   * @param character - Nhân vật đang chỉnh
-   * @returns Promise hoàn tất khi đã lưu xong hoặc đã hiển thị lỗi
+   * Save a character's changed cells.
+   * @param character - Character being edited
+   * @returns A promise settled once saved or once the error is shown
    */
   const handleConfirm = async (character: Character) => {
     const changes = getChangedCells(character);
@@ -134,7 +134,7 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
       return;
     }
 
-    // Lỗi hiển thị qua `markError` của mutation nên nuốt ở đây, tránh promise văng ra ngoài.
+    // The error surfaces through the mutation's `markError`, so swallow it here to avoid a stray promise.
     const saved = await Promise.all(
       changes.map(({ sessionId, status }) => {
         const input = { characterId: character.id, sessionId, status };

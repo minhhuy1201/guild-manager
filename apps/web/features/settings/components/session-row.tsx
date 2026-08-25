@@ -17,22 +17,22 @@ import { getSessionSubtitle } from "@/features/attendance";
 import { cn } from "@/lib/utils";
 
 interface SessionRowProps {
-  /** Trận cần hiển thị */
+  /** Session to display */
   session: BattleSession;
-  /** Gọi khi bấm Sửa */
+  /** Called on Edit */
   onEdit: (session: BattleSession) => void;
-  /** Gọi khi bấm Xoá */
+  /** Called on Delete */
   onDelete: (session: BattleSession) => void;
 }
 
 /**
- * Một trận trong danh sách thiết lập: nhãn, đối thủ, hạn chót và hai nút thao tác.
- * Guild War luôn rơi vào thứ 7 với hạn chót cố định nên không sửa cũng không xoá được,
- * hàng của nó chỉ để xem.
- * @param session - Trận cần hiển thị
- * @param onEdit - Gọi khi bấm Sửa
- * @param onDelete - Gọi khi bấm Xoá
- * @returns Một hàng trong danh sách trận
+ * One session in the settings list: label, opponent, deadline and the two action buttons.
+ * A Guild War always falls on Saturday with a fixed deadline, so it can be neither edited nor deleted —
+ * its row is read-only.
+ * @param session - Session to display
+ * @param onEdit - Called on Edit
+ * @param onDelete - Called on Delete
+ * @returns One row of the session list
  */
 export function SessionRow({ session, onEdit, onDelete }: SessionRowProps) {
   return (

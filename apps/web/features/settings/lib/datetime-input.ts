@@ -1,12 +1,12 @@
 /**
- * `<input type="datetime-local">` nhận và trả chuỗi "YYYY-MM-DDTHH:mm" theo giờ
- * máy người dùng, còn API dùng ISO UTC. Hai hàm này là chỗ duy nhất đổi qua lại.
+ * `<input type="datetime-local">` takes and returns "YYYY-MM-DDTHH:mm" in the user's local time, while
+ * the API uses ISO UTC. These two functions are the only place the two are converted.
  */
 
 /**
- * Đổi ISO string sang giá trị cho input datetime-local.
- * @param iso - Thời điểm dạng ISO string
- * @returns Chuỗi "YYYY-MM-DDTHH:mm" theo giờ máy
+ * Convert an ISO string into a datetime-local input value.
+ * @param iso - The instant as an ISO string
+ * @returns "YYYY-MM-DDTHH:mm" in local time
  */
 export function toInputValue(iso: string): string {
   const date = new Date(iso);
@@ -26,9 +26,9 @@ export function toInputValue(iso: string): string {
 }
 
 /**
- * Đổi giá trị của input datetime-local thành ISO string gửi lên API.
- * @param value - Chuỗi "YYYY-MM-DDTHH:mm" theo giờ máy
- * @returns Thời điểm dạng ISO string
+ * Convert a datetime-local input value into the ISO string sent to the API.
+ * @param value - "YYYY-MM-DDTHH:mm" in local time
+ * @returns The instant as an ISO string
  */
 export function fromInputValue(value: string): string {
   return new Date(value).toISOString();

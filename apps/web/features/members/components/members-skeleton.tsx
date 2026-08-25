@@ -1,6 +1,6 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
-/** Số hàng khung xương hiện trong lúc chờ dữ liệu. */
+/** Number of skeleton rows shown while loading. */
 const SKELETON_ROWS = 5;
 
 /**

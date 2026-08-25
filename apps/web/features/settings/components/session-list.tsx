@@ -7,24 +7,24 @@ import { CreateButton } from "@/components/shared/action-buttons";
 import { SessionRow } from "./session-row";
 
 interface SessionListProps {
-  /** Các trận của tuần đang xem, đã sắp theo giờ đánh */
+  /** Sessions of the week being viewed, already ordered by battle time */
   sessions: BattleSession[];
-  /** Gọi khi bấm Sửa một trận */
+  /** Called on Edit */
   onEdit: (session: BattleSession) => void;
-  /** Gọi khi bấm Xoá một trận */
+  /** Called on Delete */
   onDelete: (session: BattleSession) => void;
-  /** Gọi khi bấm thêm trận scrim */
+  /** Called when adding a scrim */
   onAdd: () => void;
 }
 
 /**
- * Danh sách trận của một tuần. Tuần chỉ có Guild War là trạng thái bình thường
- * của mọi tuần mới, nên phần rỗng nói rõ điều đó thay vì trông như lỗi.
- * @param sessions - Các trận của tuần đang xem
- * @param onEdit - Gọi khi bấm Sửa
- * @param onDelete - Gọi khi bấm Xoá
- * @param onAdd - Gọi khi bấm thêm trận scrim
- * @returns Danh sách trận kèm nút thêm
+ * A week's session list. A week holding only the Guild War is the normal state of every new week, so
+ * the empty state says as much instead of looking like a failure.
+ * @param sessions - Sessions of the week being viewed
+ * @param onEdit - Called on Edit
+ * @param onDelete - Called on Delete
+ * @param onAdd - Called when adding a scrim
+ * @returns The session list with its add button
  */
 export function SessionList({
   sessions,

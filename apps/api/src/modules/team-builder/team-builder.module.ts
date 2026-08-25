@@ -6,9 +6,9 @@ import { TeamBuilderController } from './team-builder.controller';
 import { TeamBuilderService } from './team-builder.service';
 
 /**
- * Module xếp đội hình bang chiến.
- * Dùng BattleSessionsService để biết tuần đang mở và đảm bảo các trận đã tồn tại —
- * lịch đánh là trách nhiệm của module lịch đánh, không chép lại ở đây.
+ * Guild war team builder module.
+ * Uses BattleSessionsService to know the open week and to ensure its sessions exist — the schedule is
+ * the schedule module's responsibility and is not duplicated here.
  */
 @Module({
   imports: [BattleSessionsModule, CharactersModule],

@@ -35,8 +35,8 @@ export function buildPrefill(
   );
   if (targetIndex < 0) return null;
 
-  // Nguồn xét theo ĐỘI HÌNH, không xét ghi chú: một ngày chỉ có ghi chú thì
-  // không có gì để chép sang.
+  // Sources are judged by their FORMATION, not their notes: a day holding only notes has nothing to
+  // copy across.
   const source = sessions
     .slice(0, targetIndex)
     .reverse()
@@ -45,15 +45,15 @@ export function buildPrefill(
     );
   if (!source) return null;
 
-  // Trận cuối cùng của ngày đó là đội hình gần hiện trạng nhất.
+  // The last match of that day is the formation closest to the current state.
   const sourceMatch = source.matches[source.matches.length - 1];
   const sourceLabel =
     source.matches.length > 1
       ? `${source.label} · trận ${source.matches.length}`
       : source.label;
   const previous = fromWire(sourceMatch.slots, slots);
-  // Ghi chú đi theo nguyên vẹn, kể cả ghi chú của ô mà người đứng đó đã báo
-  // nghỉ: ghi chú mô tả vị trí, không mô tả người.
+  // Notes travel across untouched, including the note of a slot whose occupant is absent: a note
+  // describes the position, not the person.
   const notes = fromWireNotes(sourceMatch.notes, slots);
   const assignment: Assignment = {};
   let droppedCount = 0;

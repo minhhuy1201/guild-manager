@@ -2,7 +2,6 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-/** Thẻ (card) bao ngoài một khối nội dung. */
 function Card({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -16,7 +15,6 @@ function Card({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
-/** Phần đầu card (tiêu đề, mô tả). */
 function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -27,7 +25,6 @@ function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
-/** Tiêu đề card. */
 function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -38,7 +35,6 @@ function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
-/** Mô tả phụ trong card. */
 function CardDescription({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -49,7 +45,6 @@ function CardDescription({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
-/** Phần nội dung chính của card. */
 function CardContent({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div

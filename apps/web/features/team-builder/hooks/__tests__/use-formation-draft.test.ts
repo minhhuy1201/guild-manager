@@ -292,8 +292,8 @@ describe("useFormationDraft — nạp đề xuất và nền của lần ghi đ�
       result.current.applyDrop({ kind: "slot", slotId: SLOT }, "char-1", null)
     );
 
-    // Một nháp bằng y bản đã lưu sẽ che mất lần tải lại sau, và không có nút
-    // nào bỏ được nó vì ngày vẫn sạch.
+    // A draft equal to the saved copy would shadow the next refetch, and no button could discard it
+    // because the day still counts as clean.
     expect(useFormationStore.getState().drafts[SESSION_ID]).toBeUndefined();
   });
 

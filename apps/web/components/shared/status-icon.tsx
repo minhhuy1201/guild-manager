@@ -7,9 +7,9 @@ import { cn } from "@/lib/utils";
 export type StatusIconTone = "success" | "danger";
 
 /**
- * PATTERN CHUNG: trạng thái nhị phân (Có/Không, Đạt/Không đạt, Bật/Tắt...) hiển thị
- * bằng icon tròn có màu thay vì chữ — success = tick xanh, danger = X đỏ.
- * Dùng component này ở mọi bảng/thẻ có cột trạng thái để đồng nhất toàn hệ thống.
+ * SHARED PATTERN: a binary status (yes/no, pass/fail, on/off…) renders as a coloured round icon
+ * rather than text — success = green tick, danger = red X. Use this component in every table or card
+ * with a status column so the whole app stays consistent.
  */
 const TONE: Record<StatusIconTone, { className: string; Icon: LucideIcon }> = {
   success: { className: "bg-emerald-500 text-white dark:bg-emerald-600", Icon: Check },
@@ -17,20 +17,20 @@ const TONE: Record<StatusIconTone, { className: string; Icon: LucideIcon }> = {
 };
 
 interface StatusIconProps {
-  /** Màu ngữ nghĩa: success (tick xanh) / danger (X đỏ). */
+  /** Semantic tone: success (green tick) / danger (red X). */
   tone: StatusIconTone;
-  /** Nhãn cho screen-reader (bắt buộc — icon không có chữ hiển thị). */
+  /** Screen-reader label (required — the icon has no visible text). */
   label: string;
-  /** Class bổ sung (ví dụ đổi kích thước). */
+  /** Extra classes (e.g. to change the size). */
   className?: string;
 }
 
 /**
- * Icon tròn biểu diễn một trạng thái nhị phân, thay cho text.
- * @param tone - Màu ngữ nghĩa (success/danger)
- * @param label - Text đọc bởi screen-reader
- * @param className - Class bổ sung, merge sau class mặc định
- * @returns Icon trạng thái có màu
+ * A round icon standing in for a binary status instead of text.
+ * @param tone - Semantic tone (success/danger)
+ * @param label - Text read by screen readers
+ * @param className - Extra classes, merged after the defaults
+ * @returns The coloured status icon
  */
 export function StatusIcon({ tone, label, className }: StatusIconProps) {
   const { className: toneClass, Icon } = TONE[tone];

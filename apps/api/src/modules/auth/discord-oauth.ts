@@ -1,39 +1,39 @@
-/** Endpoint OAuth2 của Discord — hằng số, không phải cấu hình theo môi trường. */
+/** Discord's OAuth2 endpoints — constants, not per-environment config. */
 const AUTHORIZE_URL = 'https://discord.com/oauth2/authorize';
 const TOKEN_URL = 'https://discord.com/api/oauth2/token';
 const PROFILE_URL = 'https://discord.com/api/users/@me';
 
 /**
- * Chỉ xin `identify`: tư cách thành viên do bảng Character quyết định, không do Discord.
- * Xin thêm scope là xin thêm dữ liệu không dùng tới.
+ * Only `identify` is requested: membership is decided by the Character table, not by Discord.
+ * Asking for more scopes is asking for data we never use.
  */
 const SCOPE = 'identify';
 
-/** Cấu hình Discord Application, đọc từ biến môi trường. */
+/** Discord Application config, read from environment variables. */
 export interface DiscordConfig {
   clientId: string;
   clientSecret: string;
   redirectUri: string;
 }
 
-/** Phần hồ sơ Discord mà hệ thống thực sự dùng. */
+/** The part of a Discord profile the system actually uses. */
 export interface DiscordProfile {
-  /** Snowflake — khoá tra ngược ra Character */
+  /** Snowflake — the key back to a Character */
   id: string;
-  /** Tên hiển thị, chỉ dùng để quản trị viên xác nhận gán đúng người */
+  /** Display name, used only so an admin can confirm the right person was assigned */
   username: string;
   /**
-   * Hash avatar — chỉ phần hash, không phải URL. null khi người dùng để avatar mặc định.
-   * Lưu hash chứ không lưu URL vì định dạng URL CDN là chuyện của Discord.
+   * Avatar hash — the hash only, not a URL. null when the user keeps the default avatar.
+   * A hash rather than a URL because the CDN URL format is Discord's business.
    */
   avatar: string | null;
 }
 
 /**
- * Dựng URL đưa người dùng sang trang cho phép của Discord.
- * @param config - Cấu hình Discord Application
- * @param state - Token state ngắn hạn, Discord trả lại nguyên văn ở callback
- * @returns URL tuyệt đối để redirect
+ * Build the URL sending the user to Discord's authorize page.
+ * @param config - Discord Application config
+ * @param state - Short-lived state token, returned verbatim by Discord in the callback
+ * @returns The absolute redirect URL
  */
 export function buildAuthorizeUrl(
   config: DiscordConfig,
@@ -50,14 +50,14 @@ export function buildAuthorizeUrl(
 }
 
 /**
- * Đổi `code` lấy access token của Discord rồi đọc hồ sơ người dùng.
+ * Trade `code` for a Discord access token, then read the user's profile.
  *
- * Access token ấy **không được lưu lại**: nó chỉ phục vụ đúng lời gọi `/users/@me` ngay dưới đây.
- * Bot sau này dùng bot token riêng, nên giữ token người dùng chỉ là thêm một thứ phải bảo vệ.
- * @param config - Cấu hình Discord Application
- * @param code - Mã uỷ quyền Discord gửi kèm callback
- * @returns Hồ sơ Discord tối giản
- * @throws Error khi Discord từ chối đổi code hoặc từ chối trả hồ sơ
+ * That access token is **never stored**: it serves only the `/users/@me` call right below. A future
+ * bot uses its own bot token, so keeping the user token would just be one more thing to protect.
+ * @param config - Discord Application config
+ * @param code - Authorization code Discord sent with the callback
+ * @returns The minimal Discord profile
+ * @throws Error when Discord refuses the code exchange or the profile read
  */
 export async function exchangeCodeForProfile(
   config: DiscordConfig,
@@ -103,7 +103,7 @@ export async function exchangeCodeForProfile(
     throw new Error('Hồ sơ Discord thiếu id hoặc username.');
   }
 
-  // `avatar` được phép vắng mặt: tài khoản để ảnh mặc định không có hash nào cả.
+  // `avatar` may be absent: an account on the default picture has no hash at all.
   return {
     id: profile.id,
     username: profile.username,

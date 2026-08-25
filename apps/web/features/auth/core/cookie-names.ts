@@ -1,22 +1,22 @@
 /**
- * Tên và cấu hình cookie giữ JWT.
- * Token nằm trong cookie httpOnly nên JS phía client không đọc được (chống XSS);
- * file này nằm trong `core/` nên không được import `next/headers` — proxy (Edge) dùng lại nó.
+ * Names and settings of the JWT cookies.
+ * The tokens live in httpOnly cookies so client-side JS cannot read them (XSS defence); this file is
+ * in `core/` and therefore may not import `next/headers` — the (Edge) proxy reuses it.
  */
 
-/** Cookie chứa access token (hạn 1 ngày). */
+/** Cookie holding the access token (1 day). */
 export const ACCESS_TOKEN_COOKIE = "access_token";
 
-/** Cookie chứa refresh token (hạn 1 tuần). */
+/** Cookie holding the refresh token (1 week). */
 export const REFRESH_TOKEN_COOKIE = "refresh_token";
 
-/** Tuổi cookie access token (giây) — khớp hạn token do backend ký. */
+/** Access token cookie age (seconds) — matches the lifetime the backend signs. */
 export const ACCESS_TOKEN_MAX_AGE = 60 * 60 * 24;
 
-/** Tuổi cookie refresh token (giây) — khớp hạn token do backend ký. */
+/** Refresh token cookie age (seconds) — matches the lifetime the backend signs. */
 export const REFRESH_TOKEN_MAX_AGE = 60 * 60 * 24 * 7;
 
-/** Options chung cho cả hai cookie token. */
+/** Shared options for both token cookies. */
 export const AUTH_COOKIE_OPTIONS = {
   httpOnly: true,
   sameSite: "lax",

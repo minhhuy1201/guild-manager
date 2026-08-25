@@ -18,7 +18,7 @@ describe('toCharacter', () => {
       id: 'huy-a1',
       name: 'Huy',
       guildClass: GuildClass.THIET_Y,
-      // @ts-expect-error — hàng thật có thêm cột; codec phải chọn field, không trải hàng
+      // @ts-expect-error — a real row has extra columns; the codec must pick fields, not spread the row
       createdAt: new Date(),
     });
 

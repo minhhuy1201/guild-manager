@@ -5,9 +5,9 @@ import { AdminGuard } from '../admin.guard';
 import { TOKEN_TYPE, type JwtPayload } from '../../constants/auth.constant';
 
 /**
- * Dựng ExecutionContext giả chỉ mang `request.user`.
- * @param user - Payload JWT mà JwtAuthGuard lẽ ra đã gắn, undefined khi chưa qua guard đó
- * @returns Context đủ dùng cho AdminGuard
+ * Build a fake ExecutionContext carrying only `request.user`.
+ * @param user - JWT payload JwtAuthGuard would have attached, undefined when it never ran
+ * @returns A context sufficient for AdminGuard
  */
 function contextWith(user?: JwtPayload): ExecutionContext {
   return {

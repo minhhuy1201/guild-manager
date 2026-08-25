@@ -2,8 +2,8 @@ import { characterSchema } from "@guild/shared/schemas";
 import { describe, expect, it } from "vitest";
 
 /**
- * Khoá số field của `Character` trong contract. Thêm field vào response phải là
- * một thay đổi có chủ đích — test này đỏ thì nhớ sửa cả hai app đọc shape này.
+ * Pin the field count of `Character` in the contract. Adding a field to the response must be
+ * deliberate — when this test goes red, remember to update both apps that read the shape.
  */
 describe("characterSchema", () => {
   it("có đúng ba field: id, name, guildClass", () => {

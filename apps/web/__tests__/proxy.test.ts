@@ -25,7 +25,7 @@ vi.mock("@/features/auth/core", async (importOriginal) => ({
   refreshRequest,
 }));
 
-/** Cặp token API trả về khi gia hạn thành công. */
+/** The token pair the API returns on a successful refresh. */
 const RENEWED: AuthTokens = {
   accessToken: "access-moi",
   refreshToken: "refresh-moi",
@@ -43,10 +43,10 @@ const RENEWED: AuthTokens = {
 };
 
 /**
- * Dựng NextRequest kèm cookie phiên.
- * @param path - Đường dẫn của request
- * @param cookies - Access/refresh token muốn gắn vào request
- * @returns Request để đưa thẳng vào `proxy()`
+ * Build a NextRequest carrying session cookies.
+ * @param path - Path of the request
+ * @param cookies - Access/refresh tokens to attach
+ * @returns A request ready to hand to `proxy()`
  */
 function request(
   path: string,
@@ -61,10 +61,10 @@ function request(
 }
 
 /**
- * Ký một token còn hạn/hết hạn bằng SECRET.
- * @param secondsToExpiry - Số giây tới hạn; âm nghĩa là token đã hết hạn
- * @param payload - Payload nền, mặc định là quản trị viên
- * @returns Token ba đoạn
+ * Sign a valid/expired token with SECRET.
+ * @param secondsToExpiry - Seconds until expiry; negative means already expired
+ * @param payload - Base payload, an admin by default
+ * @returns The three-part token
  */
 function token(
   secondsToExpiry: number,
@@ -108,14 +108,14 @@ describe("proxy", () => {
     const response = await proxy(req);
 
     expect(refreshRequest).toHaveBeenCalledWith(refresh);
-    // Ghi vào request để chính lần render này đọc được token mới.
+    // Written into the request so this very render reads the new token.
     expect(req.cookies.get(ACCESS_TOKEN_COOKIE)?.value).toBe(
       RENEWED.accessToken
     );
     expect(req.cookies.get(REFRESH_TOKEN_COOKIE)?.value).toBe(
       RENEWED.refreshToken
     );
-    // Ghi vào response để trình duyệt giữ cho các request sau.
+    // Written into the response so the browser keeps it for later requests.
     expect(response.cookies.get(ACCESS_TOKEN_COOKIE)?.value).toBe(
       RENEWED.accessToken
     );

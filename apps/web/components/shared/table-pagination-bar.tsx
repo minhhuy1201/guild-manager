@@ -4,29 +4,29 @@ import { PageSizeSelect } from "@/components/shared/page-size-select";
 import { TablePagination } from "@/components/shared/table-pagination";
 
 interface TablePaginationBarProps {
-  /** Trang hiện tại (1-based). */
+  /** Current page (1-based). */
   page: number;
-  /** Tổng số trang. */
+  /** Total number of pages. */
   pageCount: number;
-  /** Số hàng mỗi trang đang chọn. */
+  /** Currently selected page size. */
   pageSize: number;
-  /** Tổng số phần tử trước khi cắt trang. */
+  /** Total items before paging. */
   total: number;
-  /** Gọi khi người dùng chọn trang khác. */
+  /** Called when the user picks another page. */
   onPageChange: (page: number) => void;
-  /** Gọi khi người dùng đổi số hàng mỗi trang. */
+  /** Called when the user changes the page size. */
   onPageSizeChange: (pageSize: number) => void;
-  /** Danh từ đếm phần tử, ví dụ "thành viên". */
+  /** Noun counting the items, e.g. "thành viên". */
   itemLabel: string;
-  /** ID cho select số hàng mỗi trang — cần duy nhất khi có nhiều bảng trên một trang. */
+  /** Id for the page-size select — must be unique when a page holds several tables. */
   pageSizeId?: string;
 }
 
 /**
- * Thanh chân bảng dùng chung: chọn số hàng mỗi trang, tóm tắt số lượng và điều hướng trang.
- * Đi cặp với `useTablePagination` — trải thẳng state của hook vào đây là xong.
- * @param props - page, pageCount, pageSize, total, callback và nhãn
- * @returns Thanh chân bảng
+ * The shared table footer: page size, a count summary and page navigation.
+ * Pairs with `useTablePagination` — spread the hook's state straight in.
+ * @param props - page, pageCount, pageSize, total, callbacks and labels
+ * @returns The table footer bar
  */
 export function TablePaginationBar({
   page,

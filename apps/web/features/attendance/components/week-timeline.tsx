@@ -19,9 +19,9 @@ import { useBattleSessions, useCurrentWeek } from "../hooks/use-attendance";
 import { useDeadlineRefresh } from "../hooks/use-deadline-refresh";
 
 /**
- * Hiển thị khoảng thời gian tuần điểm danh và danh sách ngày đánh,
- * mỗi ngày kèm hạn chót riêng và trạng thái còn hạn/đã khóa.
- * @returns Card timeline tuần, hoặc skeleton/khối lỗi khi query chưa xong hoặc thất bại
+ * Shows the attendance week's date range and its battle days, each with its own deadline and its
+ * open/locked state.
+ * @returns The week timeline card, or a skeleton/error block while the query is pending or failed
  */
 export function WeekTimeline() {
   const { data: week } = useCurrentWeek();

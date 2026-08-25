@@ -8,21 +8,22 @@ import { DATABASE_POOL_OPTIONS, type Env } from '../../config';
 import { Prisma, PrismaClient } from '../../generated/prisma/client';
 
 /**
- * Client bên trong một `$transaction`: cùng bề mặt model như `PrismaService`, không có
- * `$transaction` lồng. Khai báo ở đây vì `src/generated/prisma` chỉ được import từ infrastructure.
+ * The client inside a `$transaction`: the same model surface as `PrismaService`, without a nested
+ * `$transaction`. Declared here because `src/generated/prisma` may only be imported from
+ * infrastructure.
  *
- * `PrismaService` gán được vào kiểu này, nên một hàm nhận nó chạy được cả trong lẫn ngoài
- * transaction.
+ * `PrismaService` is assignable to this type, so a function taking it works both inside and outside
+ * a transaction.
  */
 export type PrismaTransactionClient = Prisma.TransactionClient;
 
 /**
- * PrismaClient dùng chung cho toàn app.
- * Prisma 7 kết nối qua driver adapter nên connection string được truyền từ ConfigService,
- * không đọc trực tiếp process.env.
+ * The app-wide PrismaClient.
+ * Prisma 7 connects through a driver adapter, so the connection string comes from ConfigService
+ * rather than process.env.
  *
- * Pool được dựng ở đây thay vì để `PrismaPg` tự tạo, vì cần một tham chiếu để đưa cho
- * `attachDatabasePool` — xem createPool bên dưới.
+ * The pool is built here instead of letting `PrismaPg` create it, because a reference is needed for
+ * `attachDatabasePool` — see createPool below.
  */
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleDestroy {
@@ -36,16 +37,14 @@ export class PrismaService extends PrismaClient implements OnModuleDestroy {
     });
   }
 
-  /**
-   * Đóng connection pool khi app shutdown (đi cùng app.enableShutdownHooks()).
-   */
+  /** Close the connection pool on shutdown (paired with app.enableShutdownHooks()). */
   async onModuleDestroy(): Promise<void> {
     await this.$disconnect();
   }
 
   /**
-   * Ping database bằng một query rẻ nhất có thể.
-   * @returns true nếu database phản hồi, false nếu không kết nối được
+   * Ping the database with the cheapest possible query.
+   * @returns true when the database responds, false when it is unreachable
    */
   async isHealthy(): Promise<boolean> {
     try {
@@ -61,14 +60,14 @@ export class PrismaService extends PrismaClient implements OnModuleDestroy {
 }
 
 /**
- * Dựng pg pool và đăng ký với Vercel.
+ * Build the pg pool and register it with Vercel.
  *
- * `attachDatabasePool` nghe sự kiện `release` của pool để đóng các kết nối đang rảnh **trước khi**
- * Vercel treo instance; không có nó, kết nối nằm lại phía Supavisor cho tới lúc timeout. Ngoài
- * Vercel, hàm này tự vô hiệu (nó kiểm tra `VERCEL_URL`/`VERCEL_REGION`), nên local không cần nhánh
- * riêng.
+ * `attachDatabasePool` listens to the pool's `release` event to close idle connections **before**
+ * Vercel suspends the instance; without it they linger on the Supavisor side until timeout. Off
+ * Vercel it disables itself (it checks `VERCEL_URL`/`VERCEL_REGION`), so local needs no separate
+ * branch.
  *
- * @param connectionString - DATABASE_URL đã qua validate
+ * @param connectionString - The validated DATABASE_URL
  */
 function createPool(connectionString: string): Pool {
   const pool = new Pool({ connectionString, ...DATABASE_POOL_OPTIONS });

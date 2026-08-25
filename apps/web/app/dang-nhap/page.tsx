@@ -9,9 +9,9 @@ export const metadata: Metadata = {
 };
 
 /**
- * Route "/dang-nhap" — trang duy nhất khách chưa đăng nhập vào được.
- * @param props.searchParams - `error` (mã lỗi từ API) và `redirect` (trang định vào)
- * @returns Trang đăng nhập
+ * Route "/dang-nhap" — the only page a signed-out visitor can reach.
+ * @param props.searchParams - `error` (code from the API) and `redirect` (intended page)
+ * @returns The login page
  */
 export default async function LoginPage({
   searchParams,

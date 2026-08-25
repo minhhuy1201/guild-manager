@@ -3,7 +3,7 @@ import { Module } from '@nestjs/common';
 import { CharactersController } from './characters.controller';
 import { CharactersService } from './characters.service';
 
-/** Module quản lý thành viên: CRUD nhân vật trong bang, chỉ quản trị viên dùng. */
+/** Member management module: CRUD over guild characters, admins only. */
 @Module({
   controllers: [CharactersController],
   providers: [CharactersService],

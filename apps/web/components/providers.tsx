@@ -1,9 +1,8 @@
 "use client";
 
 /**
- * Provider tổng cho toàn bộ ứng dụng.
- * Bao gồm QueryClientProvider (TanStack Query).
- * Zustand không cần provider — dùng trực tiếp qua hook.
+ * App-wide providers: QueryClientProvider (TanStack Query).
+ * Zustand needs no provider — its hooks are used directly.
  */
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -13,9 +12,9 @@ import { useState, type ReactNode } from "react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 /**
- * Wrap toàn bộ app với các provider cần thiết
- * @param children - Các component con cần wrap
- * @returns JSX Element với các provider đã được cấu hình
+ * Wrap the app in every provider it needs.
+ * @param children - Children to wrap
+ * @returns The configured provider tree
  */
 export function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(

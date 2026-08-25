@@ -5,10 +5,10 @@ import {
 import { createZodDto } from 'nestjs-zod';
 
 /**
- * Body của request thêm thành viên.
- * Schema dùng chung với frontend (packages/shared/schemas) để hai bên không lệch nhau.
+ * Body of the create-member request.
+ * Shares its schema with the frontend (packages/shared/schemas) so the two cannot drift.
  */
 export class CreateCharacterDto extends createZodDto(createCharacterSchema) {}
 
-/** Body của request sửa thành viên — mọi field đều không bắt buộc. */
+/** Body of the edit-member request — every field optional. */
 export class UpdateCharacterDto extends createZodDto(updateCharacterSchema) {}

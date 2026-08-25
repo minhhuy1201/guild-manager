@@ -1,11 +1,11 @@
-/** API local mặc định khi chạy dev mà chưa khai báo biến môi trường. */
+/** Default local API when running dev without the environment variable. */
 const FALLBACK_API_URL = "http://localhost:3001/api";
 
 const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-// `NEXT_PUBLIC_*` được nhúng thẳng vào bundle lúc build và không đọc lại lúc chạy, nên thiếu biến
-// này ở production nghĩa là bản build đã hỏng sẵn: mọi request sẽ lặng lẽ trỏ về localhost. Ném lỗi
-// ngay để `next build` chết ở khâu deploy thay vì lên production rồi mới lộ.
+// `NEXT_PUBLIC_*` is inlined into the bundle at build time and never re-read at runtime, so a missing
+// value in production means the build is already broken: every request would quietly point at
+// localhost. Throw here so `next build` fails at deploy instead of surfacing in production.
 if (process.env.NODE_ENV === "production" && !configuredApiUrl) {
   throw new Error(
     "Thiếu biến môi trường NEXT_PUBLIC_API_URL — phải khai báo trước khi build production."
@@ -13,7 +13,7 @@ if (process.env.NODE_ENV === "production" && !configuredApiUrl) {
 }
 
 /**
- * Base URL của backend API.
- * Đặt qua `NEXT_PUBLIC_API_URL`; mặc định là API chạy local ở cổng 3001.
+ * Base URL of the backend API.
+ * Set through `NEXT_PUBLIC_API_URL`; defaults to the local API on port 3001.
  */
 export const API_BASE_URL = configuredApiUrl ?? FALLBACK_API_URL;

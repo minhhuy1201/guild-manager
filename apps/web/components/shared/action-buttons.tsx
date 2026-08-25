@@ -12,38 +12,37 @@ import {
 import { cn } from "@/lib/utils";
 
 /**
- * Bộ nút thao tác dùng chung cho toàn app: thêm / sửa / xoá.
+ * The app-wide action buttons: create / edit / delete.
  *
- * Quy ước:
- * - Thêm mới → nút có chữ (`CreateButton`), đặt ở đầu hoặc cuối danh sách.
- * - Sửa / xoá trên từng dòng → nút icon (`EditAction`, `DeleteAction`) bọc trong
- *   `RowActions`, luôn có tooltip + `sr-only` để vừa gợi ý được bằng chuột
- *   vừa đọc được bằng trình đọc màn hình.
+ * Conventions:
+ * - Create → a labelled button (`CreateButton`), at the start or end of a list.
+ * - Per-row edit / delete → icon buttons (`EditAction`, `DeleteAction`) inside `RowActions`, always
+ *   with a tooltip plus `sr-only` so they are discoverable by mouse and readable by screen readers.
  */
 
 type ButtonVariant = ComponentProps<typeof Button>["variant"];
 
 interface CreateButtonProps {
-  /** Chữ trên nút, vd "Thêm thành viên" */
+  /** Button text, e.g. "Thêm thành viên" */
   label: string;
-  /** Icon đứng trước chữ, mặc định dấu cộng */
+  /** Icon before the text, a plus sign by default */
   icon?: ReactNode;
-  /** Kiểu nút, mặc định `default` (nhấn mạnh hành động chính) */
+  /** Button variant, `default` by default (emphasises the primary action) */
   variant?: ButtonVariant;
-  /** Class bổ sung cho nút */
+  /** Extra classes */
   className?: string;
-  /** Gọi khi bấm nút */
+  /** Called on click */
   onClick: () => void;
 }
 
 /**
- * Nút thêm mới: luôn hiện chữ vì đây là hành động chính, không nên bắt đoán icon.
- * @param label - Chữ trên nút
- * @param icon - Icon đứng trước chữ
- * @param variant - Kiểu nút
- * @param className - Class bổ sung
- * @param onClick - Gọi khi bấm nút
- * @returns Nút thêm mới
+ * The create button: always labelled, since this is the primary action and should not have to be guessed from an icon.
+ * @param label - Button text
+ * @param icon - Icon before the text
+ * @param variant - Button variant
+ * @param className - Extra classes
+ * @param onClick - Called on click
+ * @returns The create button
  */
 export function CreateButton({
   label,
@@ -61,17 +60,17 @@ export function CreateButton({
 }
 
 interface RowActionsProps {
-  /** Các nút thao tác của dòng */
+  /** The row's action buttons */
   children: ReactNode;
-  /** Class bổ sung cho nhóm */
+  /** Extra classes */
   className?: string;
 }
 
 /**
- * Nhóm các nút thao tác của một dòng để khoảng cách giữa chúng đồng nhất.
- * @param children - Các nút thao tác
- * @param className - Class bổ sung
- * @returns Nhóm nút thao tác
+ * Group a row's action buttons so their spacing stays uniform.
+ * @param children - The action buttons
+ * @param className - Extra classes
+ * @returns The action button group
  */
 export function RowActions({ children, className }: RowActionsProps) {
   return (
@@ -82,31 +81,31 @@ export function RowActions({ children, className }: RowActionsProps) {
 }
 
 interface RowActionButtonProps {
-  /** Nhãn dùng cho cả tooltip lẫn trình đọc màn hình */
+  /** Label used for both the tooltip and screen readers */
   label: string;
-  /** Icon của nút */
+  /** Button icon */
   icon: ReactNode;
-  /** Kiểu nút, mặc định `ghost` để không cạnh tranh với nội dung dòng */
+  /** Button variant, `ghost` by default so it does not compete with the row content */
   variant?: ButtonVariant;
-  /** Khoá nút (vd đã quá hạn chỉnh sửa) */
+  /** Disable the button (e.g. past the editing deadline) */
   disabled?: boolean;
-  /** Class bổ sung cho nút */
+  /** Extra classes */
   className?: string;
-  /** Gọi khi bấm nút */
+  /** Called on click */
   onClick: () => void;
 }
 
 /**
- * Nút icon kèm tooltip cho thao tác trên một dòng.
- * Là nền của `EditAction`/`DeleteAction`; dùng trực tiếp cho các thao tác khác
- * (huỷ, xác nhận…) để giữ đúng một kiểu nút icon trong bảng.
- * @param label - Nhãn cho tooltip và trình đọc màn hình
- * @param icon - Icon của nút
- * @param variant - Kiểu nút
- * @param disabled - Khoá nút
- * @param className - Class bổ sung
- * @param onClick - Gọi khi bấm nút
- * @returns Nút icon kèm tooltip
+ * An icon button with a tooltip, for a per-row action.
+ * The basis of `EditAction`/`DeleteAction`; use it directly for other actions (cancel, confirm…) to
+ * keep exactly one icon button style inside tables.
+ * @param label - Label for the tooltip and screen readers
+ * @param icon - Button icon
+ * @param variant - Button variant
+ * @param disabled - Disable the button
+ * @param className - Extra classes
+ * @param onClick - Called on click
+ * @returns The icon button with its tooltip
  */
 export function RowActionButton({
   label,
@@ -138,15 +137,15 @@ export function RowActionButton({
 }
 
 type ActionButtonProps = Omit<RowActionButtonProps, "icon" | "label"> & {
-  /** Nhãn ghi đè, dùng khi cần nói rõ đối tượng (vd "Sửa Mèo Mập") */
+  /** Label override, for naming the subject (e.g. "Sửa Mèo Mập") */
   label?: string;
 };
 
 /**
- * Nút sửa của một dòng.
- * @param label - Nhãn ghi đè, mặc định "Sửa"
- * @param props - Các thuộc tính còn lại của nút thao tác
- * @returns Nút sửa
+ * A row's edit button.
+ * @param label - Label override, "Sửa" by default
+ * @param props - Remaining action button props
+ * @returns The edit button
  */
 export function EditAction({ label = "Sửa", ...props }: ActionButtonProps) {
   return (
@@ -159,11 +158,11 @@ export function EditAction({ label = "Sửa", ...props }: ActionButtonProps) {
 }
 
 /**
- * Nút xoá của một dòng, luôn tô màu destructive để phân biệt hành động phá huỷ.
- * @param label - Nhãn ghi đè, mặc định "Xoá"
- * @param className - Class bổ sung
- * @param props - Các thuộc tính còn lại của nút thao tác
- * @returns Nút xoá
+ * A row's delete button, always destructive-coloured to mark it as a destructive action.
+ * @param label - Label override, "Xoá" by default
+ * @param className - Extra classes
+ * @param props - Remaining action button props
+ * @returns The delete button
  */
 export function DeleteAction({
   label = "Xoá",

@@ -1,4 +1,4 @@
-/** Đường dẫn các route của ứng dụng — dùng chung cho nav và điều hướng. */
+/** The app's route paths — shared by the nav and by programmatic navigation. */
 export const ROUTES = {
   attendance: "/",
   attendanceHistory: "/lich-su-diem-danh",

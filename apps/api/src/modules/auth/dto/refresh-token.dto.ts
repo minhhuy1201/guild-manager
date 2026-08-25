@@ -2,7 +2,7 @@ import { refreshTokenSchema } from '@guild/shared/schemas';
 import { createZodDto } from 'nestjs-zod';
 
 /**
- * Body của request xin cặp token mới.
- * Schema dùng chung với frontend (packages/shared/schemas) để hai bên không lệch nhau.
+ * Body of the new-token-pair request.
+ * Shares its schema with the frontend (packages/shared/schemas) so the two cannot drift.
  */
 export class RefreshTokenDto extends createZodDto(refreshTokenSchema) {}

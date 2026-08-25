@@ -1,28 +1,28 @@
 /**
- * Hạn sử dụng của token đăng nhập.
- * Để ở constant thay vì biến môi trường vì chưa có nhu cầu đổi theo từng môi trường.
+ * Lifetimes of the login tokens.
+ * Constants rather than env variables because nothing needs them to differ per environment.
  */
 
-/** Hạn của access token — dùng cho mọi request cần xác thực. */
+/** Access token lifetime — used for every authenticated request. */
 export const ACCESS_TOKEN_TTL = '1d';
 
-/** Hạn của refresh token — quyết định người dùng phải đăng nhập lại sau bao lâu. */
+/** Refresh token lifetime — decides how long until the user must sign in again. */
 export const REFRESH_TOKEN_TTL = '7d';
 
-/** Hạn của token `state` trong OAuth flow — chỉ cần đủ cho một vòng bấm "Cho phép". */
+/** Lifetime of the OAuth `state` token — only needs to cover one round of clicking "Authorize". */
 export const OAUTH_STATE_TTL = '5m';
 
-/** Hạn của mã đổi lấy JWT (mili giây) — đủ cho một lần redirect, không hơn. */
+/** Lifetime of the JWT exchange code (milliseconds) — enough for one redirect, no more. */
 export const EXCHANGE_TTL_MS = 60_000;
 
-/** Mã lỗi gửi về web qua query string; web tra ra câu tiếng Việt. */
+/** Error codes sent to the web app on the query string; the web app maps them to Vietnamese text. */
 export const AUTH_ERROR = {
-  /** Người dùng bấm Huỷ ở màn cho phép của Discord */
+  /** The user clicked Cancel on Discord's authorize screen */
   denied: 'tu-choi',
-  /** Discord ID không khớp thành viên nào và không nằm trong danh sách cứu hộ */
+  /** The Discord ID matches no member and is not on the rescue list */
   notMember: 'khong-thuoc-bang',
-  /** State hỏng, hết hạn hoặc sai loại */
+  /** State malformed, expired, or of the wrong type */
   expired: 'phien-het-han',
-  /** Không gọi được Discord */
+  /** Discord was unreachable */
   upstream: 'discord-loi',
 } as const;

@@ -3,9 +3,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiError, apiFetch } from "../api-client";
 
 /**
- * Tạo fetch giả trả về một response cụ thể.
- * @param options - status và body JSON mà server "trả về"
- * @returns Hàm mock thay cho global fetch
+ * Build a fake fetch returning a specific response.
+ * @param options - status and JSON body the server "returns"
+ * @returns The mock replacing global fetch
  */
 function mockFetch(options: { status: number; body: unknown | null }) {
   const fetchMock = vi.fn().mockResolvedValue({

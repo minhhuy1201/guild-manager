@@ -1,58 +1,58 @@
 import { z } from 'zod';
 
 /**
- * Schema cho toàn bộ biến môi trường mà API cần.
- * Validate lúc boot để app fail-fast thay vì chết giữa chừng lúc chạy.
+ * Schema for every environment variable the API needs.
+ * Validated at boot so the app fails fast instead of dying mid-run.
  */
 export const envSchema = z.object({
   NODE_ENV: z
     .enum(['development', 'production', 'test'])
     .default('development'),
-  /** Port của API — mặc định 3001 để không đụng Next.js (3000). */
+  /** API port — 3001 by default so it does not collide with Next.js (3000). */
   PORT: z.coerce.number().int().positive().default(3001),
-  /** Connection string PostgreSQL dùng cho Prisma. */
+  /** PostgreSQL connection string used by Prisma. */
   DATABASE_URL: z.url(),
-  /** Origin của frontend, dùng cho CORS. */
+  /** Frontend origin, used for CORS. */
   WEB_ORIGIN: z.url().default('http://localhost:3000'),
   /**
-   * Tên project web trên Vercel — dùng để nhận thêm các domain preview
-   * `https://<project>-…vercel.app`. Bỏ trống khi không deploy trên Vercel — khai báo rỗng trong
-   * .env cũng tính là bỏ trống.
+   * Web project name on Vercel — used to additionally accept the preview domains
+   * `https://<project>-…vercel.app`. Omit when not deploying on Vercel; an empty declaration in
+   * .env counts as omitted.
    */
   WEB_PREVIEW_PROJECT: z
     .string()
     .trim()
     .optional()
     .transform((value) => value || undefined),
-  /** Khóa ký JWT (access + refresh) — dùng chung giá trị với apps/web để web verify được. */
+  /** JWT signing key (access + refresh) — must match apps/web so the web app can verify. */
   AUTH_SECRET: z.string().min(32),
-  /** Client ID của Discord Application (Developer Portal → OAuth2). */
+  /** Discord Application client ID (Developer Portal → OAuth2). */
   DISCORD_CLIENT_ID: z.string().min(1),
-  /** Client secret của Discord Application — chỉ tồn tại ở API, không bao giờ ở web. */
+  /** Discord Application client secret — lives only on the API, never on the web. */
   DISCORD_CLIENT_SECRET: z.string().min(1),
   /**
-   * Redirect URI đã khai trong Discord Developer Portal.
-   * Phải khớp từng ký tự, kể cả dấu `/` cuối — Discord từ chối nếu lệch.
+   * Redirect URI declared in the Discord Developer Portal.
+   * Must match character for character, trailing `/` included — Discord rejects any difference.
    */
   DISCORD_REDIRECT_URI: z.url(),
   /**
-   * Danh sách Discord ID cứu hộ, phân tách bằng dấu phẩy.
-   * Các ID này luôn đăng nhập được với quyền ADMIN kể cả khi không khớp Character nào —
-   * đó là lối vào duy nhất khi database chưa ai được gán Discord ID.
+   * Comma-separated list of rescue Discord IDs.
+   * These always sign in as ADMIN even when they match no Character — the only way in when no row
+   * in the database has a Discord ID yet.
    */
   DISCORD_ADMIN_IDS: z.string().default(''),
-  /** Múi giờ dùng để tính deadline điểm danh (xem docs/architecture.md mục 6). */
+  /** Timezone used to compute attendance deadlines (see docs/architecture.md section 6). */
   APP_TIMEZONE: z.string().default('Asia/Ho_Chi_Minh'),
 });
 
-/** Kiểu env đã được validate và ép kiểu. */
+/** The validated, coerced env type. */
 export type Env = z.infer<typeof envSchema>;
 
 /**
- * Validate biến môi trường lúc khởi động, dùng cho `ConfigModule.forRoot({ validate })`.
- * @param config - Biến môi trường thô lấy từ process.env và các file .env
- * @returns Env đã parse (PORT là number, các giá trị mặc định đã được áp)
- * @throws Error khi thiếu hoặc sai định dạng biến môi trường
+ * Validate environment variables at startup, for `ConfigModule.forRoot({ validate })`.
+ * @param config - Raw variables from process.env and the .env files
+ * @returns The parsed env (PORT as a number, defaults applied)
+ * @throws Error when a variable is missing or malformed
  */
 export function validateEnv(config: Record<string, unknown>): Env {
   const parsed = envSchema.safeParse(config);

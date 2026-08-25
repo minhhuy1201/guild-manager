@@ -52,7 +52,7 @@ export function combineQueries(
       failing === undefined
         ? ""
         : readErrorMessage(failing.error, fallbackMessage),
-    // Refetch tất cả cùng lúc — không await tuần tự từng query.
+    // Refetch everything at once — never await the queries one by one.
     refetch: () => {
       void Promise.all(queries.map((query) => query.refetch()));
     },

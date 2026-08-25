@@ -21,8 +21,8 @@ import {
 } from "../store/attendance-filter-store";
 
 /**
- * Query danh sách nhân vật trong bang.
- * @returns Kết quả query TanStack (data là mảng nhân vật)
+ * Query the guild's characters.
+ * @returns The TanStack query result (data is the character list)
  */
 export function useCharacters() {
   return useQuery({
@@ -32,8 +32,8 @@ export function useCharacters() {
 }
 
 /**
- * Query danh sách buổi đánh trong tuần.
- * @returns Kết quả query TanStack (data là mảng buổi đánh)
+ * Query the week's battle sessions.
+ * @returns The TanStack query result (data is the session list)
  */
 export function useBattleSessions() {
   return useQuery({
@@ -43,8 +43,8 @@ export function useBattleSessions() {
 }
 
 /**
- * Query thông tin tuần điểm danh hiện tại.
- * @returns Kết quả query TanStack (data là tuần hiện tại)
+ * Query the current attendance week.
+ * @returns The TanStack query result (data is the current week)
  */
 export function useCurrentWeek() {
   return useQuery({
@@ -54,8 +54,8 @@ export function useCurrentWeek() {
 }
 
 /**
- * Query toàn bộ record điểm danh.
- * @returns Kết quả query TanStack (data là map record theo khóa)
+ * Query every attendance record.
+ * @returns The TanStack query result (data is a map of records by key)
  */
 export function useAttendanceRecords() {
   return useQuery({
@@ -65,10 +65,10 @@ export function useAttendanceRecords() {
 }
 
 /**
- * Danh sách nhân vật đã lọc theo bộ lọc của một màn (tìm kiếm + lưu phái).
- * So khớp tên nhân vật, không phân biệt hoa/thường.
- * @param scope - Màn đang đọc bộ lọc; mỗi màn có state lọc riêng
- * @returns Mảng nhân vật khớp bộ lọc (rỗng khi query chưa có data)
+ * The characters matching one screen's filters (search + class).
+ * Name matching is case-insensitive.
+ * @param scope - Screen whose filters are read; each screen has its own filter state
+ * @returns Matching characters (empty while the query has no data)
  */
 export function useFilteredCharacters(
   scope: AttendanceFilterScope
@@ -86,9 +86,9 @@ export function useFilteredCharacters(
 }
 
 /**
- * Query số người đã điểm danh mỗi trận — dùng cho màn của bang chúng,
- * nơi không thấy hàng của người khác.
- * @returns Kết quả query TanStack (data là mảng số đếm theo trận)
+ * Query the sign-up counts per session — used by the member screen, where other people's rows are
+ * not visible.
+ * @returns The TanStack query result (data is the tallies per session)
  */
 export function useAttendanceSummary() {
   return useQuery({
@@ -98,8 +98,8 @@ export function useAttendanceSummary() {
 }
 
 /**
- * Mutation điểm danh; thành công thì invalidate lại danh sách record.
- * @returns Mutation TanStack (dùng mutateAsync để bắt lỗi validation)
+ * The attendance mutation; on success it invalidates the record list.
+ * @returns The TanStack mutation (use mutateAsync to catch validation errors)
  */
 export function useMarkAttendance() {
   const invalidate = useInvalidate("attendance");

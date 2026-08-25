@@ -22,8 +22,8 @@ export class TeamBuilderController {
   constructor(private readonly teamBuilder: TeamBuilderService) {}
 
   /**
-   * Các tuần còn dữ liệu đội hình.
-   * @returns Mảng tuần, mới nhất trước
+   * Weeks that still hold formation data.
+   * @returns Weeks, newest first
    */
   @Get('weeks')
   @ApiOperation({ summary: 'Các tuần còn dữ liệu đội hình' })
@@ -32,9 +32,9 @@ export class TeamBuilderController {
   }
 
   /**
-   * Các trận của một tuần kèm đội hình đã lưu.
-   * @param query - `weekStart`: mốc ISO của tuần; bỏ trống = tuần đang mở
-   * @returns Mảng trận sắp theo thời gian đánh
+   * Sessions of one week with their saved formations.
+   * @param query - `weekStart`: ISO marker of the week; omitted = the open week
+   * @returns Sessions ordered by battle time
    */
   @Get('formations')
   @ApiOperation({ summary: 'Đội hình của các trận trong một tuần' })
@@ -45,10 +45,10 @@ export class TeamBuilderController {
   }
 
   /**
-   * Ghi đè đội hình cả ngày (1 hoặc 2 trận), kèm ghi chú theo ô.
-   * @param sessionId - ID ngày đánh cần lưu
-   * @param body - matches: đội hình và ghi chú từng trận, theo thứ tự
-   * @returns Ngày đánh kèm đội hình vừa ghi
+   * Overwrite the whole day's formation (1 or 2 matches), notes included.
+   * @param sessionId - Id of the battle day to save
+   * @param body - matches: each match's formation and notes, in order
+   * @returns The battle day with the formation just written
    */
   @Put('formations/:sessionId')
   @ApiOperation({ summary: 'Lưu đội hình cả ngày (tối đa 2 trận)' })

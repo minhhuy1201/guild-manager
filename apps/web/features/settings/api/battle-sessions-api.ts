@@ -11,10 +11,10 @@ import { getAccessToken } from "@/features/auth/server";
 import { ApiError, apiFetch } from "@/lib/api-client";
 
 /**
- * Lấy access token của quản trị viên đang đăng nhập.
- * Chạy ở server vì token nằm trong cookie httpOnly, client không đọc được.
- * @returns Header Authorization đã dựng sẵn
- * @throws ApiError khi phiên đăng nhập đã hết hạn
+ * Get the signed-in admin's access token.
+ * Runs on the server because the token lives in an httpOnly cookie the client cannot read.
+ * @returns The prepared Authorization header
+ * @throws ApiError when the session has expired
  */
 async function authHeader(): Promise<Record<string, string>> {
   const accessToken = await getAccessToken();
@@ -29,17 +29,17 @@ async function authHeader(): Promise<Record<string, string>> {
 }
 
 /**
- * Lấy các tuần thiết lập được: tuần đang mở và tuần kế tiếp.
- * @returns Mảng 2 tuần, tuần đang mở đứng trước
+ * Get the schedulable weeks: the open week and the next one.
+ * @returns Two weeks, the open one first
  */
 export async function fetchSettingsWeeks(): Promise<Week[]> {
   return apiFetch<Week[]>("/battle-sessions/weeks");
 }
 
 /**
- * Lấy các trận của một tuần.
- * @param weekStart - Mốc Thứ 2 của tuần (ISO string)
- * @returns Mảng trận sắp theo thời gian đánh
+ * Get one week's sessions.
+ * @param weekStart - Monday marker of the week (ISO string)
+ * @returns Sessions ordered by battle time
  */
 export async function fetchWeekSessions(
   weekStart: string
@@ -50,10 +50,10 @@ export async function fetchWeekSessions(
 }
 
 /**
- * Thêm một trận scrim.
- * @param input - Giờ đánh, hạn chót và tên bang đối thủ
- * @returns Trận vừa tạo
- * @throws ApiError với message tiếng Việt của backend khi bị từ chối
+ * Add a scrim.
+ * @param input - Battle time, deadline and opponent guild name
+ * @returns The created session
+ * @throws ApiError carrying the backend's Vietnamese message when rejected
  */
 export async function createBattleSession(
   input: CreateBattleSessionInput
@@ -66,11 +66,11 @@ export async function createBattleSession(
 }
 
 /**
- * Sửa một trận.
- * @param id - Id trận cần sửa
- * @param input - Các field cần đổi
- * @returns Trận sau khi sửa
- * @throws ApiError khi trận đã bị xoá (404) hoặc backend từ chối
+ * Edit a session.
+ * @param id - Id of the session to edit
+ * @param input - Fields to change
+ * @returns The updated session
+ * @throws ApiError when the session was deleted (404) or the backend rejects it
  */
 export async function updateBattleSession(
   id: string,
@@ -84,10 +84,10 @@ export async function updateBattleSession(
 }
 
 /**
- * Xoá một trận scrim cùng điểm danh và đội hình của nó.
- * @param id - Id trận cần xoá
- * @returns Promise hoàn tất khi đã xoá
- * @throws ApiError khi là Guild War, tuần đã qua, hoặc trận đã bị xoá
+ * Delete a scrim along with its attendance and formations.
+ * @param id - Id of the session to delete
+ * @returns A promise resolving once deleted
+ * @throws ApiError for a Guild War, a past week, or an already-deleted session
  */
 export async function deleteBattleSession(id: string): Promise<void> {
   await apiFetch<void>(`/battle-sessions/${encodeURIComponent(id)}`, {

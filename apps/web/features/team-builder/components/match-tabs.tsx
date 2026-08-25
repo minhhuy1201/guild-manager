@@ -47,8 +47,8 @@ export function MatchTabs({
 }: MatchTabsProps) {
   const [confirming, setConfirming] = useState(false);
 
-  // Một trận duy nhất và không thêm được nữa (tuần cũ, trận đã đánh) thì hàng
-  // này không nói lên điều gì — ẩn hẳn.
+  // A single match that can no longer be extended (an old week, a played battle) makes this row say
+  // nothing — hide it entirely.
   if (matchCount < 2 && !canAddMatch) return null;
 
   return (

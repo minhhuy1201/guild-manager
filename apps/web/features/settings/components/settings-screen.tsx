@@ -14,9 +14,9 @@ import { SettingsSkeleton } from "./settings-skeleton";
 import { WeekSelector } from "./week-selector";
 
 /**
- * Màn Thiết lập lịch đánh: chọn tuần rồi thêm/sửa/xoá các trận của tuần đó.
- * Chỉ tuần đang mở và tuần kế tiếp sửa được — backend cũng chặn lại lần nữa.
- * @returns Màn hình thiết lập
+ * The schedule settings screen: pick a week, then add/edit/delete its sessions.
+ * Only the open week and the next one are editable — the backend enforces that again.
+ * @returns The settings screen
  */
 export function SettingsScreen() {
   const weeksQuery = useSettingsWeeks();

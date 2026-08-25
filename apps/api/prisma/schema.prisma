@@ -1,23 +1,23 @@
-// Prisma schema — single source of truth cho model dữ liệu của Guild Manager.
-// Domain và luật thời gian tóm tắt ở docs/architecture.md mục 5-6.
+// Prisma schema — single source of truth for the Guild Manager data model.
+// Domain and time rules are summarised in docs/architecture.md sections 5-6.
 
-// App chạy CommonJS (NestJS) nên client phải sinh ra ở dạng cjs,
-// nếu không jest/ts-node sẽ vỡ vì `import.meta` trong code generate.
+// The app runs CommonJS (NestJS), so the client must be generated as cjs;
+// otherwise jest/ts-node break on `import.meta` in the generated code.
 generator client {
   provider            = "prisma-client"
   output              = "../src/generated/prisma"
   moduleFormat        = "cjs"
   runtime             = "nodejs"
-  // Import không đuôi để ts-node (seed script) resolve được, không chỉ webpack/jest.
+  // Extensionless import so ts-node (the seed script) can resolve it, not just webpack/jest.
   importFileExtension = ""
 }
 
-// Connection URL khai báo ở prisma.config.ts (Prisma 7 không còn nhận `url` trong schema).
+// The connection URL is declared in prisma.config.ts (Prisma 7 no longer accepts `url` in the schema).
 datasource db {
   provider = "postgresql"
 }
 
-/// Lưu phái (class nhân vật). Giá trị phải khớp enum GuildClass ở packages/shared/enums.
+/// Character class. Values must match the GuildClass enum in packages/shared/enums.
 enum GuildClass {
   CUU_LINH
   HUYET_HA
@@ -28,36 +28,36 @@ enum GuildClass {
   TO_VAN
 }
 
-/// Trạng thái điểm danh. Giá trị phải khớp enum AttendanceStatus ở packages/shared/enums.
+/// Attendance status. Values must match the AttendanceStatus enum in packages/shared/enums.
 enum AttendanceStatus {
   CO
   KHONG
 }
 
-/// Vai trò trong bang. Giá trị phải khớp enum GuildRole ở packages/shared/enums.
+/// Guild role. Values must match the GuildRole enum in packages/shared/enums.
 enum GuildRole {
   ADMIN
   LEADER
   MEMBER
 }
 
-/// Nhân vật trong bang hội.
+/// A character in the guild.
 model Character {
-  /// Khoá chính do hệ thống sinh: slug tên + hậu tố ngẫu nhiên ("meo-beo-k7ma3x").
+  /// Generated primary key: name slug plus a random suffix ("meo-beo-k7ma3x").
   id              String     @id
-  /// Tên hiển thị của nhân vật.
+  /// Display name of the character.
   name            String
   guildClass      GuildClass
-  /// Discord ID (snowflake) do quản trị viên nhập tay. Null = thành viên chưa đăng nhập được.
-  /// Nullable + @unique: Postgres cho nhiều NULL cùng tồn tại, nên "nhiều người chưa gán" là hợp lệ,
-  /// còn "hai người cùng một ID" thì không.
+  /// Discord ID (snowflake) entered by an admin. Null = this member cannot sign in yet.
+  /// Nullable + @unique: Postgres allows many NULLs, so "many unassigned" is valid while
+  /// "two people on one ID" is not.
   discordId       String?    @unique
-  /// Tên Discord đọc lúc đăng nhập gần nhất — để quản trị viên xác nhận đã gán đúng người.
+  /// Discord name read at the last login — lets an admin confirm the right person was assigned.
   discordUsername String?
-  /// Hash avatar Discord đọc lúc đăng nhập gần nhất (chỉ hash, không phải URL).
-  /// Lưu hash chứ không lưu URL: định dạng URL CDN là chuyện của Discord, đổi lúc nào không báo.
+  /// Discord avatar hash read at the last login (hash only, not a URL).
+  /// A hash, not a URL: the CDN URL format is Discord's business and can change without notice.
   discordAvatar   String?
-  /// Null = chưa từng đăng nhập lần nào.
+  /// Null = never signed in.
   lastLoginAt     DateTime?
   role            GuildRole  @default(MEMBER)
   createdAt       DateTime   @default(now())
@@ -69,43 +69,43 @@ model Character {
   @@index([guildClass])
 }
 
-/// Một trận đánh trong tuần. Guild War do hệ thống sinh, scrim do quản trị viên nhập.
+/// A battle in the week. Guild War is system-generated, scrims are entered by admins.
 model BattleSession {
-  /// Guild War dùng id tất định `gw-<YYYY-MM-DD của weekStart>` để upsert idempotent;
-  /// scrim do quản trị viên tạo dùng cuid() mặc định.
+  /// Guild War uses the deterministic id `gw-<weekStart YYYY-MM-DD>` for an idempotent upsert;
+  /// admin-created scrims use the default cuid().
   id         String   @id @default(cuid())
-  /// Thời điểm diễn ra trận đánh.
+  /// When the battle takes place.
   dateTime   DateTime
-  /// Hạn chót điểm danh. Scrim: quản trị viên đặt, tối đa 10:00 sáng ngày đánh
-  /// (vượt trần thì backend từ chối chứ không kẹp). Guild War: hệ thống đặt
-  /// 17:00 Thứ 5 cùng tuần, quản trị viên không sửa được.
+  /// Attendance deadline. Scrim: set by an admin, at most 10:00 on the battle day
+  /// (the backend rejects rather than clamps). Guild War: system-set to 17:00 Thursday
+  /// of the same week, not editable.
   deadline   DateTime
-  /// Tên bang đối thủ. null với Guild War và với scrim chưa chốt đối thủ.
+  /// Opponent guild name. Null for a Guild War and for a scrim with no opponent yet.
   opponent   String?
-  /// Trận Guild War — do hệ thống sinh, không xoá được.
+  /// A Guild War session — system-generated, cannot be deleted.
   isGuildWar Boolean  @default(false)
-  /// Mốc Thứ 2 00:00 của tuần chứa trận này — dùng để gom trận theo tuần.
+  /// Monday 00:00 of the week containing this session — used to group sessions by week.
   weekStart  DateTime
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
   attendanceRecords AttendanceRecord[]
-  /// Các trận trong ngày này (1 hoặc 2), mỗi trận một đội hình.
+  /// The matches of this day (1 or 2), one formation each.
   formationMatches  FormationMatch[]
 
   @@index([weekStart])
 }
 
-/// Một lượt điểm danh của nhân vật cho một trận đánh.
+/// One character's attendance for one battle session.
 model AttendanceRecord {
   id                  String           @id @default(cuid())
   characterId         String
   sessionId           String
   status              AttendanceStatus
-  /// Thời điểm điểm danh gần nhất (đổi Có ⇄ Không trong hạn thì cập nhật lại).
+  /// Last time attendance was recorded (flipping yes ⇄ no before the deadline updates it).
   markedAt            DateTime         @default(now())
-  /// Ai bấm lượt điểm danh này. Null với dữ liệu ghi trước khi có đăng nhập.
-  /// Không đặt quan hệ: xoá người bấm không được phép làm mất lượt điểm danh của người khác.
+  /// Who recorded this entry. Null for data written before login existed.
+  /// Deliberately not a relation: deleting the recorder must not destroy someone else's entry.
   markedByCharacterId String?
 
   character Character     @relation(fields: [characterId], references: [id], onDelete: Cascade)
@@ -115,12 +115,12 @@ model AttendanceRecord {
   @@index([sessionId])
 }
 
-/// Mã dùng một lần để web đổi lấy cặp JWT sau khi API xử lý xong OAuth callback.
-/// Sống 60 giây; hàng hết hạn được dọn ngay trong lần đổi mã kế tiếp.
+/// One-time code the web app trades for a JWT pair once the API finished the OAuth callback.
+/// Lives 60 seconds; expired rows are swept during the next exchange.
 model AuthExchange {
-  /// 32 byte ngẫu nhiên base64url — chính là giá trị gửi cho web qua URL.
+  /// 32 random base64url bytes — the exact value handed to the web app via the URL.
   id        String    @id
-  /// Lưu discordId chứ không phải khoá ngoại: admin cứu hộ có thể không ứng với Character nào.
+  /// Stores discordId rather than a foreign key: a rescue admin may match no Character.
   discordId String
   expiresAt DateTime
   usedAt    DateTime?
@@ -129,13 +129,13 @@ model AuthExchange {
   @@index([expiresAt])
 }
 
-/// Một trận trong ngày đánh (tối đa 2 — trần đặt ở Zod, không ở đây).
-/// Hàng này tồn tại kể cả khi chưa xếp ai: đó là cách phân biệt
-/// "ngày này có 2 trận" với "trận 2 đang để trống".
+/// One match within a battle day (at most 2 — the cap lives in Zod, not here).
+/// The row exists even when nobody is placed yet: that is how "this day has 2 matches"
+/// differs from "match 2 is empty".
 model FormationMatch {
   id         String @id @default(cuid())
   sessionId  String
-  /// 1 hoặc 2. Backend gán theo vị trí trong mảng gửi lên, không nhận từ client.
+  /// 1 or 2. Assigned by the backend from the array position, never taken from the client.
   matchIndex Int
 
   session BattleSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
@@ -144,15 +144,15 @@ model FormationMatch {
   @@unique([sessionId, matchIndex])
 }
 
-/// Một ô có người HOẶC có ghi chú. Ô vừa trống vừa không ghi gì thì KHÔNG có hàng.
-/// Luật đó thành code ở `src/modules/team-builder/formation-grid.ts` — cả hai chiều đọc/ghi.
+/// A slot with an occupant OR a note. A slot that is both empty and note-less has NO row.
+/// That rule is code in `src/modules/team-builder/formation-grid.ts` — both read and write.
 model FormationSlot {
   matchId     String
-  /// "team-1-pos-1" — bố cục lưới vẫn nằm hẳn ở frontend.
+  /// "team-1-pos-1" — the grid layout itself stays entirely in the frontend.
   slotId      String
-  /// Null khi ô chỉ có ghi chú mà chưa xếp ai ("chừa cho X").
+  /// Null when the slot only carries a note and nobody is placed yet ("reserved for X").
   characterId String?
-  /// Ghi chú của người xếp team cho ô này. Null khi không ghi gì.
+  /// The team builder's note for this slot. Null when there is none.
   note        String?
 
   match     FormationMatch @relation(fields: [matchId], references: [id], onDelete: Cascade)

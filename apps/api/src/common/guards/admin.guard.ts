@@ -9,19 +9,19 @@ import { canManageGuild } from '@guild/shared/lib';
 import type { AuthenticatedRequest } from './jwt-auth.guard';
 
 /**
- * Chặn mọi request không phải quản trị viên.
+ * Rejects every request that is not from an admin.
  *
- * Luôn đứng **sau** `JwtAuthGuard` (`@UseGuards(JwtAuthGuard, AdminGuard)`): guard này chỉ đọc
- * `request.user` do guard kia gắn, tự nó không verify token. Trước khi có nhiều vai, `JwtAuthGuard`
- * chính là kiểm tra quyền admin — từ khi token của bang chúng cũng hợp lệ thì không còn đúng nữa.
+ * Always sits **after** `JwtAuthGuard` (`@UseGuards(JwtAuthGuard, AdminGuard)`): it only reads the
+ * `request.user` that guard set, it does not verify a token itself. Before multiple roles existed,
+ * `JwtAuthGuard` was the admin check — that stopped being true once member tokens became valid too.
  */
 @Injectable()
 export class AdminGuard implements CanActivate {
   /**
-   * Kiểm vai của người gọi.
-   * @param context - Ngữ cảnh thực thi, dùng để lấy request của Express
-   * @returns true khi người gọi là quản trị viên
-   * @throws ForbiddenException khi không phải quản trị viên, hoặc request chưa qua JwtAuthGuard
+   * Check the caller's role.
+   * @param context - Execution context, used to get the Express request
+   * @returns true when the caller is an admin
+   * @throws ForbiddenException when not an admin, or when the request never went through JwtAuthGuard
    */
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();

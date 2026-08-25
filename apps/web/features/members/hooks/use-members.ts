@@ -6,8 +6,8 @@ import { fetchMembers } from "../api/members-api";
 import { memberKeys } from "../api/members-keys";
 
 /**
- * Query danh sách thành viên.
- * @returns Kết quả query TanStack (data là mảng thành viên)
+ * Query the member list.
+ * @returns The TanStack query result (data is the member list)
  */
 export function useMembers() {
   return useQuery({

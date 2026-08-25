@@ -8,9 +8,9 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 
 /**
- * Module đăng nhập: xác thực bằng Discord OAuth2 và phát JWT.
- * JwtModule đăng ký `global: true` để JwtAuthGuard (ở `common/`) inject được JwtService
- * mà module nào cần bảo vệ endpoint cũng không phải import lại.
+ * Login module: Discord OAuth2 authentication and JWT issuance.
+ * JwtModule registers with `global: true` so JwtAuthGuard (in `common/`) can inject JwtService and
+ * no module protecting an endpoint has to import it again.
  */
 @Module({
   imports: [
@@ -18,15 +18,15 @@ import { AuthService } from './auth.service';
       global: true,
       inject: [ConfigService],
       /**
-       * Lấy khóa ký JWT từ biến môi trường AUTH_SECRET.
-       * @param config - ConfigService đã validate theo envSchema
-       * @returns Options của JwtModule
+       * Take the JWT signing key from the AUTH_SECRET environment variable.
+       * @param config - ConfigService validated against envSchema
+       * @returns JwtModule options
        */
       useFactory: (config: AppConfigService) => ({
         secret: config.get('AUTH_SECRET', { infer: true }),
       }),
     }),
-    // AuthService tra Character theo Discord ID — danh tính nằm ở module characters.
+    // AuthService looks Characters up by Discord ID — identity lives in the characters module.
     CharactersModule,
   ],
   controllers: [AuthController],

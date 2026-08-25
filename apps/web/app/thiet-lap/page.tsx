@@ -12,11 +12,10 @@ export const metadata: Metadata = {
 };
 
 /**
- * Route "/thiet-lap" — trang thiết lập lịch đánh và quản lý thành viên,
- * chỉ quản trị viên truy cập được.
- * Proxy đã chặn từ trước; kiểm lại cả phiên lẫn vai ở đây để phòng trường hợp proxy
- * bị bỏ qua. Chỉ kiểm "có phiên" là không đủ: token của cán bộ và bang chúng cũng hợp lệ.
- * @returns Nội dung trang thiết lập
+ * Route "/thiet-lap" — schedule setup and member management, admins only.
+ * The proxy already blocks it; both the session and the role are re-checked here in case the proxy is
+ * bypassed. Checking only "has a session" is not enough: leader and member tokens are valid too.
+ * @returns The settings page content
  */
 export default async function SettingsPage() {
   const session = await getSession();

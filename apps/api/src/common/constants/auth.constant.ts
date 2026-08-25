@@ -1,19 +1,18 @@
 /**
- * Hằng số và kiểu của JWT dùng chung giữa guard (`common/`) và module auth (`modules/auth`).
- * Đặt ở `common/` vì guard không được phép import từ `modules/`.
+ * JWT constants and types shared by the guards (`common/`) and the auth module (`modules/auth`).
+ * They live in `common/` because guards may not import from `modules/`.
  */
 import type { GuildRole } from '@guild/shared/enums';
 
 /**
- * Vai trò trong bang.
- * Định nghĩa thật nằm ở `@guild/shared/enums` vì giá trị này đi qua mạng
- * (`/auth/me`, payload JWT); re-export ở đây để guard không phải biết đường dẫn package.
+ * Guild role. The real definition is in `@guild/shared/enums` because the value crosses the network
+ * (`/auth/me`, JWT payload); re-exported here so guards need not know the package path.
  */
 export { GuildRole } from '@guild/shared/enums';
 
 /**
- * Loại token, ghi trong payload để một loại không dùng thay loại khác được.
- * `oauthState` là token ngắn hạn đi kèm tham số `state` của OAuth — nó không phải phiên đăng nhập.
+ * Token type, written into the payload so one type cannot stand in for another.
+ * `oauthState` is a short-lived token carried in the OAuth `state` parameter — not a session.
  */
 export const TOKEN_TYPE = {
   access: 'access',
@@ -21,15 +20,14 @@ export const TOKEN_TYPE = {
   oauthState: 'oauth_state',
 } as const;
 
-/** Loại token hợp lệ. */
 export type TokenType = (typeof TOKEN_TYPE)[keyof typeof TOKEN_TYPE];
 
-/** Nội dung được ký trong access/refresh token. */
+/** What is signed into an access/refresh token. */
 export interface JwtPayload {
-  /** Discord ID của người đăng nhập — khoá tra ngược ra Character */
+  /** Discord ID of the signed-in user — the key back to a Character */
   sub: string;
-  /** Vai trong bang tại thời điểm phát token */
+  /** Guild role at the time the token was issued */
   role: GuildRole;
-  /** Token này là access hay refresh */
+  /** Whether this is an access or a refresh token */
   type: TokenType;
 }

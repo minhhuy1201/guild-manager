@@ -4,9 +4,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { recordKey } from "../../lib/record-key";
 
 /**
- * `attendance-api.ts` là file "use server" và đọc cookie phiên qua `@/features/auth`,
- * vốn kéo theo `server-only` — không nạp được trong môi trường test. Mock lại đúng
- * hàm nó cần, và cũng nhờ đó khẳng định được mọi request đều mang Bearer token.
+ * `attendance-api.ts` is a "use server" file and reads the session cookie through `@/features/auth`,
+ * which pulls in `server-only` — not loadable under test. Mock exactly the function it needs, which
+ * also lets us assert that every request carries a Bearer token.
  */
 vi.mock("@/features/auth/server", () => ({
   getAccessToken: () => Promise.resolve(ACCESS_TOKEN),
@@ -17,9 +17,9 @@ const { fetchAttendanceRecords, markAttendance } = await import(
 );
 
 /**
- * Tạo fetch giả trả về một response cụ thể.
- * @param options - status và body JSON mà server "trả về"
- * @returns Hàm mock thay cho global fetch
+ * Build a fake fetch returning a specific response.
+ * @param options - status and JSON body the server "returns"
+ * @returns The mock replacing global fetch
  */
 function mockFetch(options: { status: number; body: unknown }) {
   const fetchMock = vi.fn().mockResolvedValue({
@@ -32,7 +32,7 @@ function mockFetch(options: { status: number; body: unknown }) {
   return fetchMock;
 }
 
-/** Access token giả mà mock của `@/features/auth` trả về. */
+/** The fake access token the `@/features/auth` mock returns. */
 const ACCESS_TOKEN = "access-token-gia";
 
 const RECORD = {

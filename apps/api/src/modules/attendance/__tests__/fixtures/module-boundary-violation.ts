@@ -1,11 +1,11 @@
 /**
- * Fixture cho `module-boundary.spec.ts` — **cố tình vi phạm** ranh giới module.
+ * Fixture for `module-boundary.spec.ts` — a **deliberate** module boundary violation.
  *
- * File này không bao giờ được chạy: nó tồn tại để bài test khẳng định `eslint` vẫn báo lỗi khi có
- * ai đó đụng vào file nội bộ của module khác. Nó nằm sâu hơn mọi file thật một cấp
- * (`__tests__/fixtures/`) — đúng chỗ mà luật cũ, vốn khoá theo độ sâu thư mục, đã im lặng bỏ qua.
+ * This file is never run: it exists so the test can assert `eslint` still reports an error when
+ * someone reaches into another module's internals. It sits one level deeper than any real file
+ * (`__tests__/fixtures/`) — exactly where the old depth-based rule silently let it through.
  *
- * `eslint.config.mjs` loại nó khỏi lượt lint thường; bài test lint nó riêng với `--no-ignore`.
+ * `eslint.config.mjs` excludes it from normal linting; the test lints it separately with `--no-ignore`.
  */
 import { BattleSessionsService } from '../../../battle-sessions/battle-sessions.service';
 

@@ -11,9 +11,9 @@ const SLOTS: Slot[] = [
 ];
 
 /**
- * Dựng một trận cho test.
- * @param overrides - Các field cần đổi so với mặc định
- * @returns Trận đầy đủ field
+ * Build a session for a test.
+ * @param overrides - Fields to change from the defaults
+ * @returns A fully populated session
  */
 function session(overrides: Partial<SessionFormation>): SessionFormation {
   return {
@@ -212,9 +212,9 @@ describe("buildPrefill", () => {
 });
 
 /**
- * Dựng một đề xuất đủ field, chỉ quan tâm phần đội hình.
- * @param assignment - Đội hình được đề xuất
- * @returns Đề xuất đầy đủ field
+ * Build a fully populated proposal where only the formation matters.
+ * @param assignment - The proposed formation
+ * @returns A fully populated proposal
  */
 function proposal(assignment: PrefillResult["assignment"]): PrefillResult {
   return { assignment, notes: {}, sourceLabel: "Thứ 3 · 20:30", droppedCount: 0 };

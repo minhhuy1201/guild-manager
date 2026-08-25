@@ -6,7 +6,7 @@ import {
 
 import { verifyResponse } from '../../config';
 
-/** Những cột của bảng AttendanceRecord mà codec cần để dựng response. */
+/** The AttendanceRecord columns the codec needs to build a response. */
 export type AttendanceRecordRow = {
   characterId: string;
   sessionId: string;
@@ -15,17 +15,17 @@ export type AttendanceRecordRow = {
 };
 
 /**
- * Đổi một hàng AttendanceRecord thành object trả cho client.
- * @param row - Hàng đọc từ Prisma
- * @returns Lượt điểm danh đúng shape contract, thời điểm ở dạng ISO string
+ * Turn an AttendanceRecord row into the object returned to the client.
+ * @param row - Row read from Prisma
+ * @returns The contract-shaped entry, timestamps as ISO strings
  */
 export function toAttendanceRecord(row: AttendanceRecordRow): AttendanceRecord {
   return verifyResponse(attendanceRecordSchema, {
     characterId: row.characterId,
     sessionId: row.sessionId,
-    // Prisma sinh ra union string literal, enum dùng chung là TS enum — cùng giá trị,
-    // ràng buộc bởi enum trong database nên cast ở đây là an toàn. `verifyResponse` là thứ
-    // khẳng định câu đó ngoài production: cast không được biên dịch viên kiểm.
+    // Prisma emits a string literal union, the shared enum is a TS enum — same values, constrained
+    // by the database enum, so the cast is safe. `verifyResponse` is what asserts that outside
+    // production: a cast is not checked by the compiler.
     status: row.status as AttendanceStatus,
     markedAt: row.markedAt.toISOString(),
   } satisfies AttendanceRecord);

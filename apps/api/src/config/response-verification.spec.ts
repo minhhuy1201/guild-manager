@@ -7,24 +7,24 @@ import {
 
 const schema = z.object({ status: z.enum(['PRESENT', 'ABSENT']) });
 
-/** Chính module này, nạp lại — cần một alias ngắn để câu `require` không bị bẻ dòng. */
+/** This module, reloaded — a short alias keeps the `require` call on one line. */
 type ResponseVerification = typeof import('./response-verification');
 
 /**
- * Nạp lại module với một `NODE_ENV` khác — cờ được chốt lúc import nên đây là cách duy nhất
- * quan sát được nhánh production.
+ * Reload the module under a different `NODE_ENV` — the flag is fixed at import time, so this is
+ * the only way to observe the production branch.
  *
- * @param nodeEnv - Giá trị `NODE_ENV` giả lập cho lần nạp này
- * @returns Module đã nạp lại
+ * @param nodeEnv - `NODE_ENV` value to simulate for this load
+ * @returns The reloaded module
  */
 function loadWithNodeEnv(nodeEnv: string): ResponseVerification {
   const original = process.env.NODE_ENV;
   process.env.NODE_ENV = nodeEnv;
 
   try {
-    // `import` ở đầu file được hoist nên nó nạp module *trước* khi `NODE_ENV` bị đổi — đúng thứ
-    // bài test này cần tránh. Nạp lại trong `isolateModules` là cách duy nhất thấy được nhánh kia;
-    // `import()` động không chạy được vì Jest ở đây là CommonJS.
+    // The top-of-file `import` is hoisted, so it loads the module *before* `NODE_ENV` changes —
+    // exactly what this test must avoid. Reloading inside `isolateModules` is the only way to see
+    // the other branch; a dynamic `import()` will not work because Jest runs CommonJS here.
     let loaded!: ResponseVerification;
     jest.isolateModules(() => {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -50,7 +50,7 @@ describe('verifyResponse', () => {
 
   it('ném khi object không khớp contract — đây là lý do nó tồn tại', () => {
     expect(() =>
-      // `as` mô phỏng đúng chỗ thủng: một giá trị enum lạ lọt qua biên dịch ở codec.
+      // The `as` reproduces the actual hole: an unknown enum value passing compilation in a codec.
       verifyResponse(schema, { status: 'MAYBE' as 'PRESENT' }),
     ).toThrow(z.ZodError);
   });
@@ -60,7 +60,7 @@ describe('verifyResponse', () => {
 
     expect(production.SHOULD_VERIFY_RESPONSES).toBe(false);
     expect(
-      // Cùng giá trị lạ như trên, lần này phải chảy qua không một tiếng động.
+      // Same unknown value as above, this time it must flow through silently.
       production.verifyResponse(schema, { status: 'MAYBE' as 'PRESENT' }),
     ).toEqual({ status: 'MAYBE' });
   });

@@ -3,10 +3,10 @@ import type { AuthTokens } from "@guild/shared/schemas";
 import { apiFetch } from "@/lib/api-client";
 
 /**
- * Đổi mã dùng-một-lần (API gắn vào URL sau khi xử lý xong OAuth callback) lấy cặp token.
- * @param code - Giá trị `?exchange=` trên URL callback
- * @returns Cặp token và thông tin phiên
- * @throws ApiError khi mã sai, đã dùng hoặc đã quá hạn
+ * Trade the one-time code (the API put it on the URL after handling the OAuth callback) for a token pair.
+ * @param code - The `?exchange=` value on the callback URL
+ * @returns The token pair and session info
+ * @throws ApiError when the code is wrong, used, or expired
  */
 export function exchangeRequest(code: string): Promise<AuthTokens> {
   return apiFetch<AuthTokens>("/auth/discord/exchange", {
@@ -16,10 +16,10 @@ export function exchangeRequest(code: string): Promise<AuthTokens> {
 }
 
 /**
- * Đổi refresh token còn hạn thành cặp token mới.
- * @param refreshToken - Refresh token hiện tại
- * @returns Cặp token mới và thông tin phiên
- * @throws ApiError khi refresh token hỏng hoặc đã hết hạn
+ * Trade a valid refresh token for a new token pair.
+ * @param refreshToken - The current refresh token
+ * @returns The new token pair and session info
+ * @throws ApiError when the refresh token is invalid or expired
  */
 export function refreshRequest(refreshToken: string): Promise<AuthTokens> {
   return apiFetch<AuthTokens>("/auth/refresh", {

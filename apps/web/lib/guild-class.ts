@@ -1,8 +1,8 @@
 import { GuildClass } from "@guild/shared/enums";
 
 /**
- * Đường dẫn ảnh icon (trong `public/img`) cho từng lưu phái.
- * Ảnh là asset của web nên map ở FE, không đưa vào package shared.
+ * Icon image path (under `public/img`) per guild class.
+ * The images are web assets, so the map lives on the frontend rather than in the shared package.
  */
 export const GUILD_CLASS_IMAGE: Record<GuildClass, string> = {
   [GuildClass.CUU_LINH]: "/img/cuuLinh.png",

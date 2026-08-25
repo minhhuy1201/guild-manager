@@ -12,7 +12,7 @@ import {
 
 afterEach(cleanup);
 
-// React chỉ gộp và xả state update trong act() khi biết mình đang bị test.
+// React only batches and flushes state updates inside act() when it knows it is under test.
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
   true;
 

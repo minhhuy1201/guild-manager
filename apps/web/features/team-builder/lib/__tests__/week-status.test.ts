@@ -6,7 +6,7 @@ const PREVIOUS = "2026-07-26T17:00:00.000Z";
 const ACTIVE = "2026-08-02T17:00:00.000Z";
 const NEXT = "2026-08-09T17:00:00.000Z";
 
-/** Mốc Thứ 7 23:59 tương ứng — `findActiveWeekStart` không đọc, chỉ để đủ shape. */
+/** The matching Saturday 23:59 — `findActiveWeekStart` never reads it, it is only there for the shape. */
 const PREVIOUS_END = "2026-08-01T16:59:00.000Z";
 const ACTIVE_END = "2026-08-08T16:59:00.000Z";
 const NEXT_END = "2026-08-15T16:59:00.000Z";

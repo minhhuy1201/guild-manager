@@ -18,7 +18,7 @@ describe("matchesRosterFilter", () => {
   });
 
   it("không tìm theo ID trong game: từ khoá chỉ khớp id thì loại", () => {
-    // "meomap" là id của MEO trước đây; nay chỉ tên mới được so khớp.
+    // "meomap" used to be MEO's id; only the name is matched now.
     expect(matchesRosterFilter(MEO, { search: "meomap", guildClasses: [] })).toBe(false);
   });
 

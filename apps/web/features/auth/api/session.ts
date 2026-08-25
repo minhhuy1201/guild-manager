@@ -14,24 +14,24 @@ import {
 } from "../core";
 
 /**
- * Người đang đăng nhập, đọc từ access token.
- * Chỉ có danh tính và vai — nhân vật gắn với tài khoản phải hỏi `/auth/me` (xem `api/me.ts`).
+ * The signed-in user, read from the access token.
+ * Identity and role only — the bound character must be fetched from `/auth/me` (see `api/me.ts`).
  */
 export interface SessionUser {
   /** Discord ID */
   discordId: string;
-  /** Vai trong bang */
+  /** Guild role */
   role: GuildRole;
 }
 
 /**
- * Lấy AUTH_SECRET từ biến môi trường, ném lỗi sớm nếu chưa cấu hình.
- * Giá trị phải trùng AUTH_SECRET của apps/api vì backend là bên ký token.
+ * Read AUTH_SECRET from the environment, throwing early when unconfigured.
+ * It must match apps/api's AUTH_SECRET, since the backend signs the tokens.
  *
- * Ném là đúng ở đây: Server Component lỗi thì chỉ trang đó hỏng. `readAuthSecret()` trong
- * `proxy.ts` cố ý làm ngược lại (chỉ log) vì proxy chạy trước mọi trang — đừng "sửa" cho
- * hai hàm giống nhau.
- * @returns Chuỗi bí mật dùng verify JWT
+ * Throwing is right here: a failing Server Component only breaks that page. `readAuthSecret()` in
+ * `proxy.ts` deliberately does the opposite (it only logs) because the proxy runs before every page —
+ * do not "fix" the two to match.
+ * @returns The secret used to verify JWTs
  */
 export function getAuthSecret(): string {
   const secret = process.env.AUTH_SECRET;
@@ -42,9 +42,9 @@ export function getAuthSecret(): string {
 }
 
 /**
- * Ghi cặp token vào cookie httpOnly.
- * @param tokens - Access token và refresh token do API phát
- * @returns Promise hoàn tất khi cookie được ghi
+ * Write the token pair into httpOnly cookies.
+ * @param tokens - Access and refresh token issued by the API
+ * @returns A promise resolving once the cookies are written
  */
 export async function createSession(tokens: AuthTokens): Promise<void> {
   const cookieStore = await cookies();
@@ -60,10 +60,10 @@ export async function createSession(tokens: AuthTokens): Promise<void> {
 }
 
 /**
- * Đọc phiên đăng nhập hiện tại từ access token trong cookie.
- * Không tự gia hạn ở đây vì Server Component không ghi được cookie —
- * việc refresh do `proxy.ts` đảm nhiệm.
- * @returns Discord ID và vai nếu access token còn hợp lệ, ngược lại null
+ * Read the current session from the access token cookie.
+ * It does not refresh here because a Server Component cannot write cookies — refreshing is
+ * `proxy.ts`'s job.
+ * @returns Discord ID and role while the access token is valid, otherwise null
  */
 export async function getSession(): Promise<SessionUser | null> {
   const cookieStore = await cookies();
@@ -78,10 +78,10 @@ export async function getSession(): Promise<SessionUser | null> {
 }
 
 /**
- * Đọc access token thô từ cookie để gọi API backend thay mặt người đang đăng nhập.
- * Chỉ dùng ở server (Server Action / Server Component) — cookie là httpOnly nên client
- * không tự gắn được header `Authorization`.
- * @returns Access token nếu còn trong cookie, ngược lại null
+ * Read the raw access token from the cookie to call the backend API on the signed-in user's behalf.
+ * Server-only (Server Action / Server Component) — the cookie is httpOnly, so the client cannot attach
+ * the `Authorization` header itself.
+ * @returns The access token when present, otherwise null
  */
 export async function getAccessToken(): Promise<string | null> {
   const cookieStore = await cookies();
@@ -90,8 +90,8 @@ export async function getAccessToken(): Promise<string | null> {
 }
 
 /**
- * Xóa cả hai cookie token (đăng xuất).
- * @returns Promise hoàn tất khi cookie bị xóa
+ * Clear both token cookies (sign out).
+ * @returns A promise resolving once the cookies are cleared
  */
 export async function clearSession(): Promise<void> {
   const cookieStore = await cookies();

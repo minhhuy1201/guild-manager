@@ -19,16 +19,16 @@ import {
 import { getSessionSubtitle } from "../lib/session-subtitle";
 import { recordKey } from "../lib/record-key";
 
-/** Hai lựa chọn của một lượt điểm danh, theo thứ tự hiển thị. */
+/** The two options of an attendance entry, in display order. */
 const CHOICES = [AttendanceStatus.PRESENT, AttendanceStatus.ABSENT];
 
-/** Số dòng giả lúc chờ dữ liệu — bằng số trận thường có trong một tuần. */
+/** Placeholder rows while loading — as many as a week usually has sessions. */
 const SKELETON_ROWS = 3;
 
 /**
- * Màn điểm danh của bang chúng: chỉ nhân vật của chính mình, mỗi trận một dòng,
- * kèm số người đã đăng ký để biết trận nào đang thiếu người.
- * @returns Card điểm danh cá nhân
+ * The member's attendance screen: their own character only, one row per session, with the sign-up
+ * counts so they can see which session is short-handed.
+ * @returns The personal attendance card
  */
 export function MemberAttendanceCard() {
   const { data: session } = useSession();
@@ -112,7 +112,7 @@ export function MemberAttendanceCard() {
                               sessionId: battleSession.id,
                               status,
                             }).catch(() => {
-                              // Lỗi hiển thị qua `markError`; nuốt để promise không văng ra ngoài.
+                              // The error surfaces through `markError`; swallow it to avoid a stray promise.
                             })
                           }
                         >

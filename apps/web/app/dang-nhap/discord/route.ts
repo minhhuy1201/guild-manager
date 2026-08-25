@@ -4,15 +4,16 @@ import { ROUTES } from "@/config/routes";
 import { createSession } from "@/features/auth/server";
 import { exchangeRequest } from "@/features/auth/core";
 
-/** Mã lỗi gắn vào `/dang-nhap` khi không đổi được mã lấy token. */
+/** Error code appended to `/dang-nhap` when the code cannot be traded for tokens. */
 const EXPIRED_ERROR = "phien-het-han";
 
 /**
- * Route "/dang-nhap/discord" — nhận mã đổi API gắn vào URL, lấy cặp token và ghi cookie phiên.
+ * Route "/dang-nhap/discord" — takes the exchange code the API put on the URL, gets the token pair
+ * and writes the session cookies.
  *
- * Là Route Handler chứ không phải trang: Server Component không ghi được cookie.
- * @param request - Request kèm `?exchange=` và `?redirect=`
- * @returns Redirect về trang người dùng định vào, hoặc về trang đăng nhập kèm mã lỗi
+ * A Route Handler rather than a page: a Server Component cannot write cookies.
+ * @param request - Request carrying `?exchange=` and `?redirect=`
+ * @returns A redirect to the page the user wanted, or to the login page with an error code
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const code = request.nextUrl.searchParams.get("exchange");
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   await createSession(tokens);
 
-  // Chỉ nhận đường dẫn tương đối — cùng lý do `safeRedirect` ở API.
+  // Relative paths only — the same reason as `safeRedirect` on the API.
   const target =
     redirect.startsWith("/") && !redirect.startsWith("//")
       ? redirect

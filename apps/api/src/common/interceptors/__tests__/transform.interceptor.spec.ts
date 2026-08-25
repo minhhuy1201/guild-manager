@@ -6,9 +6,9 @@ import { firstValueFrom, of } from 'rxjs';
 import { TransformInterceptor } from '../transform.interceptor';
 
 /**
- * Dựng ExecutionContext giả chỉ mang handler của route.
- * @param handler - Hàm đại diện method của controller, nơi Reflector đọc metadata
- * @returns Context đủ dùng cho TransformInterceptor
+ * Build a fake ExecutionContext carrying only the route handler.
+ * @param handler - Stand-in for the controller method where Reflector reads metadata
+ * @returns A context sufficient for TransformInterceptor
  */
 function contextFor(handler: () => void): ExecutionContext {
   return {
@@ -17,10 +17,10 @@ function contextFor(handler: () => void): ExecutionContext {
 }
 
 /**
- * Gọi interceptor với một giá trị controller trả về.
- * @param handler - Handler của route đang gọi
- * @param value - Giá trị controller trả về
- * @returns Giá trị sau khi interceptor xử lý
+ * Run the interceptor over a value returned by a controller.
+ * @param handler - Handler of the route being called
+ * @param value - Value the controller returned
+ * @returns The value after the interceptor ran
  */
 async function intercept(
   handler: () => void,
@@ -52,8 +52,8 @@ describe('TransformInterceptor', () => {
       redirectRoute,
     );
 
-    // Nest đọc `url` ngay trên giá trị trả về; bọc nó vào `data` làm Location rỗng
-    // và cả luồng đăng nhập Discord chết trong im lặng.
+    // Nest reads `url` straight off the returned value; wrapping it in `data` empties Location
+    // and the whole Discord login flow dies silently.
     await expect(
       intercept(redirectRoute, { url: 'https://discord.com/oauth2/authorize' }),
     ).resolves.toEqual({ url: 'https://discord.com/oauth2/authorize' });

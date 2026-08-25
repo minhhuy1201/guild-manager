@@ -27,12 +27,12 @@ import {
 import { CharacterName } from "./character-name";
 
 /**
- * Cột "Thời gian điểm danh" bị ẩn dưới `md`: trên điện thoại ba cột còn lại vừa
- * màn hình, còn mốc giờ điểm danh là thông tin phụ.
+ * The "Thời gian điểm danh" column is hidden below `md`: on a phone the other three columns fit, and
+ * the exact marking time is secondary.
  */
 const MARKED_AT_COLUMN = "hidden md:table-cell";
 
-/** Lớp CSS theo từng cột của skeleton, để nó ẩn đúng cột như phần header. */
+/** Per-column CSS classes for the skeleton, so it hides the same column as the header. */
 const SKELETON_COLUMN_CLASSES = [
   undefined,
   undefined,
@@ -41,9 +41,9 @@ const SKELETON_COLUMN_CLASSES = [
 ] as const;
 
 /**
- * Bảng lịch sử điểm danh: ai đã điểm danh, buổi nào, Có/Không, thời gian.
- * Lọc theo bộ lọc dùng chung (tìm kiếm + lưu phái), sắp xếp mới nhất trước.
- * @returns Card chứa bảng lịch sử
+ * The attendance history table: who marked what, for which session, yes/no, and when.
+ * Filtered by the shared filters (search + class), newest first.
+ * @returns The history table card
  */
 export function AttendanceLogTable() {
   const { data: records } = useAttendanceRecords();

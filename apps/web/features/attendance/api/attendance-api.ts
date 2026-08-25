@@ -14,12 +14,12 @@ import { ApiError, apiFetch } from "@/lib/api-client";
 import { recordKey } from "../lib/record-key";
 
 /**
- * Lấy access token của người đang đăng nhập.
- * Chạy ở server vì token nằm trong cookie httpOnly, client không đọc được.
- * (Trùng với helper cùng tên ở features/members, settings và team-builder —
- * file "use server" chỉ được export hàm async nên không dùng chung được.)
- * @returns Header Authorization đã dựng sẵn
- * @throws ApiError khi phiên đăng nhập đã hết hạn
+ * Get the signed-in user's access token.
+ * Runs on the server because the token lives in an httpOnly cookie the client cannot read.
+ * (Duplicated in features/members, settings and team-builder — a "use server" file may only export
+ * async functions, so it cannot be shared.)
+ * @returns The prepared Authorization header
+ * @throws ApiError when the session has expired
  */
 async function authHeader(): Promise<Record<string, string>> {
   const accessToken = await getAccessToken();
@@ -34,8 +34,8 @@ async function authHeader(): Promise<Record<string, string>> {
 }
 
 /**
- * Lấy danh sách nhân vật cho màn điểm danh — backend đã lọc theo vai của người gọi.
- * @returns Promise trả về mảng nhân vật
+ * Get the characters for the attendance screen — the backend already filtered by the caller's role.
+ * @returns The character list
  */
 export async function fetchCharacters(): Promise<Character[]> {
   return apiFetch<Character[]>("/attendance/characters", {
@@ -44,8 +44,8 @@ export async function fetchCharacters(): Promise<Character[]> {
 }
 
 /**
- * Lấy danh sách buổi đánh của tuần đang mở.
- * @returns Promise trả về mảng buổi đánh
+ * Get the battle sessions of the open week.
+ * @returns The session list
  */
 export async function fetchBattleSessions(): Promise<BattleSession[]> {
   return apiFetch<BattleSession[]>("/battle-sessions", {
@@ -54,8 +54,8 @@ export async function fetchBattleSessions(): Promise<BattleSession[]> {
 }
 
 /**
- * Lấy các tuần được phép thiết lập: tuần đang mở và tuần kế tiếp.
- * @returns Promise trả về mảng tuần, tuần đang mở đứng trước
+ * Get the schedulable weeks: the open week and the next one.
+ * @returns The weeks, the open one first
  */
 export async function fetchEditableWeeks(): Promise<Week[]> {
   return apiFetch<Week[]>("/battle-sessions/weeks", {
@@ -64,9 +64,9 @@ export async function fetchEditableWeeks(): Promise<Week[]> {
 }
 
 /**
- * Lấy tuần điểm danh đang mở.
- * @returns Promise trả về tuần đang mở
- * @throws Error khi backend không trả về tuần nào đang mở
+ * Get the open attendance week.
+ * @returns The open week
+ * @throws Error when the backend returns no open week
  */
 export async function fetchCurrentWeek(): Promise<Week> {
   const weeks = await fetchEditableWeeks();
@@ -78,9 +78,9 @@ export async function fetchCurrentWeek(): Promise<Week> {
 }
 
 /**
- * Lấy record điểm danh của tuần đang mở — backend đã lọc theo vai của người gọi.
- * API trả về mảng, component tra cứu theo cặp (nhân vật, buổi đánh) nên đổi sang map.
- * @returns Promise trả về map record theo khóa `recordKey`
+ * Get the open week's attendance records — the backend already filtered by the caller's role.
+ * The API returns an array; components look records up by (character, session), so it is turned into a map.
+ * @returns A map of records keyed by `recordKey`
  */
 export async function fetchAttendanceRecords(): Promise<
   Record<string, AttendanceRecord>
@@ -98,8 +98,8 @@ export async function fetchAttendanceRecords(): Promise<
 }
 
 /**
- * Lấy số lượt Có/Không của từng trận trong tuần đang mở.
- * @returns Mảng số đếm theo trận
+ * Get the yes/no tallies per session in the open week.
+ * @returns The tallies per session
  */
 export async function fetchAttendanceSummary(): Promise<AttendanceSummary[]> {
   return apiFetch<AttendanceSummary[]>("/attendance/summary", {
@@ -108,11 +108,11 @@ export async function fetchAttendanceSummary(): Promise<AttendanceSummary[]> {
 }
 
 /**
- * Điểm danh cho một nhân vật ở một buổi đánh.
- * Deadline và quyền điểm danh hộ do server kiểm tra; lỗi nổi lên dưới dạng `ApiError`
- * với message tiếng Việt để hiển thị.
- * @param input - Thông tin điểm danh
- * @returns Promise trả về record vừa ghi
+ * Record attendance for a character in a session.
+ * The deadline and the right to mark on someone's behalf are checked by the server; failures surface
+ * as an `ApiError` carrying a Vietnamese message to display.
+ * @param input - The attendance entry
+ * @returns The written record
  */
 export async function markAttendance(
   input: MarkAttendanceInput

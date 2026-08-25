@@ -6,9 +6,9 @@ import { settingsKeys } from "@/features/settings/api/battle-sessions-keys";
 import { teamBuilderKeys } from "@/features/team-builder/api/team-builder-keys";
 
 /**
- * Mọi chủ đề dữ liệu mà một thao tác ghi có thể làm cũ đi.
- * Là nguồn duy nhất của tên chủ đề: `CacheTopic` sinh ra từ đây, nên thêm một
- * chủ đề mà quên khai phụ thuộc là lỗi biên dịch.
+ * Every data topic a write can make stale.
+ * The single source of topic names: `CacheTopic` derives from it, so adding a topic without declaring
+ * its dependents is a compile error.
  */
 export const CACHE_TOPICS = [
   "roster",
@@ -18,24 +18,23 @@ export const CACHE_TOPICS = [
   "formation",
 ] as const;
 
-/** Loại dữ liệu có thể bị một thao tác ghi làm cũ đi. */
+/** A kind of data a write can make stale. */
 export type CacheTopic = (typeof CACHE_TOPICS)[number];
 
 /**
- * Query key nào phải invalidate khi một chủ đề bị ghi. Đọc như một câu domain:
- * "đổi lịch đánh thì lịch, điểm danh và đội hình đều cũ".
+ * Which query keys must be invalidated when a topic is written. Reads like a domain sentence:
+ * "change the schedule and the schedule, the attendance and the formations all go stale".
  *
- * Đây là chỗ duy nhất trong app được import key factory của feature khác: quan
- * hệ "dữ liệu nào làm cũ dữ liệu nào" là kiến thức xuyên feature, không feature
- * nào sở hữu nó.
+ * This is the only place in the app allowed to import another feature's key factory: "which data makes
+ * which data stale" is cross-feature knowledge that no single feature owns.
  *
- * Giá trị là thunk chứ không phải mảng dựng sẵn, để key factory chỉ chạy lúc
- * invalidate — thứ tự nạp module không ảnh hưởng gì.
+ * The values are thunks rather than prebuilt arrays, so a key factory only runs at invalidation time —
+ * module load order does not matter.
  */
 export const CACHE_DEPENDENTS: Record<CacheTopic, () => QueryKey[]> = {
   /**
-   * Bảng điểm danh và trang Xếp team đều liệt kê nhân vật, thiếu chỗ nào là
-   * các màn lệch nhau cho tới lần tải lại trang.
+   * The attendance table and the team builder both list characters; missing one leaves the screens
+   * inconsistent until a page reload.
    */
   roster: () => [
     memberKeys.all,
@@ -44,8 +43,8 @@ export const CACHE_DEPENDENTS: Record<CacheTopic, () => QueryKey[]> = {
     teamBuilderKeys.all,
   ],
   /**
-   * Bảng điểm danh đổi số cột và trang Xếp team đổi số tab, nên thiếu chỗ nào
-   * là hai màn lệch nhau cho tới lần tải lại trang.
+   * The attendance table changes column count and the team builder changes tab count, so missing one
+   * leaves the two screens inconsistent until a page reload.
    */
   schedule: () => [
     settingsKeys.all,
@@ -53,17 +52,17 @@ export const CACHE_DEPENDENTS: Record<CacheTopic, () => QueryKey[]> = {
     attendanceKeys.records(),
     teamBuilderKeys.all,
   ],
-  /** Điểm danh một ô chỉ đổi record; cột và danh sách nhân vật không đổi. */
+  /** Marking one cell only changes records; the columns and the character list are untouched. */
   attendance: () => [attendanceKeys.records()],
   /**
-   * Deadline trôi qua thì cột phải khoá lại: `isDeadlinePassed` do server tính
-   * và đi kèm session, nên phải nạp lại cả trận lẫn record. Lịch đánh không
-   * đổi, nên đây không phải `schedule`.
+   * A deadline passing must lock the column: `isDeadlinePassed` is computed by the server and travels
+   * with the session, so both the sessions and the records must be refetched. The schedule itself is
+   * unchanged, which is why this is not `schedule`.
    */
   "attendance-window": () => [
     attendanceKeys.sessions(),
     attendanceKeys.records(),
   ],
-  /** Lưu đội hình chỉ đụng dữ liệu của chính trang Xếp team. */
+  /** Saving a formation only touches the team builder's own data. */
   formation: () => [teamBuilderKeys.all],
 };

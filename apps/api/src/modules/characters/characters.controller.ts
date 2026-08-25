@@ -17,8 +17,7 @@ import { CharactersService } from './characters.service';
 import { CreateCharacterDto, UpdateCharacterDto } from './dto/character.dto';
 
 /**
- * Quản lý thành viên — chỉ quản trị viên được đụng tới, nên guard đặt ở cấp
- * controller chứ không đặt lẻ từng route.
+ * Member management — admins only, so the guard sits at controller level rather than on each route.
  */
 @ApiTags('characters')
 @Controller('characters')
@@ -27,8 +26,8 @@ export class CharactersController {
   constructor(private readonly characters: CharactersService) {}
 
   /**
-   * Danh sách thành viên.
-   * @returns Mảng thành viên sắp theo tên
+   * List members.
+   * @returns Members ordered by name
    */
   @Get()
   @ApiOperation({ summary: 'Danh sách thành viên' })
@@ -37,9 +36,9 @@ export class CharactersController {
   }
 
   /**
-   * Thêm một thành viên.
-   * @param body - Tên và lưu phái
-   * @returns Thành viên vừa tạo
+   * Add a member.
+   * @param body - Name and class
+   * @returns The created member
    */
   @Post()
   @ApiOperation({ summary: 'Thêm một thành viên' })
@@ -48,10 +47,10 @@ export class CharactersController {
   }
 
   /**
-   * Sửa tên hoặc lưu phái của một thành viên.
-   * @param id - Id thành viên
-   * @param body - Các field cần đổi
-   * @returns Thành viên sau khi sửa
+   * Edit a member's name or class.
+   * @param id - Member id
+   * @param body - Fields to change
+   * @returns The updated member
    */
   @Patch(':id')
   @ApiOperation({ summary: 'Sửa một thành viên' })
@@ -63,9 +62,9 @@ export class CharactersController {
   }
 
   /**
-   * Xoá một thành viên cùng toàn bộ lịch sử điểm danh và đội hình của họ.
-   * @param id - Id thành viên
-   * @returns Promise hoàn tất khi đã xoá
+   * Delete a member along with all their attendance history and formation slots.
+   * @param id - Member id
+   * @returns A promise resolving once they are deleted
    */
   @Delete(':id')
   @HttpCode(204)

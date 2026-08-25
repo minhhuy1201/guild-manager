@@ -2,7 +2,7 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-/** Bảng có bọc scroll ngang khi tràn. */
+/** A table wrapped so it scrolls horizontally on overflow. */
 function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
     <div className="relative w-full overflow-x-auto">
@@ -15,7 +15,6 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
   );
 }
 
-/** Phần đầu bảng. */
 function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
   return (
     <thead
@@ -26,7 +25,6 @@ function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
   );
 }
 
-/** Phần thân bảng. */
 function TableBody({ className, ...props }: React.ComponentProps<"tbody">) {
   return (
     <tbody
@@ -37,7 +35,6 @@ function TableBody({ className, ...props }: React.ComponentProps<"tbody">) {
   );
 }
 
-/** Một hàng trong bảng. */
 function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
   return (
     <tr
@@ -51,7 +48,6 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
   );
 }
 
-/** Ô tiêu đề cột. */
 function TableHead({ className, ...props }: React.ComponentProps<"th">) {
   return (
     <th
@@ -65,7 +61,6 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
   );
 }
 
-/** Ô dữ liệu. */
 function TableCell({ className, ...props }: React.ComponentProps<"td">) {
   return (
     <td

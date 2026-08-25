@@ -1,34 +1,34 @@
 import type { MatchFormation } from '@guild/shared/schemas';
 
 /**
- * Codec giữa đội hình một trận (`MatchFormation`) và các hàng `FormationSlot` dưới database.
+ * Codec between a match's formation (`MatchFormation`) and the `FormationSlot` rows in the database.
  *
- * Luật của cả hai chiều, nói một lần ở đây: **một hàng tồn tại khi ô CÓ NGƯỜI hoặc CÓ GHI CHÚ.**
- * Ô vừa trống vừa không ghi gì thì không có hàng, nên chiều mã hoá phải lấy hợp của hai tập khoá
- * (duyệt riêng `slots` sẽ đánh rơi ô chỉ có ghi chú) và chiều giải mã phải lọc riêng từng cột
- * (`characterId` và `note` đều có thể null).
+ * The rule for both directions, stated once here: **a row exists when the slot HAS AN OCCUPANT or HAS
+ * A NOTE.** A slot that is both empty and note-less has no row, so encoding must take the union of
+ * both key sets (walking `slots` alone drops note-only slots) and decoding must filter each column
+ * separately (`characterId` and `note` can both be null).
  *
- * `prisma/schema.prisma` mô tả cùng luật này ở phía dữ liệu; file này là chỗ duy nhất luật đó
- * thành code.
+ * `prisma/schema.prisma` states the same rule on the data side; this file is the only place it
+ * becomes code.
  */
 
-/** Một hàng `FormationSlot` — chiều ghi dựng ra, chiều đọc nhận vào. */
+/** One `FormationSlot` row — produced when writing, consumed when reading. */
 export interface SlotRow {
   slotId: string;
   characterId: string | null;
   note: string | null;
 }
 
-/** Hàng đã biết chắc là có người, dùng để thu hẹp kiểu thay cho `as string`. */
+/** A row known to have an occupant, used to narrow the type instead of `as string`. */
 type OccupiedRow = SlotRow & { characterId: string };
 
-/** Hàng đã biết chắc là có ghi chú. */
+/** A row known to have a note. */
 type AnnotatedRow = SlotRow & { note: string };
 
 /**
- * Đổi đội hình một trận thành các hàng `FormationSlot`.
- * @param match - Đội hình và ghi chú của một trận, characterId đã lọc sạch
- * @returns Mảng hàng để đưa vào nested create của Prisma; thứ tự không có ý nghĩa
+ * Turn a match's formation into `FormationSlot` rows.
+ * @param match - The match's formation and notes, characterIds already filtered
+ * @returns Rows for Prisma's nested create; order is meaningless
  */
 export function encodeMatch(match: MatchFormation): SlotRow[] {
   const slotIds = new Set([
@@ -44,10 +44,10 @@ export function encodeMatch(match: MatchFormation): SlotRow[] {
 }
 
 /**
- * Dựng lại đội hình một trận từ các hàng `FormationSlot`.
- * Nghịch đảo của `encodeMatch`: `decodeMatch(encodeMatch(x))` sâu bằng `x`.
- * @param rows - Các hàng của một trận, thứ tự không quan trọng
- * @returns Đội hình một trận; không có hàng nào cho `{ slots: {}, notes: {} }`
+ * Rebuild a match's formation from its `FormationSlot` rows.
+ * The inverse of `encodeMatch`: `decodeMatch(encodeMatch(x))` deep-equals `x`.
+ * @param rows - Rows of one match, in any order
+ * @returns The match's formation; no rows yields `{ slots: {}, notes: {} }`
  */
 export function decodeMatch(rows: SlotRow[]): MatchFormation {
   return {
@@ -63,18 +63,18 @@ export function decodeMatch(rows: SlotRow[]): MatchFormation {
 }
 
 /**
- * Hàng này có xếp người không.
- * @param row - Hàng cần kiểm
- * @returns true khi `characterId` không null, đồng thời thu hẹp kiểu của hàng
+ * Whether this row has someone placed.
+ * @param row - Row to test
+ * @returns true when `characterId` is not null, narrowing the row's type
  */
 function isOccupied(row: SlotRow): row is OccupiedRow {
   return row.characterId !== null;
 }
 
 /**
- * Hàng này có ghi chú không.
- * @param row - Hàng cần kiểm
- * @returns true khi `note` không null, đồng thời thu hẹp kiểu của hàng
+ * Whether this row has a note.
+ * @param row - Row to test
+ * @returns true when `note` is not null, narrowing the row's type
  */
 function isAnnotated(row: SlotRow): row is AnnotatedRow {
   return row.note !== null;

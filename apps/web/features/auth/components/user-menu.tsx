@@ -19,30 +19,30 @@ import { accountInitials } from "../lib/account-initials";
 import { discordAvatarUrl } from "../lib/discord-avatar";
 
 interface UserMenuProps {
-  /** Nhãn của người đang đăng nhập — tên nhân vật hoặc tên Discord, null khi chưa đọc được */
+  /** Label of the signed-in user — character name or Discord name, null when unknown */
   label: string | null;
-  /** Discord ID, dùng để dựng URL avatar */
+  /** Discord ID, used to build the avatar URL */
   discordId: string;
-  /** Hash avatar Discord đọc ở lần đăng nhập gần nhất, null khi để ảnh mặc định */
+  /** Discord avatar hash from the last login, null on the default picture */
   avatarHash: string | null;
 }
 
 /**
- * Avatar tài khoản trên header, bấm vào mở menu chứa mục Đăng xuất.
+ * The account avatar in the header; clicking it opens a menu holding Sign out.
  *
- * Chỉ render khi đã có phiên: khách chưa đăng nhập không đi tới được trang nào ngoài
- * `/dang-nhap`, nên không có nhánh "chưa đăng nhập" ở đây.
- * @param props.label - Nhãn hiển thị của người đang đăng nhập
- * @param props.discordId - Discord ID để dựng URL avatar
- * @param props.avatarHash - Hash avatar Discord
- * @returns Nhãn tài khoản kèm avatar mở được menu
+ * Only rendered with a session: a signed-out visitor cannot reach any page other than `/dang-nhap`, so
+ * there is no signed-out branch here.
+ * @param props.label - Display label of the signed-in user
+ * @param props.discordId - Discord ID used to build the avatar URL
+ * @param props.avatarHash - Discord avatar hash
+ * @returns The account label and avatar that opens the menu
  */
 export function UserMenu({ label, discordId, avatarHash }: UserMenuProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const avatarUrl = discordAvatarUrl(discordId, avatarHash);
 
-  /** Đăng xuất: xóa cookie phiên rồi đưa về trang đăng nhập. */
+  /** Sign out: clear the session cookies, then go to the login page. */
   const handleLogout = () => {
     startTransition(async () => {
       await logout();

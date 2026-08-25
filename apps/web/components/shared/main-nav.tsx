@@ -36,16 +36,16 @@ const NAV_ITEMS = [
 ] as const;
 
 interface MainNavProps {
-  /** Người dùng hiện tại có phải quản trị viên không (xác định ở server) */
+  /** Whether the current user is an admin (determined on the server) */
   isAdmin: boolean;
 }
 
 /**
- * Thanh điều hướng chính, highlight mục đang mở theo pathname.
- * Mục `adminOnly` chỉ hiện khi đã đăng nhập — việc chặn truy cập thật sự do
- * proxy và layout server đảm nhiệm.
- * @param props.isAdmin - Có hiển thị mục dành riêng cho quản trị hay không
- * @returns Nav chứa các nút điều hướng
+ * The main navigation bar, highlighting the active item by pathname.
+ * `adminOnly` items only render when signed in — the actual access control is the proxy's and the
+ * server layout's job.
+ * @param props.isAdmin - Whether to show the admin-only items
+ * @returns The navigation bar
  */
 export function MainNav({ isAdmin }: MainNavProps) {
   const pathname = usePathname();

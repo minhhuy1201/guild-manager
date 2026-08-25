@@ -2,16 +2,16 @@ import { API_BASE_URL } from "@/config/api";
 import { Button } from "@/components/ui/button";
 
 interface DiscordLoginButtonProps {
-  /** Đường dẫn muốn quay lại sau khi đăng nhập xong */
+  /** Path to return to after signing in */
   redirect?: string;
 }
 
 /**
- * Nút mở luồng đăng nhập Discord.
- * Là thẻ `a` chứ không phải `fetch`: luồng OAuth là một chuỗi redirect của trình duyệt,
- * bắt đầu bằng một điều hướng thật sang API.
- * @param props.redirect - Đường dẫn quay lại sau khi đăng nhập
- * @returns Nút dẫn sang API để mở OAuth
+ * The button starting the Discord login flow.
+ * An `a` tag rather than a `fetch`: the OAuth flow is a browser redirect chain, and it starts with a
+ * real navigation to the API.
+ * @param props.redirect - Path to return to after signing in
+ * @returns The link into the API that opens OAuth
  */
 export function DiscordLoginButton({
   redirect = "/",

@@ -8,19 +8,19 @@ import { REDIRECT_METADATA } from '@nestjs/common/constants';
 import { Reflector } from '@nestjs/core';
 import { Observable, map } from 'rxjs';
 
-/** Response thành công thống nhất: dữ liệu luôn nằm trong `data`. */
+/** The uniform success response: data always lives under `data`. */
 export interface ApiResponse<T> {
   data: T;
 }
 
 /**
- * Bọc mọi response thành công vào `{ data }` để frontend chỉ unwrap một chỗ
- * trong api client, thay vì mỗi endpoint một shape khác nhau.
+ * Wraps every successful response in `{ data }` so the frontend unwraps in one place in the api
+ * client instead of handling a different shape per endpoint.
  *
- * Trừ route `@Redirect()`: giá trị `{ url }` nó trả về không phải dữ liệu cho client mà là
- * chỉ dẫn cho Nest, và Nest đọc `url` ngay trên tầng đầu tiên. Bọc vào `data` thì Nest không
- * thấy `url` nữa và trả 302 với header `Location` rỗng — không lỗi, không log, chỉ là trình
- * duyệt đứng im giữa luồng đăng nhập Discord.
+ * Except `@Redirect()` routes: the `{ url }` they return is not client data but an instruction for
+ * Nest, and Nest reads `url` off the top level. Wrapped in `data`, Nest no longer sees `url` and
+ * returns a 302 with an empty `Location` — no error, no log, just a browser sitting still in the
+ * middle of the Discord login flow.
  */
 @Injectable()
 export class TransformInterceptor<T> implements NestInterceptor<
@@ -30,10 +30,10 @@ export class TransformInterceptor<T> implements NestInterceptor<
   constructor(private readonly reflector: Reflector) {}
 
   /**
-   * Bọc giá trị trả về của controller vào field `data`, bỏ qua route redirect.
-   * @param context - Ngữ cảnh thực thi, dùng để đọc metadata của handler
-   * @param next - Handler kế tiếp trong chuỗi xử lý
-   * @returns Observable phát ra `{ data }`, hoặc giá trị nguyên vẹn với route redirect
+   * Wrap the controller's return value in `data`, skipping redirect routes.
+   * @param context - Execution context, used to read the handler's metadata
+   * @param next - Next handler in the chain
+   * @returns An observable of `{ data }`, or the untouched value for a redirect route
    */
   intercept(
     context: ExecutionContext,

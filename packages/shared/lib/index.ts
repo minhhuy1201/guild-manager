@@ -1,7 +1,4 @@
-/**
- * Public API của `@guild/shared/lib`: đồng hồ giờ Việt Nam và luật hạn chót
- * điểm danh mà cả hai app dùng chung.
- */
+/** Public API of `@guild/shared/lib`: the Vietnam clock and the attendance deadline rules. */
 export * from './battle-session';
 export * from './permissions';
 export * from './vn-time';

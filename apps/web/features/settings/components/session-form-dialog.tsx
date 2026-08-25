@@ -17,26 +17,26 @@ import {
 import { fromInputValue, toInputValue } from "../lib/datetime-input";
 import { DateTimeField } from "./date-time-field";
 
-// Thêm trận mới thì hai ô giờ điền sẵn mốc hay dùng nhất, chỉ còn phải chọn ngày.
+// When adding a session, both time inputs prefill the most common values so only the date is left to pick.
 const DEFAULT_BATTLE_TIME = "20:30";
 const DEFAULT_DEADLINE_TIME = "10:00";
 
 interface SessionFormDialogProps {
-  /** Dialog đang mở hay không */
+  /** Whether the dialog is open */
   open: boolean;
-  /** Trận đang sửa; null nghĩa là đang thêm mới */
+  /** Session being edited; null means creating */
   session: BattleSession | null;
-  /** Gọi khi dialog đóng lại */
+  /** Called when the dialog closes */
   onOpenChange: (open: boolean) => void;
 }
 
 /**
- * Form thêm/sửa một trận. Chọn giờ đánh xong thì hạn chót tự điền theo luật gợi ý,
- * nhưng chỉ khi người dùng chưa tự sửa ô đó — đang gõ tay mà bị ghi đè là khó chịu nhất.
- * @param open - Dialog đang mở hay không
- * @param session - Trận đang sửa; null nghĩa là thêm mới
- * @param onOpenChange - Gọi khi dialog đóng lại
- * @returns Dialog form
+ * The create/edit session form. Picking a battle time auto-fills the suggested deadline, but only
+ * while the user has not edited that field themselves — being overwritten mid-typing is the worst case.
+ * @param open - Whether the dialog is open
+ * @param session - Session being edited; null means creating
+ * @param onOpenChange - Called when the dialog closes
+ * @returns The form dialog
  */
 export function SessionFormDialog({
   open,
@@ -44,7 +44,7 @@ export function SessionFormDialog({
   onOpenChange,
 }: SessionFormDialogProps) {
   return (
-    // Vỏ chỉ mount thân khi mở, nên state của form tự reset mỗi lần mở lại.
+    // The shell only mounts the body while open, so the form state resets on every open.
     <MutationDialogShell open={open} onOpenChange={onOpenChange}>
       <SessionForm session={session} onDone={() => onOpenChange(false)} />
     </MutationDialogShell>
@@ -52,17 +52,17 @@ export function SessionFormDialog({
 }
 
 interface SessionFormProps {
-  /** Trận đang sửa; null nghĩa là thêm mới */
+  /** Session being edited; null means creating */
   session: BattleSession | null;
-  /** Gọi khi lưu thành công */
+  /** Called on a successful save */
   onDone: () => void;
 }
 
 /**
- * Ba ô nhập của một trận: giờ đánh, tên bang đối thủ, hạn chót.
- * @param session - Trận đang sửa; null nghĩa là thêm mới
- * @param onDone - Gọi khi lưu thành công
- * @returns Form thêm/sửa trận
+ * A session's three fields: battle time, opponent guild name, deadline.
+ * @param session - Session being edited; null means creating
+ * @param onDone - Called on a successful save
+ * @returns The create/edit session form
  */
 function SessionForm({ session, onDone }: SessionFormProps) {
   const isGuildWar = session?.isGuildWar ?? false;
@@ -80,9 +80,9 @@ function SessionForm({ session, onDone }: SessionFormProps) {
   const updateMutation = useUpdateSession();
 
   /**
-   * Đổi giờ đánh, đồng thời điền sẵn hạn chót nếu người dùng chưa tự sửa ô đó.
-   * Giá trị điền sẵn chính là trần — muộn nhất có thể mà vẫn hợp lệ.
-   * @param value - Giá trị mới của ô giờ đánh
+   * Change the battle time, also prefilling the deadline while the user has not edited it.
+   * The prefilled value is the cap itself — the latest that is still valid.
+   * @param value - New value of the battle time field
    */
   function handleDateTimeChange(value: string) {
     setDateTime(value);
@@ -94,20 +94,20 @@ function SessionForm({ session, onDone }: SessionFormProps) {
   }
 
   /**
-   * Kiểm tra hai ô ngày giờ rồi tạo mới hoặc cập nhật tuỳ theo đang sửa trận nào.
-   * Ném lỗi thì `MutationForm` giữ dialog lại và hiện đúng câu đã ném.
-   * @returns Promise hoàn tất khi đã lưu xong
+   * Validate both date/time fields, then create or update depending on what is being edited.
+   * Throwing keeps the dialog up and shows the thrown sentence, via `MutationForm`.
+   * @returns A promise resolving once saved
    */
   async function submitSession() {
-    // Ô ngày giờ trả về rỗng khi người dùng gõ dở hoặc gõ ngày không có thật.
+    // The date/time field returns empty while the user is mid-typing or typed a date that does not exist.
     if (!dateTime || (!isGuildWar && !deadline)) {
       throw new Error(
         "Ngày giờ chưa hợp lệ. Nhập theo dạng dd/mm/yyyy và HH:mm."
       );
     }
 
-    // Ô ngày giờ là hai input text có mask, không phải `datetime-local`, nên
-    // không có thuộc tính `max` để trình duyệt tự chặn — kiểm tra ở đây thay thế.
+    // The date/time field is two masked text inputs, not a `datetime-local`, so there is no `max`
+    // attribute for the browser to enforce — this check stands in for it.
     if (
       !isGuildWar &&
       !isWithinDeadlineCap(new Date(deadline), new Date(dateTime))
@@ -124,7 +124,7 @@ function SessionForm({ session, onDone }: SessionFormProps) {
       return;
     }
 
-    // Hạn chót của Guild War do hệ thống đặt; gửi lên là 400.
+    // A Guild War's deadline is system-owned; sending one gets a 400.
     await updateMutation.mutateAsync({
       id: session.id,
       input: {

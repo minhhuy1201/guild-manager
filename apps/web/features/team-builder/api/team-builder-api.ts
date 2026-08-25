@@ -10,21 +10,20 @@ import { getAccessToken } from "@/features/auth/server";
 import { ApiError, apiFetch } from "@/lib/api-client";
 
 /**
- * Tham số của `saveFormation`. Không phải body của request: `sessionId` đi trên
- * URL, chỉ `matches` được gửi lên — body ấy là `SaveFormationInput` ở
- * `@guild/shared/schemas`.
+ * Arguments of `saveFormation`. Not the request body: `sessionId` travels on the URL and only
+ * `matches` is sent — that body is `SaveFormationInput` in `@guild/shared/schemas`.
  */
 export interface SaveFormationArgs {
-  /** ID ngày đánh cần lưu */
+  /** Id of the battle day to save */
   sessionId: string;
-  /** Từng trận: đội hình đã bỏ ô trống, và ghi chú đã bỏ ô để rỗng */
+  /** Per match: the formation with empty slots dropped, and the notes with blank ones dropped */
   matches: MatchFormation[];
 }
 
 /**
- * Lấy access token của quản trị viên đang đăng nhập.
- * @returns Header Authorization đã dựng sẵn
- * @throws ApiError khi phiên đăng nhập đã hết hạn
+ * Get the signed-in admin's access token.
+ * @returns The prepared Authorization header
+ * @throws ApiError when the session has expired
  */
 async function authHeader(): Promise<Record<string, string>> {
   const accessToken = await getAccessToken();
@@ -39,11 +38,11 @@ async function authHeader(): Promise<Record<string, string>> {
 }
 
 /**
- * Lấy các tuần còn dữ liệu đội hình.
- * Chạy ở server vì endpoint chỉ dành cho quản trị viên và token nằm trong cookie
- * httpOnly, client không tự gắn header được.
- * @returns Mảng tuần, mới nhất trước
- * @throws ApiError khi chưa đăng nhập hoặc backend từ chối
+ * Get the weeks that still hold formation data.
+ * Runs on the server because the endpoint is admin-only and the token lives in an httpOnly cookie the
+ * client cannot attach itself.
+ * @returns The weeks, newest first
+ * @throws ApiError when signed out or the backend rejects it
  */
 export async function fetchFormationWeeks(): Promise<FormationWeek[]> {
   return apiFetch<FormationWeek[]>("/team-builder/weeks", {
@@ -52,10 +51,10 @@ export async function fetchFormationWeeks(): Promise<FormationWeek[]> {
 }
 
 /**
- * Lấy đội hình của các trận trong một tuần.
- * @param weekStart - Mốc Thứ 2 của tuần (ISO string); bỏ trống = tuần đang mở
- * @returns Mảng trận sắp theo thời gian đánh
- * @throws ApiError khi chưa đăng nhập hoặc backend từ chối
+ * Get the formations of a week's sessions.
+ * @param weekStart - Monday marker of the week (ISO string); omitted = the open week
+ * @returns Sessions ordered by battle time
+ * @throws ApiError when signed out or the backend rejects it
  */
 export async function fetchFormations(
   weekStart?: string
@@ -68,10 +67,10 @@ export async function fetchFormations(
 }
 
 /**
- * Ghi đè đội hình cả ngày (1 hoặc 2 trận), kèm ghi chú theo ô.
- * @param input - sessionId và đội hình từng trận cần lưu
- * @returns Ngày đánh kèm đội hình vừa ghi
- * @throws ApiError khi chưa đăng nhập, ngày đã khoá (409), hoặc backend từ chối
+ * Overwrite the whole day's formation (1 or 2 matches), notes included.
+ * @param input - sessionId and each match's formation to save
+ * @returns The battle day with the formation just written
+ * @throws ApiError when signed out, the day is locked (409), or the backend rejects it
  */
 export async function saveFormation(
   input: SaveFormationArgs

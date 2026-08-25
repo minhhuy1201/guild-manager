@@ -8,15 +8,15 @@ import {
 } from "../store/attendance-filter-store";
 
 interface AttendanceFiltersProps {
-  /** Màn đang dùng bộ lọc — mỗi màn giữ state riêng. */
+  /** The screen using the filters — each screen keeps its own state. */
   scope: AttendanceFilterScope;
 }
 
 /**
- * Thanh lọc: tìm kiếm theo tên nhân vật và chọn lưu phái.
- * Đọc/ghi vào phần store ứng với `scope`, nên hai màn không dùng chung giá trị lọc.
- * @param scope - Màn đang dùng bộ lọc
- * @returns Card chứa các bộ lọc
+ * The filter bar: search by character name and pick classes.
+ * Reads and writes the store slice for `scope`, so two screens never share filter values.
+ * @param scope - The screen using the filters
+ * @returns The filter card
  */
 export function AttendanceFilters({ scope }: AttendanceFiltersProps) {
   const filter = useAttendanceFilterStore((s) => s.filters[scope]);

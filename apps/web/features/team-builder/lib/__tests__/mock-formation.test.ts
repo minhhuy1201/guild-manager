@@ -29,9 +29,9 @@ describe("createMockFormation", () => {
     }
   });
 
-  // Đọc kỳ vọng từ chính template thay vì ghi số cứng: mảng gợi ý là "display hint only",
-  // sửa nó là chuyện thường ngày và không được làm đỏ test. Cái đáng khẳng định là template
-  // được áp đúng offset và giống nhau ở cả 10 team.
+  // Read the expectation from the template rather than hard-coding numbers: the suggestion array is a
+  // "display hint only", editing it is routine and must not turn the test red. What is worth asserting
+  // is that the template is applied at the right offset and identically across all 10 teams.
   it("áp gợi ý lưu phái theo template, giống nhau ở mọi team", () => {
     const formation = createMockFormation();
 

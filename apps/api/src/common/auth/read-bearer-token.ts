@@ -1,24 +1,21 @@
 import type { JwtPayload, TokenType } from '../constants/auth.constant';
 
-/** Prefix của header Authorization theo chuẩn Bearer, phân biệt hoa thường như `startsWith`. */
+/** Authorization header prefix per the Bearer scheme, case-sensitive like `startsWith`. */
 const BEARER_PREFIX = 'Bearer ';
 
-/**
- * Verify chữ ký và hạn của một JWT.
- * Được phép ném — `readToken` là chỗ duy nhất bắt lỗi đó.
- */
+/** Verifies a JWT's signature and expiry. Allowed to throw — `readToken` is the only catcher. */
 export type VerifyToken = (token: string) => Promise<JwtPayload>;
 
 /**
- * Verify một token và kiểm đúng loại.
+ * Verify a token and check its type.
  *
- * Mọi kiểu không hợp lệ đều quy về một giá trị: token hỏng, sai chữ ký, hết hạn, hoặc đúng chữ ký
- * nhưng sai loại (refresh token gửi vào route cần access) — tất cả cho `null`. Người gọi quyết định
- * `null` nghĩa là "chặn" hay "khách ẩn danh".
- * @param token - Token trần, không có prefix
- * @param verify - Hàm verify JWT; được phép ném
- * @param expectedType - Loại token bắt buộc phải khớp
- * @returns Payload đã verify và đúng loại, hoặc null
+ * Every invalid shape collapses to one value: malformed, wrong signature, expired, or correctly
+ * signed but of the wrong type (a refresh token sent to an access route) — all yield `null`. The
+ * caller decides whether `null` means "reject" or "anonymous visitor".
+ * @param token - Bare token, no prefix
+ * @param verify - JWT verify function; allowed to throw
+ * @param expectedType - Token type that must match
+ * @returns The verified payload of the expected type, or null
  */
 export async function readToken(
   token: string,
@@ -31,12 +28,12 @@ export async function readToken(
 }
 
 /**
- * Đọc và verify token trong header Authorization.
- * Thiếu header hoặc sai scheme cũng cho `null`, cùng đường với token hỏng.
- * @param header - Giá trị header Authorization, undefined khi không có
- * @param verify - Hàm verify JWT; được phép ném
- * @param expectedType - Loại token bắt buộc phải khớp
- * @returns Payload đã verify và đúng loại, hoặc null
+ * Read and verify the token in the Authorization header. A missing header or wrong scheme also
+ * yields `null`, the same path as a malformed token.
+ * @param header - Authorization header value, undefined when absent
+ * @param verify - JWT verify function; allowed to throw
+ * @param expectedType - Token type that must match
+ * @returns The verified payload of the expected type, or null
  */
 export async function readBearerToken(
   header: string | undefined,

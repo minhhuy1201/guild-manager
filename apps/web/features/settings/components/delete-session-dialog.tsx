@@ -7,16 +7,16 @@ import { getSessionSubtitle } from "@/features/attendance";
 import { useDeleteSession } from "../hooks/use-session-mutations";
 
 interface DeleteSessionDialogProps {
-  /** Trận sắp xoá; null thì dialog đóng */
+  /** Session about to be deleted; null closes the dialog */
   session: BattleSession | null;
-  /** Gọi khi dialog đóng lại */
+  /** Called when the dialog closes */
   onClose: () => void;
 }
 
 /**
- * Câu cảnh báo trước khi xoá, nói thẳng sẽ mất những gì.
- * @param session - Trận sắp xoá
- * @returns Câu mô tả hậu quả
+ * The warning shown before deleting, stating plainly what will be lost.
+ * @param session - Session about to be deleted
+ * @returns The consequence sentence
  */
 function describeLoss(session: BattleSession): string {
   const losses: string[] = [];
@@ -34,10 +34,10 @@ function describeLoss(session: BattleSession): string {
 }
 
 /**
- * Xác nhận xoá một trận scrim.
- * @param session - Trận sắp xoá; null thì dialog đóng
- * @param onClose - Gọi khi dialog đóng lại
- * @returns Dialog xác nhận xoá
+ * Confirm deleting a scrim.
+ * @param session - Session about to be deleted; null closes the dialog
+ * @param onClose - Called when the dialog closes
+ * @returns The delete confirmation dialog
  */
 export function DeleteSessionDialog({
   session,
@@ -51,8 +51,8 @@ export function DeleteSessionDialog({
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
-      // Vỏ không mount thân khi đóng nên các nhánh rỗng ở đây không bao giờ
-      // hiện ra; chúng có mặt vì `session` nullable còn `title` là chuỗi bắt buộc.
+      // The shell does not mount the body while closed, so these empty branches never render; they
+      // exist because `session` is nullable while `title` is a required string.
       title={session ? `Xoá trận ${session.label}?` : ""}
       description={
         session && (

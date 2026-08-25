@@ -229,8 +229,8 @@ export function useFormationDraft(
   function addMatch() {
     if (!activeSessionId || matches.length >= MAX_MATCHES) return;
 
-    // Copy match 1 as it stands, absentees in their slots included — never pull
-    // anyone out behind the user's back. Notes travel along untouched.
+    // Copy match 1 as it stands, absentees in their slots included — never pull anyone out behind the
+    // user's back. Notes travel along untouched.
     setDraft(activeSessionId, [
       ...matches,
       {

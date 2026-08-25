@@ -1,7 +1,7 @@
 /**
- * Định dạng ngày dạng dd/MM/yyyy theo tiếng Việt.
- * @param iso - Chuỗi ISO date
- * @returns Chuỗi ngày đã định dạng
+ * Format a date as dd/MM/yyyy in Vietnamese.
+ * @param iso - ISO date string
+ * @returns The formatted date
  */
 export function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("vi-VN", {
@@ -12,10 +12,10 @@ export function formatDate(iso: string): string {
 }
 
 /**
- * Định dạng ngày dạng dd/MM. Tự ghép chuỗi vì Intl tiếng Việt trả về "08-08"
- * khi bỏ năm, trong khi giao diện luôn dùng dấu gạch chéo.
- * @param iso - Chuỗi ISO date
- * @returns Chuỗi ngày dạng dd/MM
+ * Format a date as dd/MM. Built by hand because the Vietnamese Intl locale returns "08-08" when the
+ * year is dropped, while the UI always uses slashes.
+ * @param iso - ISO date string
+ * @returns The date as dd/MM
  */
 export function formatDayMonth(iso: string): string {
   const date = new Date(iso);
@@ -25,9 +25,9 @@ export function formatDayMonth(iso: string): string {
 }
 
 /**
- * Định dạng giờ dạng HH:mm theo tiếng Việt.
- * @param iso - Chuỗi ISO date
- * @returns Chuỗi giờ đã định dạng
+ * Format a time as HH:mm in Vietnamese.
+ * @param iso - ISO date string
+ * @returns The formatted time
  */
 export function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString("vi-VN", {
@@ -37,9 +37,9 @@ export function formatTime(iso: string): string {
 }
 
 /**
- * Định dạng ngày giờ dạng dd/MM/yyyy HH:mm theo tiếng Việt.
- * @param iso - Chuỗi ISO date
- * @returns Chuỗi ngày giờ đã định dạng
+ * Format a date and time as dd/MM/yyyy HH:mm in Vietnamese.
+ * @param iso - ISO date string
+ * @returns The formatted date and time
  */
 export function formatDateTime(iso: string): string {
   return new Date(iso).toLocaleString("vi-VN", {

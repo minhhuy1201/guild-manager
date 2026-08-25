@@ -10,9 +10,9 @@ import {
 } from "@guild/shared/lib";
 
 /**
- * Tạo Date từ giờ Việt Nam (UTC+7) cho dễ đọc trong test.
- * @param iso - Chuỗi dạng '2026-07-21T20:30' hiểu theo giờ VN
- * @returns Date UTC tương ứng
+ * Build a Date from Vietnam time (UTC+7) for readability in tests.
+ * @param iso - A string like '2026-07-21T20:30', read as Vietnam time
+ * @returns The matching UTC Date
  */
 function vn(iso: string): Date {
   return new Date(`${iso}:00+07:00`);
@@ -23,7 +23,7 @@ describe("deadlineCapFor", () => {
     expect(deadlineCapFor(vn("2026-07-21T20:30")).toISOString()).toBe(
       vn("2026-07-21T10:00").toISOString()
     );
-    // Thứ 5 nay cũng theo luật ngày đánh, không còn 17:00 Thứ 5.
+    // Thursday now follows the battle-day rule too, no longer 17:00 Thursday.
     expect(deadlineCapFor(vn("2026-07-23T20:30")).toISOString()).toBe(
       vn("2026-07-23T10:00").toISOString()
     );
@@ -45,7 +45,7 @@ describe("deadlineCapFor", () => {
     expect(deadlineCapFor(vn("2026-07-21T23:59")).toISOString()).toBe(
       vn("2026-07-21T10:00").toISOString()
     );
-    // 00:30 giờ VN là trước 10:00 nên trần rơi về chính giờ đánh.
+    // 00:30 Vietnam time is before 10:00, so the cap falls back to the battle time itself.
     expect(deadlineCapFor(vn("2026-07-22T00:30")).toISOString()).toBe(
       vn("2026-07-22T00:30").toISOString()
     );
@@ -93,7 +93,7 @@ describe("vnWeekday", () => {
   });
 
   it("lấy thứ của ngày VN, không phải ngày UTC", () => {
-    // 17:30 UTC Thứ 2 = 00:30 Thứ 3 giờ VN.
+    // 17:30 UTC Monday = 00:30 Tuesday Vietnam time.
     expect(vnWeekday(new Date("2026-07-20T17:30:00Z"))).toBe(2);
   });
 });
@@ -106,7 +106,7 @@ describe("atVnTime", () => {
   });
 
   it("mốc sát nửa đêm giờ VN vẫn thuộc ngày VN của nó", () => {
-    // 23:59 VN ngày 21 là 16:59 UTC cùng ngày, không được trôi sang ngày 22.
+    // 23:59 VN on the 21st is 16:59 UTC the same day; it must not slide into the 22nd.
     expect(atVnTime(vn("2026-07-21T23:59"), 0, 0).toISOString()).toBe(
       vn("2026-07-21T00:00").toISOString()
     );
@@ -125,7 +125,7 @@ describe("vnParts", () => {
   });
 
   it("đọc theo ngày VN chứ không theo ngày UTC", () => {
-    // 17:30 UTC ngày 20 = 00:30 ngày 21 giờ VN.
+    // 17:30 UTC on the 20th = 00:30 on the 21st Vietnam time.
     expect(vnParts(new Date("2026-07-20T17:30:00Z"))).toEqual({
       year: 2026,
       month: 7,

@@ -12,16 +12,16 @@ import {
 } from '../session-schedule';
 
 /**
- * Tạo Date từ giờ Việt Nam (UTC+7) cho dễ đọc trong test.
- * @param iso - Chuỗi dạng '2026-07-22T12:00' hiểu theo giờ VN
- * @returns Date UTC tương ứng
+ * Build a Date from Vietnam time (UTC+7) for readability in tests.
+ * @param iso - A string like '2026-07-22T12:00', read as Vietnam time
+ * @returns The matching UTC Date
  */
 function vn(iso: string): Date {
   return new Date(`${iso}:00+07:00`);
 }
 
 describe('session-schedule', () => {
-  // Thứ 4 2026-07-22 12:00 VN → tuần điểm danh chứa Guild War Thứ 7 2026-07-25.
+  // Wednesday 2026-07-22 12:00 VN → the attendance week holding the Saturday 2026-07-25 Guild War.
   const wednesday = vn('2026-07-22T12:00');
 
   describe('ranh giới tuần', () => {
@@ -135,7 +135,7 @@ describe('session-schedule', () => {
     });
 
     it('cùng mốc viết bằng hai múi giờ khác nhau vẫn cùng tuần', () => {
-      // Đây là ca mà phép so chuỗi cũ sai: cùng thời điểm, hai chuỗi khác nhau.
+      // The case the old string comparison got wrong: same instant, two different strings.
       const asOffset = weekStartOf(new Date('2026-07-20T00:00:00+07:00'));
       const asUtc = weekStartOf(new Date('2026-07-19T17:00:00.000Z'));
 
@@ -150,9 +150,9 @@ describe('session-schedule', () => {
       );
     });
 
-    // Chuỗi hỏng là lỗi lập trình, không phải lỗi người dùng: `weekStartQuerySchema`
-    // chặn nó ở biên HTTP (week-start-query.spec.ts), nên tầng này chỉ ném lỗi
-    // thuần chứ không dựng response 400.
+    // A malformed string is a programming error, not a user error: `weekStartQuerySchema` blocks it
+    // at the HTTP boundary (week-start-query.spec.ts), so this layer only throws a plain error and
+    // does not build a 400 response.
     it('chuỗi không phải mốc thời gian thì ném RangeError', () => {
       expect(() => parseWeekStart('xyz', wednesday)).toThrow(RangeError);
     });
@@ -208,8 +208,8 @@ describe('session-schedule', () => {
     });
 
     it('khoá theo giờ đánh, không theo hạn điểm danh', () => {
-      // Hạn điểm danh nằm trước giờ đánh: quá hạn điểm danh nhưng chưa tới giờ đánh
-      // thì đội hình vẫn sửa được.
+      // The deadline sits before the battle time: past the attendance deadline but before the
+      // battle, the formation is still editable.
       const deadline = vn('2026-07-23T17:00');
       const afterDeadline = vn('2026-07-23T18:00');
 

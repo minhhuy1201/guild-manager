@@ -10,7 +10,7 @@ type OriginChecker = (
   callback: (error: Error | null, allowed?: boolean) => void,
 ) => void;
 
-/** Gọi callback origin của CorsOptions và quy kết quả về boolean. */
+/** Call the CorsOptions origin callback and reduce the result to a boolean. */
 function isAllowed(options: CorsOptions, origin: string | undefined): boolean {
   let allowed = false;
 

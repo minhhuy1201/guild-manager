@@ -1,19 +1,20 @@
 import { GuildRole } from "../enums/role.enum";
 
 /**
- * Vai này có được xem điểm danh của cả bang không.
- * Bang chúng chỉ thấy nhân vật của chính mình; cán bộ và quản trị thấy toàn bộ.
- * @param role - Vai của người đang đăng nhập
- * @returns true khi được xem toàn bang
+ * Whether this role may view the whole guild's attendance. Members see only their
+ * own character; leaders and admins see everyone.
+ * @param role - Role of the signed-in user
+ * @returns true when guild-wide viewing is allowed
  */
 export function canViewAllAttendance(role: GuildRole): boolean {
   return role !== GuildRole.MEMBER;
 }
 
 /**
- * Vai này có được quản trị bang không (thành viên, lịch đánh, đội hình, điểm danh hộ).
- * @param role - Vai của người đang đăng nhập
- * @returns true khi là quản trị viên
+ * Whether this role may administer the guild (members, schedule, formations,
+ * attendance on behalf of others).
+ * @param role - Role of the signed-in user
+ * @returns true for admins
  */
 export function canManageGuild(role: GuildRole): boolean {
   return role === GuildRole.ADMIN;

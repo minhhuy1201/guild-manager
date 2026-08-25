@@ -12,18 +12,18 @@ import { Observable, tap } from 'rxjs';
 import { REQUEST_ID_HEADER } from '../constants/http.constant';
 
 /**
- * Gắn request ID cho mỗi request và log lại method, URL, status, thời gian xử lý.
- * Request ID được trả về trong response header để client đối chiếu khi báo lỗi.
+ * Attaches a request ID to every request and logs method, URL, status and duration.
+ * The request ID is echoed in a response header so clients can quote it when reporting errors.
  */
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
   private readonly logger = new Logger('HTTP');
 
   /**
-   * Bọc quá trình xử lý request để đo thời gian và ghi log.
-   * @param context - Ngữ cảnh thực thi của Nest
-   * @param next - Handler kế tiếp trong chuỗi xử lý
-   * @returns Observable của response, không thay đổi dữ liệu
+   * Wrap request handling to time it and write the log line.
+   * @param context - Nest execution context
+   * @param next - Next handler in the chain
+   * @returns The response observable, unchanged
    */
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const http = context.switchToHttp();

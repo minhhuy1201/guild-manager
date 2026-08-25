@@ -18,8 +18,7 @@ import {
 } from './config';
 
 /**
- * Khởi động HTTP server: gắn pipe/filter/interceptor toàn cục, CORS, Swagger
- * và bật graceful shutdown.
+ * Boot the HTTP server: global pipes/filters/interceptors, CORS, Swagger, and graceful shutdown.
  */
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);

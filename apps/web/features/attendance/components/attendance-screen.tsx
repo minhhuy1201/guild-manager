@@ -9,14 +9,14 @@ import { AttendanceGrid } from "./attendance-grid";
 import { MemberAttendanceCard } from "./member-attendance-card";
 
 interface AttendanceScreenProps {
-  /** Vai của người đang xem, quyết định thấy cả bang hay chỉ mình */
+  /** Role of the viewer, deciding whether they see the whole guild or only themselves */
   role: GuildRole;
 }
 
 /**
- * Màn hình điểm danh. Bang chúng thấy đúng nhân vật của mình; cán bộ và quản trị thấy cả bang.
- * @param props.role - Vai của người đang xem
- * @returns Nội dung trang điểm danh
+ * The attendance screen. A member sees only their own character; leaders and admins see the whole guild.
+ * @param props.role - Role of the viewer
+ * @returns The attendance page content
  */
 export function AttendanceScreen({ role }: AttendanceScreenProps) {
   if (!canViewAllAttendance(role)) {

@@ -2,12 +2,7 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-/**
- * Đường kẻ phân cách.
- * @param className - Class bổ sung
- * @param orientation - Hướng: ngang (mặc định) hoặc dọc
- * @returns Phần tử phân cách đã style
- */
+/** A separator line, horizontal by default. */
 function Separator({
   className,
   orientation = "horizontal",

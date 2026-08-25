@@ -3,10 +3,10 @@
 import { clearSession } from "./session";
 
 /**
- * Đăng xuất: xóa cookie access/refresh token.
- * Không còn action đăng nhập nào ở đây — luồng đăng nhập là một chuỗi redirect qua Discord,
- * kết thúc ở Route Handler `/dang-nhap/discord`.
- * @returns Promise hoàn tất khi phiên bị hủy
+ * Sign out: clear the access/refresh token cookies.
+ * There is no login action here any more — the login flow is a redirect chain through Discord, ending
+ * at the `/dang-nhap/discord` Route Handler.
+ * @returns A promise resolving once the session is destroyed
  */
 export async function logout(): Promise<void> {
   await clearSession();

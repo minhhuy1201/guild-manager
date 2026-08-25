@@ -3,7 +3,7 @@ import { GuildRole } from '@guild/shared/enums';
 import { TOKEN_TYPE, type JwtPayload } from '../../constants/auth.constant';
 import { readBearerToken, readToken } from '../read-bearer-token';
 
-/** Payload access token hợp lệ dùng chung cho mọi ca. */
+/** A valid access token payload shared by every case. */
 const ACCESS: JwtPayload = {
   sub: 'admin',
   role: GuildRole.ADMIN,
@@ -11,15 +11,15 @@ const ACCESS: JwtPayload = {
 };
 
 /**
- * Dựng một hàm verify giả trả payload cho trước.
- * @param payload - Payload mà verify sẽ trả về
- * @returns Hàm verify luôn thành công
+ * Build a fake verify function returning a given payload.
+ * @param payload - Payload verify will return
+ * @returns A verify function that always succeeds
  */
 function verifiesAs(payload: JwtPayload) {
   return () => Promise.resolve(payload);
 }
 
-/** Verify giả luôn ném — token hỏng, sai chữ ký, hoặc hết hạn. */
+/** Fake verify that always throws — malformed, wrong signature, or expired. */
 const rejects = () => Promise.reject(new Error('jwt expired'));
 
 describe('readBearerToken', () => {
@@ -36,7 +36,7 @@ describe('readBearerToken', () => {
   });
 
   it('đúng prefix nhưng token rỗng thì null', async () => {
-    // 'Bearer ' lọt startsWith; chặn nằm ở verify('') ném.
+    // 'Bearer ' passes startsWith; the rejection comes from verify('') throwing.
     await expect(
       readBearerToken('Bearer ', rejects, TOKEN_TYPE.access),
     ).resolves.toBeNull();

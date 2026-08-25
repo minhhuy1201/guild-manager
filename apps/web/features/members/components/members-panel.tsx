@@ -28,13 +28,13 @@ import { MemberFormDialog } from "./member-form-dialog";
 import { MemberRow } from "./member-row";
 import { MembersSkeleton } from "./members-skeleton";
 
-/** Bộ lọc rỗng khi mới mở màn — màn này giữ bộ lọc trong state của chính nó. */
+/** The empty filter the screen opens with — this screen keeps its filters in its own state. */
 const EMPTY_FILTER: RosterFilter = { search: "", guildClasses: [] };
 
 /**
- * Bảng quản lý thành viên: tìm theo tên, lọc lưu phái, thêm/sửa/xoá.
- * Cả bang chỉ vài chục người nên lọc và phân trang ngay ở client.
- * @returns Panel quản lý thành viên
+ * The member management table: search by name, filter by class, create/edit/delete.
+ * The guild is only a few dozen people, so filtering and paging happen on the client.
+ * @returns The member management panel
  */
 export function MembersPanel() {
   const membersQuery = useMembers();
@@ -54,7 +54,7 @@ export function MembersPanel() {
 
   const pagination = useTablePagination({
     items: members,
-    // Chuỗi để so sánh theo giá trị: mảng lưu phái mới luôn khác tham chiếu cũ.
+    // Stringified for comparison by value: a new class array always differs by reference.
     resetKey: `${normalized}|${filter.guildClasses.join(",")}`,
   });
 
@@ -64,12 +64,12 @@ export function MembersPanel() {
   );
 
   /**
-   * Đổi vai của một thành viên ngay tại hàng, không mở dialog.
-   * @param member - Thành viên cần đổi vai
-   * @param role - Vai mới
+   * Change a member's role inline, without opening a dialog.
+   * @param member - Member whose role changes
+   * @param role - The new role
    */
   const handleRoleChange = (member: GuildMember, role: GuildRole) => {
-    // Lỗi backend nổi lên qua `updateMutation.error` ngay dưới bảng.
+    // Backend errors surface through `updateMutation.error` just below the table.
     void updateMutation.mutateAsync({ id: member.id, input: { role } }).catch(() => {});
   };
 

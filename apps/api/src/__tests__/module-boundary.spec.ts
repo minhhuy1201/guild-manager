@@ -3,42 +3,42 @@ import { join } from 'node:path';
 
 import type { ESLint, Linter } from 'eslint';
 
-/** Thư mục gốc của `apps/api` — nơi `eslint.config.mjs` và `tsconfig.json` nằm. */
+/** Root of `apps/api` — where `eslint.config.mjs` and `tsconfig.json` live. */
 const API_ROOT = join(__dirname, '..', '..');
 
 const BOUNDARY_RULE = 'boundaries/dependencies';
 
-/** Chạy ESLint tốn vài giây; mặc định 5s của Jest không đủ. */
+/** Running ESLint takes a few seconds; Jest's 5s default is not enough. */
 const LINT_TIMEOUT_MS = 60_000;
 
-/** Vi phạm cố ý, từ một module sang module bên cạnh, ở thư mục sâu hơn mọi file thật một cấp. */
+/** A deliberate violation, from one module into a sibling, one directory deeper than any real file. */
 const SIBLING_MODULE_FIXTURE = join(
   API_ROOT,
   'src/modules/attendance/__tests__/fixtures/module-boundary-violation.ts',
 );
 
-/** Vi phạm cố ý, từ ngoài `modules/` đi vào. */
+/** A deliberate violation, crossing in from outside `modules/`. */
 const OUTSIDE_MODULE_FIXTURE = join(
   __dirname,
   'fixtures',
   'outside-module-violation.ts',
 );
 
-/** File thật, import module bên cạnh qua đúng seam `.public`. */
+/** A real file importing a sibling module through its `.public` seam. */
 const COMPLIANT_FILE = join(
   API_ROOT,
   'src/modules/attendance/attendance.service.ts',
 );
 
 /**
- * Chạy ESLint thật lên một file và trả về các lỗi ranh giới module.
+ * Run the real ESLint over one file and return its module boundary errors.
  *
- * Chạy qua tiến trình con chứ không qua `new ESLint()`: `eslint.config.mjs` là ESM, mà Jest ở chế
- * độ CommonJS không `import()` động được. `--no-ignore` để lint cả fixture, vốn bị `ignores` của
- * cấu hình bỏ qua.
+ * Run as a child process rather than through `new ESLint()`: `eslint.config.mjs` is ESM, and Jest in
+ * CommonJS mode cannot use a dynamic `import()`. `--no-ignore` lints the fixtures, which the config's
+ * `ignores` would otherwise skip.
  *
- * @param filePath - Đường dẫn tuyệt đối tới file cần lint
- * @returns Danh sách message của luật ranh giới module trong file đó
+ * @param filePath - Absolute path of the file to lint
+ * @returns The module boundary rule messages for that file
  */
 function lintBoundaryErrors(filePath: string): Linter.LintMessage[] {
   const { stdout, status } = spawnSync(
@@ -47,7 +47,7 @@ function lintBoundaryErrors(filePath: string): Linter.LintMessage[] {
     { cwd: API_ROOT, encoding: 'utf8' },
   );
 
-  // ESLint trả 0 khi sạch, 1 khi có lỗi lint; mọi mã khác là nó chết trước khi lint được.
+  // ESLint exits 0 when clean and 1 on lint errors; any other code means it died before linting.
   if (status !== 0 && status !== 1) {
     throw new Error(`ESLint không chạy được (exit ${String(status)})`);
   }
@@ -62,10 +62,10 @@ function lintBoundaryErrors(filePath: string): Linter.LintMessage[] {
 }
 
 /**
- * Hàng rào ranh giới module chỉ có giá trị khi nó còn hiệu lực. Luật cũ khoá theo độ sâu thư mục:
- * thêm một cấp là nó ngừng kiểm tra ở cấp đó mà không báo gì. Ba bài test dưới đây khoá lại điều
- * đó — hai fixture nằm ở hai phía của ranh giới, cả hai sâu hơn mọi file thật, và một đối chứng để
- * luật không thể "đúng" bằng cách cấm tất cả.
+ * A module boundary fence is only worth having while it is still in force. The old rule keyed off
+ * directory depth: one extra level and it silently stopped checking. The three tests below lock that
+ * down — two fixtures on either side of the boundary, both deeper than any real file, plus a control
+ * so the rule cannot be "right" by forbidding everything.
  */
 describe('ranh giới module (eslint.config.mjs)', () => {
   jest.setTimeout(LINT_TIMEOUT_MS);

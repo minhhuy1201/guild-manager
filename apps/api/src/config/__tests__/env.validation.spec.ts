@@ -1,6 +1,6 @@
 import { validateEnv } from '../env.validation';
 
-/** Bộ biến môi trường tối thiểu để validateEnv đi qua. */
+/** Minimal set of environment variables for validateEnv to pass. */
 const base = {
   DATABASE_URL: 'postgresql://user:pass@localhost:5432/guild',
   AUTH_SECRET: 'x'.repeat(32),

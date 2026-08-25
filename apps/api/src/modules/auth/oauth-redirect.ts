@@ -1,13 +1,13 @@
-/** Trang mặc định sau khi đăng nhập, cũng là giá trị an toàn khi redirect không hợp lệ. */
+/** Default page after login, and the safe fallback when a redirect is invalid. */
 const DEFAULT_REDIRECT = '/';
 
 /**
- * Lọc tham số `redirect` do client gửi lên.
+ * Sanitise the client-supplied `redirect` parameter.
  *
- * Chỉ chấp nhận đường dẫn tương đối một gạch. `//host` bị loại vì trình duyệt hiểu nó là
- * protocol-relative URL — nhận vào là mở đường cho open redirect ngay giữa luồng đăng nhập.
- * @param value - Giá trị `redirect` thô, undefined khi không có
- * @returns Đường dẫn an toàn để redirect sau khi đăng nhập
+ * Only single-slash relative paths are accepted. `//host` is rejected because browsers read it as a
+ * protocol-relative URL — accepting it opens an open redirect in the middle of the login flow.
+ * @param value - Raw `redirect` value, undefined when absent
+ * @returns A safe path to redirect to after login
  */
 export function safeRedirect(value: string | undefined): string {
   if (!value?.startsWith('/') || value.startsWith('//'))
@@ -17,11 +17,11 @@ export function safeRedirect(value: string | undefined): string {
 }
 
 /**
- * Dựng URL tuyệt đối trỏ về frontend.
- * @param origin - WEB_ORIGIN đã cấu hình
- * @param path - Đường dẫn tương đối, bắt đầu bằng `/`
- * @param params - Query string cần gắn thêm
- * @returns URL đầy đủ để trả trong header Location
+ * Build an absolute URL pointing back at the frontend.
+ * @param origin - The configured WEB_ORIGIN
+ * @param path - Relative path, starting with `/`
+ * @param params - Extra query string parameters
+ * @returns The full URL for the Location header
  */
 export function webUrl(
   origin: string,

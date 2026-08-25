@@ -6,18 +6,18 @@ import { ConfirmDeleteDialog } from "@/components/shared/confirm-delete-dialog";
 import { useDeleteMember } from "../hooks/use-member-mutations";
 
 interface DeleteMemberDialogProps {
-  /** Thành viên sắp xoá; null thì dialog đóng */
+  /** Member about to be deleted; null closes the dialog */
   member: GuildMember | null;
-  /** Gọi khi dialog đóng lại */
+  /** Called when the dialog closes */
   onClose: () => void;
 }
 
 /**
- * Xác nhận xoá một thành viên. Nói thẳng là mất cả lịch sử vì database xoá cascade,
- * không có đường khôi phục.
- * @param member - Thành viên sắp xoá; null thì dialog đóng
- * @param onClose - Gọi khi dialog đóng lại
- * @returns Dialog xác nhận xoá
+ * Confirm deleting a member. It says plainly that the history goes too, because the database cascades
+ * and there is no way back.
+ * @param member - Member about to be deleted; null closes the dialog
+ * @param onClose - Called when the dialog closes
+ * @returns The delete confirmation dialog
  */
 export function DeleteMemberDialog({
   member,
@@ -31,8 +31,8 @@ export function DeleteMemberDialog({
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
-      // Vỏ không mount thân khi đóng nên nhánh rỗng không bao giờ hiện ra;
-      // nó có mặt vì `title` là chuỗi bắt buộc còn `member` thì nullable.
+      // The shell does not mount the body while closed, so the empty branch never renders; it exists
+      // because `title` is a required string while `member` is nullable.
       title={member ? `Xoá ${member.name}?` : ""}
       submitLabel="Xoá thành viên"
       pendingLabel="Đang xoá…"

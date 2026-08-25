@@ -8,27 +8,27 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-/** Các mức số hàng mỗi trang cho người dùng chọn. */
+/** The page-size options offered to the user. */
 export const PAGE_SIZE_OPTIONS = [10, 20, 50] as const;
 
-/** Số hàng mỗi trang mặc định cho các bảng. */
+/** Default page size for tables. */
 export const DEFAULT_PAGE_SIZE = PAGE_SIZE_OPTIONS[0];
 
 interface PageSizeSelectProps {
-  /** Số hàng mỗi trang đang chọn. */
+  /** Currently selected page size. */
   value: number;
-  /** Gọi khi người dùng đổi số hàng mỗi trang. */
+  /** Called when the user changes the page size. */
   onValueChange: (pageSize: number) => void;
-  /** ID cho trigger, dùng khi cần gắn label bên ngoài. */
+  /** Trigger id, for attaching an external label. */
   id?: string;
 }
 
 /**
- * Bộ chọn số hàng mỗi trang dùng chung cho các bảng — controlled từ component cha.
- * @param value - Số hàng mỗi trang đang chọn
- * @param onValueChange - Gọi khi người dùng đổi mức
- * @param id - ID cho trigger
- * @returns Select số hàng mỗi trang
+ * The shared page-size picker for tables — controlled by the parent component.
+ * @param value - Currently selected page size
+ * @param onValueChange - Called when the user picks another size
+ * @param id - Trigger id
+ * @returns The page-size select
  */
 export function PageSizeSelect({
   value,

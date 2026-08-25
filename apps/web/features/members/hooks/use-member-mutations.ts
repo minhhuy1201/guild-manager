@@ -9,17 +9,17 @@ import type {
 import { useInvalidate } from "@/hooks/use-invalidate";
 import { createMember, deleteMember, updateMember } from "../api/members-api";
 
-/** Payload sửa một thành viên. */
+/** Payload for editing a member. */
 export interface UpdateMemberVariables {
-  /** Id thành viên cần sửa */
+  /** Id of the member to edit */
   id: string;
-  /** Các field cần đổi */
+  /** Fields to change */
   input: UpdateCharacterInput;
 }
 
 /**
- * Mutation thêm thành viên.
- * @returns Mutation TanStack (dùng mutateAsync để bắt lỗi backend)
+ * The create-member mutation.
+ * @returns The TanStack mutation (use mutateAsync to catch backend errors)
  */
 export function useCreateMember() {
   const invalidate = useInvalidate("roster");
@@ -31,8 +31,8 @@ export function useCreateMember() {
 }
 
 /**
- * Mutation sửa thành viên.
- * @returns Mutation TanStack (dùng mutateAsync để bắt lỗi backend)
+ * The edit-member mutation.
+ * @returns The TanStack mutation (use mutateAsync to catch backend errors)
  */
 export function useUpdateMember() {
   const invalidate = useInvalidate("roster");
@@ -46,8 +46,8 @@ export function useUpdateMember() {
 
 
 /**
- * Mutation xoá thành viên.
- * @returns Mutation TanStack (dùng mutateAsync để bắt lỗi backend)
+ * The delete-member mutation.
+ * @returns The TanStack mutation (use mutateAsync to catch backend errors)
  */
 export function useDeleteMember() {
   const invalidate = useInvalidate("roster");

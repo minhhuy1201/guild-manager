@@ -2,7 +2,7 @@ import { weekStartQuerySchema } from '@guild/shared/schemas';
 import { createZodDto } from 'nestjs-zod';
 
 /**
- * Query string của `GET /battle-sessions`.
- * Schema dùng chung với frontend (packages/shared/schemas) để hai bên không lệch nhau.
+ * Query string of `GET /battle-sessions`.
+ * Shares its schema with the frontend (packages/shared/schemas) so the two cannot drift.
  */
 export class WeekStartQueryDto extends createZodDto(weekStartQuerySchema) {}

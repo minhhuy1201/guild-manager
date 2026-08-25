@@ -10,14 +10,14 @@ import type { Request, Response } from 'express';
 
 import { REQUEST_ID_HEADER } from '../constants/http.constant';
 
-/** Từ mốc status này trở lên là lỗi phía server — cần ghi log kèm stack. */
+/** At and above this status the error is server-side — log it with a stack. */
 const SERVER_ERROR_STATUS: number = HttpStatus.INTERNAL_SERVER_ERROR;
 
-/** Body lỗi thống nhất mà mọi endpoint trả về khi có exception. */
+/** The uniform error body every endpoint returns on an exception. */
 export interface ErrorResponseBody {
   statusCode: number;
   message: string;
-  /** Chi tiết lỗi validate (nếu có) — do ZodValidationPipe sinh ra. */
+  /** Validation details when present — produced by ZodValidationPipe. */
   errors?: unknown;
   path: string;
   requestId: string;
@@ -25,17 +25,17 @@ export interface ErrorResponseBody {
 }
 
 /**
- * Bắt mọi exception chưa xử lý và chuẩn hóa thành một format response duy nhất,
- * để frontend chỉ cần một chỗ đọc lỗi.
+ * Catches every unhandled exception and normalises it into one response shape, so the frontend
+ * reads errors in a single place.
  */
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
   private readonly logger = new Logger(AllExceptionsFilter.name);
 
   /**
-   * Chuyển exception thành HTTP response theo format thống nhất.
-   * @param exception - Exception bất kỳ do Nest bắt được
-   * @param host - Ngữ cảnh thực thi, dùng để lấy request/response của Express
+   * Turn an exception into the uniform HTTP response.
+   * @param exception - Any exception Nest caught
+   * @param host - Execution context, used to get the Express request/response
    */
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
@@ -67,10 +67,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
 }
 
 /**
- * Tách message và chi tiết lỗi ra khỏi exception.
- * Export để `__tests__` kiểm từng nhánh trực tiếp, không phải dựng `ArgumentsHost` giả.
- * @param exception - Exception cần mô tả
- * @returns Message hiển thị được, kèm `errors` khi là lỗi validate nhiều trường
+ * Extract the message and error details from an exception.
+ * Exported so `__tests__` can exercise each branch directly instead of faking an `ArgumentsHost`.
+ * @param exception - Exception to describe
+ * @returns A displayable message, plus `errors` for multi-field validation failures
  */
 export function describeException(exception: unknown): {
   message: string;

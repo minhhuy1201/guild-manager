@@ -1,10 +1,10 @@
 /**
- * Cửa vào phía **client** của feature auth — an toàn cho cả Server lẫn Client Component.
+ * The **client** entry point of the auth feature — safe for both Server and Client Components.
  *
- * Phần chạm cookie (`getSession`, `getAccessToken`, `createSession`, `fetchMe`) nằm ở
- * `./server` chứ không phải đây: chúng kéo theo `next/headers`, mà một Client Component
- * import trúng barrel này là cả build vỡ với "You're importing a module that depends on
- * next/headers". Trước khi tách, `members-panel.tsx` chỉ cần `useSession` cũng đủ làm chết app.
+ * Everything touching cookies (`getSession`, `getAccessToken`, `createSession`, `fetchMe`) lives in
+ * `./server`, not here: those pull in `next/headers`, and a Client Component importing this barrel
+ * would break the whole build with "You're importing a module that depends on next/headers". Before
+ * the split, `members-panel.tsx` needing only `useSession` was enough to kill the app.
  */
 export { DiscordLoginButton } from "./components/discord-login-button";
 export { UserMenu } from "./components/user-menu";

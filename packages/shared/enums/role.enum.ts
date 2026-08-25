@@ -1,24 +1,24 @@
 /**
- * Vai trò trong bang. Đi qua mạng (nằm trong payload JWT và response `/auth/me`)
- * nên định nghĩa phải ở package dùng chung, và phải trùng giá trị enum GuildRole của Prisma.
+ * Guild role. Travels over the network (JWT payload and `/auth/me`), so it lives
+ * in the shared package and must match Prisma's GuildRole enum values.
  */
 export enum GuildRole {
-  /** Toàn quyền: quản lý thành viên, lịch đánh, đội hình, điểm danh hộ */
+  /** Full access: members, schedule, formations, attendance on behalf of others */
   ADMIN = "ADMIN",
-  /** Cán bộ: xem điểm danh cả bang để nhắc nhở, chỉ tự điểm danh cho mình */
+  /** Sees the whole guild's attendance to chase people, marks only their own */
   LEADER = "LEADER",
-  /** Bang chúng: chỉ thấy và điểm danh cho nhân vật của mình */
+  /** Sees and marks attendance only for their own character */
   MEMBER = "MEMBER",
 }
 
-/** Nhãn hiển thị tiếng Việt cho từng vai. */
+/** Vietnamese display label per role. */
 export const GUILD_ROLE_LABEL: Record<GuildRole, string> = {
   [GuildRole.ADMIN]: "Quản trị",
   [GuildRole.LEADER]: "Cán bộ",
   [GuildRole.MEMBER]: "Bang chúng",
 };
 
-/** Danh sách vai theo thứ tự hiển thị trong dropdown. */
+/** Roles in dropdown display order. */
 export const GUILD_ROLE_OPTIONS: GuildRole[] = [
   GuildRole.MEMBER,
   GuildRole.LEADER,

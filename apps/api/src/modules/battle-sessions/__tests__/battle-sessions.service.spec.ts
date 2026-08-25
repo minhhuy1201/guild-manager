@@ -6,35 +6,35 @@ import { BattleSessionsService } from '../battle-sessions.service';
 import { weekStartOf } from '../session-schedule';
 
 /**
- * Tạo Date từ giờ Việt Nam (UTC+7) cho dễ đọc trong test.
- * @param iso - Chuỗi dạng '2026-07-22T12:00' hiểu theo giờ VN
- * @returns Date UTC tương ứng
+ * Build a Date from Vietnam time (UTC+7) for readability in tests.
+ * @param iso - A string like '2026-07-22T12:00', read as Vietnam time
+ * @returns The matching UTC Date
  */
 function vn(iso: string): Date {
   return new Date(`${iso}:00+07:00`);
 }
 
-// Thứ 4 2026-07-22 → tuần đang mở bắt đầu Thứ 2 2026-07-20, tuần kế 2026-07-27.
+// Wednesday 2026-07-22 → the open week starts Monday 2026-07-20, the next one 2026-07-27.
 const WEDNESDAY = vn('2026-07-22T12:00');
 const WEEK_START = weekStartOf(vn('2026-07-20T00:00'));
 const NEXT_WEEK_START = weekStartOf(vn('2026-07-27T00:00'));
 const LAST_WEEK_START = weekStartOf(vn('2026-07-13T00:00'));
 
 /**
- * Đọc tham số đầu tiên của lần gọi thứ `index` — jest.Mock không giữ kiểu nên
- * bóc qua đây một lần thay vì rải ép kiểu khắp file.
- * @param mock - Mock cần đọc
- * @param index - Lần gọi thứ mấy (tính từ 0)
- * @returns Tham số đầu tiên của lần gọi đó
+ * Read the first argument of call number `index` — jest.Mock loses the types, so unwrap once here
+ * instead of scattering casts across the file.
+ * @param mock - Mock to inspect
+ * @param index - Which call (0-based)
+ * @returns The first argument of that call
  */
 function firstArg(mock: jest.Mock, index: number): unknown {
   return (mock.mock.calls[index] as unknown[])[0];
 }
 
 /**
- * Dựng một hàng BattleSession như Prisma trả về (kèm `_count`).
- * @param overrides - Các field muốn ghi đè
- * @returns Hàng BattleSession giả lập
+ * Build a BattleSession row as Prisma returns it (with `_count`).
+ * @param overrides - Fields to override
+ * @returns The fake BattleSession row
  */
 function row(overrides: Record<string, unknown> = {}) {
   return {
@@ -51,7 +51,7 @@ function row(overrides: Record<string, unknown> = {}) {
 
 describe('BattleSessionsService', () => {
   let service: BattleSessionsService;
-  /** Dựng service với một mốc thời gian cố định — vài test cần mốc khác WEDNESDAY. */
+  /** Build the service with a fixed clock — a few tests need a moment other than WEDNESDAY. */
   let makeService: (now: Date) => BattleSessionsService;
   let prisma: {
     battleSession: {
@@ -116,8 +116,8 @@ describe('BattleSessionsService', () => {
   });
 
   describe('listByWeek nhận mốc tuần từ query', () => {
-    // 400 cho người dùng là việc của `weekStartQuerySchema` ở biên HTTP; tầng
-    // service chỉ phải ném ngay thay vì để `Invalid Date` rơi xuống Prisma.
+    // Returning 400 to the user is `weekStartQuerySchema`'s job at the HTTP boundary; the service
+    // layer only has to throw immediately instead of letting `Invalid Date` reach Prisma.
     it('chuỗi hỏng thì ném ngay, không rơi xuống Prisma', async () => {
       await expect(service.listByWeek('xyz')).rejects.toThrow(RangeError);
       expect(prisma.battleSession.findMany).not.toHaveBeenCalled();
@@ -151,8 +151,8 @@ describe('BattleSessionsService', () => {
       await service.ensureWeekMaterialized(WEEK_START);
       await service.ensureWeekMaterialized(WEEK_START);
 
-      // Cùng id ở cả `where` lẫn `create` nên lần gọi thứ hai rơi vào nhánh
-      // update của cùng một hàng, không thể sinh trận thứ hai.
+      // The same id in both `where` and `create`, so the second call lands on the update branch of
+      // the same row and cannot produce a second session.
       expect(firstArg(prisma.battleSession.upsert, 0)).toMatchObject({
         where: { id: 'gw-2026-07-20' },
         create: { id: 'gw-2026-07-20' },
@@ -325,7 +325,7 @@ describe('BattleSessionsService', () => {
     });
 
     it('từ chối khi dời giờ đánh khiến hạn chót cũ vượt trần', async () => {
-      // Hàng cũ theo luật trước đây: trận Thứ 5 với hạn chót 17:00 Thứ 5.
+      // A legacy row under the previous rule: a Thursday session with a 17:00 Thursday deadline.
       prisma.battleSession.findUnique.mockResolvedValue(
         row({
           dateTime: vn('2026-07-23T20:30'),

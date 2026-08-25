@@ -16,16 +16,16 @@ import {
 import { ROUTES } from "@/config/routes";
 
 /**
- * Đọc AUTH_SECRET, kêu to khi thiếu.
+ * Read AUTH_SECRET, complaining loudly when it is missing.
  *
- * Thiếu biến này thì mọi token đều không verify được, tức là quản trị viên đăng nhập xong vẫn bị
- * đá khỏi route quản trị — triệu chứng giống hệt phiên hết hạn nên rất dễ đi tìm nhầm chỗ. Không
- * ném lỗi vì proxy chạy trước **mọi** trang: ném là sập cả trang điểm danh công khai, trong khi
- * cấu hình sai chỉ ảnh hưởng phần quản trị. `getAuthSecret()` trong `features/auth/api/session.ts`
- * cố ý làm ngược lại (ném) vì Server Component lỗi thì chỉ hỏng đúng trang đó — đừng "sửa" cho hai
- * hàm giống nhau.
+ * Without it no token verifies, so an admin who has just signed in is still bounced off the admin
+ * routes — a symptom identical to an expired session and easy to chase in the wrong place. It does not
+ * throw because the proxy runs before **every** page: throwing would take down the public attendance
+ * page too, while the misconfiguration only affects the admin part. `getAuthSecret()` in
+ * `features/auth/api/session.ts` deliberately does the opposite (it throws) because a failing Server
+ * Component only breaks that one page — do not "fix" the two to match.
  *
- * @returns Khóa ký JWT, hoặc undefined khi chưa cấu hình
+ * @returns The JWT signing key, or undefined when unconfigured
  */
 function readAuthSecret(): string | undefined {
   const secret = process.env.AUTH_SECRET;
@@ -40,14 +40,14 @@ function readAuthSecret(): string | undefined {
 }
 
 /**
- * Chạy trước mỗi request trang để làm hai việc:
- * 1. Tự gia hạn phiên — access token hết hạn mà refresh token còn hạn thì đổi cặp token mới.
- *    Proxy là chỗ duy nhất trong Next ghi được cookie cho mọi request, nên việc refresh
- *    phải nằm ở đây thay vì trong Server Component.
- * 2. Quyết định request được đi tiếp hay bị đá đi đâu — mặc định là **cần đăng nhập**:
- *    ngoài `/dang-nhap` thì không còn trang công khai nào.
- * @param request - Request đang được xử lý
- * @returns Response tiếp tục xử lý (kèm cookie mới nếu vừa gia hạn), hoặc redirect
+ * Runs before every page request, doing two things:
+ * 1. Refreshing the session — when the access token expired but the refresh token has not, it trades
+ *    for a new pair. The proxy is the only place in Next that can write cookies for every request, so
+ *    refreshing belongs here rather than in a Server Component.
+ * 2. Deciding whether the request goes through and where it is sent otherwise — the default is
+ *    **sign-in required**: apart from `/dang-nhap` there is no public page left.
+ * @param request - The request being handled
+ * @returns The response continuing the request (with new cookies after a refresh), or a redirect
  */
 export async function proxy(request: NextRequest) {
   const secret = readAuthSecret();
@@ -68,13 +68,13 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  // Đến đây nghĩa là không có access token dùng được và cũng không gia hạn được.
+  // Reaching here means there is no usable access token and no way to refresh.
   const response =
     decideAccess({ pathname: request.nextUrl.pathname, role: null }) === "allow"
       ? NextResponse.next()
       : NextResponse.redirect(loginUrl(request));
 
-  // Xóa cookie hỏng/hết hạn để tránh gửi lại ở các request sau.
+  // Clear the broken/expired cookies so they are not sent again on later requests.
   if (accessToken) response.cookies.delete(ACCESS_TOKEN_COOKIE);
   if (refreshToken) response.cookies.delete(REFRESH_TOKEN_COOKIE);
 
@@ -82,11 +82,11 @@ export async function proxy(request: NextRequest) {
 }
 
 /**
- * Áp kết luận của `decideAccess` cho một phiên còn dùng được.
- * @param request - Request đang được xử lý
- * @param role - Vai đọc từ access token
- * @param allowed - Response dùng khi request được đi tiếp (có thể mang cookie vừa gia hạn)
- * @returns Response đi tiếp, hoặc redirect về trang điểm danh khi thiếu quyền
+ * Apply `decideAccess`'s verdict for a still-usable session.
+ * @param request - The request being handled
+ * @param role - Role read from the access token
+ * @param allowed - Response used when the request goes through (may carry refreshed cookies)
+ * @returns The continuing response, or a redirect to the attendance page when unauthorised
  */
 function decide(
   request: NextRequest,
@@ -104,9 +104,9 @@ function decide(
 }
 
 /**
- * URL trang đăng nhập, mang theo đường dẫn người dùng đang định vào.
- * @param request - Request đang xử lý
- * @returns URL tuyệt đối của trang đăng nhập
+ * The login page URL, carrying the path the user was heading to.
+ * @param request - The request being handled
+ * @returns The absolute login page URL
  */
 function loginUrl(request: NextRequest): URL {
   const url = new URL(ROUTES.login, request.url);
@@ -116,12 +116,12 @@ function loginUrl(request: NextRequest): URL {
 }
 
 /**
- * Ghi cặp token vừa gia hạn vào cả request và response.
- * Ghi vào request để Server Component của chính lần render này đọc được token mới,
- * ghi vào response để trình duyệt lưu lại cho các request sau.
- * @param request - Request đang được xử lý
- * @param tokens - Cặp token mới do API phát
- * @returns Response tiếp tục xử lý kèm cookie đã cập nhật
+ * Write the refreshed token pair into both the request and the response.
+ * Into the request so this render's Server Components read the new token, and into the response so the
+ * browser keeps it for later requests.
+ * @param request - The request being handled
+ * @param tokens - The new token pair issued by the API
+ * @returns The continuing response with updated cookies
  */
 function renewSession(request: NextRequest, tokens: AuthTokens): NextResponse {
   request.cookies.set(ACCESS_TOKEN_COOKIE, tokens.accessToken);
@@ -141,6 +141,6 @@ function renewSession(request: NextRequest, tokens: AuthTokens): NextResponse {
 }
 
 export const config = {
-  // Chạy trên mọi route trang (bỏ qua static asset) để phiên được gia hạn ở bất cứ trang nào.
+  // Runs on every page route (static assets excluded) so the session refreshes on any page.
   matcher: ["/((?!_next/static|_next/image|favicon.ico|img/).*)"],
 };

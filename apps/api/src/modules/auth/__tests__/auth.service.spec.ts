@@ -4,10 +4,10 @@ import { GuildClass, GuildRole } from '@guild/shared/enums';
 import { AuthService } from '../auth.service';
 import { AUTH_ERROR } from '../auth.constant';
 
-/** Discord ID nằm trong danh sách cứu hộ của cấu hình giả bên dưới. */
+/** A Discord ID on the rescue list of the fake config below. */
 const RESCUE_ID = '999888777666555444';
 
-/** Cấu hình env giả cho service. */
+/** Fake env config for the service. */
 const config = {
   get: (key: string) =>
     ({
@@ -22,7 +22,7 @@ const config = {
 const now = new Date('2026-08-24T10:00:00.000Z');
 const clock = { now: () => now } as never;
 
-/** Một hàng Character đủ để dựng SessionUser. */
+/** A Character row sufficient to build a SessionUser. */
 const ROW = {
   id: 'meo-beo-k7ma3x',
   name: 'Mèo Béo',
@@ -31,9 +31,9 @@ const ROW = {
 };
 
 /**
- * Giả hai lời gọi fetch của `exchangeCodeForProfile`: đổi code rồi đọc hồ sơ.
- * @param profile - Hồ sơ Discord mà lời gọi thứ hai trả về
- * @returns Mock của global.fetch
+ * Fake the two fetch calls in `exchangeCodeForProfile`: the code exchange, then the profile read.
+ * @param profile - Discord profile the second call returns
+ * @returns The global.fetch mock
  */
 function mockDiscord(profile: {
   id: string;
@@ -51,9 +51,9 @@ function mockDiscord(profile: {
 }
 
 /**
- * Dựng AuthService với các phụ thuộc giả.
- * @param overrides - Prisma, CharactersService và JwtService giả cho từng ca test
- * @returns Service đã sẵn sàng gọi cùng các mock để đọc lại lời gọi
+ * Build AuthService with fake dependencies.
+ * @param overrides - Fake Prisma, CharactersService and JwtService per test case
+ * @returns The ready service plus the mocks, to inspect the calls
  */
 function makeService(overrides: {
   characters?: Record<string, jest.Mock>;
@@ -115,7 +115,7 @@ describe('AuthService.authorizeUrl', () => {
 });
 
 describe('AuthService.handleCallback', () => {
-  /** State hợp lệ mà `readState` sẽ đọc được. */
+  /** A valid state that `readState` will accept. */
   const validState = { sub: 'nonce', type: 'oauth_state', redirect: '/' };
 
   it('đá về trang đăng nhập khi Discord ID không thuộc bang', async () => {

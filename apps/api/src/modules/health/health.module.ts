@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { HealthController } from './health.controller';
 
-/** Module health check — mẫu tham chiếu cho cấu trúc một module nghiệp vụ. */
+/** Health check module — the reference shape for a feature module. */
 @Module({
   controllers: [HealthController],
 })

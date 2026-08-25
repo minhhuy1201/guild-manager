@@ -10,25 +10,25 @@ import type { Request } from 'express';
 import { readBearerToken } from '../auth/read-bearer-token';
 import { TOKEN_TYPE, type JwtPayload } from '../constants/auth.constant';
 
-/** Request đã qua guard thì có thêm thông tin người dùng. */
+/** A request past this guard carries the user info. */
 export interface AuthenticatedRequest extends Request {
-  /** Payload của access token đã verify */
+  /** Payload of the verified access token */
   user?: JwtPayload;
 }
 
 /**
- * Chặn request không có access token hợp lệ trong header `Authorization: Bearer <token>`.
- * Verify xong thì gắn payload vào `request.user` để `@CurrentUser()` đọc lại.
+ * Rejects requests without a valid access token in `Authorization: Bearer <token>`.
+ * On success the payload is attached to `request.user` for `@CurrentUser()` to read.
  */
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
   constructor(private readonly jwt: JwtService) {}
 
   /**
-   * Kiểm tra access token của request.
-   * @param context - Ngữ cảnh thực thi, dùng để lấy request của Express
-   * @returns true khi token hợp lệ
-   * @throws UnauthorizedException khi thiếu token, token sai/hết hạn, hoặc không phải access token
+   * Check the request's access token.
+   * @param context - Execution context, used to get the Express request
+   * @returns true when the token is valid
+   * @throws UnauthorizedException when the token is missing, invalid/expired, or not an access token
    */
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
@@ -39,8 +39,8 @@ export class JwtAuthGuard implements CanActivate {
       TOKEN_TYPE.access,
     );
 
-    // Một câu cho mọi trường hợp: với người dùng, thiếu token và token hỏng dẫn tới cùng một hành
-    // động; với kẻ dò, phân biệt hai ca là thông tin thừa.
+    // One sentence for every case: to a user, a missing and a malformed token lead to the same
+    // action; to a prober, telling the two apart is free information.
     if (!payload) throw new UnauthorizedException('Bạn cần đăng nhập.');
 
     request.user = payload;

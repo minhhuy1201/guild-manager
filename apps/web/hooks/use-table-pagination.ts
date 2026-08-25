@@ -5,40 +5,40 @@ import { useState } from "react";
 import { DEFAULT_PAGE_SIZE } from "@/components/shared/page-size-select";
 
 interface UseTablePaginationOptions<TItem> {
-  /** Toàn bộ danh sách đã lọc, chưa cắt trang. */
+  /** The whole filtered list, before paging. */
   items: TItem[];
   /**
-   * Giá trị mô tả bộ lọc hiện tại (từ khoá, lưu phái, mảng đã lọc...).
-   * Đổi giá trị này sẽ đưa về trang 1 để không kẹt ở trang trống.
+   * A value describing the current filter (search text, classes, the filtered array…).
+   * Changing it resets to page 1 so the table cannot get stuck on an empty page.
    */
   resetKey?: unknown;
-  /** Số hàng mỗi trang lúc đầu (mặc định DEFAULT_PAGE_SIZE). */
+  /** Initial page size (defaults to DEFAULT_PAGE_SIZE). */
   initialPageSize?: number;
 }
 
 interface TablePaginationState<TItem> {
-  /** Trang đang xem, đã kẹp trong [1, pageCount]. */
+  /** Current page, clamped to [1, pageCount]. */
   page: number;
-  /** Tổng số trang (tối thiểu 1). */
+  /** Total number of pages (at least 1). */
   pageCount: number;
-  /** Số hàng mỗi trang đang chọn. */
+  /** Currently selected page size. */
   pageSize: number;
-  /** Tổng số phần tử trước khi cắt trang. */
+  /** Total items before paging. */
   total: number;
-  /** Phần tử của trang hiện tại. */
+  /** Items on the current page. */
   pagedItems: TItem[];
-  /** Chuyển sang trang khác. */
+  /** Go to another page. */
   setPage: (page: number) => void;
-  /** Đổi số hàng mỗi trang, tự đưa về trang 1. */
+  /** Change the page size, resetting to page 1. */
   setPageSize: (pageSize: number) => void;
 }
 
 /**
- * State phân trang phía client dùng chung cho các bảng.
- * Tự đưa về trang 1 khi bộ lọc đổi và luôn kẹp trang trong khoảng hợp lệ,
- * nên xoá bớt phần tử ở trang cuối cũng không rơi vào trang trống.
+ * The shared client-side pagination state for tables.
+ * It resets to page 1 when the filter changes and always clamps the page to a valid range, so deleting
+ * the last page's items never lands on an empty page.
  * @param options - items, resetKey, initialPageSize
- * @returns State và phần tử đã cắt theo trang
+ * @returns The state and the current page's items
  */
 export function useTablePagination<TItem>({
   items,
@@ -49,7 +49,7 @@ export function useTablePagination<TItem>({
   const [pageSize, setPageSizeState] = useState(initialPageSize);
   const [prevResetKey, setPrevResetKey] = useState(resetKey);
 
-  // Điều chỉnh state ngay trong render thay vì useEffect (tránh cascading render).
+  // Adjusted during render rather than in a useEffect (avoids a cascading render).
   if (resetKey !== prevResetKey) {
     setPrevResetKey(resetKey);
     setPage(1);
@@ -59,8 +59,8 @@ export function useTablePagination<TItem>({
   const safePage = Math.min(page, pageCount);
 
   /**
-   * Đổi số hàng mỗi trang và quay về trang đầu cho khỏi lệch ngữ cảnh.
-   * @param next - Số hàng mỗi trang mới
+   * Change the page size and return to the first page, so the context does not jump.
+   * @param next - The new page size
    */
   const setPageSize = (next: number) => {
     setPageSizeState(next);

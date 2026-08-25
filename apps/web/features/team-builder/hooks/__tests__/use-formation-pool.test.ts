@@ -310,7 +310,7 @@ describe("useFormationPool — thông báo điền sẵn", () => {
     const { result } = renderPool({ sessions: SESSIONS_WITH_SOURCE });
 
     act(() => {
-      // Đúng thứ clearActiveDraft ghi: nháp vẫn còn, mọi ô đều rỗng.
+      // Exactly what clearActiveDraft writes: the draft is still there, every slot empty.
       useFormationStore
         .getState()
         .setDraft(SESSION_ID, [{ assignment: { [SLOT]: null }, notes: {} }]);

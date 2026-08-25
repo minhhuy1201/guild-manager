@@ -26,20 +26,20 @@ import { GUILD_CLASS_IMAGE } from "@/lib/guild-class";
 import { useCreateMember, useUpdateMember } from "../hooks/use-member-mutations";
 
 interface MemberFormDialogProps {
-  /** Dialog đang mở hay không */
+  /** Whether the dialog is open */
   open: boolean;
-  /** Thành viên đang sửa; null nghĩa là đang thêm mới */
+  /** Member being edited; null means creating */
   member: GuildMember | null;
-  /** Gọi khi dialog đóng lại */
+  /** Called when the dialog closes */
   onOpenChange: (open: boolean) => void;
 }
 
 /**
- * Form thêm/sửa một thành viên.
- * @param open - Dialog đang mở hay không
- * @param member - Thành viên đang sửa; null nghĩa là thêm mới
- * @param onOpenChange - Gọi khi dialog đóng lại
- * @returns Dialog form
+ * The create/edit member form.
+ * @param open - Whether the dialog is open
+ * @param member - Member being edited; null means creating
+ * @param onOpenChange - Called when the dialog closes
+ * @returns The form dialog
  */
 export function MemberFormDialog({
   open,
@@ -47,7 +47,7 @@ export function MemberFormDialog({
   onOpenChange,
 }: MemberFormDialogProps) {
   return (
-    // Vỏ chỉ mount thân khi mở, nên state của form tự reset mỗi lần mở lại.
+    // The shell only mounts the body while open, so the form state resets on every open.
     <MutationDialogShell open={open} onOpenChange={onOpenChange}>
       <MemberForm member={member} onDone={() => onOpenChange(false)} />
     </MutationDialogShell>
@@ -55,17 +55,17 @@ export function MemberFormDialog({
 }
 
 interface MemberFormProps {
-  /** Thành viên đang sửa; null nghĩa là thêm mới */
+  /** Member being edited; null means creating */
   member: GuildMember | null;
-  /** Gọi khi đóng dialog */
+  /** Called when the dialog closes */
   onDone: () => void;
 }
 
 /**
- * Các ô nhập của một thành viên: tên, lưu phái và Discord ID.
- * @param member - Thành viên đang sửa; null nghĩa là thêm mới
- * @param onDone - Gọi khi đóng dialog
- * @returns Form thêm/sửa thành viên
+ * A member's input fields: name, class and Discord ID.
+ * @param member - Member being edited; null means creating
+ * @param onDone - Called when the dialog closes
+ * @returns The create/edit member form
  */
 function MemberForm({ member, onDone }: MemberFormProps) {
   const [name, setName] = useState(member?.name ?? "");
@@ -89,7 +89,7 @@ function MemberForm({ member, onDone }: MemberFormProps) {
         const input = { name: name.trim(), guildClass };
 
         if (member) {
-          // `discordId` chỉ sửa được ở thành viên đã có; backend nhận null để gỡ liên kết.
+          // `discordId` is only editable on an existing member; the backend takes null to unlink.
           await updateMutation.mutateAsync({
             id: member.id,
             input: { ...input, discordId: discordId.trim() || null },
@@ -134,7 +134,7 @@ function MemberForm({ member, onDone }: MemberFormProps) {
               {() => <GuildClassOption guildClass={guildClass} />}
             </SelectValue>
           </SelectTrigger>
-          {/* Mở như popover dưới trigger thay vì neo item đang chọn vào trigger. */}
+          {/* Open as a popover under the trigger instead of anchoring the selected item to it. */}
           <SelectContent alignItemWithTrigger={false}>
             {GUILD_CLASS_OPTIONS.map((option) => (
               <SelectItem key={option} value={option}>
@@ -149,14 +149,14 @@ function MemberForm({ member, onDone }: MemberFormProps) {
 }
 
 interface GuildClassOptionProps {
-  /** Lưu phái cần hiển thị */
+  /** Class to display */
   guildClass: GuildClass;
 }
 
 /**
- * Một dòng lưu phái trong select: icon rồi tới tên, giống ô lọc lưu phái.
- * @param guildClass - Lưu phái cần hiển thị
- * @returns Icon kèm tên lưu phái
+ * One class row in the select: icon then name, like the class filter.
+ * @param guildClass - Class to display
+ * @returns The icon with the class name
  */
 function GuildClassOption({ guildClass }: GuildClassOptionProps) {
   return (

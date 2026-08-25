@@ -1,7 +1,4 @@
-/**
- * Lưu phái (class nhân vật) trong game.
- * Dùng chung cho cả FE và BE.
- */
+/** In-game character class. */
 export enum GuildClass {
   CUU_LINH = "CUU_LINH",
   HUYET_HA = "HUYET_HA",
@@ -12,9 +9,7 @@ export enum GuildClass {
   TO_VAN = "TO_VAN",
 }
 
-/**
- * Nhãn hiển thị tiếng Việt cho từng lưu phái.
- */
+/** Vietnamese display label per class. */
 export const GUILD_CLASS_LABEL: Record<GuildClass, string> = {
   [GuildClass.CUU_LINH]: "Cửu Linh",
   [GuildClass.HUYET_HA]: "Huyết Hà",
@@ -25,5 +20,5 @@ export const GUILD_CLASS_LABEL: Record<GuildClass, string> = {
   [GuildClass.TO_VAN]: "Tố Vấn",
 };
 
-/** Danh sách lưu phái theo thứ tự hiển thị. */
+/** Classes in display order. */
 export const GUILD_CLASS_OPTIONS: GuildClass[] = Object.values(GuildClass);

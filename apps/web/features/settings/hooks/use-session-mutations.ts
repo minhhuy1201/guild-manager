@@ -13,17 +13,17 @@ import {
   updateBattleSession,
 } from "../api/battle-sessions-api";
 
-/** Payload sửa một trận. */
+/** Payload for editing a session. */
 export interface UpdateSessionVariables {
-  /** Id trận cần sửa */
+  /** Id of the session to edit */
   id: string;
-  /** Các field cần đổi */
+  /** Fields to change */
   input: UpdateBattleSessionInput;
 }
 
 /**
- * Mutation thêm trận scrim.
- * @returns Mutation TanStack (dùng mutateAsync để bắt lỗi backend)
+ * The create-scrim mutation.
+ * @returns The TanStack mutation (use mutateAsync to catch backend errors)
  */
 export function useCreateSession() {
   const invalidate = useInvalidate("schedule");
@@ -35,8 +35,8 @@ export function useCreateSession() {
 }
 
 /**
- * Mutation sửa trận.
- * @returns Mutation TanStack (dùng mutateAsync để bắt lỗi backend)
+ * The edit-session mutation.
+ * @returns The TanStack mutation (use mutateAsync to catch backend errors)
  */
 export function useUpdateSession() {
   const invalidate = useInvalidate("schedule");
@@ -49,8 +49,8 @@ export function useUpdateSession() {
 }
 
 /**
- * Mutation xoá trận scrim.
- * @returns Mutation TanStack (dùng mutateAsync để bắt lỗi backend)
+ * The delete-scrim mutation.
+ * @returns The TanStack mutation (use mutateAsync to catch backend errors)
  */
 export function useDeleteSession() {
   const invalidate = useInvalidate("schedule");

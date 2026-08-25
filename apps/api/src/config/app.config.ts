@@ -2,24 +2,24 @@ import { ConfigService } from '@nestjs/config';
 
 import type { Env } from './env.validation';
 
-/** ConfigService đã gắn kiểu Env — inject kiểu này thay vì ConfigService trần. */
+/** ConfigService typed with Env — inject this instead of a bare ConfigService. */
 export type AppConfigService = ConfigService<Env, true>;
 
-/** Prefix chung cho mọi route HTTP. */
+/** Shared prefix for every HTTP route. */
 export const API_PREFIX = 'api';
 
 /**
- * Đường dẫn trang Swagger UI (chỉ bật ngoài production).
- * Nằm ngoài `API_PREFIX` — mở tại `http://localhost:PORT/docs`.
+ * Swagger UI path (enabled outside production only).
+ * Sits outside `API_PREFIX` — served at `http://localhost:PORT/docs`.
  */
 export const SWAGGER_PATH = 'docs';
 
 /**
- * Tham số pg pool, đặt theo khuyến nghị của Vercel cho Fluid compute.
+ * pg pool settings, following Vercel's recommendations for Fluid compute.
  *
- * `idleTimeoutMillis` ngắn để nhả kết nối sớm về Supavisor. **Đừng đặt `max: 1`**: Fluid compute
- * chạy nhiều request đồng thời trên cùng một instance, pool một kết nối sẽ biến chúng thành hàng
- * đợi. `min: 1` giữ sẵn một kết nối để request kế tiếp không phải bắt tay lại từ đầu.
+ * A short `idleTimeoutMillis` returns connections to Supavisor early. **Do not set `max: 1`**:
+ * Fluid compute runs concurrent requests on one instance, and a single-connection pool turns them
+ * into a queue. `min: 1` keeps one connection warm so the next request skips the handshake.
  */
 export const DATABASE_POOL_OPTIONS = {
   min: 1,

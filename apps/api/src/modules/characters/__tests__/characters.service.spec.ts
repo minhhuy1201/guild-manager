@@ -4,7 +4,7 @@ import { GuildClass, GuildRole } from '@guild/shared/enums';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { CharactersService } from '../characters.service';
 
-/** Một hàng Character như Prisma trả về. */
+/** A Character row as Prisma returns it. */
 const ROW = {
   id: 'meo-beo-k7ma3x',
   name: 'Mèo Béo',
@@ -17,7 +17,7 @@ const ROW = {
   updatedAt: new Date(),
 };
 
-/** Thành viên như màn quản trị nhìn thấy — shape mà list/create/update trả về. */
+/** A member as the admin screen sees it — the shape list/create/update return. */
 const MEMBER = {
   id: ROW.id,
   name: ROW.name,
@@ -28,17 +28,17 @@ const MEMBER = {
   role: GuildRole.MEMBER,
 };
 
-/** Lỗi trùng khoá chính của Prisma. */
+/** Prisma's primary-key conflict error. */
 const UNIQUE_VIOLATION = Object.assign(new Error('Unique constraint failed'), {
   code: 'P2002',
 });
 
-/** Lỗi Prisma khác — service phải để nó nổi lên, không được nuốt. */
+/** A different Prisma error — the service must let it surface, not swallow it. */
 const OTHER_ERROR = Object.assign(new Error('Connection lost'), {
   code: 'P1001',
 });
 
-/** Đối số của `prisma.character.create` — khai báo để đọc lại mock.calls không lọt `any`. */
+/** Argument of `prisma.character.create` — declared so reading mock.calls does not leak `any`. */
 interface CreateArgs {
   data: {
     id: string;
@@ -47,7 +47,7 @@ interface CreateArgs {
   };
 }
 
-/** Đối số của `prisma.character.update`. */
+/** Argument of `prisma.character.update`. */
 interface UpdateArgs {
   where: { id: string };
   data: { name?: string; guildClass?: GuildClass };

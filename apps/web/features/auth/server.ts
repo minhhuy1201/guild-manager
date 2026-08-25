@@ -1,12 +1,12 @@
 import "server-only";
 
 /**
- * Cửa vào phía **server** của feature auth: mọi thứ chạm cookie phiên.
+ * The **server** entry point of the auth feature: everything touching the session cookies.
  *
- * Tách khỏi `./index.ts` vì các hàm dưới đây dùng `next/headers` — chỉ Server Component,
- * Server Action và Route Handler gọi được. `import "server-only"` ở đầu file biến một lần
- * import nhầm từ Client Component thành lỗi build có tên rõ ràng, thay vì lỗi
- * "next/headers in the Pages Router" khó lần ra.
+ * Split from `./index.ts` because the functions below use `next/headers` — only Server Components,
+ * Server Actions and Route Handlers may call them. The `import "server-only"` at the top turns an
+ * accidental import from a Client Component into a clearly named build error, instead of the
+ * hard-to-trace "next/headers in the Pages Router" one.
  */
 export { fetchMe } from "./api/me";
 export {

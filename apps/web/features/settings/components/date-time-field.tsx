@@ -23,31 +23,31 @@ import {
 } from "../lib/date-parts";
 
 interface DateTimeFieldProps {
-  /** Id của ô ngày, dùng cho label */
+  /** Id of the date input, for its label */
   id: string;
-  /** Nhãn hiển thị phía trên */
+  /** Label shown above */
   label: string;
-  /** Giá trị dạng "YYYY-MM-DDTHH:mm", rỗng nếu chưa chọn */
+  /** Value as "YYYY-MM-DDTHH:mm", empty when unset */
   value: string;
-  /** Gọi với giá trị mới; rỗng khi ngày giờ chưa hợp lệ */
+  /** Called with the new value; empty when the date/time is not yet valid */
   onChange: (value: string) => void;
-  /** Giờ điền sẵn khi chưa có giá trị, dạng HH:mm */
+  /** Time prefilled when there is no value, as HH:mm */
   defaultTime?: string;
-  /** Dòng chú thích nhỏ dưới ô, ví dụ luật giới hạn giá trị */
+  /** Small hint under the field, e.g. the value's constraint */
   description?: string;
 }
 
 /**
- * Ô nhập ngày giờ dạng dd/MM/yyyy và HH:mm, gõ tay hoặc chọn trên lịch đều được.
- * Không dùng `<input type="datetime-local">` vì trình duyệt hiển thị nó theo
- * locale của máy, máy tiếng Anh sẽ ra mm/dd/yyyy.
- * @param id - Id của ô ngày
- * @param label - Nhãn hiển thị
- * @param value - Giá trị dạng "YYYY-MM-DDTHH:mm"
- * @param onChange - Gọi với giá trị mới
- * @param defaultTime - Giờ điền sẵn khi chưa có giá trị
- * @param description - Dòng chú thích nhỏ dưới ô
- * @returns Cặp ô nhập ngày giờ kèm nút mở lịch
+ * A date/time field as dd/MM/yyyy plus HH:mm, editable by typing or through the calendar.
+ * Not `<input type="datetime-local">`, because browsers render that in the machine's locale and an
+ * English machine shows mm/dd/yyyy.
+ * @param id - Id of the date input
+ * @param label - Label shown above
+ * @param value - Value as "YYYY-MM-DDTHH:mm"
+ * @param onChange - Called with the new value
+ * @param defaultTime - Time prefilled when there is no value
+ * @param description - Small hint under the field
+ * @returns The date/time inputs with the calendar button
  */
 export function DateTimeField({
   id,
@@ -61,8 +61,8 @@ export function DateTimeField({
   const [emitted, setEmitted] = useState(value);
   const [calendarOpen, setCalendarOpen] = useState(false);
 
-  // Giá trị đến từ bên ngoài (mở lại form, hạn chót tự điền) thì nạp lại hai ô.
-  // Còn giá trị do chính ô này vừa gửi đi thì giữ nguyên chữ người dùng đang gõ.
+  // A value arriving from outside (reopening the form, an auto-filled deadline) reloads both inputs.
+  // A value this field just emitted is left alone, so what the user is typing is preserved.
   if (value !== emitted) {
     setEmitted(value);
     setParts(splitLocalValue(value, defaultTime));
@@ -71,8 +71,8 @@ export function DateTimeField({
   const isIncomplete = Boolean(parts.date && parts.time) && emitted === "";
 
   /**
-   * Cập nhật hai ô rồi báo giá trị ghép lại cho form.
-   * @param next - Nội dung mới của hai ô
+   * Update both inputs, then report the combined value to the form.
+   * @param next - New contents of the two inputs
    */
   function update(next: { date: string; time: string }) {
     const joined = joinLocalValue(next.date, next.time);
@@ -83,8 +83,8 @@ export function DateTimeField({
   }
 
   /**
-   * Điền ngày vừa chọn trên lịch, giữ nguyên giờ đang có.
-   * @param picked - Ngày người dùng bấm trên lịch
+   * Fill in the date picked on the calendar, keeping the current time.
+   * @param picked - Date the user clicked in the calendar
    */
   function handlePick(picked: Date | undefined) {
     if (!picked) return;

@@ -1,9 +1,9 @@
-/** Câu dùng khi backend gửi một mã lỗi không nằm trong bảng. */
+/** The sentence used when the backend sends an error code not in the table. */
 const FALLBACK = "Không đăng nhập được, vui lòng thử lại.";
 
 /**
- * Câu tiếng Việt cho từng mã lỗi backend gắn vào `?error=`.
- * Mã phải khớp `AUTH_ERROR` ở `apps/api/src/modules/auth/auth.constant.ts`.
+ * The Vietnamese sentence for each error code the backend puts on `?error=`.
+ * The codes must match `AUTH_ERROR` in `apps/api/src/modules/auth/auth.constant.ts`.
  */
 const MESSAGES: Record<string, string> = {
   "tu-choi": "Bạn đã huỷ đăng nhập bằng Discord.",
@@ -14,9 +14,9 @@ const MESSAGES: Record<string, string> = {
 };
 
 /**
- * Dịch mã lỗi trên query string thành câu hiển thị.
- * @param code - Giá trị `?error=`, undefined khi không có
- * @returns Câu tiếng Việt, hoặc null khi không có lỗi nào để hiện
+ * Translate the query string's error code into a displayable sentence.
+ * @param code - The `?error=` value, undefined when absent
+ * @returns The sentence, or null when there is no error to show
  */
 export function loginErrorMessage(code: string | undefined): string | null {
   if (!code) return null;

@@ -27,13 +27,13 @@ import {
 import { CharactersService } from '../characters/characters.public';
 import { decodeMatch, encodeMatch } from './formation-grid';
 
-/** Mã lỗi Prisma khi vi phạm khoá ngoại (ở đây là ô trỏ tới thành viên không còn tồn tại). */
+/** Prisma error code for a foreign key violation (here, a slot pointing at a deleted member). */
 const FOREIGN_KEY_VIOLATION = 'P2003';
 
-/** Số ngày giữ lại đội hình cũ. Quá mốc này thì dọn. */
+/** How many days old formations are kept. Past that they are purged. */
 const RETENTION_DAYS = 56;
 
-/** Số mili giây trong một ngày. */
+/** Milliseconds in a day. */
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 @Injectable()
@@ -46,14 +46,14 @@ export class TeamBuilderService {
   ) {}
 
   /**
-   * Liệt kê các tuần còn dữ liệu đội hình, mới nhất trước.
-   * Chỉ đọc — retention chạy ở đường ghi (`saveFormation`), không ở đây.
-   * @returns Mảng tuần, mới nhất trước, tuần đang mở mang cờ isActive
+   * List the weeks that still hold formation data, newest first.
+   * Read-only — retention runs on the write path (`saveFormation`), not here.
+   * @returns Weeks, newest first, the open week flagged isActive
    */
   async getWeeks(): Promise<FormationWeek[]> {
     const activeWeek = this.battleSessions.getActiveWeek();
 
-    // Sinh trước, đọc sau: tuần đang mở phải có trận thì mới xuất hiện ở đây.
+    // Materialise first, read second: the open week needs its sessions to show up here.
     await this.battleSessions.ensureWeekMaterialized(activeWeek);
 
     const anchors = await this.battleSessions.listWeekAnchors();
@@ -68,12 +68,12 @@ export class TeamBuilderService {
   }
 
   /**
-   * Xoá các đội hình cũ hơn RETENTION_DAYS.
-   * Chỉ xoá đội hình — BattleSession và điểm danh là dữ liệu của module khác.
-   * Repo không có scheduler nên `saveFormation` gọi hàm này; nó vẫn public để một cron
-   * hay một lệnh vận hành sau này gọi được mà không phải đi qua đường ghi.
-   * @param now - Thời điểm hiện tại
-   * @returns Số bản ghi đã xoá
+   * Delete formations older than RETENTION_DAYS.
+   * Formations only — BattleSession and attendance belong to other modules.
+   * The repo has no scheduler, so `saveFormation` calls this; it stays public so a cron or an ops
+   * command can call it later without going through the write path.
+   * @param now - Current moment
+   * @returns Number of deleted records
    */
   async purgeExpiredFormations(now: Date): Promise<number> {
     const cutoff = new Date(now.getTime() - RETENTION_DAYS * DAY_MS);
@@ -86,10 +86,10 @@ export class TeamBuilderService {
   }
 
   /**
-   * Lấy các trận của một tuần kèm đội hình đã lưu.
-   * @param weekStart - Mốc ISO của tuần cần xem. Bỏ trống = tuần đang mở; mốc giữa tuần được quy về Thứ 2 của tuần đó
-   * @returns Mảng ngày đánh sắp theo thời gian, mỗi ngày kèm đội hình từng trận và cờ locked
-   * @throws RangeError khi `weekStart` không phải một mốc thời gian hợp lệ — biên HTTP đã chặn ở DTO, nên chỉ xảy ra khi gọi từ trong process
+   * Sessions of one week with their saved formations.
+   * @param weekStart - ISO marker of the week to view. Omitted = the open week; a mid-week marker resolves to that week's Monday
+   * @returns Battle days ordered by time, each with its matches' formations and a locked flag
+   * @throws RangeError when `weekStart` is not a valid instant — the HTTP boundary blocks it in the DTO, so this only happens on in-process calls
    */
   async getFormations(weekStart?: string): Promise<SessionFormation[]> {
     const now = this.clock.now();
@@ -118,9 +118,9 @@ export class TeamBuilderService {
   }
 
   /**
-   * Đọc đội hình đã lưu của nhiều ngày đánh, gom theo sessionId.
-   * @param sessionIds - Id các ngày đánh cần đọc
-   * @returns Map từ sessionId sang mảng đội hình theo thứ tự trận 1 → trận 2
+   * Read the saved formations of several battle days, grouped by sessionId.
+   * @param sessionIds - Ids of the battle days to read
+   * @returns A map from sessionId to formations in match 1 → match 2 order
    */
   private async loadMatchesBySession(
     sessionIds: string[],
@@ -144,15 +144,15 @@ export class TeamBuilderService {
   }
 
   /**
-   * Ghi đè đội hình CẢ NGÀY. Idempotent — gửi cùng payload nhiều lần cho cùng
-   * kết quả. Xoá rồi tạo lại thay vì so từng ô: nhiều nhất ~120 hàng, và nhờ vậy
-   * "bỏ trận 2" chỉ là gửi mảng một phần tử, không cần endpoint riêng.
-   * @param sessionId - ID ngày đánh cần lưu đội hình
-   * @param matches - Đội hình và ghi chú từng trận, theo thứ tự trận 1 → trận 2
-   * @returns Ngày đánh kèm đội hình vừa ghi
-   * @throws NotFoundException khi không có ngày đánh nào mang sessionId đó
-   * @throws ConflictException khi ngày đánh đã qua giờ đánh, hoặc khi một thành viên bị xoá đúng
-   *   lúc đang ghi nên khoá ngoại vỡ
+   * Overwrite the WHOLE day's formation. Idempotent — sending the same payload repeatedly gives the
+   * same result. Delete-then-recreate rather than diffing slot by slot: ~120 rows at most, and it
+   * makes "drop match 2" just a one-element array instead of a dedicated endpoint.
+   * @param sessionId - Id of the battle day whose formation is saved
+   * @param matches - Each match's formation and notes, in match 1 → match 2 order
+   * @returns The battle day with the formation just written
+   * @throws NotFoundException when no battle day carries that sessionId
+   * @throws ConflictException when the battle day is past its battle time, or when a member is deleted
+   *   mid-write and the foreign key breaks
    */
   async saveFormation(
     sessionId: string,
@@ -169,21 +169,21 @@ export class TeamBuilderService {
       throw new ConflictException('Trận này đã đánh xong, không sửa được nữa.');
     }
 
-    // Retention đi theo đường GHI, không theo đường đọc: dữ liệu chỉ phình ra khi có người lưu,
-    // và `GET` phải là chỉ đọc. Chạy TRƯỚC transaction để một `deleteMany` hỏng không biến một
-    // lượt lưu đã thành công thành 500. Hai tập không giao nhau — purge lọc tuần cũ hơn 56 ngày,
-    // còn ở đây trận chắc chắn chưa đánh — nên thứ tự này không xoá mất thứ vừa ghi.
+    // Retention runs on the WRITE path, not the read path: data only grows when someone saves, and
+    // `GET` must stay read-only. It runs BEFORE the transaction so a failing `deleteMany` cannot turn
+    // a successful save into a 500. The two sets are disjoint — purge filters weeks older than 56
+    // days, and here the session is certainly unplayed — so this order cannot delete what was just written.
     await this.purgeExpiredFormations(now);
 
     const savedMatches = await this.prisma
       .$transaction(async (tx) => {
-        // Lọc TRƯỚC khi ghi: một nhân vật vừa bị xoá khỏi bang mà còn trong nháp sẽ
-        // làm cả câu insert vỡ vì khoá ngoại. Ghi chú của ô đó thì giữ nguyên —
-        // ghi chú mô tả vị trí, không mô tả người.
-        // Đọc bằng `tx` chứ không phải client ngoài: thu hẹp khoảng hở giữa phép lọc và câu insert
-        // xuống còn trong một transaction. READ COMMITTED nên đây không phải bảo đảm tuyệt đối —
-        // một DELETE commit đúng vào giữa vẫn làm vỡ khoá ngoại — nhưng đọc ngoài transaction thì
-        // khoảng hở đó rộng bằng cả request.
+        // Filter BEFORE writing: a character just removed from the guild but still in the draft would
+        // break the whole insert on its foreign key. That slot's note is kept — a note describes the
+        // position, not the person.
+        // Read through `tx`, not the outer client: it narrows the window between the filter and the
+        // insert to within one transaction. Under READ COMMITTED this is not an absolute guarantee —
+        // a DELETE committing at just the wrong moment still breaks the foreign key — but reading
+        // outside the transaction would widen that window to the whole request.
         const knownIds = await this.characters.listIds(tx);
         const cleaned: MatchFormation[] = matches.map((match) => ({
           slots: Object.fromEntries(
@@ -209,9 +209,9 @@ export class TeamBuilderService {
         return cleaned;
       })
       .catch((error: unknown) => {
-        // Phép lọc ở trên thu hẹp khoảng hở nhưng không đóng được: READ COMMITTED không khoá hàng
-        // đã đọc, nên một DELETE commit sau `listIds` vẫn làm câu insert vỡ khoá ngoại. Đổi nó thành
-        // câu tiếng Việt người dùng đọc được, thay vì 500 — thao tác đúng là tải lại rồi lưu lại.
+        // The filter above narrows the window but cannot close it: READ COMMITTED does not lock the
+        // rows read, so a DELETE committing after `listIds` still breaks the insert's foreign key.
+        // Turn it into a readable message instead of a 500 — the right move is to reload and save again.
         if (isForeignKeyViolation(error)) {
           throw new ConflictException(
             'Có thành viên vừa bị xoá khỏi bang, vui lòng tải lại trang rồi lưu lại.',
@@ -234,9 +234,9 @@ export class TeamBuilderService {
 }
 
 /**
- * Lỗi này có phải vi phạm khoá ngoại của Prisma không.
- * @param error - Lỗi bắt được
- * @returns true nếu là P2003
+ * Whether this error is a Prisma foreign key violation.
+ * @param error - The caught error
+ * @returns true for P2003
  */
 function isForeignKeyViolation(error: unknown): boolean {
   return (

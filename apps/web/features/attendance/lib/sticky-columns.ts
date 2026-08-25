@@ -1,12 +1,12 @@
 /**
- * Lớp CSS ghim hai cột ngoài cùng của bảng điểm danh khi cuộn ngang trên màn
- * hình hẹp: cột tên bám trái, cột thao tác bám phải. Nền `bg-card` phải đục để
- * nội dung cuộn không lộ ra phía dưới cột ghim.
+ * CSS classes pinning the attendance table's outer columns while scrolling horizontally on a narrow
+ * screen: the name column sticks left, the actions column sticks right. The `bg-card` background must
+ * be opaque so scrolled content does not show through a pinned column.
  */
 
-/** Cột "Thành viên" — ghim mép trái vùng cuộn. */
+/** The "Thành viên" column — pinned to the left edge of the scroll area. */
 export const STICKY_NAME_COLUMN = "sticky left-0 z-10 border-r bg-card";
 
-/** Cột "Thao tác" — ghim mép phải vùng cuộn. */
+/** The "Thao tác" column — pinned to the right edge of the scroll area. */
 export const STICKY_ACTION_COLUMN =
   "sticky right-0 z-10 w-28 border-l bg-card text-right";

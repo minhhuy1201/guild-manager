@@ -6,10 +6,11 @@ import { ApiError, apiFetch } from "@/lib/api-client";
 import { getAccessToken } from "./session";
 
 /**
- * Đọc thông tin phiên đầy đủ từ backend (vai và nhân vật gắn với tài khoản).
- * Chạy ở server vì access token nằm trong cookie httpOnly — client không tự gắn header được.
- * @returns Discord ID, vai và nhân vật của người đang đăng nhập
- * @throws ApiError khi chưa đăng nhập hoặc phiên đã hết hạn
+ * Read the full session from the backend (role and the character bound to the account).
+ * Runs on the server because the access token lives in an httpOnly cookie — the client cannot attach
+ * the header itself.
+ * @returns Discord ID, role and character of the signed-in user
+ * @throws ApiError when signed out or the session expired
  */
 export async function fetchMe(): Promise<SessionUser> {
   const accessToken = await getAccessToken();

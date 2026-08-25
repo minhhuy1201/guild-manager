@@ -1,106 +1,89 @@
 import { z } from "zod";
 
 /**
- * Đội hình trên dây: slotId → characterId.
- * Ô trống KHÔNG có khoá (không dùng null) để payload không phình vì 60 khoá rỗng.
- * Dùng chung: FE gửi lên, BE validate request body (nestjs-zod).
+ * A formation on the wire: slotId → characterId. Empty slots carry NO key (not null) so the
+ * payload does not balloon with 60 empty entries.
  */
 export const assignmentSchema = z.record(z.string().min(1), z.string().min(1));
 
-/** Độ dài tối đa của một ghi chú — vừa bề ngang ô nhập trên lưới. */
+/** Max length of one note — sized to the width of the grid cell's input. */
 export const NOTE_MAX_LENGTH = 60;
 
 /**
- * Ghi chú theo ô: slotId → text.
- * Ô không ghi gì KHÔNG có khoá, giống hệt cách ô trống không có khoá ở assignment.
- * `.trim()` để một ô chỉ chứa khoảng trắng bị từ chối chứ không lưu thành ghi chú rỗng.
+ * Per-slot notes: slotId → text. A slot with no note carries no key, exactly like an empty
+ * assignment slot. `.trim()` rejects a whitespace-only cell instead of storing an empty note.
  */
 export const notesSchema = z.record(
   z.string().min(1),
   z.string().trim().min(1).max(NOTE_MAX_LENGTH),
 );
 
-/** Một trận: ai đứng ở đâu, kèm ghi chú của từng ô. */
+/** One match: who stands where, plus each slot's note. */
 export const matchSchema = z.object({
   slots: assignmentSchema,
   notes: notesSchema,
 });
 
 /**
- * Body của PUT /team-builder/formations/:sessionId — đội hình CẢ NGÀY.
- * Một ngày có 1 hoặc 2 trận; trần 2 đặt ở đây chứ không ở cấu trúc bảng, nên
- * sau này muốn 3 trận chỉ phải sửa con số này.
+ * Body of PUT /team-builder/formations/:sessionId — the WHOLE day's formation. A day holds
+ * 1 or 2 matches; the cap of 2 lives here rather than in the table shape, so allowing 3 later
+ * means changing only this number.
  */
 export const saveFormationSchema = z.object({
   matches: z.array(matchSchema).min(1).max(2),
 });
 
-/** Kiểu đội hình trên dây đã validate. */
 export type AssignmentInput = z.infer<typeof assignmentSchema>;
 
-/** Kiểu một trận (đội hình + ghi chú) đã validate. */
 export type MatchInput = z.infer<typeof matchSchema>;
 
-/** Kiểu body lưu đội hình đã validate. */
 export type SaveFormationInput = z.infer<typeof saveFormationSchema>;
 
 /**
- * Đội hình và ghi chú của một trận, đúng như API trả về.
- * Ô trống KHÔNG có khoá, ô không ghi gì cũng KHÔNG có khoá — giống hệt chiều gửi lên.
- * Khác `matchSchema` ở chỗ không mang ràng buộc độ dài: chiều ra không validate,
- * schema này chỉ để suy ra kiểu.
+ * A match's formation and notes as the API returns it. Empty slots and note-less slots carry
+ * no key, exactly like the inbound direction. Unlike `matchSchema` it carries no length
+ * constraints: the outbound direction is not validated, this schema only derives the type.
  */
 export const matchFormationSchema = z.object({
-  /** slotId → characterId. Ô trống không có khoá. */
+  /** slotId → characterId. Empty slots carry no key. */
   slots: z.record(z.string(), z.string()),
-  /** slotId → ghi chú. Ô không ghi gì không có khoá. */
+  /** slotId → note. Note-less slots carry no key. */
   notes: z.record(z.string(), z.string()),
 });
 
-/** Một trận kèm đội hình đã lưu của nó, đúng như API trả về. */
+/** A session with its saved formation, as the API returns it. */
 export const sessionFormationSchema = z.object({
-  /** ID trận đánh */
   sessionId: z.string(),
-  /** Nhãn hiển thị của trận, ví dụ "Thứ 7 · Bang Chiến" */
+  /** Display label, e.g. "Thứ 7 · Bang Chiến" */
   label: z.string(),
-  /** Thời điểm đánh (ISO string) */
+  /** Battle time (ISO string) */
   dateTime: z.string(),
-  /** Trận Guild War Thứ 7 */
+  /** Saturday Guild War */
   isGuildWar: z.boolean(),
-  /** Tên bang đối thủ, null với Guild War hoặc scrim chưa chốt đối thủ */
+  /** Opponent guild name, null for a Guild War or an unscheduled scrim */
   opponent: z.string().nullable(),
-  /** Trận đã đánh xong — không cho sửa đội hình nữa */
+  /** Battle already played — the formation is frozen */
   locked: z.boolean(),
-  /**
-   * Từng trận trong ngày, theo thứ tự trận 1 → trận 2.
-   * Mảng rỗng nghĩa là ngày này chưa xếp gì và cũng chưa ghi chú gì.
-   */
+  /** Matches of the day, in order. Empty means nothing laid out and nothing noted. */
   matches: z.array(matchFormationSchema),
 });
 
 /**
- * Một tuần còn dữ liệu đội hình.
- * Trùng shape với `weekSchema` chỉ là tình cờ: `Week` mô tả tuần được phép
- * thiết lập lịch, còn schema này mô tả tuần còn dữ liệu đội hình — hai tập khác
- * nhau, đừng gộp làm một.
+ * A week that still holds formation data. Sharing a shape with `weekSchema` is coincidental:
+ * `Week` describes a week whose schedule may be edited, this one a week with formation data —
+ * two different sets, do not merge them.
  */
 export const formationWeekSchema = z.object({
-  /** Mốc Thứ 2 00:00 của tuần (ISO string) */
+  /** Monday 00:00 of the week (ISO string) */
   weekStart: z.string(),
-  /** Mốc Thứ 7 23:59 của tuần (ISO string) */
+  /** Saturday 23:59 of the week (ISO string) */
   weekEnd: z.string(),
-  /**
-   * Tuần điểm danh đang mở. Danh sách còn có cả tuần kế tiếp — tuần đầu mảng
-   * KHÔNG phải tuần đang mở, nên client phải đọc cờ này.
-   */
+  /** The open attendance week. The list also carries the next week, so the first element is NOT necessarily the open one. */
   isActive: z.boolean(),
 });
 
-/** Kiểu đội hình một trận API trả về. */
 export type MatchFormation = z.infer<typeof matchFormationSchema>;
 
-/** Kiểu một ngày đánh kèm đội hình API trả về. */
 export type SessionFormation = z.infer<typeof sessionFormationSchema>;
 
-/** Kiểu một tuần còn dữ liệu đội hình. */
 export type FormationWeek = z.infer<typeof formationWeekSchema>;

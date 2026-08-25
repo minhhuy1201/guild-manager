@@ -11,11 +11,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/lib/api-client";
 import { MutationDialog, type MutationDialogProps } from "../mutation-dialog";
 
-// Dialog mở ở portal; một cái còn sót lại sẽ trả về hai nút cùng tên cho ca sau.
+// The dialog mounts in a portal; a leftover one gives the next case two buttons with the same name.
 afterEach(cleanup);
 
-// React chỉ gộp và xả state update trong act() khi biết mình đang bị test;
-// thiếu cờ này thì lỗi của một mutation không kịp tới chỗ assert.
+// React only batches and flushes state updates inside act() when it knows it is under test;
+// without this flag a mutation's error does not reach the assertion in time.
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
   true;
 
@@ -120,11 +120,11 @@ describe("MutationDialog", () => {
     clickSubmit();
     await screen.findByRole("button", { name: PENDING_LABEL });
 
-    // Nút X ở góc đi qua onOpenChange của Dialog — đúng đường mà vỏ chặn.
+    // The corner X goes through the Dialog's onOpenChange — the path the shell guards.
     fireEvent.click(screen.getByRole("button", { name: "Close" }));
     expect(onOpenChange).not.toHaveBeenCalled();
 
-    // Nút "Huỷ" gọi thẳng người gọi nên nó phải tự khoá.
+    // The "Huỷ" button calls the caller directly, so it must disable itself.
     const cancel = screen.getByRole("button", { name: "Huỷ" });
     expect((cancel as HTMLButtonElement).disabled).toBe(true);
 

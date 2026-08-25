@@ -11,8 +11,8 @@ import { AttendanceService } from './attendance.service';
 import { MarkAttendanceDto } from './dto/mark-attendance.dto';
 
 /**
- * Điểm danh — mọi route đều cần phiên đăng nhập: dữ liệu người dùng thấy phụ thuộc
- * vào vai của họ, nên không còn đường ẩn danh nào.
+ * Attendance — every route needs a session: what a user sees depends on their role, so there is no
+ * anonymous path left.
  */
 @ApiTags('attendance')
 @ApiBearerAuth()
@@ -22,9 +22,9 @@ export class AttendanceController {
   constructor(private readonly attendance: AttendanceService) {}
 
   /**
-   * Danh sách nhân vật cho màn điểm danh, lọc theo vai của người gọi.
-   * @param user - Payload JWT do JwtAuthGuard gắn vào request
-   * @returns Mảng nhân vật
+   * Characters for the attendance screen, filtered by the caller's role.
+   * @param user - JWT payload attached by JwtAuthGuard
+   * @returns The character list
    */
   @Get('characters')
   @ApiOperation({ summary: 'Danh sách nhân vật trong bang' })
@@ -33,9 +33,9 @@ export class AttendanceController {
   }
 
   /**
-   * Lượt điểm danh của tuần đang mở, lọc theo vai của người gọi.
-   * @param user - Payload JWT do JwtAuthGuard gắn vào request
-   * @returns Mảng record điểm danh
+   * Attendance entries of the open week, filtered by the caller's role.
+   * @param user - JWT payload attached by JwtAuthGuard
+   * @returns The attendance records
    */
   @Get('records')
   @ApiOperation({ summary: 'Lượt điểm danh của tuần đang mở' })
@@ -44,8 +44,8 @@ export class AttendanceController {
   }
 
   /**
-   * Số lượt Có/Không của từng trận trong tuần đang mở.
-   * @returns Mảng số đếm theo trận
+   * Yes/no tallies per session in the open week.
+   * @returns Tallies per session
    */
   @Get('summary')
   @ApiOperation({ summary: 'Số người đã điểm danh mỗi trận' })
@@ -54,12 +54,12 @@ export class AttendanceController {
   }
 
   /**
-   * Điểm danh cho một nhân vật ở một trận.
-   * Bang chúng và cán bộ chỉ điểm danh cho nhân vật của mình và chỉ khi còn hạn;
-   * quản trị viên được miễn cả hai.
-   * @param body - characterId, sessionId và status
-   * @param user - Payload JWT do JwtAuthGuard gắn vào request
-   * @returns Record vừa ghi
+   * Record attendance for a character in a session.
+   * Members and leaders may only mark their own character and only before the deadline; admins are
+   * exempt from both.
+   * @param body - characterId, sessionId and status
+   * @param user - JWT payload attached by JwtAuthGuard
+   * @returns The written record
    */
   @Post()
   @ApiOperation({ summary: 'Điểm danh cho một nhân vật ở một trận' })

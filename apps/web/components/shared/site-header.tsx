@@ -9,13 +9,13 @@ import { UserMenu } from "@/features/auth";
 import { fetchMe, getSession } from "@/features/auth/server";
 
 /**
- * Thanh header trên cùng của ứng dụng: tên bang "Mèo Mập Giang Hồ" và nav chính.
- * Đọc phiên đăng nhập ở server để quyết định hiển thị mục nav dành cho quản trị.
- * @returns Header đã style
+ * The app's top header: the guild name "Mèo Mập Giang Hồ" and the main nav.
+ * Reads the session on the server to decide whether to show the admin nav items.
+ * @returns The styled header
  */
 export async function SiteHeader() {
   const session = await getSession();
-  // Trang đăng nhập cũng dựng header này, nên phiên hỏng chỉ có nghĩa "chưa đăng nhập".
+  // The login page renders this header too, so a broken session just means "signed out".
   const me = session ? await fetchMe().catch(() => null) : null;
 
   return (

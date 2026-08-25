@@ -123,8 +123,8 @@ export function MutationForm({
 
       <DialogFooter>
         {onCancel && (
-          // Khoá luôn lúc đang chạy: nút này gọi thẳng người gọi, không đi qua
-          // chốt chặn đóng của vỏ.
+          // Disabled while running: this button calls the caller directly, bypassing the shell's
+          // close guard.
           <Button
             type="button"
             variant="ghost"

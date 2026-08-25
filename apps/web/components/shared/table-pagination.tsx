@@ -17,23 +17,23 @@ import {
   PaginationLink,
 } from "@/components/ui/pagination";
 
-/** Sentinel cho vị trí "..." trong dãy trang. */
+/** Sentinel marking a "..." position in the page list. */
 const ELLIPSIS = "ellipsis" as const;
 
 /**
- * Tính dãy trang hiển thị quanh trang hiện tại, chèn "..." khi quá nhiều trang.
- * Luôn giữ trang đầu/cuối và một cửa sổ quanh trang hiện tại.
- * @param page - Trang hiện tại (1-based)
- * @param pageCount - Tổng số trang
- * @param siblings - Số trang kề mỗi bên trang hiện tại
- * @returns Mảng số trang hoặc sentinel ELLIPSIS
+ * Compute the page numbers shown around the current page, inserting "..." when there are too many.
+ * The first and last page are always kept, plus a window around the current one.
+ * @param page - Current page (1-based)
+ * @param pageCount - Total number of pages
+ * @param siblings - Pages kept on each side of the current one
+ * @returns Page numbers, or the ELLIPSIS sentinel
  */
 function getPageItems(
   page: number,
   pageCount: number,
   siblings = 1
 ): (number | typeof ELLIPSIS)[] {
-  // Ít trang thì hiện hết cho gọn.
+  // Few enough pages to just show them all.
   const totalSlots = siblings * 2 + 5;
   if (pageCount <= totalSlots) {
     return Array.from({ length: pageCount }, (_, i) => i + 1);
@@ -52,23 +52,23 @@ function getPageItems(
 }
 
 interface TablePaginationProps {
-  /** Trang hiện tại (1-based). */
+  /** Current page (1-based). */
   page: number;
-  /** Tổng số trang. */
+  /** Total number of pages. */
   pageCount: number;
-  /** Gọi khi người dùng chọn trang khác (đã kẹp trong [1, pageCount]). */
+  /** Called when the user picks another page (already clamped to [1, pageCount]). */
   onPageChange: (page: number) => void;
-  /** Số trang kề mỗi bên trang hiện tại (mặc định 1). */
+  /** Pages kept on each side of the current one (default 1). */
   siblings?: number;
 }
 
 /**
- * Điều hướng phân trang dùng chung cho các bảng — controlled qua state ở component cha.
- * Chỉ dùng icon (không chữ): về đầu, lùi, các số trang, tiến, về cuối.
- * Bọc shadcn Pagination: các link render là <a> nên bắt onClick và preventDefault
- * để đổi trang bằng state thay vì điều hướng URL.
+ * The shared table pagination — controlled by state in the parent component.
+ * Icons only (no text): first, previous, the page numbers, next, last.
+ * Wraps shadcn Pagination: its links render as <a>, so onClick is intercepted and default-prevented to
+ * change page through state instead of navigating.
  * @param props - page, pageCount, onPageChange, siblings
- * @returns Thanh phân trang, hoặc null khi chỉ có tối đa 1 trang
+ * @returns The pagination bar, or null when there is at most one page
  */
 export function TablePagination({
   page,
@@ -82,9 +82,9 @@ export function TablePagination({
   const isLast = page >= pageCount;
 
   /**
-   * Đổi sang trang chỉ định, kẹp trong khoảng hợp lệ và chặn điều hướng mặc định.
-   * @param target - Trang muốn tới (1-based)
-   * @param event - Sự kiện click trên <a>
+   * Go to a page, clamped to the valid range, preventing the default navigation.
+   * @param target - Target page (1-based)
+   * @param event - Click event on the <a>
    */
   const goTo = (target: number, event: MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();

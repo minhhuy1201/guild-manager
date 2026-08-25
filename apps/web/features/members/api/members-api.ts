@@ -10,12 +10,12 @@ import { getAccessToken } from "@/features/auth/server";
 import { ApiError, apiFetch } from "@/lib/api-client";
 
 /**
- * Lấy access token của quản trị viên đang đăng nhập.
- * Chạy ở server vì token nằm trong cookie httpOnly, client không đọc được.
- * (Trùng với helper cùng tên ở features/settings và features/team-builder —
- * file "use server" chỉ được export hàm async nên không dùng chung được.)
- * @returns Header Authorization đã dựng sẵn
- * @throws ApiError khi phiên đăng nhập đã hết hạn
+ * Get the signed-in admin's access token.
+ * Runs on the server because the token lives in an httpOnly cookie the client cannot read.
+ * (Duplicated in features/settings and features/team-builder — a "use server" file may only export
+ * async functions, so it cannot be shared.)
+ * @returns The prepared Authorization header
+ * @throws ApiError when the session has expired
  */
 async function authHeader(): Promise<Record<string, string>> {
   const accessToken = await getAccessToken();
@@ -30,18 +30,18 @@ async function authHeader(): Promise<Record<string, string>> {
 }
 
 /**
- * Lấy danh sách thành viên.
- * @returns Mảng thành viên sắp theo tên
+ * Get the member list.
+ * @returns Members ordered by name
  */
 export async function fetchMembers(): Promise<GuildMember[]> {
   return apiFetch<GuildMember[]>("/characters", { headers: await authHeader() });
 }
 
 /**
- * Thêm một thành viên.
- * @param input - Tên và lưu phái
- * @returns Thành viên vừa tạo
- * @throws ApiError với message tiếng Việt của backend khi bị từ chối
+ * Add a member.
+ * @param input - Name and class
+ * @returns The created member
+ * @throws ApiError carrying the backend's Vietnamese message when rejected
  */
 export async function createMember(
   input: CreateCharacterInput
@@ -54,11 +54,11 @@ export async function createMember(
 }
 
 /**
- * Sửa tên, lưu phái, Discord ID hoặc vai của một thành viên.
- * @param id - Id thành viên
- * @param input - Các field cần đổi
- * @returns Thành viên sau khi sửa
- * @throws ApiError khi thành viên đã bị xoá (404) hoặc Discord ID đã thuộc người khác (409)
+ * Edit a member's name, class, Discord ID or role.
+ * @param id - Member id
+ * @param input - Fields to change
+ * @returns The updated member
+ * @throws ApiError when the member was deleted (404) or the Discord ID belongs to someone else (409)
  */
 export async function updateMember(
   id: string,
@@ -73,10 +73,10 @@ export async function updateMember(
 
 
 /**
- * Xoá một thành viên cùng lịch sử điểm danh và đội hình của họ.
- * @param id - Id thành viên
- * @returns Promise hoàn tất khi đã xoá
- * @throws ApiError khi thành viên đã bị xoá (404)
+ * Delete a member along with their attendance history and formation slots.
+ * @param id - Member id
+ * @returns A promise resolving once deleted
+ * @throws ApiError when the member was already deleted (404)
  */
 export async function deleteMember(id: string): Promise<void> {
   await apiFetch<void>(`/characters/${encodeURIComponent(id)}`, {

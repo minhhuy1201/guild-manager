@@ -8,21 +8,21 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface WeekSelectorProps {
-  /** Hai tuần thiết lập được: tuần đang mở và tuần kế tiếp */
+  /** The two schedulable weeks: the open one and the next */
   weeks: Week[];
-  /** Mốc Thứ 2 của tuần đang xem */
+  /** Monday marker of the week being viewed */
   value: string;
-  /** Gọi khi người dùng đổi tuần */
+  /** Called when the user switches week */
   onChange: (weekStart: string) => void;
 }
 
 /**
- * Chọn tuần cần thiết lập. Chỉ có đúng hai lựa chọn nên dùng hai nút thay vì
- * select — nhanh hơn một thao tác và nhìn thấy ngay cả hai.
- * @param weeks - Hai tuần thiết lập được
- * @param value - Mốc Thứ 2 của tuần đang xem
- * @param onChange - Gọi khi người dùng đổi tuần
- * @returns Thanh chọn tuần
+ * Pick the week to schedule. There are exactly two options, so two buttons instead of a select — one
+ * interaction fewer, and both are visible at once.
+ * @param weeks - The two schedulable weeks
+ * @param value - Monday marker of the week being viewed
+ * @param onChange - Called when the user switches week
+ * @returns The week picker bar
  */
 export function WeekSelector({ weeks, value, onChange }: WeekSelectorProps) {
   return (

@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { isWithinDeadlineCap } from "../lib/battle-session";
 
-/** Chuỗi thời gian ISO — dùng cho mọi field giờ giấc đi trên dây. */
+/** ISO datetime string — used for every time field on the wire. */
 const isoDateTime = z
   .string()
   .refine((value) => !Number.isNaN(Date.parse(value)), {
@@ -10,8 +10,8 @@ const isoDateTime = z
   });
 
 /**
- * Tên bang đối thủ. Để trống được (scrim chưa chốt đối thủ, và Guild War thì
- * không bao giờ có). Chuỗi rỗng được service quy về null.
+ * Opponent guild name. Optional (a scrim may have no opponent yet, a Guild War never
+ * has one). The service normalises an empty string to null.
  */
 const opponent = z
   .string()
@@ -20,28 +20,28 @@ const opponent = z
   .nullable()
   .optional();
 
-/** Thông báo khi hạn chót vượt trần — API và form dùng chung một câu chữ. */
+/** Message shown when a deadline exceeds the cap — shared by the API and the form. */
 export const DEADLINE_CAP_MESSAGE =
   "Hạn chót điểm danh không được muộn hơn 10:00 sáng ngày đánh.";
 
 /**
- * Thông báo khi mốc tuần trên query string không đọc được.
+ * Message shown when the week marker on the query string cannot be parsed.
  *
- * Người đọc duy nhất là `weekStartQuerySchema` ngay dưới đây — tầng duy nhất
- * dựng câu tiếng Việt và status 400 cho `?weekStart=`. Vẫn tách thành hằng để
- * web import được khi cần hiện lại đúng câu chữ, giống `DEADLINE_CAP_MESSAGE`.
+ * Its only reader is `weekStartQuerySchema` below — the single layer that builds the
+ * Vietnamese sentence and the 400 for `?weekStart=`. Kept as a constant so the web app
+ * can import it to repeat the exact wording, like `DEADLINE_CAP_MESSAGE`.
  */
 export const INVALID_WEEK_MESSAGE = "Tuần không hợp lệ.";
 
 /**
- * Query string của các endpoint đọc theo tuần (`?weekStart=`).
+ * Query string of the week-scoped read endpoints (`?weekStart=`).
  *
- * `offset: true` vì client hợp lệ được gửi `+07:00` chứ không chỉ `Z`.
- * `preprocess` đổi chuỗi rỗng thành `undefined`: `?weekStart=` là một thứ vô hại,
- * nó phải cư xử như bỏ trống chứ không thành 400.
+ * `offset: true` because a valid client may send `+07:00`, not just `Z`. `preprocess`
+ * turns an empty string into `undefined`: `?weekStart=` is harmless and must behave like
+ * an omitted value rather than a 400.
  *
- * Zod chỉ trả lời "có phải một mốc thời gian không"; "mốc đó thuộc tuần nào" là
- * luật tuần, do `parseWeekStart` ở apps/api quyết định.
+ * Zod only answers "is this an instant"; which week that instant belongs to is a week
+ * rule owned by `parseWeekStart` in apps/api.
  */
 export const weekStartQuerySchema = z.object({
   weekStart: z.preprocess(
@@ -50,22 +50,18 @@ export const weekStartQuerySchema = z.object({
   ),
 });
 
-/** Kiểu query string đọc theo tuần đã validate. */
 export type WeekStartQuery = z.infer<typeof weekStartQuerySchema>;
 
-/** Các field của một trận, chưa gắn luật cross-field. */
+/** The fields of a session, before any cross-field rule. */
 const battleSessionFields = z.object({
-  /** Thời điểm diễn ra trận đánh (ISO string) */
+  /** When the battle takes place (ISO string) */
   dateTime: isoDateTime,
-  /** Hạn chót điểm danh do quản trị viên đặt, tối đa 10:00 ngày đánh (ISO string) */
+  /** Admin-set attendance deadline, at most 10:00 on the battle day (ISO string) */
   deadline: isoDateTime,
   opponent,
 });
 
-/**
- * Body của POST /battle-sessions.
- * Dùng chung: FE validate form, BE validate request body (nestjs-zod).
- */
+/** Body of POST /battle-sessions (form + request body). */
 export const createBattleSessionSchema = battleSessionFields.refine(
   ({ dateTime, deadline }) =>
     isWithinDeadlineCap(new Date(deadline), new Date(dateTime)),
@@ -73,51 +69,47 @@ export const createBattleSessionSchema = battleSessionFields.refine(
 );
 
 /**
- * Body của PATCH /battle-sessions/:id — sửa được từng phần.
- * Không gắn luật trần ở đây: PATCH có thể chỉ gửi một trong hai field nên schema
- * không đủ dữ liệu để kết luận. Service phán quyết trên cặp đã trộn với hàng cũ.
+ * Body of PATCH /battle-sessions/:id — partial. No cap rule here: a PATCH may send only
+ * one of the two fields, so the schema lacks the data to decide. The service rules on the
+ * pair merged with the stored row.
  */
 export const updateBattleSessionSchema = battleSessionFields.partial();
 
-/** Kiểu body tạo trận đã validate. */
 export type CreateBattleSessionInput = z.infer<typeof createBattleSessionSchema>;
 
-/** Kiểu body sửa trận đã validate. */
 export type UpdateBattleSessionInput = z.infer<typeof updateBattleSessionSchema>;
 
-/** Một trận đánh API trả về, thời gian ở dạng ISO string. */
+/** A battle session as the API returns it, times as ISO strings. */
 export const battleSessionSchema = z.object({
   id: z.string(),
-  /** Nhãn hiển thị suy ra từ giờ đánh, ví dụ "Thứ 3 · 20:30". Không lưu trong database. */
+  /** Display label derived from the battle time, e.g. "Thứ 3 · 20:30". Not stored. */
   label: z.string(),
   dateTime: isoDateTime,
-  /** Hạn chót điểm danh do quản trị viên đặt. */
+  /** Admin-set attendance deadline. */
   deadline: isoDateTime,
-  /** Đã quá hạn điểm danh tại thời điểm server dựng response. */
+  /** Whether the deadline had passed when the server built the response. */
   isDeadlinePassed: z.boolean(),
   isGuildWar: z.boolean(),
-  /** Tên bang đối thủ, null với Guild War hoặc scrim chưa chốt đối thủ. */
+  /** Opponent guild name, null for a Guild War or an unscheduled scrim. */
   opponent: z.string().nullable(),
-  /** Mốc Thứ 2 00:00 của tuần chứa trận này. */
+  /** Monday 00:00 of the week containing this session. */
   weekStart: isoDateTime,
-  /** Số lượt điểm danh đã ghi — dialog xoá cần con số này. */
+  /** Attendance entries recorded so far — the delete dialog needs this. */
   attendanceCount: z.number(),
-  /** Trận này đã có đội hình xếp sẵn hay chưa. */
+  /** Whether a formation has been laid out for this session. */
   hasFormation: z.boolean(),
 });
 
-/** Một tuần điểm danh API trả về. */
+/** An attendance week as the API returns it. */
 export const weekSchema = z.object({
-  /** Thứ 2 00:00 (ISO string) */
+  /** Monday 00:00 (ISO string) */
   weekStart: isoDateTime,
-  /** Thứ 7 23:59 (ISO string) */
+  /** Saturday 23:59 (ISO string) */
   weekEnd: isoDateTime,
-  /** Có phải tuần đang mở không (phần tử còn lại là tuần kế tiếp) */
+  /** Whether this is the open week (the other element is the next one) */
   isActive: z.boolean(),
 });
 
-/** Kiểu một trận đánh API trả về. */
 export type BattleSession = z.infer<typeof battleSessionSchema>;
 
-/** Kiểu một tuần điểm danh API trả về. */
 export type Week = z.infer<typeof weekSchema>;

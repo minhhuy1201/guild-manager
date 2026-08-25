@@ -1,17 +1,17 @@
-/** Kích thước ảnh xin từ CDN: avatar hiển thị 32px, lấy gấp đôi cho màn hình retina. */
+/** Image size requested from the CDN: the avatar renders at 32px, fetched at 2x for retina. */
 const AVATAR_SIZE = 64;
 
-/** Tiền tố Discord gắn vào hash của avatar động. */
+/** Prefix Discord puts on an animated avatar's hash. */
 const ANIMATED_PREFIX = "a_";
 
 /**
- * Dựng URL ảnh avatar Discord từ hash lưu trong database.
+ * Build the Discord avatar URL from the hash stored in the database.
  *
- * Backend chỉ lưu hash chứ không lưu URL, vì định dạng URL CDN là chuyện của Discord —
- * đổi lúc nào không báo, mà hash thì không đổi. Ghép URL ở đây, ngay chỗ dùng.
- * @param discordId - Discord ID của người đang đăng nhập
- * @param avatarHash - Hash avatar đọc ở lần đăng nhập gần nhất, null khi để ảnh mặc định
- * @returns URL ảnh, hoặc null khi không có hash để dựng
+ * The backend stores the hash, not a URL, because the CDN URL format is Discord's business — it can
+ * change without notice while the hash does not. The URL is assembled here, at the point of use.
+ * @param discordId - Discord ID of the signed-in user
+ * @param avatarHash - Avatar hash from the last login, null on the default picture
+ * @returns The image URL, or null when there is no hash to build from
  */
 export function discordAvatarUrl(
   discordId: string,
@@ -19,7 +19,7 @@ export function discordAvatarUrl(
 ): string | null {
   if (!avatarHash) return null;
 
-  // Avatar động có hash bắt đầu bằng "a_" và chỉ ra ảnh khi xin đuôi .gif.
+  // An animated avatar's hash starts with "a_" and only yields an image with the .gif extension.
   const extension = avatarHash.startsWith(ANIMATED_PREFIX) ? "gif" : "png";
 
   return `https://cdn.discordapp.com/avatars/${discordId}/${avatarHash}.${extension}?size=${AVATAR_SIZE}`;

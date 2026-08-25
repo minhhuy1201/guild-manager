@@ -9,10 +9,9 @@ const SAVED: Assignment = {
 };
 
 /**
- * Bọc một đội hình thành ngày một trận, không ghi chú — dạng mà `isDayDirty`
- * nhận vào.
- * @param assignment - Đội hình của trận duy nhất
- * @returns Ngày một trận
+ * Wrap a formation into a single-match, note-less day — the shape `isDayDirty` takes.
+ * @param assignment - Formation of the only match
+ * @returns The single-match day
  */
 function day(assignment: Assignment): MatchDraft[] {
   return [{ assignment, notes: {} }];
@@ -52,7 +51,7 @@ describe("isDayDirty — phần đội hình", () => {
   });
 
   it("nháp thiếu một ô vốn đang trống thì vẫn coi là chưa đổi gì", () => {
-    // Thiếu khoá và mang null là cùng một nghĩa: ô đó không có ai.
+    // A missing key and a null value mean the same thing: nobody is in that slot.
     expect(isDayDirty(day({ "team-1-pos-1": "char-1" }), savedDay)).toBe(false);
   });
 });
@@ -66,9 +65,9 @@ describe("isDayDirty", () => {
   ];
 
   /**
-   * Chép sâu một ngày đã lưu để test sửa thoải mái mà không đụng bản gốc.
-   * @param matches - Ngày cần chép
-   * @returns Bản sao độc lập
+   * Deep-copy a saved day so a test can mutate freely without touching the original.
+   * @param matches - Day to copy
+   * @returns An independent copy
    */
   function copy(matches: MatchDraft[]): MatchDraft[] {
     return matches.map((match) => ({

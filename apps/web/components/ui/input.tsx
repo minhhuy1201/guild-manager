@@ -2,12 +2,7 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-/**
- * Ô nhập liệu cơ bản, style theo design token của dự án.
- * @param className - Class bổ sung
- * @param type - Loại input (text, password, ...)
- * @returns Phần tử input đã style
- */
+/** The base input, styled with the project's design tokens. */
 function Input({
   className,
   type,

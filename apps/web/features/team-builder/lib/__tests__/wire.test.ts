@@ -15,19 +15,19 @@ const SLOTS: Slot[] = [
 ];
 
 /**
- * Chuyển một đội hình qua `toWireMatches` rồi lấy phần slot của trận đầu —
- * đường duy nhất mà app dùng để đẩy đội hình lên server.
- * @param assignment - Đội hình cần chuyển
- * @returns Phần `slots` gửi đi
+ * Run a formation through `toWireMatches` and take the first match's slots — the only path the app
+ * uses to push a formation to the server.
+ * @param assignment - Formation to convert
+ * @returns The `slots` that would be sent
  */
 function toWireSlots(assignment: Assignment) {
   return toWireMatches([{ assignment, notes: {} }])[0].slots;
 }
 
 /**
- * Chuyển ghi chú qua `toWireMatches` rồi lấy phần ghi chú của trận đầu.
- * @param notes - Ghi chú cần chuyển
- * @returns Phần `notes` gửi đi
+ * Run notes through `toWireMatches` and take the first match's notes.
+ * @param notes - Notes to convert
+ * @returns The `notes` that would be sent
  */
 function toWireNotesOf(notes: Record<string, string>) {
   return toWireMatches([{ assignment: {}, notes }])[0].notes;

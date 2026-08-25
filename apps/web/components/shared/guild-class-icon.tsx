@@ -12,16 +12,16 @@ import {
 import { GUILD_CLASS_IMAGE } from "@/lib/guild-class";
 
 interface GuildClassIconProps {
-  /** Lưu phái cần hiển thị */
+  /** Class to display */
   guildClass: GuildClass;
 }
 
 /**
- * PATTERN CHUNG: lưu phái luôn hiển thị bằng icon thay vì chữ — bảng nào cũng
- * hẹp mà tên lưu phái thì dài. Tooltip giữ lại tên để tra cứu, alt của ảnh lo
- * phần screen-reader.
- * @param guildClass - Lưu phái cần hiển thị
- * @returns Avatar icon lưu phái kèm tooltip tên
+ * SHARED PATTERN: a guild class always renders as an icon rather than text — every table is narrow
+ * and class names are long. The tooltip keeps the name for lookup, the image's alt covers screen
+ * readers.
+ * @param guildClass - Class to display
+ * @returns The class icon avatar with a name tooltip
  */
 export function GuildClassIcon({ guildClass }: GuildClassIconProps) {
   const label = GUILD_CLASS_LABEL[guildClass];

@@ -3,8 +3,8 @@ import { defineConfig, env } from 'prisma/config';
 import { loadPrismaEnv } from './prisma/load-env';
 
 /**
- * Cấu hình cho Prisma CLI (generate/migrate/seed/studio).
- * Runtime của app không đọc file này — PrismaService tự tạo adapter từ DATABASE_URL.
+ * Config for the Prisma CLI (generate/migrate/seed/studio). The app runtime does not read
+ * this file — PrismaService builds its adapter from DATABASE_URL.
  */
 
 loadPrismaEnv();
@@ -16,10 +16,11 @@ export default defineConfig({
     seed: 'ts-node prisma/seed.ts',
   },
   datasource: {
-    // Ưu tiên DIRECT_DATABASE_URL khi có: migrate cần advisory lock và DDL trong transaction,
-    // thứ mà transaction pooler không giữ được. Runtime không đọc file này nên nó vẫn dùng
-    // DATABASE_URL — đây là chỗ duy nhất tách được hai đường, vì Prisma 7 bỏ `directUrl`.
-    // Không dùng env() cho biến direct: env() ném lỗi khi biến trống, còn ở đây trống là hợp lệ.
+    // Prefer DIRECT_DATABASE_URL when present: migrate needs an advisory lock and DDL inside a
+    // transaction, which the transaction pooler cannot hold. The runtime does not read this file so
+    // it keeps using DATABASE_URL — this is the only place the two paths can diverge, since Prisma 7
+    // dropped `directUrl`. env() is not used for the direct variable: it throws when empty, and empty
+    // is valid here.
     url: process.env.DIRECT_DATABASE_URL || env('DATABASE_URL'),
   },
 });

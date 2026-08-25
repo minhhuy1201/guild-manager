@@ -47,7 +47,7 @@ describe("CACHE_DEPENDENTS", () => {
   });
 
   it("gọi hai lần trả về key bằng nhau", () => {
-    // Thunk chỉ để hoãn việc đọc key factory, không phải để sinh key khác nhau.
+    // The thunk only defers reading the key factory; it must not produce different keys.
     expect(CACHE_DEPENDENTS.schedule()).toEqual(CACHE_DEPENDENTS.schedule());
   });
 });

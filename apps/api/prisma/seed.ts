@@ -10,22 +10,22 @@ import { PrismaClient } from '../src/generated/prisma/client';
 import { loadPrismaEnv } from './load-env';
 
 /**
- * Danh sách nhân vật nằm ngoài repo (`seed-data.json` ở gốc, đã gitignore) vì đó là
- * dữ liệu thật của bang hội. Định dạng xem `seed-data-example.json` — file mẫu có commit.
+ * The character list lives outside the repo (`seed-data.json` at the root, gitignored) because it
+ * is real guild data. See `seed-data-example.json` for the format — that sample is committed.
  */
 const SEED_FILE = resolve(__dirname, '../../../seed-data.json');
 
-/** File mẫu để chỉ cho người dùng mới, nhắc tới trong thông báo lỗi khi thiếu file thật. */
+/** Sample file pointed at in the error message when the real one is missing. */
 const EXAMPLE_FILE = 'seed-data-example.json';
 
-/** Hạn transaction — mặc định 5s của Prisma quá ngắn cho database ở xa. */
+/** Transaction timeout — Prisma's 5s default is too short for a remote database. */
 const TRANSACTION_TIMEOUT_MS = 60_000;
 
-/** File seed là dữ liệu ngoài process nên phải validate ở biên. */
+/** The seed file is data from outside the process, so it is validated at the boundary. */
 const seedCharactersSchema = z
   .array(
     z.object({
-      /** Khoá chính: slug tên + hậu tố ngẫu nhiên, sinh bởi `generateId`. */
+      /** Primary key: name slug plus a random suffix, produced by `generateId`. */
       id: z.string().min(1),
       name: z.string().min(1),
       guildClass: z.enum(GuildClass),
@@ -36,8 +36,8 @@ const seedCharactersSchema = z
 type SeedCharacter = z.infer<typeof seedCharactersSchema>[number];
 
 /**
- * Đọc và validate danh sách nhân vật từ file seed.
- * @returns Danh sách nhân vật hợp lệ
+ * Read and validate the character list from the seed file.
+ * @returns The valid character list
  */
 function readSeedCharacters(): SeedCharacter[] {
   if (!existsSync(SEED_FILE)) {
@@ -62,17 +62,17 @@ function readSeedCharacters(): SeedCharacter[] {
 }
 
 /**
- * Ghi danh sách nhân vật vào database. Chạy được nhiều lần: khớp theo tên để giữ nguyên id
- * của nhân vật đã có, nhờ vậy điểm danh và ô đội hình đang trỏ vào nó không bị mất.
+ * Write the character list to the database. Re-runnable: matches on name so existing characters
+ * keep their id, which keeps the attendance entries and formation slots pointing at them alive.
  *
- * Chỉ thêm và cập nhật — không xoá ai: nhân vật rời bang phải xoá qua giao diện quản trị,
- * để còn thấy rõ dữ liệu điểm danh nào bị xoá theo.
+ * Only inserts and updates — never deletes: a character leaving the guild must be removed through
+ * the admin UI, so it stays visible which attendance data goes with them.
  */
 async function main(): Promise<void> {
   const envFile = loadPrismaEnv();
   const characters = readSeedCharacters();
 
-  // Cùng thứ tự ưu tiên với prisma.config.ts: seed là thao tác CLI nên đi đường direct nếu có.
+  // Same precedence as prisma.config.ts: seeding is a CLI operation, so it takes the direct path when available.
   const connectionString =
     process.env.DIRECT_DATABASE_URL || process.env.DATABASE_URL;
 
@@ -92,8 +92,8 @@ async function main(): Promise<void> {
     });
     const existingIdByName = new Map(existing.map((row) => [row.name, row.id]));
 
-    // Gom thành ít truy vấn nhất có thể: database ở xa nên mỗi round-trip đắt,
-    // upsert từng nhân vật một sẽ vượt hạn mức của transaction.
+    // Batched into as few queries as possible: the database is remote, so each round-trip is
+    // expensive and upserting one character at a time would blow the transaction timeout.
     const created = characters.filter(
       (character) => !existingIdByName.has(character.name),
     );

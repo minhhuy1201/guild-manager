@@ -2,11 +2,7 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-/**
- * Nhãn cho các trường nhập liệu.
- * @param className - Class bổ sung
- * @returns Phần tử label đã style
- */
+/** Label for form fields. */
 function Label({
   className,
   ...props

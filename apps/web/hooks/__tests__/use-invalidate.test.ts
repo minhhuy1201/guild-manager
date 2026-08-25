@@ -12,10 +12,9 @@ import { useInvalidate } from "../use-invalidate";
 afterEach(cleanup);
 
 /**
- * Render `useInvalidate` trong một QueryClient riêng và theo dõi lời gọi
- * invalidate của nó.
- * @param topic - Chủ đề truyền vào hook
- * @returns Kết quả renderHook cùng spy trên `invalidateQueries`
+ * Render `useInvalidate` inside its own QueryClient and watch its invalidate calls.
+ * @param topic - Topic passed to the hook
+ * @returns The renderHook result plus the spy on `invalidateQueries`
  */
 function renderInvalidate(topic: Parameters<typeof useInvalidate>[0]) {
   const queryClient = new QueryClient({
@@ -27,9 +26,9 @@ function renderInvalidate(topic: Parameters<typeof useInvalidate>[0]) {
 
   const rendered = renderHook(() => useInvalidate(topic), {
     /**
-     * Cấp QueryClient cho hook đang test.
-     * @param props - Children render trong provider
-     * @returns Cây đã bọc provider
+     * Provide a QueryClient to the hook under test.
+     * @param props - Children rendered inside the provider
+     * @returns The tree wrapped in the provider
      */
     wrapper: ({ children }: { children: ReactNode }) =>
       createElement(QueryClientProvider, { client: queryClient }, children),
@@ -69,8 +68,8 @@ describe("useInvalidate", () => {
   });
 
   it("trả về cùng một hàm qua các lần render", () => {
-    // use-deadline-refresh đặt hàm này vào dependency của useEffect: danh tính
-    // đổi mỗi lần render là setTimeout bị đặt lại và deadline không bao giờ tới.
+    // use-deadline-refresh puts this function in a useEffect dependency: an identity that changes on
+    // every render means the setTimeout is reset and the deadline never arrives.
     const { result, rerender } = renderInvalidate("attendance-window");
     const first = result.current;
 

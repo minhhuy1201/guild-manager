@@ -9,10 +9,10 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 /**
- * Ô nhập mật khẩu kèm nút con mắt bật/tắt hiển thị. Nhận mọi prop của `Input`
- * trừ `type` — kiểu input do trạng thái ẩn/hiện quyết định.
- * @param className - Class bổ sung cho ô nhập
- * @returns Ô nhập mật khẩu kèm nút hiện/ẩn
+ * A password field with an eye button toggling visibility. Accepts every `Input` prop except `type` —
+ * the input type follows the hidden/shown state.
+ * @param className - Extra classes for the field
+ * @returns The password field with its toggle
  */
 export function PasswordInput({
   className,
@@ -22,7 +22,7 @@ export function PasswordInput({
 
   return (
     <div className="relative">
-      {/* Chừa chỗ bên phải cho nút con mắt nằm đè lên input. */}
+      {/* Leave room on the right for the eye button overlaying the input. */}
       <Input
         type={visible ? "text" : "password"}
         className={cn("pr-10", className)}

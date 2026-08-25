@@ -5,14 +5,14 @@ import {
 import { createZodDto } from 'nestjs-zod';
 
 /**
- * Body của request tạo trận.
- * Schema dùng chung với frontend (packages/shared/schemas) để hai bên không lệch nhau.
+ * Body of the create-session request.
+ * Shares its schema with the frontend (packages/shared/schemas) so the two cannot drift.
  */
 export class CreateBattleSessionDto extends createZodDto(
   createBattleSessionSchema,
 ) {}
 
-/** Body của request sửa trận — mọi field đều không bắt buộc. */
+/** Body of the edit-session request — every field optional. */
 export class UpdateBattleSessionDto extends createZodDto(
   updateBattleSessionSchema,
 ) {}

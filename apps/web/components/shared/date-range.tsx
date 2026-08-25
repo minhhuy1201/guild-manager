@@ -4,25 +4,24 @@ import { formatDate, formatDayMonth } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 interface DateRangeProps {
-  /** Chuỗi ISO ngày bắt đầu */
+  /** ISO start date */
   start: string;
-  /** Chuỗi ISO ngày kết thúc */
+  /** ISO end date */
   end: string;
-  /** Hiện năm (dd/MM/yyyy) thay vì chỉ ngày/tháng */
+  /** Show the year (dd/MM/yyyy) instead of just day/month */
   withYear?: boolean;
-  /** Class bổ sung, merge sau class mặc định */
+  /** Extra classes, merged after the defaults */
   className?: string;
 }
 
 /**
- * PATTERN CHUNG: mọi khoảng ngày trong giao diện hiển thị dạng
- * "03/08 →(icon) 08/08" — mũi tên là icon để cân thị giác thay vì dấu "->",
- * kèm chữ "đến" cho screen-reader vì icon không đọc được.
- * @param start - Chuỗi ISO ngày bắt đầu
- * @param end - Chuỗi ISO ngày kết thúc
- * @param withYear - Hiện năm nếu cần phân biệt các năm khác nhau
- * @param className - Class bổ sung
- * @returns Khoảng ngày đã định dạng
+ * SHARED PATTERN: every date range in the UI renders as "03/08 →(icon) 08/08" — an icon arrow for
+ * visual balance rather than "->", plus the word "đến" for screen readers, which cannot read the icon.
+ * @param start - ISO start date
+ * @param end - ISO end date
+ * @param withYear - Show the year when years must be told apart
+ * @param className - Extra classes
+ * @returns The formatted date range
  */
 export function DateRange({
   start,

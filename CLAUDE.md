@@ -25,8 +25,7 @@ pnpm workspace monorepo, no root `package.json`: `apps/api` (NestJS) + `apps/web
 
 Two rules architecture.md does not repeat:
 
-- **User-facing text is Vietnamese** — error messages, labels, route paths. Identifiers, file names,
-  comments in new code and commit messages stay English.
+- Comment and code, file name will be English, but the content in docs/superpowers, docs/custom-plan and docs/custom-spec will be Vietnamese
 - **No `forwardRef()` in NestJS.** A cycle means the logic belongs in a third module.
 
 ## Secrets and `.env`

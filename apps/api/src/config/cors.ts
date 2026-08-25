@@ -1,19 +1,19 @@
 import type { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface';
 
-/** Hậu tố domain mà Vercel cấp cho mọi deployment không gắn domain riêng. */
+/** Domain suffix Vercel gives every deployment without a custom domain. */
 const VERCEL_APP_SUFFIX = 'vercel.app';
 
-/** Ký tự có thể xuất hiện trong phần hậu tố Vercel gắn thêm (hash, tên nhánh, tên scope). */
+/** Characters that can appear in the suffix Vercel appends (hash, branch name, scope name). */
 const PREVIEW_SUFFIX_PATTERN = '[a-z0-9-]+';
 
 /**
- * Origin của một bản preview trên Vercel là `https://<project>-<hash>-<scope>.vercel.app`, đổi theo
- * từng lần deploy nên không so khớp cứng được.
+ * A Vercel preview origin is `https://<project>-<hash>-<scope>.vercel.app`, different on every
+ * deploy, so it cannot be matched literally.
  *
- * Chỉ nhận đúng project web, **không** nới ra cả `*.vercel.app`: đi cùng `credentials: true` thì
- * một origin rộng như vậy là mở cửa cho bất kỳ ai deploy lên Vercel.
+ * Only the web project is accepted, **not** all of `*.vercel.app`: together with
+ * `credentials: true`, an origin that broad opens the door to anyone who deploys on Vercel.
  *
- * @param projectName - Tên project web trên Vercel
+ * @param projectName - Name of the web project on Vercel
  */
 function buildPreviewOriginPattern(projectName: string): RegExp {
   const escaped = projectName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -24,11 +24,11 @@ function buildPreviewOriginPattern(projectName: string): RegExp {
 }
 
 /**
- * Kiểm tra một origin có được phép gọi API hay không.
+ * Whether an origin may call the API.
  *
- * @param origin - Header `Origin` của request; `undefined` với request cùng origin hoặc từ curl
- * @param webOrigin - Origin production của apps/web (biến WEB_ORIGIN)
- * @param previewPattern - Mẫu domain preview, `null` khi không khai báo WEB_PREVIEW_PROJECT
+ * @param origin - The request's `Origin` header; `undefined` for same-origin or curl requests
+ * @param webOrigin - Production origin of apps/web (the WEB_ORIGIN variable)
+ * @param previewPattern - Preview domain pattern, `null` when WEB_PREVIEW_PROJECT is unset
  */
 function isOriginAllowed(
   origin: string | undefined,
@@ -47,11 +47,11 @@ function isOriginAllowed(
 }
 
 /**
- * Dựng cấu hình CORS: nhận origin production, và nhận thêm domain preview của project web nếu có
- * khai báo `WEB_PREVIEW_PROJECT`.
+ * Build the CORS config: accepts the production origin, plus the web project's preview domains
+ * when `WEB_PREVIEW_PROJECT` is declared.
  *
- * @param webOrigin - Giá trị biến WEB_ORIGIN
- * @param previewProjectName - Tên project web trên Vercel, bỏ trống khi không deploy trên Vercel
+ * @param webOrigin - Value of the WEB_ORIGIN variable
+ * @param previewProjectName - Web project name on Vercel, omitted when not deploying there
  */
 export function createCorsOptions(
   webOrigin: string,
@@ -62,10 +62,10 @@ export function createCorsOptions(
     : null;
 
   return {
-    // Từ chối bằng `false` chứ không ném Error: ném thì Nest trả 500 cho mọi request từ origin lạ
-    // (bot quét cũng tính), trong khi thứ cần làm chỉ là không gắn header CORS — trình duyệt tự
-    // chặn. Request không qua trình duyệt vẫn đi được, đúng như trước, vì CORS không phải lớp
-    // xác thực; chặn truy cập là việc của JwtAuthGuard.
+    // Reject with `false` rather than throwing: throwing makes Nest return 500 for every request
+    // from an unknown origin (scanning bots included), when all that is needed is to omit the CORS
+    // headers — the browser blocks it itself. Non-browser requests still go through, as before,
+    // because CORS is not an authentication layer; blocking access is JwtAuthGuard's job.
     origin(origin, callback) {
       callback(null, isOriginAllowed(origin, webOrigin, previewPattern));
     },

@@ -3,7 +3,7 @@ import { battleSessionSchema, type BattleSession } from '@guild/shared/schemas';
 import { verifyResponse } from '../../config';
 import { formatSessionLabel, isDeadlinePassed } from './session-schedule';
 
-/** Hàng BattleSession đọc kèm số liệu phụ cho entity. */
+/** A BattleSession row read with the extra counts the entity needs. */
 export type SessionRow = {
   id: string;
   dateTime: Date;
@@ -15,10 +15,10 @@ export type SessionRow = {
 };
 
 /**
- * Đổi một hàng BattleSession thành object trả về cho client.
- * @param row - Hàng đọc từ Prisma kèm `_count`
- * @param now - Thời điểm dựng response, dùng để chốt cờ quá hạn
- * @returns Trận đánh đã dựng nhãn và đổi thời gian sang ISO string
+ * Turn a BattleSession row into the object returned to the client.
+ * @param row - Row read from Prisma, with `_count`
+ * @param now - Moment the response is built, used to fix the past-deadline flag
+ * @returns The session with its label built and times as ISO strings
  */
 export function toBattleSession(row: SessionRow, now: Date): BattleSession {
   return verifyResponse(battleSessionSchema, {

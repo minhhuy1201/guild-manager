@@ -12,14 +12,14 @@ export const metadata: Metadata = {
 };
 
 /**
- * Route "/lich-su-diem-danh" — trang lịch sử điểm danh.
- * Bang chúng chỉ có đúng một nhân vật trong bảng (backend đã lọc) nên không hiện bộ lọc.
- * @returns Bộ lọc và bảng lịch sử điểm danh
+ * Route "/lich-su-diem-danh" — the attendance history page.
+ * A member has exactly one character in the table (the backend filtered it), so no filters are shown.
+ * @returns The filters and the attendance history table
  */
 export default async function AttendanceHistoryPage() {
   const session = await getSession();
 
-  // proxy.ts đã chặn khách; nhánh này chỉ để TypeScript biết `session` không null.
+  // proxy.ts already blocked visitors; this branch only tells TypeScript `session` is not null.
   if (!session) redirect(ROUTES.login);
 
   return (

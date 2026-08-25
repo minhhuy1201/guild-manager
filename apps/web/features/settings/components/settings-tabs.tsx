@@ -12,17 +12,16 @@ import {
 import { MembersPanel } from "@/features/members";
 import { SettingsScreen } from "./settings-screen";
 
-/** Giá trị của hai tab — mở mặc định ở lịch đánh, việc hay làm nhất. */
+/** The two tab values — the schedule opens by default, being the most common task. */
 const TAB = {
   battles: "battles",
   members: "members",
 } as const;
 
 /**
- * Màn Thiết lập với hai tab: lịch đánh và quản lý thành viên.
- * Tab đang mở chỉ là state cục bộ — không đưa vào URL vì không có nhu cầu
- * gửi link thẳng tới một tab.
- * @returns Màn thiết lập dạng tab
+ * The settings screen with its two tabs: schedule and member management.
+ * The active tab is local state only — not in the URL, since nobody needs to link straight to a tab.
+ * @returns The tabbed settings screen
  */
 export function SettingsTabs() {
   return (

@@ -1,10 +1,10 @@
 /**
- * Khóa duy nhất cho một record điểm danh: cặp (characterId, sessionId).
- * Chỉ là khoá map phía client — không phải shape đi qua mạng, nên không nằm ở
+ * Unique key for an attendance record: the (characterId, sessionId) pair.
+ * A client-side map key only — not a shape crossing the network, so it does not live in
  * `packages/shared`.
- * @param characterId - ID nhân vật
- * @param sessionId - ID buổi đánh
- * @returns Chuỗi khóa duy nhất
+ * @param characterId - Character id
+ * @param sessionId - Battle session id
+ * @returns The unique key string
  */
 export function recordKey(characterId: string, sessionId: string): string {
   return `${characterId}__${sessionId}`;

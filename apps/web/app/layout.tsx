@@ -4,7 +4,7 @@ import { Providers } from "@/components/providers";
 import { SiteHeader } from "@/components/shared/site-header";
 import "./globals.css";
 
-// Font chính toàn hệ thống: Be Vietnam Pro (sans-serif, hỗ trợ đầy đủ tiếng Việt).
+// App-wide font: Be Vietnam Pro (sans-serif, full Vietnamese coverage).
 const beVietnamPro = Be_Vietnam_Pro({
   variable: "--font-be-vietnam-pro",
   subsets: ["latin", "vietnamese"],

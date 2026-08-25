@@ -1,7 +1,7 @@
 /**
- * Query key factory cho domain điểm danh.
- * Tách khỏi `attendance-api.ts` để `lib/cache-graph.ts` đọc được key mà không
- * kéo theo `apiFetch` — và cho khớp ba feature kia, vốn đã có file key riêng.
+ * Query key factory for the attendance domain.
+ * Split out of `attendance-api.ts` so `lib/cache-graph.ts` can read the keys without pulling in
+ * `apiFetch` — and to match the other three features, which already have their own key file.
  */
 export const attendanceKeys = {
   all: ["attendance"] as const,

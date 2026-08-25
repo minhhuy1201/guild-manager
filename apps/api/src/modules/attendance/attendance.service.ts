@@ -28,7 +28,7 @@ import {
 } from '../characters/characters.public';
 import { toAttendanceRecord } from './attendance.codec';
 
-/** Thông báo khi người không phải quản trị viên điểm danh cho nhân vật khác. */
+/** Message shown when a non-admin marks attendance for someone else's character. */
 const NOT_YOUR_CHARACTER = 'Bạn chỉ điểm danh được cho nhân vật của mình.';
 
 @Injectable()
@@ -41,10 +41,10 @@ export class AttendanceService {
   ) {}
 
   /**
-   * Danh sách nhân vật cho màn điểm danh, lọc theo vai của người gọi.
-   * Lọc ở đây chứ không ở giao diện: chỉ ẩn trên web thì mở DevTools là đọc được cả bảng.
-   * @param actor - Payload JWT của người gọi
-   * @returns Cả bang với cán bộ/quản trị; đúng nhân vật của mình với bang chúng
+   * Characters for the attendance screen, filtered by the caller's role.
+   * Filtered here, not in the UI: hiding it on the web only means DevTools reveals the whole table.
+   * @param actor - JWT payload of the caller
+   * @returns The whole guild for leaders/admins; only their own character for members
    */
   async getCharacters(actor: JwtPayload): Promise<Character[]> {
     if (canViewAllAttendance(actor.role)) return this.characters.list();
@@ -58,9 +58,9 @@ export class AttendanceService {
   }
 
   /**
-   * Lượt điểm danh của tuần đang mở, lọc theo vai của người gọi.
-   * @param actor - Payload JWT của người gọi
-   * @returns Cả bang với cán bộ/quản trị; chỉ hàng của mình với bang chúng
+   * Attendance entries of the open week, filtered by the caller's role.
+   * @param actor - JWT payload of the caller
+   * @returns The whole guild for leaders/admins; only their own rows for members
    */
   async getRecords(actor: JwtPayload): Promise<AttendanceRecord[]> {
     const seesEveryone = canViewAllAttendance(actor.role);
@@ -81,8 +81,8 @@ export class AttendanceService {
   }
 
   /**
-   * Số lượt Có/Không của từng trận trong tuần đang mở.
-   * @returns Mảng số đếm theo trận, không kèm danh tính ai
+   * Yes/no tallies per session in the open week.
+   * @returns Tallies per session, carrying no identities
    */
   async getSummary(): Promise<AttendanceSummary[]> {
     const sessions = await this.battleSessions.listByWeek();
@@ -95,9 +95,9 @@ export class AttendanceService {
     return sessions.map((session) => {
       const rows = grouped.filter((row) => row.sessionId === session.id);
       /**
-       * Số lượt của một trạng thái trong trận đang xét.
-       * @param status - Trạng thái cần đếm
-       * @returns Số lượt, 0 khi chưa ai chọn trạng thái đó
+       * Count of one status in the session under consideration.
+       * @param status - Status to count
+       * @returns The count, 0 when nobody picked that status
        */
       const countOf = (status: AttendanceStatus): number =>
         rows.find((row) => (row.status as AttendanceStatus) === status)?._count
@@ -112,15 +112,15 @@ export class AttendanceService {
   }
 
   /**
-   * Ghi nhận điểm danh cho một nhân vật ở một trận.
-   * Bang chúng và cán bộ chỉ điểm danh được cho nhân vật của chính mình, và chỉ khi còn hạn.
-   * Quản trị viên điểm danh hộ được và không bị chặn bởi deadline (dùng để sửa sai sót sau trận).
-   * @param input - characterId, sessionId và status
-   * @param actor - Payload JWT của người gọi
-   * @returns Record vừa ghi
-   * @throws NotFoundException khi không có nhân vật hoặc trận đó trong tuần đang mở
-   * @throws ForbiddenException khi điểm danh hộ nhân vật khác mà không phải quản trị viên
-   * @throws ConflictException khi người thường điểm danh trận đã quá hạn
+   * Record attendance for a character in a session.
+   * Members and leaders may only mark their own character, and only before the deadline. Admins may
+   * mark on behalf of others and are not blocked by the deadline (used to fix mistakes after a battle).
+   * @param input - characterId, sessionId and status
+   * @param actor - JWT payload of the caller
+   * @returns The written record
+   * @throws NotFoundException when the character or session is not in the open week
+   * @throws ForbiddenException when a non-admin marks someone else's character
+   * @throws ConflictException when a non-admin marks a session past its deadline
    */
   async mark(
     input: MarkAttendanceInput,
@@ -140,11 +140,10 @@ export class AttendanceService {
     }
 
     const session = await this.battleSessions.findById(sessionId);
-    // Người thường chỉ điểm danh được cho tuần đang mở; quản trị viên sửa được
-    // cả tuần khác để bù sai sót.
+    // Non-admins may only mark the open week; admins may fix other weeks.
     //
-    // `findById` trả entity nên `weekStart` là ISO string; bọc lại qua
-    // `weekStartOf` để phép so đi qua đúng một đường như mọi chỗ khác.
+    // `findById` returns an entity, so `weekStart` is an ISO string; re-wrapping it through
+    // `weekStartOf` keeps the comparison on the same single path as everywhere else.
     const inActiveWeek =
       session !== null &&
       isSameWeek(
@@ -155,8 +154,8 @@ export class AttendanceService {
       throw new NotFoundException('Không tìm thấy ngày đánh.');
     }
 
-    // Dùng lại cờ mà `findById` vừa dựng thay vì tính lại: luật quá hạn chỉ được
-    // đánh giá ở một chỗ, nên cờ client nhận được và cờ chặn ghi không thể lệch.
+    // Reuse the flag `findById` just built instead of recomputing it: the deadline rule is
+    // evaluated in exactly one place, so the client's flag and the write guard cannot diverge.
     if (!isAdmin && session.isDeadlinePassed) {
       throw new ConflictException('Đã quá hạn điểm danh ngày này.');
     }
@@ -177,9 +176,9 @@ export class AttendanceService {
   }
 
   /**
-   * Nhân vật gắn với người đang gọi.
-   * @param actor - Payload JWT của người gọi
-   * @returns Id nhân vật, hoặc null khi tài khoản không gắn nhân vật nào (quản trị viên cứu hộ)
+   * The character bound to the caller.
+   * @param actor - JWT payload of the caller
+   * @returns The character id, or null when the account has no character (rescue admin)
    */
   private async ownCharacterId(actor: JwtPayload): Promise<string | null> {
     const member = await this.characters.findByDiscordId(actor.sub);

@@ -1,29 +1,29 @@
 /**
- * Luật thời gian của lịch đánh — tóm tắt ở docs/architecture.md mục 6.
+ * Time rules of the battle schedule — summarised in docs/architecture.md section 6.
  *
- * Mọi mốc giờ tính theo giờ Việt Nam (UTC+7) cố định, không phụ thuộc giờ máy
- * chạy server. Tuần điểm danh mở lúc 22:00 Thứ 7 cho tuần kế tiếp.
+ * Every clock value is Vietnam time (fixed UTC+7), independent of the server's clock. The attendance
+ * week opens at 22:00 Saturday, for the following week.
  *
- * Từ 2026-08 lịch đánh do quản trị viên nhập vào database; file này chỉ còn giữ
- * mốc tuần, trận Guild War cố định và cách dựng nhãn hiển thị.
+ * Since 2026-08 the schedule is entered by admins into the database; this file only keeps the week
+ * markers, the fixed Guild War session and the display label format.
  */
 import { shiftVnDate, vnParts, vnWeekday } from '@guild/shared/lib';
 
-/** Thứ trong tuần theo chuẩn ISO của `vnWeekday()`: 1=T2, ..., 7=CN. */
+/** ISO weekday as `vnWeekday()` reports it: 1=Mon, ..., 7=Sun. */
 const MONDAY = 1;
 const SATURDAY = 6;
 
-/** Giờ mở tuần điểm danh mới (22:00 Thứ 7). */
+/** Hour the new attendance week opens (22:00 Saturday). */
 const WEEK_OPEN_HOUR = 22;
 
-/** Lệch ngày của Thứ 7 so với Thứ 2 đầu tuần. */
+/** Day offset of Saturday from the Monday starting the week. */
 const SATURDAY_OFFSET_FROM_MONDAY = 5;
 
-/** Giờ đánh cố định của Guild War. */
+/** Fixed battle time of the Guild War. */
 const GUILD_WAR_HOUR = 20;
 const GUILD_WAR_MINUTE = 0;
 
-/** Tên thứ tra thẳng bằng `vnWeekday()`; chỉ số 0 bỏ trống vì ISO đếm từ 1. */
+/** Weekday names indexed straight by `vnWeekday()`; index 0 is empty because ISO counts from 1. */
 const WEEKDAY_NAMES = [
   '',
   'Thứ 2',
@@ -36,26 +36,26 @@ const WEEKDAY_NAMES = [
 ];
 
 /**
- * Mốc Thứ 2 00:00 giờ VN của một tuần điểm danh.
+ * Monday 00:00 Vietnam time of an attendance week.
  *
- * Nhãn `__weekAnchor` chỉ tồn tại lúc biên dịch: một `Date` bất kỳ không gán được
- * vào đây, nên không ai lỡ truyền giờ đánh của một trận vào chỗ đợi mốc tuần.
- * Chỉ dựng được qua `weekStartOf` hoặc `parseWeekStart`.
+ * The `__weekAnchor` brand exists only at compile time: an arbitrary `Date` is not assignable here,
+ * so nobody can pass a session's battle time where a week marker is expected. Only `weekStartOf` and
+ * `parseWeekStart` can build one.
  */
 export type WeekAnchor = Date & { readonly __weekAnchor: unique symbol };
 
-/** Một tuần điểm danh: mốc đầu và cuối. */
+/** An attendance week: its first and last moment. */
 export interface ScheduledWeek {
-  /** Thứ 2 00:00 — cũng là khóa gom trận theo tuần trong database. */
+  /** Monday 00:00 — also the key grouping sessions by week in the database. */
   weekStart: WeekAnchor;
-  /** Thứ 7 23:59 — mốc cuối để hiển thị timeline. */
+  /** Saturday 23:59 — the closing marker used by the timeline. */
   weekEnd: Date;
 }
 
 /**
- * Quy một thời điểm về Thứ 2 00:00 (giờ VN) của tuần chứa nó.
- * @param dateTime - Thời điểm bất kỳ
- * @returns Mốc Thứ 2 00:00 của tuần chứa `dateTime`
+ * Resolve an instant to Monday 00:00 (Vietnam time) of the week containing it.
+ * @param dateTime - Any instant
+ * @returns Monday 00:00 of the week containing `dateTime`
  */
 export function weekStartOf(dateTime: Date): WeekAnchor {
   return shiftVnDate(
@@ -67,71 +67,68 @@ export function weekStartOf(dateTime: Date): WeekAnchor {
 }
 
 /**
- * Hai mốc tuần có chỉ cùng một tuần không.
- * So bằng thời điểm chứ không bằng chuỗi: cùng một mốc viết ở hai múi giờ khác
- * nhau vẫn phải cho `true`.
- * @param a - Mốc tuần thứ nhất
- * @param b - Mốc tuần thứ hai
- * @returns true nếu hai mốc trỏ cùng một tuần
+ * Whether two week markers denote the same week.
+ * Compared by instant, not by string: the same moment written in two timezones must still be `true`.
+ * @param a - First week marker
+ * @param b - Second week marker
+ * @returns true when both point at the same week
  */
 export function isSameWeek(a: WeekAnchor, b: WeekAnchor): boolean {
   return a.getTime() === b.getTime();
 }
 
 /**
- * Dựng một tuần điểm danh từ mốc Thứ 2 của nó.
- * @param weekStart - Thứ 2 00:00 giờ VN
- * @returns Tuần kèm mốc cuối Thứ 7 23:59
+ * Build an attendance week from its Monday marker.
+ * @param weekStart - Monday 00:00 Vietnam time
+ * @returns The week including its Saturday 23:59 closing marker
  */
 function toWeek(weekStart: WeekAnchor): ScheduledWeek {
   return { weekStart, weekEnd: weekEndOf(weekStart) };
 }
 
 /**
- * Mốc cuối tuần điểm danh (Thứ 7 23:59 giờ VN) của một tuần.
- * @param weekStart - Thứ 2 00:00 giờ VN
- * @returns Mốc Thứ 7 23:59 của cùng tuần
+ * The closing marker of an attendance week (Saturday 23:59 Vietnam time).
+ * @param weekStart - Monday 00:00 Vietnam time
+ * @returns Saturday 23:59 of the same week
  */
 export function weekEndOf(weekStart: Date): Date {
   return shiftVnDate(weekStart, SATURDAY_OFFSET_FROM_MONDAY, 23, 59);
 }
 
 /**
- * Xác định tuần điểm danh đang mở tại thời điểm `now`.
- * Tuần mở lúc 22:00 Thứ 7 và mở cho tuần KẾ TIẾP.
- * @param now - Thời điểm hiện tại
- * @returns Tuần đang mở
+ * Determine which attendance week is open at `now`.
+ * The week opens at 22:00 Saturday, and it opens the FOLLOWING week.
+ * @param now - Current moment
+ * @returns The open week
  */
 export function getActiveWeek(now: Date): ScheduledWeek {
-  // Chủ nhật (ISO 7) đồng dư 0 mod 7 nên vẫn ra 1 ngày kể từ Thứ 7.
+  // Sunday (ISO 7) is congruent to 0 mod 7, so it still resolves to 1 day since Saturday.
   const daysSinceSaturday = (vnWeekday(now) - SATURDAY + 7) % 7;
 
   let anchorOpen = shiftVnDate(now, -daysSinceSaturday, WEEK_OPEN_HOUR, 0);
 
-  // Mốc mở 22:00 Thứ 7 còn ở tương lai → tuần đang mở được mở từ Thứ 7 tuần trước.
+  // The 22:00 Saturday opening is still ahead → the open week started last Saturday.
   if (anchorOpen.getTime() > now.getTime()) {
     anchorOpen = shiftVnDate(anchorOpen, -7, WEEK_OPEN_HOUR, 0);
   }
 
-  // Thứ 7 mở tuần + 2 ngày = Thứ 2 đầu tuần mới.
+  // Opening Saturday + 2 days = the Monday starting the new week.
   return toWeek(weekStartOf(shiftVnDate(anchorOpen, 2, 0, 0)));
 }
 
 /**
- * Đọc một mốc tuần từ query string — chỗ duy nhất biến chuỗi client gửi lên
- * thành mốc tuần.
+ * Read a week marker from the query string — the only place a client string becomes a week marker.
  *
- * Chuỗi hợp lệ nhưng rơi vào giữa tuần thì quy về Thứ 2 của tuần chứa nó chứ
- * không ném: client gửi giữa tuần thì ý định rõ ràng là "tuần chứa ngày này", và
- * trả đúng tuần đó không hề âm thầm sai.
- * Chuỗi không đọc được là **lỗi lập trình**, không phải lỗi người dùng: biên HTTP
- * đã chặn nó ở `weekStartQuerySchema` trước khi tới đây. Vì vậy hàm ném
- * `RangeError` chứ không phải exception của framework — file này giữ thuần, và
- * `AllExceptionsFilter` biến nó thành 500 kèm stack trong log, đúng loại lỗi đó.
- * @param input - Chuỗi ISO đã qua `weekStartQuerySchema`; bỏ trống = tuần đang mở
- * @param now - Thời điểm hiện tại, dùng khi `input` bỏ trống
- * @returns Mốc Thứ 2 00:00 giờ VN
- * @throws RangeError khi chuỗi không phải một mốc thời gian hợp lệ
+ * A valid string landing mid-week resolves to that week's Monday rather than throwing: a mid-week
+ * value clearly means "the week containing this day", and returning that week is not silently wrong.
+ * An unparseable string is a **programming error**, not a user error: the HTTP boundary already
+ * rejected it in `weekStartQuerySchema`. Hence a plain `RangeError` rather than a framework
+ * exception — this file stays pure, and `AllExceptionsFilter` turns it into a 500 with a stack in the
+ * log, which is the right treatment for that class of error.
+ * @param input - ISO string that passed `weekStartQuerySchema`; omitted = the open week
+ * @param now - Current moment, used when `input` is omitted
+ * @returns Monday 00:00 Vietnam time
+ * @throws RangeError when the string is not a valid instant
  */
 export function parseWeekStart(
   input: string | undefined,
@@ -149,10 +146,9 @@ export function parseWeekStart(
 }
 
 /**
- * Các tuần quản trị viên được phép thiết lập lịch: tuần đang mở và tuần kế tiếp.
- * Tuần đã qua chỉ đọc.
- * @param now - Thời điểm hiện tại
- * @returns Mảng 2 tuần, tuần đang mở đứng trước
+ * The weeks an admin may schedule: the open week and the next one. Past weeks are read-only.
+ * @param now - Current moment
+ * @returns Two weeks, the open one first
  */
 export function getEditableWeeks(now: Date): ScheduledWeek[] {
   const active = getActiveWeek(now);
@@ -161,9 +157,9 @@ export function getEditableWeeks(now: Date): ScheduledWeek[] {
 }
 
 /**
- * Thời điểm diễn ra Guild War của một tuần: 20:00 Thứ 7.
- * @param weekStart - Thứ 2 00:00 của tuần
- * @returns Thời điểm đánh Guild War
+ * When a week's Guild War takes place: 20:00 Saturday.
+ * @param weekStart - Monday 00:00 of the week
+ * @returns The Guild War battle time
  */
 export function guildWarDateTime(weekStart: Date): Date {
   return shiftVnDate(
@@ -175,10 +171,10 @@ export function guildWarDateTime(weekStart: Date): Date {
 }
 
 /**
- * Id tất định của trận Guild War một tuần.
- * Không còn ràng buộc unique theo nhãn nên id chính là khóa để upsert idempotent.
- * @param weekStart - Thứ 2 00:00 của tuần
- * @returns Id dạng `gw-YYYY-MM-DD` theo ngày Thứ 2 giờ VN
+ * Deterministic id of a week's Guild War session.
+ * There is no unique constraint on the label any more, so the id is the key for an idempotent upsert.
+ * @param weekStart - Monday 00:00 of the week
+ * @returns An id of the form `gw-YYYY-MM-DD` from the Vietnam-time Monday
  */
 export function guildWarSessionId(weekStart: Date): string {
   const { year, month, day } = vnParts(weekStart);
@@ -187,11 +183,11 @@ export function guildWarSessionId(weekStart: Date): string {
 }
 
 /**
- * Dựng nhãn hiển thị của một trận từ giờ đánh — nhãn KHÔNG lưu trong database
- * nên đổi giờ đánh là nhãn tự đúng theo.
- * @param dateTime - Thời điểm đánh
- * @param isGuildWar - Có phải trận Guild War không
- * @returns Nhãn dạng "Thứ 3 · 20:30" hoặc "Thứ 7 · Bang Chiến"
+ * Build a session's display label from its battle time — the label is NOT stored, so changing the
+ * battle time keeps the label correct.
+ * @param dateTime - Battle time
+ * @param isGuildWar - Whether this is the Guild War session
+ * @returns A label like "Thứ 3 · 20:30" or "Thứ 7 · Bang Chiến"
  */
 export function formatSessionLabel(
   dateTime: Date,
@@ -207,22 +203,23 @@ export function formatSessionLabel(
 }
 
 /**
- * Kiểm tra đã quá hạn điểm danh hay chưa.
- * @param deadline - Hạn chót của trận
- * @param now - Thời điểm hiện tại
- * @returns true nếu đã quá hạn, không cho ghi nhận điểm danh nữa
+ * Whether the attendance deadline has passed.
+ * @param deadline - The session's deadline
+ * @param now - Current moment
+ * @returns true when it has passed and attendance can no longer be recorded
  */
 export function isDeadlinePassed(deadline: Date, now: Date): boolean {
   return now.getTime() > deadline.getTime();
 }
 
 /**
- * Trận đã qua giờ đánh thì khoá, không sửa đội hình được nữa.
- * Khác `isDeadlinePassed` ở mốc so: hạn điểm danh là một thời điểm riêng trước giờ đánh, còn
- * đây so thẳng với chính giờ đánh. Đúng giờ đánh vẫn chưa khoá.
- * @param dateTime - Thời điểm đánh của trận
- * @param now - Thời điểm hiện tại
- * @returns true khi trận đã đánh xong
+ * A session past its battle time is locked and its formation can no longer be edited.
+ * Differs from `isDeadlinePassed` in what it compares against: the attendance deadline is a separate
+ * moment before the battle, while this compares against the battle time itself. Exactly at the
+ * battle time it is not yet locked.
+ * @param dateTime - Battle time of the session
+ * @param now - Current moment
+ * @returns true when the battle is over
  */
 export function isSessionLocked(dateTime: Date, now: Date): boolean {
   return dateTime.getTime() < now.getTime();

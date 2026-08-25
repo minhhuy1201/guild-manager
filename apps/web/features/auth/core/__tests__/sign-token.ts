@@ -1,7 +1,7 @@
 /**
- * Ký JWT HS256 bằng Web Crypto — bản test-only của việc backend làm ở `apps/api`.
- * Đặt cạnh test của `core/` vì cả test JWT lẫn test proxy đều cần dựng token thật.
- * Không có đuôi `.test.ts` nên Vitest không thu file này như một suite.
+ * Sign HS256 JWTs with Web Crypto — a test-only counterpart of what the backend does in `apps/api`.
+ * It sits beside the `core/` tests because both the JWT tests and the proxy tests need real tokens.
+ * It has no `.test.ts` suffix, so Vitest does not collect it as a suite.
  */
 
 import { GuildRole } from "@guild/shared/enums";
@@ -9,9 +9,9 @@ import { GuildRole } from "@guild/shared/enums";
 const encoder = new TextEncoder();
 
 /**
- * Mã hoá chuỗi hoặc bytes thành base64url không padding.
- * @param value - Chuỗi UTF-8 hoặc bytes thô cần mã hoá
- * @returns Chuỗi base64url
+ * Encode a string or bytes as unpadded base64url.
+ * @param value - UTF-8 string or raw bytes to encode
+ * @returns The base64url string
  */
 export function toBase64Url(value: string | Uint8Array): string {
   const binary =
@@ -22,19 +22,19 @@ export function toBase64Url(value: string | Uint8Array): string {
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
 }
 
-/** Thời điểm hết hạn cách hiện tại `seconds` giây (epoch giây, có thể âm để tạo token hết hạn). */
+/** An expiry `seconds` from now (epoch seconds; negative produces an expired token). */
 export function expiresIn(seconds: number): number {
   return Math.floor(Date.now() / 1000) + seconds;
 }
 
-/** Payload mặc định của một access token hợp lệ — quản trị viên. */
+/** Default payload of a valid admin access token. */
 export const DEFAULT_PAYLOAD: Record<string, unknown> = {
   sub: "999888777666555444",
   role: GuildRole.ADMIN,
   type: "access",
 };
 
-/** Payload của một access token hợp lệ thuộc bang chúng. */
+/** Payload of a valid member access token. */
 export const MEMBER_PAYLOAD: Record<string, unknown> = {
   sub: "123456789012345678",
   role: GuildRole.MEMBER,
@@ -42,10 +42,10 @@ export const MEMBER_PAYLOAD: Record<string, unknown> = {
 };
 
 /**
- * Dựng JWT với header và payload tuỳ ý; chữ ký luôn được tính đúng theo `secret`,
- * kể cả khi header khai `alg` khác — để test được tấn công đổi thuật toán.
- * @param options - Header, payload và secret muốn dùng
- * @returns Token ba đoạn
+ * Build a JWT with an arbitrary header and payload; the signature is always computed correctly from
+ * `secret`, even when the header declares a different `alg` — so algorithm-confusion attacks are testable.
+ * @param options - Header, payload and secret to use
+ * @returns The three-part token
  */
 export async function signToken({
   header = { alg: "HS256", typ: "JWT" },

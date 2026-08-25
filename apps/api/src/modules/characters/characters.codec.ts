@@ -8,7 +8,7 @@ import {
 
 import { verifyResponse } from '../../config';
 
-/** Những cột của bảng Character mà codec cần để dựng response. */
+/** The Character columns the codec needs to build a response. */
 export type CharacterRow = {
   id: string;
   name: string;
@@ -16,35 +16,35 @@ export type CharacterRow = {
 };
 
 /**
- * Đổi một hàng Character thành object trả cho client.
- * @param row - Hàng đọc từ Prisma
- * @returns Nhân vật đúng shape contract
+ * Turn a Character row into the object returned to the client.
+ * @param row - Row read from Prisma
+ * @returns The contract-shaped character
  */
 export function toCharacter(row: CharacterRow): Character {
   return verifyResponse(characterSchema, {
     id: row.id,
     name: row.name,
-    // Prisma sinh ra union string literal, enum dùng chung là TS enum — cùng giá trị,
-    // ràng buộc bởi enum trong database nên cast ở đây là an toàn. `verifyResponse` là thứ
-    // khẳng định câu đó ngoài production: cast không được biên dịch viên kiểm.
+    // Prisma emits a string literal union, the shared enum is a TS enum — same values, constrained
+    // by the database enum, so the cast is safe. `verifyResponse` is what asserts that outside
+    // production: a cast is not checked by the compiler.
     guildClass: row.guildClass as GuildClass,
   } satisfies Character);
 }
 
-/** Những cột của bảng Character mà codec quản trị cần. */
+/** The Character columns the admin codec needs. */
 export type GuildMemberRow = CharacterRow & {
   discordId: string | null;
   discordUsername: string | null;
-  /** Hash avatar Discord. Không nằm trong `guildMemberSchema`: màn quản trị không hiện ảnh. */
+  /** Discord avatar hash. Not in `guildMemberSchema`: the admin screen shows no picture. */
   discordAvatar: string | null;
   lastLoginAt: Date | null;
   role: string;
 };
 
 /**
- * Đổi một hàng Character thành object cho màn quản trị (kèm danh tính Discord).
- * @param row - Hàng đọc từ Prisma
- * @returns Thành viên đúng shape contract, thời điểm ở dạng ISO string
+ * Turn a Character row into the admin-screen object (with the Discord identity).
+ * @param row - Row read from Prisma
+ * @returns The contract-shaped member, timestamps as ISO strings
  */
 export function toGuildMember(row: GuildMemberRow): GuildMember {
   return verifyResponse(guildMemberSchema, {

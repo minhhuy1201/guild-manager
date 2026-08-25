@@ -5,7 +5,7 @@ import { CharactersModule } from '../characters/characters.module';
 import { AttendanceController } from './attendance.controller';
 import { AttendanceService } from './attendance.service';
 
-/** Module điểm danh: nhân vật và các lượt điểm danh. Lịch đánh do BattleSessionsModule lo. */
+/** Attendance module: characters and their attendance entries. The schedule belongs to BattleSessionsModule. */
 @Module({
   imports: [BattleSessionsModule, CharactersModule],
   controllers: [AttendanceController],

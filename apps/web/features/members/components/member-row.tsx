@@ -24,26 +24,26 @@ import { TableCell, TableRow } from "@/components/ui/table";
 import { formatDateTime } from "@/lib/format";
 
 interface MemberRowProps {
-  /** Thành viên của hàng này */
+  /** Member of this row */
   member: GuildMember;
-  /** Discord ID của người đang đăng nhập — dùng để khoá dropdown quyền ở hàng của chính họ */
+  /** Discord ID of the signed-in user — used to lock the role dropdown on their own row */
   currentDiscordId: string;
-  /** Gọi khi bấm Sửa */
+  /** Called on Edit */
   onEdit: (member: GuildMember) => void;
-  /** Gọi khi bấm Xoá */
+  /** Called on Delete */
   onDelete: (member: GuildMember) => void;
-  /** Gọi khi đổi vai của thành viên này */
+  /** Called when this member's role changes */
   onRoleChange: (member: GuildMember, role: GuildRole) => void;
 }
 
 /**
- * Một hàng thành viên trong bảng quản lý.
- * @param props.member - Thành viên của hàng này
- * @param props.currentDiscordId - Discord ID của người đang đăng nhập
- * @param props.onEdit - Gọi khi bấm Sửa
- * @param props.onDelete - Gọi khi bấm Xoá
- * @param props.onRoleChange - Gọi khi đổi vai
- * @returns Hàng bảng
+ * One member row in the management table.
+ * @param props.member - Member of this row
+ * @param props.currentDiscordId - Discord ID of the signed-in user
+ * @param props.onEdit - Called on Edit
+ * @param props.onDelete - Called on Delete
+ * @param props.onRoleChange - Called when the role changes
+ * @returns The table row
  */
 export function MemberRow({
   member,
@@ -52,7 +52,7 @@ export function MemberRow({
   onDelete,
   onRoleChange,
 }: MemberRowProps) {
-  // Chưa gán Discord ID thì vai vô nghĩa; và không ai được tự hạ quyền chính mình.
+  // A role is meaningless without a Discord ID; and nobody may demote themselves.
   const isRoleLocked =
     member.discordId === null || member.discordId === currentDiscordId;
 

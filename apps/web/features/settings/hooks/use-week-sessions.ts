@@ -9,8 +9,8 @@ import {
 import { settingsKeys } from "../api/battle-sessions-keys";
 
 /**
- * Query các tuần thiết lập được (tuần đang mở + tuần kế tiếp).
- * @returns Kết quả query TanStack (data là mảng 2 tuần)
+ * Query the schedulable weeks (the open week + the next one).
+ * @returns The TanStack query result (data is the two weeks)
  */
 export function useSettingsWeeks() {
   return useQuery({
@@ -20,9 +20,9 @@ export function useSettingsWeeks() {
 }
 
 /**
- * Query các trận của một tuần.
- * @param weekStart - Mốc Thứ 2 của tuần; bỏ trống thì query không chạy
- * @returns Kết quả query TanStack (data là mảng trận)
+ * Query one week's sessions.
+ * @param weekStart - Monday marker of the week; omitted disables the query
+ * @returns The TanStack query result (data is the session list)
  */
 export function useWeekSessions(weekStart: string | null) {
   return useQuery({

@@ -33,26 +33,26 @@ import {
 } from './discord-oauth';
 import { safeRedirect, webUrl } from './oauth-redirect';
 
-/** Thông báo duy nhất cho mọi ca phiên không dùng được — phân biệt là thông tin thừa. */
+/** One message for every unusable-session case — telling them apart is free information. */
 const SESSION_EXPIRED = 'Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.';
 
-/** Đường dẫn trang đăng nhập ở web. */
+/** Path of the web app's login page. */
 const LOGIN_PATH = '/dang-nhap';
 
-/** Đường dẫn route handler nhận mã đổi ở web. */
+/** Path of the web app's route handler that receives the exchange code. */
 const CALLBACK_PATH = '/dang-nhap/discord';
 
 /**
- * Xác thực bằng Discord OAuth2 và phát JWT.
+ * Discord OAuth2 authentication and JWT issuance.
  *
- * Danh tính đến từ cột `Character.discordId` do quản trị viên nhập tay: đăng nhập là một phép tra
- * cứu, không khớp thì cấm hoàn toàn. `DISCORD_ADMIN_IDS` là lối vào cứu hộ duy nhất cho tình huống
- * chưa ai được gán ID.
+ * Identity comes from the `Character.discordId` column filled in by an admin: signing in is a lookup,
+ * and no match means no entry at all. `DISCORD_ADMIN_IDS` is the single rescue path for when nobody
+ * has been assigned an ID yet.
  */
 @Injectable()
 export class AuthService {
   constructor(
-    // AppConfigService chỉ là type alias của ConfigService<Env> nên phải chỉ token tường minh.
+    // AppConfigService is only a type alias of ConfigService<Env>, so the token must be explicit.
     @Inject(ConfigService) private readonly config: AppConfigService,
     private readonly jwt: JwtService,
     private readonly prisma: PrismaService,
@@ -61,9 +61,9 @@ export class AuthService {
   ) {}
 
   /**
-   * Dựng URL đưa người dùng sang Discord, mang theo state đã ký.
-   * @param redirect - Đường dẫn muốn quay lại sau khi đăng nhập
-   * @returns URL tuyệt đối để redirect sang Discord
+   * Build the URL sending the user to Discord, carrying the signed state.
+   * @param redirect - Path to return to after login
+   * @returns The absolute Discord redirect URL
    */
   async authorizeUrl(redirect?: string): Promise<string> {
     const state = await this.jwt.signAsync(
@@ -79,12 +79,12 @@ export class AuthService {
   }
 
   /**
-   * Xử lý callback của Discord và cho biết phải redirect người dùng đi đâu.
+   * Handle Discord's callback and say where the user should be redirected.
    *
-   * Không bao giờ ném: trình duyệt đang ở giữa một chuỗi redirect chứ không phải trong một lời gọi
-   * fetch, nên mọi lỗi đều phải trở thành một URL kèm mã lỗi.
-   * @param query - Tham số Discord gắn vào callback
-   * @returns URL tuyệt đối để trả trong header Location
+   * Never throws: the browser is in the middle of a redirect chain, not inside a fetch call, so every
+   * failure must become a URL carrying an error code.
+   * @param query - Parameters Discord attached to the callback
+   * @returns The absolute URL for the Location header
    */
   async handleCallback(query: {
     code?: string;
@@ -127,20 +127,20 @@ export class AuthService {
   }
 
   /**
-   * Đổi mã dùng-một-lần lấy cặp JWT.
-   * @param input - Mã lấy từ query string mà API vừa redirect về web
-   * @returns Cặp token và thông tin phiên
-   * @throws UnauthorizedException khi mã sai, đã dùng, hoặc đã quá 60 giây
+   * Trade the one-time code for a JWT pair.
+   * @param input - Code from the query string the API just redirected the web app to
+   * @returns The token pair and session info
+   * @throws UnauthorizedException when the code is wrong, already used, or older than 60 seconds
    */
   async exchange(input: DiscordExchangeInput): Promise<AuthTokens> {
     const now = this.clock.now();
 
-    // Dọn rác ngay tại đây thay vì dựng cron cho một bảng vài hàng.
+    // Sweep expired rows right here rather than running a cron over a table of a few rows.
     await this.prisma.authExchange.deleteMany({
       where: { expiresAt: { lt: now } },
     });
 
-    // Tiêu mã bằng một update nguyên tử: hai request cùng mã thì chỉ một request thắng.
+    // Consume the code with an atomic update: two requests on one code, only one wins.
     const consumed = await this.prisma.authExchange.updateMany({
       where: { id: input.code, usedAt: null, expiresAt: { gt: now } },
       data: { usedAt: now },
@@ -156,13 +156,13 @@ export class AuthService {
   }
 
   /**
-   * Đổi refresh token còn hạn thành cặp token mới.
+   * Trade a valid refresh token for a new token pair.
    *
-   * Đây là chỗ việc đuổi một người khỏi hệ thống có hiệu lực: `discordId` đã bị gỡ khỏi mọi nhân
-   * vật (và không nằm trong danh sách cứu hộ) thì phiên chấm dứt.
-   * @param input - Refresh token hiện tại
-   * @returns Cặp token mới và thông tin phiên
-   * @throws UnauthorizedException khi token hỏng/hết hạn hoặc người này không còn trong bang
+   * This is where removing someone from the system takes effect: once `discordId` is unlinked from
+   * every character (and is not on the rescue list), the session ends.
+   * @param input - The current refresh token
+   * @returns The new token pair and session info
+   * @throws UnauthorizedException when the token is invalid/expired or the person left the guild
    */
   async refresh(input: RefreshTokenInput): Promise<AuthTokens> {
     const payload = await readToken(
@@ -176,16 +176,16 @@ export class AuthService {
   }
 
   /**
-   * Thông tin phiên của access token đang dùng.
-   * @param payload - Payload JWT do JwtAuthGuard gắn vào request
-   * @returns Discord ID, vai và nhân vật gắn với tài khoản
-   * @throws UnauthorizedException khi tài khoản không còn hợp lệ
+   * Session info for the access token in use.
+   * @param payload - JWT payload attached by JwtAuthGuard
+   * @returns Discord ID, role and the character bound to the account
+   * @throws UnauthorizedException when the account is no longer valid
    */
   async me(payload: JwtPayload): Promise<SessionUser> {
     return this.describeSession(payload.sub);
   }
 
-  /** Cấu hình Discord Application đọc từ env. */
+  /** Discord Application config read from env. */
   private get discordConfig(): DiscordConfig {
     return {
       clientId: this.config.get('DISCORD_CLIENT_ID', { infer: true }),
@@ -194,15 +194,15 @@ export class AuthService {
     };
   }
 
-  /** Origin của frontend, dùng cho mọi URL redirect trả về. */
+  /** Frontend origin, used for every redirect URL returned. */
   private get webOrigin(): string {
     return this.config.get('WEB_ORIGIN', { infer: true });
   }
 
   /**
-   * Discord ID này có nằm trong danh sách cứu hộ không.
-   * @param discordId - Discord ID vừa đọc từ hồ sơ
-   * @returns true khi ID thuộc danh sách DISCORD_ADMIN_IDS
+   * Whether this Discord ID is on the rescue list.
+   * @param discordId - Discord ID just read from the profile
+   * @returns true when the ID belongs to DISCORD_ADMIN_IDS
    */
   private isRescueAdmin(discordId: string): boolean {
     return this.config
@@ -214,9 +214,9 @@ export class AuthService {
   }
 
   /**
-   * Verify token `state` và đọc đường dẫn quay lại.
-   * @param value - Giá trị state Discord trả lại
-   * @returns Đường dẫn quay lại đã lọc, hoặc null khi state không dùng được
+   * Verify the `state` token and read the return path out of it.
+   * @param value - The state value Discord echoed back
+   * @returns The sanitised return path, or null when the state is unusable
    */
   private async readState(value: string): Promise<{ redirect: string } | null> {
     const payload = await this.jwt
@@ -229,9 +229,9 @@ export class AuthService {
   }
 
   /**
-   * Ghi một mã đổi mới cho Discord ID vừa xác thực.
-   * @param discordId - Discord ID đã qua kiểm tra tư cách thành viên
-   * @returns Mã ngẫu nhiên để gắn vào URL trả về web
+   * Write a fresh exchange code for the authenticated Discord ID.
+   * @param discordId - Discord ID that passed the membership check
+   * @returns The random code to attach to the URL sent back to the web app
    */
   private async issueExchangeCode(discordId: string): Promise<string> {
     const id = randomBytes(32).toString('base64url');
@@ -248,10 +248,10 @@ export class AuthService {
   }
 
   /**
-   * Dựng thông tin phiên từ Discord ID.
-   * @param discordId - Discord ID của người đăng nhập
-   * @returns Thông tin phiên đã verify theo contract
-   * @throws UnauthorizedException khi người này không còn trong bang và không phải admin cứu hộ
+   * Build session info from a Discord ID.
+   * @param discordId - Discord ID of the signing-in user
+   * @returns Contract-verified session info
+   * @throws UnauthorizedException when the person left the guild and is not a rescue admin
    */
   private async describeSession(discordId: string): Promise<SessionUser> {
     const member = await this.characters.findByDiscordId(discordId);
@@ -265,16 +265,16 @@ export class AuthService {
       discordId,
       discordUsername: row?.discordUsername ?? null,
       discordAvatar: row?.discordAvatar ?? null,
-      // Danh sách cứu hộ thắng giá trị trong database: quản trị viên không tự khoá mình ra ngoài.
+      // The rescue list beats the database value: an admin must not lock themselves out.
       role: isRescue ? GuildRole.ADMIN : (member?.role ?? GuildRole.MEMBER),
       character: row ? toCharacter(row) : null,
     } satisfies SessionUser);
   }
 
   /**
-   * Ký cặp token cho một Discord ID.
-   * @param discordId - Discord ID đã xác thực
-   * @returns Cặp token kèm thông tin phiên
+   * Sign a token pair for a Discord ID.
+   * @param discordId - The authenticated Discord ID
+   * @returns The token pair with its session info
    */
   private async issueTokens(discordId: string): Promise<AuthTokens> {
     const user = await this.describeSession(discordId);
@@ -299,10 +299,10 @@ export class AuthService {
   }
 
   /**
-   * URL trang đăng nhập kèm mã lỗi.
-   * @param error - Mã lỗi trong bảng AUTH_ERROR
-   * @param redirect - Đường dẫn người dùng định vào, để thử lại sau khi đăng nhập
-   * @returns URL tuyệt đối để redirect
+   * The login page URL carrying an error code.
+   * @param error - An error code from the AUTH_ERROR table
+   * @param redirect - Path the user was heading to, to retry after login
+   * @returns The absolute redirect URL
    */
   private errorUrl(error: string, redirect: string): string {
     return webUrl(this.webOrigin, LOGIN_PATH, { error, redirect });

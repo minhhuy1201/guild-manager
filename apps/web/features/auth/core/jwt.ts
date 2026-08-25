@@ -1,31 +1,31 @@
 /**
- * Verify JWT HS256 do backend (apps/api) ký, bằng Web Crypto.
- * File này nằm trong `core/` nên không dùng API riêng của Node hay `next/headers`,
- * chạy được cả ở proxy (Edge runtime) lẫn server action.
+ * Verify the HS256 JWTs the backend (apps/api) signs, using Web Crypto.
+ * This file is in `core/`, so it uses no Node-specific API and no `next/headers`; it runs both in the
+ * proxy (Edge runtime) and in server actions.
  */
 import type { GuildRole } from "@guild/shared/enums";
 
-/** Thuật toán duy nhất được chấp nhận — trùng với thuật toán mặc định của @nestjs/jwt. */
+/** The only accepted algorithm — the same default @nestjs/jwt uses. */
 const EXPECTED_ALG = "HS256";
 
-/** Nội dung payload mà backend ký trong access/refresh token. */
+/** The payload the backend signs into access/refresh tokens. */
 export interface JwtPayload {
-  /** Discord ID của người đăng nhập */
+  /** Discord ID of the signed-in user */
   sub: string;
-  /** Vai trong bang */
+  /** Guild role */
   role: GuildRole;
-  /** Token này là "access" hay "refresh" */
+  /** Whether this is an "access" or a "refresh" token */
   type: string;
-  /** Thời điểm hết hạn (epoch giây) */
+  /** Expiry (epoch seconds) */
   exp: number;
 }
 
 const encoder = new TextEncoder();
 
 /**
- * Giải mã chuỗi base64url về bytes.
- * @param value - Chuỗi base64url (không padding)
- * @returns Dữ liệu gốc
+ * Decode a base64url string into bytes.
+ * @param value - base64url string (unpadded)
+ * @returns The original bytes
  */
 function fromBase64Url(value: string): Uint8Array<ArrayBuffer> {
   const base64 = value.replace(/-/g, "+").replace(/_/g, "/");
@@ -38,9 +38,9 @@ function fromBase64Url(value: string): Uint8Array<ArrayBuffer> {
 }
 
 /**
- * Tạo CryptoKey HMAC-SHA256 từ secret.
- * @param secret - Chuỗi bí mật (AUTH_SECRET, trùng giá trị với apps/api)
- * @returns CryptoKey dùng để verify chữ ký
+ * Build an HMAC-SHA256 CryptoKey from the secret.
+ * @param secret - The secret string (AUTH_SECRET, identical to apps/api's)
+ * @returns The CryptoKey used to verify signatures
  */
 function importKey(secret: string): Promise<CryptoKey> {
   return crypto.subtle.importKey(
@@ -53,10 +53,10 @@ function importKey(secret: string): Promise<CryptoKey> {
 }
 
 /**
- * Verify chữ ký và hạn dùng của một JWT.
- * @param token - Token lấy từ cookie (có thể undefined)
- * @param secret - Khóa bí mật backend dùng để ký
- * @returns Payload nếu token hợp lệ và còn hạn, ngược lại null
+ * Verify a JWT's signature and expiry.
+ * @param token - Token from the cookie (may be undefined)
+ * @param secret - The secret the backend signs with
+ * @returns The payload when the token is valid and unexpired, otherwise null
  */
 export async function verifyJwt(
   token: string | undefined,

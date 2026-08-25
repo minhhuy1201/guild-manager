@@ -6,10 +6,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { CACHE_DEPENDENTS, type CacheTopic } from "@/lib/cache-graph";
 
 /**
- * Invalidate mọi query phụ thuộc một chủ đề vừa bị ghi. Chỗ ghi chỉ nói mình
- * vừa đổi cái gì; ai bị ảnh hưởng là việc của `CACHE_DEPENDENTS`.
- * @param topic - Chủ đề dữ liệu vừa thay đổi
- * @returns Hàm dùng trong `onSuccess` của mutation, ổn định qua các lần render
+ * Invalidate every query depending on a topic that was just written. The writer only states what it
+ * changed; who is affected is `CACHE_DEPENDENTS`'s business.
+ * @param topic - Data topic that just changed
+ * @returns A function for a mutation's `onSuccess`, stable across renders
  */
 export function useInvalidate(topic: CacheTopic): () => void {
   const queryClient = useQueryClient();

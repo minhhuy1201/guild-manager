@@ -1,10 +1,10 @@
 /**
- * Fixture cho `module-boundary.spec.ts` — **cố tình vi phạm** ranh giới module, từ ngoài
+ * Fixture for `module-boundary.spec.ts` — a **deliberate** module boundary violation, from outside
  * `modules/`.
  *
- * Cặp với `modules/attendance/__tests__/fixtures/module-boundary-violation.ts`: file kia đi từ một
- * module sang module bên cạnh, file này đi từ ngoài vào. Hai hướng dùng hai nhánh khác nhau trong
- * `boundaries/elements`, nên cả hai đều cần được khoá.
+ * Paired with `modules/attendance/__tests__/fixtures/module-boundary-violation.ts`: that one crosses
+ * from one module into a sibling, this one crosses in from outside. The two directions hit different
+ * branches of `boundaries/elements`, so both need locking down.
  */
 import { CharactersService } from '../../modules/characters/characters.service';
 

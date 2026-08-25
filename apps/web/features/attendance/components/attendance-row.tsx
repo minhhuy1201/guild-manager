@@ -23,38 +23,38 @@ import {
 } from "../lib/sticky-columns";
 import { CharacterName } from "./character-name";
 
-/** Trạng thái nháp của một dòng khi chỉnh sửa: map sessionId → trạng thái. */
+/** Draft state of a row being edited: sessionId → status. */
 export type AttendanceDraft = Record<string, AttendanceStatus | undefined>;
 
 interface AttendanceRowProps {
-  /** Nhân vật của dòng này */
+  /** Character of this row */
   character: Character;
-  /** Danh sách buổi đánh (cột) */
+  /** Battle sessions (the columns) */
   sessions: BattleSession[];
-  /** Map record hiện tại theo khóa (characterId__sessionId) */
+  /** Current records keyed by (characterId__sessionId) */
   recordMap: Record<string, AttendanceRecord>;
-  /** Tập id các ngày đã quá deadline (khóa cột tương ứng) */
+  /** Ids of days past their deadline (their columns are locked) */
   lockedSessionIds: Set<string>;
-  /** Mọi ngày đều đã khóa — disable nút chỉnh sửa */
+  /** Every day is locked — disable the edit button */
   allLocked: boolean;
-  /** Dòng này có đang ở chế độ chỉnh sửa không */
+  /** Whether this row is in editing mode */
   isEditing: boolean;
-  /** Trạng thái nháp (chỉ dùng khi isEditing) */
+  /** Draft state (only used while isEditing) */
   draft: AttendanceDraft;
-  /** Bắt đầu chỉnh sửa dòng này */
+  /** Start editing this row */
   onStartEdit: (character: Character) => void;
-  /** Đổi trạng thái nháp của một ô */
+  /** Change one cell's draft status */
   onDraftChange: (sessionId: string, status: AttendanceStatus) => void;
-  /** Huỷ chỉnh sửa, reset dữ liệu */
+  /** Cancel editing and reset */
   onCancel: () => void;
-  /** Xác nhận và lưu thay đổi */
+  /** Confirm and save the changes */
   onConfirm: (character: Character) => void;
 }
 
 /**
- * Một dòng điểm danh: mặc định read-only, có thể chuyển sang chỉnh sửa.
- * Cột cuối là thao tác (bút chì ở read-only, Huỷ/Xác nhận ở edit).
- * @returns Hàng bảng điểm danh của một nhân vật
+ * One attendance row: read-only by default, switchable to editing.
+ * The last column holds the actions (a pencil when read-only, Cancel/Confirm while editing).
+ * @returns The character's attendance row
  */
 export function AttendanceRow({
   character,
@@ -79,7 +79,7 @@ export function AttendanceRow({
         const currentStatus =
           recordMap[recordKey(character.id, session.id)]?.status;
         const sessionLocked = lockedSessionIds.has(session.id);
-        // Cột đã khóa luôn hiển thị read-only, kể cả khi dòng đang chỉnh sửa.
+        // A locked column always renders read-only, even while the row is being edited.
         const showToggle = isEditing && !sessionLocked;
         return (
           <TableCell key={session.id} className="text-center">
@@ -123,13 +123,13 @@ export function AttendanceRow({
 }
 
 interface StatusBadgeProps {
-  /** Trạng thái hiện tại (nếu đã điểm danh) */
+  /** Current status (when already marked) */
   status?: AttendanceStatus;
 }
 
 /**
- * Badge hiển thị trạng thái điểm danh ở chế độ read-only bằng icon + màu.
- * @returns Icon xanh (Có) / đỏ (Không) / "—" (chưa điểm danh)
+ * Read-only attendance status badge, shown as a coloured icon.
+ * @returns A green (yes) / red (no) icon, or "—" when unmarked
  */
 function StatusBadge({ status }: StatusBadgeProps) {
   if (status === AttendanceStatus.PRESENT) {
@@ -142,14 +142,14 @@ function StatusBadge({ status }: StatusBadgeProps) {
 }
 
 interface AttendanceToggleProps {
-  /** Trạng thái hiện tại (nếu đã chọn) */
+  /** Current status (when already picked) */
   value?: AttendanceStatus;
   onSelect: (status: AttendanceStatus) => void;
 }
 
 /**
- * Cặp nút Có/Không cho một ô điểm danh (chỉ dùng khi đang chỉnh sửa).
- * @returns Segmented control 2 nút
+ * The yes/no button pair for one attendance cell (editing mode only).
+ * @returns A two-button segmented control
  */
 function AttendanceToggle({ value, onSelect }: AttendanceToggleProps) {
   return (

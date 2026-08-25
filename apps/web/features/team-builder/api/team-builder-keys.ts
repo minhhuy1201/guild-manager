@@ -1,6 +1,6 @@
 /**
- * Query key factory cho domain xếp đội hình.
- * Tách khỏi `team-builder-api.ts` vì file `"use server"` chỉ được export hàm async.
+ * Query key factory for the team builder domain.
+ * Split out of `team-builder-api.ts` because a `"use server"` file may only export async functions.
  */
 export const teamBuilderKeys = {
   all: ["team-builder"] as const,

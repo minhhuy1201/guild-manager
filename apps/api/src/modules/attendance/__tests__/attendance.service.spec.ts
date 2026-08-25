@@ -12,56 +12,56 @@ import { CharactersService } from '../../characters/characters.public';
 import { AttendanceService } from '../attendance.service';
 
 /**
- * Tạo Date từ giờ Việt Nam (UTC+7) cho dễ đọc trong test.
- * @param iso - Chuỗi dạng '2026-07-22T12:00' hiểu theo giờ VN
- * @returns Date UTC tương ứng
+ * Build a Date from Vietnam time (UTC+7) for readability in tests.
+ * @param iso - A string like '2026-07-22T12:00', read as Vietnam time
+ * @returns The matching UTC Date
  */
 function vn(iso: string): Date {
   return new Date(`${iso}:00+07:00`);
 }
 
-// Thứ 4 — Guild War Thứ 7 còn hạn, trận Thứ 3 đã qua 10:00 nên bị khóa.
+// Wednesday — the Saturday Guild War is still open, the Tuesday session is past 10:00 and locked.
 const WEDNESDAY = vn('2026-07-22T12:00');
 const CHARACTER_ID = 'char-1';
 
-/** Hàng Character của người đang đăng nhập, như `findById` trả về. */
+/** Character row of the signed-in user, as `findById` returns it. */
 const OWN_ROW = {
   id: CHARACTER_ID,
   name: 'Huy',
   guildClass: GuildClass.THIET_Y,
 };
 
-/** Nhân vật của người khác — dùng để thử điểm danh hộ. */
+/** Someone else's character — used to test marking on their behalf. */
 const OTHER_CHARACTER_ID = 'char-2';
 
-/** Quản trị viên đang đăng nhập — sửa được cả trận đã quá hạn và điểm danh hộ người khác. */
+/** Signed-in admin — may fix past-deadline sessions and mark for others. */
 const ADMIN: JwtPayload = {
   sub: '999888777666555444',
   role: GuildRole.ADMIN,
   type: TOKEN_TYPE.access,
 };
 
-/** Bang chúng đang đăng nhập, gắn với CHARACTER_ID. */
+/** Signed-in member, bound to CHARACTER_ID. */
 const MEMBER: JwtPayload = {
   sub: '123456789012345678',
   role: GuildRole.MEMBER,
   type: TOKEN_TYPE.access,
 };
 
-/** Cán bộ đang đăng nhập, cũng gắn với CHARACTER_ID. */
+/** Signed-in leader, also bound to CHARACTER_ID. */
 const LEADER: JwtPayload = {
   sub: '123456789012345678',
   role: GuildRole.LEADER,
   type: TOKEN_TYPE.access,
 };
 
-/** Id trận trong lịch giả lập, tra theo nhãn cho dễ đọc. */
+/** Session ids in the fake schedule, keyed by label for readability. */
 const SESSION_IDS: Record<string, string> = {
   'Thứ 3 · 20:30': 'session-tue',
   'Thứ 7 · Bang Chiến': 'session-sat',
 };
 
-/** Lịch của tuần đang mở mà BattleSessionsService trả về. */
+/** The open week's schedule as BattleSessionsService returns it. */
 const SESSIONS = [
   {
     id: 'session-tue',
@@ -89,7 +89,7 @@ const SESSIONS = [
 
 describe('AttendanceService', () => {
   let service: AttendanceService;
-  /** Dựng service với một mốc thời gian cố định — vài test cần mốc khác WEDNESDAY. */
+  /** Build the service with a fixed clock — a few tests need a moment other than WEDNESDAY. */
   let makeService: (now: Date) => AttendanceService;
   let prisma: {
     attendanceRecord: {
@@ -111,9 +111,9 @@ describe('AttendanceService', () => {
   };
 
   /**
-   * Cho `findById` trả lịch giả lập kèm cờ quá hạn dựng ở mốc `now`, đúng như
-   * BattleSessionsService thật làm.
-   * @param now - Mốc thời gian dùng để dựng cờ `isDeadlinePassed`
+   * Make `findById` return the fake schedule with the past-deadline flags computed at `now`,
+   * exactly as the real BattleSessionsService does.
+   * @param now - Moment used to compute `isDeadlinePassed`
    */
   const stubSchedule = (now: Date): void => {
     battleSessions.findById.mockImplementation((id: string) => {
@@ -316,9 +316,9 @@ describe('AttendanceService', () => {
     });
 
     it('quyết định theo cờ của lịch đánh, không tự tính lại từ hạn chót', async () => {
-      // Lịch nói "chưa quá hạn" trong khi hạn chót đã lùi vào quá khứ. Hai giá trị
-      // này chỉ lệch được khi có hai đồng hồ — đúng thứ code cũ tạo ra. Còn một chỗ
-      // đánh giá luật thì cờ thắng, nên lượt điểm danh phải đi qua.
+      // The schedule says "not past deadline" while the deadline itself is in the past. These two
+      // can only diverge with two clocks — exactly what the old code created. With a single place
+      // evaluating the rule the flag wins, so the entry must go through.
       battleSessions.findById.mockResolvedValue({
         ...SESSIONS[0],
         isDeadlinePassed: false,

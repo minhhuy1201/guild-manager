@@ -7,19 +7,19 @@ import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { TeamBuilderService } from '../team-builder.service';
 
 /**
- * Tạo Date từ giờ Việt Nam (UTC+7) cho dễ đọc trong test.
- * @param iso - Chuỗi dạng '2026-07-22T12:00' hiểu theo giờ VN
- * @returns Date UTC tương ứng
+ * Build a Date from Vietnam time (UTC+7) for readability in tests.
+ * @param iso - A string like '2026-07-22T12:00', read as Vietnam time
+ * @returns The matching UTC Date
  */
 function vn(iso: string): Date {
   return new Date(`${iso}:00+07:00`);
 }
 
-// Thứ 4 — trận Thứ 3 đã đánh xong, Thứ 5 và Thứ 7 còn ở tương lai.
+// Wednesday — the Tuesday session is over, Thursday and Saturday are still ahead.
 const WEDNESDAY = vn('2026-07-22T12:00');
 const WEEK_START = vn('2026-07-20T00:00');
 
-// Lịch tuần như battle-sessions trả về: nhãn đã dựng, không kèm số liệu phụ.
+// The week's schedule as battle-sessions returns it: labels built, no extra counts.
 const SCHEDULED_SESSIONS = [
   {
     id: 'session-tue',
@@ -145,8 +145,8 @@ describe('TeamBuilderService.getFormations', () => {
   });
 
   it('trận đã lưu nhưng không còn ô nào vẫn là một phần tử trong matches', async () => {
-    // "Không có trận 2" và "trận 2 rỗng" phân biệt ở tầng này, không phải ở codec:
-    // codec chỉ thấy mảng hàng rỗng, service mới biết hàng FormationMatch có tồn tại hay không.
+    // "No match 2" and "match 2 is empty" are distinguished at this layer, not in the codec: the
+    // codec only sees an empty row array, the service knows whether a FormationMatch row exists.
     prisma.formationMatch.findMany.mockResolvedValue([
       { sessionId: 'session-sat', matchIndex: 1, slots: [] },
     ]);
@@ -180,7 +180,7 @@ describe('TeamBuilderService.getFormations', () => {
   });
 
   it('mốc giữa tuần đọc đúng tuần chứa ngày đó, không trả rỗng', async () => {
-    // Hành vi đổi có chủ ý: trước đây chuỗi này không khớp hàng nào nên ra [].
+    // Deliberate behaviour change: this string previously matched no row and returned [].
     const result = await service.getFormations(
       vn('2026-07-22T12:00').toISOString(),
     );
@@ -193,8 +193,8 @@ describe('TeamBuilderService.getFormations', () => {
     ]);
   });
 
-  // 400 cho người dùng là việc của `weekStartQuerySchema` ở biên HTTP; ở đây chỉ
-  // cần chắc chuỗi hỏng dừng lại trước khi chạm module lịch.
+  // Returning 400 to the user is `weekStartQuerySchema`'s job at the HTTP boundary; here it is
+  // enough that a malformed string stops before reaching the schedule module.
   it('mốc tuần hỏng thì ném ngay, không gọi xuống module lịch', async () => {
     await expect(service.getFormations('xyz')).rejects.toThrow(RangeError);
     expect(battleSessions.readWeekSessions).not.toHaveBeenCalled();
@@ -213,7 +213,7 @@ describe('TeamBuilderService.getFormations', () => {
 
 describe('TeamBuilderService.getWeeks', () => {
   let service: TeamBuilderService;
-  // Không có mock Prisma nào: getWeeks chỉ đọc qua module lịch, và không còn tự dọn dữ liệu.
+  // No Prisma mocks: getWeeks only reads through the schedule module and no longer purges data.
   let prisma: Record<string, never>;
   let battleSessions: {
     getActiveWeek: jest.Mock;
@@ -286,8 +286,8 @@ describe('TeamBuilderService.getWeeks', () => {
   });
 
   it('nhận ra tuần đang mở kể cả khi mốc đến từ một Date khác instance', async () => {
-    // Phép so chuỗi cũ đúng vì tình cờ cả hai vế cùng đi qua toISOString();
-    // so bằng thời điểm thì không phụ thuộc vào cách viết chuỗi.
+    // The old string comparison happened to be right because both sides went through toISOString();
+    // comparing instants does not depend on how the string is written.
     battleSessions.listWeekAnchors.mockResolvedValue([
       new Date(WEEK_START.getTime()),
     ]);
@@ -337,7 +337,7 @@ describe('TeamBuilderService.purgeExpiredFormations', () => {
   });
 });
 
-/** Đối số của `formationMatch.create` — khai báo để đọc lại mock.calls không lọt `any`. */
+/** Argument of `formationMatch.create` — declared so reading mock.calls does not leak `any`. */
 interface CreateMatchArgs {
   data: {
     sessionId: string;
@@ -577,8 +577,8 @@ describe('TeamBuilderService.saveFormation', () => {
   });
 
   it('thành viên bị xoá đúng lúc ghi thành 409, không phải 500', async () => {
-    // Phép lọc đọc trong transaction nhưng READ COMMITTED không khoá hàng đã đọc, nên một DELETE
-    // commit sau `listIds` vẫn làm câu insert vỡ khoá ngoại.
+    // The filter reads inside the transaction, but READ COMMITTED does not lock the rows read, so a
+    // DELETE committing after `listIds` still breaks the insert's foreign key.
     tx.formationMatch.create.mockRejectedValue(
       Object.assign(new Error('Foreign key constraint failed'), {
         code: 'P2003',

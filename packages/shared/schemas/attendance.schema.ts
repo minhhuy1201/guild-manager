@@ -2,50 +2,37 @@ import { z } from "zod";
 
 import { AttendanceStatus } from "../enums/attendance.enum";
 
-/**
- * Payload điểm danh cho một nhân vật ở một buổi đánh.
- * Dùng chung: FE validate form, BE validate request body (nestjs-zod).
- */
+/** Attendance payload for one character in one session (form + request body). */
 export const markAttendanceSchema = z.object({
-  /** ID nhân vật */
   characterId: z.string().min(1, "Thiếu thành viên."),
-  /** ID buổi đánh */
   sessionId: z.string().min(1, "Thiếu ngày đánh."),
-  /** Trạng thái Có/Không */
   status: z.enum(AttendanceStatus),
 });
 
-/** Kiểu payload điểm danh đã validate. */
 export type MarkAttendanceInput = z.infer<typeof markAttendanceSchema>;
 
-/** Một lượt điểm danh của nhân vật ở một trận, đúng như API trả về. */
+/** One attendance entry as the API returns it. */
 export const attendanceRecordSchema = z.object({
-  /** ID nhân vật */
   characterId: z.string(),
-  /** ID buổi đánh */
   sessionId: z.string(),
-  /** Trạng thái Có/Không */
   status: z.enum(AttendanceStatus),
-  /** Thời điểm điểm danh (ISO string) */
+  /** When attendance was recorded (ISO string) */
   markedAt: z.string(),
 });
 
-/** Kiểu một lượt điểm danh API trả về. */
 export type AttendanceRecord = z.infer<typeof attendanceRecordSchema>;
 
 /**
- * Số lượt điểm danh của một trận, không kèm danh tính.
- * Bang chúng chỉ thấy hàng của chính mình nên mất cảm giác "trận này thiếu người";
- * con số này bù lại mà không lộ ai đăng ký trận nào.
+ * Attendance tallies for a session, without identities. Members only see their own
+ * row and so lose the sense of "this session is short-handed"; these counts restore
+ * it without revealing who signed up for what.
  */
 export const attendanceSummarySchema = z.object({
-  /** ID buổi đánh */
   sessionId: z.string(),
-  /** Số người trả lời Có */
+  /** Number of yes answers */
   coCount: z.number().int().nonnegative(),
-  /** Số người trả lời Không */
+  /** Number of no answers */
   khongCount: z.number().int().nonnegative(),
 });
 
-/** Kiểu số đếm điểm danh API trả về. */
 export type AttendanceSummary = z.infer<typeof attendanceSummarySchema>;

@@ -69,7 +69,7 @@ describe('exchangeCodeForProfile', () => {
         ),
       );
 
-    // Thiếu avatar không được coi là hồ sơ hỏng: chỉ `id` và `username` mới bắt buộc.
+    // A missing avatar is not a broken profile: only `id` and `username` are required.
     await expect(exchangeCodeForProfile(config, 'auth-code')).resolves.toEqual({
       id: '123456789012345678',
       username: 'meobeo',

@@ -2,11 +2,7 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-/**
- * Ô nhập nhiều dòng, style khớp với `Input` của dự án.
- * @param className - Class bổ sung
- * @returns Phần tử textarea đã style
- */
+/** A multi-line input, styled to match the project's `Input`. */
 function Textarea({ className, ...props }: React.ComponentProps<"textarea">) {
   return (
     <textarea

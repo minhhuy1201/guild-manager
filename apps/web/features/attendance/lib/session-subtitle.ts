@@ -1,21 +1,21 @@
 import { formatTime } from "@/lib/format";
 
-/** Các trường của một trận cần để dựng dòng phụ. */
+/** The session fields needed to build the subtitle. */
 interface SessionSubtitleInput {
-  /** Trận Guild War — không có đối thủ */
+  /** A Guild War session — no opponent */
   isGuildWar: boolean;
-  /** Thời điểm đánh (ISO string) */
+  /** Battle time (ISO string) */
   dateTime: string;
-  /** Tên bang đối thủ, null nếu chưa chốt */
+  /** Opponent guild name, null when undecided */
   opponent: string | null;
 }
 
 /**
- * Dòng phụ hiển thị dưới nhãn ngày đánh.
- * Guild War chỉ hiện giờ đánh; trận thường hiện tên bang đối thủ, và nếu chưa có
- * thì nói thẳng là chưa có để quản trị viên biết còn thiếu thông tin.
- * @param session - Trận cần hiển thị
- * @returns Dòng phụ đã dựng
+ * The subtitle rendered under a battle day's label.
+ * A Guild War shows only the battle time; a scrim shows the opponent guild, and says so plainly when
+ * there is none yet so admins know information is still missing.
+ * @param session - Session to display
+ * @returns The built subtitle
  */
 export function getSessionSubtitle(session: SessionSubtitleInput): string {
   if (session.isGuildWar) return formatTime(session.dateTime);

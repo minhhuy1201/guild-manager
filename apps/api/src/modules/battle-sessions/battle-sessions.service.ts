@@ -28,16 +28,16 @@ import {
   type WeekAnchor,
 } from './session-schedule';
 
-/** Những gì cần đọc thêm cùng mỗi trận để dựng entity. */
+/** What must be read alongside each session to build the entity. */
 const SESSION_INCLUDE = {
   _count: { select: { attendanceRecords: true, formationMatches: true } },
 } as const;
 
 /**
- * Mệnh đề lọc + sắp xếp dùng chung cho mọi truy vấn "các trận của một tuần",
- * để thứ tự trả về không lệch nhau giữa các cách đọc.
- * @param weekStart - Mốc Thứ 2 của tuần cần đọc
- * @returns Phần `where` và `orderBy` cho `battleSession.findMany`
+ * The shared filter + ordering clause for every "sessions of a week" query, so the returned order
+ * cannot differ between read paths.
+ * @param weekStart - Monday marker of the week to read
+ * @returns The `where` and `orderBy` for `battleSession.findMany`
  */
 const weekSessionQuery = (weekStart: WeekAnchor) =>
   ({
@@ -45,7 +45,7 @@ const weekSessionQuery = (weekStart: WeekAnchor) =>
     orderBy: { dateTime: 'asc' },
   }) as const;
 
-/** Một trận trong tuần, nhãn đã dựng, không kèm số liệu điểm danh/đội hình. */
+/** A session in the week, label built, without attendance/formation counts. */
 export interface ScheduledSession {
   id: string;
   label: string;
@@ -55,9 +55,9 @@ export interface ScheduledSession {
 }
 
 /**
- * Sở hữu vòng đời của lịch đánh: tự sinh Guild War cho tuần đang mở và tuần kế,
- * đồng thời phục vụ CRUD scrim cho quản trị viên.
- * Module khác (điểm danh, xếp team) đọc lịch qua service này, không tự truy vấn bảng.
+ * Owns the schedule's lifecycle: generates the Guild War for the open and next week, and serves
+ * scrim CRUD to admins. Other modules (attendance, team builder) read the schedule through this
+ * service rather than querying the table.
  */
 @Injectable()
 export class BattleSessionsService {
@@ -67,18 +67,18 @@ export class BattleSessionsService {
   ) {}
 
   /**
-   * Mốc Thứ 2 của tuần điểm danh đang mở.
-   * Trả về mốc có kiểu chứ không phải ISO string: so tuần là việc của
-   * `isSameWeek`, không phải của phép so chuỗi ở call site.
-   * @returns Mốc Thứ 2 00:00 giờ VN
+   * Monday marker of the open attendance week.
+   * Returns a typed marker rather than an ISO string: comparing weeks is `isSameWeek`'s job, not a
+   * string comparison at the call site.
+   * @returns Monday 00:00 Vietnam time
    */
   getActiveWeek(): WeekAnchor {
     return getActiveWeek(this.clock.now()).weekStart;
   }
 
   /**
-   * Các tuần quản trị viên được phép thiết lập: tuần đang mở và tuần kế tiếp.
-   * @returns Mảng 2 tuần, tuần đang mở đứng trước
+   * The weeks an admin may schedule: the open week and the next one.
+   * @returns Two weeks, the open one first
    */
   getEditableWeeks(): Week[] {
     return getEditableWeeks(this.clock.now()).map((week, index) =>
@@ -91,12 +91,12 @@ export class BattleSessionsService {
   }
 
   /**
-   * Các trận của một tuần, sắp theo thời gian đánh.
-   * Tuần đang mở và tuần kế được đảm bảo đã có trận Guild War; tuần đã qua chỉ
-   * đọc những gì còn lưu.
-   * @param weekStart - Mốc ISO của tuần cần xem. Bỏ trống = tuần đang mở; mốc giữa tuần được quy về Thứ 2 của tuần đó
-   * @returns Mảng trận đã sắp theo thời gian đánh
-   * @throws RangeError khi `weekStart` không phải một mốc thời gian hợp lệ — biên HTTP đã chặn ở DTO, nên chỉ xảy ra khi gọi từ trong process
+   * Sessions of one week, ordered by battle time.
+   * The open and next week are guaranteed to have their Guild War; past weeks return only what is
+   * stored.
+   * @param weekStart - ISO marker of the week to view. Omitted = the open week; a mid-week marker resolves to that week's Monday
+   * @returns Sessions ordered by battle time
+   * @throws RangeError when `weekStart` is not a valid instant — the HTTP boundary blocks it in the DTO, so this only happens on in-process calls
    */
   async listByWeek(weekStart?: string): Promise<BattleSession[]> {
     const now = this.clock.now();
@@ -113,21 +113,21 @@ export class BattleSessionsService {
   }
 
   /**
-   * Đảm bảo tuần đã có đủ các trận hệ thống sinh (hiện là Guild War).
-   * Tuần ngoài phạm vi thiết lập là no-op, nên caller gọi được vô điều kiện.
-   * @param week - Mốc Thứ 2 của tuần cần dựng
-   * @returns Promise hoàn tất khi tuần đã sẵn sàng để đọc
+   * Ensure the week holds every system-generated session (currently the Guild War).
+   * A week outside the schedulable range is a no-op, so callers may call unconditionally.
+   * @param week - Monday marker of the week to materialise
+   * @returns A promise resolving once the week is ready to read
    */
   async ensureWeekMaterialized(week: WeekAnchor): Promise<void> {
     await this.materializeWeek(week, this.clock.now());
   }
 
   /**
-   * Thân của `ensureWeekMaterialized`, tách ra để `listByWeek` dùng lại đúng mốc
-   * thời gian nó đã đọc thay vì đọc đồng hồ lần thứ hai.
-   * @param week - Mốc Thứ 2 00:00 của tuần cần dựng
-   * @param now - Thời điểm hiện tại
-   * @returns Promise hoàn tất khi tuần đã sẵn sàng để đọc
+   * Body of `ensureWeekMaterialized`, split out so `listByWeek` can reuse the exact moment it
+   * already read instead of reading the clock a second time.
+   * @param week - Monday 00:00 marker of the week to materialise
+   * @param now - Current moment
+   * @returns A promise resolving once the week is ready to read
    */
   private async materializeWeek(week: WeekAnchor, now: Date): Promise<void> {
     if (!this.isEditableWeek(week, now)) return;
@@ -136,10 +136,10 @@ export class BattleSessionsService {
   }
 
   /**
-   * Các trận của một tuần, sắp theo thời gian đánh, nhãn đã dựng.
-   * Không tự sinh trận — gọi `ensureWeekMaterialized` trước nếu cần.
-   * @param week - Mốc Thứ 2 của tuần cần đọc
-   * @returns Mảng trận đã sắp theo giờ đánh
+   * Sessions of one week, ordered by battle time, labels built.
+   * Does not generate sessions — call `ensureWeekMaterialized` first if needed.
+   * @param week - Monday marker of the week to read
+   * @returns Sessions ordered by battle time
    */
   async readWeekSessions(week: WeekAnchor): Promise<ScheduledSession[]> {
     const rows = await this.prisma.battleSession.findMany({
@@ -162,11 +162,11 @@ export class BattleSessionsService {
   }
 
   /**
-   * Các tuần còn dữ liệu lịch, mới nhất trước.
-   * Hàng trong database luôn là mốc Thứ 2 (mọi đường ghi đều đi qua `weekStartOf`),
-   * nhưng vẫn dựng lại qua `weekStartOf` — đó là hàm dựng hợp lệ duy nhất, và nó
-   * là phép đồng nhất trên một mốc đã đúng.
-   * @returns Mảng mốc Thứ 2, mới nhất trước
+   * Weeks that still hold schedule data, newest first.
+   * Rows in the database are always Monday markers (every write path goes through `weekStartOf`),
+   * but they are rebuilt through `weekStartOf` anyway — it is the only valid constructor, and it is
+   * the identity on an already-correct marker.
+   * @returns Monday markers, newest first
    */
   async listWeekAnchors(): Promise<WeekAnchor[]> {
     const rows = await this.prisma.battleSession.findMany({
@@ -179,9 +179,9 @@ export class BattleSessionsService {
   }
 
   /**
-   * Đọc một trận theo id.
-   * @param id - Id trận cần đọc
-   * @returns Trận tương ứng, null nếu không có
+   * Read one session by id.
+   * @param id - Id of the session
+   * @returns The session, or null when it does not exist
    */
   async findById(id: string): Promise<BattleSession | null> {
     const now = this.clock.now();
@@ -194,10 +194,10 @@ export class BattleSessionsService {
   }
 
   /**
-   * Tạo một trận scrim mới. Không tạo được Guild War — trận đó do hệ thống sinh.
-   * @param input - Giờ đánh, hạn chót và tên bang đối thủ
-   * @returns Trận vừa tạo
-   * @throws BadRequestException khi trận không thuộc tuần được thiết lập hoặc hạn chót vượt trần 10:00 ngày đánh
+   * Create a scrim. Guild Wars cannot be created — the system generates those.
+   * @param input - Battle time, deadline and opponent guild name
+   * @returns The created session
+   * @throws BadRequestException when the session falls outside the schedulable weeks or the deadline exceeds the 10:00 cap on the battle day
    */
   async create(input: CreateBattleSessionInput): Promise<BattleSession> {
     const now = this.clock.now();
@@ -222,16 +222,16 @@ export class BattleSessionsService {
   }
 
   /**
-   * Sửa một trận. Dời giờ đánh sang tuần khác thì `weekStart` của trận và của
-   * đội hình đi kèm được cập nhật trong cùng một transaction.
+   * Edit a session. Moving the battle time into another week updates the `weekStart` of both the
+   * session and its formations in one transaction.
    *
-   * Hạn chót của Guild War do hệ thống sở hữu: gửi lên là lỗi, và giá trị ghi
-   * xuống luôn được tính lại từ tuần chứa trận.
-   * @param id - Id trận cần sửa
-   * @param input - Các field cần đổi
-   * @returns Trận sau khi sửa
-   * @throws NotFoundException khi trận không còn tồn tại
-   * @throws BadRequestException khi tuần không được thiết lập, hạn chót vượt trần, hoặc đặt đối thủ/hạn chót cho Guild War
+   * A Guild War's deadline is owned by the system: sending one is an error, and the stored value is
+   * always recomputed from the week containing the session.
+   * @param id - Id of the session to edit
+   * @param input - Fields to change
+   * @returns The updated session
+   * @throws NotFoundException when the session no longer exists
+   * @throws BadRequestException when the week is not schedulable, the deadline exceeds the cap, or an opponent/deadline is set on a Guild War
    */
   async update(
     id: string,
@@ -268,8 +268,8 @@ export class BattleSessionsService {
 
     this.assertEditableWeek(weekStart, now);
 
-    // Guild War: hệ thống tính lại theo tuần đang chứa trận, kể cả khi trận vừa
-    // bị dời sang tuần khác. Scrim: trộn giá trị gửi lên với hàng hiện có.
+    // Guild War: the system recomputes it from the week now containing the session, even if the
+    // session was just moved. Scrim: merge the incoming values with the stored row.
     let deadline = guildWarDeadline(weekStart);
 
     if (!current.isGuildWar) {
@@ -287,11 +287,11 @@ export class BattleSessionsService {
   }
 
   /**
-   * Xoá một trận scrim. Điểm danh và đội hình của trận bị xoá theo (cascade).
-   * @param id - Id trận cần xoá
-   * @returns Promise hoàn tất khi đã xoá
-   * @throws NotFoundException khi trận không còn tồn tại
-   * @throws BadRequestException khi là Guild War hoặc thuộc tuần đã qua
+   * Delete a scrim. Its attendance and formations go with it (cascade).
+   * @param id - Id of the session to delete
+   * @returns A promise resolving once it is deleted
+   * @throws NotFoundException when the session no longer exists
+   * @throws BadRequestException when it is a Guild War or belongs to a past week
    */
   async remove(id: string): Promise<void> {
     const now = this.clock.now();
@@ -311,9 +311,9 @@ export class BattleSessionsService {
   }
 
   /**
-   * Đảm bảo tuần đã có trận Guild War. Idempotent nhờ id tất định.
-   * @param weekStart - Mốc Thứ 2 00:00 của tuần
-   * @returns Promise hoàn tất khi trận đã tồn tại
+   * Ensure the week has its Guild War. Idempotent thanks to the deterministic id.
+   * @param weekStart - Monday 00:00 marker of the week
+   * @returns A promise resolving once the session exists
    */
   private async ensureGuildWar(weekStart: WeekAnchor): Promise<void> {
     const dateTime = guildWarDateTime(weekStart);
@@ -327,17 +327,17 @@ export class BattleSessionsService {
         deadline: guildWarDeadline(weekStart),
         isGuildWar: true,
       },
-      // Giờ đánh không đụng vào — quản trị viên có thể đã dời. Hạn chót thì
-      // ngược lại: hệ thống sở hữu, nên hàng cũ lệch luật tự chỉnh về đúng.
+      // The battle time is left alone — an admin may have moved it. The deadline is the opposite:
+      // the system owns it, so a legacy row breaking the rule corrects itself.
       update: { deadline: guildWarDeadline(weekStart) },
     });
   }
 
   /**
-   * Tuần này có thuộc phạm vi quản trị viên được thiết lập không.
-   * @param weekStart - Mốc Thứ 2 00:00 của tuần cần xét
-   * @param now - Thời điểm hiện tại
-   * @returns true nếu là tuần đang mở hoặc tuần kế tiếp
+   * Whether this week is within the range admins may schedule.
+   * @param weekStart - Monday 00:00 marker of the week
+   * @param now - Current moment
+   * @returns true for the open week or the next one
    */
   private isEditableWeek(weekStart: WeekAnchor, now: Date): boolean {
     return getEditableWeeks(now).some((week) =>
@@ -346,11 +346,11 @@ export class BattleSessionsService {
   }
 
   /**
-   * Chặn thao tác lên tuần ngoài phạm vi thiết lập.
-   * @param weekStart - Mốc Thứ 2 của tuần cần xét
-   * @param now - Thời điểm hiện tại
-   * @returns Không trả về gì khi hợp lệ
-   * @throws BadRequestException khi tuần đã qua hoặc quá xa ở tương lai
+   * Reject an operation on a week outside the schedulable range.
+   * @param weekStart - Monday marker of the week
+   * @param now - Current moment
+   * @returns Nothing when valid
+   * @throws BadRequestException when the week is past or too far ahead
    */
   private assertEditableWeek(weekStart: WeekAnchor, now: Date): void {
     if (!this.isEditableWeek(weekStart, now)) {
@@ -361,11 +361,11 @@ export class BattleSessionsService {
   }
 
   /**
-   * Chặn hạn chót vượt trần: 10:00 sáng ngày đánh, và không muộn hơn giờ đánh.
-   * @param deadline - Hạn chót điểm danh
-   * @param dateTime - Giờ đánh
-   * @returns Không trả về gì khi hợp lệ
-   * @throws BadRequestException khi hạn chót muộn hơn trần
+   * Reject a deadline beyond the cap: 10:00 on the battle day, and never later than the battle.
+   * @param deadline - Attendance deadline
+   * @param dateTime - Battle time
+   * @returns Nothing when valid
+   * @throws BadRequestException when the deadline is past the cap
    */
   private assertDeadlineWithinCap(deadline: Date, dateTime: Date): void {
     if (!isWithinDeadlineCap(deadline, dateTime)) {
@@ -375,9 +375,9 @@ export class BattleSessionsService {
 }
 
 /**
- * Chuẩn hoá tên bang đối thủ: bỏ trắng hai đầu, chuỗi rỗng coi như chưa có.
- * @param value - Giá trị người dùng gửi lên (undefined = không đổi)
- * @returns Tên bang đã chuẩn hoá hoặc null
+ * Normalise the opponent guild name: trim both ends, an empty string means none.
+ * @param value - The submitted value (undefined = unchanged)
+ * @returns The normalised name, or null
  */
 function normalizeOpponent(value: string | null | undefined): string | null {
   const trimmed = value?.trim();

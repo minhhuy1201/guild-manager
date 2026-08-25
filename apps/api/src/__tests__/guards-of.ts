@@ -1,17 +1,17 @@
 import 'reflect-metadata';
 
-/** Khoá metadata Nest dùng để lưu danh sách guard của một class hoặc một method. */
+/** Metadata key Nest uses to store a class's or method's guard list. */
 const GUARDS_METADATA = '__guards__';
 
 /**
- * Đọc danh sách guard mà Nest gắn cho một controller.
+ * Read the guards Nest attached to a controller.
  *
- * Sống ở `src/__tests__` chứ không ở trong một module: mỗi module tự khẳng định guard của mình
- * (luật ranh giới cấm test của module này import controller của module kia), nên helper phải nằm
- * ngoài mọi module để cả ba dùng chung.
- * @param target - Class controller
- * @param method - Tên method cần đọc; bỏ trống để đọc guard cấp class
- * @returns Mảng class guard, rỗng khi route không gắn guard riêng
+ * Lives in `src/__tests__` rather than inside a module: each module asserts its own guards (the
+ * boundary rule forbids one module's tests importing another's controller), so the helper must sit
+ * outside every module for all three to share it.
+ * @param target - The controller class
+ * @param method - Method name to read; omit for class-level guards
+ * @returns The guard classes, empty when the route has none of its own
  */
 export function guardsOf(target: object, method?: string): unknown[] {
   const source = method

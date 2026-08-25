@@ -22,9 +22,9 @@ export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
   /**
-   * Mở luồng đăng nhập: đưa người dùng sang trang cho phép của Discord.
-   * @param redirect - Đường dẫn muốn quay lại sau khi đăng nhập
-   * @returns Chỉ dẫn redirect cho Nest
+   * Start the login flow: send the user to Discord's authorize page.
+   * @param redirect - Path to return to after login
+   * @returns A redirect instruction for Nest
    */
   @Get('discord')
   @Redirect()
@@ -36,10 +36,10 @@ export class AuthController {
   }
 
   /**
-   * Nhận callback của Discord rồi đẩy người dùng về web.
-   * Mọi lỗi đều thành một redirect kèm mã lỗi — trình duyệt đang giữa chuỗi redirect.
-   * @param query - code, state hoặc error do Discord gắn vào
-   * @returns Chỉ dẫn redirect cho Nest
+   * Handle Discord's callback and send the user back to the web app.
+   * Every failure becomes a redirect carrying an error code — the browser is mid-redirect-chain.
+   * @param query - code, state or error as Discord attached them
+   * @returns A redirect instruction for Nest
    */
   @Get('discord/callback')
   @Redirect()
@@ -51,9 +51,9 @@ export class AuthController {
   }
 
   /**
-   * Đổi mã dùng-một-lần lấy cặp JWT.
-   * @param body - Mã lấy từ query string của trang callback
-   * @returns Cặp token và thông tin phiên
+   * Trade the one-time code for a JWT pair.
+   * @param body - Code taken from the callback page's query string
+   * @returns The token pair and session info
    */
   @Post('discord/exchange')
   @ApiOperation({ summary: 'Đổi mã đăng nhập lấy token' })
@@ -62,9 +62,9 @@ export class AuthController {
   }
 
   /**
-   * Đổi refresh token còn hạn thành cặp token mới.
-   * @param body - Refresh token hiện tại
-   * @returns Cặp token mới và thông tin phiên
+   * Trade a valid refresh token for a new token pair.
+   * @param body - The current refresh token
+   * @returns The new token pair and session info
    */
   @Post('refresh')
   @ApiOperation({ summary: 'Cấp lại token từ refresh token' })
@@ -73,9 +73,9 @@ export class AuthController {
   }
 
   /**
-   * Thông tin phiên của access token đang dùng.
-   * @param user - Payload JWT do JwtAuthGuard gắn vào request
-   * @returns Discord ID, vai và nhân vật gắn với tài khoản
+   * Session info for the access token in use.
+   * @param user - JWT payload attached by JwtAuthGuard
+   * @returns Discord ID, role and the character bound to the account
    */
   @Get('me')
   @UseGuards(JwtAuthGuard)
@@ -86,11 +86,11 @@ export class AuthController {
   }
 
   /**
-   * Đường đăng nhập cũ bằng tên đăng nhập/mật khẩu.
-   * Giữ tạm để bản web cũ còn cache không nhận về một lỗi khó hiểu trong lúc hai app deploy lệch
-   * nhau; xoá ở lần dọn sau khi cả hai đã lên.
-   * @returns Không bao giờ trả về
-   * @throws GoneException luôn luôn
+   * The old username/password login route.
+   * Kept temporarily so a cached old web build does not get a confusing error while the two apps
+   * deploy out of step; delete in the next cleanup once both are live.
+   * @returns Never returns
+   * @throws GoneException always
    */
   @Post('login')
   @ApiOperation({

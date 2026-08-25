@@ -1,16 +1,16 @@
 import type { ZodType } from 'zod';
 
 /**
- * Có chạy schema Zod trên object chiều ra hay không.
+ * Whether to run the Zod schema over outbound objects.
  *
- * Đây là chỗ **duy nhất** trong `src/` đọc thẳng `process.env` (luật chung: chỉ
- * `ConfigService<Env, true>` được đọc env). Lý do: người dùng cờ này là các `<domain>.codec.ts` —
- * hàm thuần ở mức module, không nằm trong cây DI nên không nhận được `ConfigService`. Truyền cờ
- * qua tham số thì mọi call site phải mang theo một thứ chẳng liên quan tới việc dựng response.
- * Giá trị chốt một lần lúc import, đúng như mọi hằng số khác trong `config/`.
+ * This is the **only** place in `src/` that reads `process.env` directly (the standing rule: only
+ * `ConfigService<Env, true>` reads env). The reason: this flag's users are the `<domain>.codec.ts`
+ * files — module-level pure functions outside the DI tree, so they cannot receive a `ConfigService`.
+ * Passing the flag as a parameter would force every call site to carry something unrelated to
+ * building a response. The value is fixed once at import, like every other constant in `config/`.
  *
- * Tắt ở production vì đây là lưới an toàn cho dev/CI chứ không phải biên nhận dữ liệu không tin
- * được: dữ liệu **ra** khỏi process không cần trả giá CPU cho mỗi response.
+ * Disabled in production because this is a dev/CI safety net, not an untrusted-data boundary: data
+ * leaving the process need not pay CPU on every response.
  */
 export const SHOULD_VERIFY_RESPONSES = process.env.NODE_ENV !== 'production';
 

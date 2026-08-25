@@ -12,21 +12,21 @@ import {
 } from "@/components/ui/dialog";
 
 interface DeleteMatchDialogProps {
-  /** Dialog đang mở hay không */
+  /** Whether the dialog is open */
   open: boolean;
-  /** Gọi khi người dùng đóng hoặc xác nhận */
+  /** Called when the user closes or confirms */
   onOpenChange: (open: boolean) => void;
-  /** Bỏ trận 2 khỏi nháp của ngày */
+  /** Drop match 2 from the day's draft */
   onConfirm: () => void;
 }
 
 /**
- * Xác nhận bỏ trận 2. Nói rõ chưa mất gì cho tới khi bấm Lưu, vì nút Lưu là
- * của cả ngày chứ không của riêng trận nào.
- * @param open - Dialog đang mở hay không
- * @param onOpenChange - Gọi khi người dùng đóng hoặc xác nhận
- * @param onConfirm - Bỏ trận 2 khỏi nháp của ngày
- * @returns Dialog xác nhận
+ * Confirm dropping match 2. It says plainly that nothing is lost until Save, because Save covers the
+ * whole day rather than any single match.
+ * @param open - Whether the dialog is open
+ * @param onOpenChange - Called when the user closes or confirms
+ * @param onConfirm - Drop match 2 from the day's draft
+ * @returns The confirmation dialog
  */
 export function DeleteMatchDialog({
   open,

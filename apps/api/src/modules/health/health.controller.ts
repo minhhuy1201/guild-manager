@@ -4,13 +4,13 @@ import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Clock } from '../../common';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 
-/** Kết quả health check của API. */
+/** Result of the API health check. */
 export interface HealthStatus {
-  /** 'ok' khi API sống — kể cả khi database chưa sẵn sàng. */
+  /** 'ok' while the API is alive — even when the database is not ready. */
   status: 'ok';
-  /** Số giây process đã chạy. */
+  /** Seconds the process has been running. */
   uptime: number;
-  /** Trạng thái kết nối database. */
+  /** Database connection state. */
   db: 'up' | 'down';
   timestamp: string;
 }
@@ -24,8 +24,8 @@ export class HealthController {
   ) {}
 
   /**
-   * Kiểm tra API và kết nối database.
-   * @returns Trạng thái tổng quát; `db` là 'down' khi chưa kết nối được database
+   * Check the API and its database connection.
+   * @returns The overall status; `db` is 'down' when the database is unreachable
    */
   @Get()
   @ApiOperation({ summary: 'Kiểm tra tình trạng API và database' })

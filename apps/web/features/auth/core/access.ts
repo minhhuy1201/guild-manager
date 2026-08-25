@@ -3,29 +3,29 @@ import { canManageGuild } from "@guild/shared/lib";
 
 import { ROUTES } from "@/config/routes";
 
-/** Các route công khai duy nhất — mọi trang khác đều cần phiên đăng nhập. */
+/** The only public routes — every other page needs a session. */
 const PUBLIC_PATH_PREFIXES = [ROUTES.login];
 
-/** Các route chỉ dành cho quản trị viên. */
+/** Admin-only routes. */
 const ADMIN_PATH_PREFIXES = [ROUTES.teamBuilder, ROUTES.settings];
 
-/** Kết luận cho một request trang. */
+/** The verdict for a page request. */
 export type AccessDecision =
-  /** Cho đi tiếp */
+  /** Let it through */
   | "allow"
-  /** Đá về trang đăng nhập (kèm redirect quay lại) */
+  /** Send to the login page (carrying a return redirect) */
   | "login"
-  /** Đã đăng nhập nhưng không đủ quyền — đá về trang điểm danh */
+  /** Signed in but not allowed — send to the attendance page */
   | "home";
 
 /**
- * Quyết định một request trang được đi tiếp hay bị đá đi đâu.
+ * Decide whether a page request goes through, and where it is sent otherwise.
  *
- * Tách khỏi `proxy.ts` để test được mà không phải dựng NextRequest: proxy chỉ còn việc đọc cookie
- * và dịch kết luận này thành response.
- * @param input.pathname - Đường dẫn đang vào
- * @param input.role - Vai đọc từ access token, null khi chưa đăng nhập
- * @returns Kết luận cho request
+ * Split out of `proxy.ts` so it is testable without building a NextRequest: the proxy is left reading
+ * cookies and translating this verdict into a response.
+ * @param input.pathname - Path being requested
+ * @param input.role - Role read from the access token, null when signed out
+ * @returns The verdict for the request
  */
 export function decideAccess({
   pathname,

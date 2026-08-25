@@ -11,7 +11,7 @@ describe("discordAvatarUrl", () => {
   });
 
   it("xin đuôi gif cho avatar động", () => {
-    // Hash bắt đầu bằng "a_" là avatar động; xin .png sẽ ra ảnh tĩnh mờ.
+    // A hash starting with "a_" is an animated avatar; requesting .png yields a blurry still.
     expect(discordAvatarUrl("123456789012345678", "a_9f8e7d")).toBe(
       "https://cdn.discordapp.com/avatars/123456789012345678/a_9f8e7d.gif?size=64"
     );
