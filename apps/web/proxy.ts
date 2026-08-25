@@ -142,5 +142,9 @@ function renewSession(request: NextRequest, tokens: AuthTokens): NextResponse {
 
 export const config = {
   // Runs on every page route (static assets excluded) so the session refreshes on any page.
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|img/).*)"],
+  //
+  // `icon.svg` is the App Router metadata file behind the `<link rel="icon">` Next injects. Without
+  // it here the proxy answers the browser's favicon request with the login redirect, so no tab ever
+  // shows an icon while signed out — the login page included.
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon.svg|img/).*)"],
 };
