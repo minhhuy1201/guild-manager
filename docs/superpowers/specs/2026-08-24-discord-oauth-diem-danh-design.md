@@ -449,3 +449,18 @@ deploy, web bản cũ gọi `POST /auth/login` đã biến mất, nên API giữ
   `ADMIN_ROLE` làm package không build được, mà mọi test đều chạy trên `dist` của nó.
 - **Nhãn tài khoản trên header lấy từ `/auth/me`** (tên nhân vật, lùi về tên Discord) chứ không lấy từ
   access token — token chỉ mang Discord ID và vai.
+- **Header hiện avatar Discord thay cho nút đăng xuất trần** (bổ sung 2026-08-25, ngoài thiết kế
+  gốc). Kéo theo cột `Character.discordAvatar` giữ **hash** avatar — không phải URL, vì định dạng URL
+  CDN là chuyện của Discord — ghi lại mỗi lần đăng nhập cùng `discordUsername`/`lastLoginAt`, và
+  `sessionUserSchema` thêm `discordAvatar`. Cột này cố ý **không** vào `guildMemberSchema`: màn quản
+  trị không hiện ảnh, nên avatar chỉ đi qua `/auth/me`, không rò ra danh sách cả bang.
+
+## Lỗ hổng đã biết, chưa sửa
+
+- **Quản trị viên cứu hộ không tự nâng mình thành ADMIN thật được.** `DISCORD_ADMIN_IDS` chỉ ghi đè
+  vai ở tầng phiên, không bao giờ ghi ngược vào `Character.role`; mà ô chọn vai ở màn Thành viên khoá
+  toàn bộ hàng của chính mình (`member.discordId === currentDiscordId`) để chống tự hạ quyền — nên nó
+  chặn cả việc tự nâng. Hệ quả: hệ thống phụ thuộc vĩnh viễn vào biến môi trường, bỏ biến là mất
+  quyền admin. Cách đi vòng hiện tại là một câu `UPDATE "Character" SET role='ADMIN'` chạy tay sau
+  khi đã gán Discord ID. Hai hướng sửa đã cân nhắc: ghi vai về database ngay trong `touchLogin` khi
+  người đăng nhập nằm trong danh sách cứu hộ, hoặc nới khoá thành "chỉ cấm hạ, cho phép nâng".

@@ -35,7 +35,11 @@ const ROW = {
  * @param profile - Hồ sơ Discord mà lời gọi thứ hai trả về
  * @returns Mock của global.fetch
  */
-function mockDiscord(profile: { id: string; username: string }) {
+function mockDiscord(profile: {
+  id: string;
+  username: string;
+  avatar?: string | null;
+}) {
   return jest
     .spyOn(global, 'fetch')
     .mockResolvedValueOnce(
