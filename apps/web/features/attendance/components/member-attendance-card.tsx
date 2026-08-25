@@ -2,6 +2,7 @@
 
 import { ATTENDANCE_STATUS_LABEL, AttendanceStatus } from "@guild/shared/enums";
 
+import { EmptyState } from "@/components/shared/empty-state";
 import { QueryBoundary } from "@/components/shared/query-boundary";
 import { SessionLabel } from "@/components/shared/session-label";
 import { Button } from "@/components/ui/button";
@@ -59,8 +60,8 @@ export function MemberAttendanceCard() {
     >
       {character === null ? (
         <Card>
-          <CardContent className="py-8 text-center text-sm text-muted-foreground">
-            Tài khoản chưa được gán nhân vật, liên hệ quản trị viên.
+          <CardContent>
+            <EmptyState message="Tài khoản chưa được gán nhân vật, liên hệ quản trị viên." />
           </CardContent>
         </Card>
       ) : (
@@ -126,9 +127,7 @@ export function MemberAttendanceCard() {
             })}
 
             {battleSessions.length === 0 && (
-              <p className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
-                Tuần này chưa có trận nào.
-              </p>
+              <EmptyState message="Tuần này chưa có trận nào." />
             )}
           </CardContent>
         </Card>

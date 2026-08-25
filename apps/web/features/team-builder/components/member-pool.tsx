@@ -3,6 +3,7 @@
 import { useDroppable } from "@dnd-kit/core";
 import type { Character } from "@guild/shared/schemas";
 
+import { EmptyState } from "@/components/shared/empty-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -71,11 +72,13 @@ export function MemberPool({
         >
           <ScrollArea className="h-64">
             {pool.length === 0 ? (
-              <p className="py-8 text-center text-sm text-muted-foreground">
-                {isFiltering
-                  ? "Không có thành viên nào khớp bộ lọc."
-                  : "Không còn ai để xếp cho trận này."}
-              </p>
+              <EmptyState
+                message={
+                  isFiltering
+                    ? "Không có thành viên nào khớp bộ lọc."
+                    : "Không còn ai để xếp cho trận này."
+                }
+              />
             ) : (
               <div className="grid grid-cols-2 gap-2 pr-3 md:grid-cols-3 lg:grid-cols-4">
                 {pool.map((character) => (

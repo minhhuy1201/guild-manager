@@ -374,6 +374,19 @@ From `components/shared/action-buttons.tsx`:
 - **Destructive actions get a confirm dialog** — see `delete-member-dialog`, `delete-session-dialog`,
   `delete-match-dialog`.
 
+### Trạng thái rỗng
+
+`components/shared/empty-state.tsx` (`<EmptyState message icon? action? />`) là **cách duy nhất** để
+nói "tải xong nhưng không có gì". Cùng khung, cùng khoảng cách, cùng cỡ chữ với
+`components/shared/error-state.tsx` — hai nhánh của cùng một câu chuyện thì phải trông như nhau.
+
+Một phương ngữ duy nhất: `flex flex-col items-center gap-3 py-8 text-center`. Không còn bản viền đứt
+`rounded-lg border border-dashed p-4`. Trong bảng thì đi qua `table-body-state`; ngoài bảng thì gọi
+thẳng.
+
+`border-dashed` còn lại trong app là viền vùng thả của kéo-thả (`member-pool`, `slot-cell`,
+`prefill-banner`), không phải trạng thái rỗng.
+
 ### Chuyển động
 
 Bốn token trong `app/globals.css` là toàn bộ từ vựng chuyển động của app:

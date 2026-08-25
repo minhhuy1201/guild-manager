@@ -4,6 +4,7 @@ import { CalendarPlus } from "lucide-react";
 import type { BattleSession } from "@guild/shared/schemas";
 
 import { CreateButton } from "@/components/shared/action-buttons";
+import { EmptyState } from "@/components/shared/empty-state";
 import { SessionRow } from "./session-row";
 
 interface SessionListProps {
@@ -45,11 +46,7 @@ export function SessionList({
         />
       ))}
 
-      {!hasScrim && (
-        <div className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
-          Tuần này chưa có trận scrim nào.
-        </div>
-      )}
+      {!hasScrim && <EmptyState message="Tuần này chưa có trận scrim nào." />}
 
       <CreateButton
         label="Thêm trận scrim"

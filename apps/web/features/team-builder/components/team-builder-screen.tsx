@@ -9,6 +9,7 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 
+import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -82,8 +83,8 @@ export function TeamBuilderScreen() {
   if (screen.selection.sessions.length === 0) {
     return (
       <Card>
-        <CardContent className="py-8 text-center text-sm text-muted-foreground">
-          Tuần này chưa có trận đánh nào.
+        <CardContent>
+          <EmptyState message="Tuần này chưa có trận đánh nào." />
         </CardContent>
       </Card>
     );
