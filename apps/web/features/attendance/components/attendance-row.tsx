@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, X } from "lucide-react";
+import { Check, Swords, X } from "lucide-react";
 import { AttendanceStatus } from "@guild/shared/enums";
 import type {
   AttendanceRecord,
@@ -155,39 +155,54 @@ interface AttendanceToggleProps {
 
 /**
  * The yes/no button pair for one attendance cell (editing mode only).
+ *
+ * Unlike the read-only `StatusBadge`, this one spells out "Có"/"Không": it is a control the user is
+ * about to press, and the swords icon marks "đi đánh" the same way `SessionLabel` marks a battle.
+ * Each button rests as a neutral icon and only on hover widens and takes its own colour — red for
+ * "Không", emerald for "Có" — so a week with many sessions still fits across the grid. The picked
+ * side stays filled, which is the only thing that says what was chosen once the pointer leaves.
  * @returns A two-button segmented control
  */
 function AttendanceToggle({ value, onSelect }: AttendanceToggleProps) {
   return (
-    <div className="inline-flex overflow-hidden rounded-lg border">
-      <button
-        type="button"
-        aria-label="Không"
-        aria-pressed={value === AttendanceStatus.ABSENT}
-        onClick={() => onSelect(AttendanceStatus.ABSENT)}
-        className={cn(
-          "flex cursor-pointer items-center px-3 py-1.5 transition-colors",
-          value === AttendanceStatus.ABSENT
-            ? "bg-destructive text-white"
-            : "text-destructive hover:bg-destructive/10"
-        )}
-      >
-        <X className="size-4" />
-      </button>
-      <button
-        type="button"
-        aria-label="Có"
-        aria-pressed={value === AttendanceStatus.PRESENT}
-        onClick={() => onSelect(AttendanceStatus.PRESENT)}
-        className={cn(
-          "flex cursor-pointer items-center border-l px-3 py-1.5 transition-colors",
-          value === AttendanceStatus.PRESENT
-            ? "bg-emerald-500 text-white"
-            : "text-emerald-600 hover:bg-emerald-500/10 dark:text-emerald-400"
-        )}
-      >
-        <Check className="size-4" />
-      </button>
+    // A fixed-width slot: the buttons grow inside it, so the column keeps its width on hover.
+    // Without it the whole table shifts every time the pointer crosses a cell.
+    <div className="mx-auto flex w-32 justify-center">
+      <div className="inline-flex overflow-hidden rounded-lg border">
+        <button
+          type="button"
+          aria-pressed={value === AttendanceStatus.ABSENT}
+          onClick={() => onSelect(AttendanceStatus.ABSENT)}
+          className={cn(
+            "group/no flex w-9 cursor-pointer items-center justify-start gap-2 overflow-hidden px-2 py-1.5 text-sm font-medium whitespace-nowrap transition-all duration-[var(--duration-base)] ease-out-soft hover:w-22",
+            value === AttendanceStatus.ABSENT
+              ? "bg-destructive text-white"
+              : "text-foreground hover:bg-destructive/10 hover:text-destructive"
+          )}
+        >
+          <X className="size-4 shrink-0" />
+          {/* Hidden outright at rest: clipping with overflow alone still leaks a sliver of the word. */}
+          <span className="opacity-0 transition-opacity duration-[var(--duration-base)] group-hover/no:opacity-100">
+            Không
+          </span>
+        </button>
+        <button
+          type="button"
+          aria-pressed={value === AttendanceStatus.PRESENT}
+          onClick={() => onSelect(AttendanceStatus.PRESENT)}
+          className={cn(
+            "group/yes flex w-9 cursor-pointer items-center justify-end gap-2 overflow-hidden border-l px-2 py-1.5 text-sm font-medium whitespace-nowrap transition-all duration-[var(--duration-base)] ease-out-soft hover:w-18",
+            value === AttendanceStatus.PRESENT
+              ? "bg-emerald-500 text-white"
+              : "text-foreground hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:text-emerald-400"
+          )}
+        >
+          <span className="opacity-0 transition-opacity duration-[var(--duration-base)] group-hover/yes:opacity-100">
+            Có
+          </span>
+          <Swords className="size-4 shrink-0" />
+        </button>
+      </div>
     </div>
   );
 }

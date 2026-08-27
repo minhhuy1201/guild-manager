@@ -29,9 +29,9 @@ export function PasswordInput({
         {...props}
       />
       {/*
-        Căn giữa bằng flex chứ không phải -translate-y-1/2: Button dùng
-        translate-y cho hiệu ứng nhún lúc bấm, đặt cả hai lên cùng một phần tử
-        thì nút rơi xuống nửa chiều cao mỗi lần click.
+        Centred with flex rather than -translate-y-1/2: Button already uses translate-y for its
+        press effect, and putting both on the same element drops the button half its own height on
+        every click.
       */}
       <div className="absolute inset-y-0 right-0.5 flex items-center">
         <Button

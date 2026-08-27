@@ -61,11 +61,11 @@ export function SessionTabs({
       onValueChange={(value) => onSelect(String(value))}
     >
       {/*
-        Chiều cao mặc định của TabsList gắn với modifier `group-data-horizontal/tabs`,
-        nên `h-auto` trơn KHÔNG đè được nó: tailwind-merge coi hai lớp khác modifier
-        là không xung đột, và cả hai cùng độ ưu tiên nên lớp sinh sau thắng. Phải
-        đè bằng đúng modifier đó, không thì hàng thẻ trận bị ép còn 32px và tràn
-        xuống che mất hàng "Trận 1 / Tạo trận 2" bên dưới.
+        TabsList's default height hangs off the `group-data-horizontal/tabs` modifier, so a bare
+        `h-auto` does NOT override it: tailwind-merge treats two classes under different modifiers as
+        non-conflicting, and with equal specificity the one emitted later wins. It has to be
+        overridden under that same modifier — otherwise the row of session cards is squeezed to 32px
+        and spills over the "Trận 1 / Tạo trận 2" row below it.
       */}
       <TabsList className="grid w-full gap-2 bg-transparent p-0 group-data-horizontal/tabs:h-auto sm:grid-cols-2 lg:grid-cols-3">
         {sessions.map((session) => {
@@ -75,7 +75,7 @@ export function SessionTabs({
             <TabsTrigger
               key={session.sessionId}
               value={session.sessionId}
-              className="h-auto cursor-pointer flex-col items-center justify-center gap-0.5 rounded-lg border border-muted-foreground/40 px-3 py-3 text-sm font-medium not-data-active:hover:border-primary/60 not-data-active:hover:bg-foreground/5 data-active:border-primary data-active:bg-primary data-active:text-primary-foreground dark:data-active:border-primary dark:data-active:bg-primary dark:data-active:text-primary-foreground"
+              className="h-auto cursor-pointer flex-col items-center justify-center gap-0.5 rounded-lg border border-muted-foreground/40 px-3 py-3 text-sm font-medium not-data-active:hover:border-primary/60 not-data-active:hover:bg-foreground/5 data-active:border-primary data-active:bg-primary data-active:text-primary-foreground data-active:*:text-primary-foreground dark:data-active:border-primary dark:data-active:bg-primary dark:data-active:text-primary-foreground"
             >
               <SessionLabel session={session} size="sm">
                 {session.locked ? <Lock className="size-3 opacity-70" /> : null}

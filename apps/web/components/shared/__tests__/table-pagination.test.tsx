@@ -6,7 +6,7 @@ import { TablePagination, getPageSlots } from "../table-pagination";
 
 afterEach(cleanup);
 
-/** Số ô của dải khi siblings = 1 (siblings * 2 + 5). */
+/** Number of cells in the strip when siblings = 1 (siblings * 2 + 5). */
 const TOTAL_SLOTS = 7;
 
 describe("getPageSlots", () => {

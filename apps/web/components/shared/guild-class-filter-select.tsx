@@ -90,7 +90,7 @@ export function GuildClassFilterSelect({
           }}
         </SelectValue>
       </SelectTrigger>
-      {/* Mở như popover dưới trigger thay vì neo item đang chọn vào trigger. */}
+      {/* Opens as a popover under the trigger instead of anchoring the selected item to it. */}
       <SelectContent alignItemWithTrigger={false}>
         <SelectItem value={ALL_CLASSES}>Tất cả</SelectItem>
         {GUILD_CLASS_OPTIONS.map((guildClass) => (

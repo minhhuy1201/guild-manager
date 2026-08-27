@@ -74,8 +74,8 @@ export function UserMenu({ label, discordId, avatarHash }: UserMenuProps) {
         </Avatar>
       </DropdownMenuTrigger>
       {/*
-        Mở sang phải và cho phép tràn khỏi lề: mặc định Base UI né va chạm bằng
-        cách kéo ngược menu vào trong, khiến nó đổ về phía trái của avatar.
+        Opens rightwards and is allowed to overflow the edge: Base UI's default collision avoidance
+        pulls the menu back inside, which drops it to the left of the avatar.
       */}
       <DropdownMenuContent
         align="start"

@@ -312,8 +312,13 @@ icon, not text:
 Use **`components/shared/status-icon.tsx`** (`<StatusIcon tone label />`). `label` is required — the
 icon has no visible text, so it is the only thing a screen reader gets.
 
-In use on the attendance grid (`attendance-row`, both read-only and toggling) and the attendance
-history table (`attendance-log-table`).
+In use on the attendance grid (`attendance-row`, read-only cells) and the attendance history table
+(`attendance-log-table`).
+
+**This rule covers *displaying* a state only.** The cell being edited in `attendance-row`
+(`AttendanceToggle`) is a control about to be pressed, so it carries words: "Không" with a
+destructive `X`, "Có" with an emerald `Swords` — the same mark `SessionLabel` gives a battle. At rest
+each button shrinks to the width of its icon (`w-9`) and only widens on hover.
 
 > Not to be confused with `status-badge.tsx`: a badge **has words** and is for descriptive labels
 > ("Đã khóa" / "Đang mở" on the week timeline), not for binary state.
@@ -363,48 +368,68 @@ the settings row's "Bang Chiến" badge, the team builder tab's lock icon and un
 `label` is built by the API (`architecture.md` §5 — never stored). Never assemble a battle's name on
 the frontend.
 
-### Kích thước control
+**A screen that puts `SessionLabel` on a `primary` surface has to invert it.** The Guild War's
+`text-primary` *is* that background, so the label disappears — `session-tabs` adds
+`data-active:*:text-primary-foreground` to the selected card to flip its whole content back.
 
-Một thang duy nhất cho mọi control, đặt trong `components/ui/` chứ không phải từng chỗ dùng:
+### Control sizes
 
-- **Button** — `default` `h-10`, `lg` `h-11`, `sm` `h-9`, `xs` `h-7`; bản icon là `size-10 / 11 / 9 / 7`.
-- **Input, Textarea, SelectTrigger** — `h-11` (`SelectTrigger size="sm"` là `h-9`), chữ `text-base`.
-- **Label, item của Select và DropdownMenu, TabsTrigger** — `text-base`; `TabsList` cao `h-11`.
-- Icon trong control mặc định `size-4.5`, chỉ các cỡ `xs/sm` mới hạ xuống `size-3.5 / 4`.
+One scale for every control, written in `components/ui/` and nowhere else:
 
-Cần một control nhỏ hơn cho một màn hình thì dùng biến thể `sm`/`xs` sẵn có, đừng viết `h-*` tay.
-Sửa thang này là sửa `components/ui/`: nó là design token, không phải một biến thể để bọc lại trong
-`components/shared/`.
+- **Button** — `default` `h-10`, `lg` `h-11`, `sm` `h-9`, `xs` `h-7`; the icon sizes are
+  `size-10 / 11 / 9 / 7`.
+- **Input, Textarea, SelectTrigger** — `h-11` (`SelectTrigger size="sm"` is `h-9`), `text-base`.
+- **Label, `Select` and `DropdownMenu` items, `TabsTrigger`** — `text-base`; `TabsList` is `h-11`.
+- An icon inside a control is `size-4.5`; only the `xs`/`sm` sizes drop to `size-3.5 / 4`.
 
-### Nền của trạng thái hover/active
+A screen that needs something smaller takes the existing `sm`/`xs` variant — never a hand-written
+`h-*`. Changing the scale means editing `components/ui/`: it is a design token, not a variant to be
+wrapped in `components/shared/`.
 
-Trong palette hiện tại `--muted`, `--secondary` và `--card` đều nằm sát `--background`, nên
-`bg-muted` hay `bg-secondary` gần như không nhìn thấy khi làm nền cho hover hoặc trạng thái đang
-chọn. Quy ước:
+### The surface behind a hovered or selected control
 
-- **Hover trung tính** — `hover:bg-foreground/5` (nút `ghost`, `outline`, dòng bảng), mở popup thì
-  `bg-foreground/10`.
-- **Đang chọn** — nền `primary` đặc, chữ `primary-foreground`: xanh navy chữ trắng ở light theme,
-  đảo lại ở dark. Áp cho cả ba chỗ: `TabsTrigger` mặc định, nav trên header, thẻ ca của team builder.
+In the current palette `--muted`, `--secondary` and `--card` all sit within a hair of
+`--background`, so `bg-muted` or `bg-secondary` is all but invisible as the surface of a hover or of
+a selected state. The convention:
 
-`--muted` và `--secondary` vẫn dùng cho *chữ* (`text-muted-foreground`) và cho badge, không dùng làm
-nền báo trạng thái.
+- **Neutral hover** — `hover:bg-foreground/5` (the `ghost` and `outline` buttons, table rows);
+  `bg-foreground/10` while a popup is open.
+- **Selected** — a solid `primary` surface with `primary-foreground` text: navy on white in the
+  light theme, inverted in the dark one. All three places follow it: the default `TabsTrigger`, the
+  header nav, and the team builder's session cards.
 
-**Hover phải chừa mục đang chọn ra.** Mục đang chọn đã có nền `primary` và chữ đảo, một
-`hover:text-foreground` trơn sẽ kéo chữ về đen và mất tương phản. Luôn viết
-`not-data-active:hover:*` (Base UI đánh dấu mục đang chọn bằng `data-active`), hoặc với nút thì cho
-nhánh active tự khai `hover:` của nó.
+`--muted` and `--secondary` still carry *text* (`text-muted-foreground`) and badges; neither is a
+surface for signalling state.
 
-### Tab đang chọn → nền `primary`
+**A hovered menu item is `data-highlighted`, never `focus:`.** Base UI marks the item under the
+pointer — and the one reached by keyboard — with `data-highlighted`; `:focus` never lands on it. Nor
+paint it with `bg-accent`: `--accent` is the exact colour of `--popover` in the light theme, so that
+highlight renders nothing at all. `SelectItem` and every `DropdownMenu` item use
+`data-highlighted:bg-foreground/5`.
 
-`--muted` và `--background` cùng độ sáng ở light theme, nên `TabsList bg-muted` và tab active
-`bg-background` đều chìm vào nền trang. Biến thể `default` của `components/ui/tabs.tsx` vì thế dùng:
+**Hover must skip the selected item.** The selected one already sits on `primary` with inverted
+text, so a bare `hover:text-foreground` drags that text back to black and kills the contrast. Always
+write `not-data-active:hover:*` (Base UI marks the selected item with `data-active`); for a button,
+let the active branch declare its own `hover:`.
 
-- **Track** — `bg-foreground/5 ring-1 ring-border`, ăn được cả hai theme mà không phải sửa token.
-- **Tab đang chọn** — `bg-primary text-primary-foreground font-semibold`; tab còn lại `text-muted-foreground`.
+### The selected tab → a `primary` surface
 
-Biến thể `line` giữ nguyên kiểu gạch chân (nền trong suốt, chữ `foreground`). Màn hình cần kiểu tab
-riêng thì override tại chỗ như `session-tabs.tsx`, đừng đổi biến thể `default`.
+`--muted` and `--background` share the same lightness in the light theme, so both `TabsList
+bg-muted` and an active tab on `bg-background` sank into the page. The `default` variant of
+`components/ui/tabs.tsx` therefore uses:
+
+- **Track** — `bg-foreground/20 dark:bg-foreground/5`. The alpha differs per theme on purpose:
+  `--background` is 0.964 in the light theme, so a 5% tint measured 1.05:1 against the page and was
+  invisible; 20% brings it to 1.23:1. In the dark theme that same 5% is already 1.63:1. No ring — at
+  this strength the tint alone draws the shape, and `--border` (0.922) would sit *lighter* than the
+  track.
+- **Selected tab** — `bg-primary text-primary-foreground font-semibold`; the rest keep plain
+  `text-foreground`. Not `text-muted-foreground`: on that track it measures 3.4:1 in the dark theme,
+  and the filled pill already carries the hierarchy without dimming the other labels.
+
+The `line` variant keeps its underline look (transparent surface, `foreground` text). A screen that
+wants tabs of its own overrides them at the call site, as `session-tabs.tsx` does — it never edits
+the `default` variant.
 
 ### Actions
 
@@ -416,10 +441,10 @@ From `components/shared/action-buttons.tsx`:
   a screen reader.
 - **Destructive actions get a confirm dialog** — see `delete-member-dialog`, `delete-session-dialog`,
   `delete-match-dialog`.
-- **Mục nguy hiểm trong menu dùng `variant="destructive"` của `DropdownMenuItem`**, không tự tô màu
-  bằng `className`: biến thể đã có sẵn chữ đỏ và nền `destructive/10` lúc hover. `user-menu` là ví dụ
-  — tên tài khoản nằm ở `DropdownMenuLabel` đầu menu, `DropdownMenuSeparator`, rồi "Đăng xuất" cuối
-  cùng, đúng mẫu account menu của shadcn.
+- **A dangerous menu entry takes `DropdownMenuItem`'s `variant="destructive"`**, never a hand-rolled
+  `className`: the variant already carries the red text and the `destructive/10` surface on hover.
+  `user-menu` is the worked example — the account name in a `DropdownMenuLabel` at the top, a
+  `DropdownMenuSeparator`, then "Đăng xuất" last, which is shadcn's own account-menu pattern.
 
 ### Empty state
 
@@ -450,6 +475,14 @@ Tailwind 4 has an `--ease-*` namespace, so `--ease-out-soft` gives the `ease-out
 
 **Motion may change opacity and colour only, never geometry** — no `translate`, no `height`, no
 `scale` on table content. A transition that moves something is exactly what makes the layout jump.
+Two exceptions. One is a popup in a portal (`SelectContent`, `DropdownMenuContent`,
+`DialogContent`): it sits outside the layout flow, so it may slide in. `SelectContent` rises from
+below (`data-open:slide-in-from-bottom-8`) over `--duration-slow`, and needs
+`alignItemWithTrigger={false}` — in align-to-item mode the popup covers the trigger and its
+animation is switched off. The other is `AttendanceToggle`, whose buttons animate their width on
+hover (`--duration-base`); it is allowed only because it lives in a fixed-width slot (`w-32`), so
+the motion stops inside the cell and the table column never resizes. Animating geometry inside a
+table requires pinning the slot like that — otherwise the table jumps.
 
 `prefers-reduced-motion: reduce` is answered **once**, at the end of `globals.css`, for the whole app —
 never repeated at a call site.

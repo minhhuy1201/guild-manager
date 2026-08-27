@@ -1,8 +1,10 @@
 "use client";
 
+import { CalendarCheck, CalendarDays } from "lucide-react";
 import type { FormationWeek } from "@guild/shared/schemas";
 
 import { DateRange } from "@/components/shared/date-range";
+import { cn } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -36,7 +38,13 @@ export function WeekPicker({ weeks, value, onChange }: WeekPickerProps) {
       <SelectTrigger id="formation-week" className="w-52">
         <SelectValue>
           {() => (
-            <span className="inline-flex items-center gap-1">
+            <span
+              className={cn(
+                "inline-flex items-center gap-1.5",
+                selected?.isActive && "text-primary"
+              )}
+            >
+              {selected?.isActive ? <CalendarCheck /> : <CalendarDays />}
               Tuần{" "}
               {selected ? (
                 <DateRange start={selected.weekStart} end={selected.weekEnd} />
@@ -48,7 +56,15 @@ export function WeekPicker({ weeks, value, onChange }: WeekPickerProps) {
       <SelectContent alignItemWithTrigger={false}>
         {weeks.map((week) => (
           <SelectItem key={week.weekStart} value={week.weekStart}>
-            <span className="inline-flex items-center gap-1">
+            {/* The current week keeps its colour even while highlighted: the
+                declaration sits on this span, not on the item. */}
+            <span
+              className={cn(
+                "inline-flex items-center gap-1.5",
+                week.isActive && "font-medium text-primary"
+              )}
+            >
+              {week.isActive ? <CalendarCheck /> : <CalendarDays />}
               Tuần{" "}
               <DateRange start={week.weekStart} end={week.weekEnd} />
               {week.isActive ? " (hiện tại)" : ""}
