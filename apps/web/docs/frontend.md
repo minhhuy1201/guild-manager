@@ -376,6 +376,36 @@ Cần một control nhỏ hơn cho một màn hình thì dùng biến thể `sm`
 Sửa thang này là sửa `components/ui/`: nó là design token, không phải một biến thể để bọc lại trong
 `components/shared/`.
 
+### Nền của trạng thái hover/active
+
+Trong palette hiện tại `--muted`, `--secondary` và `--card` đều nằm sát `--background`, nên
+`bg-muted` hay `bg-secondary` gần như không nhìn thấy khi làm nền cho hover hoặc trạng thái đang
+chọn. Quy ước:
+
+- **Hover trung tính** — `hover:bg-foreground/5` (nút `ghost`, `outline`, dòng bảng), mở popup thì
+  `bg-foreground/10`.
+- **Đang chọn** — nền `primary` đặc, chữ `primary-foreground`: xanh navy chữ trắng ở light theme,
+  đảo lại ở dark. Áp cho cả ba chỗ: `TabsTrigger` mặc định, nav trên header, thẻ ca của team builder.
+
+`--muted` và `--secondary` vẫn dùng cho *chữ* (`text-muted-foreground`) và cho badge, không dùng làm
+nền báo trạng thái.
+
+**Hover phải chừa mục đang chọn ra.** Mục đang chọn đã có nền `primary` và chữ đảo, một
+`hover:text-foreground` trơn sẽ kéo chữ về đen và mất tương phản. Luôn viết
+`not-data-active:hover:*` (Base UI đánh dấu mục đang chọn bằng `data-active`), hoặc với nút thì cho
+nhánh active tự khai `hover:` của nó.
+
+### Tab đang chọn → nền `primary`
+
+`--muted` và `--background` cùng độ sáng ở light theme, nên `TabsList bg-muted` và tab active
+`bg-background` đều chìm vào nền trang. Biến thể `default` của `components/ui/tabs.tsx` vì thế dùng:
+
+- **Track** — `bg-foreground/5 ring-1 ring-border`, ăn được cả hai theme mà không phải sửa token.
+- **Tab đang chọn** — `bg-primary text-primary-foreground font-semibold`; tab còn lại `text-muted-foreground`.
+
+Biến thể `line` giữ nguyên kiểu gạch chân (nền trong suốt, chữ `foreground`). Màn hình cần kiểu tab
+riêng thì override tại chỗ như `session-tabs.tsx`, đừng đổi biến thể `default`.
+
 ### Actions
 
 From `components/shared/action-buttons.tsx`:
@@ -386,6 +416,10 @@ From `components/shared/action-buttons.tsx`:
   a screen reader.
 - **Destructive actions get a confirm dialog** — see `delete-member-dialog`, `delete-session-dialog`,
   `delete-match-dialog`.
+- **Mục nguy hiểm trong menu dùng `variant="destructive"` của `DropdownMenuItem`**, không tự tô màu
+  bằng `className`: biến thể đã có sẵn chữ đỏ và nền `destructive/10` lúc hover. `user-menu` là ví dụ
+  — tên tài khoản nằm ở `DropdownMenuLabel` đầu menu, `DropdownMenuSeparator`, rồi "Đăng xuất" cuối
+  cùng, đúng mẫu account menu của shadcn.
 
 ### Empty state
 

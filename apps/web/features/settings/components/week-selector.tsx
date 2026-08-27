@@ -30,10 +30,14 @@ export function WeekSelector({ weeks, value, onChange }: WeekSelectorProps) {
       {weeks.map((week) => (
         <Button
           key={week.weekStart}
-          variant={week.weekStart === value ? "secondary" : "ghost"}
+          variant="ghost"
           size="sm"
           aria-current={week.weekStart === value ? "true" : undefined}
-          className={cn(week.weekStart !== value && "text-muted-foreground")}
+          className={cn(
+            week.weekStart === value
+              ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
+              : "text-muted-foreground"
+          )}
           onClick={() => onChange(week.weekStart)}
         >
           {week.isActive ? <CalendarCheck /> : <CalendarClock />}

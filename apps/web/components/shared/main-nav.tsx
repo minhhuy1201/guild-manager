@@ -58,10 +58,17 @@ export function MainNav({ isAdmin }: MainNavProps) {
           return (
             <Button
               key={href}
-              variant={isActive ? "secondary" : "ghost"}
+              variant="ghost"
               size="lg"
               aria-current={isActive ? "page" : undefined}
-              className={cn(!isActive && "text-muted-foreground")}
+              // The selected item takes the same solid primary surface as a
+              // selected tab. --secondary and --muted are within a hair of
+              // --background, so neither reads as "selected" on the header.
+              className={cn(
+                isActive
+                  ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
+                  : "text-muted-foreground"
+              )}
               nativeButton={false}
               render={<Link href={href} />}
             >

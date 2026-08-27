@@ -29,7 +29,7 @@ export function SettingsTabs() {
       <TabsList>
         <TabsTrigger value={TAB.battles}>
           <Swords />
-          Thiết lập trận đánh
+          Thiết lập lịch đánh
         </TabsTrigger>
         <TabsTrigger value={TAB.members}>
           <Users />

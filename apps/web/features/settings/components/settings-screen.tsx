@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { CalendarPlus } from "lucide-react";
 import type { BattleSession } from "@guild/shared/schemas";
 
+import { CreateButton } from "@/components/shared/action-buttons";
 import { QueryBoundary } from "@/components/shared/query-boundary";
 import { Card, CardContent } from "@/components/ui/card";
 import { combineQueries } from "@/lib/query-group";
@@ -51,11 +53,21 @@ export function SettingsScreen() {
                 </p>
               </div>
 
-              <WeekSelector
-                weeks={weeks}
-                value={weekStart}
-                onChange={setSelectedWeek}
-              />
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <WeekSelector
+                  weeks={weeks}
+                  value={weekStart}
+                  onChange={setSelectedWeek}
+                />
+                <CreateButton
+                  label="Thêm trận scrim"
+                  icon={<CalendarPlus className="size-4" />}
+                  onClick={() => {
+                    setEditing(null);
+                    setFormOpen(true);
+                  }}
+                />
+              </div>
 
               <SessionList
                 sessions={sessionsQuery.data ?? []}
@@ -64,10 +76,6 @@ export function SettingsScreen() {
                   setFormOpen(true);
                 }}
                 onDelete={setDeleting}
-                onAdd={() => {
-                  setEditing(null);
-                  setFormOpen(true);
-                }}
               />
             </>
           )}
