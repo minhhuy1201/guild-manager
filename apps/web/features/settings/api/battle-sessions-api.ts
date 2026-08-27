@@ -33,7 +33,9 @@ async function authHeader(): Promise<Record<string, string>> {
  * @returns Two weeks, the open one first
  */
 export async function fetchSettingsWeeks(): Promise<Week[]> {
-  return apiFetch<Week[]>("/battle-sessions/weeks");
+  return apiFetch<Week[]>("/battle-sessions/weeks", {
+    headers: await authHeader(),
+  });
 }
 
 /**
@@ -45,7 +47,8 @@ export async function fetchWeekSessions(
   weekStart: string
 ): Promise<BattleSession[]> {
   return apiFetch<BattleSession[]>(
-    `/battle-sessions?weekStart=${encodeURIComponent(weekStart)}`
+    `/battle-sessions?weekStart=${encodeURIComponent(weekStart)}`,
+    { headers: await authHeader() }
   );
 }
 
