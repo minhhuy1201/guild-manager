@@ -25,7 +25,7 @@ export function PasswordInput({
       {/* Leave room on the right for the eye button overlaying the input. */}
       <Input
         type={visible ? "text" : "password"}
-        className={cn("pr-10", className)}
+        className={cn("pr-12", className)}
         {...props}
       />
       {/*
@@ -42,7 +42,7 @@ export function PasswordInput({
           aria-label={visible ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
           onClick={() => setVisible((current) => !current)}
         >
-          {visible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+          {visible ? <EyeOff className="size-4.5" /> : <Eye className="size-4.5" />}
         </Button>
       </div>
     </div>

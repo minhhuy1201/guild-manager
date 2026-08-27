@@ -363,6 +363,19 @@ the settings row's "Bang Chiến" badge, the team builder tab's lock icon and un
 `label` is built by the API (`architecture.md` §5 — never stored). Never assemble a battle's name on
 the frontend.
 
+### Kích thước control
+
+Một thang duy nhất cho mọi control, đặt trong `components/ui/` chứ không phải từng chỗ dùng:
+
+- **Button** — `default` `h-10`, `lg` `h-11`, `sm` `h-9`, `xs` `h-7`; bản icon là `size-10 / 11 / 9 / 7`.
+- **Input, Textarea, SelectTrigger** — `h-11` (`SelectTrigger size="sm"` là `h-9`), chữ `text-base`.
+- **Label, item của Select và DropdownMenu, TabsTrigger** — `text-base`; `TabsList` cao `h-11`.
+- Icon trong control mặc định `size-4.5`, chỉ các cỡ `xs/sm` mới hạ xuống `size-3.5 / 4`.
+
+Cần một control nhỏ hơn cho một màn hình thì dùng biến thể `sm`/`xs` sẵn có, đừng viết `h-*` tay.
+Sửa thang này là sửa `components/ui/`: nó là design token, không phải một biến thể để bọc lại trong
+`components/shared/`.
+
 ### Actions
 
 From `components/shared/action-buttons.tsx`:

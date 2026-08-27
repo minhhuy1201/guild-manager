@@ -11,7 +11,7 @@ function Label({
     <label
       data-slot="label"
       className={cn(
-        "flex items-center gap-2 text-sm font-medium leading-none select-none",
+        "flex items-center gap-2 text-base font-medium leading-none select-none",
         className
       )}
       {...props}

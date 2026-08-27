@@ -171,7 +171,7 @@ export function TablePagination({
               // this is what keeps the strip's width constant.
               return (
                 <PaginationItem key={`blank-${index}`}>
-                  <span className="block size-8" aria-hidden />
+                  <span className="block size-10" aria-hidden />
                 </PaginationItem>
               );
             default:

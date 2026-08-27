@@ -53,7 +53,7 @@ export function SlotNoteInput({
       placeholder="Ghi chú"
       aria-label="Ghi chú cho ô này"
       className={cn(
-        "min-h-8 resize-none py-1.5 text-xs leading-snug field-sizing-content",
+        "min-h-9 resize-none px-2.5 py-1.5 text-sm leading-snug field-sizing-content",
         readOnly && "cursor-default border-transparent bg-muted/30 shadow-none"
       )}
     />
