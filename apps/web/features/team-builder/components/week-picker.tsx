@@ -45,7 +45,6 @@ export function WeekPicker({ weeks, value, onChange }: WeekPickerProps) {
               )}
             >
               {selected?.isActive ? <CalendarCheck /> : <CalendarDays />}
-              Tuần{" "}
               {selected ? (
                 <DateRange start={selected.weekStart} end={selected.weekEnd} />
               ) : null}

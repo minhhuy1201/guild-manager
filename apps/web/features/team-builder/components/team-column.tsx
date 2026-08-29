@@ -44,9 +44,9 @@ export function TeamColumn({
   onNoteChange,
 }: TeamColumnProps) {
   return (
-    <Card className="gap-2 py-3">
-      <CardHeader className="px-3">
-        <CardTitle className="text-sm">Team {team}</CardTitle>
+    <Card className="gap-2 overflow-hidden pt-0 pb-3">
+      <CardHeader className="bg-primary px-3 py-2 text-primary-foreground">
+        <CardTitle className="text-center text-lg">{team}</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-2 px-3">
         {slots.map((slot) => {
