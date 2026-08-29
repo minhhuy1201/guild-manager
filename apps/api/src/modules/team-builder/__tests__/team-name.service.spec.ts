@@ -35,8 +35,8 @@ describe('TeamBuilderService — tên đội', () => {
 
     prisma = {
       teamName: { findMany: jest.fn().mockResolvedValue([]) },
-      $transaction: jest.fn(
-        (run: (client: TeamNameTx) => Promise<unknown>) => run(tx),
+      $transaction: jest.fn((run: (client: TeamNameTx) => Promise<unknown>) =>
+        run(tx),
       ),
     };
 
@@ -92,9 +92,9 @@ describe('TeamBuilderService — tên đội', () => {
     });
 
     it('trả về đúng map vừa ghi', async () => {
-      await expect(service.saveTeamNames({ '2': 'Xung kích' })).resolves.toEqual(
-        { '2': 'Xung kích' },
-      );
+      await expect(
+        service.saveTeamNames({ '2': 'Xung kích' }),
+      ).resolves.toEqual({ '2': 'Xung kích' });
     });
 
     it('không kiểm tra khoá trận: tên đội không thuộc ngày đánh nào', async () => {
