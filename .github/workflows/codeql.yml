@@ -25,7 +25,7 @@ jobs:
       contents: read
       actions: read
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       # One language covers the whole repo: both apps and packages/shared are TypeScript.
       # No build step — CodeQL analyses the sources directly for this language.
