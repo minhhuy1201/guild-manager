@@ -6,12 +6,12 @@ import { Spinner } from "@/components/shared/spinner";
 import { Button } from "@/components/ui/button";
 
 interface FormationToolbarProps {
-  /** Whether this battle holds unsaved changes */
+  /** Whether the battle or the team names hold unsaved changes */
   dirty: boolean;
-  /** Whether a save is in flight */
+  /** Whether either save is in flight */
   saving: boolean;
-  /** Message from a failed save, if any */
-  errorMessage?: string;
+  /** Messages from the failed saves, if any */
+  errorMessages?: string[];
   /** Whether this battle still accepts edits */
   editable: boolean;
   /** Persist the current draft */
@@ -24,9 +24,13 @@ interface FormationToolbarProps {
  * Save and reset controls for the battle on screen, plus the save status.
  * A failed save leaves the draft untouched on purpose — losing the arrangement
  * is far worse than retrying.
- * @param dirty - Whether this battle holds unsaved changes
- * @param saving - Whether a save is in flight
- * @param errorMessage - Message from a failed save, if any
+ *
+ * One button commits two independent drafts — the day's formation and the
+ * global team names — so every prop here is already the union of the two. The
+ * label says "Lưu" rather than naming the formation, because it does more.
+ * @param dirty - Whether the battle or the team names hold unsaved changes
+ * @param saving - Whether either save is in flight
+ * @param errorMessages - Messages from the failed saves, if any
  * @param editable - Whether this battle still accepts edits
  * @param onSave - Persist the current draft
  * @param onReset - Discard the draft
@@ -35,7 +39,7 @@ interface FormationToolbarProps {
 export function FormationToolbar({
   dirty,
   saving,
-  errorMessage,
+  errorMessages = [],
   editable,
   onSave,
   onReset,
@@ -50,10 +54,12 @@ export function FormationToolbar({
 
   return (
     <div className="flex items-center gap-3">
-      {errorMessage ? (
-        <span className="text-sm text-destructive">{errorMessage}</span>
-      ) : null}
-      {dirty && !errorMessage ? (
+      {errorMessages.map((message) => (
+        <span key={message} className="text-sm text-destructive">
+          {message}
+        </span>
+      ))}
+      {dirty && errorMessages.length === 0 ? (
         <span className="text-sm text-muted-foreground">Chưa lưu</span>
       ) : null}
       <Button
@@ -73,7 +79,7 @@ export function FormationToolbar({
         disabled={!dirty || saving}
       >
         {saving ? <Spinner /> : <Save />}
-        {saving ? "Đang lưu..." : "Lưu đội hình cả ngày"}
+        {saving ? "Đang lưu..." : "Lưu"}
       </Button>
     </div>
   );

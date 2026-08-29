@@ -37,7 +37,31 @@ export function TeamBuilderScreen() {
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   );
 
-  const hasUnsaved = screen.draft.dirtySessionIds.size > 0;
+  // The team names are global, so an unsaved name is unsaved work on every day
+  // of the week, not only the one whose tab is open.
+  const hasUnsaved =
+    screen.draft.dirtySessionIds.size > 0 || screen.teamNames.dirty;
+  const dirty = screen.draft.dirty || screen.teamNames.dirty;
+  const saving = screen.draft.saving || screen.teamNames.saving;
+  const errorMessages = [
+    screen.draft.saveErrorMessage,
+    screen.teamNames.saveErrorMessage,
+  ].filter((message): message is string => Boolean(message));
+
+  /**
+   * Commit both drafts at once. They are independent resources, so they go in
+   * parallel and each one only runs when it has something to write — renaming a
+   * team must not rewrite the formation of the day that happens to be open.
+   */
+  async function handleSave() {
+    await Promise.all([screen.draft.handleSave(), screen.teamNames.save()]);
+  }
+
+  /** Discard both drafts — the toolbar's "Đặt lại" covers everything it can save. */
+  function handleReset() {
+    screen.draft.resetActive();
+    screen.teamNames.reset();
+  }
 
   // Drafts live in memory, so leaving the page would silently drop them.
   useEffect(() => {
@@ -129,12 +153,12 @@ export function TeamBuilderScreen() {
 
         <div className="flex flex-wrap items-center justify-end gap-2 mt-4">
           <FormationToolbar
-            dirty={screen.draft.dirty}
-            saving={screen.draft.saving}
-            errorMessage={screen.draft.saveErrorMessage}
+            dirty={dirty}
+            saving={saving}
+            errorMessages={errorMessages}
             editable={screen.selection.editable}
-            onSave={screen.draft.handleSave}
-            onReset={screen.draft.resetActive}
+            onSave={handleSave}
+            onReset={handleReset}
           />
         </div>
 
@@ -147,6 +171,9 @@ export function TeamBuilderScreen() {
           assignment={screen.draft.assignment}
           notes={screen.draft.notes}
           onNoteChange={screen.draft.setNote}
+          names={screen.teamNames.names}
+          onNameChange={screen.teamNames.setName}
+          saving={saving}
           charactersById={screen.pool.charactersById}
           readOnly={!screen.selection.editable}
           absentIds={screen.pool.absentIds}
