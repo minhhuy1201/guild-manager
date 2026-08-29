@@ -455,6 +455,13 @@ scanning with it unless GitHub Advanced Security is bought.
 A Dependabot PR is an ordinary PR: `main` is protected, so the same six checks must pass before it can
 be merged. Nothing reaches production without going through the pipeline in section 4.
 
+**Why there is a root `package.json`.** Security updates do not read the `directories` list in
+`dependabot.yml` — they target the manifest path recorded on the alert, which for a pnpm workspace is
+always the root `pnpm-lock.yaml`. With no manifest beside that lockfile every security job failed with
+`dependency_file_not_found: /package.json not found`, so none of the 30 open advisories could ever
+produce a PR. The root manifest is `private`, carries no dependencies and no scripts, and adds one
+empty importer (`.: {}`) to the lockfile. It is a marker for the updater, not a package.
+
 **A dependency update that touches `apps/api` runs the migration job on merge.** That job is a no-op
 when nothing is pending, so this is safe — but it is the reason a lockfile bump is not "just" a
 lockfile bump.
