@@ -3,7 +3,7 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
-import { AttendanceStatus, GuildClass, GuildRole } from '@guild/shared/enums';
+import { GuildClass, GuildRole } from '@guild/shared/enums';
 
 import { FixedClock, TOKEN_TYPE, type JwtPayload } from '../../../common';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
@@ -147,12 +147,12 @@ describe('AttendanceService', () => {
           .mockImplementation(
             (args: {
               create: { characterId: string; sessionId: string };
-              update: { status: AttendanceStatus; markedAt: Date };
+              update: { isPresent: boolean; markedAt: Date };
             }) =>
               Promise.resolve({
                 characterId: args.create.characterId,
                 sessionId: args.create.sessionId,
-                status: args.update.status,
+                isPresent: args.update.isPresent,
                 markedAt: args.update.markedAt,
               }),
           ),
@@ -186,7 +186,7 @@ describe('AttendanceService', () => {
         {
           characterId: CHARACTER_ID,
           sessionId: SESSION_IDS['Thứ 7 · Bang Chiến'],
-          status: AttendanceStatus.PRESENT,
+          isPresent: true,
         },
         MEMBER,
       );
@@ -194,7 +194,7 @@ describe('AttendanceService', () => {
       expect(record).toEqual({
         characterId: CHARACTER_ID,
         sessionId: SESSION_IDS['Thứ 7 · Bang Chiến'],
-        status: AttendanceStatus.PRESENT,
+        isPresent: true,
         markedAt: WEDNESDAY.toISOString(),
       });
     });
@@ -204,7 +204,7 @@ describe('AttendanceService', () => {
         {
           characterId: CHARACTER_ID,
           sessionId: SESSION_IDS['Thứ 7 · Bang Chiến'],
-          status: AttendanceStatus.PRESENT,
+          isPresent: true,
         },
         MEMBER,
       );
@@ -212,12 +212,12 @@ describe('AttendanceService', () => {
         {
           characterId: CHARACTER_ID,
           sessionId: SESSION_IDS['Thứ 7 · Bang Chiến'],
-          status: AttendanceStatus.ABSENT,
+          isPresent: false,
         },
         MEMBER,
       );
 
-      expect(changed.status).toBe(AttendanceStatus.ABSENT);
+      expect(changed.isPresent).toBe(false);
       expect(prisma.attendanceRecord.upsert).toHaveBeenLastCalledWith(
         expect.objectContaining({
           where: {
@@ -238,7 +238,7 @@ describe('AttendanceService', () => {
           {
             characterId: 'khong-ton-tai',
             sessionId: SESSION_IDS['Thứ 7 · Bang Chiến'],
-            status: AttendanceStatus.PRESENT,
+            isPresent: true,
           },
           MEMBER,
         ),
@@ -251,7 +251,7 @@ describe('AttendanceService', () => {
           {
             characterId: CHARACTER_ID,
             sessionId: 'session-da-xoa',
-            status: AttendanceStatus.PRESENT,
+            isPresent: true,
           },
           MEMBER,
         ),
@@ -264,7 +264,7 @@ describe('AttendanceService', () => {
           {
             characterId: CHARACTER_ID,
             sessionId: SESSION_IDS['Thứ 3 · 20:30'],
-            status: AttendanceStatus.PRESENT,
+            isPresent: true,
           },
           MEMBER,
         ),
@@ -276,12 +276,12 @@ describe('AttendanceService', () => {
         {
           characterId: CHARACTER_ID,
           sessionId: SESSION_IDS['Thứ 7 · Bang Chiến'],
-          status: AttendanceStatus.PRESENT,
+          isPresent: true,
         },
         ADMIN,
       );
 
-      expect(record.status).toBe(AttendanceStatus.PRESENT);
+      expect(record.isPresent).toBe(true);
       expect(prisma.attendanceRecord.upsert).toHaveBeenCalled();
     });
 
@@ -290,12 +290,12 @@ describe('AttendanceService', () => {
         {
           characterId: CHARACTER_ID,
           sessionId: SESSION_IDS['Thứ 3 · 20:30'],
-          status: AttendanceStatus.ABSENT,
+          isPresent: false,
         },
         ADMIN,
       );
 
-      expect(record.status).toBe(AttendanceStatus.ABSENT);
+      expect(record.isPresent).toBe(false);
       expect(record.sessionId).toBe(SESSION_IDS['Thứ 3 · 20:30']);
     });
 
@@ -308,7 +308,7 @@ describe('AttendanceService', () => {
           {
             characterId: CHARACTER_ID,
             sessionId: SESSION_IDS['Thứ 7 · Bang Chiến'],
-            status: AttendanceStatus.PRESENT,
+            isPresent: true,
           },
           MEMBER,
         ),
@@ -328,12 +328,12 @@ describe('AttendanceService', () => {
         {
           characterId: CHARACTER_ID,
           sessionId: SESSION_IDS['Thứ 3 · 20:30'],
-          status: AttendanceStatus.PRESENT,
+          isPresent: true,
         },
         MEMBER,
       );
 
-      expect(record.status).toBe(AttendanceStatus.PRESENT);
+      expect(record.isPresent).toBe(true);
     });
   });
 
@@ -367,7 +367,7 @@ describe('AttendanceService', () => {
           {
             characterId: OTHER_CHARACTER_ID,
             sessionId: SESSION_IDS['Thứ 7 · Bang Chiến'],
-            status: AttendanceStatus.PRESENT,
+            isPresent: true,
           },
           LEADER,
         ),
@@ -382,7 +382,7 @@ describe('AttendanceService', () => {
         {
           characterId: OTHER_CHARACTER_ID,
           sessionId: SESSION_IDS['Thứ 7 · Bang Chiến'],
-          status: AttendanceStatus.PRESENT,
+          isPresent: true,
         },
         ADMIN,
       );
@@ -419,12 +419,12 @@ describe('AttendanceService', () => {
       prisma.attendanceRecord.groupBy.mockResolvedValue([
         {
           sessionId: 'session-sat',
-          status: AttendanceStatus.PRESENT,
+          isPresent: true,
           _count: { _all: 3 },
         },
         {
           sessionId: 'session-sat',
-          status: AttendanceStatus.ABSENT,
+          isPresent: false,
           _count: { _all: 1 },
         },
       ]);
@@ -454,7 +454,7 @@ describe('AttendanceService', () => {
         {
           characterId: CHARACTER_ID,
           sessionId: 'session-sat',
-          status: AttendanceStatus.PRESENT,
+          isPresent: true,
           markedAt: WEDNESDAY,
         },
       ]);
@@ -463,7 +463,7 @@ describe('AttendanceService', () => {
         {
           characterId: CHARACTER_ID,
           sessionId: 'session-sat',
-          status: AttendanceStatus.PRESENT,
+          isPresent: true,
           markedAt: WEDNESDAY.toISOString(),
         },
       ]);

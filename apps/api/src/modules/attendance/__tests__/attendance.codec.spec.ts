@@ -1,34 +1,37 @@
-import { AttendanceStatus } from '@guild/shared/enums';
-
 import { toAttendanceRecord } from '../attendance.codec';
 
 const MARKED_AT = new Date('2026-07-22T05:00:00.000Z');
 
 describe('toAttendanceRecord', () => {
-  it('đổi markedAt sang ISO string và giữ nguyên trạng thái', () => {
+  it('đổi markedAt sang ISO string và giữ nguyên câu trả lời "Có"', () => {
     expect(
       toAttendanceRecord({
         characterId: 'char-1',
         sessionId: 'session-sat',
-        status: AttendanceStatus.PRESENT,
+        isPresent: true,
         markedAt: MARKED_AT,
       }),
     ).toEqual({
       characterId: 'char-1',
       sessionId: 'session-sat',
-      status: AttendanceStatus.PRESENT,
+      isPresent: true,
       markedAt: '2026-07-22T05:00:00.000Z',
     });
   });
 
-  it('ném khi trạng thái trong database không thuộc enum dùng chung', () => {
-    expect(() =>
+  it('giữ nguyên câu trả lời "Không"', () => {
+    expect(
       toAttendanceRecord({
         characterId: 'char-1',
         sessionId: 'session-sat',
-        status: 'CO_LE',
+        isPresent: false,
         markedAt: MARKED_AT,
       }),
-    ).toThrow();
+    ).toEqual({
+      characterId: 'char-1',
+      sessionId: 'session-sat',
+      isPresent: false,
+      markedAt: '2026-07-22T05:00:00.000Z',
+    });
   });
 });

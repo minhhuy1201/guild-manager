@@ -4,7 +4,6 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { AttendanceStatus } from '@guild/shared/enums';
 import { canManageGuild, canViewAllAttendance } from '@guild/shared/lib';
 import {
   attendanceSummarySchema,
@@ -87,7 +86,7 @@ export class AttendanceService {
   async getSummary(): Promise<AttendanceSummary[]> {
     const sessions = await this.battleSessions.listByWeek();
     const grouped = await this.prisma.attendanceRecord.groupBy({
-      by: ['sessionId', 'status'],
+      by: ['sessionId', 'isPresent'],
       where: { sessionId: { in: sessions.map((session) => session.id) } },
       _count: { _all: true },
     });
@@ -95,18 +94,17 @@ export class AttendanceService {
     return sessions.map((session) => {
       const rows = grouped.filter((row) => row.sessionId === session.id);
       /**
-       * Count of one status in the session under consideration.
-       * @param status - Status to count
-       * @returns The count, 0 when nobody picked that status
+       * Count of one answer in the session under consideration.
+       * @param isPresent - Answer to count
+       * @returns The count, 0 when nobody gave that answer
        */
-      const countOf = (status: AttendanceStatus): number =>
-        rows.find((row) => (row.status as AttendanceStatus) === status)?._count
-          ._all ?? 0;
+      const countOf = (isPresent: boolean): number =>
+        rows.find((row) => row.isPresent === isPresent)?._count._all ?? 0;
 
       return verifyResponse(attendanceSummarySchema, {
         sessionId: session.id,
-        coCount: countOf(AttendanceStatus.PRESENT),
-        khongCount: countOf(AttendanceStatus.ABSENT),
+        coCount: countOf(true),
+        khongCount: countOf(false),
       } satisfies AttendanceSummary);
     });
   }
@@ -115,7 +113,7 @@ export class AttendanceService {
    * Record attendance for a character in a session.
    * Members and leaders may only mark their own character, and only before the deadline. Admins may
    * mark on behalf of others and are not blocked by the deadline (used to fix mistakes after a battle).
-   * @param input - characterId, sessionId and status
+   * @param input - characterId, sessionId and isPresent
    * @param actor - JWT payload of the caller
    * @returns The written record
    * @throws NotFoundException when the character or session is not in the open week
@@ -127,7 +125,7 @@ export class AttendanceService {
     actor: JwtPayload,
   ): Promise<AttendanceRecord> {
     const now = this.clock.now();
-    const { characterId, sessionId, status } = input;
+    const { characterId, sessionId, isPresent } = input;
     const isAdmin = canManageGuild(actor.role);
 
     if (!(await this.characters.exists(characterId))) {
@@ -165,11 +163,11 @@ export class AttendanceService {
       create: {
         characterId,
         sessionId,
-        status,
+        isPresent,
         markedAt: now,
         markedByCharacterId: own,
       },
-      update: { status, markedAt: now, markedByCharacterId: own },
+      update: { isPresent, markedAt: now, markedByCharacterId: own },
     });
 
     return toAttendanceRecord(record);

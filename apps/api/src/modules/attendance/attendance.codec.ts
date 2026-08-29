@@ -1,4 +1,3 @@
-import type { AttendanceStatus } from '@guild/shared/enums';
 import {
   attendanceRecordSchema,
   type AttendanceRecord,
@@ -10,7 +9,7 @@ import { verifyResponse } from '../../config';
 export type AttendanceRecordRow = {
   characterId: string;
   sessionId: string;
-  status: string;
+  isPresent: boolean;
   markedAt: Date;
 };
 
@@ -23,10 +22,7 @@ export function toAttendanceRecord(row: AttendanceRecordRow): AttendanceRecord {
   return verifyResponse(attendanceRecordSchema, {
     characterId: row.characterId,
     sessionId: row.sessionId,
-    // Prisma emits a string literal union, the shared enum is a TS enum — same values, constrained
-    // by the database enum, so the cast is safe. `verifyResponse` is what asserts that outside
-    // production: a cast is not checked by the compiler.
-    status: row.status as AttendanceStatus,
+    isPresent: row.isPresent,
     markedAt: row.markedAt.toISOString(),
   } satisfies AttendanceRecord);
 }
