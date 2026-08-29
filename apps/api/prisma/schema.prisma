@@ -28,12 +28,6 @@ enum GuildClass {
   TO_VAN
 }
 
-/// Attendance status. Values must match the AttendanceStatus enum in packages/shared/enums.
-enum AttendanceStatus {
-  CO
-  KHONG
-}
-
 /// Guild role. Values must match the GuildRole enum in packages/shared/enums.
 enum GuildRole {
   ADMIN
@@ -101,7 +95,8 @@ model AttendanceRecord {
   id                  String           @id @default(cuid())
   characterId         String
   sessionId           String
-  status              AttendanceStatus
+  /// True = "Có" (signed up), false = "Không".
+  isPresent           Boolean
   /// Last time attendance was recorded (flipping yes ⇄ no before the deadline updates it).
   markedAt            DateTime         @default(now())
   /// Who recorded this entry. Null for data written before login existed.
