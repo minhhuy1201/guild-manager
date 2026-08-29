@@ -4,9 +4,10 @@ description: Cài pnpm, Node và dependencies của monorepo cho một job CI.
 runs:
   using: composite
   steps:
+    # Không khai báo `version` ở đây: root package.json đã ghi `packageManager: pnpm@…`, và
+    # action từ chối chạy khi thấy hai nguồn ("Multiple versions of pnpm specified"). Để
+    # packageManager làm nguồn duy nhất còn ghim đúng bản vá thay vì thả nổi ở "10".
     - uses: pnpm/action-setup@v6
-      with:
-        version: 10
 
     - uses: actions/setup-node@v7
       with:
