@@ -8,10 +8,15 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import type { FormationWeek, SessionFormation } from '@guild/shared/schemas';
+import type {
+  FormationWeek,
+  SessionFormation,
+  TeamNames,
+} from '@guild/shared/schemas';
 
 import { AdminGuard, JwtAuthGuard } from '../../common';
 import { SaveFormationDto } from './dto/save-formation.dto';
+import { SaveTeamNamesDto } from './dto/save-team-names.dto';
 import { WeekStartQueryDto } from './dto/week-start-query.dto';
 import { TeamBuilderService } from './team-builder.service';
 
@@ -57,5 +62,26 @@ export class TeamBuilderController {
     @Body() body: SaveFormationDto,
   ): Promise<SessionFormation> {
     return this.teamBuilder.saveFormation(sessionId, body.matches);
+  }
+
+  /**
+   * The team names shown on the grid's column headers — global, not per battle day.
+   * @returns Team number (as a decimal string) → name
+   */
+  @Get('team-names')
+  @ApiOperation({ summary: 'Tên các đội trên lưới đội hình' })
+  getTeamNames(): Promise<TeamNames> {
+    return this.teamBuilder.getTeamNames();
+  }
+
+  /**
+   * Overwrite the whole team name map.
+   * @param body - names: team number → name; a team left out loses its name
+   * @returns The map just written
+   */
+  @Put('team-names')
+  @ApiOperation({ summary: 'Lưu tên các đội' })
+  saveTeamNames(@Body() body: SaveTeamNamesDto): Promise<TeamNames> {
+    return this.teamBuilder.saveTeamNames(body.names);
   }
 }

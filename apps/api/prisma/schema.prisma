@@ -161,3 +161,14 @@ model FormationSlot {
   @@id([matchId, slotId])
   @@index([characterId])
 }
+
+/// Display name of one team column in the war formation. Global configuration: the same names
+/// apply to every week, every battle day and every match — unlike FormationSlot, which is per
+/// match. A team still showing its plain number has NO row.
+model TeamName {
+  /// Team number as the frontend numbers its columns (1..10 today). The backend never interprets
+  /// it: the grid layout lives entirely in the frontend, exactly like `FormationSlot.slotId`.
+  team      Int      @id
+  name      String
+  updatedAt DateTime @updatedAt
+}

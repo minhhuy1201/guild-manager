@@ -18,6 +18,34 @@ export const notesSchema = z.record(
   z.string().trim().min(1).max(NOTE_MAX_LENGTH),
 );
 
+/** Max length of a team's name — sized to the width of the team column header. */
+export const TEAM_NAME_MAX_LENGTH = 24;
+
+/**
+ * Team names: team number (as a decimal string key) → name. Global data, not per session: the
+ * same ten names apply to every week and every match. A team still showing its number carries NO
+ * key, the same rule empty slots and note-less slots follow.
+ *
+ * The key is the team number rather than a slot id because the grid layout lives entirely in the
+ * frontend — the backend only stores what the user typed against a number it never interprets.
+ */
+export const teamNamesSchema = z.record(
+  z.string().regex(/^\d+$/, "Số đội không hợp lệ."),
+  z.string().trim().min(1).max(TEAM_NAME_MAX_LENGTH),
+);
+
+/**
+ * Body of PUT /team-builder/team-names — the WHOLE map every time, like the formation save.
+ * A name dropped from the map is a name deleted.
+ */
+export const saveTeamNamesSchema = z.object({
+  names: teamNamesSchema,
+});
+
+export type TeamNames = z.infer<typeof teamNamesSchema>;
+
+export type SaveTeamNamesInput = z.infer<typeof saveTeamNamesSchema>;
+
 /** One match: who stands where, plus each slot's note. */
 export const matchSchema = z.object({
   slots: assignmentSchema,

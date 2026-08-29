@@ -6,12 +6,14 @@ import {
 import {
   formationWeekSchema,
   sessionFormationSchema,
+  teamNamesSchema,
 } from '@guild/shared/schemas';
 import type {
   FormationWeek,
   MatchFormation,
   MatchInput,
   SessionFormation,
+  TeamNames,
 } from '@guild/shared/schemas';
 
 import { Clock } from '../../common';
@@ -230,6 +232,47 @@ export class TeamBuilderService {
       locked: isSessionLocked(dateTime, now),
       matches: savedMatches,
     } satisfies SessionFormation);
+  }
+
+  /**
+   * The team names shown on the formation grid's column headers.
+   * Global data: one map for the whole app, not one per week or per battle day.
+   * @returns Team number (as a decimal string) → name; teams still on their number are absent
+   */
+  async getTeamNames(): Promise<TeamNames> {
+    const rows = await this.prisma.teamName.findMany({
+      orderBy: { team: 'asc' },
+    });
+
+    return verifyResponse(
+      teamNamesSchema,
+      Object.fromEntries(
+        rows.map((row) => [String(row.team), row.name]),
+      ) satisfies TeamNames,
+    );
+  }
+
+  /**
+   * Overwrite the WHOLE team name map. Delete-then-recreate for the same reason `saveFormation`
+   * does it: ten rows at most, and clearing a name back to its plain number becomes a missing key
+   * rather than a dedicated endpoint.
+   * Not guarded by a session lock — the names are global configuration and belong to no battle day,
+   * so a played battle never freezes them.
+   * @param names - Team number (as a decimal string) → name; a team left out loses its name
+   * @returns The map just written
+   */
+  async saveTeamNames(names: TeamNames): Promise<TeamNames> {
+    const rows = Object.entries(names).map(([team, name]) => ({
+      team: Number(team),
+      name,
+    }));
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.teamName.deleteMany({});
+      if (rows.length > 0) await tx.teamName.createMany({ data: rows });
+    });
+
+    return verifyResponse(teamNamesSchema, names satisfies TeamNames);
   }
 }
 
