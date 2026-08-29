@@ -13,7 +13,8 @@ places people usually get stuck.
 | Docker | any supported release | only used to run PostgreSQL (Podman works, see section 4) |
 | `openssl` | | to generate `AUTH_SECRET` |
 
-The monorepo has no root `package.json`. Run an app's scripts in either of two ways:
+The root `package.json` declares no scripts, so there is nothing to run from the repo root. Run an
+app's scripts in either of two ways:
 
 ```bash
 pnpm --filter api dev        # from the repo root

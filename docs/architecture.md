@@ -34,8 +34,10 @@ Three properties everything else follows from:
 
 ## 2. Repository layout
 
-pnpm workspace monorepo, no root `package.json`. Every command runs as `pnpm --filter <app> …`
-(filters: `api`, `web`, `@guild/shared`).
+pnpm workspace monorepo. Every command runs as `pnpm --filter <app> …` (filters: `api`, `web`,
+`@guild/shared`). The root `package.json` holds no dependencies and no scripts — it exists only so
+Dependabot's npm updater has a manifest to anchor `pnpm-lock.yaml` to; see
+[`production.md`](production.md) §6.
 
 ```
 guild-manager/

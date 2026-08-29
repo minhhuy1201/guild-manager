@@ -1,8 +1,12 @@
 # Guild Manager
 
-pnpm workspace monorepo, no root `package.json`: `apps/api` (NestJS) + `apps/web` (Next.js) +
-`packages/shared` (the Zod schemas and enums both sides share). Every command runs as
-`pnpm --filter <api|web|@guild/shared> …`.
+pnpm workspace monorepo: `apps/api` (NestJS) + `apps/web` (Next.js) + `packages/shared` (the Zod
+schemas and enums both sides share). Every command runs as `pnpm --filter <api|web|@guild/shared> …`.
+
+The root `package.json` is a **marker, not a package**: `private`, no dependencies, no scripts. It
+exists so Dependabot's npm updater has a manifest to anchor `pnpm-lock.yaml` to — without it every
+security update failed with `/package.json not found`. Nothing is installed or run from the root, and
+nothing new belongs there: a dependency goes in the app or package that uses it.
 
 ## Workflow (superpowers plugin)
 
