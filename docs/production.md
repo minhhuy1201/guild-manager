@@ -128,7 +128,7 @@ integration is switched off, so **this workflow is the only path to production**
 
 ```
          ┌ backend-test, quality-api, build-api ┐
-changes ─┤                                      ├─→ deploy-api ─→ deploy-web
+changes ─┤                                      ├─→ migrate ─→ deploy-api ─→ deploy-web
          └ frontend-test, quality-web, build-web ┘
 ```
 
@@ -140,12 +140,12 @@ instance) skips every job, including the deploys.
 
 | Git event | What happens |
 |---|---|
-| Push to `main` touching `apps/api` | API test, lint, build, then API deploy only |
+| Push to `main` touching `apps/api` | API test, lint, build, then the database migration, then API deploy only |
 | Push to `main` touching `apps/web` | Web test, lint, build, then web deploy only |
 | Push to `main` touching shared code or workspace config | The whole pipeline, both deploys |
 | Push to `main` touching only docs | Nothing runs; production is untouched |
 | Open/update a pull request | Tests only — the deploy jobs are gated on `github.ref` |
-| Any test job fails | Both deploy jobs are skipped; production keeps the previous build |
+| Any test job fails | The migration and both deploy jobs are skipped; production keeps the previous build **and its schema** |
 
 Three things make the gate real:
 
@@ -374,6 +374,23 @@ prints which env file it wrote to.
 `migrate deploy` only applies migrations that already exist in the repo; it never generates one and
 never prompts. New migrations are always created locally with `prisma:migrate` and committed — never
 generated directly against the real database.
+
+**CI applies migrations, not you.** The `migrate` job in [`ci.yml`](../.github/workflows/ci.yml) runs
+`pnpm migrate:prod` after every test job is green and **before** `deploy-api`, so new code always meets
+the new schema and never the other way round. The commands above stay the way to inspect production or
+to recover when Actions is down.
+
+Running it by hand used to be the only option, and it sat outside the pipeline's safety net: a deploy
+that failed *after* a manual migration left production on the new schema with the old code still
+serving. Ordering it inside the workflow is what closes that window.
+
+The job needs `secrets.DIRECT_DATABASE_URL` — the same value as the variable in section 3, including
+`?connect_timeout=30`. It writes that secret to `apps/api/.env.production` on the runner rather than
+exporting it as a job variable, because `setup-workspace` copies `.env.example` to `.env` and
+`loadPrismaEnv()` loads the chosen file with `override: true`: a file always beats an environment
+variable here. `migrate:prod` then names that file through `PRISMA_ENV_FILE`, exactly as it does
+locally. With no migration pending the job is a no-op, so it is safe on every commit touching
+`apps/api`.
 
 Seeding is safely re-runnable and is the intended way to load the roster into production. It matches
 on name, so existing characters keep their ids (and their attendance records), and it never deletes
