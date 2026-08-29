@@ -126,6 +126,56 @@ jobs:
           AUTH_SECRET: ci-placeholder-secret-0123456789abcdef
         run: pnpm --filter web build
 
+  # Migration chạy sau khi test xanh và TRƯỚC deploy-api: code mới luôn gặp schema mới, không
+  # bao giờ ngược lại. Trước đây bước này làm tay từ máy local, nằm ngoài lưới an toàn của CI —
+  # một deploy hỏng sau khi migrate đã chạy sẽ để production ở trạng thái schema mới + code cũ.
+  #
+  # `migrate deploy` chỉ áp dụng migration đã commit, không bao giờ tự sinh và không hỏi gì; khi
+  # không có migration nào pending nó là no-op, nên chạy ở mọi commit chạm apps/api là an toàn.
+  migrate:
+    name: Migrate production database
+    needs: [changes, backend-test, frontend-test, quality-api, quality-web, build-api, build-web]
+    if: >-
+      always()
+      && !contains(needs.*.result, 'failure')
+      && !contains(needs.*.result, 'cancelled')
+      && github.event_name == 'push'
+      && github.ref == 'refs/heads/main'
+      && needs.changes.outputs.api == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-workspace
+
+      # `migrate:prod` đặt PRISMA_ENV_FILE=.env.production, và loadPrismaEnv() ném lỗi khi file
+      # đó không tồn tại — cố tình như vậy, để một lệnh nhắm production không âm thầm rơi về
+      # database khác. Trên runner không có file nào nên phải dựng từ secret.
+      #
+      # Không đặt biến ở cấp job được: setup-workspace copy .env.example thành .env và
+      # loadPrismaEnv() nạp file với override: true, nên file luôn thắng biến môi trường.
+      - name: Write the production env file
+        env:
+          DIRECT_DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL }}
+        run: |
+          if [ -z "$DIRECT_DATABASE_URL" ]; then
+            echo "::error::secrets.DIRECT_DATABASE_URL rỗng hoặc chưa được đặt." >&2
+            echo "Lấy giá trị trong apps/api/.env.production rồi thêm vào" >&2
+            echo "Settings → Secrets and variables → Actions của repo." >&2
+            exit 1
+          fi
+          # DATABASE_URL cũng được ghi: prisma.config.ts đọc DIRECT_DATABASE_URL trước, nhưng
+          # loadPrismaEnv() vẫn cần một nguồn biến hợp lệ nếu file rỗng.
+          {
+            printf 'DATABASE_URL=%s\n' "$DIRECT_DATABASE_URL"
+            printf 'DIRECT_DATABASE_URL=%s\n' "$DIRECT_DATABASE_URL"
+          } > apps/api/.env.production
+
+      - name: Show what production is behind
+        run: pnpm --filter api migrate:prod:status
+
+      - name: Apply migrations
+        run: pnpm --filter api migrate:prod
+
   # Deploy chạy sau khi TOÀN BỘ job kiểm thử xanh, và chỉ khi commit đã nằm trên main.
   #
   # Từ khi các job kiểm thử bị lọc theo phần, `needs` một mình không còn đủ để chặn: một
@@ -142,7 +192,7 @@ jobs:
     environment:
       name: production-api
       url: https://guild-manager-api.vercel.app
-    needs: [changes, backend-test, frontend-test, quality-api, quality-web, build-api, build-web]
+    needs: [changes, backend-test, frontend-test, quality-api, quality-web, build-api, build-web, migrate]
     if: >-
       always()
       && !contains(needs.*.result, 'failure')
@@ -165,7 +215,7 @@ jobs:
     environment:
       name: production-web
       url: https://mmgh-nth.vercel.app
-    needs: [changes, backend-test, frontend-test, quality-api, quality-web, build-api, build-web, deploy-api]
+    needs: [changes, backend-test, frontend-test, quality-api, quality-web, build-api, build-web, migrate, deploy-api]
     if: >-
       always()
       && !contains(needs.*.result, 'failure')
