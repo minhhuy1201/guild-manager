@@ -58,7 +58,7 @@ the sources after compiling — see [`production.md`](production.md) §4.
 
 | Import | Contents |
 |---|---|
-| `@guild/shared/enums` | `GuildClass`, `AttendanceStatus` |
+| `@guild/shared/enums` | `GuildClass`, and `attendanceLabel(isPresent)` — the Vietnamese "Có"/"Không" label |
 | `@guild/shared/schemas` | Zod schemas for attendance, auth, battle sessions, characters, formations |
 | `@guild/shared/lib` | The Vietnam clock (`vnWeekday`, `vnParts`, `shiftVnDate`, `atVnTime`) and the deadline-cap rules both sides share |
 
@@ -70,7 +70,7 @@ The Zod schemas are the single definition of every request/response shape. The b
 into DTOs (`createZodDto`), the frontend types its API functions from them. **A payload shape that
 crosses the network belongs here, never duplicated on one side.**
 
-Prisma's `GuildClass` / `AttendanceStatus` enums must keep the same values as the shared enums.
+Prisma's `GuildClass` enum must keep the same values as the shared enum.
 `prisma/seed.ts` imports the shared enums directly, so drift is a compile error rather than a
 runtime bug.
 
@@ -288,7 +288,7 @@ Character ──< AttendanceRecord >── BattleSession ──< FormationMatch 
 |---|---|
 | `Character` | Member. Id is a slug of the name plus a random suffix (`meo-beo-k7ma3x`), not a game id. `discordId` is nullable and unique — an admin types it in, and it is what a login resolves against; `role` (`GuildRole`) defaults to `MEMBER`; `discordUsername`, `discordAvatar` and `lastLoginAt` are written on each sign-in so an admin can confirm the right person was linked. `discordAvatar` holds Discord's avatar **hash**, not a URL — the CDN URL format belongs to Discord and the web app builds it; it reaches the browser through `/auth/me` only, never through the members list. |
 | `BattleSession` | One match in a week. `weekStart` (Monday 00:00 VN) groups matches into weeks. Guild War uses the deterministic id `gw-<YYYY-MM-DD>` so it can be upserted idempotently; scrims get a `cuid()`. `deadline` is the admin's value for a scrim, capped at 10:00 on the match day; for Guild War it is system-owned (17:00 Thursday). |
-| `AttendanceRecord` | One `(character, session)` pair, unique. `markedAt` updates whenever the answer flips. `markedByCharacterId` records who pressed the button — no relation on purpose, so deleting that person cannot take someone else's entry with them. |
+| `AttendanceRecord` | One `(character, session)` pair, unique. The answer is `isPresent Boolean` — `true` = "Có", `false` = "Không"; not answered at all is the absence of a row. `markedAt` updates whenever the answer flips. `markedByCharacterId` records who pressed the button — no relation on purpose, so deleting that person cannot take someone else's entry with them. |
 | `AuthExchange` | A single-use code the web app trades for a JWT pair after the API finishes the OAuth callback. Lives 60 seconds; expired rows are swept during the next exchange. Holds `discordId`, not a foreign key, because a rescue admin may match no `Character`. |
 | `FormationSlot` | One cell of the roster grid: a person, a note, or both. A cell that is empty *and* unannotated has no row — that is how "slot 2 is empty" differs from "there is no slot 2". |
 | `TeamName` | Display name of one team column, keyed by team number. Global configuration, not per battle day: the same names apply to every week and every match, which is why it hangs off nothing in the diagram above. A team still showing its plain number has no row. |
