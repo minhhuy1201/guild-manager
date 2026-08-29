@@ -437,6 +437,28 @@ where relkind = 'r' and relnamespace = 'public'::regnamespace order by relname;
 
 ## 6. Operations
 
+### Automated dependency and security checks
+
+Four things run on their own; none of them can deploy, so the worst any of them does is open a PR or
+raise an alert.
+
+| What | Where it lives | What it does |
+|---|---|---|
+| Dependabot version updates | [`.github/dependabot.yml`](../.github/dependabot.yml) | Weekly PRs for `apps/api`, `apps/web`, `packages/shared` and the GitHub Actions the workflows use. Minor and patch bumps are grouped into one PR per package; majors come one at a time, because those are the ones worth reading. |
+| Dependabot security updates | Repository setting | Out-of-band PRs for advisories, ignoring the weekly schedule. Enabled together with vulnerability alerts. |
+| CodeQL | [`.github/workflows/codeql.yml`](../.github/workflows/codeql.yml) | Static analysis on every PR and push to `main`, plus weekly. Follows data across the repo, which is a different question from `pnpm lint` — ESLint reads one file at a time. Findings land in the Security tab. |
+| Secret scanning + push protection | Repository setting | Blocks a push that carries a recognised credential, instead of reporting it after the fact. This is the automated half of the rule in the root `CLAUDE.md`: never commit credentials. |
+
+All four are free because the repository is **public**. Making it private would take CodeQL and secret
+scanning with it unless GitHub Advanced Security is bought.
+
+A Dependabot PR is an ordinary PR: `main` is protected, so the same six checks must pass before it can
+be merged. Nothing reaches production without going through the pipeline in section 4.
+
+**A dependency update that touches `apps/api` runs the migration job on merge.** That job is a no-op
+when nothing is pending, so this is safe — but it is the reason a lockfile bump is not "just" a
+lockfile bump.
+
 ### Health check
 
 ```bash

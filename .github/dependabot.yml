@@ -1,0 +1,45 @@
+# Dependabot: version updates for the three workspace packages and for the actions CI runs.
+#
+# This is a pnpm workspace with no root package.json, so each package is listed by directory —
+# there is no single manifest at "/" for Dependabot to start from. The lockfile at the repo root
+# is shared, so an update to one package still resolves against the whole workspace.
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directories:
+      - /apps/api
+      - /apps/web
+      - /packages/shared
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Asia/Ho_Chi_Minh
+    # One PR per package per group instead of one per dependency: a solo repo drowns otherwise,
+    # and patch bumps are reviewed as a batch or not at all.
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+    # Majors stay one PR each — they are the ones that need reading.
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore
+      include: scope
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Asia/Ho_Chi_Minh
+    groups:
+      actions:
+        update-types:
+          - minor
+          - patch
+    commit-message:
+      prefix: ci

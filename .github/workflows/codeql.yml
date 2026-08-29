@@ -1,0 +1,39 @@
+# CodeQL: static analysis for security problems (injection, unsafe deserialisation, secrets
+# reaching a sink). It answers a different question from `pnpm lint` — ESLint reads one file at a
+# time, CodeQL follows data across the whole repo — so the two do not overlap.
+#
+# Free here because the repository is public. Runs on pull requests and on main, plus weekly:
+# the query pack keeps improving, so yesterday's clean scan is not permanently clean.
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Monday 02:17 UTC — an odd minute, to stay off GitHub's busiest scheduling slot.
+    - cron: "17 2 * * 1"
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    permissions:
+      # Uploading results into the Security tab is a write; nothing else is needed.
+      security-events: write
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v5
+
+      # One language covers the whole repo: both apps and packages/shared are TypeScript.
+      # No build step — CodeQL analyses the sources directly for this language.
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: javascript-typescript
+          queries: security-and-quality
+
+      - uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:javascript-typescript
