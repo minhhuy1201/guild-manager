@@ -2,7 +2,9 @@
 
 import { useMemo } from "react";
 
-import type { Character } from "@guild/shared/schemas";
+import type { Character, TeamNames } from "@guild/shared/schemas";
+
+import { Spinner } from "@/components/shared/spinner";
 import { createMockFormation } from "../lib/mock-formation";
 import type { Assignment, Notes, Slot } from "../types/formation";
 import { TeamColumn } from "./team-column";
@@ -23,6 +25,12 @@ interface FormationGridProps {
   notes: Notes;
   /** Called with the raw text when a slot's note changes */
   onNoteChange: (slotId: string, text: string) => void;
+  /** Team names, keyed by team number. A team with no key shows its number. */
+  names: TeamNames;
+  /** Called with the committed name when a team header is edited */
+  onNameChange: (team: number, name: string) => void;
+  /** True while a save is in flight — the grid is covered and frozen */
+  saving?: boolean;
 }
 
 /**
@@ -40,6 +48,9 @@ interface FormationGridProps {
  * @param absentIds - Ids of placed members who dropped out
  * @param notes - Notes currently shown, keyed by slot id
  * @param onNoteChange - Called with the raw text when a slot's note changes
+ * @param names - Team names, keyed by team number
+ * @param onNameChange - Called with the committed name of a team
+ * @param saving - True while a save is in flight
  * @returns Grid of team columns
  */
 export function FormationGrid({
@@ -49,6 +60,9 @@ export function FormationGrid({
   absentIds,
   notes,
   onNoteChange,
+  names,
+  onNameChange,
+  saving = false,
 }: FormationGridProps) {
   const teams = useMemo(() => {
     const grouped = new Map<number, Slot[]>();
@@ -80,19 +94,33 @@ export function FormationGrid({
   }, [assignment, charactersById]);
 
   return (
-    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-5">
-      {teams.map(({ team, slots }) => (
-        <TeamColumn
-          key={team}
-          team={team}
-          slots={slots}
-          occupants={occupants}
-          readOnly={readOnly}
-          absentIds={absentIds}
-          notes={notes}
-          onNoteChange={onNoteChange}
-        />
-      ))}
+    <div className="relative">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-5">
+        {teams.map(({ team, slots }) => (
+          <TeamColumn
+            key={team}
+            team={team}
+            name={names[String(team)] ?? ""}
+            onNameChange={onNameChange}
+            slots={slots}
+            occupants={occupants}
+            readOnly={readOnly}
+            absentIds={absentIds}
+            notes={notes}
+            onNoteChange={onNoteChange}
+          />
+        ))}
+      </div>
+
+      {/* Covers the grid rather than only spinning inside the toolbar button:
+          the eyes are down here, and the cover also keeps a drag or a keystroke
+          from landing on a formation already on its way to the server. */}
+      {saving ? (
+        <div className="absolute inset-0 z-10 flex items-center justify-center gap-2 rounded-xl bg-background/60 text-sm font-medium backdrop-blur-[1px]">
+          <Spinner />
+          Đang lưu đội hình...
+        </div>
+      ) : null}
     </div>
   );
 }

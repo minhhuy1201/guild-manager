@@ -19,7 +19,7 @@ export async function SiteHeader() {
   const me = session ? await fetchMe().catch(() => null) : null;
 
   return (
-    <header className="sticky top-0 z-10 border-b bg-background">
+    <header className="sticky top-0 z-10 border-b bg-card">
       <div className="mx-auto flex h-14 max-w-[1600px] items-center gap-3 px-4 sm:px-6">
         <Link
           href={ROUTES.attendance}

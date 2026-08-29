@@ -46,3 +46,35 @@ describe('TeamBuilderController.getWeeks', () => {
     await expect(controller.getWeeks()).resolves.toEqual(weeks);
   });
 });
+
+describe('TeamBuilderController — tên đội', () => {
+  let controller: TeamBuilderController;
+  let teamBuilder: {
+    getTeamNames: jest.Mock;
+    saveTeamNames: jest.Mock;
+  };
+
+  beforeEach(() => {
+    teamBuilder = {
+      getTeamNames: jest.fn().mockResolvedValue({ '1': 'Thủ nhà' }),
+      saveTeamNames: jest.fn().mockResolvedValue({ '2': 'Xung kích' }),
+    };
+
+    controller = new TeamBuilderController(
+      teamBuilder as unknown as TeamBuilderService,
+    );
+  });
+
+  it('trả về map tên service đưa ra', async () => {
+    await expect(controller.getTeamNames()).resolves.toEqual({
+      '1': 'Thủ nhà',
+    });
+  });
+
+  it('lưu bằng chính map trong body, không bọc thêm', async () => {
+    const names = { '2': 'Xung kích' };
+
+    await expect(controller.saveTeamNames({ names })).resolves.toEqual(names);
+    expect(teamBuilder.saveTeamNames).toHaveBeenCalledWith(names);
+  });
+});

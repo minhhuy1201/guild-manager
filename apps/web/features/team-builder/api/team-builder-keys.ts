@@ -7,4 +7,5 @@ export const teamBuilderKeys = {
   weeks: () => [...teamBuilderKeys.all, "weeks"] as const,
   formations: (weekStart?: string) =>
     [...teamBuilderKeys.all, "formations", weekStart ?? "current"] as const,
+  teamNames: () => [...teamBuilderKeys.all, "team-names"] as const,
 };

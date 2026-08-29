@@ -140,7 +140,7 @@ Each is `<domain>.module.ts` + `<domain>.controller.ts` + `<domain>.service.ts`,
 | `characters` | Member CRUD, Discord identity and guild role | Admin (`JwtAuthGuard, AdminGuard` on the controller) |
 | `battle-sessions` | The week's schedule, deadlines, the Guild War session, time rules | Reads signed-in, writes admin |
 | `attendance` | Marking attendance and reading records, filtered by role | Bearer required, admin bypasses the deadline and marks for others |
-| `team-builder` | Per-match formations | Admin |
+| `team-builder` | Per-match formations, and the team names shown on the grid | Admin |
 
 Endpoints, all behind the `/api` prefix:
 
@@ -168,6 +168,8 @@ Endpoints, all behind the `/api` prefix:
 | `GET` | `/team-builder/weeks` | Weeks that still have roster data | Bearer |
 | `GET` | `/team-builder/formations?weekStart=` | Match rosters of a week | Bearer |
 | `PUT` | `/team-builder/formations/:sessionId` | Overwrite one match's roster | Admin |
+| `GET` | `/team-builder/team-names` | Names of the grid's team columns | Admin |
+| `PUT` | `/team-builder/team-names` | Overwrite the whole team name map | Admin |
 
 ### 3.4 Cross-cutting contracts
 
@@ -289,6 +291,7 @@ Character ──< AttendanceRecord >── BattleSession ──< FormationMatch 
 | `AttendanceRecord` | One `(character, session)` pair, unique. `markedAt` updates whenever the answer flips. `markedByCharacterId` records who pressed the button — no relation on purpose, so deleting that person cannot take someone else's entry with them. |
 | `AuthExchange` | A single-use code the web app trades for a JWT pair after the API finishes the OAuth callback. Lives 60 seconds; expired rows are swept during the next exchange. Holds `discordId`, not a foreign key, because a rescue admin may match no `Character`. |
 | `FormationSlot` | One cell of the roster grid: a person, a note, or both. A cell that is empty *and* unannotated has no row — that is how "slot 2 is empty" differs from "there is no slot 2". |
+| `TeamName` | Display name of one team column, keyed by team number. Global configuration, not per battle day: the same names apply to every week and every match, which is why it hangs off nothing in the diagram above. A team still showing its plain number has no row. |
 
 The label of a match ("Thứ 3 · 20:30") is **derived from `dateTime`**, never stored, so changing the
 time changes the label everywhere.

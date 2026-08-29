@@ -4,6 +4,7 @@ import type {
   FormationWeek,
   MatchFormation,
   SessionFormation,
+  TeamNames,
 } from "@guild/shared/schemas";
 
 import { getAccessToken } from "@/features/auth/server";
@@ -83,4 +84,30 @@ export async function saveFormation(
       headers: await authHeader(),
     }
   );
+}
+
+/**
+ * Get the team names shown on the grid's column headers.
+ * Global data — one map for the whole app, not one per week or per battle day.
+ * @returns Team number (as a decimal string) → name; teams still on their number are absent
+ * @throws ApiError when signed out or the backend rejects it
+ */
+export async function fetchTeamNames(): Promise<TeamNames> {
+  return apiFetch<TeamNames>("/team-builder/team-names", {
+    headers: await authHeader(),
+  });
+}
+
+/**
+ * Overwrite the whole team name map.
+ * @param names - Team number (as a decimal string) → name; a team left out loses its name
+ * @returns The map just written
+ * @throws ApiError when signed out or the backend rejects it
+ */
+export async function saveTeamNames(names: TeamNames): Promise<TeamNames> {
+  return apiFetch<TeamNames>("/team-builder/team-names", {
+    method: "PUT",
+    body: JSON.stringify({ names }),
+    headers: await authHeader(),
+  });
 }
