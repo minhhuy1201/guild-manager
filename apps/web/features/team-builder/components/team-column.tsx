@@ -1,6 +1,8 @@
 import type { Character } from "@guild/shared/schemas";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import { getTeamHeaderColor } from "../lib/team-colors";
 import type { Notes, Slot } from "../types/formation";
 import { SlotCell } from "./slot-cell";
 import { TeamNameField } from "./team-name-field";
@@ -54,7 +56,7 @@ export function TeamColumn({
 }: TeamColumnProps) {
   return (
     <Card className="gap-2 overflow-hidden pt-0 pb-3">
-      <CardHeader className="bg-primary px-3 py-2 text-primary-foreground">
+      <CardHeader className={cn("px-3 py-2", getTeamHeaderColor(team))}>
         <TeamNameField
           team={team}
           value={name}
