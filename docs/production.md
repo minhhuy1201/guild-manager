@@ -178,6 +178,31 @@ vercel deploy --prod --yes --project mmgh-nth --scope <team>
 
 Note that a hand deploy **bypasses the tests**. It is a break-glass tool, not the normal path.
 
+### The Deployments tab, and why it was empty
+
+`vercel deploy` authenticates with `VERCEL_TOKEN` and talks only to Vercel — it has no GitHub context
+and creates no deployment record. So when the git integration was switched off on 2026-08-16, GitHub's
+**Deployments** tab froze at the last entry `vercel[bot]` had written, and stayed two weeks stale while
+production kept shipping normally. The tab was misleading, not broken.
+
+Both deploy jobs therefore declare an `environment`, which is GitHub's own way of recording a
+deployment — no extra API call, no third-party action:
+
+```yaml
+deploy-api:
+  environment:
+    name: production-api
+    url: https://guild-manager-api.vercel.app
+```
+
+Each run now writes an entry against the real commit, and the environment page carries the deploy
+history and the live URL.
+
+**This is visibility, not a safety gate.** An environment only becomes a gate once protection rules are
+configured on it (required reviewers, a wait timer, branch restrictions) in Settings → Environments.
+None are set, so deploys still run unattended. Turning on required reviewers would make every push to
+`main` wait for a human — a deliberate choice, not a default.
+
 ### Why pushes to `main` do not cancel each other
 
 The `concurrency` block cancels superseded runs on every ref **except** `main`. Runs on `main` share

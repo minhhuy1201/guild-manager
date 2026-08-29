@@ -136,6 +136,12 @@ jobs:
   # đây là đường duy nhất đưa code lên production.
   deploy-api:
     name: Deploy API
+    # Ghi lại bản deploy vào tab Deployments của GitHub. `vercel deploy` chạy bằng token nên
+    # không tạo record nào; từ khi git integration bị tắt, tab đó đứng yên ở lần cuối
+    # vercel[bot] ghi (2026-08-16) dù production vẫn lên đều.
+    environment:
+      name: production-api
+      url: https://guild-manager-api.vercel.app
     needs: [changes, backend-test, frontend-test, quality-api, quality-web, build-api, build-web]
     if: >-
       always()
@@ -156,6 +162,9 @@ jobs:
   # web, deploy-api bị skip và job này vẫn chạy — thứ tự chỉ ràng buộc khi cả hai cùng deploy.
   deploy-web:
     name: Deploy web
+    environment:
+      name: production-web
+      url: https://mmgh-nth.vercel.app
     needs: [changes, backend-test, frontend-test, quality-api, quality-web, build-api, build-web, deploy-api]
     if: >-
       always()
