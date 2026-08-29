@@ -1,12 +1,11 @@
 import { z } from "zod";
 
-import { AttendanceStatus } from "../enums/attendance.enum";
-
 /** Attendance payload for one character in one session (form + request body). */
 export const markAttendanceSchema = z.object({
   characterId: z.string().min(1, "Thiếu thành viên."),
   sessionId: z.string().min(1, "Thiếu ngày đánh."),
-  status: z.enum(AttendanceStatus),
+  /** True = "Có" (đi đánh), false = "Không". */
+  isPresent: z.boolean(),
 });
 
 export type MarkAttendanceInput = z.infer<typeof markAttendanceSchema>;
@@ -15,7 +14,8 @@ export type MarkAttendanceInput = z.infer<typeof markAttendanceSchema>;
 export const attendanceRecordSchema = z.object({
   characterId: z.string(),
   sessionId: z.string(),
-  status: z.enum(AttendanceStatus),
+  /** True = "Có" (đi đánh), false = "Không". */
+  isPresent: z.boolean(),
   /** When attendance was recorded (ISO string) */
   markedAt: z.string(),
 });

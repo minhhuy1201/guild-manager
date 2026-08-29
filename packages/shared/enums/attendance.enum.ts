@@ -1,11 +1,8 @@
-/** Attendance status of a character for one battle session. */
-export enum AttendanceStatus {
-  PRESENT = "CO",
-  ABSENT = "KHONG",
+/**
+ * Vietnamese display label for an attendance answer.
+ * @param isPresent - Whether the character signed up for the session
+ * @returns "Có" when true, "Không" when false
+ */
+export function attendanceLabel(isPresent: boolean): string {
+  return isPresent ? "Có" : "Không";
 }
-
-/** Vietnamese display label per attendance status. */
-export const ATTENDANCE_STATUS_LABEL: Record<AttendanceStatus, string> = {
-  [AttendanceStatus.PRESENT]: "Có",
-  [AttendanceStatus.ABSENT]: "Không",
-};
