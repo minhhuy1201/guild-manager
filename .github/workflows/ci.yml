@@ -36,7 +36,7 @@ jobs:
       api: ${{ steps.filter.outputs.api == 'true' || steps.filter.outputs.global == 'true' }}
       web: ${{ steps.filter.outputs.web == 'true' || steps.filter.outputs.global == 'true' }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: dorny/paths-filter@v4
         id: filter
         with:
@@ -58,7 +58,7 @@ jobs:
     if: needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-workspace
       - run: pnpm --filter api test
 
@@ -68,7 +68,7 @@ jobs:
     if: needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-workspace
       - run: pnpm --filter web test
 
@@ -78,7 +78,7 @@ jobs:
     if: needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-workspace
       - name: Lint api
         run: pnpm --filter api lint
@@ -93,7 +93,7 @@ jobs:
     if: needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-workspace
       - name: Lint web
         run: pnpm --filter web lint
@@ -106,7 +106,7 @@ jobs:
     if: needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-workspace
       - run: pnpm --filter api build
 
@@ -116,7 +116,7 @@ jobs:
     if: needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-workspace
       - name: Build web
         # Giá trị giả cho khâu build: `next build` ném lỗi nếu thiếu NEXT_PUBLIC_API_URL ở
@@ -144,7 +144,7 @@ jobs:
       && needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-workspace
 
       # `migrate:prod` đặt PRISMA_ENV_FILE=.env.production, và loadPrismaEnv() ném lỗi khi file
@@ -202,7 +202,7 @@ jobs:
       && needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/deploy-vercel
         with:
           project-id: ${{ env.VERCEL_API_PROJECT_ID }}
@@ -225,7 +225,7 @@ jobs:
       && needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/deploy-vercel
         with:
           project-id: ${{ env.VERCEL_WEB_PROJECT_ID }}
