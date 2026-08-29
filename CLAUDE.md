@@ -48,6 +48,18 @@ before anything else happens.
 - `seed-data.json` is real guild data and git-ignored; `seed-data-example.json` is the committed
   sample.
 
+## Shipping
+
+- **`main` is protected.** No direct push, no force-push: every change is a PR that the six CI checks
+  must pass. The branch is deleted on merge.
+- **A merged PR touching `apps/api` migrates the production database, then deploys** — that order is
+  the point, so new code never meets the old schema. Migrations are created locally with
+  `prisma:migrate` and committed; CI applies them. Never run `migrate deploy` against production by
+  hand.
+- **A destructive migration (drop a column, change a type) needs a data-conversion step written by
+  hand** — Prisma generates `DROP COLUMN` + `ADD COLUMN`, which loses the data.
+- The PR body follows [`.github/pull_request_template.md`](.github/pull_request_template.md).
+
 ## Conventions
 
 - **`packages/shared` owns every shape that crosses the network** — one Zod schema, wrapped as a DTO
