@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { AttendanceStatus, GuildClass } from "@guild/shared/enums";
+import { GuildClass } from "@guild/shared/enums";
 import type { Character, SessionFormation } from "@guild/shared/schemas";
 
 import type { AttendanceRecordLike } from "../../lib/session-pool";
@@ -22,20 +22,20 @@ const CHARACTERS: Character[] = [
 /**
  * Build one attendance record for the battle under test.
  * @param characterId - Who marked attendance
- * @param status - What they marked
+ * @param isPresent - What they marked
  * @returns The record
  */
 function record(
   characterId: string,
-  status: AttendanceStatus
+  isPresent: boolean
 ): AttendanceRecordLike {
-  return { characterId, sessionId: SESSION_ID, status };
+  return { characterId, sessionId: SESSION_ID, isPresent };
 }
 
 const ALL_PRESENT = [
-  record("char-1", AttendanceStatus.PRESENT),
-  record("char-2", AttendanceStatus.PRESENT),
-  record("char-3", AttendanceStatus.PRESENT),
+  record("char-1", true),
+  record("char-2", true),
+  record("char-3", true),
 ];
 
 /** The battle under test on its own, with nothing saved yet. */
@@ -124,8 +124,8 @@ describe("useFormationPool — pool", () => {
   it("chỉ gồm người đã báo tham gia và chưa được xếp", () => {
     const { result } = renderPool({
       records: [
-        record("char-1", AttendanceStatus.PRESENT),
-        record("char-2", AttendanceStatus.ABSENT),
+        record("char-1", true),
+        record("char-2", false),
       ],
     });
 
@@ -170,7 +170,7 @@ describe("useFormationPool — pool", () => {
 describe("useFormationPool — người đã báo nghỉ", () => {
   it("người đã xếp rồi mới báo nghỉ vẫn đứng nguyên trong ô, chỉ bị đánh dấu", () => {
     const { result } = renderPool({
-      records: [record("char-1", AttendanceStatus.ABSENT)],
+      records: [record("char-1", false)],
       assignment: { [SLOT]: "char-1" },
       matches: [{ assignment: { [SLOT]: "char-1" }, notes: {} }],
     });
@@ -219,7 +219,7 @@ describe("useFormationPool — prefill", () => {
   it("bỏ người không tham gia ngày này khỏi nháp, ghi chú vẫn giữ", () => {
     renderPool({
       sessions: SESSIONS_WITH_SOURCE,
-      records: [record("char-1", AttendanceStatus.ABSENT)],
+      records: [record("char-1", false)],
     });
 
     const draft = useFormationStore.getState().drafts[SESSION_ID];
@@ -297,7 +297,7 @@ describe("useFormationPool — thông báo điền sẵn", () => {
   it("chép sang mà cả đội đều báo nghỉ thì vẫn phải báo — đó là lúc cần nhất", () => {
     const { result } = renderPool({
       sessions: SESSIONS_WITH_SOURCE,
-      records: [record("char-1", AttendanceStatus.ABSENT)],
+      records: [record("char-1", false)],
     });
 
     expect(result.current.prefill?.droppedCount).toBe(1);

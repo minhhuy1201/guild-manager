@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { AttendanceStatus } from "@guild/shared/enums";
 import type { Character } from "@guild/shared/schemas";
 
 import { SessionLabel } from "@/components/shared/session-label";
@@ -100,19 +99,20 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
   const handleStartEdit = (character: Character) => {
     const initial: AttendanceDraft = {};
     for (const session of battleSessions) {
-      initial[session.id] = recordMap[recordKey(character.id, session.id)]?.status;
+      initial[session.id] =
+        recordMap[recordKey(character.id, session.id)]?.isPresent;
     }
     setDraft(initial);
     setEditingId(character.id);
   };
 
   /**
-   * Change one cell's draft status in the row being edited.
+   * Change one cell's draft answer in the row being edited.
    * @param sessionId - Battle session id
-   * @param status - New status
+   * @param isPresent - New answer
    */
-  const handleDraftChange = (sessionId: string, status: AttendanceStatus) => {
-    setDraft((prev) => ({ ...prev, [sessionId]: status }));
+  const handleDraftChange = (sessionId: string, isPresent: boolean) => {
+    setDraft((prev) => ({ ...prev, [sessionId]: isPresent }));
   };
 
   /** Cancel editing and reset the draft. */
@@ -124,15 +124,15 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
   /**
    * The cells that changed relative to a character's current records.
    * @param character - Character being edited
-   * @returns The { sessionId, status } entries to save
+   * @returns The { sessionId, isPresent } entries to save
    */
   const getChangedCells = (character: Character) =>
     battleSessions.flatMap((session) => {
       if (lockedSessionIds.has(session.id)) return [];
       const next = draft[session.id];
-      const current = recordMap[recordKey(character.id, session.id)]?.status;
+      const current = recordMap[recordKey(character.id, session.id)]?.isPresent;
       if (next === undefined || next === current) return [];
-      return [{ sessionId: session.id, status: next }];
+      return [{ sessionId: session.id, isPresent: next }];
     });
 
   /**
@@ -150,8 +150,8 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
     setSavingId(character.id);
     // The error surfaces through the mutation's `markError`, so swallow it here to avoid a stray promise.
     const saved = await Promise.all(
-      changes.map(({ sessionId, status }) => {
-        const input = { characterId: character.id, sessionId, status };
+      changes.map(({ sessionId, isPresent }) => {
+        const input = { characterId: character.id, sessionId, isPresent };
         return mark(input);
       })
     ).catch(() => null);

@@ -1,4 +1,3 @@
-import { AttendanceStatus } from "@guild/shared/enums";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { recordKey } from "../../lib/record-key";
@@ -38,7 +37,7 @@ const ACCESS_TOKEN = "access-token-gia";
 const RECORD = {
   characterId: "c1",
   sessionId: "s1",
-  status: AttendanceStatus.PRESENT,
+  isPresent: true,
   markedAt: "2026-07-22T05:00:00.000Z",
 };
 
@@ -53,7 +52,7 @@ describe("attendance-api", () => {
       body: {
         data: [
           RECORD,
-          { ...RECORD, sessionId: "s2", status: AttendanceStatus.ABSENT },
+          { ...RECORD, sessionId: "s2", isPresent: false },
         ],
       },
     });
@@ -64,7 +63,7 @@ describe("attendance-api", () => {
       recordKey("c1", "s1"),
       recordKey("c1", "s2"),
     ]);
-    expect(records[recordKey("c1", "s2")].status).toBe(AttendanceStatus.ABSENT);
+    expect(records[recordKey("c1", "s2")].isPresent).toBe(false);
   });
 
   it("gắn Bearer token vào mọi request đọc dữ liệu", async () => {
@@ -87,7 +86,7 @@ describe("attendance-api", () => {
     const input = {
       characterId: "c1",
       sessionId: "s1",
-      status: AttendanceStatus.PRESENT,
+      isPresent: true,
     };
 
     await expect(markAttendance(input)).resolves.toEqual(RECORD);
@@ -113,7 +112,7 @@ describe("attendance-api", () => {
       markAttendance({
         characterId: "c1",
         sessionId: "s1",
-        status: AttendanceStatus.PRESENT,
+        isPresent: true,
       })
     ).rejects.toThrowError("Đã quá hạn điểm danh ngày này.");
   });

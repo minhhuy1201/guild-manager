@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 import { act, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { AttendanceStatus } from "@guild/shared/enums";
 import type { AttendanceRecord, FormationWeek } from "@guild/shared/schemas";
 
 import {
@@ -59,7 +58,7 @@ const WEEKS = [week(NEXT_WEEK, false), week(OPEN_WEEK, true), week(PAST_WEEK, fa
 const RECORD: AttendanceRecord = {
   characterId: "char-1",
   sessionId: "thu-7",
-  status: AttendanceStatus.PRESENT,
+  isPresent: true,
   markedAt: "2026-08-17T10:00:00.000Z",
 };
 

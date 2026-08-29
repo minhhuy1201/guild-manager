@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { ATTENDANCE_STATUS_LABEL, AttendanceStatus } from "@guild/shared/enums";
+import { attendanceLabel } from "@guild/shared/enums";
 
 import { StatusIcon } from "@/components/shared/status-icon";
 import { TableBodyState } from "@/components/shared/table-body-state";
@@ -115,7 +115,7 @@ export function AttendanceLogTable() {
               renderRow={(record) => {
                 const character = characterMap.get(record.characterId);
                 const session = sessionMap.get(record.sessionId);
-                const present = record.status === AttendanceStatus.PRESENT;
+                const present = record.isPresent;
                 return (
                   <TableRow key={`${record.characterId}-${record.sessionId}`}>
                     <TableCell>
@@ -129,7 +129,7 @@ export function AttendanceLogTable() {
                     <TableCell className="text-center">
                       <StatusIcon
                         tone={present ? "success" : "danger"}
-                        label={ATTENDANCE_STATUS_LABEL[record.status]}
+                        label={attendanceLabel(record.isPresent)}
                       />
                     </TableCell>
                     <TableCell

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { AttendanceStatus, GuildClass } from "@guild/shared/enums";
+import { GuildClass } from "@guild/shared/enums";
 
 import type { PoolCandidate } from "../pool";
 import {
@@ -18,17 +18,17 @@ const RECORDS: AttendanceRecordLike[] = [
   {
     characterId: "MeoMap01",
     sessionId: "sat",
-    status: AttendanceStatus.PRESENT,
+    isPresent: true,
   },
   {
     characterId: "LongNho02",
     sessionId: "sat",
-    status: AttendanceStatus.ABSENT,
+    isPresent: false,
   },
   {
     characterId: "ToVan03",
     sessionId: "thu",
-    status: AttendanceStatus.PRESENT,
+    isPresent: true,
   },
 ];
 

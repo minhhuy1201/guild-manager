@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Swords, X } from "lucide-react";
-import { AttendanceStatus } from "@guild/shared/enums";
+import { attendanceLabel } from "@guild/shared/enums";
 import type {
   AttendanceRecord,
   BattleSession,
@@ -24,8 +24,8 @@ import {
 } from "../lib/sticky-columns";
 import { CharacterName } from "./character-name";
 
-/** Draft state of a row being edited: sessionId → status. */
-export type AttendanceDraft = Record<string, AttendanceStatus | undefined>;
+/** Draft state of a row being edited: sessionId → answer (undefined = not marked yet). */
+export type AttendanceDraft = Record<string, boolean | undefined>;
 
 interface AttendanceRowProps {
   /** Character of this row */
@@ -46,8 +46,8 @@ interface AttendanceRowProps {
   draft: AttendanceDraft;
   /** Start editing this row */
   onStartEdit: (character: Character) => void;
-  /** Change one cell's draft status */
-  onDraftChange: (sessionId: string, status: AttendanceStatus) => void;
+  /** Change one cell's draft answer */
+  onDraftChange: (sessionId: string, isPresent: boolean) => void;
   /** Cancel editing and reset */
   onCancel: () => void;
   /** Confirm and save the changes */
@@ -80,8 +80,8 @@ export function AttendanceRow({
       </TableCell>
 
       {sessions.map((session) => {
-        const currentStatus =
-          recordMap[recordKey(character.id, session.id)]?.status;
+        const currentIsPresent =
+          recordMap[recordKey(character.id, session.id)]?.isPresent;
         const sessionLocked = lockedSessionIds.has(session.id);
         // A locked column always renders read-only, even while the row is being edited.
         const showToggle = isEditing && !sessionLocked;
@@ -90,10 +90,10 @@ export function AttendanceRow({
             {showToggle ? (
               <AttendanceToggle
                 value={draft[session.id]}
-                onSelect={(status) => onDraftChange(session.id, status)}
+                onSelect={(isPresent) => onDraftChange(session.id, isPresent)}
               />
             ) : (
-              <StatusBadge status={currentStatus} />
+              <StatusBadge isPresent={currentIsPresent} />
             )}
           </TableCell>
         );
@@ -129,28 +129,31 @@ export function AttendanceRow({
 }
 
 interface StatusBadgeProps {
-  /** Current status (when already marked) */
-  status?: AttendanceStatus;
+  /** Current answer (when already marked) */
+  isPresent?: boolean;
 }
 
 /**
- * Read-only attendance status badge, shown as a coloured icon.
+ * Read-only attendance badge, shown as a coloured icon.
  * @returns A green (yes) / red (no) icon, or "—" when unmarked
  */
-function StatusBadge({ status }: StatusBadgeProps) {
-  if (status === AttendanceStatus.PRESENT) {
-    return <StatusIcon tone="success" label="Có" />;
+function StatusBadge({ isPresent }: StatusBadgeProps) {
+  // `false` is a real answer, so the unmarked branch must test undefined explicitly.
+  if (isPresent === undefined) {
+    return <span className="text-muted-foreground">—</span>;
   }
-  if (status === AttendanceStatus.ABSENT) {
-    return <StatusIcon tone="danger" label="Không" />;
-  }
-  return <span className="text-muted-foreground">—</span>;
+  return (
+    <StatusIcon
+      tone={isPresent ? "success" : "danger"}
+      label={attendanceLabel(isPresent)}
+    />
+  );
 }
 
 interface AttendanceToggleProps {
-  /** Current status (when already picked) */
-  value?: AttendanceStatus;
-  onSelect: (status: AttendanceStatus) => void;
+  /** Current answer (when already picked) */
+  value?: boolean;
+  onSelect: (isPresent: boolean) => void;
 }
 
 /**
@@ -171,11 +174,11 @@ function AttendanceToggle({ value, onSelect }: AttendanceToggleProps) {
       <div className="inline-flex overflow-hidden rounded-lg border">
         <button
           type="button"
-          aria-pressed={value === AttendanceStatus.ABSENT}
-          onClick={() => onSelect(AttendanceStatus.ABSENT)}
+          aria-pressed={value === false}
+          onClick={() => onSelect(false)}
           className={cn(
             "group/no flex w-9 cursor-pointer items-center justify-start gap-2 overflow-hidden px-2 py-1.5 text-sm font-medium whitespace-nowrap transition-all duration-[var(--duration-base)] ease-out-soft hover:w-22",
-            value === AttendanceStatus.ABSENT
+            value === false
               ? "bg-destructive text-white"
               : "text-foreground hover:bg-destructive/10 hover:text-destructive"
           )}
@@ -188,11 +191,11 @@ function AttendanceToggle({ value, onSelect }: AttendanceToggleProps) {
         </button>
         <button
           type="button"
-          aria-pressed={value === AttendanceStatus.PRESENT}
-          onClick={() => onSelect(AttendanceStatus.PRESENT)}
+          aria-pressed={value === true}
+          onClick={() => onSelect(true)}
           className={cn(
             "group/yes flex w-9 cursor-pointer items-center justify-end gap-2 overflow-hidden border-l px-2 py-1.5 text-sm font-medium whitespace-nowrap transition-all duration-[var(--duration-base)] ease-out-soft hover:w-18",
-            value === AttendanceStatus.PRESENT
+            value === true
               ? "bg-emerald-500 text-white"
               : "text-foreground hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:text-emerald-400"
           )}

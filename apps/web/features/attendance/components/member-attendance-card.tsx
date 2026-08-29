@@ -1,6 +1,6 @@
 "use client";
 
-import { ATTENDANCE_STATUS_LABEL, AttendanceStatus } from "@guild/shared/enums";
+import { attendanceLabel } from "@guild/shared/enums";
 
 import { EmptyState } from "@/components/shared/empty-state";
 import { QueryBoundary } from "@/components/shared/query-boundary";
@@ -21,7 +21,7 @@ import { getSessionSubtitle } from "../lib/session-subtitle";
 import { recordKey } from "../lib/record-key";
 
 /** The two options of an attendance entry, in display order. */
-const CHOICES = [AttendanceStatus.PRESENT, AttendanceStatus.ABSENT];
+const CHOICES = [true, false];
 
 /** Placeholder rows while loading — as many as a week usually has sessions. */
 const SKELETON_ROWS = 3;
@@ -78,8 +78,8 @@ export function MemberAttendanceCard() {
 
             {battleSessions.map((battleSession) => {
               const current =
-                recordMap[recordKey(character.id, battleSession.id)]?.status ??
-                null;
+                recordMap[recordKey(character.id, battleSession.id)]
+                  ?.isPresent ?? null;
               const counts = summary?.find(
                 (row) => row.sessionId === battleSession.id
               );
@@ -103,21 +103,23 @@ export function MemberAttendanceCard() {
                         Đã khoá
                       </span>
                     ) : (
-                      CHOICES.map((status) => (
+                      CHOICES.map((isPresent) => (
                         <Button
-                          key={status}
-                          variant={current === status ? "default" : "outline"}
+                          key={String(isPresent)}
+                          variant={
+                            current === isPresent ? "default" : "outline"
+                          }
                           onClick={() =>
                             void mark({
                               characterId: character.id,
                               sessionId: battleSession.id,
-                              status,
+                              isPresent,
                             }).catch(() => {
                               // The error surfaces through `markError`; swallow it to avoid a stray promise.
                             })
                           }
                         >
-                          {ATTENDANCE_STATUS_LABEL[status]}
+                          {attendanceLabel(isPresent)}
                         </Button>
                       ))
                     )}

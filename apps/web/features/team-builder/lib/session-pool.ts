@@ -1,5 +1,3 @@
-import { AttendanceStatus } from "@guild/shared/enums";
-
 import type { PoolCandidate } from "./pool";
 
 /** The bit of an attendance record this module needs. */
@@ -9,7 +7,7 @@ export interface AttendanceRecordLike {
   /** Battle the record belongs to */
   sessionId: string;
   /** Whether they are showing up */
-  status: AttendanceStatus;
+  isPresent: boolean;
 }
 
 /**
@@ -23,11 +21,7 @@ export function presentCharacterIds(
   sessionId: string
 ): Set<string> {
   const present = records
-    .filter(
-      (record) =>
-        record.sessionId === sessionId &&
-        record.status === AttendanceStatus.PRESENT
-    )
+    .filter((record) => record.sessionId === sessionId && record.isPresent)
     .map((record) => record.characterId);
 
   return new Set(present);
