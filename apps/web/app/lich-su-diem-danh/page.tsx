@@ -15,8 +15,8 @@ export const metadata: Metadata = {
 
 /**
  * Route "/lich-su-diem-danh" — the attendance history page.
- * The filters are shown to everyone: a member only sees their own rows, but still filters them by
- * session answer.
+ * The whole guild's history, for every signed-in member: attendance is shared information, so the
+ * page is the same whatever the role.
  * @returns The filters and the attendance history table
  */
 export default async function AttendanceHistoryPage() {

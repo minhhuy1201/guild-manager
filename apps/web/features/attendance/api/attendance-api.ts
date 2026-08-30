@@ -34,7 +34,7 @@ async function authHeader(): Promise<Record<string, string>> {
 }
 
 /**
- * Get the characters for the attendance screen — the backend already filtered by the caller's role.
+ * Get the characters for the attendance screen — the whole guild, whoever is signed in.
  * @returns The character list
  */
 export async function fetchCharacters(): Promise<Character[]> {
@@ -66,7 +66,7 @@ export async function fetchCurrentWeek(): Promise<Week> {
 }
 
 /**
- * Get the open week's attendance records — the backend already filtered by the caller's role.
+ * Get the open week's attendance records — the whole guild's, whoever is signed in.
  * The API returns an array; components look records up by (character, session), so it is turned into a map.
  * @returns A map of records keyed by `recordKey`
  */

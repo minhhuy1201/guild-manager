@@ -40,45 +40,27 @@ export class AttendanceService {
   ) {}
 
   /**
-   * Characters for the attendance screen, filtered by the caller's role.
-   * Filtered here, not in the UI: hiding it on the web only means DevTools reveals the whole table.
-   * @param actor - JWT payload of the caller
-   * @returns The whole guild for admins; only their own character for members
+   * Characters for the attendance screen — the whole guild, whoever is asking.
+   * Attendance is guild-wide information: everyone signed in sees every member, and only the right
+   * to *write* an entry still depends on the role.
+   * @returns Every character in the guild
    */
-  async getCharacters(actor: JwtPayload): Promise<Character[]> {
+  async getCharacters(): Promise<Character[]> {
     // Through `toCharacter`, not `characters.list()`: that one carries the Discord identity, which
     // this screen must not hand out.
-    if (canManageGuild(actor.role)) {
-      const rows = await this.characters.listRows();
+    const rows = await this.characters.listRows();
 
-      return rows.map(toCharacter);
-    }
-
-    const own = await this.ownCharacterId(actor);
-    if (!own) return [];
-
-    const row = await this.characters.findById(own);
-
-    return row ? [toCharacter(row)] : [];
+    return rows.map(toCharacter);
   }
 
   /**
-   * Attendance entries of the open week, filtered by the caller's role.
-   * @param actor - JWT payload of the caller
-   * @returns The whole guild for admins; only their own rows for members
+   * Attendance entries of the open week — the whole guild's, whoever is asking.
+   * @returns Every record of the open week, newest first
    */
-  async getRecords(actor: JwtPayload): Promise<AttendanceRecord[]> {
-    const isAdmin = canManageGuild(actor.role);
-    const own = isAdmin ? null : await this.ownCharacterId(actor);
-
-    if (!isAdmin && !own) return [];
-
+  async getRecords(): Promise<AttendanceRecord[]> {
     const sessions = await this.battleSessions.listByWeek();
     const records = await this.prisma.attendanceRecord.findMany({
-      where: {
-        sessionId: { in: sessions.map((session) => session.id) },
-        ...(own === null ? {} : { characterId: own }),
-      },
+      where: { sessionId: { in: sessions.map((session) => session.id) } },
       orderBy: { markedAt: 'desc' },
     });
 
