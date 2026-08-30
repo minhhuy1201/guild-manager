@@ -11,6 +11,7 @@ export type AttendanceRecordRow = {
   sessionId: string;
   isPresent: boolean;
   markedAt: Date;
+  reason: string | null;
 };
 
 /**
@@ -24,5 +25,6 @@ export function toAttendanceRecord(row: AttendanceRecordRow): AttendanceRecord {
     sessionId: row.sessionId,
     isPresent: row.isPresent,
     markedAt: row.markedAt.toISOString(),
+    reason: row.reason,
   } satisfies AttendanceRecord);
 }

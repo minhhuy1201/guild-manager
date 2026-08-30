@@ -44,12 +44,20 @@ const SESSIONS = [makeSession("sess-1"), makeSession("sess-2")];
  * @returns The records keyed by `recordKey`
  */
 function makeRecords(
-  entries: Array<Pick<AttendanceRecord, "characterId" | "sessionId" | "isPresent">>
+  entries: Array<
+    Pick<AttendanceRecord, "characterId" | "sessionId" | "isPresent"> & {
+      reason?: string | null;
+    }
+  >
 ): Record<string, AttendanceRecord> {
   return Object.fromEntries(
     entries.map((entry) => [
       recordKey(entry.characterId, entry.sessionId),
-      { ...entry, markedAt: "2026-08-24T10:00:00.000Z" },
+      {
+        ...entry,
+        markedAt: "2026-08-24T10:00:00.000Z",
+        reason: entry.reason ?? null,
+      },
     ])
   );
 }
@@ -57,7 +65,12 @@ function makeRecords(
 /** Two members × two sessions, one "Có" and one "Không" each. */
 const RECORDS = makeRecords([
   { characterId: "char-1", sessionId: "sess-1", isPresent: true },
-  { characterId: "char-1", sessionId: "sess-2", isPresent: false },
+  {
+    characterId: "char-1",
+    sessionId: "sess-2",
+    isPresent: false,
+    reason: "Bận đi công tác",
+  },
   { characterId: "char-2", sessionId: "sess-1", isPresent: false },
   { characterId: "char-2", sessionId: "sess-2", isPresent: true },
 ]);
@@ -158,5 +171,14 @@ describe("AttendanceLogTable", () => {
     const rowCount = await renderTable();
 
     expect(rowCount()).toBe(4);
+  });
+
+  it("hiện lý do vắng, và dấu gạch ở lượt không có lý do", async () => {
+    await renderTable();
+
+    expect(screen.getByRole("columnheader", { name: "Lý do" })).toBeTruthy();
+    expect(screen.getByText("Bận đi công tác")).toBeTruthy();
+    // Ba lượt còn lại không có lý do.
+    expect(screen.getAllByText("—").length).toBe(3);
   });
 });

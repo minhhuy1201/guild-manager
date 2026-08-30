@@ -1,11 +1,23 @@
 import { z } from "zod";
 
+/** Longest absence reason accepted — mirrors `@db.VarChar(255)` on `AttendanceRecord.reason`. */
+export const ATTENDANCE_REASON_MAX_LENGTH = 255;
+
 /** Attendance payload for one character in one session (form + request body). */
 export const markAttendanceSchema = z.object({
   characterId: z.string().min(1, "Thiếu thành viên."),
   sessionId: z.string().min(1, "Thiếu ngày đánh."),
   /** True = "Có" (đi đánh), false = "Không". */
   isPresent: z.boolean(),
+  /**
+   * Why the member answered "Không". Nullish rather than optional: sending `null` is how a stored
+   * reason is cleared. The server ignores it when `isPresent` is true.
+   */
+  reason: z
+    .string()
+    .trim()
+    .max(ATTENDANCE_REASON_MAX_LENGTH, "Lý do tối đa 255 ký tự.")
+    .nullish(),
 });
 
 export type MarkAttendanceInput = z.infer<typeof markAttendanceSchema>;
@@ -18,6 +30,8 @@ export const attendanceRecordSchema = z.object({
   isPresent: z.boolean(),
   /** When attendance was recorded (ISO string) */
   markedAt: z.string(),
+  /** Why the member answered "Không"; null for a "Có" answer or when none was given. */
+  reason: z.string().nullable(),
 });
 
 export type AttendanceRecord = z.infer<typeof attendanceRecordSchema>;

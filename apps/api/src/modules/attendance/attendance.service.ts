@@ -30,6 +30,24 @@ import { toAttendanceRecord } from './attendance.codec';
 /** Message shown when a non-admin marks attendance for someone else's character. */
 const NOT_YOUR_CHARACTER = 'Bạn chỉ điểm danh được cho nhân vật của mình.';
 
+/**
+ * The reason to persist alongside an answer.
+ * A "Có" answer carries no reason, and an empty string is the same state as never having given one,
+ * so both collapse to null — decided here rather than trusted from the request body, which keeps one
+ * representation of "no reason" in the database.
+ * @param isPresent - The answer being written
+ * @param reason - Reason from the request body, already trimmed by Zod
+ * @returns The reason to store, or null
+ */
+function resolveReason(
+  isPresent: boolean,
+  reason: string | null | undefined,
+): string | null {
+  if (isPresent) return null;
+
+  return reason ? reason : null;
+}
+
 @Injectable()
 export class AttendanceService {
   constructor(
@@ -101,7 +119,8 @@ export class AttendanceService {
    * Record attendance for a character in a session.
    * Members may only mark their own character, and only before the deadline. Admins may
    * mark on behalf of others and are not blocked by the deadline (used to fix mistakes after a battle).
-   * @param input - characterId, sessionId and isPresent
+   * @param input - characterId, sessionId, isPresent and the optional absence reason, which is
+   * stored only for a "Không" answer — a "Có" answer clears it
    * @param actor - JWT payload of the caller
    * @returns The written record
    * @throws NotFoundException when the character or session is not in the open week
@@ -113,7 +132,7 @@ export class AttendanceService {
     actor: JwtPayload,
   ): Promise<AttendanceRecord> {
     const now = this.clock.now();
-    const { characterId, sessionId, isPresent } = input;
+    const { characterId, sessionId, isPresent, reason } = input;
     const isAdmin = canManageGuild(actor.role);
 
     if (!(await this.characters.exists(characterId))) {
@@ -146,6 +165,7 @@ export class AttendanceService {
       throw new ConflictException('Đã quá hạn điểm danh ngày này.');
     }
 
+    const absenceReason = resolveReason(isPresent, reason);
     const record = await this.prisma.attendanceRecord.upsert({
       where: { characterId_sessionId: { characterId, sessionId } },
       create: {
@@ -154,8 +174,14 @@ export class AttendanceService {
         isPresent,
         markedAt: now,
         markedByCharacterId: own,
+        reason: absenceReason,
       },
-      update: { isPresent, markedAt: now, markedByCharacterId: own },
+      update: {
+        isPresent,
+        markedAt: now,
+        markedByCharacterId: own,
+        reason: absenceReason,
+      },
     });
 
     return toAttendanceRecord(record);

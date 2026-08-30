@@ -35,11 +35,12 @@ import { CharacterName } from "./character-name";
  */
 const MARKED_AT_COLUMN = "hidden md:table-cell";
 
-/** Header column count: member, session, status, marked-at. */
-const COLUMN_COUNT = 4;
+/** Header column count: member, session, status, reason, marked-at. */
+const COLUMN_COUNT = 5;
 
 /** Per-column CSS classes, so the skeleton hides the same column as the header. */
 const COLUMN_CLASSES = [
+  undefined,
   undefined,
   undefined,
   undefined,
@@ -109,6 +110,7 @@ export function AttendanceLogTable() {
               <TableHead>Thành viên</TableHead>
               <TableHead>Ngày đánh</TableHead>
               <TableHead className="text-center">Trạng thái</TableHead>
+              <TableHead>Lý do</TableHead>
               <TableHead className={MARKED_AT_COLUMN}>
                 Thời gian điểm danh
               </TableHead>
@@ -140,6 +142,16 @@ export function AttendanceLogTable() {
                     <TableCell>{session?.label ?? "—"}</TableCell>
                     <TableCell className="text-center">
                       <AttendanceStatusIcon isPresent={record.isPresent} />
+                    </TableCell>
+                    {/* A 255-character sentence would stretch the table, so the cell is capped and
+                        the full text lives in the tooltip. */}
+                    <TableCell className="max-w-56 text-muted-foreground">
+                      <span
+                        className="block truncate"
+                        title={record.reason ?? undefined}
+                      >
+                        {record.reason ?? "—"}
+                      </span>
                     </TableCell>
                     <TableCell
                       className={cn("text-muted-foreground", MARKED_AT_COLUMN)}
