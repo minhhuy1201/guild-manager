@@ -182,8 +182,13 @@ Note that a hand deploy **bypasses the tests**. It is a break-glass tool, not th
 
 `vercel deploy` authenticates with `VERCEL_TOKEN` and talks only to Vercel — it has no GitHub context
 and creates no deployment record. So when the git integration was switched off on 2026-08-16, GitHub's
-**Deployments** tab froze at the last entry `vercel[bot]` had written, and stayed two weeks stale while
-production kept shipping normally. The tab was misleading, not broken.
+**Deployments** tab stopped recording real deploys and stayed stale for two weeks while production kept
+shipping normally. The tab was misleading, not broken.
+
+It did not go completely silent: a project still connected to the repository keeps writing one
+`vercel[bot]` record per push, `inactive` and described `Skipped - Not affected`, because Vercel
+registers the deployment before `deploymentEnabled` turns it down. Those are the empty rows, not
+deploys — see [The repository connection, and the four environments](#the-repository-connection-and-the-four-environments).
 
 Both deploy jobs therefore declare an `environment`, which is GitHub's own way of recording a
 deployment — no extra API call, no third-party action:
@@ -202,6 +207,36 @@ history and the live URL.
 configured on it (required reviewers, a wait timer, branch restrictions) in Settings → Environments.
 None are set, so deploys still run unattended. Turning on required reviewers would make every push to
 `main` wait for a human — a deliberate choice, not a default.
+
+### The repository connection, and the four environments
+
+GitHub's **Environments** page lists four, from two different sources:
+
+| Environment | Written by | What it means |
+| --- | --- | --- |
+| `production-api`, `production-web` | this workflow | A real deploy, one entry per run against the real commit |
+| `Preview – mmgh-nth`, `Production – mmgh-nth` | `vercel[bot]` | Nothing. Every record is `inactive`, described `Skipped - Not affected` |
+
+They are not duplicates of each other, and nothing deploys twice. `deploymentEnabled: false` stops a git
+event from *building*, but it does not stop Vercel's GitHub App from touching the repository: while a
+project is connected, every push makes `vercel[bot]` open a deployment it immediately skips, and GitHub
+auto-creates an environment per target beside the ones the workflow declares.
+
+**The two projects differ.** The API project has its **Settings → Git** connection removed, which is why
+no `… – guild-manager-api` environment exists. The **web project (`mmgh-nth`) is still connected** — that
+is the whole source of the two extra rows. Removing its connection too is an open decision, not something
+already done; deleting the environments without it does not hold, because GitHub recreates them on the
+next push.
+
+What removing it would cost: half the "no git deploys" policy moves into a dashboard nobody can review,
+while `vercel.json` stays in git. Keep `deploymentEnabled` either way — it is the declarative rule and it
+survives a project being reconnected by hand.
+
+What it would not cost: `vercel deploy` authenticates with `VERCEL_TOKEN` and never consulted the
+connection, so the workflow, the break-glass hand deploy, the build and runtime logs, and promoting an
+older deployment are all unaffected. `vercel.json` is still read — it travels with the source the CLI
+uploads. The one thing worth checking first is whether a CLI deploy still shows its commit in the Vercel
+dashboard; the already-disconnected API project answers that.
 
 ### Why pushes to `main` do not cancel each other
 
@@ -230,7 +265,9 @@ map points at. `zod` resolves out of `packages/shared/node_modules`.
 
 Both apps carry a `vercel.json` setting `git.deploymentEnabled` to `{"**": false}` — no branch, not
 even `main`, deploys on a git event. That is what hands the trigger to GitHub Actions; leaving `main`
-enabled would deploy twice per push, once ungated by the tests.
+enabled would deploy twice per push, once ungated by the tests. Whether a project is still *connected* to
+the repository is a separate switch with separate consequences — see
+[The repository connection, and the four environments](#the-repository-connection-and-the-four-environments).
 
 `deploymentEnabled` governs git events only. CLI deploys — from the workflow or by hand — are
 unaffected, which is why the pipeline still works with everything set to `false`.
@@ -503,6 +540,9 @@ There is no automatic rollback. In practice:
 
 Recorded so nobody assumes otherwise: preview deployments (both projects build on `main` only), a
 staging environment, verified backups, monitoring/alerting, application-level rate limiting.
+
+The web Vercel project is still connected to the repository, so `vercel[bot]` keeps writing skipped
+deployments and its two auto-created environments stay on the Environments page (section 4).
 
 Migrations are still run by hand (section 5) — the pipeline deploys code, never schema. A deploy
 whose code expects a column that nobody migrated will fail at runtime, not in CI.

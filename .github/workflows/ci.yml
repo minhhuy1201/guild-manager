@@ -192,8 +192,8 @@ jobs:
   deploy-api:
     name: Deploy API
     # Ghi lại bản deploy vào tab Deployments của GitHub. `vercel deploy` chạy bằng token nên
-    # không tạo record nào; từ khi git integration bị tắt, tab đó đứng yên ở lần cuối
-    # vercel[bot] ghi (2026-08-16) dù production vẫn lên đều.
+    # không tạo record nào; từ khi git integration bị tắt (2026-08-16), tab đó không còn ghi
+    # bản deploy thật nữa dù production vẫn lên đều.
     environment:
       name: production-api
       url: https://guild-manager-api.vercel.app
