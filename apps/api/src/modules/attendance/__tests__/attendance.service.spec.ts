@@ -331,27 +331,16 @@ describe('AttendanceService', () => {
   });
 
   describe('getCharacters', () => {
-    it('quản trị viên nhận cả bang, đã lược danh tính Discord', async () => {
+    it('trả cả bang, đã lược danh tính Discord', async () => {
       characters.listRows.mockResolvedValue([
         { ...OWN_ROW, discordId: '123456789012345678', role: GuildRole.MEMBER },
         { id: OTHER_CHARACTER_ID, name: 'Mèo', guildClass: GuildClass.TO_VAN },
       ]);
 
-      await expect(service.getCharacters(ADMIN)).resolves.toEqual([
+      await expect(service.getCharacters()).resolves.toEqual([
         OWN_ROW,
         { id: OTHER_CHARACTER_ID, name: 'Mèo', guildClass: GuildClass.TO_VAN },
       ]);
-    });
-
-    it('bang chúng chỉ nhận nhân vật của chính mình', async () => {
-      await expect(service.getCharacters(MEMBER)).resolves.toEqual([OWN_ROW]);
-      expect(characters.listRows).not.toHaveBeenCalled();
-    });
-
-    it('tài khoản chưa gắn nhân vật thì nhận danh sách rỗng', async () => {
-      characters.findByDiscordId.mockResolvedValue(null);
-
-      await expect(service.getCharacters(MEMBER)).resolves.toEqual([]);
     });
   });
 
@@ -391,22 +380,6 @@ describe('AttendanceService', () => {
       expect(args.create.markedByCharacterId).toBeNull();
       expect(args.update.markedByCharacterId).toBeNull();
     });
-
-    it('bang chúng chỉ đọc lượt điểm danh của chính mình', async () => {
-      await service.getRecords(MEMBER);
-
-      const [args] = prisma.attendanceRecord.findMany.mock.calls[0] as [
-        { where: { characterId?: string } },
-      ];
-      expect(args.where.characterId).toBe(CHARACTER_ID);
-    });
-
-    it('bang chúng chưa gắn nhân vật thì không đọc được lượt nào', async () => {
-      characters.findByDiscordId.mockResolvedValue(null);
-
-      await expect(service.getRecords(MEMBER)).resolves.toEqual([]);
-      expect(prisma.attendanceRecord.findMany).not.toHaveBeenCalled();
-    });
   });
 
   describe('getSummary', () => {
@@ -435,13 +408,24 @@ describe('AttendanceService', () => {
     it('chỉ đọc record của các trận trong tuần đang mở', async () => {
       prisma.attendanceRecord.findMany.mockResolvedValue([]);
 
-      await service.getRecords(ADMIN);
+      await service.getRecords();
 
       expect(prisma.attendanceRecord.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { sessionId: { in: ['session-tue', 'session-sat'] } },
         }),
       );
+    });
+
+    it('không lọc theo nhân vật — ai cũng đọc được lượt của cả bang', async () => {
+      prisma.attendanceRecord.findMany.mockResolvedValue([]);
+
+      await service.getRecords();
+
+      const [args] = prisma.attendanceRecord.findMany.mock.calls[0] as [
+        { where: { characterId?: string } },
+      ];
+      expect(args.where.characterId).toBeUndefined();
     });
 
     it('dựng record qua codec — markedAt ra ISO string', async () => {
@@ -454,7 +438,7 @@ describe('AttendanceService', () => {
         },
       ]);
 
-      await expect(service.getRecords(ADMIN)).resolves.toEqual([
+      await expect(service.getRecords()).resolves.toEqual([
         {
           characterId: CHARACTER_ID,
           sessionId: 'session-sat',

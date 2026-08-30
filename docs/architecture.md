@@ -141,7 +141,7 @@ Each is `<domain>.module.ts` + `<domain>.controller.ts` + `<domain>.service.ts`,
 | `auth` | Admin login, refresh, `me` | Public except `me` |
 | `characters` | Member CRUD, Discord identity and guild role | Admin (`JwtAuthGuard, AdminGuard` on the controller) |
 | `battle-sessions` | The week's schedule, deadlines, the Guild War session, time rules | Reads signed-in, writes admin |
-| `attendance` | Marking attendance and reading records, filtered by role | Bearer required, admin bypasses the deadline and marks for others |
+| `attendance` | Marking attendance and reading records | Bearer required; reads are guild-wide for everyone, admin bypasses the deadline and marks for others |
 | `team-builder` | Per-match formations, and the team names shown on the grid | Admin |
 
 Endpoints, all behind the `/api` prefix:
@@ -164,8 +164,8 @@ Endpoints, all behind the `/api` prefix:
 | `POST` | `/battle-sessions` | Add a scrim | Admin |
 | `PATCH` | `/battle-sessions/:id` | Edit a match | Admin |
 | `DELETE` | `/battle-sessions/:id` | Delete a scrim (Guild War cannot be deleted) | Admin |
-| `GET` | `/attendance/characters` | Characters for the attendance board (own only for MEMBER) | Bearer |
-| `GET` | `/attendance/records` | Attendance entries of the open week (own only for MEMBER) | Bearer |
+| `GET` | `/attendance/characters` | Characters for the attendance board (the whole guild, any role) | Bearer |
+| `GET` | `/attendance/records` | Attendance entries of the open week (the whole guild, any role) | Bearer |
 | `GET` | `/attendance/summary` | Yes/no counts per match, no identities | Bearer |
 | `POST` | `/attendance` | Mark one character for one match | Bearer (own character; admin marks for anyone and bypasses the deadline) |
 | `GET` | `/team-builder/weeks` | Weeks that still have roster data | Bearer |

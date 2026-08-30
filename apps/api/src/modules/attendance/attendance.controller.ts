@@ -11,8 +11,8 @@ import { AttendanceService } from './attendance.service';
 import { MarkAttendanceDto } from './dto/mark-attendance.dto';
 
 /**
- * Attendance — every route needs a session: what a user sees depends on their role, so there is no
- * anonymous path left.
+ * Attendance — every route needs a session: attendance is guild-wide information, readable by any
+ * signed-in member, so there is no anonymous path left. Only the write route branches on the role.
  */
 @ApiTags('attendance')
 @ApiBearerAuth()
@@ -22,25 +22,23 @@ export class AttendanceController {
   constructor(private readonly attendance: AttendanceService) {}
 
   /**
-   * Characters for the attendance screen, filtered by the caller's role.
-   * @param user - JWT payload attached by JwtAuthGuard
+   * Characters for the attendance screen — the whole guild, for every signed-in caller.
    * @returns The character list
    */
   @Get('characters')
   @ApiOperation({ summary: 'Danh sách nhân vật trong bang' })
-  getCharacters(@CurrentUser() user: JwtPayload): Promise<Character[]> {
-    return this.attendance.getCharacters(user);
+  getCharacters(): Promise<Character[]> {
+    return this.attendance.getCharacters();
   }
 
   /**
-   * Attendance entries of the open week, filtered by the caller's role.
-   * @param user - JWT payload attached by JwtAuthGuard
+   * Attendance entries of the open week — the whole guild's, for every signed-in caller.
    * @returns The attendance records
    */
   @Get('records')
   @ApiOperation({ summary: 'Lượt điểm danh của tuần đang mở' })
-  getRecords(@CurrentUser() user: JwtPayload): Promise<AttendanceRecord[]> {
-    return this.attendance.getRecords(user);
+  getRecords(): Promise<AttendanceRecord[]> {
+    return this.attendance.getRecords();
   }
 
   /**
