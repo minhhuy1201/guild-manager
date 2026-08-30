@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "@/config/api";
+import { DiscordIcon } from "@/components/shared/discord-icon";
 import { Button } from "@/components/ui/button";
 
 interface DiscordLoginButtonProps {
@@ -20,6 +21,7 @@ export function DiscordLoginButton({
 
   return (
     <Button size="lg" nativeButton={false} render={<a href={href} />}>
+      <DiscordIcon />
       Đăng nhập bằng Discord
     </Button>
   );
