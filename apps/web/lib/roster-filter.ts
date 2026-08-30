@@ -18,6 +18,17 @@ export interface RosterFilter {
 }
 
 /**
+ * Whether the filter narrows the roster at all.
+ * The keyword is trimmed here for the same reason `matchesRosterFilter` trims it: a box holding
+ * only spaces keeps every character, so it is not a filter the user can be asked to clear.
+ * @param filter - Filter currently applied
+ * @returns True when at least one half of the filter is set
+ */
+export function isRosterFilterActive(filter: RosterFilter): boolean {
+  return filter.search.trim().length > 0 || filter.guildClasses.length > 0;
+}
+
+/**
  * Whether a character passes the roster filter.
  * The keyword matches on NAME only; both sides are lowercased before comparing,
  * because people type whatever case they like. The in-game id is deliberately

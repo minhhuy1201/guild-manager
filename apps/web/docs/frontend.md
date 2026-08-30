@@ -268,6 +268,42 @@ into one store.
 its create button, with the same labels turned `sr-only`. A real difference in *content* still stays
 outside the component — the create button is members' own JSX, not a prop.
 
+A screen that stacks several filters ends its bar with **one "Xoá bộ lọc" button that clears all of
+them in a single store write** — `attendance-history-filters` is the worked example, resetting the
+roster filter, the presence and the session at once. The button is always rendered and `disabled`
+while nothing is set, the way `formation-toolbar` holds its "Đặt lại": one that appears and
+disappears makes the card change height as soon as the first filter is typed. Whether the roster
+half counts as set is `isRosterFilterActive` (`lib/roster-filter.ts`), which trims the keyword for
+the same reason `matchesRosterFilter` does — a box holding only spaces filters nothing. A filter
+whose value no longer resolves (a session since deleted) is **not** counted: it already reads as
+"Tất cả" on screen, so there is nothing to clear.
+
+Below that sits the per-control X, `FilterClearButton` (`components/shared/filter-clear-button.tsx`),
+laid over the right end of a single control and rendered only while that control holds a value. Two
+rules come with it: **nothing already on screen may move when the X appears**, and the caller
+**moves focus back to the control** after clearing, because the button removes itself and focus
+would otherwise fall to the body.
+
+The first rule is not the same instruction on both control shapes. On an `Input`, `padding-right` is
+where the text stops, so the box holds a constant `pr-10` whether or not the X is there. On a
+`SelectTrigger` it is **not**: the trigger's `pr-2.5` is where its *chevron* stands, and widening it
+drags the chevron inwards and leaves an empty strip along the right edge. The room comes off the
+value instead — `*:data-[slot=select-value]:mr-9`, the same selector shape the trigger already uses
+for `line-clamp-1`.
+
+On a select the X never goes through `FilterClearButton` directly — `ClearableSelectTrigger`
+(`components/shared/clearable-select-trigger.tsx`) is the trigger every filter select uses, and it
+owns the `relative` wrapper, the widened padding and the focus hand-back. The X is a **sibling laid
+over** the trigger, not a child of it: the trigger is a button, and a button inside a button is
+markup the browser reshuffles.
+
+**Never centre an overlaid `Button` with `-translate-y-1/2`.** `Button` already owns
+`--tw-translate-y` for its press effect (`active:not-aria-[haspopup]:translate-y-px`), so the
+centring transform is thrown away the instant the pointer goes down: the button drops by half its
+own height, the pointer ends up outside it, and the browser never fires `click` — it reads as "I
+have to press it twice". Centre it with a flex wrapper instead (`absolute inset-y-0 right-* flex
+items-center`), the way `password-input` holds its eye and `filter-clear-button` its X.
+
 ### Writing through a dialog
 
 A dialog whose job is one write does **not** spell the protocol out again. Five rules live in

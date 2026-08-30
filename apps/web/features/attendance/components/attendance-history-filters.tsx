@@ -1,18 +1,20 @@
 "use client";
 
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, FilterX } from "lucide-react";
 
+import { ClearableSelectTrigger } from "@/components/shared/clearable-select-trigger";
 import { FilterAllIcon } from "@/components/shared/filter-all-icon";
 import { RosterFilterBar } from "@/components/shared/roster-filter-bar";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
-  SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { isRosterFilterActive } from "@/lib/roster-filter";
 import { useSessionFilter } from "../hooks/use-attendance";
 import {
   PRESENCE_FILTER_LABEL,
@@ -96,7 +98,15 @@ export function AttendanceHistoryFilters() {
   const setFilter = useAttendanceFilterStore((s) => s.setFilter);
   const presence = useAttendanceFilterStore((s) => s.presence);
   const setPresence = useAttendanceFilterStore((s) => s.setPresence);
+  const resetFilters = useAttendanceFilterStore((s) => s.resetHistoryFilters);
   const { sessions, selectedSession, setSessionId } = useSessionFilter();
+
+  // `selectedSession`, not the raw `sessionId`: a stored id whose session was deleted shows as
+  // "Tất cả ngày đánh" and filters nothing, so there is nothing for the button to clear either.
+  const isFiltered =
+    isRosterFilterActive(filter) ||
+    presence !== "all" ||
+    selectedSession !== null;
 
   return (
     <Card>
@@ -120,14 +130,19 @@ export function AttendanceHistoryFilters() {
                 setSessionId(next === ALL_SESSIONS ? null : next)
               }
             >
-              <SelectTrigger id={`${SCOPE}-session`} className="w-full">
+              <ClearableSelectTrigger
+                id={`${SCOPE}-session`}
+                isActive={selectedSession !== null}
+                clearLabel="Xoá lọc ngày đánh"
+                onClear={() => setSessionId(null)}
+              >
                 <SelectValue>
                   <SessionOption
                     label={selectedSession?.label ?? null}
                     allLabel="Tất cả ngày đánh"
                   />
                 </SelectValue>
-              </SelectTrigger>
+              </ClearableSelectTrigger>
               <SelectContent alignItemWithTrigger={false}>
                 <SelectItem value={ALL_SESSIONS}>
                   <SessionOption label={null} />
@@ -148,11 +163,16 @@ export function AttendanceHistoryFilters() {
                 setPresence(next as AttendancePresenceFilter)
               }
             >
-              <SelectTrigger id={`${SCOPE}-presence`} className="w-full">
+              <ClearableSelectTrigger
+                id={`${SCOPE}-presence`}
+                isActive={presence !== "all"}
+                clearLabel="Xoá lọc trạng thái"
+                onClear={() => setPresence("all")}
+              >
                 <SelectValue>
                   <PresenceOption option={presence} />
                 </SelectValue>
-              </SelectTrigger>
+              </ClearableSelectTrigger>
               <SelectContent alignItemWithTrigger={false}>
                 {PRESENCE_FILTER_OPTIONS.map((option) => (
                   <SelectItem key={option} value={option}>
@@ -162,6 +182,24 @@ export function AttendanceHistoryFilters() {
               </SelectContent>
             </Select>
           </div>
+        </div>
+
+        {/*
+          Always rendered and disabled when nothing is set, the way `formation-toolbar` holds its
+          "Đặt lại": a button that appears and disappears makes the card change height every time
+          the first filter is typed.
+        */}
+        <div className="mt-4 flex justify-end">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={resetFilters}
+            disabled={!isFiltered}
+          >
+            <FilterX />
+            Xoá bộ lọc
+          </Button>
         </div>
       </CardContent>
     </Card>
