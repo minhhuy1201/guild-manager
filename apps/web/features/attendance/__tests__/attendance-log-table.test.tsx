@@ -65,7 +65,12 @@ function makeRecords(
 /** Two members × two sessions, one "Có" and one "Không" each. */
 const RECORDS = makeRecords([
   { characterId: "char-1", sessionId: "sess-1", isPresent: true },
-  { characterId: "char-1", sessionId: "sess-2", isPresent: false },
+  {
+    characterId: "char-1",
+    sessionId: "sess-2",
+    isPresent: false,
+    reason: "Bận đi công tác",
+  },
   { characterId: "char-2", sessionId: "sess-1", isPresent: false },
   { characterId: "char-2", sessionId: "sess-2", isPresent: true },
 ]);
@@ -166,5 +171,14 @@ describe("AttendanceLogTable", () => {
     const rowCount = await renderTable();
 
     expect(rowCount()).toBe(4);
+  });
+
+  it("hiện lý do vắng, và dấu gạch ở lượt không có lý do", async () => {
+    await renderTable();
+
+    expect(screen.getByRole("columnheader", { name: "Lý do" })).toBeTruthy();
+    expect(screen.getByText("Bận đi công tác")).toBeTruthy();
+    // Ba lượt còn lại không có lý do.
+    expect(screen.getAllByText("—").length).toBe(3);
   });
 });
