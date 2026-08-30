@@ -12,3 +12,21 @@ ignoredBuiltDependencies:
   - "@prisma/engines"
   - "@scarf/scarf"
   - prisma
+
+# Nâng sàn phiên bản cho các dependency gián tiếp có advisory đang mở trên Dependabot.
+# Không package nào trong workspace khai báo chúng trực tiếp, nên override là chỗ duy nhất
+# ép được bản vá. Gỡ một dòng khi dependency cha đã tự nâng qua mốc tương ứng.
+overrides:
+  "brace-expansion@1": "^1.1.18"
+  "brace-expansion@2": "^2.1.4"
+  "brace-expansion@>=4": "^5.0.9"
+  deepmerge-ts: "^8.0.0"
+  fast-uri: "^3.1.5"
+  "@hono/node-server": "^1.19.15"
+  hono: "^4.12.34"
+  ip-address: "^10.3.1"
+  "js-yaml@3": "^3.15.1"
+  "js-yaml@4": "^4.3.1"
+  "nanoid@3": "^3.3.18"
+  postcss: "^8.5.23"
+  undici: "^7.29.0"
