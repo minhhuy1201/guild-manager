@@ -65,13 +65,16 @@ export class CharactersService {
 
   /**
    * Add a member; the id is system-generated.
-   * @param input - Name and class
+   * @param input - Name, class and optionally the Discord ID
    * @returns The created member
+   * @throws ConflictException when the Discord ID already belongs to another member
    */
   async create(input: CreateCharacterInput): Promise<GuildMember> {
     try {
       return await this.insert(input);
     } catch (error) {
+      if (isDiscordIdViolation(error))
+        throw new ConflictException(DISCORD_ID_TAKEN);
       // The random suffix collided with an existing id — regenerating once is enough.
       if (!isUniqueViolation(error)) throw error;
 
@@ -180,7 +183,7 @@ export class CharactersService {
 
   /**
    * Insert a new Character row with the generated id.
-   * @param input - Name and class
+   * @param input - Name, class and optionally the Discord ID
    * @returns The created member
    */
   private async insert(input: CreateCharacterInput): Promise<GuildMember> {
@@ -189,6 +192,7 @@ export class CharactersService {
         id: generateId(input.name),
         name: input.name,
         guildClass: input.guildClass,
+        discordId: input.discordId ?? null,
       },
     });
 
@@ -206,6 +210,20 @@ export class CharactersService {
       throw new NotFoundException(NOT_FOUND);
     }
   }
+}
+
+/**
+ * Whether a unique violation is the one on `discordId` rather than on the primary key.
+ * Only the id collision is worth retrying — a taken Discord ID is the caller's to fix.
+ * @param error - The caught error
+ * @returns true for P2002 naming the discordId column
+ */
+function isDiscordIdViolation(error: unknown): boolean {
+  if (!isUniqueViolation(error)) return false;
+
+  const { meta } = error as { meta?: { target?: unknown } };
+
+  return JSON.stringify(meta?.target ?? '').includes('discordId');
 }
 
 /**

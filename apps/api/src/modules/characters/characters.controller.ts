@@ -37,7 +37,7 @@ export class CharactersController {
 
   /**
    * Add a member.
-   * @param body - Name and class
+   * @param body - Name, class and optionally the Discord ID
    * @returns The created member
    */
   @Post()

@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   joinLocalValue,
-  maskDate,
   maskTime,
   parseDisplayDate,
   splitLocalValue,
@@ -91,23 +90,6 @@ describe("parseDisplayDate", () => {
     const display = "29/02/2028";
 
     expect(toDisplayDate(parseDisplayDate(display)!)).toBe(display);
-  });
-});
-
-describe("maskDate", () => {
-  it("tự chèn dấu / khi gõ số", () => {
-    expect(maskDate("2")).toBe("2");
-    expect(maskDate("21")).toBe("21");
-    expect(maskDate("217")).toBe("21/7");
-    expect(maskDate("21072026")).toBe("21/07/2026");
-  });
-
-  it("bỏ ký tự không phải số và phần thừa", () => {
-    expect(maskDate("21/07/2026abc9")).toBe("21/07/2026");
-  });
-
-  it("giữ nguyên chuỗi rỗng để người dùng xoá hết được", () => {
-    expect(maskDate("")).toBe("");
   });
 });
 

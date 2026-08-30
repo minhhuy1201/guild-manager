@@ -33,6 +33,12 @@ const UNIQUE_VIOLATION = Object.assign(new Error('Unique constraint failed'), {
   code: 'P2002',
 });
 
+/** Prisma's conflict error on the discordId column — a different fix from an id collision. */
+const DISCORD_ID_VIOLATION = Object.assign(
+  new Error('Unique constraint failed'),
+  { code: 'P2002', meta: { target: ['discordId'] } },
+);
+
 /** A different Prisma error — the service must let it surface, not swallow it. */
 const OTHER_ERROR = Object.assign(new Error('Connection lost'), {
   code: 'P1001',
@@ -44,6 +50,7 @@ interface CreateArgs {
     id: string;
     name: string;
     guildClass: GuildClass;
+    discordId: string | null;
   };
 }
 
@@ -126,6 +133,40 @@ describe('CharactersService', () => {
       expect(data.id).toMatch(/^meo-beo-[a-z0-9]{6}$/);
       expect(data.name).toBe('Mèo Béo');
       expect(data.guildClass).toBe(GuildClass.CUU_LINH);
+    });
+
+    it('gán luôn Discord ID khi được truyền vào', async () => {
+      await service.create({
+        name: 'Mèo Béo',
+        guildClass: GuildClass.CUU_LINH,
+        discordId: '123456789012345678',
+      });
+
+      const { data } = prisma.character.create.mock.calls[0][0];
+      expect(data.discordId).toBe('123456789012345678');
+    });
+
+    it('để discordId null khi không truyền', async () => {
+      await service.create({
+        name: 'Mèo Béo',
+        guildClass: GuildClass.CUU_LINH,
+      });
+
+      const { data } = prisma.character.create.mock.calls[0][0];
+      expect(data.discordId).toBeNull();
+    });
+
+    it('báo 409 và không thử lại khi Discord ID đã có người dùng', async () => {
+      prisma.character.create.mockRejectedValue(DISCORD_ID_VIOLATION);
+
+      await expect(
+        service.create({
+          name: 'Mèo Béo',
+          guildClass: GuildClass.CUU_LINH,
+          discordId: '123456789012345678',
+        }),
+      ).rejects.toThrow(ConflictException);
+      expect(prisma.character.create).toHaveBeenCalledTimes(1);
     });
 
     it('sinh lại id và thử lần nữa khi đụng khoá chính', async () => {

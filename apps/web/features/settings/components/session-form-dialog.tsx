@@ -1,15 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Save } from "lucide-react";
+import { AlarmClock, CalendarClock, Save, Swords } from "lucide-react";
 
 import { deadlineCapFor, isWithinDeadlineCap } from "@guild/shared/lib";
 import { DEADLINE_CAP_MESSAGE, type BattleSession } from "@guild/shared/schemas";
 
+import { FieldLabel } from "@/components/shared/field-label";
 import { MutationDialogShell } from "@/components/shared/mutation-dialog";
 import { MutationForm } from "@/components/shared/mutation-form";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   useCreateSession,
   useUpdateSession,
@@ -99,11 +99,9 @@ function SessionForm({ session, onDone }: SessionFormProps) {
    * @returns A promise resolving once saved
    */
   async function submitSession() {
-    // The date/time field returns empty while the user is mid-typing or typed a date that does not exist.
+    // The date/time field returns empty while no day is picked or the time box is still blank.
     if (!dateTime || (!isGuildWar && !deadline)) {
-      throw new Error(
-        "Ngày giờ chưa hợp lệ. Nhập theo dạng dd/mm/yyyy và HH:mm."
-      );
+      throw new Error("Vui lòng chọn đủ ngày và giờ.");
     }
 
     // The date/time field is two masked text inputs, not a `datetime-local`, so there is no `max`
@@ -148,6 +146,7 @@ function SessionForm({ session, onDone }: SessionFormProps) {
       <DateTimeField
         id="session-date-time"
         label="Ngày giờ đánh"
+        icon={<CalendarClock />}
         value={dateTime}
         onChange={handleDateTimeChange}
         defaultTime={DEFAULT_BATTLE_TIME}
@@ -155,7 +154,9 @@ function SessionForm({ session, onDone }: SessionFormProps) {
 
       {!isGuildWar && (
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="session-opponent">Tên bang đối thủ</Label>
+          <FieldLabel htmlFor="session-opponent" icon={<Swords />}>
+            Tên bang đối thủ
+          </FieldLabel>
           <Input
             id="session-opponent"
             maxLength={100}
@@ -168,7 +169,7 @@ function SessionForm({ session, onDone }: SessionFormProps) {
 
       {isGuildWar ? (
         <div className="flex flex-col gap-1.5">
-          <Label>Hạn chót điểm danh</Label>
+          <FieldLabel icon={<AlarmClock />}>Hạn chót điểm danh</FieldLabel>
           <p className="text-sm text-muted-foreground">
             17:00 Thứ 5 — cố định, không sửa được.
           </p>
@@ -177,6 +178,7 @@ function SessionForm({ session, onDone }: SessionFormProps) {
         <DateTimeField
           id="session-deadline"
           label="Hạn chót điểm danh"
+          icon={<AlarmClock />}
           value={deadline}
           onChange={(value) => {
             setDeadlineTouched(true);

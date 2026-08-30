@@ -7,8 +7,22 @@ import { GuildRole } from "../enums/role.enum";
 const DISCORD_ID_PATTERN = /^\d{17,19}$/;
 
 /**
+ * The Discord ID as both forms send it: null unlinks, an empty string is normalised to null so a
+ * form can leave the box blank, anything else must be a snowflake.
+ */
+const discordIdField = z
+  .union([z.string(), z.null()])
+  .transform((value) =>
+    value === null || value.trim() === "" ? null : value.trim(),
+  )
+  .refine((value) => value === null || DISCORD_ID_PATTERN.test(value), {
+    message: "Discord ID phải gồm 17–19 chữ số.",
+  });
+
+/**
  * Body of POST /characters (form + request body). Names are not unique — duplicates are
- * legal in game, the id is what distinguishes characters.
+ * legal in game, the id is what distinguishes characters. The Discord ID is optional: a member
+ * can be created before anyone knows theirs.
  */
 export const createCharacterSchema = z.object({
   name: z
@@ -17,22 +31,14 @@ export const createCharacterSchema = z.object({
     .min(1, "Vui lòng nhập tên thành viên.")
     .max(50, "Tên thành viên tối đa 50 ký tự."),
   guildClass: z.enum(GuildClass),
+  discordId: discordIdField.optional(),
 });
 
 /**
- * Body of PATCH /characters/:id — partial. `discordId` accepts null to unlink; an empty
- * string is normalised to null so forms stay simple.
+ * Body of PATCH /characters/:id — every create field optional, plus the role. Only an existing
+ * member has a role to change: creating one always lands on MEMBER.
  */
 export const updateCharacterSchema = createCharacterSchema.partial().extend({
-  discordId: z
-    .union([z.string(), z.null()])
-    .transform((value) =>
-      value === null || value.trim() === "" ? null : value.trim(),
-    )
-    .refine((value) => value === null || DISCORD_ID_PATTERN.test(value), {
-      message: "Discord ID phải gồm 17–19 chữ số.",
-    })
-    .optional(),
   role: z.enum(GuildRole).optional(),
 });
 

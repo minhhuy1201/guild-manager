@@ -108,7 +108,8 @@ export function MutationForm({
 
   return (
     <form onSubmit={handleSubmit} className="grid gap-4">
-      <DialogHeader>
+      {/* The title needs more air than the grid's own gap gives it, or it reads as part of the body. */}
+      <DialogHeader className="mb-2">
         <DialogTitle>{title}</DialogTitle>
       </DialogHeader>
 
