@@ -64,7 +64,8 @@ apps/web/
 ```
 
 Stack: Next.js 16 App Router (React 19) · Tailwind CSS 4 + shadcn/ui on `@base-ui/react` ·
-TanStack Query for server state · Zustand for UI state · dnd-kit on the team builder · Vitest.
+TanStack Query for server state · Zustand for UI state · dnd-kit on the team builder · sonner for
+toasts · Vitest.
 
 All user-facing copy is **Vietnamese**. Identifiers and file names are English.
 
@@ -320,6 +321,11 @@ In use on the attendance grid (`attendance-row`, read-only cells) and the attend
 destructive `X`, "Có" with an emerald `Swords` — the same mark `SessionLabel` gives a battle. At rest
 each button shrinks to the width of its icon (`w-9`) and only widens on hover.
 
+The member card (`member-attendance-card`) answers the same two questions with the same two marks,
+as full `Button`s: a member sees one card and has room for the words, where the admin grid has one
+narrow column per day. The picked side is filled — emerald for "Có", destructive for "Không" — and
+the icon becomes a `Spinner` while that answer is being written.
+
 > Not to be confused with `status-badge.tsx`: a badge **has words** and is for descriptive labels
 > ("Đã khóa" / "Đang mở" on the week timeline), not for binary state.
 
@@ -458,6 +464,23 @@ outside one, call it directly.
 
 The `border-dashed` left in the app is the drag-and-drop drop-zone border (`member-pool`, `slot-cell`,
 `prefill-banner`), not an empty state.
+
+### Feedback after a write → a toast
+
+One `<Toaster position="top-center" theme="light" />` lives in `components/providers.tsx`; a screen
+calls `toast.success` / `toast.error` from `sonner` itself. Top centre because on a phone a thumb
+covers the bottom half of the screen, which is exactly where the attendance buttons sit;
+`theme="light"` because nothing in the app sets the `.dark` class, and left on `"system"` sonner
+follows the operating system and drops a dark toast onto a light page.
+
+Which of the two feedback shapes:
+
+- **A write with no visible result of its own** → a toast, success and failure both, so the two
+  outcomes land in the same place. `member-attendance-card` is the worked example: pressing "Có"
+  changes one button's fill, which is too quiet to read as "saved".
+- **A write inside a table or a dialog** → the inline error line that keeps its slot (see *Motion*,
+  "A mutation error keeps its slot"). The row is already in view and a toast would pull the eye off
+  it — `attendance-grid` and `members-panel`.
 
 ### Motion
 
