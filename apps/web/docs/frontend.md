@@ -219,7 +219,7 @@ regenerating a component never eats a local change.
 Current shared building blocks: `action-buttons`, `confirm-delete-dialog`, `date-range`,
 `error-state`, `guild-class-filter-select`, `guild-class-icon`, `main-nav`, `mutation-dialog`,
 `mutation-form`, `mutation-pending`, `page-size-select`, `password-input`, `query-boundary`,
-`roster-filter-bar`, `session-label`, `site-header`, `status-badge`, `status-icon`,
+`roster-filter-bar`, `session-label`, `site-header`, `status-badge`, `status-icon`, `toast`,
 `table-pagination`, `table-pagination-bar`, `table-skeleton`.
 
 ### The query group of a screen
@@ -468,10 +468,19 @@ The `border-dashed` left in the app is the drag-and-drop drop-zone border (`memb
 ### Feedback after a write → a toast
 
 One `<Toaster position="top-center" theme="light" />` lives in `components/providers.tsx`; a screen
-calls `toast.success` / `toast.error` from `sonner` itself. Top centre because on a phone a thumb
-covers the bottom half of the screen, which is exactly where the attendance buttons sit;
-`theme="light"` because nothing in the app sets the `.dark` class, and left on `"system"` sonner
-follows the operating system and drops a dark toast onto a light page.
+raises one through **`components/shared/toast.ts`** (`toastSuccess` / `toastError`), never by calling
+`sonner` directly. Top centre because on a phone a thumb covers the bottom half of the screen, which
+is exactly where the attendance buttons sit; `theme="light"` because nothing in the app sets the
+`.dark` class, and left on `"system"` sonner follows the operating system and drops a dark toast onto
+a light page.
+
+The two tones are the app's own: emerald for a success, `destructive` for a failure — the "Có" and
+"Không" marks again. Sonner takes a surface as three custom properties, so `toast.ts` sets them
+together: `--normal-bg` is a 10% tint of the accent over `--background`, `--normal-text` and
+`--normal-border` are the accent itself. Soft tint, never a filled accent, so the sentence stays
+readable. Tailwind 4 only emits the palette variables the app actually uses, which is why the accent
+is `--color-emerald-600` (in use elsewhere) and not `--color-green-600` (not emitted, so it would
+silently resolve to nothing).
 
 Which of the two feedback shapes:
 

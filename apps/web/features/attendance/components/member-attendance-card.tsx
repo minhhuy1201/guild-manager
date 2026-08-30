@@ -1,7 +1,6 @@
 "use client";
 
 import { Swords, X } from "lucide-react";
-import { toast } from "sonner";
 import { attendanceLabel } from "@guild/shared/enums";
 import type { BattleSession } from "@guild/shared/schemas";
 
@@ -9,6 +8,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { QueryBoundary } from "@/components/shared/query-boundary";
 import { SessionLabel } from "@/components/shared/session-label";
 import { Spinner } from "@/components/shared/spinner";
+import { toastError, toastSuccess } from "@/components/shared/toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -74,11 +74,11 @@ export function MemberAttendanceCard() {
         sessionId: battleSession.id,
         isPresent,
       });
-      toast.success(
+      toastSuccess(
         `Đã điểm danh "${attendanceLabel(isPresent)}" cho ${battleSession.label}.`
       );
     } catch (error) {
-      toast.error(
+      toastError(
         error instanceof ApiError ? error.message : FALLBACK_ERROR_MESSAGE
       );
     }
