@@ -4,8 +4,9 @@ Attendance and roster tool for a guild: a few matches every week, members mark t
 "Yes/No" before the deadline, admins review history and build the team for each match.
 
 A pnpm workspace monorepo: `apps/api` (NestJS + Prisma + PostgreSQL), `apps/web` (Next.js), and
-`packages/shared` (enums and Zod schemas used by both). There is no root `package.json` — every
-command runs through `pnpm --filter <app>` or from inside the app directory.
+`packages/shared` (enums and Zod schemas used by both). Every command runs through
+`pnpm --filter <app>` or from inside the app directory — the root `package.json` declares no
+dependencies and no scripts.
 
 How the pieces fit together, and where new code belongs: [`docs/architecture.md`](docs/architecture.md).
 
@@ -57,6 +58,20 @@ More detail (environment variables, common commands, troubleshooting): [`docs/de
 | `/xep-team` | Build the roster for each match | Admin only |
 | `/thiet-lap` | Two tabs: "Match setup" (the week's schedule) and "Member management" (add/edit/delete members) | Admin only |
 
+## Contributing
+
+`main` is protected: no direct pushes, no force-pushes. Every change goes through a pull request that
+the six CI checks must pass, and the branch is deleted on merge.
+
+```bash
+git checkout -b <type>/<kebab-case-description>   # feat, fix, refactor, chore, docs, test, ci…
+gh pr create                                       # fills in .github/pull_request_template.md
+```
+
+Commits and PRs are written in English as Conventional Commits: `<type>(<scope>): <description>`.
+Merging a PR that touches `apps/api` migrates the production database and then deploys — see
+[`docs/production.md`](docs/production.md) §4.
+
 ## Documentation
 
 | File | Contents |
@@ -66,7 +81,7 @@ More detail (environment variables, common commands, troubleshooting): [`docs/de
 | [`docs/production.md`](docs/production.md) | Build, deploy, migrating the real database, operations |
 | [`apps/api/README.md`](apps/api/README.md) | Backend: running it, commands, the database |
 | [`apps/web/README.md`](apps/web/README.md) | Frontend: running it, commands, env |
-| [`AGENTS.md`](AGENTS.md) | Code conventions for humans and AI agents |
+| [`CLAUDE.md`](CLAUDE.md) | Code conventions for humans and AI agents |
 | [`apps/api/docs/backend.md`](apps/api/docs/backend.md) | Backend structure: layers, dependency rules, conventions |
 | [`apps/web/docs/frontend.md`](apps/web/docs/frontend.md) | Frontend structure: data-flow rules, components, UI conventions |
 | `docs/superpowers/specs/` | Design specs per feature |
