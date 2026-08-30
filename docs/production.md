@@ -74,7 +74,7 @@ by default, and each writes to whatever database it names.
 | `DISCORD_CLIENT_ID` | Client id of the production Discord Application |
 | `DISCORD_CLIENT_SECRET` | Its client secret — mark Sensitive |
 | `DISCORD_REDIRECT_URI` | `https://<api-domain>/api/auth/discord/callback`, declared character for character under OAuth2 → Redirects in the Developer Portal |
-| `DISCORD_ADMIN_IDS` | The guild leader's Discord ID. **Forget this and nobody can sign in**, because no `Character` has a `discordId` yet |
+| `DISCORD_ADMIN_IDS` | The guild admin's Discord ID. **Forget this and nobody can sign in**, because no `Character` has a `discordId` yet |
 | `WEB_ORIGIN` | The web app's real origin (`https://…`) — CORS matches this value exactly |
 | `WEB_PREVIEW_PROJECT` | The web app's Vercel project name (`mmgh-nth`) — makes CORS also accept that project's preview domains. Optional; omit it and only `WEB_ORIGIN` is allowed |
 | `APP_TIMEZONE` | `Asia/Ho_Chi_Minh` |

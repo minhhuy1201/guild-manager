@@ -249,7 +249,7 @@ describe('AuthService.refresh', () => {
       characters: {
         findByDiscordId: jest
           .fn()
-          .mockResolvedValue({ id: ROW.id, role: GuildRole.LEADER }),
+          .mockResolvedValue({ id: ROW.id, role: GuildRole.ADMIN }),
       },
     });
     jwt.verifyAsync.mockResolvedValue({
@@ -260,6 +260,6 @@ describe('AuthService.refresh', () => {
 
     const tokens = await service.refresh({ refreshToken: 'r' });
 
-    expect(tokens.user.role).toBe(GuildRole.LEADER);
+    expect(tokens.user.role).toBe(GuildRole.ADMIN);
   });
 });

@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { canManageGuild, canViewAllAttendance } from '@guild/shared/lib';
+import { canManageGuild } from '@guild/shared/lib';
 import {
   attendanceSummarySchema,
   type AttendanceRecord,
@@ -43,12 +43,12 @@ export class AttendanceService {
    * Characters for the attendance screen, filtered by the caller's role.
    * Filtered here, not in the UI: hiding it on the web only means DevTools reveals the whole table.
    * @param actor - JWT payload of the caller
-   * @returns The whole guild for leaders/admins; only their own character for members
+   * @returns The whole guild for admins; only their own character for members
    */
   async getCharacters(actor: JwtPayload): Promise<Character[]> {
     // Through `toCharacter`, not `characters.list()`: that one carries the Discord identity, which
-    // this screen must not hand to leaders.
-    if (canViewAllAttendance(actor.role)) {
+    // this screen must not hand out.
+    if (canManageGuild(actor.role)) {
       const rows = await this.characters.listRows();
 
       return rows.map(toCharacter);
@@ -65,13 +65,13 @@ export class AttendanceService {
   /**
    * Attendance entries of the open week, filtered by the caller's role.
    * @param actor - JWT payload of the caller
-   * @returns The whole guild for leaders/admins; only their own rows for members
+   * @returns The whole guild for admins; only their own rows for members
    */
   async getRecords(actor: JwtPayload): Promise<AttendanceRecord[]> {
-    const seesEveryone = canViewAllAttendance(actor.role);
-    const own = seesEveryone ? null : await this.ownCharacterId(actor);
+    const isAdmin = canManageGuild(actor.role);
+    const own = isAdmin ? null : await this.ownCharacterId(actor);
 
-    if (!seesEveryone && !own) return [];
+    if (!isAdmin && !own) return [];
 
     const sessions = await this.battleSessions.listByWeek();
     const records = await this.prisma.attendanceRecord.findMany({
@@ -117,7 +117,7 @@ export class AttendanceService {
 
   /**
    * Record attendance for a character in a session.
-   * Members and leaders may only mark their own character, and only before the deadline. Admins may
+   * Members may only mark their own character, and only before the deadline. Admins may
    * mark on behalf of others and are not blocked by the deadline (used to fix mistakes after a battle).
    * @param input - characterId, sessionId and isPresent
    * @param actor - JWT payload of the caller

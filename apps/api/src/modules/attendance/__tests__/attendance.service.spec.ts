@@ -48,13 +48,6 @@ const MEMBER: JwtPayload = {
   type: TOKEN_TYPE.access,
 };
 
-/** Signed-in leader, also bound to CHARACTER_ID. */
-const LEADER: JwtPayload = {
-  sub: '123456789012345678',
-  role: GuildRole.LEADER,
-  type: TOKEN_TYPE.access,
-};
-
 /** Session ids in the fake schedule, keyed by label for readability. */
 const SESSION_IDS: Record<string, string> = {
   'Thứ 3 · 20:30': 'session-tue',
@@ -338,13 +331,13 @@ describe('AttendanceService', () => {
   });
 
   describe('getCharacters', () => {
-    it('cán bộ nhận cả bang, đã lược danh tính Discord', async () => {
+    it('quản trị viên nhận cả bang, đã lược danh tính Discord', async () => {
       characters.listRows.mockResolvedValue([
         { ...OWN_ROW, discordId: '123456789012345678', role: GuildRole.MEMBER },
         { id: OTHER_CHARACTER_ID, name: 'Mèo', guildClass: GuildClass.TO_VAN },
       ]);
 
-      await expect(service.getCharacters(LEADER)).resolves.toEqual([
+      await expect(service.getCharacters(ADMIN)).resolves.toEqual([
         OWN_ROW,
         { id: OTHER_CHARACTER_ID, name: 'Mèo', guildClass: GuildClass.TO_VAN },
       ]);
@@ -363,7 +356,7 @@ describe('AttendanceService', () => {
   });
 
   describe('điểm danh theo vai', () => {
-    it('cán bộ điểm danh hộ người khác thì bị chặn', async () => {
+    it('bang chúng điểm danh hộ người khác thì bị chặn', async () => {
       await expect(
         service.mark(
           {
@@ -371,7 +364,7 @@ describe('AttendanceService', () => {
             sessionId: SESSION_IDS['Thứ 7 · Bang Chiến'],
             isPresent: true,
           },
-          LEADER,
+          MEMBER,
         ),
       ).rejects.toThrow(ForbiddenException);
       expect(prisma.attendanceRecord.upsert).not.toHaveBeenCalled();
@@ -442,7 +435,7 @@ describe('AttendanceService', () => {
     it('chỉ đọc record của các trận trong tuần đang mở', async () => {
       prisma.attendanceRecord.findMany.mockResolvedValue([]);
 
-      await service.getRecords(LEADER);
+      await service.getRecords(ADMIN);
 
       expect(prisma.attendanceRecord.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -461,7 +454,7 @@ describe('AttendanceService', () => {
         },
       ]);
 
-      await expect(service.getRecords(LEADER)).resolves.toEqual([
+      await expect(service.getRecords(ADMIN)).resolves.toEqual([
         {
           characterId: CHARACTER_ID,
           sessionId: 'session-sat',

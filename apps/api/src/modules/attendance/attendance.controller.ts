@@ -55,7 +55,7 @@ export class AttendanceController {
 
   /**
    * Record attendance for a character in a session.
-   * Members and leaders may only mark their own character and only before the deadline; admins are
+   * Members may only mark their own character and only before the deadline; admins are
    * exempt from both.
    * @param body - characterId, sessionId and status
    * @param user - JWT payload attached by JwtAuthGuard

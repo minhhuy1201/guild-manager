@@ -28,14 +28,16 @@ describe('AdminGuard', () => {
     expect(guard.canActivate(contextWith(user))).toBe(true);
   });
 
-  it('chặn cán bộ và bang chúng', () => {
-    for (const role of [GuildRole.LEADER, GuildRole.MEMBER]) {
-      const user: JwtPayload = { sub: '123', role, type: TOKEN_TYPE.access };
+  it('chặn bang chúng', () => {
+    const user: JwtPayload = {
+      sub: '123',
+      role: GuildRole.MEMBER,
+      type: TOKEN_TYPE.access,
+    };
 
-      expect(() => guard.canActivate(contextWith(user))).toThrow(
-        ForbiddenException,
-      );
-    }
+    expect(() => guard.canActivate(contextWith(user))).toThrow(
+      ForbiddenException,
+    );
   });
 
   it('chặn khi request chưa qua JwtAuthGuard', () => {

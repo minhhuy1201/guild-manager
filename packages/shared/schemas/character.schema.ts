@@ -54,7 +54,7 @@ export type Character = z.infer<typeof characterSchema>;
 
 /**
  * A member seen from the admin screen: the character plus its Discord identity. The
- * attendance screen uses `characterSchema` (no Discord ID) so leaders cannot read the whole
+ * attendance screen uses `characterSchema` (no Discord ID) so that screen never hands out the
  * guild's Discord IDs.
  */
 export const guildMemberSchema = characterSchema.extend({
