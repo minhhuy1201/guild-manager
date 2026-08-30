@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { canViewAllAttendance } from "@guild/shared/lib";
 
 import { ROUTES } from "@/config/routes";
-import { AttendanceFilters, AttendanceLogTable } from "@/features/attendance";
+import {
+  AttendanceHistoryFilters,
+  AttendanceLogTable,
+} from "@/features/attendance";
 import { getSession } from "@/features/auth/server";
 
 export const metadata: Metadata = {
@@ -13,7 +15,8 @@ export const metadata: Metadata = {
 
 /**
  * Route "/lich-su-diem-danh" — the attendance history page.
- * A member has exactly one character in the table (the backend filtered it), so no filters are shown.
+ * The filters are shown to everyone: a member only sees their own rows, but still filters them by
+ * session answer.
  * @returns The filters and the attendance history table
  */
 export default async function AttendanceHistoryPage() {
@@ -24,9 +27,7 @@ export default async function AttendanceHistoryPage() {
 
   return (
     <>
-      {canViewAllAttendance(session.role) && (
-        <AttendanceFilters scope="history" />
-      )}
+      <AttendanceHistoryFilters />
       <AttendanceLogTable />
     </>
   );

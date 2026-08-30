@@ -7,6 +7,7 @@ import {
   type GuildClass,
 } from "@guild/shared/enums";
 
+import { FilterAllIcon } from "@/components/shared/filter-all-icon";
 import {
   Select,
   SelectContent,
@@ -72,7 +73,13 @@ export function GuildClassFilterSelect({
             const classes = current.filter(
               (item) => item !== ALL_CLASSES
             ) as GuildClass[];
-            if (classes.length === 0) return "Tất cả lưu phái";
+            if (classes.length === 0)
+              return (
+                <span className="flex items-center gap-2">
+                  <FilterAllIcon />
+                  Tất cả lưu phái
+                </span>
+              );
             if (classes.length === 1)
               return (
                 <span className="flex items-center gap-2">
@@ -92,7 +99,12 @@ export function GuildClassFilterSelect({
       </SelectTrigger>
       {/* Opens as a popover under the trigger instead of anchoring the selected item to it. */}
       <SelectContent alignItemWithTrigger={false}>
-        <SelectItem value={ALL_CLASSES}>Tất cả</SelectItem>
+        <SelectItem value={ALL_CLASSES}>
+          <span className="flex items-center gap-2">
+            <FilterAllIcon />
+            Tất cả
+          </span>
+        </SelectItem>
         {GUILD_CLASS_OPTIONS.map((guildClass) => (
           <SelectItem key={guildClass} value={guildClass}>
             <span className="flex items-center gap-2">

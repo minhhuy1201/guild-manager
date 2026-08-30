@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import type { Character } from "@guild/shared/schemas";
+import type { BattleSession, Character } from "@guild/shared/schemas";
 
 import { useInvalidate } from "@/hooks/use-invalidate";
 import { matchesRosterFilter } from "@/lib/roster-filter";
@@ -83,6 +83,34 @@ export function useFilteredCharacters(
       ),
     [characters, filter]
   );
+}
+
+interface SessionFilter {
+  /** The week's sessions, empty while the query has no data. */
+  sessions: BattleSession[];
+  /** The session being filtered on, null when every session is shown. */
+  selectedSession: BattleSession | null;
+  setSessionId: (value: string | null) => void;
+}
+
+/**
+ * The History screen's session filter, resolved against the sessions actually loaded.
+ * A stored id matching no session — the admin deleted it while the filter was set — resolves to
+ * null, so the picker and the table agree on "every session" instead of one showing "Tất cả" and the
+ * other showing nothing.
+ * @returns The week's sessions, the resolved selection and its setter
+ */
+export function useSessionFilter(): SessionFilter {
+  const { data: sessions } = useBattleSessions();
+  const sessionId = useAttendanceFilterStore((s) => s.sessionId);
+  const setSessionId = useAttendanceFilterStore((s) => s.setSessionId);
+
+  const list = sessions ?? [];
+  return {
+    sessions: list,
+    selectedSession: list.find((session) => session.id === sessionId) ?? null,
+    setSessionId,
+  };
 }
 
 /**
