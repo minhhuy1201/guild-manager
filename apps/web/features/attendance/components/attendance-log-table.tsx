@@ -1,9 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { attendanceLabel } from "@guild/shared/enums";
 
-import { StatusIcon } from "@/components/shared/status-icon";
 import { TableBodyState } from "@/components/shared/table-body-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -23,6 +21,7 @@ import {
   useCharacters,
   useFilteredCharacters,
 } from "../hooks/use-attendance";
+import { AttendanceStatusIcon } from "./attendance-status-icon";
 import { CharacterName } from "./character-name";
 
 /**
@@ -115,7 +114,6 @@ export function AttendanceLogTable() {
               renderRow={(record) => {
                 const character = characterMap.get(record.characterId);
                 const session = sessionMap.get(record.sessionId);
-                const present = record.isPresent;
                 return (
                   <TableRow key={`${record.characterId}-${record.sessionId}`}>
                     <TableCell>
@@ -127,10 +125,7 @@ export function AttendanceLogTable() {
                     </TableCell>
                     <TableCell>{session?.label ?? "—"}</TableCell>
                     <TableCell className="text-center">
-                      <StatusIcon
-                        tone={present ? "success" : "danger"}
-                        label={attendanceLabel(record.isPresent)}
-                      />
+                      <AttendanceStatusIcon isPresent={record.isPresent} />
                     </TableCell>
                     <TableCell
                       className={cn("text-muted-foreground", MARKED_AT_COLUMN)}

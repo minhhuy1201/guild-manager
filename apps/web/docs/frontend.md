@@ -313,8 +313,12 @@ icon, not text:
 Use **`components/shared/status-icon.tsx`** (`<StatusIcon tone label />`). `label` is required — the
 icon has no visible text, so it is the only thing a screen reader gets.
 
-In use on the attendance grid (`attendance-row`, read-only cells) and the attendance history table
-(`attendance-log-table`).
+The glyph is a default, not a rule: a domain with a mark of its own passes `icon` and keeps the tone.
+Attendance does — a recorded "Có" is the emerald circle with the **`Swords`** of a battle, "Không" the
+red cross — through `features/attendance/components/attendance-status-icon.tsx`
+(`<AttendanceStatusIcon isPresent />`), which is what the attendance grid (`attendance-row`,
+read-only cells) and the history table (`attendance-log-table`) render. Reading a row and pressing a
+button then use one vocabulary: swords means "đi đánh" everywhere on the screen.
 
 **This rule covers *displaying* a state only.** The cell being edited in `attendance-row`
 (`AttendanceToggle`) is a control about to be pressed, so it carries words: "Không" with a
