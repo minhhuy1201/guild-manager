@@ -363,7 +363,9 @@ each button shrinks to the width of its icon (`w-9`) and only widens on hover.
 
 The member card (`member-attendance-card`) answers the same two questions with the same two marks,
 as full `Button`s: a member sees their own day tiles and has room for the words, where the admin grid
-has one narrow column per day. The picked side is filled — emerald for "Có", destructive for "Không"
+has one narrow column per day. A member gets **both**, in that order — the card they answer in, then
+the same guild-wide grid an admin sees, minus its action column (`AttendanceGrid isAdmin={false}`),
+so reading what everyone else picked never means being able to edit it. The picked side is filled — emerald for "Có", destructive for "Không"
 — and the icon becomes a `Spinner` while that answer is being written.
 
 A member's tile **carries its own answer in its surface**: emerald for "Có", `destructive` for
@@ -601,6 +603,11 @@ pagination bar down — see `members-panel` and `attendance-grid`.
   call site only says what a row *looks like*, through `renderRow`, never which branch wins.
 - `columns` must equal the header's `<th>` count. A table whose column count follows the data must
   pin that count in **one** variable shared by header and body — see `attendance-grid`.
+- A column only some viewers get (an action column behind a role) disappears from the **header, the
+  row and `columns` together**, on one flag passed to both — `attendance-grid` drops its "Điểm danh"
+  column for a member through `AttendanceRow`'s `canEdit`. Rendering a disabled or empty cell instead
+  keeps a column that says nothing; leaving `columns` behind breaks every `colSpan` in
+  `table-body-state`.
 - Paging → `use-table-pagination` (client-side, resets to page 1 when the filter changes) rendered
   with `table-pagination-bar` / `page-size-select`. The pagination bar **always** renders, even at one
   page, so filtering does not move the layout.

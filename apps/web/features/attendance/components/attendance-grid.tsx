@@ -32,14 +32,22 @@ import { AttendanceRow, type AttendanceDraft } from "./attendance-row";
  */
 const PLACEHOLDER_DAY_COLUMNS = 4;
 
+/** Mobile hint above the grid — the pinned columns differ, so each viewer gets their own wording. */
+const SWIPE_HINT_ADMIN =
+  "Vuốt ngang để xem các ngày đánh khác — cột tên và cột thao tác luôn hiện.";
+const SWIPE_HINT_READ_ONLY =
+  "Vuốt ngang để xem các ngày đánh khác — cột tên luôn hiện.";
+
 interface AttendanceGridProps {
-  /** The viewer is an admin — not locked by the deadline. */
+  /** The viewer is an admin — they get the action column and are not locked by the deadline. */
   isAdmin: boolean;
 }
 
 /**
  * The attendance grid: one row per character, read-only by default.
  * The edit button in the last column switches a row to editing; confirming saves it straight away.
+ * That column belongs to an admin — a member reads the same grid without it and answers for their
+ * own character in `MemberAttendanceCard`.
  * @param isAdmin - Whether the viewer is an admin
  * @returns The attendance table card
  */
@@ -70,7 +78,7 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
   const dayColumns = state.isPending
     ? PLACEHOLDER_DAY_COLUMNS
     : battleSessions.length;
-  const columns = dayColumns + 2; // name + days + actions
+  const columns = dayColumns + (isAdmin ? 2 : 1); // name + days + actions
 
   useDeadlineRefresh(battleSessions);
 
@@ -161,8 +169,7 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
       <CardContent>
         {!state.isError && !state.isPending && battleSessions.length > 0 && (
           <p className="mb-2 text-xs text-muted-foreground md:hidden">
-            Vuốt ngang để xem các ngày đánh khác — cột tên và cột thao tác luôn
-            hiện.
+            {isAdmin ? SWIPE_HINT_ADMIN : SWIPE_HINT_READ_ONLY}
           </p>
         )}
         <DataTable
@@ -191,7 +198,9 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
                       </TableHead>
                     );
                   })}
-              <TableHead className={STICKY_ACTION_COLUMN}>Điểm danh</TableHead>
+              {isAdmin && (
+                <TableHead className={STICKY_ACTION_COLUMN}>Điểm danh</TableHead>
+              )}
             </TableRow>
           }
           pagination={pagination}
@@ -203,6 +212,7 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
               key={character.id}
               character={character}
               sessions={battleSessions}
+              canEdit={isAdmin}
               recordMap={recordMap}
               lockedSessionIds={lockedSessionIds}
               allLocked={allLocked}

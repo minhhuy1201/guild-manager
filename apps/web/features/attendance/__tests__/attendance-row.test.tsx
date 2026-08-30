@@ -51,14 +51,16 @@ function makeRecordMap(reason: string | null): Record<string, AttendanceRecord> 
  * Render one row inside a table, with the props a read-only row needs.
  * @param reason - Reason stored with the answer
  * @param isEditing - Whether the row is in editing mode
+ * @param canEdit - Whether the viewer gets the action column
  */
-function renderRow(reason: string | null, isEditing = false) {
+function renderRow(reason: string | null, isEditing = false, canEdit = true) {
   render(
     <table>
       <tbody>
         <AttendanceRow
           character={CHARACTER}
           sessions={[SESSION]}
+          canEdit={canEdit}
           recordMap={makeRecordMap(reason)}
           lockedSessionIds={new Set<string>()}
           allLocked={false}
@@ -94,5 +96,19 @@ describe("AttendanceRow", () => {
     renderRow("Bận đi công tác", true);
 
     expect(screen.queryByText("Bận đi công tác")).toBeNull();
+  });
+
+  it("người không được sửa thì hàng không có ô thao tác", () => {
+    renderRow(null, false, false);
+
+    expect(screen.queryByRole("button", { name: "Điểm danh" })).toBeNull();
+    expect(document.querySelectorAll("td").length).toBe(2);
+  });
+
+  it("người được sửa thì hàng có nút điểm danh ở ô cuối", () => {
+    renderRow(null);
+
+    expect(screen.queryByRole("button", { name: "Điểm danh" })).not.toBeNull();
+    expect(document.querySelectorAll("td").length).toBe(3);
   });
 });
