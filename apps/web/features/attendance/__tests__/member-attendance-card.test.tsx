@@ -333,4 +333,83 @@ describe("MemberAttendanceCard", () => {
 
     expect(screen.queryByText("Trận sess-1")).toBeNull();
   });
+
+  it('hiện ô lý do khi câu trả lời đã lưu là "Không"', () => {
+    records = makeRecords("sess-1", false, "Bận đi công tác");
+
+    render(<MemberAttendanceCard />);
+
+    const input = screen.getByLabelText("Lý do vắng") as HTMLInputElement;
+    expect(input.value).toBe("Bận đi công tác");
+    expect(input.maxLength).toBe(255);
+  });
+
+  it('không hiện ô lý do khi câu trả lời là "Có"', () => {
+    records = makeRecords("sess-1", true);
+
+    render(<MemberAttendanceCard />);
+
+    expect(screen.queryByLabelText("Lý do vắng")).toBeNull();
+  });
+
+  it("Enter gửi lý do kèm câu trả lời Không", async () => {
+    records = makeRecords("sess-1", false);
+
+    render(<MemberAttendanceCard />);
+
+    const input = screen.getByLabelText("Lý do vắng");
+    fireEvent.change(input, { target: { value: "  Ốm  " } });
+    await act(async () => {
+      fireEvent.keyDown(input, { key: "Enter" });
+    });
+
+    expect(markState.mutateAsync).toHaveBeenCalledWith({
+      characterId: "char-1",
+      sessionId: "sess-1",
+      isPresent: false,
+      reason: "Ốm",
+    });
+    expect(toastSuccess).toHaveBeenCalled();
+  });
+
+  it("Escape trả ô về giá trị đã lưu và không gửi gì", () => {
+    records = makeRecords("sess-1", false, "Bận đi công tác");
+
+    render(<MemberAttendanceCard />);
+
+    const input = screen.getByLabelText("Lý do vắng") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "gõ nhầm" } });
+    fireEvent.keyDown(input, { key: "Escape" });
+
+    expect(input.value).toBe("Bận đi công tác");
+    expect(markState.mutateAsync).not.toHaveBeenCalled();
+  });
+
+  it("lưu lỗi thì giữ nguyên chữ đang gõ để không phải gõ lại", async () => {
+    records = makeRecords("sess-1", false);
+    markState.mutateAsync = vi
+      .fn()
+      .mockRejectedValue(new ApiError("Đã quá hạn điểm danh ngày này.", 409));
+
+    render(<MemberAttendanceCard />);
+
+    const input = screen.getByLabelText("Lý do vắng") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "Ốm" } });
+    await act(async () => {
+      fireEvent.keyDown(input, { key: "Enter" });
+    });
+
+    expect(toastError).toHaveBeenCalledWith("Đã quá hạn điểm danh ngày này.");
+    expect(input.value).toBe("Ốm");
+  });
+
+  it("ngày đã khoá thì chỉ hiện lý do dạng chữ, không có ô nhập", () => {
+    sessions = [makeSession("sess-1", { isDeadlinePassed: true })];
+    records = makeRecords("sess-1", false, "Bận đi công tác");
+
+    render(<MemberAttendanceCard />);
+
+    expect(screen.queryByLabelText("Lý do vắng")).toBeNull();
+    expect(screen.getByText("Lý do: Bận đi công tác")).toBeTruthy();
+  });
 });

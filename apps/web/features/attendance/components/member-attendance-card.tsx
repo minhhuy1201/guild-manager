@@ -1,8 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { Swords, X } from "lucide-react";
 import { attendanceLabel } from "@guild/shared/enums";
-import type { BattleSession } from "@guild/shared/schemas";
+import {
+  ATTENDANCE_REASON_MAX_LENGTH,
+  type BattleSession,
+} from "@guild/shared/schemas";
 
 import { EmptyState } from "@/components/shared/empty-state";
 import { QueryBoundary } from "@/components/shared/query-boundary";
@@ -11,6 +15,7 @@ import { Spinner } from "@/components/shared/spinner";
 import { toastError, toastSuccess } from "@/components/shared/toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSession } from "@/features/auth";
 import { ApiError } from "@/lib/api-client";
@@ -103,6 +108,34 @@ export function MemberAttendanceCard() {
     }
   };
 
+  /**
+   * Save the reason for a "Không" answer and report the outcome in a toast.
+   * It reuses the attendance write, so the entry keeps one code path — and one deadline check.
+   * @param battleSession - Session the reason belongs to
+   * @param reason - Text typed by the member
+   * @returns A promise settled once the toast is shown
+   */
+  const handleSaveReason = async (
+    battleSession: BattleSession,
+    reason: string
+  ): Promise<void> => {
+    if (!character) return;
+
+    try {
+      await mark({
+        characterId: character.id,
+        sessionId: battleSession.id,
+        isPresent: false,
+        reason: reason.trim() || null,
+      });
+      toastSuccess(`Đã lưu lý do cho ${battleSession.label}.`);
+    } catch (error) {
+      toastError(
+        error instanceof ApiError ? error.message : FALLBACK_ERROR_MESSAGE
+      );
+    }
+  };
+
   return (
     <QueryBoundary
       state={board}
@@ -138,6 +171,9 @@ export function MemberAttendanceCard() {
                   const current =
                     recordMap[recordKey(character.id, battleSession.id)]
                       ?.isPresent ?? null;
+                  const savedReason =
+                    recordMap[recordKey(character.id, battleSession.id)]
+                      ?.reason ?? "";
                   const counts = summary?.find(
                     (row) => row.sessionId === battleSession.id
                   );
@@ -168,28 +204,50 @@ export function MemberAttendanceCard() {
                           subtitle does not leave its buttons higher than its neighbour's. */}
                       <div className="mt-auto flex flex-col gap-2 pt-2">
                         {battleSession.isDeadlinePassed ? (
-                          <span className="text-center text-sm text-muted-foreground">
-                            Đã khoá
-                          </span>
+                          <>
+                            <span className="text-center text-sm text-muted-foreground">
+                              Đã khoá
+                            </span>
+                            {savedReason !== "" && (
+                              <span className="text-center text-sm text-muted-foreground italic">
+                                Lý do: {savedReason}
+                              </span>
+                            )}
+                          </>
                         ) : (
-                          CHOICES.map((isPresent) => (
-                            <AttendanceChoiceButton
-                              key={String(isPresent)}
-                              isPresent={isPresent}
-                              isSelected={current === isPresent}
-                              isSaving={
-                                isPending &&
-                                variables?.sessionId === battleSession.id &&
-                                variables.isPresent === isPresent
-                              }
-                              // Both answers of every day wait: a second write while one is in
-                              // flight would leave the spinner on the wrong button.
-                              disabled={isPending}
-                              onSelect={() =>
-                                void handleMark(battleSession, isPresent)
-                              }
-                            />
-                          ))
+                          <>
+                            {CHOICES.map((isPresent) => (
+                              <AttendanceChoiceButton
+                                key={String(isPresent)}
+                                isPresent={isPresent}
+                                isSelected={current === isPresent}
+                                isSaving={
+                                  isPending &&
+                                  variables?.sessionId === battleSession.id &&
+                                  variables.isPresent === isPresent
+                                }
+                                // Both answers of every day wait: a second write while one is in
+                                // flight would leave the spinner on the wrong button.
+                                disabled={isPending}
+                                onSelect={() =>
+                                  void handleMark(battleSession, isPresent)
+                                }
+                              />
+                            ))}
+                            {current === false && (
+                              // Remounting on the stored value resets the field once a save lands,
+                              // while a failed save keeps the typed text — the stored value did not
+                              // change, so there is no remount.
+                              <AbsenceReasonInput
+                                key={`${battleSession.id}:${savedReason}`}
+                                savedReason={savedReason}
+                                disabled={isPending}
+                                onSubmit={(reason) =>
+                                  void handleSaveReason(battleSession, reason)
+                                }
+                              />
+                            )}
+                          </>
                         )}
                       </div>
                     </div>
@@ -257,5 +315,53 @@ function AttendanceChoiceButton({
       </span>
       {attendanceLabel(isPresent)}
     </Button>
+  );
+}
+
+interface AbsenceReasonInputProps {
+  /** Reason already stored for this session — "" when none was given */
+  savedReason: string;
+  /** A write is already in flight, so this one may not start */
+  disabled: boolean;
+  /** Send the typed reason; the caller performs the write and shows the toast */
+  onSubmit: (reason: string) => void;
+}
+
+/**
+ * The one-line reason that goes with a "Không" answer.
+ *
+ * Enter sends and Escape restores what is stored — blur does neither: leaving the field is something
+ * that happens by accident, and here it would fire a request rather than touch a local draft the way
+ * the team builder's name field does.
+ * @returns The reason input
+ */
+function AbsenceReasonInput({
+  savedReason,
+  disabled,
+  onSubmit,
+}: AbsenceReasonInputProps) {
+  const [value, setValue] = useState(savedReason);
+
+  return (
+    <Input
+      value={value}
+      disabled={disabled}
+      aria-label="Lý do vắng"
+      placeholder="Lý do vắng (tuỳ chọn)…"
+      maxLength={ATTENDANCE_REASON_MAX_LENGTH}
+      className="h-8 text-sm"
+      onChange={(event) => setValue(event.target.value)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          onSubmit(value);
+          return;
+        }
+        if (event.key === "Escape") {
+          setValue(savedReason);
+          event.currentTarget.blur();
+        }
+      }}
+    />
   );
 }
