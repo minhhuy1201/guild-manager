@@ -142,9 +142,9 @@ export function MemberAttendanceCard() {
 
                       {/* `mt-auto` pins the answers to the bottom, so a day with a longer
                           subtitle does not leave its buttons higher than its neighbour's. */}
-                      <div className="mt-auto ml-auto flex w-28 flex-col gap-2 pt-2">
+                      <div className="mt-auto flex flex-col gap-2 pt-2">
                         {battleSession.isDeadlinePassed ? (
-                          <span className="text-right text-sm text-muted-foreground">
+                          <span className="text-center text-sm text-muted-foreground">
                             Đã khoá
                           </span>
                         ) : (

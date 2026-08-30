@@ -332,10 +332,10 @@ has one narrow column per day. The picked side is filled — emerald for "Có", 
 
 That card repeats the **week timeline's grid** (`grid gap-2 sm:grid-cols-2 lg:grid-cols-3`, the same
 tile frame and `sessionTintClass`), so a day keeps its column in both cards and the eye drops
-straight from the day to its two buttons. The answers sit at the bottom right of the tile, "Có" above
-"Không", in a fixed-width column (`mt-auto ml-auto … w-28`): `mt-auto` so a longer subtitle cannot
-leave one tile's buttons higher than its neighbour's, the fixed width so the two buttons are equal
-even though the words are not.
+straight from the day to its two buttons. The answers close the tile, "Có" above "Không", each the
+full width of the tile — the widest possible target on a phone, and two equal buttons whose words are
+not. `mt-auto` on their column pins them to the bottom, so a longer subtitle cannot leave one tile's
+answers higher than its neighbour's.
 
 > Not to be confused with `status-badge.tsx`: a badge **has words** and is for descriptive labels
 > ("Đã khóa" / "Đang mở" on the week timeline), not for binary state.
