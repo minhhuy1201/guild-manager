@@ -6,6 +6,7 @@ import { GuildClassFilterSelect } from "@/components/shared/guild-class-filter-s
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { RosterFilter } from "@/lib/roster-filter";
+import { cn } from "@/lib/utils";
 
 /**
  * How the two controls are laid out. Only the arrangement differs — both
@@ -26,6 +27,11 @@ interface RosterFilterBarProps {
   idPrefix: string;
   /** Arrangement of the two controls. Defaults to `stacked`. */
   layout?: RosterFilterLayout;
+  /**
+   * Extra classes on the root, for a caller whose own grid the two controls take part in —
+   * a column span, or a different column count.
+   */
+  className?: string;
 }
 
 /**
@@ -38,6 +44,7 @@ interface RosterFilterBarProps {
  * @param onChange - Receives the whole next filter
  * @param idPrefix - Prefix making the input ids unique on the page
  * @param layout - Arrangement of the two controls, `stacked` by default
+ * @param className - Extra classes on the root
  * @returns The filter row
  */
 export function RosterFilterBar({
@@ -45,17 +52,19 @@ export function RosterFilterBar({
   onChange,
   idPrefix,
   layout = "stacked",
+  className,
 }: RosterFilterBarProps) {
   const isInline = layout === "inline";
   const labelClassName = isInline ? "sr-only" : undefined;
 
   return (
     <div
-      className={
+      className={cn(
         isInline
           ? "flex flex-wrap items-center gap-2"
-          : "grid gap-4 sm:grid-cols-2"
-      }
+          : "grid gap-4 sm:grid-cols-2",
+        className
+      )}
     >
       <div className={isInline ? "w-64" : "flex flex-col gap-1.5"}>
         <Label htmlFor={`${idPrefix}-search`} className={labelClassName}>

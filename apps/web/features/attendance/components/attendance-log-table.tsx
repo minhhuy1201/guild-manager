@@ -20,7 +20,10 @@ import {
   useBattleSessions,
   useCharacters,
   useFilteredCharacters,
+  useSessionFilter,
 } from "../hooks/use-attendance";
+import { matchesPresenceFilter } from "../lib/presence-filter";
+import { useAttendanceFilterStore } from "../store/attendance-filter-store";
 import { AttendanceStatusIcon } from "./attendance-status-icon";
 import { CharacterName } from "./character-name";
 
@@ -43,7 +46,7 @@ const COLUMN_CLASSES = [
 
 /**
  * The attendance history table: who marked what, for which session, yes/no, and when.
- * Filtered by the shared filters (search + class), newest first.
+ * Filtered by the History screen's filters (search + class + presence + session), newest first.
  * @returns The history table card
  */
 export function AttendanceLogTable() {
@@ -51,6 +54,8 @@ export function AttendanceLogTable() {
   const { data: characters } = useCharacters();
   const { data: sessions } = useBattleSessions();
   const state = useAttendanceBoard();
+  const presence = useAttendanceFilterStore((s) => s.presence);
+  const { selectedSession } = useSessionFilter();
 
   const characterMap = useMemo(
     () => new Map((characters ?? []).map((c) => [c.id, c])),
@@ -72,12 +77,17 @@ export function AttendanceLogTable() {
   const rows = useMemo(
     () =>
       allRecords
-        .filter((record) => filteredIds.has(record.characterId))
+        .filter(
+          (record) =>
+            filteredIds.has(record.characterId) &&
+            matchesPresenceFilter(presence, record.isPresent) &&
+            (selectedSession === null || record.sessionId === selectedSession.id)
+        )
         .sort(
           (a, b) =>
             new Date(b.markedAt).getTime() - new Date(a.markedAt).getTime()
         ),
-    [allRecords, filteredIds]
+    [allRecords, filteredIds, presence, selectedSession]
   );
 
   return (
