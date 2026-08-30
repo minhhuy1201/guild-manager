@@ -6,7 +6,10 @@ import type { BattleSession } from "@guild/shared/schemas";
 
 import { EmptyState } from "@/components/shared/empty-state";
 import { QueryBoundary } from "@/components/shared/query-boundary";
-import { SessionLabel } from "@/components/shared/session-label";
+import {
+  SessionLabel,
+  sessionTintClass,
+} from "@/components/shared/session-label";
 import { Spinner } from "@/components/shared/spinner";
 import { toastError, toastSuccess } from "@/components/shared/toast";
 import { Button } from "@/components/ui/button";
@@ -108,58 +111,67 @@ export function MemberAttendanceCard() {
           <CardHeader>
             <CardTitle>Điểm danh của {character.name}</CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            {battleSessions.map((battleSession) => {
-              const current =
-                recordMap[recordKey(character.id, battleSession.id)]
-                  ?.isPresent ?? null;
-              const counts = summary?.find(
-                (row) => row.sessionId === battleSession.id
-              );
-
-              return (
-                <div
-                  key={battleSession.id}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3"
-                >
-                  <div className="min-w-0">
-                    <SessionLabel session={battleSession} size="md" />
-                    <p className="text-sm text-muted-foreground">
-                      {getSessionSubtitle(battleSession)}
-                      {counts && ` · Đã có ${counts.coCount} người`}
-                    </p>
-                  </div>
-
-                  <div className="flex shrink-0 gap-2">
-                    {battleSession.isDeadlinePassed ? (
-                      <span className="text-sm text-muted-foreground">
-                        Đã khoá
-                      </span>
-                    ) : (
-                      CHOICES.map((isPresent) => (
-                        <AttendanceChoiceButton
-                          key={String(isPresent)}
-                          isPresent={isPresent}
-                          isSelected={current === isPresent}
-                          isSaving={
-                            isPending &&
-                            variables?.sessionId === battleSession.id &&
-                            variables.isPresent === isPresent
-                          }
-                          // Both answers of every session wait: a second write while one is in
-                          // flight would leave the buttons pointing at the wrong pending cell.
-                          disabled={isPending}
-                          onSelect={() => void handleMark(battleSession, isPresent)}
-                        />
-                      ))
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-
-            {battleSessions.length === 0 && (
+          <CardContent>
+            {battleSessions.length === 0 ? (
               <EmptyState message="Tuần này chưa có trận nào." />
+            ) : (
+              // The week timeline's own grid, so a day sits in the same column in both cards and
+              // the eye travels straight down from the day to its two buttons.
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {battleSessions.map((battleSession) => {
+                  const current =
+                    recordMap[recordKey(character.id, battleSession.id)]
+                      ?.isPresent ?? null;
+                  const counts = summary?.find(
+                    (row) => row.sessionId === battleSession.id
+                  );
+
+                  return (
+                    <div
+                      key={battleSession.id}
+                      className={cn(
+                        "flex flex-col gap-1.5 rounded-lg border p-3",
+                        sessionTintClass(battleSession.isGuildWar)
+                      )}
+                    >
+                      <SessionLabel session={battleSession} size="md" />
+                      <p className="text-sm text-muted-foreground">
+                        {getSessionSubtitle(battleSession)}
+                        {counts && ` · Đã có ${counts.coCount} người`}
+                      </p>
+
+                      {/* `mt-auto` pins the answers to the bottom, so a day with a longer
+                          subtitle does not leave its buttons higher than its neighbour's. */}
+                      <div className="mt-auto ml-auto flex w-28 flex-col gap-2 pt-2">
+                        {battleSession.isDeadlinePassed ? (
+                          <span className="text-right text-sm text-muted-foreground">
+                            Đã khoá
+                          </span>
+                        ) : (
+                          CHOICES.map((isPresent) => (
+                            <AttendanceChoiceButton
+                              key={String(isPresent)}
+                              isPresent={isPresent}
+                              isSelected={current === isPresent}
+                              isSaving={
+                                isPending &&
+                                variables?.sessionId === battleSession.id &&
+                                variables.isPresent === isPresent
+                              }
+                              // Both answers of every day wait: a second write while one is in
+                              // flight would leave the spinner on the wrong button.
+                              disabled={isPending}
+                              onSelect={() =>
+                                void handleMark(battleSession, isPresent)
+                              }
+                            />
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </CardContent>
         </Card>

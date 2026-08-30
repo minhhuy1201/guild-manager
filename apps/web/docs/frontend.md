@@ -326,9 +326,16 @@ destructive `X`, "Có" with an emerald `Swords` — the same mark `SessionLabel`
 each button shrinks to the width of its icon (`w-9`) and only widens on hover.
 
 The member card (`member-attendance-card`) answers the same two questions with the same two marks,
-as full `Button`s: a member sees one card and has room for the words, where the admin grid has one
-narrow column per day. The picked side is filled — emerald for "Có", destructive for "Không" — and
-the icon becomes a `Spinner` while that answer is being written.
+as full `Button`s: a member sees their own day tiles and has room for the words, where the admin grid
+has one narrow column per day. The picked side is filled — emerald for "Có", destructive for "Không"
+— and the icon becomes a `Spinner` while that answer is being written.
+
+That card repeats the **week timeline's grid** (`grid gap-2 sm:grid-cols-2 lg:grid-cols-3`, the same
+tile frame and `sessionTintClass`), so a day keeps its column in both cards and the eye drops
+straight from the day to its two buttons. The answers sit at the bottom right of the tile, "Có" above
+"Không", in a fixed-width column (`mt-auto ml-auto … w-28`): `mt-auto` so a longer subtitle cannot
+leave one tile's buttons higher than its neighbour's, the fixed width so the two buttons are equal
+even though the words are not.
 
 > Not to be confused with `status-badge.tsx`: a badge **has words** and is for descriptive labels
 > ("Đã khóa" / "Đang mở" on the week timeline), not for binary state.
