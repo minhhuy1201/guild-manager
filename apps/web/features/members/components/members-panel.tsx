@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { UserPlus } from "lucide-react";
 
-import type { GuildRole } from "@guild/shared/enums";
 import type { GuildMember } from "@guild/shared/schemas";
 
 import { CreateButton } from "@/components/shared/action-buttons";
@@ -20,9 +19,7 @@ import {
 import { useTablePagination } from "@/hooks/use-table-pagination";
 import { combineQueries } from "@/lib/query-group";
 import { matchesRosterFilter, type RosterFilter } from "@/lib/roster-filter";
-import { useSession } from "@/features/auth";
 import { useMembers } from "../hooks/use-members";
-import { useUpdateMember } from "../hooks/use-member-mutations";
 import { DeleteMemberDialog } from "./delete-member-dialog";
 import { MemberFormDialog } from "./member-form-dialog";
 import { MemberRow } from "./member-row";
@@ -40,8 +37,6 @@ const COLUMN_COUNT = 5;
  */
 export function MembersPanel() {
   const membersQuery = useMembers();
-  const { data: session } = useSession();
-  const updateMutation = useUpdateMember();
   const [filter, setFilter] = useState<RosterFilter>(EMPTY_FILTER);
   const [editing, setEditing] = useState<GuildMember | null>(null);
   const [formOpen, setFormOpen] = useState(false);
@@ -51,7 +46,7 @@ export function MembersPanel() {
   const allMembers = membersQuery.data ?? [];
   const isFiltering = normalized.length > 0 || filter.guildClasses.length > 0;
   const members = allMembers.filter((member) =>
-    matchesRosterFilter(member, filter)
+    matchesRosterFilter(member, filter),
   );
 
   const pagination = useTablePagination({
@@ -62,18 +57,8 @@ export function MembersPanel() {
 
   const state = combineQueries(
     [membersQuery],
-    "Không tải được danh sách thành viên."
+    "Không tải được danh sách thành viên.",
   );
-
-  /**
-   * Change a member's role inline, without opening a dialog.
-   * @param member - Member whose role changes
-   * @param role - The new role
-   */
-  const handleRoleChange = (member: GuildMember, role: GuildRole) => {
-    // Backend errors surface through `updateMutation.error` just below the table.
-    void updateMutation.mutateAsync({ id: member.id, input: { role } }).catch(() => {});
-  };
 
   return (
     <div className="flex flex-col gap-4">
@@ -94,15 +79,6 @@ export function MembersPanel() {
         />
       </div>
 
-      {/* Always occupies its slot: an error appearing must not push the table down. */}
-      <div className="min-h-10">
-        {updateMutation.error && (
-          <p className="animate-in rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive fade-in duration-[var(--duration-base)] ease-out-soft">
-            {updateMutation.error.message}
-          </p>
-        )}
-      </div>
-
       <Table>
         <TableHeader>
           <TableRow>
@@ -110,7 +86,7 @@ export function MembersPanel() {
             <TableHead>Lưu phái</TableHead>
             <TableHead>Discord</TableHead>
             <TableHead>Quyền</TableHead>
-            <TableHead>Thao tác</TableHead>
+            <TableHead className="text-center">Thao tác</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -127,17 +103,11 @@ export function MembersPanel() {
               <MemberRow
                 key={member.id}
                 member={member}
-                currentDiscordId={session?.discordId ?? ""}
-                isSavingRole={
-                  updateMutation.isPending &&
-                  updateMutation.variables?.id === member.id
-                }
                 onEdit={(target) => {
                   setEditing(target);
                   setFormOpen(true);
                 }}
                 onDelete={setDeleting}
-                onRoleChange={handleRoleChange}
               />
             )}
           />

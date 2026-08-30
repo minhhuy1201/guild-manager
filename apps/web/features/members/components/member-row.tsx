@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  GUILD_ROLE_LABEL,
-  GUILD_ROLE_OPTIONS,
-  type GuildRole,
-} from "@guild/shared/enums";
+import { GuildRole, GUILD_ROLE_LABEL } from "@guild/shared/enums";
 import type { GuildMember } from "@guild/shared/schemas";
 
 import {
@@ -13,54 +9,36 @@ import {
   RowActions,
 } from "@/components/shared/action-buttons";
 import { GuildClassIcon } from "@/components/shared/guild-class-icon";
-import { Spinner } from "@/components/shared/spinner";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { formatDateTime } from "@/lib/format";
+
+/** Badge variant per role: the administrator stands out, everyone else stays quiet. */
+const ROLE_BADGE_VARIANT: Record<
+  GuildRole,
+  React.ComponentProps<typeof Badge>["variant"]
+> = {
+  [GuildRole.ADMIN]: "default",
+  [GuildRole.MEMBER]: "outline",
+};
 
 interface MemberRowProps {
   /** Member of this row */
   member: GuildMember;
-  /** Discord ID of the signed-in user — used to lock the role dropdown on their own row */
-  currentDiscordId: string;
-  /** This row's role write is in flight — lock the dropdown and show a spinner */
-  isSavingRole: boolean;
   /** Called on Edit */
   onEdit: (member: GuildMember) => void;
   /** Called on Delete */
   onDelete: (member: GuildMember) => void;
-  /** Called when this member's role changes */
-  onRoleChange: (member: GuildMember, role: GuildRole) => void;
 }
 
 /**
- * One member row in the management table.
+ * One member row in the management table. Read-only: every change goes through the member form.
  * @param props.member - Member of this row
- * @param props.currentDiscordId - Discord ID of the signed-in user
- * @param props.isSavingRole - Whether this row's role write is in flight
  * @param props.onEdit - Called on Edit
  * @param props.onDelete - Called on Delete
- * @param props.onRoleChange - Called when the role changes
  * @returns The table row
  */
-export function MemberRow({
-  member,
-  currentDiscordId,
-  isSavingRole,
-  onEdit,
-  onDelete,
-  onRoleChange,
-}: MemberRowProps) {
-  // A role is meaningless without a Discord ID; and nobody may demote themselves.
-  const isRoleLocked =
-    member.discordId === null || member.discordId === currentDiscordId;
-
+export function MemberRow({ member, onEdit, onDelete }: MemberRowProps) {
   return (
     <TableRow>
       <TableCell className="font-medium">{member.name}</TableCell>
@@ -84,32 +62,11 @@ export function MemberRow({
         )}
       </TableCell>
       <TableCell>
-        <div className="flex items-center gap-2">
-          <Select
-            value={member.role}
-            disabled={isRoleLocked || isSavingRole}
-            onValueChange={(next) =>
-              onRoleChange(member, String(next) as GuildRole)
-            }
-          >
-            <SelectTrigger
-              aria-label={`Quyền của ${member.name}`}
-              className="w-36"
-            >
-              <SelectValue>{() => GUILD_ROLE_LABEL[member.role]}</SelectValue>
-            </SelectTrigger>
-            <SelectContent alignItemWithTrigger={false}>
-              {GUILD_ROLE_OPTIONS.map((option) => (
-                <SelectItem key={option} value={option}>
-                  {GUILD_ROLE_LABEL[option]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {isSavingRole && <Spinner size="sm" label="Đang lưu quyền" />}
-        </div>
+        <Badge variant={ROLE_BADGE_VARIANT[member.role]}>
+          {GUILD_ROLE_LABEL[member.role]}
+        </Badge>
       </TableCell>
-      <TableCell className="text-right">
+      <TableCell className="text-center">
         <RowActions>
           <EditAction
             label={`Sửa ${member.name}`}

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { GuildClass, GuildRole } from "@guild/shared/enums";
+import { GuildClass, GUILD_ROLE_LABEL, GuildRole } from "@guild/shared/enums";
 import type { GuildMember } from "@guild/shared/schemas";
 
 import { Table, TableBody } from "@/components/ui/table";
@@ -21,39 +21,36 @@ const MEMBER: GuildMember = {
 
 /**
  * Render one member row inside a real table.
- * @param isSavingRole - Whether this row's role write is in flight
+ * @param member - Member the row displays
  * @returns The testing-library render result
  */
-function renderRow(isSavingRole: boolean) {
+function renderRow(member: GuildMember = MEMBER) {
   return render(
     <Table>
       <TableBody>
-        <MemberRow
-          member={MEMBER}
-          currentDiscordId="other"
-          isSavingRole={isSavingRole}
-          onEdit={vi.fn()}
-          onDelete={vi.fn()}
-          onRoleChange={vi.fn()}
-        />
+        <MemberRow member={member} onEdit={vi.fn()} onDelete={vi.fn()} />
       </TableBody>
     </Table>
   );
 }
 
-describe("MemberRow", () => {
-  it("đang ghi thì khoá select quyền và báo cho trình đọc màn hình", () => {
-    renderRow(true);
-    expect(screen.getByText("Đang lưu quyền").classList.contains("sr-only")).toBe(
-      true
-    );
-    expect(
-      screen.getByLabelText(`Quyền của ${MEMBER.name}`).hasAttribute("disabled")
-    ).toBe(true);
+describe("MemberRow - cột quyền", () => {
+  it("hiển thị quyền dạng badge chỉ để đọc", () => {
+    renderRow();
+    const badge = screen.getByText(GUILD_ROLE_LABEL[GuildRole.MEMBER]);
+    expect(badge.dataset.slot).toBe("badge");
   });
 
-  it("không ghi thì không có spinner", () => {
-    renderRow(false);
-    expect(screen.queryByText("Đang lưu quyền")).toBeNull();
+  it("không còn ô chọn quyền trong bảng", () => {
+    renderRow();
+    expect(screen.queryByLabelText(`Quyền của ${MEMBER.name}`)).toBeNull();
+    expect(screen.queryByRole("combobox")).toBeNull();
+  });
+
+  it("hiển thị nhãn quyền quản trị", () => {
+    renderRow({ ...MEMBER, role: GuildRole.ADMIN });
+    expect(
+      screen.getByText(GUILD_ROLE_LABEL[GuildRole.ADMIN])
+    ).not.toBeNull();
   });
 });
