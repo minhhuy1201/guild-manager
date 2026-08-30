@@ -93,6 +93,28 @@ describe('CharactersService', () => {
     });
   });
 
+  describe('listRows', () => {
+    it('trả nguyên hàng Prisma, sắp theo tên, không qua codec nào', async () => {
+      const rows = await service.listRows();
+
+      expect(prisma.character.findMany).toHaveBeenCalledWith({
+        orderBy: { name: 'asc' },
+      });
+      expect(rows).toEqual([ROW]);
+    });
+
+    it('hàng thô còn đủ trường để caller tự chọn codec của mình', async () => {
+      prisma.character.findMany.mockResolvedValue([
+        { ...ROW, discordId: '123456789012345678' },
+      ]);
+
+      const [row] = await service.listRows();
+
+      expect(row.discordId).toBe('123456789012345678');
+      expect(row).toHaveProperty('createdAt');
+    });
+  });
+
   describe('create', () => {
     it('sinh id mang prefix từ tên', async () => {
       await service.create({
