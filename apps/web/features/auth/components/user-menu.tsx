@@ -74,12 +74,12 @@ export function UserMenu({ label, discordId, avatarHash }: UserMenuProps) {
         </Avatar>
       </DropdownMenuTrigger>
       {/*
-        Opens rightwards and is allowed to overflow the edge: Base UI's default collision avoidance
-        pulls the menu back inside, which drops it to the left of the avatar.
+        Opens rightwards, and flips to align on the right edge of the avatar when there is not enough
+        room — `shift`, Base UI's default, only slides the menu and can still leave it clipped.
       */}
       <DropdownMenuContent
         align="start"
-        collisionAvoidance={{ align: "none" }}
+        collisionAvoidance={{ align: "flip" }}
         className="min-w-48"
       >
         {label && (
