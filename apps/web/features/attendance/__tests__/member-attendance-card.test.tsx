@@ -96,7 +96,8 @@ function makeSession(
  */
 function makeRecords(
   sessionId: string,
-  isPresent: boolean
+  isPresent: boolean,
+  reason: string | null = null
 ): Record<string, AttendanceRecord> {
   return {
     [recordKey(CHARACTER.id, sessionId)]: {
@@ -104,6 +105,7 @@ function makeRecords(
       sessionId,
       isPresent,
       markedAt: "2026-08-24T10:00:00.000Z",
+      reason,
     },
   };
 }

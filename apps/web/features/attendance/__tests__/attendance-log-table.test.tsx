@@ -44,12 +44,20 @@ const SESSIONS = [makeSession("sess-1"), makeSession("sess-2")];
  * @returns The records keyed by `recordKey`
  */
 function makeRecords(
-  entries: Array<Pick<AttendanceRecord, "characterId" | "sessionId" | "isPresent">>
+  entries: Array<
+    Pick<AttendanceRecord, "characterId" | "sessionId" | "isPresent"> & {
+      reason?: string | null;
+    }
+  >
 ): Record<string, AttendanceRecord> {
   return Object.fromEntries(
     entries.map((entry) => [
       recordKey(entry.characterId, entry.sessionId),
-      { ...entry, markedAt: "2026-08-24T10:00:00.000Z" },
+      {
+        ...entry,
+        markedAt: "2026-08-24T10:00:00.000Z",
+        reason: entry.reason ?? null,
+      },
     ])
   );
 }

@@ -60,6 +60,7 @@ const RECORD: AttendanceRecord = {
   sessionId: "thu-7",
   isPresent: true,
   markedAt: "2026-08-17T10:00:00.000Z",
+  reason: null,
 };
 
 beforeEach(() => {

@@ -101,6 +101,9 @@ model AttendanceRecord {
   /// Who recorded this entry. Null for data written before login existed.
   /// Deliberately not a relation: deleting the recorder must not destroy someone else's entry.
   markedByCharacterId String?
+  /// Why the member answered "Không". Null when isPresent = true, or when no reason was given.
+  /// VarChar(255) so the business limit cannot be bypassed by any write path.
+  reason              String?          @db.VarChar(255)
 
   character Character     @relation(fields: [characterId], references: [id], onDelete: Cascade)
   session   BattleSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
