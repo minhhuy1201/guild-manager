@@ -107,6 +107,10 @@ mà admin gần như không làm: lý do là lời của người vắng, admin 
 - **Enter** ⇒ gửi. **Escape** ⇒ trả về giá trị đã lưu rồi bỏ focus. **Blur không gửi** — rời ô là
   thao tác vô tình, không phải một quyết định; `TeamNameField` chốt khi blur vì nó chỉ ghi vào nháp,
   còn ở đây blur sẽ là một request.
+- Luật "blur không lưu" không tự hiện ra trên màn hình, mà đây lại là control duy nhất của màn này
+  không lưu khi bấm. Nên placeholder gọi thẳng tên phím — `Lý do vắng — Enter để lưu` — và tooltip
+  (kèm `title` gốc cho bàn phím/màn hình hẹp) nói đủ hợp đồng: `Nhập lý do rồi bấm Enter để lưu. Bỏ
+  trống cũng được, Esc để huỷ thay đổi.`
 - `maxLength={ATTENDANCE_REASON_MAX_LENGTH}` chặn ngay khi gõ, không để Zod báo lỗi sau lưng — giống
   `SlotNoteInput` và `TeamNameField`.
 - Đang bay thì khoá ô và cả hai nút của ngày đó, đúng luật "một lần ghi tại một thời điểm" mà tile đang

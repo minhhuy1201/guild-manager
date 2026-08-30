@@ -17,6 +17,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useSession } from "@/features/auth";
 import { ApiError } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
@@ -39,6 +44,16 @@ const SKELETON_ROWS = 3;
 
 /** Shown when the write fails with something other than an `ApiError`. */
 const FALLBACK_ERROR_MESSAGE = "Không điểm danh được, thử lại giúp mình.";
+
+/**
+ * Placeholder of the reason field. It names the key rather than describing the field, because the
+ * field is the only control on this screen that a click does not save.
+ */
+const REASON_PLACEHOLDER = "Lý do vắng — Enter để lưu";
+
+/** The whole contract of the reason field, shown as a tooltip and as the native `title`. */
+const REASON_HINT =
+  "Nhập lý do rồi bấm Enter để lưu. Bỏ trống cũng được, Esc để huỷ thay đổi.";
 
 /**
  * Surface of a day tile, by the answer recorded for it: the tile says its own state before a single
@@ -332,7 +347,8 @@ interface AbsenceReasonInputProps {
  *
  * Enter sends and Escape restores what is stored — blur does neither: leaving the field is something
  * that happens by accident, and here it would fire a request rather than touch a local draft the way
- * the team builder's name field does.
+ * the team builder's name field does. Nothing on screen would say that, so the placeholder names the
+ * key and the tooltip spells out the whole contract, Escape included.
  * @returns The reason input
  */
 function AbsenceReasonInput({
@@ -343,25 +359,33 @@ function AbsenceReasonInput({
   const [value, setValue] = useState(savedReason);
 
   return (
-    <Input
-      value={value}
-      disabled={disabled}
-      aria-label="Lý do vắng"
-      placeholder="Lý do vắng (tuỳ chọn)…"
-      maxLength={ATTENDANCE_REASON_MAX_LENGTH}
-      className="h-8 text-sm"
-      onChange={(event) => setValue(event.target.value)}
-      onKeyDown={(event) => {
-        if (event.key === "Enter") {
-          event.preventDefault();
-          onSubmit(value);
-          return;
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <Input
+            value={value}
+            disabled={disabled}
+            aria-label="Lý do vắng"
+            placeholder={REASON_PLACEHOLDER}
+            title={REASON_HINT}
+            maxLength={ATTENDANCE_REASON_MAX_LENGTH}
+            className="h-8 text-sm"
+            onChange={(event) => setValue(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                onSubmit(value);
+                return;
+              }
+              if (event.key === "Escape") {
+                setValue(savedReason);
+                event.currentTarget.blur();
+              }
+            }}
+          />
         }
-        if (event.key === "Escape") {
-          setValue(savedReason);
-          event.currentTarget.blur();
-        }
-      }}
-    />
+      />
+      <TooltipContent>{REASON_HINT}</TooltipContent>
+    </Tooltip>
   );
 }

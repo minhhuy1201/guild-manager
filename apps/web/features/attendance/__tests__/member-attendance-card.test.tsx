@@ -344,6 +344,18 @@ describe("MemberAttendanceCard", () => {
     expect(input.maxLength).toBe(255);
   });
 
+  it("ô lý do nói rõ bấm Enter để lưu, ở cả placeholder lẫn tooltip", () => {
+    records = makeRecords("sess-1", false);
+
+    render(<MemberAttendanceCard />);
+
+    const input = screen.getByLabelText("Lý do vắng") as HTMLInputElement;
+    expect(input.placeholder).toBe("Lý do vắng — Enter để lưu");
+    expect(input.title).toBe(
+      "Nhập lý do rồi bấm Enter để lưu. Bỏ trống cũng được, Esc để huỷ thay đổi."
+    );
+  });
+
   it('không hiện ô lý do khi câu trả lời là "Có"', () => {
     records = makeRecords("sess-1", true);
 
