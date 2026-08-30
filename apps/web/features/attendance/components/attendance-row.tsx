@@ -79,8 +79,7 @@ export function AttendanceRow({
       </TableCell>
 
       {sessions.map((session) => {
-        const currentIsPresent =
-          recordMap[recordKey(character.id, session.id)]?.isPresent;
+        const currentRecord = recordMap[recordKey(character.id, session.id)];
         const sessionLocked = lockedSessionIds.has(session.id);
         // A locked column always renders read-only, even while the row is being edited.
         const showToggle = isEditing && !sessionLocked;
@@ -92,7 +91,19 @@ export function AttendanceRow({
                 onSelect={(isPresent) => onDraftChange(session.id, isPresent)}
               />
             ) : (
-              <StatusBadge isPresent={currentIsPresent} />
+              <div className="flex flex-col items-center gap-0.5">
+                <StatusBadge isPresent={currentRecord?.isPresent} />
+                {/* Read-only on purpose: the reason is the absent member's own words, and letting an
+                    admin edit it would mean carrying a draft string per cell of the whole grid. */}
+                {currentRecord?.reason && (
+                  <span
+                    className="block max-w-32 truncate text-xs text-muted-foreground"
+                    title={currentRecord.reason}
+                  >
+                    {currentRecord.reason}
+                  </span>
+                )}
+              </div>
             )}
           </TableCell>
         );

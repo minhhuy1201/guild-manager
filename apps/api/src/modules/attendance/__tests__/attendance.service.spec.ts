@@ -135,25 +135,23 @@ describe('AttendanceService', () => {
 
     prisma = {
       attendanceRecord: {
-        upsert: jest
-          .fn()
-          .mockImplementation(
-            (args: {
-              create: { characterId: string; sessionId: string };
-              update: {
-                isPresent: boolean;
-                markedAt: Date;
-                reason: string | null;
-              };
-            }) =>
-              Promise.resolve({
-                characterId: args.create.characterId,
-                sessionId: args.create.sessionId,
-                isPresent: args.update.isPresent,
-                markedAt: args.update.markedAt,
-                reason: args.update.reason,
-              }),
-          ),
+        upsert: jest.fn().mockImplementation(
+          (args: {
+            create: { characterId: string; sessionId: string };
+            update: {
+              isPresent: boolean;
+              markedAt: Date;
+              reason: string | null;
+            };
+          }) =>
+            Promise.resolve({
+              characterId: args.create.characterId,
+              sessionId: args.create.sessionId,
+              isPresent: args.update.isPresent,
+              markedAt: args.update.markedAt,
+              reason: args.update.reason,
+            }),
+        ),
         findMany: jest.fn().mockResolvedValue([]),
         groupBy: jest.fn().mockResolvedValue([]),
       },
@@ -398,7 +396,10 @@ describe('AttendanceService', () => {
       );
 
       const [args] = prisma.attendanceRecord.upsert.mock.calls[0] as [
-        { create: { reason: string | null }; update: { reason: string | null } },
+        {
+          create: { reason: string | null };
+          update: { reason: string | null };
+        },
       ];
       expect(args.create.reason).toBe('Ốm');
       expect(args.update.reason).toBe('Ốm');
