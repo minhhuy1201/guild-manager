@@ -39,9 +39,10 @@ export async function fetchMembers(): Promise<GuildMember[]> {
 
 /**
  * Add a member.
- * @param input - Name and class
+ * @param input - Name, class and optionally the Discord ID
  * @returns The created member
- * @throws ApiError carrying the backend's Vietnamese message when rejected
+ * @throws ApiError carrying the backend's Vietnamese message when rejected — 409 when the Discord
+ * ID already belongs to another member
  */
 export async function createMember(
   input: CreateCharacterInput
