@@ -9,30 +9,23 @@ import { AttendanceGrid } from "./attendance-grid";
 import { MemberAttendanceCard } from "./member-attendance-card";
 
 interface AttendanceScreenProps {
-  /** Role of the viewer, deciding whether they see the whole guild or only themselves */
+  /** Role of the viewer, deciding whether they may edit the grid or only read it */
   role: GuildRole;
 }
 
 /**
- * The attendance screen. A member sees only their own character; an admin sees the whole guild.
+ * The attendance screen. Everyone reads the whole guild's grid, filters included; only an admin gets
+ * its edit column. A member answers for their own character in the card above the grid.
  * @param props.role - Role of the viewer
  * @returns The attendance page content
  */
 export function AttendanceScreen({ role }: AttendanceScreenProps) {
   const isAdmin = canManageGuild(role);
 
-  if (!isAdmin) {
-    return (
-      <>
-        <WeekTimeline />
-        <MemberAttendanceCard />
-      </>
-    );
-  }
-
   return (
     <>
       <WeekTimeline />
+      {!isAdmin && <MemberAttendanceCard />}
       <AttendanceFilters scope="attendance" />
       <AttendanceGrid isAdmin={isAdmin} />
     </>

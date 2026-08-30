@@ -31,6 +31,8 @@ interface AttendanceRowProps {
   character: Character;
   /** Battle sessions (the columns) */
   sessions: BattleSession[];
+  /** The viewer may edit — without it the row has no action column at all */
+  canEdit: boolean;
   /** Current records keyed by (characterId__sessionId) */
   recordMap: Record<string, AttendanceRecord>;
   /** Ids of days past their deadline (their columns are locked) */
@@ -55,12 +57,14 @@ interface AttendanceRowProps {
 
 /**
  * One attendance row: read-only by default, switchable to editing.
- * The last column holds the actions (a pencil when read-only, Cancel/Confirm while editing).
+ * The last column holds the actions (a pencil when read-only, Cancel/Confirm while editing); a
+ * viewer who may not edit gets no such column, matching a header rendered without it.
  * @returns The character's attendance row
  */
 export function AttendanceRow({
   character,
   sessions,
+  canEdit,
   recordMap,
   lockedSessionIds,
   allLocked,
@@ -109,31 +113,35 @@ export function AttendanceRow({
         );
       })}
 
-      <TableCell className={STICKY_ACTION_COLUMN}>
-        {isEditing ? (
-          <RowActions className="gap-1.5">
-            <RowActionButton
-              label="Huỷ"
-              icon={<X className="size-4" />}
-              disabled={isSaving}
-              onClick={onCancel}
+      {canEdit && (
+        <TableCell className={STICKY_ACTION_COLUMN}>
+          {isEditing ? (
+            <RowActions className="gap-1.5">
+              <RowActionButton
+                label="Huỷ"
+                icon={<X className="size-4" />}
+                disabled={isSaving}
+                onClick={onCancel}
+              />
+              <RowActionButton
+                label="Xác nhận điểm danh"
+                icon={
+                  isSaving ? <Spinner size="sm" /> : <Check className="size-4" />
+                }
+                variant="default"
+                disabled={isSaving}
+                onClick={() => onConfirm(character)}
+              />
+            </RowActions>
+          ) : (
+            <EditAction
+              label="Điểm danh"
+              disabled={allLocked}
+              onClick={() => onStartEdit(character)}
             />
-            <RowActionButton
-              label="Xác nhận điểm danh"
-              icon={isSaving ? <Spinner size="sm" /> : <Check className="size-4" />}
-              variant="default"
-              disabled={isSaving}
-              onClick={() => onConfirm(character)}
-            />
-          </RowActions>
-        ) : (
-          <EditAction
-            label="Điểm danh"
-            disabled={allLocked}
-            onClick={() => onStartEdit(character)}
-          />
-        )}
-      </TableCell>
+          )}
+        </TableCell>
+      )}
     </TableRow>
   );
 }
