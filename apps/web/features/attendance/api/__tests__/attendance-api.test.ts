@@ -11,9 +11,8 @@ vi.mock("@/features/auth/server", () => ({
   getAccessToken: () => Promise.resolve(ACCESS_TOKEN),
 }));
 
-const { fetchAttendanceRecords, markAttendance } = await import(
-  "../attendance-api"
-);
+const { fetchAttendanceRecords, fetchCurrentWeek, markAttendance } =
+  await import("../attendance-api");
 
 /**
  * Build a fake fetch returning a specific response.
@@ -78,6 +77,21 @@ describe("attendance-api", () => {
           Authorization: `Bearer ${ACCESS_TOKEN}`,
         }),
       })
+    );
+  });
+
+  it("đọc tuần đang mở qua endpoint không cần quyền quản trị", async () => {
+    const week = {
+      weekStart: "2026-07-19T17:00:00.000Z",
+      weekEnd: "2026-07-25T16:59:00.000Z",
+      isActive: true,
+    };
+    const fetchMock = mockFetch({ status: 200, body: { data: week } });
+
+    await expect(fetchCurrentWeek()).resolves.toEqual(week);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:3001/api/battle-sessions/current-week",
+      expect.anything()
     );
   });
 

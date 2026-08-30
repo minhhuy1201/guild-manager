@@ -46,7 +46,13 @@ export class AttendanceService {
    * @returns The whole guild for leaders/admins; only their own character for members
    */
   async getCharacters(actor: JwtPayload): Promise<Character[]> {
-    if (canViewAllAttendance(actor.role)) return this.characters.list();
+    // Through `toCharacter`, not `characters.list()`: that one carries the Discord identity, which
+    // this screen must not hand to leaders.
+    if (canViewAllAttendance(actor.role)) {
+      const rows = await this.characters.listRows();
+
+      return rows.map(toCharacter);
+    }
 
     const own = await this.ownCharacterId(actor);
     if (!own) return [];

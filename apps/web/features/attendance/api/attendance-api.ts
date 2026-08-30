@@ -54,27 +54,15 @@ export async function fetchBattleSessions(): Promise<BattleSession[]> {
 }
 
 /**
- * Get the schedulable weeks: the open week and the next one.
- * @returns The weeks, the open one first
- */
-export async function fetchEditableWeeks(): Promise<Week[]> {
-  return apiFetch<Week[]>("/battle-sessions/weeks", {
-    headers: await authHeader(),
-  });
-}
-
-/**
  * Get the open attendance week.
+ * Reads `/battle-sessions/current-week`, not the schedulable weeks: that endpoint is admin-only and
+ * this screen is the one every member sees.
  * @returns The open week
- * @throws Error when the backend returns no open week
  */
 export async function fetchCurrentWeek(): Promise<Week> {
-  const weeks = await fetchEditableWeeks();
-  const active = weeks.find((week) => week.isActive);
-
-  if (!active) throw new Error("Không xác định được tuần điểm danh.");
-
-  return active;
+  return apiFetch<Week>("/battle-sessions/current-week", {
+    headers: await authHeader(),
+  });
 }
 
 /**

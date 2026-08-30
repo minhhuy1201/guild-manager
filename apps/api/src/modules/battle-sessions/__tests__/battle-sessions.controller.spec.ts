@@ -13,7 +13,9 @@ describe('BattleSessionsController', () => {
     }
   });
 
-  it('xem lịch của một tuần không cần quyền quản trị', () => {
-    expect(guardsOf(BattleSessionsController, 'list')).toEqual([]);
+  it('đọc lịch và tuần đang mở chỉ cần một phiên đăng nhập', () => {
+    for (const method of ['list', 'getCurrentWeek']) {
+      expect(guardsOf(BattleSessionsController, method)).toEqual([]);
+    }
   });
 });

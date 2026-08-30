@@ -3,7 +3,7 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { FixedClock } from '../../../common';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { BattleSessionsService } from '../battle-sessions.service';
-import { weekStartOf } from '../session-schedule';
+import { getEditableWeeks, weekStartOf } from '../session-schedule';
 
 /**
  * Build a Date from Vietnam time (UTC+7) for readability in tests.
@@ -143,6 +143,14 @@ describe('BattleSessionsService', () => {
       expect(service.getActiveWeek().toISOString()).toBe(
         WEEK_START.toISOString(),
       );
+    });
+
+    it('getCurrentWeek trả tuần đang mở, không cần danh sách tuần sửa được', () => {
+      expect(service.getCurrentWeek()).toEqual({
+        weekStart: WEEK_START.toISOString(),
+        weekEnd: getEditableWeeks(WEDNESDAY)[0].weekEnd.toISOString(),
+        isActive: true,
+      });
     });
   });
 

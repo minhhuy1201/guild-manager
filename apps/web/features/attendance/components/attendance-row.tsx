@@ -1,7 +1,6 @@
 "use client";
 
 import { Check, Swords, X } from "lucide-react";
-import { attendanceLabel } from "@guild/shared/enums";
 import type {
   AttendanceRecord,
   BattleSession,
@@ -14,7 +13,6 @@ import {
   RowActions,
 } from "@/components/shared/action-buttons";
 import { Spinner } from "@/components/shared/spinner";
-import { StatusIcon } from "@/components/shared/status-icon";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { recordKey } from "../lib/record-key";
@@ -22,6 +20,7 @@ import {
   STICKY_ACTION_COLUMN,
   STICKY_NAME_COLUMN,
 } from "../lib/sticky-columns";
+import { AttendanceStatusIcon } from "./attendance-status-icon";
 import { CharacterName } from "./character-name";
 
 /** Draft state of a row being edited: sessionId → answer (undefined = not marked yet). */
@@ -135,19 +134,14 @@ interface StatusBadgeProps {
 
 /**
  * Read-only attendance badge, shown as a coloured icon.
- * @returns A green (yes) / red (no) icon, or "—" when unmarked
+ * @returns An emerald swords (yes) / red cross (no) icon, or "—" when unmarked
  */
 function StatusBadge({ isPresent }: StatusBadgeProps) {
   // `false` is a real answer, so the unmarked branch must test undefined explicitly.
   if (isPresent === undefined) {
     return <span className="text-muted-foreground">—</span>;
   }
-  return (
-    <StatusIcon
-      tone={isPresent ? "success" : "danger"}
-      label={attendanceLabel(isPresent)}
-    />
-  );
+  return <AttendanceStatusIcon isPresent={isPresent} />;
 }
 
 interface AttendanceToggleProps {

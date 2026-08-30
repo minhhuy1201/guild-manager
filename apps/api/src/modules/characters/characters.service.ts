@@ -32,15 +32,22 @@ export class CharactersService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * List every member.
+   * List every member with their Discord identity — the admin screen's shape.
    * @returns Members ordered by name
    */
   async list(): Promise<GuildMember[]> {
-    const rows = await this.prisma.character.findMany({
-      orderBy: { name: 'asc' },
-    });
+    const rows = await this.listRows();
 
     return rows.map(toGuildMember);
+  }
+
+  /**
+   * Raw member rows, for a caller that applies its own codec.
+   * `list()` would hand out `discordId` and `lastLoginAt`, which only the admin screen may read.
+   * @returns The Character rows ordered by name
+   */
+  async listRows(): Promise<GuildMemberRow[]> {
+    return this.prisma.character.findMany({ orderBy: { name: 'asc' } });
   }
 
   /**

@@ -64,7 +64,8 @@ apps/web/
 ```
 
 Stack: Next.js 16 App Router (React 19) · Tailwind CSS 4 + shadcn/ui on `@base-ui/react` ·
-TanStack Query for server state · Zustand for UI state · dnd-kit on the team builder · Vitest.
+TanStack Query for server state · Zustand for UI state · dnd-kit on the team builder · sonner for
+toasts · Vitest.
 
 All user-facing copy is **Vietnamese**. Identifiers and file names are English.
 
@@ -218,7 +219,7 @@ regenerating a component never eats a local change.
 Current shared building blocks: `action-buttons`, `confirm-delete-dialog`, `date-range`,
 `error-state`, `guild-class-filter-select`, `guild-class-icon`, `main-nav`, `mutation-dialog`,
 `mutation-form`, `mutation-pending`, `page-size-select`, `password-input`, `query-boundary`,
-`roster-filter-bar`, `session-label`, `site-header`, `status-badge`, `status-icon`,
+`roster-filter-bar`, `session-label`, `site-header`, `status-badge`, `status-icon`, `toast`,
 `table-pagination`, `table-pagination-bar`, `table-skeleton`.
 
 ### The query group of a screen
@@ -312,13 +313,39 @@ icon, not text:
 Use **`components/shared/status-icon.tsx`** (`<StatusIcon tone label />`). `label` is required — the
 icon has no visible text, so it is the only thing a screen reader gets.
 
-In use on the attendance grid (`attendance-row`, read-only cells) and the attendance history table
-(`attendance-log-table`).
+The glyph is a default, not a rule: a domain with a mark of its own passes `icon` and keeps the tone.
+Attendance does — a recorded "Có" is the emerald circle with the **`Swords`** of a battle, "Không" the
+red cross — through `features/attendance/components/attendance-status-icon.tsx`
+(`<AttendanceStatusIcon isPresent />`), which is what the attendance grid (`attendance-row`,
+read-only cells) and the history table (`attendance-log-table`) render. Reading a row and pressing a
+button then use one vocabulary: swords means "đi đánh" everywhere on the screen.
 
 **This rule covers *displaying* a state only.** The cell being edited in `attendance-row`
 (`AttendanceToggle`) is a control about to be pressed, so it carries words: "Không" with a
 destructive `X`, "Có" with an emerald `Swords` — the same mark `SessionLabel` gives a battle. At rest
 each button shrinks to the width of its icon (`w-9`) and only widens on hover.
+
+The member card (`member-attendance-card`) answers the same two questions with the same two marks,
+as full `Button`s: a member sees their own day tiles and has room for the words, where the admin grid
+has one narrow column per day. The picked side is filled — emerald for "Có", destructive for "Không"
+— and the icon becomes a `Spinner` while that answer is being written.
+
+A member's tile **carries its own answer in its surface**: emerald for "Có", `destructive` for
+"Không", amber while the day is still unanswered — the one tone with no token in the design system,
+because "still waiting for you" is neither a success nor a failure. The border takes the tone at full
+strength, the background at `/5`: a week of tiles is a lot of surface, and a fill as strong as the
+border would drown the text and the buttons on it.
+
+The answer owns the whole tile, which is why the member card is the one place that does **not** call
+`sessionTintClass` — a Guild War is still named there by `SessionLabel`'s swords, and by the tinted
+tile in the week timeline directly above.
+
+That card repeats the **week timeline's grid** (`grid gap-2 sm:grid-cols-2 lg:grid-cols-3`, the same
+tile frame and `sessionTintClass`), so a day keeps its column in both cards and the eye drops
+straight from the day to its two buttons. The answers close the tile, "Có" above "Không", each the
+full width of the tile — the widest possible target on a phone, and two equal buttons whose words are
+not. `mt-auto` on their column pins them to the bottom, so a longer subtitle cannot leave one tile's
+answers higher than its neighbour's.
 
 > Not to be confused with `status-badge.tsx`: a badge **has words** and is for descriptive labels
 > ("Đã khóa" / "Đang mở" on the week timeline), not for binary state.
@@ -458,6 +485,32 @@ outside one, call it directly.
 
 The `border-dashed` left in the app is the drag-and-drop drop-zone border (`member-pool`, `slot-cell`,
 `prefill-banner`), not an empty state.
+
+### Feedback after a write → a toast
+
+One `<Toaster position="top-center" theme="light" />` lives in `components/providers.tsx`; a screen
+raises one through **`components/shared/toast.ts`** (`toastSuccess` / `toastError`), never by calling
+`sonner` directly. Top centre because on a phone a thumb covers the bottom half of the screen, which
+is exactly where the attendance buttons sit; `theme="light"` because nothing in the app sets the
+`.dark` class, and left on `"system"` sonner follows the operating system and drops a dark toast onto
+a light page.
+
+The two tones are the app's own: emerald for a success, `destructive` for a failure — the "Có" and
+"Không" marks again. Sonner takes a surface as three custom properties, so `toast.ts` sets them
+together: `--normal-bg` is a 10% tint of the accent over `--background`, `--normal-text` and
+`--normal-border` are the accent itself. Soft tint, never a filled accent, so the sentence stays
+readable. Tailwind 4 only emits the palette variables the app actually uses, which is why the accent
+is `--color-emerald-600` (in use elsewhere) and not `--color-green-600` (not emitted, so it would
+silently resolve to nothing).
+
+Which of the two feedback shapes:
+
+- **A write with no visible result of its own** → a toast, success and failure both, so the two
+  outcomes land in the same place. `member-attendance-card` is the worked example: pressing "Có"
+  changes one button's fill, which is too quiet to read as "saved".
+- **A write inside a table or a dialog** → the inline error line that keeps its slot (see *Motion*,
+  "A mutation error keeps its slot"). The row is already in view and a toast would pull the eye off
+  it — `attendance-grid` and `members-panel`.
 
 ### Motion
 
