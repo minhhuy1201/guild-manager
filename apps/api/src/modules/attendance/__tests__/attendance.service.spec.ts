@@ -140,13 +140,18 @@ describe('AttendanceService', () => {
           .mockImplementation(
             (args: {
               create: { characterId: string; sessionId: string };
-              update: { isPresent: boolean; markedAt: Date };
+              update: {
+                isPresent: boolean;
+                markedAt: Date;
+                reason: string | null;
+              };
             }) =>
               Promise.resolve({
                 characterId: args.create.characterId,
                 sessionId: args.create.sessionId,
                 isPresent: args.update.isPresent,
                 markedAt: args.update.markedAt,
+                reason: args.update.reason,
               }),
           ),
         findMany: jest.fn().mockResolvedValue([]),
@@ -189,6 +194,7 @@ describe('AttendanceService', () => {
         sessionId: SESSION_IDS['Thứ 7 · Bang Chiến'],
         isPresent: true,
         markedAt: WEDNESDAY.toISOString(),
+        reason: null,
       });
     });
 
@@ -330,6 +336,75 @@ describe('AttendanceService', () => {
     });
   });
 
+  describe('lý do vắng', () => {
+    const SATURDAY = SESSION_IDS['Thứ 7 · Bang Chiến'];
+
+    it('lưu lý do khi trả lời "Không"', async () => {
+      const record = await service.mark(
+        {
+          characterId: CHARACTER_ID,
+          sessionId: SATURDAY,
+          isPresent: false,
+          reason: 'Bận đi công tác',
+        },
+        MEMBER,
+      );
+
+      expect(record.reason).toBe('Bận đi công tác');
+    });
+
+    it('bỏ lý do khi trả lời "Có", dù body có gửi', async () => {
+      const record = await service.mark(
+        {
+          characterId: CHARACTER_ID,
+          sessionId: SATURDAY,
+          isPresent: true,
+          reason: 'Bận đi công tác',
+        },
+        MEMBER,
+      );
+
+      expect(record.reason).toBeNull();
+    });
+
+    it('lý do rỗng và không gửi lý do đều thành null', async () => {
+      const empty = await service.mark(
+        {
+          characterId: CHARACTER_ID,
+          sessionId: SATURDAY,
+          isPresent: false,
+          reason: '',
+        },
+        MEMBER,
+      );
+      const missing = await service.mark(
+        { characterId: CHARACTER_ID, sessionId: SATURDAY, isPresent: false },
+        MEMBER,
+      );
+
+      expect(empty.reason).toBeNull();
+      expect(missing.reason).toBeNull();
+    });
+
+    it('ghi lý do vào cả nhánh tạo mới lẫn nhánh cập nhật của upsert', async () => {
+      await service.mark(
+        {
+          characterId: CHARACTER_ID,
+          sessionId: SATURDAY,
+          isPresent: false,
+          reason: 'Ốm',
+        },
+        MEMBER,
+      );
+
+      const [args] = prisma.attendanceRecord.upsert.mock.calls[0] as [
+        { create: { reason: string | null }; update: { reason: string | null } },
+      ];
+      expect(args.create.reason).toBe('Ốm');
+      expect(args.update.reason).toBe('Ốm');
+    });
+  });
+
   describe('getCharacters', () => {
     it('trả cả bang, đã lược danh tính Discord', async () => {
       characters.listRows.mockResolvedValue([
@@ -435,6 +510,7 @@ describe('AttendanceService', () => {
           sessionId: 'session-sat',
           isPresent: true,
           markedAt: WEDNESDAY,
+          reason: null,
         },
       ]);
 
@@ -444,6 +520,7 @@ describe('AttendanceService', () => {
           sessionId: 'session-sat',
           isPresent: true,
           markedAt: WEDNESDAY.toISOString(),
+          reason: null,
         },
       ]);
     });
