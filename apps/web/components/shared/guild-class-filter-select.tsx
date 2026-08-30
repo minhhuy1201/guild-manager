@@ -7,12 +7,12 @@ import {
   type GuildClass,
 } from "@guild/shared/enums";
 
+import { ClearableSelectTrigger } from "@/components/shared/clearable-select-trigger";
 import { FilterAllIcon } from "@/components/shared/filter-all-icon";
 import {
   Select,
   SelectContent,
   SelectItem,
-  SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import { GUILD_CLASS_IMAGE } from "@/lib/guild-class";
@@ -50,7 +50,6 @@ export function GuildClassFilterSelect({
 }: GuildClassFilterSelectProps) {
   const isAll = value.length === 0;
   const selected: ClassFilterValue[] = isAll ? [ALL_CLASSES] : value;
-
   /**
    * Translate a picker selection back into the caller's representation.
    * Picking "Tất cả" while some classes are checked clears them; picking a
@@ -67,7 +66,12 @@ export function GuildClassFilterSelect({
 
   return (
     <Select multiple value={selected} onValueChange={handleValueChange}>
-      <SelectTrigger id={id} className="w-full">
+      <ClearableSelectTrigger
+        id={id}
+        isActive={!isAll}
+        clearLabel="Xoá lọc lưu phái"
+        onClear={() => onChange([])}
+      >
         <SelectValue>
           {(current: ClassFilterValue[]) => {
             const classes = current.filter(
@@ -96,7 +100,7 @@ export function GuildClassFilterSelect({
             return `${classes.length} lưu phái`;
           }}
         </SelectValue>
-      </SelectTrigger>
+      </ClearableSelectTrigger>
       {/* Opens as a popover under the trigger instead of anchoring the selected item to it. */}
       <SelectContent alignItemWithTrigger={false}>
         <SelectItem value={ALL_CLASSES}>

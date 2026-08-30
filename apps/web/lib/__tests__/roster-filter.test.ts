@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { GuildClass } from "@guild/shared/enums";
 
-import { matchesRosterFilter, type RosterCandidate } from "../roster-filter";
+import {
+  isRosterFilterActive,
+  matchesRosterFilter,
+  type RosterCandidate,
+} from "../roster-filter";
 
 const MEO: RosterCandidate = {
   name: "Mèo Mập",
@@ -44,5 +48,29 @@ describe("matchesRosterFilter", () => {
 
   it("cắt khoảng trắng thừa quanh từ khoá thật", () => {
     expect(matchesRosterFilter(MEO, { search: "  mập  ", guildClasses: [] })).toBe(true);
+  });
+});
+
+describe("isRosterFilterActive", () => {
+  it("bộ lọc rỗng thì coi như chưa lọc gì", () => {
+    expect(isRosterFilterActive({ search: "", guildClasses: [] })).toBe(false);
+  });
+
+  it("từ khoá chỉ có khoảng trắng cũng là chưa lọc — đúng như matchesRosterFilter", () => {
+    expect(isRosterFilterActive({ search: "   ", guildClasses: [] })).toBe(false);
+  });
+
+  it("có từ khoá thật là đang lọc", () => {
+    expect(isRosterFilterActive({ search: "mèo", guildClasses: [] })).toBe(true);
+  });
+
+  it("cắt khoảng trắng quanh từ khoá rồi mới xét", () => {
+    expect(isRosterFilterActive({ search: "  mèo  ", guildClasses: [] })).toBe(true);
+  });
+
+  it("chọn lưu phái là đang lọc, dù ô tìm kiếm trống", () => {
+    expect(
+      isRosterFilterActive({ search: "", guildClasses: [GuildClass.TO_VAN] })
+    ).toBe(true);
   });
 });

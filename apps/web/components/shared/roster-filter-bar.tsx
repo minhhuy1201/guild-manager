@@ -1,7 +1,9 @@
 "use client";
 
+import { useRef } from "react";
 import { Search } from "lucide-react";
 
+import { FilterClearButton } from "@/components/shared/filter-clear-button";
 import { GuildClassFilterSelect } from "@/components/shared/guild-class-filter-select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -56,6 +58,13 @@ export function RosterFilterBar({
 }: RosterFilterBarProps) {
   const isInline = layout === "inline";
   const labelClassName = isInline ? "sr-only" : undefined;
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  /** Empty the keyword and hand focus back to the box the X just vanished from. */
+  const clearSearch = () => {
+    onChange({ ...value, search: "" });
+    searchRef.current?.focus();
+  };
 
   return (
     <div
@@ -74,13 +83,23 @@ export function RosterFilterBar({
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             id={`${idPrefix}-search`}
+            ref={searchRef}
             value={value.search}
             onChange={(event) =>
               onChange({ ...value, search: event.target.value })
             }
             placeholder="Tên thành viên..."
-            className="pl-9"
+            // The right padding is held whether or not the X is there, so typing the first letter
+            // does not reflow what is already in the box.
+            className="pr-10 pl-9"
           />
+          {value.search.length > 0 && (
+            <FilterClearButton
+              label="Xoá từ khoá"
+              onClear={clearSearch}
+              className="right-1.5"
+            />
+          )}
         </div>
       </div>
 
