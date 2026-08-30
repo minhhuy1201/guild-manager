@@ -6,16 +6,9 @@ import { UserPlus } from "lucide-react";
 import type { GuildMember } from "@guild/shared/schemas";
 
 import { CreateButton } from "@/components/shared/action-buttons";
+import { DataTable } from "@/components/shared/data-table";
 import { RosterFilterBar } from "@/components/shared/roster-filter-bar";
-import { TableBodyState } from "@/components/shared/table-body-state";
-import { TablePaginationBar } from "@/components/shared/table-pagination-bar";
-import {
-  Table,
-  TableBody,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { TableHead, TableRow } from "@/components/ui/table";
 import { useTablePagination } from "@/hooks/use-table-pagination";
 import { combineQueries } from "@/lib/query-group";
 import { matchesRosterFilter, type RosterFilter } from "@/lib/roster-filter";
@@ -79,8 +72,8 @@ export function MembersPanel() {
         />
       </div>
 
-      <Table>
-        <TableHeader>
+      <DataTable
+        header={
           <TableRow>
             <TableHead>Tên</TableHead>
             <TableHead>Lưu phái</TableHead>
@@ -88,39 +81,26 @@ export function MembersPanel() {
             <TableHead>Quyền</TableHead>
             <TableHead className="text-center">Thao tác</TableHead>
           </TableRow>
-        </TableHeader>
-        <TableBody>
-          <TableBodyState
-            state={state}
-            columns={COLUMN_COUNT}
-            rows={pagination.pagedItems}
-            emptyMessage={
-              isFiltering
-                ? "Không có thành viên nào khớp."
-                : "Bang chưa có thành viên nào."
-            }
-            renderRow={(member) => (
-              <MemberRow
-                key={member.id}
-                member={member}
-                onEdit={(target) => {
-                  setEditing(target);
-                  setFormOpen(true);
-                }}
-                onDelete={setDeleting}
-              />
-            )}
+        }
+        pagination={pagination}
+        state={state}
+        columns={COLUMN_COUNT}
+        emptyMessage={
+          isFiltering
+            ? "Không có thành viên nào khớp."
+            : "Bang chưa có thành viên nào."
+        }
+        renderRow={(member) => (
+          <MemberRow
+            key={member.id}
+            member={member}
+            onEdit={(target) => {
+              setEditing(target);
+              setFormOpen(true);
+            }}
+            onDelete={setDeleting}
           />
-        </TableBody>
-      </Table>
-
-      <TablePaginationBar
-        page={pagination.page}
-        pageCount={pagination.pageCount}
-        pageSize={pagination.pageSize}
-        total={pagination.total}
-        onPageChange={pagination.setPage}
-        onPageSizeChange={pagination.setPageSize}
+        )}
         itemLabel="thành viên"
         pageSizeId="members-page-size"
       />

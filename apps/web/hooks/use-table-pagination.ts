@@ -16,7 +16,7 @@ interface UseTablePaginationOptions<TItem> {
   initialPageSize?: number;
 }
 
-interface TablePaginationState<TItem> {
+export interface TablePaginationState<TItem> {
   /** Current page, clamped to [1, pageCount]. */
   page: number;
   /** Total number of pages (at least 1). */
