@@ -1,10 +1,10 @@
 /**
  * A browser renders `<input type="datetime-local">` in its own locale, so an English machine shows
- * mm/dd/yyyy. The form uses separate text inputs for date and time to stay on dd/MM/yyyy and HH:mm;
+ * mm/dd/yyyy, and `<input type="time">` shows AM/PM there. The form picks the day on a calendar and
+ * takes the time as text so it stays on dd/MM/yyyy and 24h HH:mm whatever the machine's locale is;
  * this is where they convert to and from the local "YYYY-MM-DDTHH:mm" string [[datetime-input]] uses.
  */
 
-const DATE_DIGITS = 8;
 const TIME_DIGITS = 4;
 const MONTHS_IN_YEAR = 12;
 const HOURS_IN_DAY = 24;
@@ -126,16 +126,7 @@ function sum(values: number[]): number {
 }
 
 /**
- * Progressively format the date the user is typing into dd/MM/yyyy.
- * @param raw - Raw string in the input
- * @returns The date string with `/` inserted
- */
-export function maskDate(raw: string): string {
-  return mask(raw, "/", [2, 2, DATE_DIGITS - 4]);
-}
-
-/**
- * Progressively format the time the user is typing into HH:mm.
+ * Progressively format the time the user is typing into 24h HH:mm.
  * @param raw - Raw string in the input
  * @returns The time string with `:` inserted
  */

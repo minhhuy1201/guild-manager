@@ -103,7 +103,8 @@ export function RosterFilterBar({
         </div>
       </div>
 
-      <div className={isInline ? "w-48" : "flex flex-col gap-1.5"}>
+      {/* Wide enough for "Tất cả lưu phái" beside its icon, the chevron and the clear X. */}
+      <div className={isInline ? "w-60" : "flex flex-col gap-1.5"}>
         <Label htmlFor={`${idPrefix}-guild-class`} className={labelClassName}>
           Lưu phái
         </Label>
