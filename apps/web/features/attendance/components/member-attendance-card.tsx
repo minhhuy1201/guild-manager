@@ -39,6 +39,20 @@ const SKELETON_ROWS = 3;
 const FALLBACK_ERROR_MESSAGE = "Không điểm danh được, thử lại giúp mình.";
 
 /**
+ * Border of a day tile, by the answer recorded for it: the tile says its own state before a single
+ * button is read. Amber is the one tone the design system has no token for — it means "this day is
+ * still waiting for you", which is neither a success nor a failure.
+ *
+ * It is merged after `sessionTintClass`, so a Guild War keeps its primary background tint and gives
+ * the border up: an unanswered day is the more urgent of the two things a tile can say.
+ */
+const TILE_BORDER = {
+  co: "border-emerald-500",
+  khong: "border-destructive",
+  chuaTraLoi: "border-amber-500",
+} as const;
+
+/**
  * The member's attendance screen: their own character only, one row per session, with the sign-up
  * counts so they can see which session is short-handed.
  * @returns The personal attendance card
@@ -125,13 +139,22 @@ export function MemberAttendanceCard() {
                   const counts = summary?.find(
                     (row) => row.sessionId === battleSession.id
                   );
+                  // `null` is "not answered yet", and `false` is a real answer — so the branch on
+                  // null has to come first.
+                  const tileBorder =
+                    current === null
+                      ? TILE_BORDER.chuaTraLoi
+                      : current
+                        ? TILE_BORDER.co
+                        : TILE_BORDER.khong;
 
                   return (
                     <div
                       key={battleSession.id}
                       className={cn(
                         "flex flex-col gap-1.5 rounded-lg border p-3",
-                        sessionTintClass(battleSession.isGuildWar)
+                        sessionTintClass(battleSession.isGuildWar),
+                        tileBorder
                       )}
                     >
                       <SessionLabel session={battleSession} size="md" />

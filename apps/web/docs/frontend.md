@@ -330,6 +330,12 @@ as full `Button`s: a member sees their own day tiles and has room for the words,
 has one narrow column per day. The picked side is filled — emerald for "Có", destructive for "Không"
 — and the icon becomes a `Spinner` while that answer is being written.
 
+A member's tile also **carries its own answer in its border**: emerald for "Có", `destructive` for
+"Không", amber while the day is still unanswered — the one tone with no token in the design system,
+because "still waiting for you" is neither a success nor a failure. It is merged after
+`sessionTintClass`, so a Guild War keeps its primary background tint and gives up its border: of the
+two things a tile can say, the unanswered day is the more urgent.
+
 That card repeats the **week timeline's grid** (`grid gap-2 sm:grid-cols-2 lg:grid-cols-3`, the same
 tile frame and `sessionTintClass`), so a day keeps its column in both cards and the eye drops
 straight from the day to its two buttons. The answers close the tile, "Có" above "Không", each the
