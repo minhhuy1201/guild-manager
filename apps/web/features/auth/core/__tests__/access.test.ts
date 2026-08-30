@@ -13,12 +13,12 @@ describe("decideAccess", () => {
     expect(decideAccess({ pathname: "/xep-team", role: null })).toBe("login");
   });
 
-  it("bang chúng và cán bộ không vào được route quản trị", () => {
-    for (const role of [GuildRole.MEMBER, GuildRole.LEADER]) {
-      expect(decideAccess({ pathname: "/xep-team", role })).toBe("home");
-      expect(decideAccess({ pathname: "/thiet-lap", role })).toBe("home");
-      expect(decideAccess({ pathname: "/", role })).toBe("allow");
-    }
+  it("bang chúng không vào được route quản trị", () => {
+    const role = GuildRole.MEMBER;
+
+    expect(decideAccess({ pathname: "/xep-team", role })).toBe("home");
+    expect(decideAccess({ pathname: "/thiet-lap", role })).toBe("home");
+    expect(decideAccess({ pathname: "/", role })).toBe("allow");
   });
 
   it("quản trị viên vào được mọi route", () => {

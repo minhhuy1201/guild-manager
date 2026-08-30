@@ -15,7 +15,7 @@ export const metadata: Metadata = {
  * Route "/xep-team" — the team builder page, admins only.
  * The proxy already blocks it; both the session and the role are re-checked here in case the proxy is
  * bypassed (an internal rewrite, a matcher config change…). Checking only "has a session" is not
- * enough: leader and member tokens are valid too.
+ * enough: member tokens are valid too.
  * @returns The team builder page content
  */
 export default async function TeamBuilderPage() {

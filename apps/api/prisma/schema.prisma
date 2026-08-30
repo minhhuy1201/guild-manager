@@ -31,7 +31,6 @@ enum GuildClass {
 /// Guild role. Values must match the GuildRole enum in packages/shared/enums.
 enum GuildRole {
   ADMIN
-  LEADER
   MEMBER
 }
 

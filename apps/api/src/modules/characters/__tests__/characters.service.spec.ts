@@ -195,12 +195,12 @@ describe('CharactersService', () => {
     it('tra được thành viên theo Discord ID', async () => {
       prisma.character.findUnique.mockResolvedValue({
         id: ROW.id,
-        role: GuildRole.LEADER,
+        role: GuildRole.ADMIN,
       });
 
       await expect(
         service.findByDiscordId('123456789012345678'),
-      ).resolves.toEqual({ id: ROW.id, role: GuildRole.LEADER });
+      ).resolves.toEqual({ id: ROW.id, role: GuildRole.ADMIN });
       expect(prisma.character.findUnique).toHaveBeenCalledWith({
         where: { discordId: '123456789012345678' },
         select: { id: true, role: true },

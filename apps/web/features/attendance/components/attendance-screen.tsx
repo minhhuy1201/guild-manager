@@ -1,7 +1,7 @@
 "use client";
 
 import type { GuildRole } from "@guild/shared/enums";
-import { canManageGuild, canViewAllAttendance } from "@guild/shared/lib";
+import { canManageGuild } from "@guild/shared/lib";
 
 import { WeekTimeline } from "./week-timeline";
 import { AttendanceFilters } from "./attendance-filters";
@@ -14,12 +14,14 @@ interface AttendanceScreenProps {
 }
 
 /**
- * The attendance screen. A member sees only their own character; leaders and admins see the whole guild.
+ * The attendance screen. A member sees only their own character; an admin sees the whole guild.
  * @param props.role - Role of the viewer
  * @returns The attendance page content
  */
 export function AttendanceScreen({ role }: AttendanceScreenProps) {
-  if (!canViewAllAttendance(role)) {
+  const isAdmin = canManageGuild(role);
+
+  if (!isAdmin) {
     return (
       <>
         <WeekTimeline />
@@ -32,7 +34,7 @@ export function AttendanceScreen({ role }: AttendanceScreenProps) {
     <>
       <WeekTimeline />
       <AttendanceFilters scope="attendance" />
-      <AttendanceGrid isAdmin={canManageGuild(role)} />
+      <AttendanceGrid isAdmin={isAdmin} />
     </>
   );
 }
