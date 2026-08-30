@@ -39,22 +39,31 @@ export function TablePaginationBar({
   pageSizeId,
 }: TablePaginationBarProps) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2">
-      <div className="flex items-center gap-2">
+    <div className="flex items-center justify-between gap-3 max-sm:flex-col">
+      <p
+        className="flex-1 text-sm whitespace-nowrap text-muted-foreground"
+        aria-live="polite"
+      >
+        {total} {itemLabel} · trang{" "}
+        <span className="text-foreground">{page}</span>/
+        <span className="text-foreground">{pageCount}</span>
+      </p>
+
+      <div className="grow">
+        <TablePagination
+          page={page}
+          pageCount={pageCount}
+          onPageChange={onPageChange}
+        />
+      </div>
+
+      <div className="flex flex-1 justify-end">
         <PageSizeSelect
           id={pageSizeId}
           value={pageSize}
           onValueChange={onPageSizeChange}
         />
-        <p className="text-sm text-muted-foreground">
-          {total} {itemLabel} · trang {page}/{pageCount}
-        </p>
       </div>
-      <TablePagination
-        page={page}
-        pageCount={pageCount}
-        onPageChange={onPageChange}
-      />
     </div>
   );
 }

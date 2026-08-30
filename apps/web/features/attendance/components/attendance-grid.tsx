@@ -3,18 +3,11 @@
 import { useState } from "react";
 import type { Character } from "@guild/shared/schemas";
 
+import { DataTable } from "@/components/shared/data-table";
 import { SessionLabel } from "@/components/shared/session-label";
-import { TableBodyState } from "@/components/shared/table-body-state";
-import { TablePaginationBar } from "@/components/shared/table-pagination-bar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { TableHead, TableRow } from "@/components/ui/table";
 import { useTablePagination } from "@/hooks/use-table-pagination";
 import { getSessionSubtitle } from "../lib/session-subtitle";
 import {
@@ -172,8 +165,8 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
             hiện.
           </p>
         )}
-        <Table>
-          <TableHeader>
+        <DataTable
+          header={
             <TableRow>
               <TableHead className={STICKY_NAME_COLUMN}>Thành viên</TableHead>
               {state.isPending
@@ -200,55 +193,41 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
                   })}
               <TableHead className={STICKY_ACTION_COLUMN}>Điểm danh</TableHead>
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            <TableBodyState
-              state={state}
-              columns={columns}
-              rows={pagination.pagedItems}
-              emptyMessage="Không tìm thấy thành viên phù hợp."
-              renderRow={(character) => (
-                <AttendanceRow
-                  key={character.id}
-                  character={character}
-                  sessions={battleSessions}
-                  recordMap={recordMap}
-                  lockedSessionIds={lockedSessionIds}
-                  allLocked={allLocked}
-                  isEditing={editingId === character.id}
-                  isSaving={savingId === character.id}
-                  draft={editingId === character.id ? draft : {}}
-                  onStartEdit={handleStartEdit}
-                  onDraftChange={handleDraftChange}
-                  onCancel={handleCancel}
-                  onConfirm={handleConfirm}
-                />
-              )}
+          }
+          pagination={pagination}
+          state={state}
+          columns={columns}
+          emptyMessage="Không tìm thấy thành viên phù hợp."
+          renderRow={(character) => (
+            <AttendanceRow
+              key={character.id}
+              character={character}
+              sessions={battleSessions}
+              recordMap={recordMap}
+              lockedSessionIds={lockedSessionIds}
+              allLocked={allLocked}
+              isEditing={editingId === character.id}
+              isSaving={savingId === character.id}
+              draft={editingId === character.id ? draft : {}}
+              onStartEdit={handleStartEdit}
+              onDraftChange={handleDraftChange}
+              onCancel={handleCancel}
+              onConfirm={handleConfirm}
             />
-          </TableBody>
-        </Table>
-
-        {/* Always occupies its slot, so the pagination bar below never moves. */}
-        <div className="mt-4 min-h-5">
-          {markError && (
-            <p className="animate-in text-center text-sm text-destructive fade-in duration-[var(--duration-base)] ease-out-soft">
-              {markError.message}
-            </p>
           )}
-        </div>
-
-        <div className="mt-4">
-          <TablePaginationBar
-            page={pagination.page}
-            pageCount={pagination.pageCount}
-            pageSize={pagination.pageSize}
-            total={pagination.total}
-            onPageChange={pagination.setPage}
-            onPageSizeChange={pagination.setPageSize}
-            itemLabel="thành viên"
-            pageSizeId="attendance-page-size"
-          />
-        </div>
+          itemLabel="thành viên"
+          pageSizeId="attendance-page-size"
+          footer={
+            /* Always occupies its slot, so the pagination bar below never moves. */
+            <div className="min-h-5">
+              {markError && (
+                <p className="animate-in text-center text-sm text-destructive fade-in duration-[var(--duration-base)] ease-out-soft">
+                  {markError.message}
+                </p>
+              )}
+            </div>
+          }
+        />
       </CardContent>
     </Card>
   );

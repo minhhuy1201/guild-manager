@@ -2,15 +2,11 @@
 
 import { useMemo } from "react";
 
-import { TableBodyState } from "@/components/shared/table-body-state";
-import { TablePaginationBar } from "@/components/shared/table-pagination-bar";
+import { DataTable } from "@/components/shared/data-table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Table,
-  TableBody,
   TableCell,
   TableHead,
-  TableHeader,
   TableRow,
 } from "@/components/ui/table";
 import { useTablePagination } from "@/hooks/use-table-pagination";
@@ -104,8 +100,8 @@ export function AttendanceLogTable() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
+        <DataTable
+          header={
             <TableRow>
               <TableHead>Thành viên</TableHead>
               <TableHead>Ngày đánh</TableHead>
@@ -115,68 +111,53 @@ export function AttendanceLogTable() {
                 Thời gian điểm danh
               </TableHead>
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            <TableBodyState
-              state={state}
-              columns={COLUMN_COUNT}
-              columnClassNames={COLUMN_CLASSES}
-              rows={pagination.pagedItems}
-              emptyMessage={
-                allRecords.length === 0
-                  ? "Chưa có ai điểm danh."
-                  : "Không có lượt điểm danh phù hợp."
-              }
-              renderRow={(record) => {
-                const character = characterMap.get(record.characterId);
-                const session = sessionMap.get(record.sessionId);
-                return (
-                  <TableRow key={`${record.characterId}-${record.sessionId}`}>
-                    <TableCell>
-                      {character ? (
-                        <CharacterName character={character} />
-                      ) : (
-                        <span className="font-medium">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell>{session?.label ?? "—"}</TableCell>
-                    <TableCell className="text-center">
-                      <AttendanceStatusIcon isPresent={record.isPresent} />
-                    </TableCell>
-                    {/* A 255-character sentence would stretch the table, so the cell is capped and
-                        the full text lives in the tooltip. */}
-                    <TableCell className="max-w-56 text-muted-foreground">
-                      <span
-                        className="block truncate"
-                        title={record.reason ?? undefined}
-                      >
-                        {record.reason ?? "—"}
-                      </span>
-                    </TableCell>
-                    <TableCell
-                      className={cn("text-muted-foreground", MARKED_AT_COLUMN)}
-                    >
-                      {formatDateTime(record.markedAt)}
-                    </TableCell>
-                  </TableRow>
-                );
-              }}
-            />
-          </TableBody>
-        </Table>
-
-        <div className="mt-4">
-          <TablePaginationBar
-            page={pagination.page}
-            pageCount={pagination.pageCount}
-            pageSize={pagination.pageSize}
-            total={pagination.total}
-            onPageChange={pagination.setPage}
-            onPageSizeChange={pagination.setPageSize}
-            itemLabel="lượt điểm danh"
-            pageSizeId="attendance-log-page-size"
-          />
-        </div>
+          }
+          pagination={pagination}
+          state={state}
+          columns={COLUMN_COUNT}
+          columnClassNames={COLUMN_CLASSES}
+          emptyMessage={
+            allRecords.length === 0
+              ? "Chưa có ai điểm danh."
+              : "Không có lượt điểm danh phù hợp."
+          }
+          renderRow={(record) => {
+            const character = characterMap.get(record.characterId);
+            const session = sessionMap.get(record.sessionId);
+            return (
+              <TableRow key={`${record.characterId}-${record.sessionId}`}>
+                <TableCell>
+                  {character ? (
+                    <CharacterName character={character} />
+                  ) : (
+                    <span className="font-medium">—</span>
+                  )}
+                </TableCell>
+                <TableCell>{session?.label ?? "—"}</TableCell>
+                <TableCell className="text-center">
+                  <AttendanceStatusIcon isPresent={record.isPresent} />
+                </TableCell>
+                {/* A 255-character sentence would stretch the table, so the cell is capped and
+                    the full text lives in the tooltip. */}
+                <TableCell className="max-w-56 text-muted-foreground">
+                  <span
+                    className="block truncate"
+                    title={record.reason ?? undefined}
+                  >
+                    {record.reason ?? "—"}
+                  </span>
+                </TableCell>
+                <TableCell
+                  className={cn("text-muted-foreground", MARKED_AT_COLUMN)}
+                >
+                  {formatDateTime(record.markedAt)}
+                </TableCell>
+              </TableRow>
+            );
+          }}
+          itemLabel="lượt điểm danh"
+          pageSizeId="attendance-log-page-size"
+        />
       </CardContent>
     </Card>
   );
