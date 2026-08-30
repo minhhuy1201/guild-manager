@@ -104,7 +104,7 @@ describe('AttendanceService', () => {
     getActiveWeek: jest.Mock;
   };
   let characters: {
-    list: jest.Mock;
+    listRows: jest.Mock;
     exists: jest.Mock;
     findByDiscordId: jest.Mock;
     findById: jest.Mock;
@@ -168,7 +168,7 @@ describe('AttendanceService', () => {
     };
 
     characters = {
-      list: jest.fn().mockResolvedValue([]),
+      listRows: jest.fn().mockResolvedValue([]),
       exists: jest.fn().mockResolvedValue(true),
       findByDiscordId: jest
         .fn()
@@ -338,19 +338,21 @@ describe('AttendanceService', () => {
   });
 
   describe('getCharacters', () => {
-    it('cán bộ nhận cả bang, thẳng từ CharactersService', async () => {
-      const roster = [
+    it('cán bộ nhận cả bang, đã lược danh tính Discord', async () => {
+      characters.listRows.mockResolvedValue([
+        { ...OWN_ROW, discordId: '123456789012345678', role: GuildRole.MEMBER },
+        { id: OTHER_CHARACTER_ID, name: 'Mèo', guildClass: GuildClass.TO_VAN },
+      ]);
+
+      await expect(service.getCharacters(LEADER)).resolves.toEqual([
         OWN_ROW,
         { id: OTHER_CHARACTER_ID, name: 'Mèo', guildClass: GuildClass.TO_VAN },
-      ];
-      characters.list.mockResolvedValue(roster);
-
-      await expect(service.getCharacters(LEADER)).resolves.toEqual(roster);
+      ]);
     });
 
     it('bang chúng chỉ nhận nhân vật của chính mình', async () => {
       await expect(service.getCharacters(MEMBER)).resolves.toEqual([OWN_ROW]);
-      expect(characters.list).not.toHaveBeenCalled();
+      expect(characters.listRows).not.toHaveBeenCalled();
     });
 
     it('tài khoản chưa gắn nhân vật thì nhận danh sách rỗng', async () => {

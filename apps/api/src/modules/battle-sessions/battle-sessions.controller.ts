@@ -44,6 +44,16 @@ export class BattleSessionsController {
   }
 
   /**
+   * The open attendance week — every signed-in user reads it to render the attendance screen.
+   * @returns The week attendance is currently open for
+   */
+  @Get('current-week')
+  @ApiOperation({ summary: 'Tuần điểm danh đang mở' })
+  getCurrentWeek(): Week {
+    return this.battleSessions.getCurrentWeek();
+  }
+
+  /**
    * Sessions of one week.
    * @param query - `weekStart`: ISO marker of the week; omitted = the open week
    * @returns Sessions ordered by battle time

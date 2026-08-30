@@ -25,6 +25,7 @@ import {
   isSameWeek,
   parseWeekStart,
   weekStartOf,
+  type ScheduledWeek,
   type WeekAnchor,
 } from './session-schedule';
 
@@ -77,16 +78,22 @@ export class BattleSessionsService {
   }
 
   /**
+   * The open attendance week.
+   * Separate from `getEditableWeeks` because every signed-in user needs this one to read the
+   * attendance screen, while the schedulable weeks are an admin's business.
+   * @returns The week attendance is currently open for
+   */
+  getCurrentWeek(): Week {
+    return toWeekResponse(getActiveWeek(this.clock.now()), true);
+  }
+
+  /**
    * The weeks an admin may schedule: the open week and the next one.
    * @returns Two weeks, the open one first
    */
   getEditableWeeks(): Week[] {
     return getEditableWeeks(this.clock.now()).map((week, index) =>
-      verifyResponse(weekSchema, {
-        weekStart: week.weekStart.toISOString(),
-        weekEnd: week.weekEnd.toISOString(),
-        isActive: index === 0,
-      } satisfies Week),
+      toWeekResponse(week, index === 0),
     );
   }
 
@@ -383,4 +390,18 @@ function normalizeOpponent(value: string | null | undefined): string | null {
   const trimmed = value?.trim();
 
   return trimmed ? trimmed : null;
+}
+
+/**
+ * Turn a scheduled week into the object returned to the client.
+ * @param week - Week computed by `session-schedule`
+ * @param isActive - Whether this is the open attendance week
+ * @returns The contract-shaped week, times as ISO strings
+ */
+function toWeekResponse(week: ScheduledWeek, isActive: boolean): Week {
+  return verifyResponse(weekSchema, {
+    weekStart: week.weekStart.toISOString(),
+    weekEnd: week.weekEnd.toISOString(),
+    isActive,
+  } satisfies Week);
 }

@@ -159,6 +159,7 @@ Endpoints, all behind the `/api` prefix:
 | `PATCH` | `/characters/:id` | Update a member | Bearer |
 | `DELETE` | `/characters/:id` | Delete a member | Bearer |
 | `GET` | `/battle-sessions/weeks` | Weeks an admin may edit | Admin |
+| `GET` | `/battle-sessions/current-week` | The open attendance week (every attendance screen reads it) | Bearer |
 | `GET` | `/battle-sessions` | Matches of a week with their deadlines | Bearer |
 | `POST` | `/battle-sessions` | Add a scrim | Admin |
 | `PATCH` | `/battle-sessions/:id` | Edit a match | Admin |
