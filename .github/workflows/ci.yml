@@ -170,8 +170,13 @@ jobs:
             printf 'DIRECT_DATABASE_URL=%s\n' "$DIRECT_DATABASE_URL"
           } > apps/api/.env.production
 
+      # Bước này chỉ để in ra production đang thiếu migration nào, phục vụ đọc log. Nhưng
+      # `prisma migrate status` thoát với mã 1 khi CÓ migration chưa apply — đúng cái tình
+      # huống nó sinh ra để báo cáo — nên dưới `bash -e` nó giết job trước khi tới bước apply,
+      # kéo theo deploy-api và deploy-web bị skip. Nuốt mã lỗi: quyền quyết định thành/bại
+      # thuộc về `migrate deploy` ở bước dưới.
       - name: Show what production is behind
-        run: pnpm --filter api migrate:prod:status
+        run: pnpm --filter api migrate:prod:status || true
 
       - name: Apply migrations
         run: pnpm --filter api migrate:prod
