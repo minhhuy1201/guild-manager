@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 
 import { TableBodyState } from "@/components/shared/table-body-state";
+import { TablePaginationBar } from "@/components/shared/table-pagination-bar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -12,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useTablePagination } from "@/hooks/use-table-pagination";
 import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useAttendanceBoard } from "../hooks/use-attendance-board";
@@ -90,6 +92,8 @@ export function AttendanceLogTable() {
     [allRecords, filteredIds, presence, selectedSession]
   );
 
+  const pagination = useTablePagination({ items: rows, resetKey: rows });
+
   return (
     <Card>
       <CardHeader>
@@ -115,7 +119,7 @@ export function AttendanceLogTable() {
               state={state}
               columns={COLUMN_COUNT}
               columnClassNames={COLUMN_CLASSES}
-              rows={rows}
+              rows={pagination.pagedItems}
               emptyMessage={
                 allRecords.length === 0
                   ? "Chưa có ai điểm danh."
@@ -148,6 +152,19 @@ export function AttendanceLogTable() {
             />
           </TableBody>
         </Table>
+
+        <div className="mt-4">
+          <TablePaginationBar
+            page={pagination.page}
+            pageCount={pagination.pageCount}
+            pageSize={pagination.pageSize}
+            total={pagination.total}
+            onPageChange={pagination.setPage}
+            onPageSizeChange={pagination.setPageSize}
+            itemLabel="lượt điểm danh"
+            pageSizeId="attendance-log-page-size"
+          />
+        </div>
       </CardContent>
     </Card>
   );
