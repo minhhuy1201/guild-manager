@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { AlarmClock, CalendarClock, Save, Swords } from "lucide-react";
 
 import { deadlineCapFor, isWithinDeadlineCap } from "@guild/shared/lib";
@@ -15,10 +15,15 @@ import {
   useUpdateSession,
 } from "../hooks/use-session-mutations";
 import { fromInputValue, toInputValue } from "../lib/datetime-input";
+import { willDropFormation } from "../lib/match-count";
 import { DateTimeField } from "./date-time-field";
+import { MatchCountField } from "./match-count-field";
+import { ReduceMatchCountDialog } from "./reduce-match-count-dialog";
 
 // When adding a session, both time inputs prefill the most common values so only the date is left to pick.
 const DEFAULT_BATTLE_TIME = "20:30";
+// A day is played over two matches unless an admin says otherwise.
+const DEFAULT_MATCH_COUNT = 2;
 const DEFAULT_DEADLINE_TIME = "10:00";
 
 interface SessionFormDialogProps {
@@ -74,6 +79,13 @@ function SessionForm({ session, onDone }: SessionFormProps) {
     session ? toInputValue(session.deadline) : ""
   );
   const [opponent, setOpponent] = useState(session?.opponent ?? "");
+  const [matchCount, setMatchCount] = useState(
+    session?.matchCount ?? DEFAULT_MATCH_COUNT
+  );
+  const [confirmingReduce, setConfirmingReduce] = useState(false);
+  // Resolver of the confirmation currently on screen. A ref, not state: resolving it must not
+  // re-render, and there is only ever one in flight because the submit is blocked while it waits.
+  const confirmResolver = useRef<((accepted: boolean) => void) | null>(null);
   const [deadlineTouched, setDeadlineTouched] = useState(Boolean(session));
 
   const createMutation = useCreateSession();
@@ -91,6 +103,28 @@ function SessionForm({ session, onDone }: SessionFormProps) {
 
     const cap = deadlineCapFor(new Date(value));
     setDeadline(toInputValue(cap.toISOString()));
+  }
+
+  /**
+   * Show the confirmation and wait for the admin's answer.
+   * @returns A promise resolving to true when the admin accepted losing the second formation
+   */
+  function askToDropFormation(): Promise<boolean> {
+    setConfirmingReduce(true);
+
+    return new Promise<boolean>((resolve) => {
+      confirmResolver.current = resolve;
+    });
+  }
+
+  /**
+   * Close the confirmation, handing the waiting submit the admin's answer.
+   * @param accepted - Whether the admin accepted losing the second formation
+   */
+  function settleConfirmation(accepted: boolean) {
+    setConfirmingReduce(false);
+    confirmResolver.current?.(accepted);
+    confirmResolver.current = null;
   }
 
   /**
@@ -113,10 +147,21 @@ function SessionForm({ session, onDone }: SessionFormProps) {
       throw new Error(DEADLINE_CAP_MESSAGE);
     }
 
+    // The request must not go out before the admin has seen what it destroys. Throwing on refusal
+    // keeps the form up with everything they typed — `MutationForm` shows the sentence, and nothing
+    // is saved.
+    if (
+      willDropFormation(session, matchCount) &&
+      !(await askToDropFormation())
+    ) {
+      throw new Error("Chưa lưu — bạn đã huỷ việc hạ số trận.");
+    }
+
     if (!session) {
       await createMutation.mutateAsync({
         dateTime: fromInputValue(dateTime),
         deadline: fromInputValue(deadline),
+        matchCount,
         opponent: opponent.trim() || null,
       });
       return;
@@ -127,14 +172,15 @@ function SessionForm({ session, onDone }: SessionFormProps) {
       id: session.id,
       input: {
         dateTime: fromInputValue(dateTime),
-        ...(isGuildWar ? {} : { deadline: fromInputValue(deadline) }),
+        ...(isGuildWar ? {} : { deadline: fromInputValue(deadline), matchCount }),
         opponent: isGuildWar ? null : opponent.trim() || null,
       },
     });
   }
 
   return (
-    <MutationForm
+    <>
+      <MutationForm
       title={session ? "Sửa ngày đánh" : "Thêm trận scrim"}
       submitLabel="Lưu"
       pendingLabel="Đang lưu…"
@@ -150,6 +196,12 @@ function SessionForm({ session, onDone }: SessionFormProps) {
         value={dateTime}
         onChange={handleDateTimeChange}
         defaultTime={DEFAULT_BATTLE_TIME}
+      />
+
+      <MatchCountField
+        value={matchCount}
+        isGuildWar={isGuildWar}
+        onChange={setMatchCount}
       />
 
       {!isGuildWar && (
@@ -188,6 +240,15 @@ function SessionForm({ session, onDone }: SessionFormProps) {
           description="Muộn nhất 10:00 sáng ngày đánh."
         />
       )}
-    </MutationForm>
+      </MutationForm>
+
+      <ReduceMatchCountDialog
+        open={confirmingReduce}
+        onOpenChange={(open) => {
+          if (!open) settleConfirmation(false);
+        }}
+        onConfirm={() => settleConfirmation(true)}
+      />
+    </>
   );
 }
