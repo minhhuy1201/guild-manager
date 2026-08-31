@@ -403,6 +403,17 @@ the image `alt`.
 Inside a chart's SVG that avatar cannot be used; the tick draws the same image directly — see "A
 count broken down by answer" below.
 
+**A class also has a colour**, the one the guild already uses in game: `GUILD_CLASS_COLOR` in
+`lib/guild-class.ts`, beside the images. `guildClassSurface(guildClass)` returns the inline
+`borderColor` and `backgroundColor` a card takes to show whose class it is — the team builder's
+`member-card.tsx` is the worked example. Two rules go with it:
+
+- **Inline styles, not Tailwind classes.** The colour comes from data, and a class name assembled at
+  runtime is not in the stylesheet Tailwind generates.
+- **The surface is `color-mix`ed against `--card`, never a second hard-coded pastel**, so one value
+  per class covers both themes. A colour that means "something is wrong" still wins: a member card
+  with a warning keeps `border-destructive` and takes only the tint.
+
 The images live in `public/img/` and are mapped in `lib/guild-class.ts` — they are a web asset, so
 the mapping stays on the frontend while the enum itself comes from `@guild/shared/enums`:
 
