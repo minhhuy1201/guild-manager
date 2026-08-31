@@ -44,6 +44,8 @@ Things to watch for when building on CI/hosting:
 - The `postinstall` of `apps/api` runs `prisma generate`, which needs `DATABASE_URL` to **exist and
   be a well-formed URL** (it does not need to be reachable).
 - This is a pnpm workspace: the host must install from the repo root, not inside `apps/*`.
+- **pnpm 12 needs `ENABLE_EXPERIMENTAL_COREPACK=1` on Vercel**, and every project needs its own
+  `installCommand`; section 4 explains both failures.
 - `packages/shared` **is compiled to JavaScript** (`packages/shared/dist`). Its `prepare` script runs
   `tsc`, so `pnpm install` alone produces the output — no separate build step to remember. The
   `exports` map points `types` at the `.ts` sources and everything else at `dist/*.js`; the runtime
@@ -244,22 +246,45 @@ The `concurrency` block cancels superseded runs on every ref **except** `main`. 
 the group but are not cancelled, so they queue and deploy in commit order. Cancelling one mid-deploy
 would abandon a Vercel build that keeps running with nobody watching its result.
 
-### `apps/web` installs only what it needs
+### Each app installs only what it needs
 
-`apps/web/vercel.json` overrides the install command:
+Both `apps/*/vercel.json` override the install command:
 
 ```
-pnpm install --frozen-lockfile --filter web --filter @guild/shared
+pnpm install --frozen-lockfile --filter web --filter @guild/shared   # apps/web
+pnpm install --frozen-lockfile --filter api --filter @guild/shared   # apps/api
 ```
 
-Without it, Vercel installs all three workspace projects, which runs the `postinstall` of `apps/api`
-— `prisma generate` — inside the **web** build, where `DATABASE_URL` does not exist. That failed the
-build during setup.
+For **web** the reason is scope. Without the override Vercel installs all three workspace projects,
+which runs the `postinstall` of `apps/api` — `prisma generate` — inside the **web** build, where
+`DATABASE_URL` does not exist. That failed the build during setup.
+
+For **api** the reason is pnpm 12, below: a project that brings its own install command never sees
+the flag Vercel would otherwise append. The filter itself is not load-bearing here — the api build
+wants its own `postinstall` — but it keeps the two projects symmetrical and skips installing web.
 
 `@guild/shared` is named explicitly because the filter is `--filter web`, not `--filter web...` —
 the dependency is declared (`"@guild/shared": "workspace:*"`), but that plain filter does not follow
 it. Its `prepare` script runs `tsc`, so this install is also what produces the `dist` the `exports`
 map points at. `zod` resolves out of `packages/shared/node_modules`.
+
+### pnpm 12 on Vercel needs corepack, and its own install command
+
+Two separate things break a Vercel build once `packageManager` says `pnpm@12`. Both were hit on
+2026-08-31 upgrading from pnpm 10, and the deploy job is the only place they surface — it is the one
+part of the pipeline that does not run on pull requests.
+
+- **The pnpm binary never gets installed.** pnpm 12 ships `bin/pnpm` as a placeholder *text file*
+  that its `preinstall` (`node install.js`) overwrites with the platform's native binary. Vercel's
+  default path installs the pinned pnpm with lifecycle scripts off, so the placeholder survives and
+  running it as a shell script dies with ``syntax error near unexpected token `)'``. The fix is
+  **`ENABLE_EXPERIMENTAL_COREPACK=1`** as a plain (not Sensitive) environment variable on **both**
+  Vercel projects. Corepack runs no lifecycle scripts either, but it enters through `bin/pnpm.mjs`
+  instead of the placeholder, so it needs no swap.
+- **Vercel's default install passes `--unsafe-perm`.** pnpm 10 still tolerated the legacy npm flag;
+  pnpm 12's rewritten CLI rejects it — `error: unexpected argument '--unsafe-perm' found`. A project
+  that sets its own `installCommand` runs exactly that string and never receives the flag, which is
+  why `apps/web` was unaffected and `apps/api` needed one of its own.
 
 ### Why there are no preview deployments
 
