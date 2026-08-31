@@ -27,6 +27,7 @@ const SCHEDULED_SESSIONS = [
     dateTime: vn('2026-07-21T20:30'),
     opponent: 'Hắc Long Đường',
     isGuildWar: false,
+    matchCount: 2,
   },
   {
     id: 'session-thu',
@@ -34,6 +35,7 @@ const SCHEDULED_SESSIONS = [
     dateTime: vn('2026-07-23T20:30'),
     opponent: 'Thiên Nhẫn Giáo',
     isGuildWar: false,
+    matchCount: 2,
   },
   {
     id: 'session-sat',
@@ -41,6 +43,7 @@ const SCHEDULED_SESSIONS = [
     dateTime: vn('2026-07-25T20:00'),
     opponent: null,
     isGuildWar: true,
+    matchCount: 2,
   },
 ];
 
@@ -352,6 +355,17 @@ interface CreateMatchArgs {
   };
 }
 
+/** The battle day `saveFormation` writes to, as `battleSessions.findById` returns it. */
+const SAVED_DAY = {
+  id: 'session-thu',
+  label: 'Thứ 5 · 20:30',
+  dateTime: vn('2026-07-23T20:30').toISOString(),
+  opponent: 'Thiên Nhẫn Giáo',
+  isGuildWar: false,
+  weekStart: WEEK_START.toISOString(),
+  matchCount: 2,
+};
+
 describe('TeamBuilderService.saveFormation', () => {
   let service: TeamBuilderService;
   let tx: {
@@ -384,14 +398,7 @@ describe('TeamBuilderService.saveFormation', () => {
       listIds: jest.fn().mockResolvedValue(new Set(['char-1', 'char-2'])),
     };
     battleSessions = {
-      findById: jest.fn().mockResolvedValue({
-        id: 'session-thu',
-        label: 'Thứ 5 · 20:30',
-        dateTime: vn('2026-07-23T20:30').toISOString(),
-        opponent: 'Thiên Nhẫn Giáo',
-        isGuildWar: false,
-        weekStart: WEEK_START.toISOString(),
-      }),
+      findById: jest.fn().mockResolvedValue(SAVED_DAY),
     };
 
     service = new TeamBuilderService(
@@ -539,12 +546,11 @@ describe('TeamBuilderService.saveFormation', () => {
 
   it('ngày đã khoá thì không dọn gì cả — request bị từ chối là không đụng dữ liệu', async () => {
     battleSessions.findById.mockResolvedValue({
+      ...SAVED_DAY,
       id: 'session-tue',
       label: 'Thứ 3 · 20:30',
       dateTime: vn('2026-07-21T20:30').toISOString(),
       opponent: null,
-      isGuildWar: false,
-      weekStart: WEEK_START.toISOString(),
     });
 
     await expect(
@@ -563,12 +569,11 @@ describe('TeamBuilderService.saveFormation', () => {
 
   it('ngày đã qua giờ đánh thì ném ConflictException', async () => {
     battleSessions.findById.mockResolvedValue({
+      ...SAVED_DAY,
       id: 'session-tue',
       label: 'Thứ 3 · 20:30',
       dateTime: vn('2026-07-21T20:30').toISOString(),
       opponent: null,
-      isGuildWar: false,
-      weekStart: WEEK_START.toISOString(),
     });
 
     await expect(
@@ -602,4 +607,27 @@ describe('TeamBuilderService.saveFormation', () => {
       ]),
     ).rejects.toBe(failure);
   });
+
+  describe('số trận là trần trên của số đội hình', () => {
+    it('từ chối lưu 2 đội hình cho ngày chỉ đánh 1 trận', async () => {
+      battleSessions.findById.mockResolvedValue({ ...SAVED_DAY, matchCount: 1 });
+
+      await expect(
+        service.saveFormation('session-thu', [
+          { slots: {}, notes: {} },
+          { slots: {}, notes: {} },
+        ]),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('cho lưu 1 đội hình cho ngày đánh 2 trận — cả hai trận dùng chung', async () => {
+      const saved = await service.saveFormation('session-thu', [
+        { slots: {}, notes: {} },
+      ]);
+
+      expect(saved.matches).toHaveLength(1);
+      expect(saved.matchCount).toBe(2);
+    });
+  });
+
 });

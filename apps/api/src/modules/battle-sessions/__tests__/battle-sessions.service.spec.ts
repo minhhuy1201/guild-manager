@@ -193,6 +193,7 @@ describe('BattleSessionsService', () => {
           label: 'Thứ 3 · 20:30',
           dateTime: vn('2026-07-21T20:30'),
           isGuildWar: false,
+          matchCount: 2,
           opponent: 'Hắc Long Đường',
         },
       ]);

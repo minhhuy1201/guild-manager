@@ -53,6 +53,7 @@ export interface ScheduledSession {
   label: string;
   dateTime: Date;
   isGuildWar: boolean;
+  matchCount: number;
   opponent: string | null;
 }
 
@@ -156,6 +157,7 @@ export class BattleSessionsService {
         id: true,
         dateTime: true,
         isGuildWar: true,
+        matchCount: true,
         opponent: true,
       },
     });
@@ -165,6 +167,7 @@ export class BattleSessionsService {
       label: formatSessionLabel(row.dateTime, row.isGuildWar),
       dateTime: row.dateTime,
       isGuildWar: row.isGuildWar,
+      matchCount: row.matchCount,
       opponent: row.opponent,
     }));
   }
