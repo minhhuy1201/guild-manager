@@ -138,7 +138,7 @@ Each is `<domain>.module.ts` + `<domain>.controller.ts` + `<domain>.service.ts`,
 | Module | Owns | Access |
 |---|---|---|
 | `health` | Liveness + a database ping | Public |
-| `auth` | Admin login, refresh, `me` | Public except `me` |
+| `auth` | Discord OAuth2 sign-in, the single-use code exchange, refresh, `me` | Public except `me` |
 | `characters` | Member CRUD, Discord identity and guild role | Admin (`JwtAuthGuard, AdminGuard` on the controller) |
 | `battle-sessions` | The week's schedule, deadlines, the Guild War session, time rules | Reads signed-in, writes admin |
 | `attendance` | Marking attendance and reading records | Bearer required; reads are guild-wide for everyone, admin bypasses the deadline and marks for others |
@@ -154,6 +154,7 @@ Endpoints, all behind the `/api` prefix:
 | `POST` | `/auth/discord/exchange` | Trade the one-time code for a token pair | Public |
 | `POST` | `/auth/refresh` | Exchange a refresh token for a new pair | Public |
 | `GET` | `/auth/me` | Session behind the current access token | Bearer |
+| `POST` | `/auth/login` | Tombstone of the old username/password login — always `410 Gone`, kept only until every cached web build is gone | Public |
 | `GET` | `/characters` | Member list | Bearer |
 | `POST` | `/characters` | Create a member | Bearer |
 | `PATCH` | `/characters/:id` | Update a member | Bearer |

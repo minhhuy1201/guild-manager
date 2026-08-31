@@ -20,8 +20,10 @@ Requires `apps/api` to already be running at `http://localhost:3001/api` (see [`
 | `AUTH_SECRET` | Verifies JWTs signed by the API (HMAC-SHA256) — **must match** the API's value |
 | `NEXT_PUBLIC_API_URL` | Backend base URL, defaults to `http://localhost:3001/api` |
 
-The web app never connects to the database and holds no admin accounts — those live in the backend
-(`DISCORD_CLIENT_ID` / `DISCORD_CLIENT_SECRET`); the web app only verifies the token it receives.
+The web app never connects to the database and holds no accounts — sign-in is Discord OAuth2, driven
+entirely by the backend (`DISCORD_CLIENT_ID` / `DISCORD_CLIENT_SECRET`); the web app only verifies the
+token it receives. Every page needs a session except `/dang-nhap`; `/xep-team` and `/thiet-lap`
+additionally need the `ADMIN` role (`proxy.ts`).
 
 ## Commands
 
@@ -30,6 +32,7 @@ The web app never connects to the database and holds no admin accounts — those
 | `pnpm dev` | Dev server |
 | `pnpm build` / `pnpm start` | Production build / run the build |
 | `pnpm lint` | ESLint (`eslint-config-next`) |
+| `pnpm typecheck` | `tsc --noEmit` |
 | `pnpm test` / `pnpm test:watch` | Vitest |
 | `pnpm dlx shadcn@latest add <component>` | Add a shadcn component to `components/ui/` |
 

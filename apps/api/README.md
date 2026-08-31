@@ -8,18 +8,26 @@ Stack, layering, modules, the endpoint list and the response contract are in
 ## Running dev
 
 ```bash
-cp .env.example .env      # fill in AUTH_SECRET (openssl rand -hex 32)
+cp .env.example .env      # fill in AUTH_SECRET (openssl rand -hex 32) and the DISCORD_* values
 pnpm install              # postinstall runs `prisma generate` automatically
 pnpm db:up                # start PostgreSQL with Docker (docker-compose.yml)
 pnpm prisma:migrate       # create the tables
-pnpm db:seed              # seed 25 sample characters
+pnpm db:seed              # load the roster from seed-data.json at the repo root
 pnpm dev                  # http://localhost:3001/api
 ```
+
+`seed-data.json` is real guild data and git-ignored. Start from the committed example —
+`cp ../../seed-data-example.json ../../seed-data.json` — which holds 14 sample characters.
 
 - Health check: `GET /api/health`
 - Swagger UI: `http://localhost:3001/docs` (JSON spec: `/docs-json`) — disabled when `NODE_ENV=production`
 
-`AUTH_SECRET` must match the value in `apps/web`, since both sides share the session cookie.
+`AUTH_SECRET` must match the value in `apps/web`: this side signs the JWT, the web app verifies it,
+and a mismatch logs everyone out.
+
+Sign-in is Discord OAuth2 only — no password is stored anywhere. `DISCORD_CLIENT_ID`,
+`DISCORD_CLIENT_SECRET` and `DISCORD_REDIRECT_URI` are required at boot, and `DISCORD_ADMIN_IDS` is
+the rescue list that gets you in before any `Character` has a `discordId`.
 
 Full list of environment variables and troubleshooting: [`docs/development.md`](../../docs/development.md).
 
@@ -30,14 +38,17 @@ Full list of environment variables and troubleshooting: [`docs/development.md`](
 | `pnpm dev` | Run in watch mode |
 | `pnpm build` / `pnpm start:prod` | Build (webpack, outputs `dist/main.js`) and run the build |
 | `pnpm lint` | ESLint + Prettier, including the cross-layer import ban |
+| `pnpm format:check` | Prettier in check mode — what CI runs |
+| `pnpm typecheck` | `tsc --noEmit`, no build output |
 | `pnpm test` | Unit tests (Jest) |
 | `pnpm prisma:generate` | Regenerate Prisma Client into `src/generated/prisma` (not committed) |
 | `pnpm prisma:migrate` | Create a new migration from schema changes (`migrate dev`) |
 | `pnpm prisma:studio` | Open Prisma Studio |
 | `pnpm migrate:prod` | Apply migrations to the real database through `DIRECT_DATABASE_URL` |
+| `pnpm prisma:status` / `pnpm migrate:prod:status` | How many migrations the local / real database is behind |
 | `pnpm db:up` / `pnpm db:down` | Start/stop the PostgreSQL container |
 | `pnpm db:reset` | Wipe the volume and recreate an empty DB (re-run `prisma:migrate` + `db:seed` afterwards) |
-| `pnpm db:seed` | Seed 25 sample characters (upsert, safe to re-run) |
+| `pnpm db:seed` | Load the roster from `seed-data.json` (upsert on **name**, safe to re-run) |
 
 ## Dev database
 
