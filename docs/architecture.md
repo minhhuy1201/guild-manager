@@ -290,7 +290,7 @@ Character ──< AttendanceRecord >── BattleSession ──< FormationMatch 
 | Model | Notes |
 |---|---|
 | `Character` | Member. Id is a slug of the name plus a random suffix (`meo-beo-k7ma3x`), not a game id. `discordId` is nullable and unique — an admin types it in, and it is what a login resolves against; `role` is `GuildRole` — `ADMIN` or `MEMBER`, the only two roles, defaulting to `MEMBER`; `discordUsername`, `discordAvatar` and `lastLoginAt` are written on each sign-in so an admin can confirm the right person was linked. `discordAvatar` holds Discord's avatar **hash**, not a URL — the CDN URL format belongs to Discord and the web app builds it; it reaches the browser through `/auth/me` only, never through the members list. |
-| `BattleSession` | One match in a week. `weekStart` (Monday 00:00 VN) groups matches into weeks. Guild War uses the deterministic id `gw-<YYYY-MM-DD>` so it can be upserted idempotently; scrims get a `cuid()`. `deadline` is the admin's value for a scrim, capped at 10:00 on the match day; for Guild War it is system-owned (17:00 Thursday). |
+| `BattleSession` | One match in a week. `weekStart` (Monday 00:00 VN) groups matches into weeks. Guild War uses the deterministic id `gw-<YYYY-MM-DD>` so it can be upserted idempotently; scrims get a `cuid()`. `deadline` is the admin's value for a scrim, capped at 10:00 on the match day; for Guild War it is system-owned (17:00 Thursday). `matchCount` là số trận đánh trong ngày (1 hoặc 2): scrim do admin chọn, mặc định 2; Guild War do hệ thống tính theo luật xen kẽ của tuần. Nó là **trần trên** của số `FormationMatch`, không phải mệnh lệnh — một ngày 2 trận hoàn toàn có thể chỉ xếp một đội hình dùng chung cho cả hai trận. |
 | `AttendanceRecord` | One `(character, session)` pair, unique. The answer is `isPresent Boolean` — `true` = "Có", `false` = "Không"; not answered at all is the absence of a row. `markedAt` updates whenever the answer flips. `markedByCharacterId` records who pressed the button — no relation on purpose, so deleting that person cannot take someone else's entry with them. `reason` là câu giải thích (≤255 ký tự) đi kèm một câu trả lời "Không"; nó luôn `null` khi `isPresent = true`, và server tự quyết giá trị đó chứ không tin body. |
 | `AuthExchange` | A single-use code the web app trades for a JWT pair after the API finishes the OAuth callback. Lives 60 seconds; expired rows are swept during the next exchange. Holds `discordId`, not a foreign key, because a rescue admin may match no `Character`. |
 | `FormationSlot` | One cell of the roster grid: a person, a note, or both. A cell that is empty *and* unannotated has no row — that is how "slot 2 is empty" differs from "there is no slot 2". |
@@ -318,6 +318,9 @@ frontend only mirrors `isDeadlinePassed` to grey out a column.
 - **Guild War's deadline is system-owned**: 17:00 Thursday of its week (`guildWarDeadline`). Sending
   `deadline` for a Guild War match is a 400, and `ensureGuildWar` rewrites the value on every read so
   a stale row corrects itself.
+- **Guild War's match count is system-owned too**: it alternates 2 → 1 → 2 by week, counted from the
+  Monday 2026-08-31 anchor (that week plays 2), in `guildWarMatchCount`. Sending `matchCount` for a
+  Guild War match is a 400, and `ensureGuildWar` rewrites it on every read, exactly like `deadline`.
 - Past a match's deadline the column locks. Until then answers may flip freely. A request with a
   valid admin token bypasses the deadline.
 
