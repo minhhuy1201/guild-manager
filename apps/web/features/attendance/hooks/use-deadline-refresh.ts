@@ -20,7 +20,9 @@ export function useDeadlineRefresh(sessions: BattleSession[]): void {
   useEffect(() => {
     if (nextDeadline === null) return;
 
-    const timer = setTimeout(invalidate, nextDeadline - Date.now());
+    // The only caller that does not await the invalidation: nothing is waiting on this refresh, so
+    // the promise is dropped on purpose rather than left floating.
+    const timer = setTimeout(() => void invalidate(), nextDeadline - Date.now());
 
     return () => clearTimeout(timer);
   }, [nextDeadline, invalidate]);

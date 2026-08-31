@@ -129,8 +129,14 @@ These are the rules that get broken first, in the order they get broken:
    `*-keys.ts` file imports nothing, so both problems disappear. A write site never lists keys
    itself: it calls `useInvalidate("<topic>")` and only names what it just changed. Adding a topic
    means adding a line to `CACHE_TOPICS` — a missing dependents entry is a compile error.
-6. **Prefer Server Components.** `"use client"` only where interactivity actually requires it.
-7. **Import with `@/`.** Route paths come from `config/routes.ts` (`ROUTES`), never string literals.
+6. **A write stays pending until its refetch lands.** `useInvalidate` returns a promise and a
+   mutation returns it from `onSuccess`, so `mutateAsync` resolves only once the invalidated queries
+   have new data. A fire-and-forget invalidation ends the write a whole round-trip early: the caller
+   drops its spinner, closes its dialog or clears its draft, and the screen sits on the old rows with
+   nothing saying it is still working — the pause reads as the app freezing, not as it loading. The
+   one caller that may drop the promise is `useDeadlineRefresh`, a timer nobody is waiting on.
+7. **Prefer Server Components.** `"use client"` only where interactivity actually requires it.
+8. **Import with `@/`.** Route paths come from `config/routes.ts` (`ROUTES`), never string literals.
 
 Shared code comes in by its real package name — `@guild/shared/enums`, `@guild/shared/schemas`,
 `@guild/shared/lib` — declared as `"@guild/shared": "workspace:*"` in `package.json`, exactly as

@@ -38,12 +38,12 @@ function renderInvalidate(topic: Parameters<typeof useInvalidate>[0]) {
 }
 
 describe("useInvalidate", () => {
-  it("invalidate đúng từng key của chủ đề", () => {
+  it("invalidate đúng từng key của chủ đề", async () => {
     const { result, invalidateSpy } = renderInvalidate("schedule");
 
-    result.current();
+    await result.current();
 
-    expect(invalidateSpy).toHaveBeenCalledTimes(4);
+    expect(invalidateSpy).toHaveBeenCalledTimes(5);
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: settingsKeys.all });
     expect(invalidateSpy).toHaveBeenCalledWith({
       queryKey: attendanceKeys.sessions(),
@@ -51,20 +51,48 @@ describe("useInvalidate", () => {
     expect(invalidateSpy).toHaveBeenCalledWith({
       queryKey: attendanceKeys.records(),
     });
+    // The sign-up tallies are counted from the records, so a schedule change makes them stale too.
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: attendanceKeys.summary(),
+    });
     expect(invalidateSpy).toHaveBeenCalledWith({
       queryKey: teamBuilderKeys.all,
     });
   });
 
-  it("chủ đề hẹp chỉ invalidate một key", () => {
+  it("chủ đề hẹp chỉ invalidate một key", async () => {
     const { result, invalidateSpy } = renderInvalidate("formation");
 
-    result.current();
+    await result.current();
 
     expect(invalidateSpy).toHaveBeenCalledTimes(1);
     expect(invalidateSpy).toHaveBeenCalledWith({
       queryKey: teamBuilderKeys.all,
     });
+  });
+
+  it("chỉ resolve sau khi mọi invalidation xong", async () => {
+    // Đây là hợp đồng khiến mutation giữ trạng thái pending tới lúc dữ liệu mới về: onSuccess trả
+    // promise này, nên spinner còn quay thay vì tắt sớm rồi để màn hình đứng im với dữ liệu cũ.
+    const { result, invalidateSpy } = renderInvalidate("attendance");
+    let finishInvalidation = () => {};
+    invalidateSpy.mockReturnValue(
+      new Promise<void>((resolve) => {
+        finishInvalidation = resolve;
+      })
+    );
+
+    let isSettled = false;
+    const pending = result.current().then(() => {
+      isSettled = true;
+    });
+
+    await Promise.resolve();
+    expect(isSettled).toBe(false);
+
+    finishInvalidation();
+    await pending;
+    expect(isSettled).toBe(true);
   });
 
   it("trả về cùng một hàm qua các lần render", () => {

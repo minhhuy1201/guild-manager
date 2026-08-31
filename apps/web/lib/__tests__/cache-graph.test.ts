@@ -18,6 +18,7 @@ describe("CACHE_DEPENDENTS", () => {
       memberKeys.all,
       attendanceKeys.characters(),
       attendanceKeys.records(),
+      attendanceKeys.summary(),
       teamBuilderKeys.all,
     ]);
   });
@@ -27,15 +28,19 @@ describe("CACHE_DEPENDENTS", () => {
       settingsKeys.all,
       attendanceKeys.sessions(),
       attendanceKeys.records(),
+      attendanceKeys.summary(),
       teamBuilderKeys.all,
     ]);
   });
 
-  it("điểm danh chỉ làm cũ record", () => {
-    expect(CACHE_DEPENDENTS.attendance()).toEqual([attendanceKeys.records()]);
+  it("điểm danh làm cũ record và số liệu đăng ký đếm từ record", () => {
+    expect(CACHE_DEPENDENTS.attendance()).toEqual([
+      attendanceKeys.records(),
+      attendanceKeys.summary(),
+    ]);
   });
 
-  it("deadline trôi qua làm cũ trận và record, không đụng lịch", () => {
+  it("deadline trôi qua làm cũ trận và record, không đụng lịch hay số liệu", () => {
     expect(CACHE_DEPENDENTS["attendance-window"]()).toEqual([
       attendanceKeys.sessions(),
       attendanceKeys.records(),
