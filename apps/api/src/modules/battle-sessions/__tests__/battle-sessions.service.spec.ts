@@ -63,6 +63,7 @@ describe('BattleSessionsService', () => {
       update: jest.Mock;
       delete: jest.Mock;
     };
+    formationMatch: { deleteMany: jest.Mock };
     $transaction: jest.Mock;
   };
 
@@ -75,6 +76,9 @@ describe('BattleSessionsService', () => {
         create: jest.fn().mockImplementation(() => Promise.resolve(row())),
         update: jest.fn().mockImplementation(() => Promise.resolve(row())),
         delete: jest.fn().mockResolvedValue(row()),
+      },
+      formationMatch: {
+        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
       },
       $transaction: jest
         .fn()
@@ -434,4 +438,64 @@ describe('BattleSessionsService', () => {
       );
     });
   });
+
+  describe('số trận', () => {
+    it('lưu số trận admin chọn khi tạo scrim', async () => {
+      await service.create({
+        dateTime: vn('2026-07-21T20:30').toISOString(),
+        deadline: vn('2026-07-21T10:00').toISOString(),
+        matchCount: 1,
+      });
+
+      expect(firstArg(prisma.battleSession.create, 0)).toMatchObject({
+        data: { matchCount: 1 },
+      });
+    });
+
+    it('ghi đè số trận của Bang Chiến theo luật xen kẽ, cả khi tạo lẫn khi đã tồn tại', async () => {
+      // Tuần 2026-08-31 là mốc → 2 trận; tuần 2026-09-07 → 1 trận.
+      await makeService(vn('2026-09-02T12:00')).listByWeek();
+
+      expect(firstArg(prisma.battleSession.upsert, 0)).toMatchObject({
+        create: { matchCount: 2 },
+        update: { matchCount: 2 },
+      });
+
+      await makeService(vn('2026-09-09T12:00')).listByWeek();
+
+      expect(firstArg(prisma.battleSession.upsert, 1)).toMatchObject({
+        create: { matchCount: 1 },
+        update: { matchCount: 1 },
+      });
+    });
+
+    it('từ chối sửa số trận của Bang Chiến', async () => {
+      prisma.battleSession.findUnique.mockResolvedValue(
+        row({ id: 'gw-2026-07-20', isGuildWar: true, opponent: null }),
+      );
+
+      await expect(
+        service.update('gw-2026-07-20', { matchCount: 1 }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('hạ số trận thì xoá đội hình vượt trần, trong cùng transaction với lệnh update', async () => {
+      await service.update('session-tue', { matchCount: 1 });
+
+      expect(prisma.$transaction).toHaveBeenCalled();
+      expect(firstArg(prisma.formationMatch.deleteMany, 0)).toMatchObject({
+        where: { sessionId: 'session-tue', matchIndex: { gt: 1 } },
+      });
+      expect(firstArg(prisma.battleSession.update, 0)).toMatchObject({
+        data: { matchCount: 1 },
+      });
+    });
+
+    it('không đụng vào đội hình khi số trận giữ nguyên hoặc tăng', async () => {
+      await service.update('session-tue', { matchCount: 2 });
+
+      expect(prisma.formationMatch.deleteMany).not.toHaveBeenCalled();
+    });
+  });
+
 });
