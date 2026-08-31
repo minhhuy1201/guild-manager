@@ -43,17 +43,13 @@ describe("useInvalidate", () => {
 
     await result.current();
 
-    expect(invalidateSpy).toHaveBeenCalledTimes(5);
+    expect(invalidateSpy).toHaveBeenCalledTimes(4);
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: settingsKeys.all });
     expect(invalidateSpy).toHaveBeenCalledWith({
       queryKey: attendanceKeys.sessions(),
     });
     expect(invalidateSpy).toHaveBeenCalledWith({
       queryKey: attendanceKeys.records(),
-    });
-    // The sign-up tallies are counted from the records, so a schedule change makes them stale too.
-    expect(invalidateSpy).toHaveBeenCalledWith({
-      queryKey: attendanceKeys.summary(),
     });
     expect(invalidateSpy).toHaveBeenCalledWith({
       queryKey: teamBuilderKeys.all,

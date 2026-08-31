@@ -87,7 +87,6 @@ vi.mock("../api/attendance-api", () => ({
     weekEnd: "2026-08-29T16:59:59.000Z",
     isActive: true,
   }),
-  fetchAttendanceSummary: async () => [],
   markAttendance: async () => undefined,
 }));
 

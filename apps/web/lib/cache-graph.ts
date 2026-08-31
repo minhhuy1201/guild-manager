@@ -40,7 +40,6 @@ export const CACHE_DEPENDENTS: Record<CacheTopic, () => QueryKey[]> = {
     memberKeys.all,
     attendanceKeys.characters(),
     attendanceKeys.records(),
-    attendanceKeys.summary(),
     teamBuilderKeys.all,
   ],
   /**
@@ -51,19 +50,14 @@ export const CACHE_DEPENDENTS: Record<CacheTopic, () => QueryKey[]> = {
     settingsKeys.all,
     attendanceKeys.sessions(),
     attendanceKeys.records(),
-    attendanceKeys.summary(),
     teamBuilderKeys.all,
   ],
-  /**
-   * Marking one cell changes the records and the per-session tallies derived from them; the columns
-   * and the character list are untouched. The summary travels with the records everywhere for the
-   * same reason — the server counts the rows, so whatever makes a row stale makes the count stale.
-   */
-  attendance: () => [attendanceKeys.records(), attendanceKeys.summary()],
+  /** Marking one cell only changes records; the columns and the character list are untouched. */
+  attendance: () => [attendanceKeys.records()],
   /**
    * A deadline passing must lock the column: `isDeadlinePassed` is computed by the server and travels
    * with the session, so both the sessions and the records must be refetched. The schedule itself is
-   * unchanged, which is why this is not `schedule` — and no row is written, so the tallies stand.
+   * unchanged, which is why this is not `schedule`.
    */
   "attendance-window": () => [
     attendanceKeys.sessions(),
