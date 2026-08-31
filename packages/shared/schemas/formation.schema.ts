@@ -88,6 +88,8 @@ export const sessionFormationSchema = z.object({
   dateTime: z.string(),
   /** Saturday Guild War */
   isGuildWar: z.boolean(),
+  /** How many matches are played on this day — the ceiling on how many formations it may hold */
+  matchCount: z.number(),
   /** Opponent guild name, null for a Guild War or an unscheduled scrim */
   opponent: z.string().nullable(),
   /** Battle already played — the formation is frozen */

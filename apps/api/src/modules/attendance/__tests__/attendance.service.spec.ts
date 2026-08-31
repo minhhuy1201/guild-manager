@@ -65,7 +65,8 @@ const SESSIONS = [
     opponent: 'Hắc Long Đường',
     weekStart: vn('2026-07-20T00:00').toISOString(),
     attendanceCount: 0,
-    hasFormation: false,
+    matchCount: 2,
+    formationMatchCount: 0,
   },
   {
     id: 'session-sat',
@@ -76,7 +77,8 @@ const SESSIONS = [
     opponent: null,
     weekStart: vn('2026-07-20T00:00').toISOString(),
     attendanceCount: 0,
-    hasFormation: false,
+    matchCount: 2,
+    formationMatchCount: 0,
   },
 ];
 

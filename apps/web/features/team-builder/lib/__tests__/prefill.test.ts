@@ -21,6 +21,7 @@ function session(overrides: Partial<SessionFormation>): SessionFormation {
     label: "Thứ 3 · 20:30",
     dateTime: "2026-07-21T13:30:00.000Z",
     isGuildWar: false,
+    matchCount: 2,
     opponent: null,
     locked: false,
     matches: [],

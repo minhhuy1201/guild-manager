@@ -21,6 +21,7 @@ import {
   getActiveWeek,
   getEditableWeeks,
   guildWarDateTime,
+  guildWarMatchCount,
   guildWarSessionId,
   isSameWeek,
   parseWeekStart,
@@ -52,6 +53,7 @@ export interface ScheduledSession {
   label: string;
   dateTime: Date;
   isGuildWar: boolean;
+  matchCount: number;
   opponent: string | null;
 }
 
@@ -155,6 +157,7 @@ export class BattleSessionsService {
         id: true,
         dateTime: true,
         isGuildWar: true,
+        matchCount: true,
         opponent: true,
       },
     });
@@ -164,6 +167,7 @@ export class BattleSessionsService {
       label: formatSessionLabel(row.dateTime, row.isGuildWar),
       dateTime: row.dateTime,
       isGuildWar: row.isGuildWar,
+      matchCount: row.matchCount,
       opponent: row.opponent,
     }));
   }
@@ -218,6 +222,7 @@ export class BattleSessionsService {
       data: {
         dateTime,
         deadline,
+        matchCount: input.matchCount,
         opponent: normalizeOpponent(input.opponent),
         isGuildWar: false,
         weekStart: weekStartOf(dateTime),
@@ -267,6 +272,11 @@ export class BattleSessionsService {
         'Hạn chót của trận Bang Chiến cố định 17:00 Thứ 5, không sửa được.',
       );
     }
+    if (current.isGuildWar && input.matchCount !== undefined) {
+      throw new BadRequestException(
+        'Số trận của Bang Chiến do hệ thống tính theo tuần, không sửa được.',
+      );
+    }
 
     const dateTime = input.dateTime
       ? new Date(input.dateTime)
@@ -284,10 +294,25 @@ export class BattleSessionsService {
       this.assertDeadlineWithinCap(deadline, dateTime);
     }
 
-    const updated = await this.prisma.battleSession.update({
-      where: { id },
-      data: { dateTime, deadline, opponent, weekStart },
-      include: SESSION_INCLUDE,
+    // A Guild War's match count follows the week it now sits in, exactly like its deadline.
+    const matchCount = current.isGuildWar
+      ? guildWarMatchCount(weekStart)
+      : (input.matchCount ?? current.matchCount);
+
+    // One transaction, not two statements: between them the day would claim one match while still
+    // holding two formations — the very state `saveFormation` refuses.
+    const updated = await this.prisma.$transaction(async (tx) => {
+      if (matchCount < current.matchCount) {
+        await tx.formationMatch.deleteMany({
+          where: { sessionId: id, matchIndex: { gt: matchCount } },
+        });
+      }
+
+      return tx.battleSession.update({
+        where: { id },
+        data: { dateTime, deadline, opponent, weekStart, matchCount },
+        include: SESSION_INCLUDE,
+      });
     });
 
     return toBattleSession(updated, now);
@@ -324,6 +349,7 @@ export class BattleSessionsService {
    */
   private async ensureGuildWar(weekStart: WeekAnchor): Promise<void> {
     const dateTime = guildWarDateTime(weekStart);
+    const matchCount = guildWarMatchCount(weekStart);
 
     await this.prisma.battleSession.upsert({
       where: { id: guildWarSessionId(weekStart) },
@@ -332,11 +358,13 @@ export class BattleSessionsService {
         weekStart,
         dateTime,
         deadline: guildWarDeadline(weekStart),
+        matchCount,
         isGuildWar: true,
       },
-      // The battle time is left alone — an admin may have moved it. The deadline is the opposite:
-      // the system owns it, so a legacy row breaking the rule corrects itself.
-      update: { deadline: guildWarDeadline(weekStart) },
+      // The battle time is left alone — an admin may have moved it. The deadline and the match
+      // count are the opposite: the system owns both, so a legacy row breaking either rule
+      // corrects itself.
+      update: { deadline: guildWarDeadline(weekStart), matchCount },
     });
   }
 

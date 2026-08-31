@@ -23,6 +23,22 @@ const SATURDAY_OFFSET_FROM_MONDAY = 5;
 const GUILD_WAR_HOUR = 20;
 const GUILD_WAR_MINUTE = 0;
 
+/** Milliseconds in a week — the alternation counts whole weeks between two Monday markers. */
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * Monday 00:00 Vietnam time of the week the Guild War alternation is anchored to.
+ * Written with the `+07:00` offset rather than `Z`: the constant talks about a Monday on the
+ * Vietnamese clock, and writing it that way spares every reader the mental subtraction.
+ */
+const GUILD_WAR_MATCH_COUNT_ANCHOR = new Date('2026-08-31T00:00:00+07:00');
+
+/** Matches played in the anchor week and every second week from it. */
+const GUILD_WAR_MATCH_COUNT_EVEN = 2;
+
+/** Matches played in the weeks in between. */
+const GUILD_WAR_MATCH_COUNT_ODD = 1;
+
 /** Weekday names indexed straight by `vnWeekday()`; index 0 is empty because ISO counts from 1. */
 const WEEKDAY_NAMES = [
   '',
@@ -168,6 +184,25 @@ export function guildWarDateTime(weekStart: Date): Date {
     GUILD_WAR_HOUR,
     GUILD_WAR_MINUTE,
   );
+}
+
+/**
+ * How many matches a week's Guild War is played over: 2, then 1, then 2 again.
+ *
+ * `Math.abs` before the parity test rather than a bare `weeks % 2 === 0`: a past week gives a
+ * NEGATIVE delta, and `%` in JavaScript keeps the sign of the dividend, so the parity has to be
+ * computed off a magnitude to be right for reasons a reader can see.
+ * @param weekStart - Monday 00:00 Vietnam time of the week
+ * @returns 2 for the anchor week and every second week from it, 1 for the weeks between
+ */
+export function guildWarMatchCount(weekStart: Date): number {
+  const weeksFromAnchor = Math.round(
+    (weekStart.getTime() - GUILD_WAR_MATCH_COUNT_ANCHOR.getTime()) / WEEK_MS,
+  );
+
+  return Math.abs(weeksFromAnchor) % 2 === 0
+    ? GUILD_WAR_MATCH_COUNT_EVEN
+    : GUILD_WAR_MATCH_COUNT_ODD;
 }
 
 /**

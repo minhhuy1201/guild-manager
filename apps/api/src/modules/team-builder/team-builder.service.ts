@@ -113,6 +113,7 @@ export class TeamBuilderService {
         opponent: session.opponent,
         dateTime: session.dateTime.toISOString(),
         isGuildWar: session.isGuildWar,
+        matchCount: session.matchCount,
         locked: isSessionLocked(session.dateTime, now),
         matches: matchesBySession.get(session.id) ?? [],
       } satisfies SessionFormation),
@@ -169,6 +170,15 @@ export class TeamBuilderService {
     const dateTime = new Date(session.dateTime);
     if (isSessionLocked(dateTime, now)) {
       throw new ConflictException('Trận này đã đánh xong, không sửa được nữa.');
+    }
+
+    // The day decides how many matches are played; the payload only decides how many formations are
+    // laid out for them. One formation for a two-match day is normal — both matches use it. More
+    // formations than matches is not.
+    if (matches.length > session.matchCount) {
+      throw new ConflictException(
+        `Ngày này chỉ đánh ${session.matchCount} trận, không xếp được nhiều đội hình hơn.`,
+      );
     }
 
     // Retention runs on the WRITE path, not the read path: data only grows when someone saves, and
@@ -229,6 +239,7 @@ export class TeamBuilderService {
       opponent: session.opponent,
       dateTime: session.dateTime,
       isGuildWar: session.isGuildWar,
+      matchCount: session.matchCount,
       locked: isSessionLocked(dateTime, now),
       matches: savedMatches,
     } satisfies SessionFormation);

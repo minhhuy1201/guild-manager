@@ -6,6 +6,7 @@ const ROW: SessionRow = {
   deadline: new Date('2026-07-23T10:00:00.000Z'),
   opponent: null,
   isGuildWar: true,
+  matchCount: 2,
   weekStart: new Date('2026-07-19T17:00:00.000Z'),
   _count: { attendanceRecords: 3, formationMatches: 0 },
 };
@@ -34,6 +35,20 @@ describe('toBattleSession', () => {
     const entity = toBattleSession(ROW, new Date('2026-07-22T05:00:00.000Z'));
 
     expect(entity.attendanceCount).toBe(3);
-    expect(entity.hasFormation).toBe(false);
+    expect(entity.formationMatchCount).toBe(0);
+  });
+
+  it('trả số trận của ngày đánh và số đội hình đã xếp như hai con số khác nhau', () => {
+    const entity = toBattleSession(
+      {
+        ...ROW,
+        matchCount: 2,
+        _count: { attendanceRecords: 3, formationMatches: 1 },
+      },
+      new Date('2026-07-22T05:00:00.000Z'),
+    );
+
+    expect(entity.matchCount).toBe(2);
+    expect(entity.formationMatchCount).toBe(1);
   });
 });

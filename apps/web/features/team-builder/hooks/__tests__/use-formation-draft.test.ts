@@ -309,3 +309,32 @@ describe("useFormationDraft — nạp đề xuất và nền của lần ghi đ�
     expect(result.current.dirty).toBe(true);
   });
 });
+
+describe("useFormationDraft — trần số đội hình theo số trận của ngày", () => {
+  it("ngày chỉ đánh 1 trận thì không tạo được đội hình thứ hai", () => {
+    const session = makeSession(SESSION_ID, { matchCount: 1 });
+    const { result } = renderFormationHook(() =>
+      useFormationDraft([session], SESSION_ID, true, vi.fn())
+    );
+
+    expect(result.current.canAddMatch).toBe(false);
+  });
+
+  it("ngày đánh 2 trận vẫn cho phép chỉ có 1 đội hình, và mời tạo trận 2", () => {
+    const session = makeSession(SESSION_ID, { matchCount: 2 });
+    const { result } = renderFormationHook(() =>
+      useFormationDraft([session], SESSION_ID, true, vi.fn())
+    );
+
+    expect(result.current.matchCount).toBe(1);
+    expect(result.current.canAddMatch).toBe(true);
+  });
+
+  it("chưa chọn ngày nào thì không mời tạo gì", () => {
+    const { result } = renderFormationHook(() =>
+      useFormationDraft([], null, true, vi.fn())
+    );
+
+    expect(result.current.canAddMatch).toBe(false);
+  });
+});

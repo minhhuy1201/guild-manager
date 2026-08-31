@@ -34,6 +34,16 @@ export const DEADLINE_CAP_MESSAGE =
 export const INVALID_WEEK_MESSAGE = "Tuần không hợp lệ.";
 
 /**
+ * A day is played over 1 or 2 matches. Both bounds and the message are shared by the schema, the
+ * service and the form, so the rule cannot drift between the three.
+ */
+export const MATCH_COUNT_MIN = 1;
+export const MATCH_COUNT_MAX = 2;
+
+/** Message shown when the match count falls outside its bounds. */
+export const MATCH_COUNT_MESSAGE = "Một ngày đánh 1 hoặc 2 trận.";
+
+/**
  * Query string of the week-scoped read endpoints (`?weekStart=`).
  *
  * `offset: true` because a valid client may send `+07:00`, not just `Z`. `preprocess`
@@ -58,6 +68,12 @@ const battleSessionFields = z.object({
   dateTime: isoDateTime,
   /** Admin-set attendance deadline, at most 10:00 on the battle day (ISO string) */
   deadline: isoDateTime,
+  /** How many matches are played on this day, 1 or 2 */
+  matchCount: z
+    .number()
+    .int(MATCH_COUNT_MESSAGE)
+    .min(MATCH_COUNT_MIN, MATCH_COUNT_MESSAGE)
+    .max(MATCH_COUNT_MAX, MATCH_COUNT_MESSAGE),
   opponent,
 });
 
@@ -96,8 +112,10 @@ export const battleSessionSchema = z.object({
   weekStart: isoDateTime,
   /** Attendance entries recorded so far — the delete dialog needs this. */
   attendanceCount: z.number(),
-  /** Whether a formation has been laid out for this session. */
-  hasFormation: z.boolean(),
+  /** How many matches are played on this day. Guild War: system-owned, alternating per week. */
+  matchCount: z.number(),
+  /** How many formations have been laid out for this day — never more than `matchCount`. */
+  formationMatchCount: z.number(),
 });
 
 /** An attendance week as the API returns it. */

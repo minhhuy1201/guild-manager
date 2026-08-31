@@ -3,6 +3,7 @@ import { Swords } from "lucide-react";
 
 import type { BattleSession } from "@guild/shared/schemas";
 
+import { Badge } from "@/components/ui/badge";
 import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -22,8 +23,8 @@ const ICON_CLASS: Record<SessionLabelSize, string> = {
 const GUILD_WAR_TINT = "border-primary/40 bg-primary/5";
 
 export interface SessionLabelProps {
-  /** Battle to show; only its label and its Guild War flag are read */
-  session: Pick<BattleSession, "label" | "isGuildWar">;
+  /** Battle to show; its label, its Guild War flag and its match count are read */
+  session: Pick<BattleSession, "label" | "isGuildWar" | "matchCount">;
   /** Icon size: "sm" for a narrow cell, "md" for a list row */
   size?: SessionLabelSize;
   /** Marks a single screen adds after the label, inside the same row */
@@ -32,13 +33,14 @@ export interface SessionLabelProps {
 
 /**
  * How a battle is recognised across the app: the Guild War carries a crossed
- * swords icon and the primary colour, a scrim carries neither.
+ * swords icon and the primary colour, a scrim carries neither. Both carry a
+ * badge with the number of matches the day is played over.
  *
  * This is one inline row and nothing more — no frame, no spacing, no second
  * line. Four screens lay a battle out four different ways, and the only thing
  * they genuinely share is what the row itself looks like. The subtitle stays
  * with each screen because each screen stacks and styles it differently.
- * @param session - Battle to show; only label and isGuildWar are read
+ * @param session - Battle to show; label, isGuildWar and matchCount are read
  * @param size - Icon size; "sm" for a narrow cell, "md" for a list row
  * @param children - Marks the screen adds after the label, in the same row
  * @returns The label row
@@ -57,6 +59,9 @@ export function SessionLabel({
     >
       {session.isGuildWar && <Swords className={ICON_CLASS[size]} />}
       {session.label}
+      {/* `secondary`, not a hand-rolled outline: a solid ground with full-strength text is the
+          only way this reads at a glance beside a label that is already bold, and often primary. */}
+      <Badge variant="secondary">{session.matchCount} trận</Badge>
       {children}
     </span>
   );

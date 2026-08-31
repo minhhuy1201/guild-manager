@@ -24,7 +24,7 @@ function describeLoss(session: BattleSession): string {
   if (session.attendanceCount > 0) {
     losses.push(`${session.attendanceCount} lượt điểm danh`);
   }
-  if (session.hasFormation) losses.push("1 đội hình đã xếp");
+  if (session.formationMatchCount > 0) losses.push("1 đội hình đã xếp");
 
   if (losses.length === 0) return "Trận này chưa có dữ liệu gì.";
 
