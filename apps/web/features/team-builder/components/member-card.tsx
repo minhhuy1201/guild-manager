@@ -7,7 +7,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { GUILD_CLASS_IMAGE } from "@/lib/guild-class";
+import { GUILD_CLASS_IMAGE, guildClassSurface } from "@/lib/guild-class";
 import { cn } from "@/lib/utils";
 
 interface MemberCardProps {
@@ -22,7 +22,7 @@ interface MemberCardProps {
 }
 
 /**
- * A guild member shown as a compact card: class avatar plus character name.
+ * A guild member shown as a compact card: class avatar plus character name, on that class's colour.
  * Purely presentational — no drag behaviour, so it can also render inside DragOverlay.
  * Always carries a tooltip: the full name, since a slot is too narrow for the
  * longer ones and truncation gives no way to read them back, or the warning
@@ -40,6 +40,9 @@ export function MemberCard({
   className,
 }: MemberCardProps) {
   const classLabel = GUILD_CLASS_LABEL[character.guildClass];
+  const { borderColor, backgroundColor } = guildClassSurface(
+    character.guildClass
+  );
 
   return (
     <Tooltip>
@@ -47,10 +50,15 @@ export function MemberCard({
         render={
           <div
             className={cn(
-              "flex w-full items-center gap-2 rounded-md border bg-card px-2 py-1.5 text-left shadow-sm",
+              "flex w-full items-center gap-2 rounded-md border px-2 py-1.5 text-left shadow-sm",
               warning && "border-destructive",
               className
             )}
+            // The surface always carries the class, the border only when nothing is wrong with the
+            // placement: a warning owns the border, and an inline colour would outrank its class.
+            style={
+              warning ? { backgroundColor } : { borderColor, backgroundColor }
+            }
           >
             <Avatar size="sm" className="shrink-0">
               <AvatarImage
