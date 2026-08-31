@@ -3,6 +3,7 @@ import {
   getActiveWeek,
   getEditableWeeks,
   guildWarDateTime,
+  guildWarMatchCount,
   guildWarSessionId,
   isDeadlinePassed,
   isSameWeek,
@@ -217,4 +218,35 @@ describe('session-schedule', () => {
       expect(isSessionLocked(dateTime, afterDeadline)).toBe(false);
     });
   });
+
+  describe('số trận của Bang Chiến xen kẽ theo tuần', () => {
+    // Mốc là Thứ 2 2026-08-31 — tuần đó đánh 2 trận, rồi cứ một tuần 1 trận, một tuần 2 trận.
+    it('tuần mốc đánh 2 trận', () => {
+      expect(guildWarMatchCount(vn('2026-08-31T00:00'))).toBe(2);
+    });
+
+    it('tuần kế tiếp đánh 1 trận', () => {
+      expect(guildWarMatchCount(vn('2026-09-07T00:00'))).toBe(1);
+    });
+
+    it('hai tuần sau mốc quay lại 2 trận', () => {
+      expect(guildWarMatchCount(vn('2026-09-14T00:00'))).toBe(2);
+    });
+
+    it('tuần ngay trước mốc đánh 1 trận', () => {
+      expect(guildWarMatchCount(vn('2026-08-24T00:00'))).toBe(1);
+    });
+
+    it('hai tuần trước mốc đánh 2 trận', () => {
+      expect(guildWarMatchCount(vn('2026-08-17T00:00'))).toBe(2);
+    });
+
+    // 2026-01-05 cách mốc đúng 34 tuần về trước — số chẵn, và là số ÂM. Đây là ca dễ viết sai:
+    // `%` trong JavaScript giữ dấu của số bị chia.
+    it('tuần quá khứ xa vẫn tính chẵn/lẻ đúng dù số tuần lệch là số âm', () => {
+      expect(guildWarMatchCount(vn('2026-01-05T00:00'))).toBe(2);
+      expect(guildWarMatchCount(vn('2026-01-12T00:00'))).toBe(1);
+    });
+  });
+
 });
