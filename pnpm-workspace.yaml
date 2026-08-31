@@ -3,15 +3,13 @@ packages:
   - "packages/*"
 
 # Node 24 chỉ là gợi ý nếu không ai ép: `engines.node` của mỗi package thành lỗi cài đặt thật.
-engineStrict: true
+allowBuilds:
+  '@prisma/engines': true
+  '@scarf/scarf': false
+  prisma: true
+  unrs-resolver: true
 
-ignoredBuiltDependencies:
-  - sharp
-  - unrs-resolver
-  # Prisma 7 chạy rust-free, không cần postinstall script tải engine.
-  - "@prisma/engines"
-  - "@scarf/scarf"
-  - prisma
+engineStrict: true
 
 # Nâng sàn phiên bản cho các dependency gián tiếp có advisory đang mở trên Dependabot.
 # Không package nào trong workspace khai báo chúng trực tiếp, nên override là chỗ duy nhất
