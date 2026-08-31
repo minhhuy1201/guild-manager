@@ -40,10 +40,10 @@ describe("AttendanceScreen", () => {
     expect(order).toEqual(["week-timeline", "member-card", "filters", "grid"]);
   });
 
-  it("admin không thấy thẻ cá nhân và lưới cho sửa được", () => {
+  it("admin cũng thấy thẻ cá nhân, và lưới cho sửa được", () => {
     render(<AttendanceScreen role={GuildRole.ADMIN} />);
 
-    expect(screen.queryByTestId("member-card")).toBeNull();
+    expect(screen.getByTestId("member-card")).toBeTruthy();
     expect(screen.getByTestId("grid").dataset.admin).toBe("true");
   });
 });

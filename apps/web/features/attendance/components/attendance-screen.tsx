@@ -14,8 +14,9 @@ interface AttendanceScreenProps {
 }
 
 /**
- * The attendance screen. Everyone reads the whole guild's grid, filters included; only an admin gets
- * its edit column. A member answers for their own character in the card above the grid.
+ * The attendance screen. Everyone reads the whole guild's grid, filters included, and answers for
+ * their own character in the card above it — an admin fights the battles too. The role only decides
+ * whether the grid gets its edit column.
  * @param props.role - Role of the viewer
  * @returns The attendance page content
  */
@@ -25,7 +26,7 @@ export function AttendanceScreen({ role }: AttendanceScreenProps) {
   return (
     <>
       <WeekTimeline />
-      {!isAdmin && <MemberAttendanceCard />}
+      <MemberAttendanceCard />
       <AttendanceFilters scope="attendance" />
       <AttendanceGrid isAdmin={isAdmin} />
     </>
