@@ -89,6 +89,12 @@ Commits and PRs are written in English as Conventional Commits: `<type>(<scope>)
 Merging a PR that touches `apps/api` migrates the production database and then deploys — see
 [`docs/production.md`](docs/production.md) §4.
 
+**Self-review before pushing.** `.claude/settings.json` registers a hook that blocks `git push`
+made through Claude Code until the `pr-review` skill has approved the exact commit being pushed —
+run `/pr-review`, and on an Approve verdict it records `.claude/.pr-review-passed` (git-ignored,
+per-developer). It is a cooperative guardrail, not a security boundary: a push from a plain
+terminal never reaches it, and branch protection on `main` remains the real enforcement.
+
 ## Documentation
 
 | File | Contents |
