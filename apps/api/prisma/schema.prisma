@@ -77,6 +77,10 @@ model BattleSession {
   opponent   String?
   /// A Guild War session — system-generated, cannot be deleted.
   isGuildWar Boolean  @default(false)
+  /// How many matches are played on this day, 1 or 2. The cap lives in Zod, not here — the same
+  /// rule FormationMatch.matchIndex follows. Scrim: an admin's value, defaulting to 2.
+  /// Guild War: system-owned, alternating 2/1 per week (see session-schedule.ts).
+  matchCount Int      @default(2)
   /// Monday 00:00 of the week containing this session — used to group sessions by week.
   weekStart  DateTime
   createdAt  DateTime @default(now())
