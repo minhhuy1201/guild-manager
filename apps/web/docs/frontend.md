@@ -400,6 +400,9 @@ Class names are long and every table is narrow, so a character's class always re
 `components/shared/guild-class-icon.tsx`: an avatar image with the class name in a tooltip and in
 the image `alt`.
 
+Inside a chart's SVG that avatar cannot be used; the tick draws the same image directly — see "A
+count broken down by answer" below.
+
 The images live in `public/img/` and are mapped in `lib/guild-class.ts` — they are a web asset, so
 the mapping stays on the frontend while the enum itself comes from `@guild/shared/enums`:
 
@@ -442,6 +445,35 @@ the frontend.
 **A screen that puts `SessionLabel` on a `primary` surface has to invert it.** The Guild War's
 `text-primary` *is* that background, so the label disappears — `session-tabs` adds
 `data-active:*:text-primary-foreground` to the selected card to flip its whole content back.
+
+### A count broken down by answer → a stacked horizontal bar
+
+Counts are shown as `components/ui/chart.tsx` (shadcn's recharts wrapper), never as a hand-rolled
+`div` with a percentage width: the tooltip, the legend and the theme-aware colour variables come with
+it. The attendance history dashboard
+(`features/attendance/components/attendance-summary-card.tsx`) is the worked example — one card per
+battle day, one horizontal bar per guild class, three stacked segments.
+
+- **The segments reuse the answer tones of the member card**: emerald for "Có", `destructive` for
+  "Không", amber for "Chưa điểm danh". A chart is read by colour alone, so the fills are at full
+  strength — the tile's `/5` exists because a tile is a whole surface, a 16px band is not.
+- **The colours are declared once, in the chart's `ChartConfig`**, which `ChartStyle` turns into
+  `--color-<key>` variables per theme; a `<Bar>` takes `fill="var(--color-co)"` and nothing else.
+- **Every card on a screen shares one X domain** (`maxClassSize` in
+  `features/attendance/lib/attendance-summary.ts`). Left to itself recharts scales each chart to its
+  own data, and two bars of the same length would then mean two different numbers.
+- **Counting is a pure function in `lib/`, never inline in the component** — `summarizeByClass`
+  returns all seven classes in `GUILD_CLASS_OPTIONS` order, zeroes included, so the rows never
+  reshuffle as answers come in.
+- **The Y axis names a class the way §6 already does — by its icon.** A recharts tick lives inside
+  the chart's SVG, where `GuildClassIcon`'s `Avatar` is not valid content, so the tick draws the same
+  `GUILD_CLASS_IMAGE` entry as an SVG `<image>` clipped to a circle, with the class name in a
+  `<title>` in place of the avatar's tooltip and `alt`. It sits on an opaque `card` disc with the
+  standard border: the images are transparent PNGs and would otherwise lose their edge on the Guild
+  War card's tinted surface.
+- **A chart follows the roster search and the session picker, not the class and presence filters**:
+  those two are the chart's own axes, and filtering by them empties the very comparison the card is
+  for.
 
 ### Control sizes
 
