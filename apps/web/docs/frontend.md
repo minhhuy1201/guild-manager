@@ -656,7 +656,8 @@ The session path is covered too, and deliberately: `features/auth/core/__tests__
 with a signature forged to match still returns `null`), and `__tests__/proxy.test.ts` builds a real
 `NextRequest` for the four branches that matter: valid access token, renewal (new cookies land on
 **both** request and response), a dead session redirected off an admin route with its stale cookies
-cleared, and a missing `AUTH_SECRET`, where public pages must still render. Tokens are signed with
+cleared, and a missing `AUTH_SECRET`, where the proxy must redirect to the login page instead of
+throwing — throwing would take down every page at once. Tokens are signed with
 `core/__tests__/sign-token.ts` (Web Crypto, no new dependency).
 
 Above that layer sit the hooks that wire it together, where the real bugs live: the five hooks of

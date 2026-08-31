@@ -9,7 +9,7 @@ places people usually get stuck.
 | | Version | Notes |
 |---|---|---|
 | Node.js | 24 | pinned in `.nvmrc`; `engines.node` + `engineStrict` make a wrong version fail `pnpm install` |
-| pnpm | 10+ | `corepack enable pnpm` is enough |
+| pnpm | 12 | pinned in the root `package.json` (`packageManager`); `corepack enable pnpm` picks up that exact version |
 | Docker | any supported release | only used to run PostgreSQL (Podman works, see section 4) |
 | `openssl` | | to generate `AUTH_SECRET` |
 
@@ -151,6 +151,8 @@ pnpm --filter web dev    # http://localhost:3000
 | `dev` | Watch mode |
 | `build` / `start:prod` | Webpack build to `dist/main.js` / run the build |
 | `lint` | ESLint + Prettier, including the rule blocking cross-layer imports |
+| `format:check` | Prettier in check mode — what CI runs |
+| `typecheck` | `tsc --noEmit`, no build output |
 | `test` | Unit tests (Jest) |
 | `prisma:generate` | Regenerate the Prisma Client |
 | `prisma:migrate` | `migrate dev` — create a new migration from schema changes |
@@ -166,6 +168,7 @@ pnpm --filter web dev    # http://localhost:3000
 | `dev` | Next.js dev server |
 | `build` / `start` | Production build / run the build |
 | `lint` | ESLint (`eslint-config-next`) |
+| `typecheck` | `tsc --noEmit` |
 | `test` / `test:watch` | Vitest |
 
 Add a shadcn component (run inside `apps/web`):
@@ -199,9 +202,11 @@ pnpm --filter @guild/shared build
 ## 8. Before committing
 
 ```bash
-pnpm --filter api lint && pnpm --filter api test
-pnpm --filter web lint && pnpm --filter web test
+pnpm --filter api lint && pnpm --filter api typecheck && pnpm --filter api test
+pnpm --filter web lint && pnpm --filter web typecheck && pnpm --filter web test
 ```
+
+That is the whole of what the six CI checks run, minus the two builds.
 
 Never commit: `.env*` (except `.env.example`), `apps/api/src/generated/`, `dist/`, `.next/`.
 

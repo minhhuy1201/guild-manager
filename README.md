@@ -15,8 +15,9 @@ How the pieces fit together, and where new code belongs: [`docs/architecture.md`
 | | Version |
 |---|---|
 | Node.js | 24 (pinned in `.nvmrc`) |
-| pnpm | 10+ |
+| pnpm | 12 (pinned in `package.json` → `packageManager`; `corepack enable pnpm` picks up that exact version) |
 | Docker | to run PostgreSQL locally |
+| A Discord application | sign-in is Discord OAuth2 only — there are no passwords |
 
 ## Running locally
 
@@ -31,21 +32,36 @@ cp apps/web/.env.example apps/web/.env.local
 # 3. Generate AUTH_SECRET and put it in BOTH files (the values must match)
 openssl rand -hex 32
 
-# 4. Start the database, create the tables, seed 25 sample characters
+# 4. Fill in the Discord credentials in apps/api/.env — see "Signing in" below
+
+# 5. Start the database, create the tables, load the roster
 pnpm --filter api db:up
 pnpm --filter api prisma:migrate
+cp seed-data-example.json seed-data.json   # 14 sample characters; the real roster is git-ignored
 pnpm --filter api db:seed
 
-# 5. Run — open two terminals
+# 6. Run — open two terminals
 pnpm --filter api dev     # http://localhost:3001/api  (Swagger: /docs)
 pnpm --filter web dev     # http://localhost:3000
 ```
 
-Log in as an admin with an account from `ADMIN_USERNAMES` + `ADMIN_PASSWORD` in `apps/api/.env`
-(defaults to `huy` / `testne`). The attendance screen needs no login: anyone can mark attendance for
-any member, as long as the deadline has not passed.
-
 Quick check: `curl http://localhost:3001/api/health` must return `"db": "up"`.
+
+## Signing in
+
+Identity comes from **Discord OAuth2**, and the API owns the whole flow — no password is stored
+anywhere. Create an application at <https://discord.com/developers/applications>, add
+`http://localhost:3001/api/auth/discord/callback` under OAuth2 → Redirects, then fill
+`DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` and `DISCORD_REDIRECT_URI` in `apps/api/.env`.
+
+A login resolves against `Character.discordId`, a column an admin fills in by hand, so a fresh
+database lets nobody in. Put your own Discord ID in `DISCORD_ADMIN_IDS` — those ids always sign in as
+`ADMIN`, matching character or not, and are the way in before anyone has been linked.
+
+**Every page needs a session**; `/dang-nhap` is the only public route. There are two roles: an
+`ADMIN` administers the guild and marks attendance for anyone, past the deadline included, while a
+`MEMBER` sees the whole guild's week read-only and marks only their own character, only while the
+deadline is open.
 
 More detail (environment variables, common commands, troubleshooting): [`docs/development.md`](docs/development.md).
 
@@ -53,10 +69,11 @@ More detail (environment variables, common commands, troubleshooting): [`docs/de
 
 | Route | Purpose | Access |
 |---|---|---|
-| `/` | Mark attendance for the current week | Everyone |
-| `/lich-su-diem-danh` | Attendance history | Everyone |
+| `/dang-nhap` | Sign in with Discord | Public — the only page reachable without a session |
+| `/` | Mark attendance for the current week | Signed in — a member marks their own character, an admin edits the whole grid |
+| `/lich-su-diem-danh` | Attendance history | Signed in |
 | `/xep-team` | Build the roster for each match | Admin only |
-| `/thiet-lap` | Two tabs: "Match setup" (the week's schedule) and "Member management" (add/edit/delete members) | Admin only |
+| `/thiet-lap` | Two tabs: "Match setup" (the week's schedule) and "Member management" (add/edit/delete members, including each one's Discord ID and role) | Admin only |
 
 ## Contributing
 
@@ -81,7 +98,7 @@ Merging a PR that touches `apps/api` migrates the production database and then d
 | [`docs/production.md`](docs/production.md) | Build, deploy, migrating the real database, operations |
 | [`apps/api/README.md`](apps/api/README.md) | Backend: running it, commands, the database |
 | [`apps/web/README.md`](apps/web/README.md) | Frontend: running it, commands, env |
-| [`CLAUDE.md`](CLAUDE.md) | Code conventions for humans and AI agents |
+| [`CLAUDE.md`](CLAUDE.md) | Code conventions for humans and AI agents; [`apps/api/CLAUDE.md`](apps/api/CLAUDE.md) and [`apps/web/CLAUDE.md`](apps/web/CLAUDE.md) add the per-app rules |
 | [`apps/api/docs/backend.md`](apps/api/docs/backend.md) | Backend structure: layers, dependency rules, conventions |
 | [`apps/web/docs/frontend.md`](apps/web/docs/frontend.md) | Frontend structure: data-flow rules, components, UI conventions |
 | `docs/superpowers/specs/` | Design specs per feature |
