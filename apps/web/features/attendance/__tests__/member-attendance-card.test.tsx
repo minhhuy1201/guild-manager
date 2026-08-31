@@ -4,7 +4,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GuildClass } from "@guild/shared/enums";
 import type {
   AttendanceRecord,
-  AttendanceSummary,
   BattleSession,
   Character,
 } from "@guild/shared/schemas";
@@ -28,7 +27,6 @@ const boardState = {
 let character: Character | null = CHARACTER;
 let sessions: BattleSession[] = [];
 let records: Record<string, AttendanceRecord> = {};
-let summary: AttendanceSummary[] = [];
 const markState = {
   mutateAsync: vi.fn(),
   isPending: false,
@@ -53,7 +51,6 @@ vi.mock("../hooks/use-deadline-refresh", () => ({
 vi.mock("../hooks/use-attendance", () => ({
   useBattleSessions: () => ({ data: sessions }),
   useAttendanceRecords: () => ({ data: records }),
-  useAttendanceSummary: () => ({ data: summary }),
   useMarkAttendance: () => markState,
 }));
 vi.mock("@/features/auth", () => ({
@@ -141,7 +138,6 @@ describe("MemberAttendanceCard", () => {
     character = CHARACTER;
     sessions = [makeSession("sess-1")];
     records = {};
-    summary = [];
     boardState.isPending = false;
     boardState.isError = false;
     markState.mutateAsync = vi.fn().mockResolvedValue(undefined);
@@ -218,14 +214,6 @@ describe("MemberAttendanceCard", () => {
 
     expect(screen.getByText("Đã khoá")).toBeTruthy();
     expect(tileOf("sess-1").querySelectorAll("button")).toHaveLength(0);
-  });
-
-  it("phụ đề ngày kèm số người đã nhận trận đó", () => {
-    summary = [{ sessionId: "sess-1", coCount: 7, khongCount: 2 }];
-
-    render(<MemberAttendanceCard />);
-
-    expect(tileOf("sess-1").textContent).toContain("Đã có 7 người");
   });
 
   it("bấm Có ghi đúng nhân vật, đúng trận, đúng câu trả lời", async () => {

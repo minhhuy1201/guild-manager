@@ -29,7 +29,6 @@ import { useAttendanceBoard } from "../hooks/use-attendance-board";
 import { useDeadlineRefresh } from "../hooks/use-deadline-refresh";
 import {
   useAttendanceRecords,
-  useAttendanceSummary,
   useBattleSessions,
   useMarkAttendance,
 } from "../hooks/use-attendance";
@@ -75,15 +74,13 @@ const TILE_TONE = {
 } as const;
 
 /**
- * The member's attendance screen: their own character only, one row per session, with the sign-up
- * counts so they can see which session is short-handed.
+ * The member's attendance screen: their own character only, one row per session.
  * @returns The personal attendance card
  */
 export function MemberAttendanceCard() {
   const { data: session } = useSession();
   const { data: sessions } = useBattleSessions();
   const { data: records } = useAttendanceRecords();
-  const { data: summary } = useAttendanceSummary();
   const { mutateAsync: mark, isPending, variables } = useMarkAttendance();
   const board = useAttendanceBoard();
 
@@ -189,9 +186,6 @@ export function MemberAttendanceCard() {
                   const savedReason =
                     recordMap[recordKey(character.id, battleSession.id)]
                       ?.reason ?? "";
-                  const counts = summary?.find(
-                    (row) => row.sessionId === battleSession.id
-                  );
                   // `null` is "not answered yet", and `false` is a real answer — so the branch on
                   // null has to come first.
                   const tileTone =
@@ -212,7 +206,6 @@ export function MemberAttendanceCard() {
                       <SessionLabel session={battleSession} size="md" />
                       <p className="text-sm text-muted-foreground">
                         {getSessionSubtitle(battleSession)}
-                        {counts && ` · Đã có ${counts.coCount} người`}
                       </p>
 
                       {/* `mt-auto` pins the answers to the bottom, so a day with a longer

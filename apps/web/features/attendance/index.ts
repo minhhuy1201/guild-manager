@@ -7,5 +7,4 @@ export {
   useCharacters,
   useBattleSessions,
   useAttendanceRecords,
-  useAttendanceSummary,
 } from "./hooks/use-attendance";

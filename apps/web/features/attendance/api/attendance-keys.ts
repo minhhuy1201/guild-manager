@@ -9,5 +9,4 @@ export const attendanceKeys = {
   sessions: () => [...attendanceKeys.all, "sessions"] as const,
   week: () => [...attendanceKeys.all, "week"] as const,
   records: () => [...attendanceKeys.all, "records"] as const,
-  summary: () => [...attendanceKeys.all, "summary"] as const,
 };

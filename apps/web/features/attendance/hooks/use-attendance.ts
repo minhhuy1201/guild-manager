@@ -9,7 +9,6 @@ import { matchesRosterFilter } from "@/lib/roster-filter";
 import { attendanceKeys } from "../api/attendance-keys";
 import {
   fetchAttendanceRecords,
-  fetchAttendanceSummary,
   fetchBattleSessions,
   fetchCharacters,
   fetchCurrentWeek,
@@ -111,18 +110,6 @@ export function useSessionFilter(): SessionFilter {
     selectedSession: list.find((session) => session.id === sessionId) ?? null,
     setSessionId,
   };
-}
-
-/**
- * Query the sign-up counts per session — used by the member screen, where other people's rows are
- * not visible.
- * @returns The TanStack query result (data is the tallies per session)
- */
-export function useAttendanceSummary() {
-  return useQuery({
-    queryKey: attendanceKeys.summary(),
-    queryFn: fetchAttendanceSummary,
-  });
 }
 
 /**

@@ -2,7 +2,6 @@
 
 import type {
   AttendanceRecord,
-  AttendanceSummary,
   BattleSession,
   Character,
   MarkAttendanceInput,
@@ -83,16 +82,6 @@ export async function fetchAttendanceRecords(): Promise<
       record,
     ])
   );
-}
-
-/**
- * Get the yes/no tallies per session in the open week.
- * @returns The tallies per session
- */
-export async function fetchAttendanceSummary(): Promise<AttendanceSummary[]> {
-  return apiFetch<AttendanceSummary[]>("/attendance/summary", {
-    headers: await authHeader(),
-  });
 }
 
 /**
