@@ -27,7 +27,8 @@ const SESSION: BattleSession = {
   opponent: null,
   weekStart: "2026-08-24T00:00:00.000Z",
   attendanceCount: 0,
-  hasFormation: false,
+  matchCount: 2,
+  formationMatchCount: 0,
 };
 
 /**

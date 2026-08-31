@@ -10,6 +10,7 @@ export type SessionRow = {
   deadline: Date;
   opponent: string | null;
   isGuildWar: boolean;
+  matchCount: number;
   weekStart: Date;
   _count: { attendanceRecords: number; formationMatches: number };
 };
@@ -31,6 +32,7 @@ export function toBattleSession(row: SessionRow, now: Date): BattleSession {
     opponent: row.opponent,
     weekStart: row.weekStart.toISOString(),
     attendanceCount: row._count.attendanceRecords,
-    hasFormation: row._count.formationMatches > 0,
+    matchCount: row.matchCount,
+    formationMatchCount: row._count.formationMatches,
   } satisfies BattleSession);
 }
