@@ -498,5 +498,4 @@ describe('BattleSessionsService', () => {
       expect(prisma.formationMatch.deleteMany).not.toHaveBeenCalled();
     });
   });
-
 });

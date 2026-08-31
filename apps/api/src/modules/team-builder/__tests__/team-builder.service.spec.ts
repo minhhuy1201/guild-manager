@@ -610,7 +610,10 @@ describe('TeamBuilderService.saveFormation', () => {
 
   describe('số trận là trần trên của số đội hình', () => {
     it('từ chối lưu 2 đội hình cho ngày chỉ đánh 1 trận', async () => {
-      battleSessions.findById.mockResolvedValue({ ...SAVED_DAY, matchCount: 1 });
+      battleSessions.findById.mockResolvedValue({
+        ...SAVED_DAY,
+        matchCount: 1,
+      });
 
       await expect(
         service.saveFormation('session-thu', [
@@ -629,5 +632,4 @@ describe('TeamBuilderService.saveFormation', () => {
       expect(saved.matchCount).toBe(2);
     });
   });
-
 });

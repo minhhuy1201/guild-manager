@@ -248,5 +248,4 @@ describe('session-schedule', () => {
       expect(guildWarMatchCount(vn('2026-01-12T00:00'))).toBe(1);
     });
   });
-
 });
