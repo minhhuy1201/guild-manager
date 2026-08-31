@@ -24,9 +24,6 @@ const CONFLICT_STATUS = 409;
 /** Stable stand-in while no battle day is selected, so memos do not rerun. */
 const EMPTY_MATCHES: MatchDraft[] = [{ assignment: {}, notes: {} }];
 
-/** Ceiling on matches per day — mirrors the `.max(2)` the backend validates. */
-const MAX_MATCHES = 2;
-
 /** The draft being edited: the open day's matches and everything that writes them. */
 export interface FormationDraftState {
   /** Matches of the open day, draft where one exists, saved copy otherwise */
@@ -43,7 +40,7 @@ export interface FormationDraftState {
   dirty: boolean;
   /** Every day of the week that differs from its saved copy */
   dirtySessionIds: Set<string>;
-  /** Whether a second match may still be added */
+  /** Whether another match may still be added — capped by the day's own match count */
   canAddMatch: boolean;
   /** Number of slots in the layout */
   slotCount: number;
@@ -146,6 +143,16 @@ export function useFormationDraft(
     [activeSessionId, matchesBySession]
   );
 
+  // The day itself sets the ceiling: a one-match day can never hold a second formation, while a
+  // two-match day is free to run both matches off a single one. `?? 1` for "no day open" — there
+  // is nothing to add a match to, and a looser default would light up a button with no target.
+  const maxMatches = useMemo(
+    () =>
+      sessions.find((session) => session.sessionId === activeSessionId)
+        ?.matchCount ?? 1,
+    [sessions, activeSessionId]
+  );
+
   const activeMatchIndex = resolveActiveMatchIndex(
     matches.length,
     storedMatchIndex
@@ -227,7 +234,7 @@ export function useFormationDraft(
 
   /** Clone match 1 into a new match 2 and open it. */
   function addMatch() {
-    if (!activeSessionId || matches.length >= MAX_MATCHES) return;
+    if (!activeSessionId || matches.length >= maxMatches) return;
 
     // Copy match 1 as it stands, absentees in their slots included — never pull anyone out behind the
     // user's back. Notes travel along untouched.
@@ -297,7 +304,7 @@ export function useFormationDraft(
     notes: activeMatch.notes,
     dirty: activeSessionId ? dirtySessionIds.has(activeSessionId) : false,
     dirtySessionIds,
-    canAddMatch: editable && matches.length < MAX_MATCHES,
+    canAddMatch: editable && matches.length < maxMatches,
     slotCount: FORMATION.slots.length,
     setActiveMatch,
     setNote,
