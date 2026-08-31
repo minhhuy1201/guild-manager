@@ -16,8 +16,12 @@ afterEach(cleanup);
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
   true;
 
-const GUILD_WAR = { label: "Thứ 7 · Bang Chiến", isGuildWar: true };
-const SCRIM = { label: "Thứ 3 · 20:30", isGuildWar: false };
+const GUILD_WAR = {
+  label: "Thứ 7 · Bang Chiến",
+  isGuildWar: true,
+  matchCount: 2,
+};
+const SCRIM = { label: "Thứ 3 · 20:30", isGuildWar: false, matchCount: 1 };
 
 /**
  * Render a SessionLabel and hand back the row element it produced.
@@ -46,7 +50,7 @@ describe("SessionLabel", () => {
 
     expect(row.querySelector("svg")).not.toBeNull();
     expect(row.className).toContain("text-primary");
-    expect(row.textContent).toBe("Thứ 7 · Bang Chiến");
+    expect(row.textContent).toContain("Thứ 7 · Bang Chiến");
   });
 
   it("trận thường không có icon và không đổi màu chữ", () => {
@@ -77,7 +81,30 @@ describe("SessionLabel", () => {
       </SessionLabel>
     );
 
-    expect(row.textContent).toBe("Thứ 7 · Bang ChiếnĐã khoá");
+    expect(row.textContent).toContain("Thứ 7 · Bang Chiến");
+    expect(row.textContent).toContain("Đã khoá");
+  });
+
+  it("hiện số trận ngay sau nhãn", () => {
+    const row = renderRow(<SessionLabel session={GUILD_WAR} />);
+
+    expect(row.textContent).toContain("2 trận");
+  });
+
+  it('ngày 1 trận cũng hiện badge — "không thấy gì" không được phép có hai nghĩa', () => {
+    const row = renderRow(<SessionLabel session={SCRIM} />);
+
+    expect(row.textContent).toContain("1 trận");
+  });
+
+  it("children vẫn đứng sau badge", () => {
+    const row = renderRow(
+      <SessionLabel session={SCRIM}>
+        <span>Đã khoá</span>
+      </SessionLabel>
+    );
+
+    expect(row.textContent).toBe("Thứ 3 · 20:301 trậnĐã khoá");
   });
 });
 

@@ -21,9 +21,13 @@ const ICON_CLASS: Record<SessionLabelSize, string> = {
 /** Frame classes for a Guild War, kept beside the label they belong with. */
 const GUILD_WAR_TINT = "border-primary/40 bg-primary/5";
 
+/** Badge classes for the match count, kept beside the label it belongs with. */
+const MATCH_COUNT_BADGE =
+  "rounded-full border px-1.5 py-0.5 text-[0.6875rem] leading-none font-normal text-muted-foreground";
+
 export interface SessionLabelProps {
-  /** Battle to show; only its label and its Guild War flag are read */
-  session: Pick<BattleSession, "label" | "isGuildWar">;
+  /** Battle to show; its label, its Guild War flag and its match count are read */
+  session: Pick<BattleSession, "label" | "isGuildWar" | "matchCount">;
   /** Icon size: "sm" for a narrow cell, "md" for a list row */
   size?: SessionLabelSize;
   /** Marks a single screen adds after the label, inside the same row */
@@ -32,13 +36,14 @@ export interface SessionLabelProps {
 
 /**
  * How a battle is recognised across the app: the Guild War carries a crossed
- * swords icon and the primary colour, a scrim carries neither.
+ * swords icon and the primary colour, a scrim carries neither. Both carry a
+ * badge with the number of matches the day is played over.
  *
  * This is one inline row and nothing more — no frame, no spacing, no second
  * line. Four screens lay a battle out four different ways, and the only thing
  * they genuinely share is what the row itself looks like. The subtitle stays
  * with each screen because each screen stacks and styles it differently.
- * @param session - Battle to show; only label and isGuildWar are read
+ * @param session - Battle to show; label, isGuildWar and matchCount are read
  * @param size - Icon size; "sm" for a narrow cell, "md" for a list row
  * @param children - Marks the screen adds after the label, in the same row
  * @returns The label row
@@ -57,6 +62,7 @@ export function SessionLabel({
     >
       {session.isGuildWar && <Swords className={ICON_CLASS[size]} />}
       {session.label}
+      <span className={MATCH_COUNT_BADGE}>{session.matchCount} trận</span>
       {children}
     </span>
   );

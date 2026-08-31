@@ -88,6 +88,7 @@ export function makeSession(
     label: `Trận ${sessionId}`,
     dateTime: "2026-08-18T20:00:00.000Z",
     isGuildWar: false,
+    matchCount: 2,
     opponent: null,
     locked: false,
     matches: [],
