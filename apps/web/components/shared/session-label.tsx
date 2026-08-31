@@ -3,6 +3,7 @@ import { Swords } from "lucide-react";
 
 import type { BattleSession } from "@guild/shared/schemas";
 
+import { Badge } from "@/components/ui/badge";
 import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -20,10 +21,6 @@ const ICON_CLASS: Record<SessionLabelSize, string> = {
 
 /** Frame classes for a Guild War, kept beside the label they belong with. */
 const GUILD_WAR_TINT = "border-primary/40 bg-primary/5";
-
-/** Badge classes for the match count, kept beside the label it belongs with. */
-const MATCH_COUNT_BADGE =
-  "rounded-full border px-1.5 py-0.5 text-[0.6875rem] leading-none font-normal text-muted-foreground";
 
 export interface SessionLabelProps {
   /** Battle to show; its label, its Guild War flag and its match count are read */
@@ -62,7 +59,9 @@ export function SessionLabel({
     >
       {session.isGuildWar && <Swords className={ICON_CLASS[size]} />}
       {session.label}
-      <span className={MATCH_COUNT_BADGE}>{session.matchCount} trận</span>
+      {/* `secondary`, not a hand-rolled outline: a solid ground with full-strength text is the
+          only way this reads at a glance beside a label that is already bold, and often primary. */}
+      <Badge variant="secondary">{session.matchCount} trận</Badge>
       {children}
     </span>
   );

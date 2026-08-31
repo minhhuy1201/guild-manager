@@ -97,6 +97,14 @@ describe("SessionLabel", () => {
     expect(row.textContent).toContain("1 trận");
   });
 
+  it("badge có nền đặc, không phải viền suông — nó phải đọc được ngay khi liếc qua", () => {
+    const row = renderRow(<SessionLabel session={SCRIM} />);
+    const badge = row.querySelector('[data-slot="badge"]');
+
+    expect(badge?.className).toContain("bg-secondary");
+    expect(badge?.className).toContain("text-secondary-foreground");
+  });
+
   it("children vẫn đứng sau badge", () => {
     const row = renderRow(
       <SessionLabel session={SCRIM}>
