@@ -1,6 +1,7 @@
 import type { SessionFormation } from "@guild/shared/schemas";
 
 import type { Assignment, MatchDraft, Notes, Slot } from "../types/formation";
+import { copyMatch } from "./copy-match";
 import { fromWire, fromWireNotes } from "./wire";
 
 /** A formation proposed for a battle that has none yet. */
@@ -51,30 +52,20 @@ export function buildPrefill(
     source.matches.length > 1
       ? `${source.label} · trận ${source.matches.length}`
       : source.label;
-  const previous = fromWire(sourceMatch.slots, slots);
-  // Notes travel across untouched, including the note of a slot whose occupant is absent: a note
-  // describes the position, not the person.
-  const notes = fromWireNotes(sourceMatch.notes, slots);
-  const assignment: Assignment = {};
-  let droppedCount = 0;
+  const previous: MatchDraft = {
+    assignment: fromWire(sourceMatch.slots, slots),
+    // Notes travel across untouched, including the note of a slot whose occupant is absent: a note
+    // describes the position, not the person.
+    notes: fromWireNotes(sourceMatch.notes, slots),
+  };
+  const copied = copyMatch(previous, presentIds, slots);
 
-  for (const slot of slots) {
-    const characterId = previous[slot.id];
-
-    if (characterId === null || characterId === undefined) {
-      assignment[slot.id] = null;
-      continue;
-    }
-
-    if (presentIds.has(characterId)) {
-      assignment[slot.id] = characterId;
-    } else {
-      assignment[slot.id] = null;
-      droppedCount += 1;
-    }
-  }
-
-  return { assignment, notes, sourceLabel, droppedCount };
+  return {
+    assignment: copied.assignment,
+    notes: copied.notes,
+    sourceLabel,
+    droppedCount: copied.droppedCount,
+  };
 }
 
 /**
