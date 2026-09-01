@@ -502,6 +502,12 @@ wrapped in `components/shared/`.
 
 ### The surface behind a hovered or selected control
 
+**A bordered control carries `bg-card`, never a transparent fill.** `--border` and `--background`
+sit half a step apart in the light theme, so a transparent control standing on the page plane — the
+team builder's week picker is the only one that does — shows neither its fill nor its outline. The
+white surface is what separates it, exactly as for `Input` and the `outline` Button; the border only
+draws the edge. Inside a card the fill is the card's own white, so nothing changes there.
+
 In the current palette `--muted`, `--secondary` and `--card` all sit within a hair of
 `--background`, so `bg-muted` or `bg-secondary` is all but invisible as the surface of a hover or of
 a selected state. The convention:
