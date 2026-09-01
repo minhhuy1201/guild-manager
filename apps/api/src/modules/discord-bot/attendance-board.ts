@@ -44,7 +44,16 @@ const NOT_LINKED =
 export interface BoardTarget {
   characterId: string;
   characterName: string;
+  /** Mentioned in the heading when present, so a public board reaches the person it is about. */
+  discordId: string | null;
 }
+
+/** Status marker per day, so the whole week is readable at a glance instead of word by word. */
+const STATUS_ICON = {
+  unanswered: '⬜',
+  present: '✅',
+  absent: '❌',
+} as const;
 
 /**
  * Whether this actor may still record an answer for this session.
@@ -71,17 +80,28 @@ function describeSession(
   record: AttendanceRecord | undefined,
 ): string {
   const opponent = session.opponent ? ` · gặp ${session.opponent}` : '';
-  const answer = record ? (record.isPresent ? 'Có' : 'Không') : 'chưa trả lời';
   const overdue = session.isDeadlinePassed ? ' · đã quá hạn' : '';
 
-  return `${session.label}${opponent} — ${answer}${overdue}`;
+  if (!record) {
+    return `${STATUS_ICON.unanswered} **${session.label}**${opponent} — chưa trả lời${overdue}`;
+  }
+
+  const icon = record.isPresent ? STATUS_ICON.present : STATUS_ICON.absent;
+  const answer = record.isPresent ? 'CÓ' : 'KHÔNG';
+
+  return `${icon} **${session.label}**${opponent} — **${answer}**${overdue}`;
 }
 
 /**
  * The pair of buttons for one session.
  *
- * The button matching the answer already on record is disabled: pressing it changes nothing, and a
- * disabled button is how the board shows what is currently chosen.
+ * Exactly one button per row is ever coloured — the answer currently on record, which also carries a
+ * ✔. The other stays grey. Nothing is disabled: Discord renders a disabled button faded, which reads
+ * as "you cannot press this" rather than "this is your answer", and pressing the same answer twice
+ * is harmless anyway.
+ *
+ * The day is repeated in every label because Discord stacks all action rows below the message body
+ * instead of interleaving them with the text — without it, five rows of buttons look identical.
  *
  * @param session - The session the buttons record against
  * @param characterId - Who the answer is recorded for
@@ -98,22 +118,38 @@ function buildRow(
    * @param isPresent - The answer this button records
    * @returns The button component
    */
-  const button = (isPresent: boolean): ButtonComponent => ({
-    type: COMPONENT_TYPE.button,
-    style: isPresent ? BUTTON_STYLE.success : BUTTON_STYLE.danger,
-    label: `${session.label} · ${isPresent ? 'Có' : 'Không'}`,
-    custom_id: encodeAttendanceButtonId({
-      sessionId: session.id,
-      characterId,
-      isPresent,
-    }),
-    ...(record?.isPresent === isPresent ? { disabled: true } : {}),
-  });
+  const button = (isPresent: boolean): ButtonComponent => {
+    const isChosen = record?.isPresent === isPresent;
+    const chosenStyle = isPresent ? BUTTON_STYLE.success : BUTTON_STYLE.danger;
+    const answer = isPresent ? 'Có' : 'Không';
+
+    return {
+      type: COMPONENT_TYPE.button,
+      style: isChosen ? chosenStyle : BUTTON_STYLE.secondary,
+      label: `${isChosen ? '✔ ' : ''}${session.label} · ${answer}`,
+      custom_id: encodeAttendanceButtonId({
+        sessionId: session.id,
+        characterId,
+        isPresent,
+      }),
+    };
+  };
 
   return {
     type: COMPONENT_TYPE.actionRow,
     components: [button(true), button(false)],
   };
+}
+
+/**
+ * The board's first line: who it is about.
+ * @param target - The character being marked
+ * @returns A markdown heading, mentioning the person when their Discord ID is known
+ */
+function buildHeading(target: BoardTarget): string {
+  const mention = target.discordId ? ` (<@${target.discordId}>)` : '';
+
+  return `## Điểm danh · ${target.characterName}${mention}`;
 }
 
 /**
@@ -138,7 +174,7 @@ export async function buildAttendanceBoard(
   ]);
 
   if (sessions.length === 0) {
-    return { content: `Điểm danh · ${target.characterName}\n\n${NO_SESSIONS}` };
+    return { content: `${buildHeading(target)}\n\n${NO_SESSIONS}` };
   }
 
   const records = new Map(
@@ -166,7 +202,8 @@ export async function buildAttendanceBoard(
       : '';
 
   return {
-    content: `Điểm danh · ${target.characterName}\n\n${lines.join('\n')}${note}\n\n${REASON_NOTE}`,
+    // `-#` is Discord's subtext: the warning has to be present without competing with the answers.
+    content: `${buildHeading(target)}\n\n${lines.join('\n')}${note}\n\n-# ${REASON_NOTE}`,
     components: shown.map((session) =>
       buildRow(session, target.characterId, records.get(session.id)),
     ),
@@ -211,7 +248,7 @@ export async function handleAttendanceButton(
   if (!row) return { content: STALE_BUTTON };
 
   return buildAttendanceBoard(
-    { characterId: row.id, characterName: row.name },
+    { characterId: row.id, characterName: row.name, discordId: row.discordId },
     resolved.actor,
     deps,
   );

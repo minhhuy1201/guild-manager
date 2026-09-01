@@ -2,9 +2,14 @@ import { GuildRole } from '@guild/shared/enums';
 
 import { TOKEN_TYPE, type JwtPayload } from '../../../common';
 import { buildAttendanceBoard } from '../attendance-board';
+import { BUTTON_STYLE } from '../discord.constants';
 import type { CommandDeps } from '../commands/command.types';
 
-const TARGET = { characterId: 'meo-beo-k7ma3x', characterName: 'Mèo Béo' };
+const TARGET = {
+  characterId: 'meo-beo-k7ma3x',
+  characterName: 'Mèo Béo',
+  discordId: null,
+};
 
 /**
  * A battle session as `listByWeek` returns it, with only the fields the board reads.
@@ -74,7 +79,7 @@ describe('buildAttendanceBoard', () => {
     expect(board.content).toContain('Thứ 5 · 20:30');
     expect(board.content).toContain('chưa trả lời');
     expect(board.content).toContain('Thứ 7 · Bang Chiến');
-    expect(board.content).toContain('Có');
+    expect(board.content).toContain('**CÓ**');
   });
 
   it('bỏ qua bản ghi của nhân vật khác', async () => {
@@ -124,7 +129,9 @@ describe('buildAttendanceBoard', () => {
     expect(board.components).toHaveLength(1);
   });
 
-  it('mỗi ngày một hàng, hai nút Có và Không', async () => {
+  it('mỗi ngày một hàng, hai nút mang tên ngày', async () => {
+    // Discord dồn mọi action row xuống dưới khối chữ chứ không xen kẽ theo từng ngày, nên tên ngày
+    // phải nằm trong nhãn nút — không thì 5 hàng nút không phân biệt được với nhau.
     const deps = makeDeps({ sessions: [session({ id: 'a' })], records: [] });
 
     const board = await buildAttendanceBoard(
@@ -141,7 +148,24 @@ describe('buildAttendanceBoard', () => {
     expect(row?.components[0].custom_id).toBe('dd:a:meo-beo-k7ma3x:1');
   });
 
-  it('khoá nút ứng với câu trả lời đang có hiệu lực', async () => {
+  it('chưa trả lời thì cả hai nút đều xám', async () => {
+    // Màu mã hoá TRẠNG THÁI, không mã hoá ý nghĩa: hai nút cùng sáng thì không còn gì nói cho người
+    // dùng biết họ đã chọn cái nào.
+    const deps = makeDeps({ sessions: [session({ id: 'a' })], records: [] });
+
+    const board = await buildAttendanceBoard(
+      TARGET,
+      actorOf(GuildRole.MEMBER),
+      deps,
+    );
+
+    const [yes, no] = board.components![0].components;
+
+    expect(yes.style).toBe(BUTTON_STYLE.secondary);
+    expect(no.style).toBe(BUTTON_STYLE.secondary);
+  });
+
+  it('đúng một nút sáng lên kèm dấu ✔ cho câu trả lời đang có hiệu lực', async () => {
     const deps = makeDeps({
       sessions: [session({ id: 'a' })],
       records: [
@@ -155,8 +179,67 @@ describe('buildAttendanceBoard', () => {
       deps,
     );
 
-    expect(board.components?.[0].components[0].disabled).toBe(true);
-    expect(board.components?.[0].components[1].disabled).toBeUndefined();
+    const [yes, no] = board.components![0].components;
+
+    expect(yes.style).toBe(BUTTON_STYLE.success);
+    expect(yes.label).toBe('✔ Thứ 5 · 20:30 · Có');
+    expect(no.style).toBe(BUTTON_STYLE.secondary);
+    expect(no.label).not.toContain('✔');
+  });
+
+  it('không khoá nút nào — nút mờ trông như không bấm được', async () => {
+    const deps = makeDeps({
+      sessions: [session({ id: 'a' })],
+      records: [
+        { characterId: TARGET.characterId, sessionId: 'a', isPresent: true },
+      ],
+    });
+
+    const board = await buildAttendanceBoard(
+      TARGET,
+      actorOf(GuildRole.MEMBER),
+      deps,
+    );
+
+    for (const button of board.components![0].components) {
+      expect(button.disabled).toBeUndefined();
+    }
+  });
+
+  it('mỗi ngày có một emoji trạng thái để liếc là thấy', async () => {
+    const deps = makeDeps({
+      sessions: [
+        session({ id: 'a', label: 'Ngày chưa trả lời' }),
+        session({ id: 'b', label: 'Ngày có' }),
+        session({ id: 'c', label: 'Ngày không' }),
+      ],
+      records: [
+        { characterId: TARGET.characterId, sessionId: 'b', isPresent: true },
+        { characterId: TARGET.characterId, sessionId: 'c', isPresent: false },
+      ],
+    });
+
+    const board = await buildAttendanceBoard(
+      TARGET,
+      actorOf(GuildRole.MEMBER),
+      deps,
+    );
+
+    expect(board.content).toContain('⬜ **Ngày chưa trả lời**');
+    expect(board.content).toContain('✅ **Ngày có**');
+    expect(board.content).toContain('❌ **Ngày không**');
+  });
+
+  it('nhắc tên người được điểm danh khi nhân vật có discord id', async () => {
+    const deps = makeDeps({ sessions: [session({ id: 'a' })], records: [] });
+
+    const board = await buildAttendanceBoard(
+      { ...TARGET, discordId: '999' },
+      actorOf(GuildRole.ADMIN),
+      deps,
+    );
+
+    expect(board.content).toContain('<@999>');
   });
 
   it('quá 5 ngày thì cắt còn 5 và nói ra', async () => {

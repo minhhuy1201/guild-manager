@@ -38,11 +38,18 @@ export const COMPONENT_TYPE = {
   button: 2,
 } as const;
 
-/** Button styles. Only the two the attendance board uses are listed. */
+/**
+ * Button styles. On the attendance board colour encodes *state*, not meaning: an answer that is not
+ * currently chosen is always `secondary`, so exactly one button per row is ever lit. Colouring both
+ * (green "Có", red "Không") left nothing to tell the two apart, and a lit red button read as
+ * "you picked Không".
+ */
 export const BUTTON_STYLE = {
-  /** Green */
+  /** Grey — the answer that is not currently chosen */
+  secondary: 2,
+  /** Green — "Có", when it is the current answer */
   success: 3,
-  /** Red */
+  /** Red — "Không", when it is the current answer */
   danger: 4,
 } as const;
 

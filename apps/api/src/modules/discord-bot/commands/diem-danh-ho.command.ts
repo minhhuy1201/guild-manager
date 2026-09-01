@@ -3,7 +3,7 @@ import { canManageGuild } from '@guild/shared/lib';
 import { buildAttendanceBoard } from '../attendance-board';
 import { COMMAND_OPTION_TYPE } from '../discord.constants';
 import { callerDiscordId, commandOptionValue } from '../interaction.schema';
-import { ephemeral, ephemeralText } from '../reply';
+import { ephemeralText, publicMessage } from '../reply';
 import type { CommandReply, SlashCommand } from './command.types';
 
 /** Name of the option, used both when registering and when reading the invocation. */
@@ -13,7 +13,11 @@ const TARGET_OPTION = 'nguoi';
 const NOT_LINKED =
   'Bạn chưa được gán nhân vật nào. Nhờ admin thêm Discord ID của bạn.';
 
-/** Shown to a member who tried to mark on someone else's behalf. */
+/**
+ * Shown to a member who tried to mark on someone else's behalf.
+ * Refusals stay ephemeral even though the board is public: only the caller needs them, and a channel
+ * does not need to watch someone be told no.
+ */
 const ADMIN_ONLY = 'Chỉ admin mới điểm danh hộ được.';
 
 /**
@@ -60,11 +64,18 @@ export const diemDanhHoCommand: SlashCommand = {
     }
 
     const board = await buildAttendanceBoard(
-      { characterId: row.id, characterName: row.name },
+      {
+        characterId: row.id,
+        characterName: row.name,
+        discordId: row.discordId,
+      },
       resolved.actor,
       deps,
     );
 
-    return ephemeral(board);
+    // Public, unlike every other reply the bot sends: an ephemeral message reaches one viewer, and
+    // the whole point here is that the person being marked — mentioned in the heading, so they are
+    // notified — sees it too.
+    return publicMessage(board);
   },
 };

@@ -34,7 +34,11 @@ export const diemDanhCommand: SlashCommand = {
     if (!row) return ephemeralText(NOT_LINKED);
 
     const board = await buildAttendanceBoard(
-      { characterId: row.id, characterName: row.name },
+      {
+        characterId: row.id,
+        characterName: row.name,
+        discordId: row.discordId,
+      },
       resolved.actor,
       deps,
     );

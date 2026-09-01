@@ -3,6 +3,7 @@ import { GuildRole } from '@guild/shared/enums';
 import { TOKEN_TYPE } from '../../../common';
 import type { CommandDeps } from '../commands/command.types';
 import { diemDanhHoCommand } from '../commands/diem-danh-ho.command';
+import { MESSAGE_FLAG } from '../discord.constants';
 
 const INTERACTION = {
   type: 2 as const,
@@ -57,12 +58,49 @@ describe('/diem-danh-ho', () => {
     const deps = makeDeps({
       callerRole: GuildRole.ADMIN,
       target: { id: 'meo-beo-k7ma3x', role: GuildRole.MEMBER },
-      targetRow: { id: 'meo-beo-k7ma3x', name: 'Mèo Béo' },
+      targetRow: { id: 'meo-beo-k7ma3x', name: 'Mèo Béo', discordId: '999' },
     });
 
     const reply = await diemDanhHoCommand.execute(INTERACTION, deps);
 
     expect(reply.data.content).toContain('Mèo Béo');
+  });
+
+  it('bảng hiện công khai cho cả kênh, không phải riêng người gõ lệnh', async () => {
+    // Tin ephemeral chỉ ĐÚNG MỘT người xem được, nên để người được điểm danh hộ thấy thì bắt buộc
+    // phải công khai. Cờ ephemeral quay lại đây là hỏng đúng cái yêu cầu của tính năng.
+    const deps = makeDeps({
+      callerRole: GuildRole.ADMIN,
+      target: { id: 'meo-beo-k7ma3x', role: GuildRole.MEMBER },
+      targetRow: { id: 'meo-beo-k7ma3x', name: 'Mèo Béo', discordId: '999' },
+    });
+
+    const reply = await diemDanhHoCommand.execute(INTERACTION, deps);
+
+    expect(reply.data.flags).toBeUndefined();
+  });
+
+  it('nhắc tên người được điểm danh để họ nhận được thông báo', async () => {
+    const deps = makeDeps({
+      callerRole: GuildRole.ADMIN,
+      target: { id: 'meo-beo-k7ma3x', role: GuildRole.MEMBER },
+      targetRow: { id: 'meo-beo-k7ma3x', name: 'Mèo Béo', discordId: '999' },
+    });
+
+    const reply = await diemDanhHoCommand.execute(INTERACTION, deps);
+
+    expect(reply.data.content).toContain('<@999>');
+  });
+
+  it('lời từ chối vẫn riêng tư, cả kênh không cần xem ai bị nói không', async () => {
+    const deps = makeDeps({
+      callerRole: GuildRole.MEMBER,
+      target: { id: 'meo-beo-k7ma3x', role: GuildRole.MEMBER },
+    });
+
+    const reply = await diemDanhHoCommand.execute(INTERACTION, deps);
+
+    expect(reply.data.flags).toBe(MESSAGE_FLAG.ephemeral);
   });
 
   it('member bị từ chối trước khi thấy bảng', async () => {

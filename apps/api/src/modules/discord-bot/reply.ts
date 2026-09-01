@@ -33,3 +33,21 @@ export function ephemeral(payload: MessagePayload): CommandReply {
 export function ephemeralText(content: string): CommandReply {
   return ephemeral({ content });
 }
+
+/**
+ * Wrap a message body as a reply the whole channel sees.
+ *
+ * Used by `/diem-danh-ho`: the person being marked has to know it happened, and Discord shows an
+ * ephemeral message to exactly one viewer — so reaching them at all means the message is public.
+ * The buttons are safe in the open because `AttendanceService.mark` re-checks every press: a
+ * bystander marking somebody else is refused, while the person it is about may fix their own answer.
+ *
+ * @param payload - The message body
+ * @returns The reply Discord posts in the channel
+ */
+export function publicMessage(payload: MessagePayload): CommandReply {
+  return {
+    type: INTERACTION_RESPONSE_TYPE.channelMessageWithSource,
+    data: payload,
+  };
+}

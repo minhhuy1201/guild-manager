@@ -24,20 +24,35 @@ command đi được từ ô chat Discord tới `apps/api` và trả lời về.
 | `/diem-danh` | Mọi thành viên đã được gán `discordId` | Điểm danh cho **chính mình** |
 | `/diem-danh-ho nguoi:@ai-đó` | Chỉ ADMIN | Điểm danh **thay** người được mention |
 
-Cả hai trả về **một tin nhắn ephemeral** (chỉ người gọi thấy): phần chữ liệt kê mọi ngày đánh của
-tuần đang mở kèm câu trả lời hiện tại, phía dưới là các hàng nút `Có` / `Không`. Bấm nút là ghi
-ngay, rồi chính tin nhắn đó được vẽ lại với trạng thái mới.
+Cả hai trả về cùng một bảng: phần chữ liệt kê mọi ngày đánh của tuần đang mở kèm câu trả lời hiện
+tại, phía dưới là các hàng nút `Có` / `Không`. Bấm nút là ghi ngay, rồi chính tin nhắn đó được vẽ
+lại với trạng thái mới.
+
+**Ai thấy tin nhắn thì khác nhau, và đó là chủ ý:**
+
+- `/diem-danh` — **ephemeral**, chỉ người gọi thấy. Bảng của chính mình, cả kênh không cần xem.
+- `/diem-danh-ho` — **công khai cả kênh**, và nhắc tên người được điểm danh để họ nhận thông báo.
+  Discord chỉ cho **đúng một** người xem tin ephemeral, nên "để người được điểm danh hộ cũng thấy"
+  và "ephemeral" là hai thứ loại trừ nhau. Nút công khai vẫn an toàn: mọi lượt bấm đều đi lại qua
+  `AttendanceService.mark`, nên người ngoài bấm hộ ai đó sẽ bị từ chối, còn chính chủ thì tự sửa
+  được câu trả lời của mình — một tính năng, không phải lỗ hổng. Riêng **lời từ chối vẫn ephemeral**:
+  chỉ người gõ lệnh cần đọc chúng.
 
 ```
-Điểm danh tuần 01/09 – 06/09 · Mèo Béo
+## Điểm danh · Mèo Béo (@meobeo)
 
-Thứ 5 · 20:30 · giao hữu vs ABC   — chưa trả lời
-Thứ 7 · Bang Chiến               — Có
-Chủ nhật · 21:00                 — Không · đã quá hạn
+⬜ **Thứ 5 · 20:30** · gặp ABC — chưa trả lời
+✅ **Thứ 7 · Bang Chiến** — **CÓ**
+❌ **Chủ nhật · 21:00** — **KHÔNG** · đã quá hạn
 
-[ Thứ 5 · Có ] [ Thứ 5 · Không ]
-[ Thứ 7 · Có ] [ Thứ 7 · Không ]
+-# Bấm "Không" ở đây sẽ xoá lý do vắng đã ghi trên web.
+
+[ Thứ 5 · 20:30 · Có ] [ Thứ 5 · 20:30 · Không ]     <- cả hai xám
+[ ✔ Thứ 7 · Bang Chiến · Có ] [ Thứ 7 · ... · Không ] <- chỉ "Có" xanh
 ```
+
+Discord xếp **toàn bộ** action row xuống dưới khối chữ chứ không xen kẽ theo từng ngày, nên tên ngày
+bắt buộc phải nằm trong nhãn nút — bỏ đi thì năm hàng nút trông y hệt nhau.
 
 ## 2. Những gì đã chốt, và vì sao
 
@@ -133,11 +148,23 @@ hiếm; im lặng cắt mất một ngày thì không chấp nhận được.
 
 **Nhãn nút** là `<nhãn ngày> · Có` / `<nhãn ngày> · Không`, dùng thẳng `label` mà API đã dựng từ
 `formatSessionLabel` (`Thứ 5 · 20:30`, `Thứ 7 · Bang Chiến`). Trần 80 ký tự của Discord còn rất xa,
-và dùng lại nhãn có sẵn thì nút với dòng chữ phía trên không thể gọi cùng một ngày bằng hai tên. Nút `Có` màu xanh (`style: 3`), nút `Không` màu đỏ (`style: 4`); nút ứng với câu trả lời
-đang có hiệu lực để `disabled: true`, vì bấm lại đúng cái mình đã chọn không đổi gì.
+và dùng lại nhãn có sẵn thì nút với dòng chữ phía trên không thể gọi cùng một ngày bằng hai tên.
 
-Với `/diem-danh-ho`, dòng đầu của phần chữ nêu tên nhân vật đang được điểm danh hộ, để admin không
-ghi nhầm người sau khi gọi lệnh vài lần.
+**Màu nút mã hoá trạng thái, không mã hoá ý nghĩa.** Câu trả lời chưa được chọn luôn là `secondary`
+(xám); đúng một nút mỗi hàng được tô màu — cái đang có hiệu lực — và nó mang thêm dấu `✔` ở đầu
+nhãn. Bản đầu tiên tô xanh "Có" và đỏ "Không" cùng lúc, nên **lúc nào cả hai nút cũng sáng** và
+không còn gì nói cho người dùng biết họ đã chọn cái nào; nút đỏ sáng lên còn bị đọc thành "tôi đã
+chọn Không". Cũng vì thế **không nút nào bị `disabled`**: Discord vẽ nút disabled thành mờ, đọc ra
+"không bấm được" chứ không phải "đây là lựa chọn của bạn" — hai tín hiệu ngược nhau. Bấm lại đúng
+câu trả lời cũ là vô hại (`mark` là upsert).
+
+**Phần chữ** dùng markdown của Discord: một heading `##`, mỗi ngày một dòng mở đầu bằng emoji trạng
+thái (`⬜` chưa trả lời, `✅` Có, `❌` Không) với tên ngày in đậm, và dòng cảnh báo xoá lý do đặt ở
+`-#` (subtext) để có mặt mà không tranh chấp với các câu trả lời.
+
+Dòng đầu nêu tên nhân vật, kèm mention khi nhân vật đó có `discordId` — với `/diem-danh-ho` đó chính
+là cách người được điểm danh hộ nhận được thông báo, và nó cũng khiến admin không ghi nhầm người sau
+khi gọi lệnh vài lần.
 
 **`custom_id` của nút** mang đủ ngữ cảnh vì Discord không giữ hộ gì cả:
 
@@ -271,3 +298,6 @@ Jest, đặt trong `src/modules/discord-bot/__tests__/` cạnh code (architectur
 - Chọn nhân vật bằng tên qua autocomplete.
 - Xem điểm danh của cả bang trong Discord, nhắc theo lịch, sửa điểm danh của tuần đã đóng.
 - Deferred response (§9).
+- Cho **đúng hai người** (người điểm danh hộ và người được điểm danh) thấy tin nhắn: Discord không
+  có cách nào làm thế trong một interaction — ephemeral là một người, ngoài ra phải gửi DM qua
+  Discord REST API. Không tương xứng với chỗ nó cứu.
