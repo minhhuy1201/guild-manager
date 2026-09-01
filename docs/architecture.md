@@ -92,8 +92,9 @@ src/
 │   ├── constants/    # REQUEST_ID_HEADER…
 │   ├── decorators/   # current-user.decorator.ts
 │   ├── filters/      # all-exceptions.filter.ts — one error shape for everything
-│   ├── guards/       # jwt-auth.guard.ts, optional-jwt-auth.guard.ts
-│   └── interceptors/ # logging (request id) + transform ({ data })
+│   ├── guards/       # jwt-auth.guard.ts, admin.guard.ts
+│   ├── interceptors/ # logging (success path) + transform ({ data })
+│   └── middleware/   # request-id.middleware.ts — mints the id ahead of the guards
 ├── config/           # env.validation.ts (Zod, fail-fast at boot), app.config.ts
 ├── infrastructure/
 │   └── prisma/       # PrismaService (@Global PrismaModule) + isHealthy()
@@ -182,8 +183,14 @@ Endpoints, all behind the `/api` prefix:
 - **Response shape.** Success is `{ data }` (transform interceptor); errors are
   `{ statusCode, message, errors?, path, requestId, timestamp }` (exception filter). `message` is
   already Vietnamese and is meant to be shown to the user verbatim.
-- **Request id.** Every response carries an `x-request-id` header and the logging interceptor writes
-  the same id into the log line, so a user-reported error maps to one request.
+- **Request id.** `request-id.middleware.ts` mints it, and every response carries it as an
+  `x-request-id` header, so a user-reported error maps to one request. It is middleware and not an
+  interceptor because Nest runs middleware *before* guards: while the id was minted in the
+  interceptor, every request a guard rejected — each 401 and 403 — got no id and no log line at all.
+- **Who logs what.** The logging interceptor covers requests that succeed; `AllExceptionsFilter`
+  covers every failure — `warn` with one line for 4xx, `error` with a stack for 5xx. The split is
+  deliberate: an interceptor never runs when a guard rejects, so the filter has to own that half.
+  Together they log each request exactly once.
 - **Env.** Validated by a Zod schema at boot; anything missing or malformed kills the process with a
   Vietnamese message instead of failing halfway through. `DIRECT_DATABASE_URL` is deliberately absent
   from the schema — only the Prisma CLI may read it, never the runtime.

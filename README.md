@@ -17,7 +17,7 @@ How the pieces fit together, and where new code belongs: [`docs/architecture.md`
 | Node.js | 24 (pinned in `.nvmrc`) |
 | pnpm | 12 (pinned in `package.json` → `packageManager`; `corepack enable pnpm` picks up that exact version) |
 | Docker | to run PostgreSQL locally |
-| A Discord application | sign-in is Discord OAuth2 only — there are no passwords |
+| A Discord application | sign-in is Discord OAuth2 only — there are no passwords, and the same application backs the bot |
 
 ## Running locally
 
@@ -54,6 +54,10 @@ anywhere. Create an application at <https://discord.com/developers/applications>
 `http://localhost:3001/api/auth/discord/callback` under OAuth2 → Redirects, then fill
 `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` and `DISCORD_REDIRECT_URI` in `apps/api/.env`.
 
+Copy the **Public Key** from that application's General Information page into `DISCORD_PUBLIC_KEY`
+in the same file. It belongs to the bot, not to sign-in, but the API refuses to boot without it —
+and since the API is also the web app's backend, a missing value takes the whole site down.
+
 A login resolves against `Character.discordId`, a column an admin fills in by hand, so a fresh
 database lets nobody in. Put your own Discord ID in `DISCORD_ADMIN_IDS` — those ids always sign in as
 `ADMIN`, matching character or not, and are the way in before anyone has been linked.
@@ -74,6 +78,16 @@ More detail (environment variables, common commands, troubleshooting): [`docs/de
 | `/lich-su-diem-danh` | Attendance history | Signed in |
 | `/xep-team` | Build the roster for each match | Admin only |
 | `/thiet-lap` | Two tabs: "Match setup" (the week's schedule) and "Member management" (add/edit/delete members, including each one's Discord ID and role) | Admin only |
+
+## Discord bot
+
+The same Discord application also runs a bot, served by `apps/api` itself rather than a separate
+process: Discord `POST`s each slash command to `/api/discord/interactions`, the API verifies the
+Ed25519 signature and answers in the same response. Today it answers one command, `/ping`.
+
+Adding a command is one file in `apps/api/src/modules/discord-bot/commands/` plus one line in
+`commands/index.ts`, then `pnpm --filter api discord:register` to tell Discord about it.
+[`apps/api/README.md`](apps/api/README.md) covers running it against a local tunnel.
 
 ## Contributing
 

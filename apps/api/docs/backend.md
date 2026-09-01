@@ -37,6 +37,7 @@ apps/api/
 │   │   ├── auth/
 │   │   ├── battle-sessions/
 │   │   ├── characters/
+│   │   ├── discord-bot/            # slash commands + the Discord interactions endpoint
 │   │   ├── health/
 │   │   └── team-builder/
 │   │
@@ -46,8 +47,9 @@ apps/api/
 │   │   ├── constants/              # REQUEST_ID_HEADER, auth constants
 │   │   ├── decorators/             # current-user.decorator.ts
 │   │   ├── filters/                # all-exceptions.filter.ts
-│   │   ├── guards/                 # jwt-auth.guard.ts, optional-jwt-auth.guard.ts
-│   │   ├── interceptors/           # logging (request id) + transform ({ data })
+│   │   ├── guards/                 # jwt-auth.guard.ts, admin.guard.ts
+│   │   ├── interceptors/           # logging (success path) + transform ({ data })
+│   │   ├── middleware/             # request-id.middleware.ts — runs ahead of the guards
 │   │   └── index.ts                # barrel — the import surface of this layer
 │   │
 │   ├── infrastructure/             # ⭐ Connections to the outside world
@@ -428,7 +430,10 @@ What a NestJS project should have on day one, and where this one stands:
 - [x] Global validation pipe — `ZodValidationPipe` from `nestjs-zod`, schemas from `packages/shared`
 - [x] Global exception filter + one uniform response shape
       (`{ data }` on success, `{ statusCode, message, errors?, path, requestId, timestamp }` on error)
-- [x] Logging interceptor + request id (`x-request-id` on every response, same id in the log line)
+- [x] Request id minted in middleware, so it survives a guard rejection (`x-request-id` on every
+      response, the same id in the log line and in the error body)
+- [x] Every request logged exactly once — the logging interceptor takes the success path, the
+      exception filter takes every failure (`warn` for 4xx, `error` + stack for 5xx)
 - [x] Fail-fast env validation
 - [x] Swagger generated from the DTOs, disabled when `NODE_ENV=production`
 - [x] Health check endpoint (`GET /api/health`, including a database ping)
