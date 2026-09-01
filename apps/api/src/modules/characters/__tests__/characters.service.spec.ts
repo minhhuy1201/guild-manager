@@ -33,10 +33,32 @@ const UNIQUE_VIOLATION = Object.assign(new Error('Unique constraint failed'), {
   code: 'P2002',
 });
 
-/** Prisma's conflict error on the discordId column — a different fix from an id collision. */
+/**
+ * Prisma's conflict error on the discordId column — a different fix from an id collision.
+ *
+ * Copied from what Prisma 7 actually throws through the driver adapter, not hand-shaped: the older
+ * `meta.target` array is gone, and building the double from memory is how this stayed green while
+ * `POST /characters` answered 500 in production.
+ */
 const DISCORD_ID_VIOLATION = Object.assign(
   new Error('Unique constraint failed'),
-  { code: 'P2002', meta: { target: ['discordId'] } },
+  {
+    code: 'P2002',
+    meta: {
+      driverAdapterError: {
+        name: 'DriverAdapterError',
+        cause: {
+          originalCode: '23505',
+          originalMessage:
+            'duplicate key value violates unique constraint "Character_discordId_key"',
+          kind: 'UniqueConstraintViolation',
+          constraint: { index: 'Character_discordId_key' },
+          table: 'Character',
+        },
+      },
+      modelName: 'Character',
+    },
+  },
 );
 
 /** A different Prisma error — the service must let it surface, not swallow it. */

@@ -20,6 +20,19 @@ import { generateId } from './characters.lib';
 /** Prisma error code for a unique constraint violation (here, a primary key collision). */
 const UNIQUE_VIOLATION = 'P2002';
 
+/** Column name as it appears in both Prisma conflict shapes, and inside `Character_discordId_key`. */
+const DISCORD_ID_COLUMN = 'discordId';
+
+/** The parts of a P2002 `meta` that name the constraint, across Prisma's two reporting shapes. */
+interface PrismaConflictMeta {
+  /** Present without a driver adapter: the conflicting column names. */
+  target?: string[];
+  /** Present with a driver adapter: the database's own constraint name. */
+  driverAdapterError?: {
+    cause?: { constraint?: { index?: string } };
+  };
+}
+
 /** Shared message for a missing id. */
 const NOT_FOUND = 'Không tìm thấy thành viên.';
 
@@ -221,9 +234,19 @@ export class CharactersService {
 function isDiscordIdViolation(error: unknown): boolean {
   if (!isUniqueViolation(error)) return false;
 
-  const { meta } = error as { meta?: { target?: unknown } };
+  const { meta } = error as { meta?: PrismaConflictMeta };
 
-  return JSON.stringify(meta?.target ?? '').includes('discordId');
+  // Two shapes, because Prisma reports the offending constraint in two different places: through a
+  // driver adapter (what this app uses) it is the constraint name, and without one it is the column
+  // list. Reading only `target` is what made a taken Discord ID answer 500 instead of 409 — the
+  // retry below fired on a conflict that could never resolve, and its second failure escaped.
+  const constraintName = meta?.driverAdapterError?.cause?.constraint?.index;
+  const columns = meta?.target;
+
+  return (
+    (constraintName ?? '').includes(DISCORD_ID_COLUMN) ||
+    (columns ?? []).includes(DISCORD_ID_COLUMN)
+  );
 }
 
 /**
