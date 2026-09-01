@@ -48,6 +48,13 @@ export function routeInteraction(interaction: Interaction): InteractionReply {
       return command.execute(interaction);
     }
 
+    case INTERACTION_TYPE.messageComponent:
+      // The real handler arrives with the attendance board; until then this is a registration
+      // mismatch, exactly like an unknown command name.
+      throw new Error(
+        `Component Discord chưa được xử lý: ${interaction.data.custom_id}`,
+      );
+
     default:
       return assertNever(interaction, 'Interaction type ngoài dự kiến');
   }
