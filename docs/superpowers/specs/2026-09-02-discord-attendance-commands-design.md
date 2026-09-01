@@ -46,6 +46,11 @@ Chủ nhật · 21:00                 — Không · đã quá hạn
   bộ luật thứ hai. Member gọi lệnh này sẽ nhận đúng câu từ chối mà API vẫn trả.
 - **Không nhập lý do vắng mặt trên Discord.** Bấm `Không` là ghi luôn với `reason = null`. Muốn kèm
   lý do thì vào website. Đổi lại bot không phải xử lý modal, và một lượt điểm danh là một lượt bấm.
+
+  **Hệ quả phải nói ra:** `AttendanceService.mark` quyết định `reason` từ chính request, nên ai đã
+  ghi lý do trên web rồi bấm `Không` lần nữa trong Discord sẽ **mất câu lý do đó**. Chấp nhận, vì
+  cách duy nhất để tránh là đổi luật của service — tức đổi luôn hành vi của web, cho một trường hợp
+  hiếm. Bảng trong Discord nói thẳng điều này ở dòng cuối, để không ai mất dữ liệu mà không biết.
 - **Chọn người bằng mention**, không phải gõ tên nhân vật. Hệ quả đã biết và chấp nhận: không điểm
   danh hộ được cho ai chưa được gán `discordId`, hoặc không ở trong server Discord. Bot nói thẳng
   điều đó thay vì im lặng.
@@ -126,9 +131,9 @@ mỗi tin nhắn**, mỗi ngày chiếm một row, nên nếu số ngày còn gh
 theo `dateTime` và phần chữ nói rõ những ngày còn lại phải điểm danh trên web. Một tuần 6 trận là
 hiếm; im lặng cắt mất một ngày thì không chấp nhận được.
 
-**Nhãn nút** là `<nhãn ngày rút gọn> · Có` / `… · Không`, lấy từ `formatSessionLabel` đã có
-(`Thứ 5 · 20:30`, `Thứ 7 · Bang Chiến`) — cắt phần giờ để nhãn ngắn, trần 80 ký tự của Discord còn
-rất xa. Nút `Có` màu xanh (`style: 3`), nút `Không` màu đỏ (`style: 4`); nút ứng với câu trả lời
+**Nhãn nút** là `<nhãn ngày> · Có` / `<nhãn ngày> · Không`, dùng thẳng `label` mà API đã dựng từ
+`formatSessionLabel` (`Thứ 5 · 20:30`, `Thứ 7 · Bang Chiến`). Trần 80 ký tự của Discord còn rất xa,
+và dùng lại nhãn có sẵn thì nút với dòng chữ phía trên không thể gọi cùng một ngày bằng hai tên. Nút `Có` màu xanh (`style: 3`), nút `Không` màu đỏ (`style: 4`); nút ứng với câu trả lời
 đang có hiệu lực để `disabled: true`, vì bấm lại đúng cái mình đã chọn không đổi gì.
 
 Với `/diem-danh-ho`, dòng đầu của phần chữ nêu tên nhân vật đang được điểm danh hộ, để admin không
