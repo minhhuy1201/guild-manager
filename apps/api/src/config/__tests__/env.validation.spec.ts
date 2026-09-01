@@ -7,6 +7,7 @@ const base = {
   DISCORD_CLIENT_ID: '1234567890',
   DISCORD_CLIENT_SECRET: 'secret',
   DISCORD_REDIRECT_URI: 'http://localhost:3001/api/auth/discord/callback',
+  DISCORD_PUBLIC_KEY: 'a'.repeat(64),
 };
 
 describe('validateEnv', () => {
@@ -22,6 +23,21 @@ describe('validateEnv', () => {
     delete withoutSecret.DISCORD_CLIENT_SECRET;
 
     expect(() => validateEnv(withoutSecret)).toThrow(
+      /Biến môi trường không hợp lệ/,
+    );
+  });
+
+  it('chết khi DISCORD_PUBLIC_KEY không phải 64 ký tự hex', () => {
+    expect(() =>
+      validateEnv({ ...base, DISCORD_PUBLIC_KEY: 'khoá-sai' }),
+    ).toThrow(/Biến môi trường không hợp lệ/);
+  });
+
+  it('chết khi thiếu hẳn DISCORD_PUBLIC_KEY', () => {
+    const withoutKey: Partial<typeof base> = { ...base };
+    delete withoutKey.DISCORD_PUBLIC_KEY;
+
+    expect(() => validateEnv(withoutKey)).toThrow(
       /Biến môi trường không hợp lệ/,
     );
   });
