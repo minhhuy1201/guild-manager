@@ -194,6 +194,36 @@ describe("useFormationDraft — lưu", () => {
     expect(result.current.dirty).toBe(false);
   });
 
+  it("trận 2 không còn ai thì không được lưu lên server", async () => {
+    saveFormationMock.mockResolvedValue(SAVED_SESSION);
+    const { result } = renderDraft();
+
+    // "Tạo trận 2" clone nguyên trận 1, nên phải dọn sạch trận 2 mới ra được
+    // trạng thái "ngày hai trận, trận 2 không có ai".
+    act(() => result.current.addMatch());
+    act(() => result.current.clearActiveDraft());
+    act(() => result.current.setActiveMatch(0));
+    act(() =>
+      result.current.copyIntoActiveMatch({
+        assignment: { [SLOT]: "char-1" },
+        notes: {},
+      })
+    );
+    expect(result.current.matchCount).toBe(2);
+
+    await act(async () => {
+      await result.current.handleSave();
+    });
+
+    expect(saveFormationMock).toHaveBeenCalledWith(
+      {
+        sessionId: SESSION_ID,
+        matches: [{ slots: { [SLOT]: "char-1" }, notes: {} }],
+      },
+      expect.anything()
+    );
+  });
+
   it("lưu thất bại thì GIỮ nháp và hiện thông báo của backend", async () => {
     saveFormationMock.mockRejectedValue(new ApiError("Máy chủ bận.", 500));
     const { result } = renderDraft();

@@ -59,8 +59,9 @@ nút khoá. Đội hình cách hai tuần đã đủ cũ để việc chép lạ
 Trong một ngày nguồn thì lấy **trận cuối** của ngày đó — đúng luật `buildPrefill` đang dùng: đó là
 đội hình gần với hiện tại nhất.
 
-"Có đội hình" xét theo **vị trí người**, không xét ghi chú: một ngày chỉ có note thì không có gì để
-chép sang.
+"Có đội hình" xét theo **vị trí người** của đúng trận sẽ được chép, không xét ghi chú và không xét
+các trận khác trong ngày — xem [drop-empty-second-match](./2026-09-01-drop-empty-second-match-design.md)
+§3.
 
 ### 3. Nguồn là bản **đang hiển thị**, không phải bản đã lưu
 

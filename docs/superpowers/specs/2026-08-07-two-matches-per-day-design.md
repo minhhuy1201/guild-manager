@@ -58,6 +58,11 @@ hệt mô hình JSON.
 
 ### 3. Hai bảng: trận và ô
 
+> **Cập nhật 2026-09-01:** câu dưới đây không còn đúng. Trận 2 không có ai giờ bị bỏ ở cả hai
+> chiều của wire, nên "trận 2 rỗng" không còn là trạng thái lưu được — xem
+> [drop-empty-second-match](./2026-09-01-drop-empty-second-match-design.md). Việc tách bảng vẫn giữ
+> nguyên: nó là chỗ gắn dữ liệu riêng theo trận (đoạn ngay dưới).
+
 `FormationMatch` tồn tại tách khỏi `FormationSlot` vì **một trận 2 rỗng là trạng thái hợp lệ**:
 người dùng tạo trận 2 rồi xoá sạch người, nó vẫn phải còn đó sau khi tải lại trang. Nếu chỉ có bảng
 ô thì "trận 2 rỗng" không phân biệt được với "không có trận 2".

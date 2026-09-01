@@ -152,6 +152,28 @@ describe("buildPrefill", () => {
     expect(result?.sourceLabel).toBe("Thứ 3 · 20:30 · trận 2");
   });
 
+  it("ngày trước có trận 2 không còn ai thì chép trận 1, nhãn không nhắc tới trận 2", () => {
+    const tuesday = session({
+      sessionId: "tue",
+      label: "Thứ 3 · 20:30",
+      dateTime: "2026-07-21T13:30:00.000Z",
+      matches: [
+        { slots: { "team-1-pos-1": "char-1" }, notes: {} },
+        { slots: {}, notes: { "team-1-pos-1": "vào sau" } },
+      ],
+    });
+
+    const result = buildPrefill(
+      [tuesday, THURSDAY],
+      "thu",
+      new Set(["char-1"]),
+      SLOTS
+    );
+
+    expect(result?.assignment["team-1-pos-1"]).toBe("char-1");
+    expect(result?.sourceLabel).toBe("Thứ 3 · 20:30");
+  });
+
   it("chép ghi chú sang trận mới, kể cả ghi chú của ô có người bị gỡ vì báo nghỉ", () => {
     const tuesday = session({
       sessionId: "tue",
