@@ -5,15 +5,20 @@ import {
   Logger,
   NestInterceptor,
 } from '@nestjs/common';
-import { randomUUID } from 'node:crypto';
 import type { Request, Response } from 'express';
 import { Observable, tap } from 'rxjs';
 
 import { REQUEST_ID_HEADER } from '../constants/http.constant';
 
 /**
- * Attaches a request ID to every request and logs method, URL, status and duration.
- * The request ID is echoed in a response header so clients can quote it when reporting errors.
+ * Logs method, URL, status and duration of every request that succeeds.
+ *
+ * Failures are not logged here: `tap` with one argument only sees the `next` branch, and an
+ * interceptor never runs at all when a guard rejects the request. `AllExceptionsFilter` owns the
+ * failure path, so the two together cover every request exactly once.
+ *
+ * The correlation id comes from `requestIdMiddleware`, which runs early enough that a rejected
+ * request has one too.
  */
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
@@ -30,11 +35,8 @@ export class LoggingInterceptor implements NestInterceptor {
     const request = http.getRequest<Request>();
     const response = http.getResponse<Response>();
 
-    const requestId = String(
-      request.headers[REQUEST_ID_HEADER] ?? randomUUID(),
-    );
-    request.headers[REQUEST_ID_HEADER] = requestId;
-    response.setHeader(REQUEST_ID_HEADER, requestId);
+    // `requestIdMiddleware` runs before every guard, so the header is always here by now.
+    const requestId = String(request.headers[REQUEST_ID_HEADER]);
 
     const startedAt = Date.now();
 
