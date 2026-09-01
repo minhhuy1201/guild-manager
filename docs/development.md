@@ -64,6 +64,9 @@ the app dies immediately with a Vietnamese error message instead of half-running
 | `DISCORD_CLIENT_SECRET` | ✅ | — | Discord Application client secret — API only, never the web app |
 | `DISCORD_REDIRECT_URI` | ✅ | — | Must match a Redirect declared in the Developer Portal **character for character**; locally `http://localhost:3001/api/auth/discord/callback` |
 | `DISCORD_ADMIN_IDS` | | empty | Rescue Discord IDs, comma-separated. They always sign in as `ADMIN`, even with no matching `Character` — the only way in before anyone has been linked |
+| `DISCORD_PUBLIC_KEY` | ✅ | — | Application public key (Developer Portal → General Information), 64 hex characters. Verifies the Ed25519 signature on every interaction webhook — **the API refuses to boot without it** |
+| `DISCORD_BOT_TOKEN` | script only | — | Developer Portal → Bot → Reset Token, shown exactly once. Read by `pnpm --filter api discord:register` and nothing else, which is why it is not in `env.validation.ts` |
+| `DISCORD_GUILD_ID` | script only | — | Id of the guild's Discord server (Developer Mode → right-click the server → Copy Server ID). Read by `discord:register` only |
 | `APP_TIMEZONE` | | `Asia/Ho_Chi_Minh` | Timezone used to compute attendance deadlines |
 | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` / `POSTGRES_PORT` | | postgres/postgres/guild_manager/5432 | Read by `docker-compose.yml` only — **must match `DATABASE_URL`** |
 

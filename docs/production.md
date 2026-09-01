@@ -77,9 +77,15 @@ by default, and each writes to whatever database it names.
 | `DISCORD_CLIENT_SECRET` | Its client secret — mark Sensitive |
 | `DISCORD_REDIRECT_URI` | `https://<api-domain>/api/auth/discord/callback`, declared character for character under OAuth2 → Redirects in the Developer Portal |
 | `DISCORD_ADMIN_IDS` | The guild admin's Discord ID. **Forget this and nobody can sign in**, because no `Character` has a `discordId` yet |
+| `DISCORD_PUBLIC_KEY` | Public key of the production Discord Application (General Information), 64 hex characters. **Set it before the first deploy that ships the bot**: it is required, so a missing value kills the API at boot — and because the web app has no other backend, the whole site goes down with it |
 | `WEB_ORIGIN` | The web app's real origin (`https://…`) — CORS matches this value exactly |
 | `WEB_PREVIEW_PROJECT` | The web app's Vercel project name (`mmgh-nth`) — makes CORS also accept that project's preview domains. Optional; omit it and only `WEB_ORIGIN` is allowed |
 | `APP_TIMEZONE` | `Asia/Ho_Chi_Minh` |
+
+`DISCORD_BOT_TOKEN` and `DISCORD_GUILD_ID` are deliberately **not** set here. Only
+`pnpm --filter api discord:register` reads them, that script is run by hand from a developer's
+machine, and the runtime never touches them — the same reasoning that keeps `DIRECT_DATABASE_URL`
+out of the env schema.
 
 The `POSTGRES_*` variables are for `docker-compose.yml` in development only; production does not need
 them.
