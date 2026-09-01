@@ -15,6 +15,7 @@ const MODULE_BOUNDARY_MESSAGE =
  */
 const BOUNDARY_FIXTURES = [
   'src/__tests__/fixtures/outside-module-violation.ts',
+  'src/__tests__/fixtures/nested-target-violation.ts',
   'src/modules/attendance/__tests__/fixtures/module-boundary-violation.ts',
 ];
 
@@ -31,6 +32,12 @@ const LOWER_LAYER_MESSAGE =
  *
  * Mỗi thư mục trong `src/modules/` là một phần tử; cửa vào của nó là `*.public.ts` (code) và
  * `*.module.ts` (class module cho `app.module.ts` và các `imports: [...]`). Mọi file khác là nội bộ.
+ *
+ * `fileInternalPath` cần **hai** pattern. `!(*.public.ts|*.module.ts)` là extglob một tầng: nó
+ * không khớp chuỗi có dấu gạch chéo, nên một file nằm sâu hơn gốc module (`dto/character.dto.ts`)
+ * không khớp pattern nào, `disallow` không áp, và luật im lặng cho qua. Pattern thứ hai bắt đúng
+ * phần đó — mọi đường dẫn có ít nhất một cấp thư mục, mà file lồng thì luôn là nội bộ, vì cả hai
+ * cửa vào của module đều nằm ngay ở gốc.
  *
  * Phần tử `app` bắt phần `src/` còn lại. Nó không thừa: `boundaries` bỏ qua mọi phụ thuộc mà nó
  * không phân loại được **cả hai đầu**, nên thiếu nó thì `app.module.ts`, `infrastructure/` và
@@ -64,7 +71,10 @@ function moduleBoundaryRules() {
                   to: {
                     element: {
                       type: 'module',
-                      fileInternalPath: '!(*.public.ts|*.module.ts)',
+                      fileInternalPath: [
+                        '!(*.public.ts|*.module.ts)',
+                        '*/**',
+                      ],
                     },
                   },
                 },
@@ -163,5 +173,10 @@ export default tseslint.config(
       'no-restricted-imports': 'off',
       'no-console': 'off',
     },
+  },
+  {
+    // Script chạy tay ngoài app — nó nói chuyện với người qua stdout, không qua logger của Nest.
+    files: ['src/scripts/**/*.ts'],
+    rules: { 'no-console': 'off' },
   },
 );

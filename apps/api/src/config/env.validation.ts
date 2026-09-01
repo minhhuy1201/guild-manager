@@ -41,6 +41,13 @@ export const envSchema = z.object({
    * in the database has a Discord ID yet.
    */
   DISCORD_ADMIN_IDS: z.string().default(''),
+  /**
+   * Discord Application public key (Developer Portal → General Information).
+   * Verifies the Ed25519 signature on every interaction webhook — 64 hex characters.
+   */
+  DISCORD_PUBLIC_KEY: z
+    .string()
+    .regex(/^[0-9a-f]{64}$/i, 'DISCORD_PUBLIC_KEY phải là 64 ký tự hex.'),
   /** Timezone used to compute attendance deadlines (see docs/architecture.md section 6). */
   APP_TIMEZONE: z.string().default('Asia/Ho_Chi_Minh'),
 });

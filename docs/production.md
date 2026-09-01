@@ -77,9 +77,27 @@ by default, and each writes to whatever database it names.
 | `DISCORD_CLIENT_SECRET` | Its client secret — mark Sensitive |
 | `DISCORD_REDIRECT_URI` | `https://<api-domain>/api/auth/discord/callback`, declared character for character under OAuth2 → Redirects in the Developer Portal |
 | `DISCORD_ADMIN_IDS` | The guild admin's Discord ID. **Forget this and nobody can sign in**, because no `Character` has a `discordId` yet |
+| `DISCORD_PUBLIC_KEY` | Public key of the production Discord Application (General Information), 64 hex characters. **Set it before the first deploy that ships the bot**: it is required, so a missing value kills the API at boot — and because the web app has no other backend, the whole site goes down with it |
 | `WEB_ORIGIN` | The web app's real origin (`https://…`) — CORS matches this value exactly |
 | `WEB_PREVIEW_PROJECT` | The web app's Vercel project name (`mmgh-nth`) — makes CORS also accept that project's preview domains. Optional; omit it and only `WEB_ORIGIN` is allowed |
 | `APP_TIMEZONE` | `Asia/Ho_Chi_Minh` |
+
+`DISCORD_BOT_TOKEN` and `DISCORD_GUILD_ID` are deliberately **not** set here. Only
+`pnpm --filter api discord:register` reads them, that script is run by hand from a developer's
+machine, and the runtime never touches them — the same reasoning that keeps `DIRECT_DATABASE_URL`
+out of the env schema. They belong in `apps/api/.env.production` instead, and the script is aimed at
+that file the same way the Prisma commands are:
+
+```
+DISCORD_ENV_FILE=.env.production pnpm --filter api discord:register
+```
+
+**Local and production are two different Discord Applications.** Each has its own public key, its
+own bot token, its own invite to the server, and — the part that bites — its own single
+**Interactions Endpoint URL**. That is why the development tunnel cannot be pointed at the
+production application: saving a tunnel URL there would send every real slash command to a laptop.
+Exactly one env file is ever loaded, never merged, so a missing `.env.production` fails loudly
+instead of quietly registering production's commands against the development application.
 
 The `POSTGRES_*` variables are for `docker-compose.yml` in development only; production does not need
 them.

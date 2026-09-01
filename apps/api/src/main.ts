@@ -21,7 +21,9 @@ import {
  * Boot the HTTP server: global pipes/filters/interceptors, CORS, Swagger, and graceful shutdown.
  */
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule);
+  // Discord signs the bytes it sent, so the interaction guard needs them unparsed. Nest keeps a
+  // copy on `request.rawBody` only when this is on.
+  const app = await NestFactory.create(AppModule, { rawBody: true });
   const config = app.get<ConfigService<Env, true>>(ConfigService);
 
   app.setGlobalPrefix(API_PREFIX);
