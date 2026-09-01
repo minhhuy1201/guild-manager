@@ -12,7 +12,7 @@ const UUID_PATTERN =
  * @param headers - Incoming request headers
  * @returns The request, the response with a recording `setHeader`, and a counting `next`
  */
-function callMiddleware(headers: Record<string, string>): {
+function callMiddleware(headers: Record<string, string | string[]>): {
   request: Request;
   setHeader: jest.Mock;
   next: jest.Mock;
@@ -52,5 +52,29 @@ describe('requestIdMiddleware', () => {
     const { next } = callMiddleware({});
 
     expect(next).toHaveBeenCalledTimes(1);
+  });
+
+  it('thay id quá dài bằng id tự sinh', () => {
+    // Id được ghi vào log của mọi request, kể cả request chưa xác thực bị guard chặn — nhận nguyên
+    // si chuỗi tuỳ ý của người gọi là biến log thành chỗ đổ rác miễn phí.
+    const { request } = callMiddleware({ [REQUEST_ID_HEADER]: 'a'.repeat(65) });
+
+    expect(String(request.headers[REQUEST_ID_HEADER])).toMatch(UUID_PATTERN);
+  });
+
+  it('thay id chứa ký tự ngoài chữ, số và dấu gạch bằng id tự sinh', () => {
+    const { request } = callMiddleware({
+      [REQUEST_ID_HEADER]: 'id có khoảng trắng',
+    });
+
+    expect(String(request.headers[REQUEST_ID_HEADER])).toMatch(UUID_PATTERN);
+  });
+
+  it('thay id bằng id tự sinh khi header bị gửi hai lần — Express gộp thành string[]', () => {
+    const { request } = callMiddleware({
+      [REQUEST_ID_HEADER]: ['tu-frontend', 'tu-frontend'],
+    });
+
+    expect(String(request.headers[REQUEST_ID_HEADER])).toMatch(UUID_PATTERN);
   });
 });
