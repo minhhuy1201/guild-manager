@@ -67,6 +67,7 @@ the app dies immediately with a Vietnamese error message instead of half-running
 | `DISCORD_PUBLIC_KEY` | ✅ | — | Application public key (Developer Portal → General Information), 64 hex characters. Verifies the Ed25519 signature on every interaction webhook — **the API refuses to boot without it** |
 | `DISCORD_BOT_TOKEN` | script only | — | Developer Portal → Bot → Reset Token, shown exactly once. Read by `pnpm --filter api discord:register` and nothing else, which is why it is not in `env.validation.ts` |
 | `DISCORD_GUILD_ID` | script only | — | Id of the guild's Discord server (Developer Mode → right-click the server → Copy Server ID). Read by `discord:register` only |
+| `DISCORD_ENV_FILE` | script only | `.env` | Which file `discord:register` reads. Local and production are two **different** Discord Applications, so production registers with `DISCORD_ENV_FILE=.env.production`. Exactly one file is loaded, never merged — a named file that is missing is an error, not a silent fall back to `.env` |
 | `APP_TIMEZONE` | | `Asia/Ho_Chi_Minh` | Timezone used to compute attendance deadlines |
 | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` / `POSTGRES_PORT` | | postgres/postgres/guild_manager/5432 | Read by `docker-compose.yml` only — **must match `DATABASE_URL`** |
 

@@ -85,7 +85,19 @@ by default, and each writes to whatever database it names.
 `DISCORD_BOT_TOKEN` and `DISCORD_GUILD_ID` are deliberately **not** set here. Only
 `pnpm --filter api discord:register` reads them, that script is run by hand from a developer's
 machine, and the runtime never touches them — the same reasoning that keeps `DIRECT_DATABASE_URL`
-out of the env schema.
+out of the env schema. They belong in `apps/api/.env.production` instead, and the script is aimed at
+that file the same way the Prisma commands are:
+
+```
+DISCORD_ENV_FILE=.env.production pnpm --filter api discord:register
+```
+
+**Local and production are two different Discord Applications.** Each has its own public key, its
+own bot token, its own invite to the server, and — the part that bites — its own single
+**Interactions Endpoint URL**. That is why the development tunnel cannot be pointed at the
+production application: saving a tunnel URL there would send every real slash command to a laptop.
+Exactly one env file is ever loaded, never merged, so a missing `.env.production` fails loudly
+instead of quietly registering production's commands against the development application.
 
 The `POSTGRES_*` variables are for `docker-compose.yml` in development only; production does not need
 them.

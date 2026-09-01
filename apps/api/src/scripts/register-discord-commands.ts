@@ -1,27 +1,25 @@
-import { existsSync } from 'node:fs';
-
-import { config } from 'dotenv';
-
 import { commandDefinitions } from '../modules/discord-bot/discord-bot.public';
-
-/** Env files in the same order ConfigModule reads them; the first value found wins. */
-const ENV_FILES = ['.env.local', '.env'];
+import { loadDiscordEnv } from './load-discord-env';
 
 const DISCORD_API_BASE = 'https://discord.com/api/v10';
 
 /**
  * Read one required variable, or explain exactly what to do about it.
  * @param name - Variable name
+ * @param envFile - File the variables were read from, named in the error so the fix goes in the
+ *   right one — with two applications, `.env` and `.env.production` hold different values
  * @returns Its value
  * @throws Error when the variable is missing or empty
  */
-function required(name: string): string {
+function required(name: string, envFile: string | null): string {
   const value = process.env[name];
 
   if (!value) {
-    throw new Error(
-      `Thiếu ${name}. Thêm vào apps/api/.env — xem .env.example, và chạy lệnh từ thư mục gốc repo.`,
-    );
+    const where = envFile
+      ? `apps/api/${envFile}`
+      : 'môi trường (không có file .env nào được nạp)';
+
+    throw new Error(`Thiếu ${name}. Thêm vào ${where} — xem .env.example.`);
   }
 
   return value;
@@ -33,20 +31,23 @@ function required(name: string): string {
  * Guild scope, not global: guild commands take effect immediately, global ones take up to an hour
  * to propagate, and the bot serves exactly one guild.
  *
+ * Local and production are two different Discord Applications, so the target is chosen by env file:
+ *
+ *   pnpm discord:register                                  → .env
+ *   DISCORD_ENV_FILE=.env.production pnpm discord:register  → .env.production
+ *
  * Run by hand, never from CI: the list only changes when a command is added or renamed, and
  * Discord rate-limits this route hard.
  *
- * @returns Nothing; logs the registered names
+ * @returns Nothing; logs which application was targeted and the registered names
  * @throws Error when a variable is missing or Discord rejects the request
  */
 async function main(): Promise<void> {
-  for (const file of ENV_FILES) {
-    if (existsSync(file)) config({ path: file });
-  }
+  const envFile = loadDiscordEnv();
 
-  const applicationId = required('DISCORD_CLIENT_ID');
-  const guildId = required('DISCORD_GUILD_ID');
-  const botToken = required('DISCORD_BOT_TOKEN');
+  const applicationId = required('DISCORD_CLIENT_ID', envFile);
+  const guildId = required('DISCORD_GUILD_ID', envFile);
+  const botToken = required('DISCORD_BOT_TOKEN', envFile);
 
   const response = await fetch(
     `${DISCORD_API_BASE}/applications/${applicationId}/guilds/${guildId}/commands`,
@@ -67,7 +68,13 @@ async function main(): Promise<void> {
   }
 
   const names = commandDefinitions.map((definition) => definition.name);
-  console.log(`Đã đăng ký ${names.length} lệnh: ${names.join(', ')}`);
+  const source = envFile ?? 'biến môi trường có sẵn';
+
+  // Name the application: with two of them, registering against the wrong one looks like a success.
+  console.log(
+    `Đã đăng ký ${names.length} lệnh cho application ${applicationId} ` +
+      `(guild ${guildId}, đọc từ ${source}): ${names.join(', ')}`,
+  );
 }
 
 void main().catch((error: unknown) => {

@@ -131,6 +131,7 @@ hữu một hình dạng mà ta chỉ đang đọc.
 | `DISCORD_PUBLIC_KEY` | Runtime (guard) | Developer Portal → General Information → Public Key. 64 ký tự hex; Zod kiểm đúng dạng đó. **Vào `env.validation.ts`.** |
 | `DISCORD_BOT_TOKEN` | Chỉ script §7 | Portal → Bot → Reset Token, chỉ hiện một lần. **Không** vào `env.validation.ts`. |
 | `DISCORD_GUILD_ID` | Chỉ script §7 | ID server Discord của bang. |
+| `DISCORD_ENV_FILE` | Chỉ script §7 | File env script đọc, mặc định `.env`. Xem §7.1. |
 
 Hai biến sau **cố ý nằm ngoài schema env**, đúng tiền lệ `DIRECT_DATABASE_URL`: runtime không bao
 giờ đọc chúng, nên bắt chúng có mặt là chặn boot vô cớ. Script tự validate và tự báo lỗi rõ ràng khi
@@ -156,6 +157,27 @@ trong `commands/index.ts` tới
   để lan. Bot phục vụ đúng một bang nên phạm vi guild không mất gì.
 - **Chạy tay, không đưa vào CI.** Việc này chỉ cần khi thêm hoặc đổi tên lệnh, và Discord rate-limit
   nặng — chạy mỗi lần deploy là tự chuốc `429`.
+
+### 7.1 Hai Discord Application, chọn bằng `DISCORD_ENV_FILE`
+
+Phát hiện trong lúc triển khai: `.env` và `.env.production` đang trỏ tới **hai application khác
+nhau**. Bản đầu của spec này coi bot là một application duy nhất, và điều đó sai.
+
+Hệ quả là mỗi môi trường có public key riêng, bot token riêng, lời mời bot riêng, và — chỗ đau nhất
+— **một Interactions Endpoint URL riêng**. Một application chỉ giữ được đúng một URL, nên nếu dùng
+chung thì lúc cắm tunnel để dev là toàn bộ lệnh thật của bang bị đẩy về máy cá nhân.
+
+Script vì vậy chọn file theo đúng khuôn `PRISMA_ENV_FILE` đã có:
+
+```
+pnpm --filter api discord:register                          → .env
+DISCORD_ENV_FILE=.env.production pnpm --filter api discord:register → .env.production
+```
+
+**Đúng một file được nạp, không bao giờ trộn.** File được chỉ định mà không tồn tại là lỗi, không
+phải cái cớ để rơi về `.env` — rơi về `.env` nghĩa là đăng ký lệnh của production lên application
+dev, thành công, và không báo cho ai. Script in ra application id và guild id nó vừa nhắm tới, vì
+với hai application thì nhắm nhầm trông y hệt nhắm đúng.
 
 ## 8. Xoá `apps/bot/`
 
