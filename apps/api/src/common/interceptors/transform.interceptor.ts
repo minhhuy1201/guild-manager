@@ -8,6 +8,8 @@ import { REDIRECT_METADATA } from '@nestjs/common/constants';
 import { Reflector } from '@nestjs/core';
 import { Observable, map } from 'rxjs';
 
+import { RAW_RESPONSE_METADATA } from '../decorators/raw-response.decorator';
+
 /** The uniform success response: data always lives under `data`. */
 export interface ApiResponse<T> {
   data: T;
@@ -21,6 +23,9 @@ export interface ApiResponse<T> {
  * Nest, and Nest reads `url` off the top level. Wrapped in `data`, Nest no longer sees `url` and
  * returns a 302 with an empty `Location` — no error, no log, just a browser sitting still in the
  * middle of the Discord login flow.
+ *
+ * Same for `@RawResponse()`: Discord reads `type` off the top level of an interaction reply, so a
+ * wrapped body is ignored silently — no error, no log, just a slash command that never answers.
  */
 @Injectable()
 export class TransformInterceptor<T> implements NestInterceptor<
@@ -41,8 +46,10 @@ export class TransformInterceptor<T> implements NestInterceptor<
   ): Observable<ApiResponse<T> | T> {
     const isRedirect =
       this.reflector.get(REDIRECT_METADATA, context.getHandler()) !== undefined;
+    const isRaw =
+      this.reflector.get(RAW_RESPONSE_METADATA, context.getHandler()) === true;
 
-    if (isRedirect) return next.handle();
+    if (isRedirect || isRaw) return next.handle();
 
     return next.handle().pipe(map((data) => ({ data })));
   }

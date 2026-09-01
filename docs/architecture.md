@@ -143,6 +143,7 @@ Each is `<domain>.module.ts` + `<domain>.controller.ts` + `<domain>.service.ts`,
 | `battle-sessions` | The week's schedule, deadlines, the Guild War session, time rules | Reads signed-in, writes admin |
 | `attendance` | Marking attendance and reading records | Bearer required; reads are guild-wide for everyone, admin bypasses the deadline and marks for others |
 | `team-builder` | Per-match formations, and the team names shown on the grid | Admin |
+| `discord-bot` | The Discord interactions endpoint and the slash command registry | Discord's Ed25519 signature — no JWT, no session |
 
 Endpoints, all behind the `/api` prefix:
 
@@ -174,6 +175,7 @@ Endpoints, all behind the `/api` prefix:
 | `PUT` | `/team-builder/formations/:sessionId` | Overwrite one match's roster | Admin |
 | `GET` | `/team-builder/team-names` | Names of the grid's team columns | Admin |
 | `PUT` | `/team-builder/team-names` | Overwrite the whole team name map | Admin |
+| `POST` | `/discord/interactions` | Receive a slash command from Discord and answer it | Discord's Ed25519 signature |
 
 ### 3.4 Cross-cutting contracts
 
@@ -346,6 +348,7 @@ one exception is `prisma/fix-deadlines.ts`, a one-off migration of rows written 
 | **A new environment variable** | `env.validation.ts` (+ `.env.example`) on the API; `config/api.ts` on the web side. Then the tables in [`development.md`](development.md) §3 and [`production.md`](production.md) §3. |
 | **A change to the week or deadline rules** | `session-schedule.ts` and its `__tests__` — nowhere else. The frontend must not re-derive a rule the backend owns. |
 | **A display convention** (state icon, action button, table shell) | Follow, and extend, [`frontend.md`](../apps/web/docs/frontend.md) §6 with a wrapper in `components/shared/`. |
+| **A new Discord slash command** | One file in `src/modules/discord-bot/commands/`, holding both its `definition` and its `execute`, plus one line in `commands/index.ts`. Then `pnpm --filter api discord:register`. Nothing else changes. |
 | **Anything with a non-obvious "why"** | A spec in `docs/superpowers/specs/`, then link it from the code comment. |
 
 Tests sit next to what they cover: `__tests__/` beside the module or feature folder (Jest on the
