@@ -10,5 +10,8 @@ import { AttendanceService } from './attendance.service';
   imports: [BattleSessionsModule, CharactersModule],
   controllers: [AttendanceController],
   providers: [AttendanceService],
+  // The Discord bot writes attendance through this same service, so the rule about who may mark
+  // whom lives in exactly one place.
+  exports: [AttendanceService],
 })
 export class AttendanceModule {}
