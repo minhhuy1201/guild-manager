@@ -49,14 +49,17 @@ function toSource(candidate: CopyCandidate): CopySource {
 }
 
 /**
- * Find the line-up a battle would be copied from: the nearest earlier day of its
- * own week that holds one, falling back to the last such day of the previous
- * week — which is how the first battle of a new week reaches back to the Guild
- * War that closed the old one.
+ * Find the line-up a battle would be copied from: the day immediately before it,
+ * and for the first battle of a week the last day of the previous one — which is
+ * how a new week picks up from the Guild War that closed the old one.
+ *
+ * Only that one day is considered. A day whose predecessor is still empty has
+ * nothing to copy, and skipping past it to an older line-up would put the button
+ * on a day the user never named.
  * @param weekCandidates - Days of the week on screen, ordered by battle time
  * @param targetSessionId - Battle the copy would land on
  * @param previousWeekCandidates - Days of the week before it, ordered by battle time
- * @returns The source, or null when neither week holds a line-up
+ * @returns The source, or null when that day holds nothing
  */
 export function findCopySource(
   weekCandidates: CopyCandidate[],
@@ -68,12 +71,12 @@ export function findCopySource(
   );
   if (targetIndex < 0) return null;
 
-  const inWeek = weekCandidates.slice(0, targetIndex).reverse().find(hasLineUp);
-  if (inWeek) return toSource(inWeek);
+  const candidate =
+    targetIndex > 0
+      ? weekCandidates[targetIndex - 1]
+      : previousWeekCandidates[previousWeekCandidates.length - 1];
 
-  // Only ONE week back: a line-up two weeks old is stale enough that copying it
-  // does more harm than good.
-  const lastWeek = [...previousWeekCandidates].reverse().find(hasLineUp);
+  if (!candidate || !hasLineUp(candidate)) return null;
 
-  return lastWeek ? toSource(lastWeek) : null;
+  return toSource(candidate);
 }

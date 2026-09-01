@@ -78,17 +78,17 @@ export function useFormationCopy(
     [sessions, matchesBySession]
   );
 
-  // Asked twice on purpose: this first answer decides whether the previous week
-  // is worth a request at all.
-  const inWeekSource = activeSessionId
-    ? findCopySource(weekCandidates, activeSessionId, [])
-    : null;
-
   const previousWeekStart = weekStart
     ? findPreviousWeekStart(weeks, weekStart)
     : null;
+  // Only the FIRST battle of the week ever looks outside it, so no other day
+  // costs a request.
+  const isFirstOfWeek =
+    weekCandidates.findIndex(
+      (candidate) => candidate.sessionId === activeSessionId
+    ) === 0;
   const needsPreviousWeek = Boolean(
-    editable && activeSessionId && !inWeekSource && previousWeekStart
+    editable && isFirstOfWeek && previousWeekStart
   );
 
   const previousQuery = useFormations(

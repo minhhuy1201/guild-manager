@@ -34,20 +34,23 @@ const THURSDAY = day("thu", "Thứ 5 · 20:30", [EMPTY]);
 const SATURDAY = day("sat", "Thứ 7 · Bang Chiến", [EMPTY]);
 
 describe("findCopySource", () => {
-  it("lấy ngày gần nhất trước đó có đội hình trong cùng tuần", () => {
-    const source = findCopySource([TUESDAY, THURSDAY, SATURDAY], "sat", []);
+  it("lấy đúng ngày liền trước trong cùng tuần", () => {
+    const source = findCopySource([TUESDAY, THURSDAY, SATURDAY], "thu", []);
 
     expect(source?.sessionId).toBe("tue");
     expect(source?.match).toEqual(filled("char-1"));
   });
 
-  it("bỏ qua ngày chỉ có ghi chú, không có người", () => {
+  it("ngày liền trước chưa xếp gì thì không có nguồn, không lùi tiếp", () => {
+    expect(findCopySource([TUESDAY, THURSDAY, SATURDAY], "sat", [])).toBeNull();
+  });
+
+  it("ngày liền trước chỉ có ghi chú cũng coi như chưa xếp", () => {
     const noteOnly = day("wed", "Thứ 4 · 20:30", [
       { assignment: { "team-1-pos-1": null }, notes: { "team-1-pos-1": "x" } },
     ]);
-    const source = findCopySource([TUESDAY, noteOnly, SATURDAY], "sat", []);
 
-    expect(source?.sessionId).toBe("tue");
+    expect(findCopySource([TUESDAY, noteOnly, SATURDAY], "sat", [])).toBeNull();
   });
 
   it("lấy trận cuối của ngày nguồn và ghi rõ số trận trong nhãn", () => {
@@ -67,36 +70,35 @@ describe("findCopySource", () => {
     expect(source?.label).toBe("Thứ 3 · 20:30");
   });
 
-  it("không có ngày nào trước đó thì lùi sang tuần trước, lấy ngày cuối cùng có đội hình", () => {
+  it("ngày đầu tuần lấy ngày cuối cùng của tuần trước", () => {
     const lastWeek = [
       day("prev-tue", "Thứ 3 · 20:30", [filled("char-7")]),
       day("prev-sat", "Thứ 7 · Bang Chiến", [filled("char-8")]),
     ];
-    const source = findCopySource([THURSDAY, SATURDAY], "thu", lastWeek);
+    const source = findCopySource([TUESDAY, SATURDAY], "tue", lastWeek);
 
     expect(source?.sessionId).toBe("prev-sat");
     expect(source?.match).toEqual(filled("char-8"));
   });
 
-  it("tuần trước mà ngày cuối chưa xếp thì lùi tiếp lên ngày trước nữa", () => {
+  it("ngày cuối tuần trước chưa xếp thì cũng không có nguồn", () => {
     const lastWeek = [
       day("prev-tue", "Thứ 3 · 20:30", [filled("char-7")]),
       day("prev-sat", "Thứ 7 · Bang Chiến", [EMPTY]),
     ];
-    const source = findCopySource([THURSDAY], "thu", lastWeek);
 
-    expect(source?.sessionId).toBe("prev-tue");
+    expect(findCopySource([TUESDAY, SATURDAY], "tue", lastWeek)).toBeNull();
   });
 
-  it("trong tuần đã có nguồn thì không đụng tới tuần trước", () => {
+  it("ngày giữa tuần không đụng tới tuần trước", () => {
     const lastWeek = [day("prev-sat", "Thứ 7 · Bang Chiến", [filled("char-8")])];
-    const source = findCopySource([TUESDAY, SATURDAY], "sat", lastWeek);
+    const source = findCopySource([TUESDAY, THURSDAY], "thu", lastWeek);
 
     expect(source?.sessionId).toBe("tue");
   });
 
-  it("không tuần nào có đội hình thì trả null", () => {
-    expect(findCopySource([THURSDAY, SATURDAY], "sat", [])).toBeNull();
+  it("ngày đầu tuần mà tuần trước không có gì thì trả null", () => {
+    expect(findCopySource([TUESDAY, SATURDAY], "tue", [])).toBeNull();
   });
 
   it("ngày đích không nằm trong tuần thì trả null", () => {

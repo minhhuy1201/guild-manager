@@ -28,7 +28,7 @@ chốt tất cả.* Spec này bám mô hình đó — copy chỉ ghi vào **nhá
 
 ### 1. Nguồn copy là **tự động**, không cho chọn
 
-Bấm nút là copy ngay từ ngày gần nhất *về phía trước* có đội hình. Không dropdown, không danh sách.
+Bấm nút là copy ngay từ ngày liền trước ngày đang mở. Không dropdown, không danh sách.
 
 Lý do: thứ tự các ngày trong tuần đã mang sẵn ý nghĩa "đội hình mới nhất". Người xếp team gần như
 luôn muốn tiếp nối trận vừa rồi, nên bắt họ chọn là bắt họ xác nhận lại điều hiển nhiên. Nút vẫn nói
@@ -37,25 +37,24 @@ rõ nguồn của nó (xem §5) nên không có chuyện copy nhầm mà không 
 **Hệ quả phải chấp nhận:** không copy ngược được — không thể lấy đội hình Thứ 7 xếp vào Thứ 3. Đổi
 sang dropdown sau này chỉ là đổi phần UI; phần tìm nguồn và phần ghi vào nháp không phải viết lại.
 
-### 2. Thứ tự tìm nguồn: trong tuần trước, rồi mới lùi một tuần
+### 2. Nguồn là **ngày liền trước**, không nhảy qua ngày trống
 
 ```
-Các ngày của tuần đang xem, đứng TRƯỚC ngày B, duyệt ngược theo giờ đánh
-  → ngày đầu tiên có đội hình  ⇒ đó là nguồn
-Không có ngày nào  → các ngày của tuần LIỀN TRƯỚC, duyệt ngược
-  → ngày cuối cùng có đội hình ⇒ đó là nguồn
-Vẫn không có       → nút disabled
+Ngày B đứng giữa tuần  ⇒ nguồn là ngày ngay trước nó trong tuần
+Ngày B là ngày đầu tuần ⇒ nguồn là ngày CUỐI CÙNG của tuần liền trước
+Ngày nguồn đó chưa xếp đội hình ⇒ nút disabled
 ```
+
+Chỉ xét đúng **một** ngày. Ngày liền trước còn trống thì không có gì để chép, và nhảy qua nó để lấy
+một đội hình cũ hơn sẽ khiến nút chỉ vào một ngày người dùng không nghĩ tới — Thứ 7 bỗng nói "Copy
+từ Thứ 5" chỉ vì Thứ 6 chưa ai mở ra xếp.
 
 Nhánh lùi tuần tồn tại cho đúng một tình huống, và là tình huống hay gặp nhất: **trận đầu tiên của
-tuần mới**. Nó không có ngày nào trước nó trong tuần, nên nguồn tự nhiên của nó là trận bang chiến
-Thứ 7 của tuần vừa kết thúc.
+tuần mới**. Nó không có ngày nào trước nó trong tuần, nên nguồn của nó là ngày cuối cùng của tuần
+vừa kết thúc — trong lịch bang hội đó chính là trận bang chiến Thứ 7.
 
-Duyệt ngược chứ không chốt cứng vào Thứ 7: nếu Thứ 7 tuần trước chưa kịp xếp đội hình thì lùi tiếp
-lên Thứ 6, Thứ 5… Chốt cứng vào bang chiến sẽ biến một tuần bỏ trống một ngày thành "không có nguồn".
-
-**Chỉ lùi đúng một tuần.** Tuần trước trống hoàn toàn thì dừng, không lùi tiếp. Đội hình cách hai
-tuần đã đủ cũ để việc chép lại nó gây hại nhiều hơn lợi, và mỗi tuần lùi thêm là một request nữa.
+**Chỉ lùi đúng một tuần.** Tuần trước không có trong danh sách, hoặc ngày cuối của nó còn trống, thì
+nút khoá. Đội hình cách hai tuần đã đủ cũ để việc chép lại nó gây hại nhiều hơn lợi.
 
 Trong một ngày nguồn thì lấy **trận cuối** của ngày đó — đúng luật `buildPrefill` đang dùng: đó là
 đội hình gần với hiện tại nhất.
@@ -106,8 +105,8 @@ xếp hai dải thông báo chồng nhau trên đầu lưới thì không ai đ�
 ### 6. Không đụng backend
 
 Dữ liệu tuần trước lấy qua `GET /team-builder/formations?weekStart=` đã có sẵn, thêm một
-`useFormations(previousWeekStart)` với `enabled` — chỉ bắn khi trong tuần đang xem không tìm ra
-nguồn. Ngày thường không tốn thêm request nào.
+`useFormations(previousWeekStart)` với `enabled` — chỉ bắn khi ngày đang mở là **ngày đầu tiên**
+của tuần. Mọi ngày khác không tốn thêm request nào.
 
 `previousWeekStart` lấy từ danh sách `weeks` (`GET /team-builder/weeks`, mới nhất trước): phần tử
 đầu tiên có `weekStart` nhỏ hơn tuần đang xem. Không tự tính "trừ 7 ngày" — danh sách đó mới là câu
