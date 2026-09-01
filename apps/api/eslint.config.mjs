@@ -164,4 +164,9 @@ export default tseslint.config(
       'no-console': 'off',
     },
   },
+  {
+    // Script chạy tay ngoài app — nó nói chuyện với người qua stdout, không qua logger của Nest.
+    files: ['src/scripts/**/*.ts'],
+    rules: { 'no-console': 'off' },
+  },
 );

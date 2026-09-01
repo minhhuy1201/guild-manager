@@ -35,7 +35,8 @@
     "prisma:studio": "prisma studio",
     "prisma:studio:prod": "PRISMA_ENV_FILE=.env.production prisma studio",
     "db:seed": "prisma db seed",
-    "db:fix-deadlines": "ts-node prisma/fix-deadlines.ts"
+    "db:fix-deadlines": "ts-node prisma/fix-deadlines.ts",
+    "discord:register": "ts-node src/scripts/register-discord-commands.ts"
   },
   "dependencies": {
     "@guild/shared": "workspace:*",
