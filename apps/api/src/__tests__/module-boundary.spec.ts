@@ -24,6 +24,13 @@ const OUTSIDE_MODULE_FIXTURE = join(
   'outside-module-violation.ts',
 );
 
+/** A deliberate violation whose target sits deeper than the module root. */
+const NESTED_TARGET_FIXTURE = join(
+  __dirname,
+  'fixtures',
+  'nested-target-violation.ts',
+);
+
 /** A real file importing a sibling module through its `.public` seam. */
 const COMPLIANT_FILE = join(
   API_ROOT,
@@ -76,6 +83,10 @@ describe('ranh giới module (eslint.config.mjs)', () => {
 
   it('báo lỗi khi một file ngoài modules/ đụng file nội bộ của module', () => {
     expect(lintBoundaryErrors(OUTSIDE_MODULE_FIXTURE)).toHaveLength(1);
+  });
+
+  it('báo lỗi khi file bị đụng nằm sâu hơn gốc module', () => {
+    expect(lintBoundaryErrors(NESTED_TARGET_FIXTURE)).toHaveLength(1);
   });
 
   it('không báo lỗi khi module bên cạnh được import qua file .public', () => {
