@@ -10,3 +10,4 @@ export * from './guards/admin.guard';
 export * from './guards/jwt-auth.guard';
 export * from './interceptors/logging.interceptor';
 export * from './interceptors/transform.interceptor';
+export * from './middleware/request-id.middleware';

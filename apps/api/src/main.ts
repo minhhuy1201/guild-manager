@@ -9,6 +9,7 @@ import {
   AllExceptionsFilter,
   LoggingInterceptor,
   TransformInterceptor,
+  requestIdMiddleware,
 } from './common';
 import {
   API_PREFIX,
@@ -25,6 +26,10 @@ async function bootstrap(): Promise<void> {
   // copy on `request.rawBody` only when this is on.
   const app = await NestFactory.create(AppModule, { rawBody: true });
   const config = app.get<ConfigService<Env, true>>(ConfigService);
+
+  // Must be the first thing in the stack: middleware runs before guards, so a request a guard
+  // rejects still carries an id into the error body and the response header.
+  app.use(requestIdMiddleware);
 
   app.setGlobalPrefix(API_PREFIX);
   app.useGlobalPipes(new ZodValidationPipe());
