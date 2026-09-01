@@ -2,7 +2,8 @@ import type { SessionFormation } from "@guild/shared/schemas";
 
 import type { Assignment, MatchDraft, Notes, Slot } from "../types/formation";
 import { copyMatch } from "./copy-match";
-import { fromWire, fromWireNotes } from "./wire";
+import { lastLineUp } from "./day-matches";
+import { fromWireMatches } from "./wire";
 
 /** A formation proposed for a battle that has none yet. */
 export interface PrefillResult {
@@ -36,36 +37,30 @@ export function buildPrefill(
   );
   if (targetIndex < 0) return null;
 
-  // Sources are judged by their FORMATION, not their notes: a day holding only notes has nothing to
-  // copy across.
-  const source = sessions
-    .slice(0, targetIndex)
-    .reverse()
-    .find((session) =>
-      session.matches.some((match) => Object.keys(match.slots).length > 0)
-    );
-  if (!source) return null;
+  // Sources are judged by the line-up that would actually be copied — the day's
+  // last match — so a day holding only notes, or one whose match 2 was emptied,
+  // is not a source. `fromWireMatches` is what normalises a stored empty match 2
+  // away, which is why this reads the rebuilt matches rather than the wire.
+  for (const session of sessions.slice(0, targetIndex).reverse()) {
+    const matches = fromWireMatches(session.matches, slots);
+    const previous = lastLineUp(matches);
+    if (!previous) continue;
 
-  // The last match of that day is the formation closest to the current state.
-  const sourceMatch = source.matches[source.matches.length - 1];
-  const sourceLabel =
-    source.matches.length > 1
-      ? `${source.label} · trận ${source.matches.length}`
-      : source.label;
-  const previous: MatchDraft = {
-    assignment: fromWire(sourceMatch.slots, slots),
-    // Notes travel across untouched, including the note of a slot whose occupant is absent: a note
-    // describes the position, not the person.
-    notes: fromWireNotes(sourceMatch.notes, slots),
-  };
-  const copied = copyMatch(previous, presentIds, slots);
+    const sourceLabel =
+      matches.length > 1
+        ? `${session.label} · trận ${matches.length}`
+        : session.label;
+    const copied = copyMatch(previous, presentIds, slots);
 
-  return {
-    assignment: copied.assignment,
-    notes: copied.notes,
-    sourceLabel,
-    droppedCount: copied.droppedCount,
-  };
+    return {
+      assignment: copied.assignment,
+      notes: copied.notes,
+      sourceLabel,
+      droppedCount: copied.droppedCount,
+    };
+  }
+
+  return null;
 }
 
 /**

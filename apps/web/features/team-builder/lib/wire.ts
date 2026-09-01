@@ -1,6 +1,7 @@
 import type { MatchFormation } from "@guild/shared/schemas";
 
 import type { Assignment, MatchDraft, Notes, Slot } from "../types/formation";
+import { withoutEmptySecondMatch } from "./day-matches";
 
 /**
  * Strip empty slots before sending an assignment to the server.
@@ -78,11 +79,14 @@ export function fromWireNotes(
 
 /**
  * Strip empty slots and blank notes from every match of a day before sending.
+ * A match 2 nobody stands in is dropped here rather than saved as an empty
+ * second formation — the two directions of this file apply the same rule, so a
+ * day can neither be written nor read as "two matches, one of them nobody's".
  * @param matches - Each match of the day, as the UI holds it
- * @returns Same order, each match carrying only its filled slots and notes
+ * @returns The matches worth saving, each carrying only its filled slots and notes
  */
 export function toWireMatches(matches: MatchDraft[]): MatchFormation[] {
-  return matches.map((match) => ({
+  return withoutEmptySecondMatch(matches).map((match) => ({
     slots: toWire(match.assignment),
     notes: toWireNotes(match.notes),
   }));
@@ -91,10 +95,12 @@ export function toWireMatches(matches: MatchDraft[]): MatchFormation[] {
 /**
  * Rebuild a day's matches from what the server stored.
  * A day with nothing saved comes back as `[]`; it is normalised to one empty
- * match here so nothing downstream has to handle "no match at all".
+ * match here so nothing downstream has to handle "no match at all". A stored
+ * match 2 nobody stands in is dropped for the same reason — days written before
+ * that rule existed must not keep showing an empty second tab.
  * @param wire - Matches as stored
  * @param slots - Slots of the current layout
- * @returns One draft per match, always at least one
+ * @returns One draft per match worth showing, always at least one
  */
 export function fromWireMatches(
   wire: MatchFormation[],
@@ -102,8 +108,10 @@ export function fromWireMatches(
 ): MatchDraft[] {
   const source = wire.length > 0 ? wire : [{ slots: {}, notes: {} }];
 
-  return source.map((match) => ({
-    assignment: fromWire(match.slots, slots),
-    notes: fromWireNotes(match.notes, slots),
-  }));
+  return withoutEmptySecondMatch(
+    source.map((match) => ({
+      assignment: fromWire(match.slots, slots),
+      notes: fromWireNotes(match.notes, slots),
+    }))
+  );
 }

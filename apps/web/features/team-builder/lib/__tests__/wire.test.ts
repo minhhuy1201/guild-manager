@@ -129,6 +129,17 @@ describe("toWireMatches", () => {
       { slots: { "team-1-pos-2": "char-2" }, notes: {} },
     ]);
   });
+
+  it("bỏ trận 2 không còn ai trước khi gửi lên server", () => {
+    const matches: MatchDraft[] = [
+      { assignment: { "team-1-pos-1": "char-1" }, notes: {} },
+      { assignment: { "team-1-pos-1": null }, notes: { "team-1-pos-1": "x" } },
+    ];
+
+    expect(toWireMatches(matches)).toEqual([
+      { slots: { "team-1-pos-1": "char-1" }, notes: {} },
+    ]);
+  });
 });
 
 describe("fromWireMatches", () => {
@@ -153,14 +164,30 @@ describe("fromWireMatches", () => {
           slots: { "team-1-pos-1": "char-1" },
           notes: { "team-1-pos-3": "chừa cho X" },
         },
-        { slots: {}, notes: { "team-1-pos-1": "vào sau" } },
+        {
+          slots: { "team-1-pos-2": "char-2" },
+          notes: { "team-1-pos-1": "vào sau" },
+        },
       ],
       SLOTS
     );
 
     expect(result[0].assignment["team-1-pos-1"]).toBe("char-1");
     expect(result[0].notes).toEqual({ "team-1-pos-3": "chừa cho X" });
-    expect(result[1].assignment["team-1-pos-1"]).toBeNull();
+    expect(result[1].assignment["team-1-pos-2"]).toBe("char-2");
     expect(result[1].notes).toEqual({ "team-1-pos-1": "vào sau" });
+  });
+
+  it("bỏ trận 2 đã lưu mà không còn ai đứng trong đó", () => {
+    const result = fromWireMatches(
+      [
+        { slots: { "team-1-pos-1": "char-1" }, notes: {} },
+        { slots: {}, notes: { "team-1-pos-1": "vào sau" } },
+      ],
+      SLOTS
+    );
+
+    expect(result).toHaveLength(1);
+    expect(result[0].assignment["team-1-pos-1"]).toBe("char-1");
   });
 });

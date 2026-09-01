@@ -64,6 +64,12 @@ describe("findCopySource", () => {
     expect(source?.label).toBe("Thứ 3 · 20:30 · trận 2");
   });
 
+  it("ngày liền trước có người ở trận 1 nhưng trận 2 rỗng thì không có nguồn", () => {
+    const emptiedSecond = day("tue", "Thứ 3 · 20:30", [filled("char-1"), EMPTY]);
+
+    expect(findCopySource([emptiedSecond, SATURDAY], "sat", [])).toBeNull();
+  });
+
   it("ngày một trận thì nhãn chỉ là tên ngày", () => {
     const source = findCopySource([TUESDAY, SATURDAY], "sat", []);
 

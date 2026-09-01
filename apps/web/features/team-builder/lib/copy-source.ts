@@ -1,4 +1,5 @@
 import type { MatchDraft } from "../types/formation";
+import { lastLineUp } from "./day-matches";
 
 /** One battle day offered as a copy source, with the matches currently shown for it. */
 export interface CopyCandidate {
@@ -21,25 +22,16 @@ export interface CopySource {
 }
 
 /**
- * Whether a day holds a line-up worth copying. Judged by the PEOPLE placed, not
- * the notes: a day carrying only notes has nothing to copy across.
- * @param candidate - The day being judged
- * @returns true when at least one slot of one match holds someone
- */
-function hasLineUp(candidate: CopyCandidate): boolean {
-  return candidate.matches.some((match) =>
-    Object.values(match.assignment).some(Boolean)
-  );
-}
-
-/**
  * Turn a day into the source it offers: its last match, which is the line-up
- * closest to the present.
+ * closest to the present. Judged by the PEOPLE placed, not the notes — a day
+ * carrying only notes has nothing to copy across.
  * @param candidate - The day being copied from
- * @returns The match and the label naming it
+ * @returns The match and the label naming it, or null when nobody stands in it
  */
-function toSource(candidate: CopyCandidate): CopySource {
-  const match = candidate.matches[candidate.matches.length - 1];
+function toSource(candidate: CopyCandidate): CopySource | null {
+  const match = lastLineUp(candidate.matches);
+  if (!match) return null;
+
   const label =
     candidate.matches.length > 1
       ? `${candidate.label} · trận ${candidate.matches.length}`
@@ -76,7 +68,5 @@ export function findCopySource(
       ? weekCandidates[targetIndex - 1]
       : previousWeekCandidates[previousWeekCandidates.length - 1];
 
-  if (!candidate || !hasLineUp(candidate)) return null;
-
-  return toSource(candidate);
+  return candidate ? toSource(candidate) : null;
 }
