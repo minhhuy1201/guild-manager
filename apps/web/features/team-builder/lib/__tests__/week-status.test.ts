@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { findActiveWeekStart, isWeekEditable } from "../week-status";
+import {
+  findActiveWeekStart,
+  findPreviousWeekStart,
+  isWeekEditable,
+} from "../week-status";
 
 const PREVIOUS = "2026-07-26T17:00:00.000Z";
 const ACTIVE = "2026-08-02T17:00:00.000Z";
@@ -54,5 +58,29 @@ describe("isWeekEditable", () => {
 
   it("chưa chọn tuần nào thì không cho sửa", () => {
     expect(isWeekEditable(undefined, ACTIVE)).toBe(false);
+  });
+});
+
+describe("findPreviousWeekStart", () => {
+  const WEEKS = [
+    { weekStart: NEXT, weekEnd: NEXT_END, isActive: false },
+    { weekStart: ACTIVE, weekEnd: ACTIVE_END, isActive: true },
+    { weekStart: PREVIOUS, weekEnd: PREVIOUS_END, isActive: false },
+  ];
+
+  it("trả về tuần liền trước trong danh sách", () => {
+    expect(findPreviousWeekStart(WEEKS, ACTIVE)).toBe(PREVIOUS);
+  });
+
+  it("tuần cũ nhất thì không có tuần trước", () => {
+    expect(findPreviousWeekStart(WEEKS, PREVIOUS)).toBeNull();
+  });
+
+  it("tuần không có trong danh sách vẫn lấy được tuần cũ hơn gần nhất", () => {
+    expect(findPreviousWeekStart(WEEKS, "2026-08-16T17:00:00.000Z")).toBe(NEXT);
+  });
+
+  it("danh sách rỗng thì trả null", () => {
+    expect(findPreviousWeekStart([], ACTIVE)).toBeNull();
   });
 });

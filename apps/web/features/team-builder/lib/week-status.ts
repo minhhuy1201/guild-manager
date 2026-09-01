@@ -29,3 +29,23 @@ export function isWeekEditable(
 
   return new Date(weekStart).getTime() >= new Date(activeWeekStart).getTime();
 }
+
+/**
+ * Monday of the week before the one on screen, among the weeks that still hold
+ * data. Read off the list rather than subtracting seven days: the list is the
+ * answer to "which week still has anything in it".
+ * @param weeks - Weeks that still hold formation data, newest first
+ * @param weekStart - Monday of the week on screen
+ * @returns Monday of the newest week older than it, or null when there is none
+ */
+export function findPreviousWeekStart(
+  weeks: FormationWeek[],
+  weekStart: string
+): string | null {
+  const target = new Date(weekStart).getTime();
+  const previous = weeks.find(
+    (week) => new Date(week.weekStart).getTime() < target
+  );
+
+  return previous?.weekStart ?? null;
+}
