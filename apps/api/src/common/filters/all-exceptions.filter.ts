@@ -27,6 +27,9 @@ export interface ErrorResponseBody {
 /**
  * Catches every unhandled exception and normalises it into one response shape, so the frontend
  * reads errors in a single place.
+ *
+ * It is also the only place a failed request gets logged — `LoggingInterceptor` covers the success
+ * path and never runs when a guard rejects the request.
  */
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
@@ -55,11 +58,17 @@ export class AllExceptionsFilter implements ExceptionFilter {
       timestamp: new Date().toISOString(),
     };
 
+    const line = `${request.method} ${request.url} -> ${status} [${body.requestId}]`;
+
     if (status >= SERVER_ERROR_STATUS) {
       this.logger.error(
-        `${request.method} ${request.url} -> ${status}`,
+        line,
         exception instanceof Error ? exception.stack : String(exception),
       );
+    } else {
+      // A guard rejects before any interceptor runs, so without this line a 401 or 403 leaves no
+      // trace anywhere. 4xx is the caller's mistake: one line, no stack.
+      this.logger.warn(line);
     }
 
     response.status(status).json(body);
