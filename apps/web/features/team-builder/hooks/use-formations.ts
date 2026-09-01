@@ -9,11 +9,13 @@ import { teamBuilderKeys } from "../api/team-builder-keys";
  * Saved formations for every battle of one week.
  * This is the server copy — user edits live as drafts in the Zustand store.
  * @param weekStart - Monday of the week to read; omit for the open week
+ * @param enabled - Whether the request may run; false parks the query
  * @returns TanStack query holding the week's sessions and their formations
  */
-export function useFormations(weekStart?: string) {
+export function useFormations(weekStart?: string, enabled = true) {
   return useQuery({
     queryKey: teamBuilderKeys.formations(weekStart),
     queryFn: () => fetchFormations(weekStart),
+    enabled,
   });
 }

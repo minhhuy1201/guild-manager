@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -14,6 +14,7 @@ import { ErrorState } from "@/components/shared/error-state";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFormationScreen } from "../hooks/use-formation-screen";
+import { CopyFormationDialog } from "./copy-formation-dialog";
 import { FormationGrid } from "./formation-grid";
 import { FormationToolbar } from "./formation-toolbar";
 import { MemberCard } from "./member-card";
@@ -31,6 +32,7 @@ import { WeekPicker } from "./week-picker";
  */
 export function TeamBuilderScreen() {
   const screen = useFormationScreen();
+  const [confirmingCopy, setConfirmingCopy] = useState(false);
 
   // A short distance threshold keeps a plain click on a card from starting a drag.
   const sensors = useSensors(
@@ -55,6 +57,21 @@ export function TeamBuilderScreen() {
    */
   async function handleSave() {
     await Promise.all([screen.draft.handleSave(), screen.teamNames.save()]);
+  }
+
+  // An empty match has nothing to lose, so it is copied over without a dialog.
+  const activeMatchHasMembers = Object.values(screen.draft.assignment).some(
+    Boolean
+  );
+
+  /** Copy straight into an empty match; ask first when it still holds people. */
+  function handleCopy() {
+    if (activeMatchHasMembers) {
+      setConfirmingCopy(true);
+      return;
+    }
+
+    screen.copy.copy();
   }
 
   /** Discard both drafts — the toolbar's "Đặt lại" covers everything it can save. */
@@ -157,10 +174,20 @@ export function TeamBuilderScreen() {
             saving={saving}
             errorMessages={errorMessages}
             editable={screen.selection.editable}
+            copySourceLabel={screen.copy.sourceLabel}
+            canCopy={screen.copy.canCopy}
+            onCopy={handleCopy}
             onSave={handleSave}
             onReset={handleReset}
           />
         </div>
+
+        <CopyFormationDialog
+          open={confirmingCopy}
+          sourceLabel={screen.copy.sourceLabel}
+          onOpenChange={setConfirmingCopy}
+          onConfirm={screen.copy.copy}
+        />
 
         <PrefillBanner
           result={screen.pool.prefill}

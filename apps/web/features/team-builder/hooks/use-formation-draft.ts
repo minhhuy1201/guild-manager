@@ -28,6 +28,8 @@ const EMPTY_MATCHES: MatchDraft[] = [{ assignment: {}, notes: {} }];
 export interface FormationDraftState {
   /** Matches of the open day, draft where one exists, saved copy otherwise */
   matches: MatchDraft[];
+  /** Matches shown for every day of the week, keyed by session id — same rule as `matches` */
+  matchesBySession: Record<string, MatchDraft[]>;
   /** How many matches the open day has, 1 or 2 */
   matchCount: number;
   /** Sub-tab open inside the day: 0 = match 1, 1 = match 2 */
@@ -54,6 +56,8 @@ export interface FormationDraftState {
   removeMatch: () => void;
   /** Empty every slot of every match of the open day */
   clearActiveDraft: () => void;
+  /** Overwrite the match currently open with a copied line-up */
+  copyIntoActiveMatch: (match: MatchDraft) => void;
   /** Discard the open day's draft, falling back to the saved copy */
   resetActive: () => void;
   /** Fill a day that has no draft yet with a proposed line-up */
@@ -267,6 +271,22 @@ export function useFormationDraft(
     setDraft(activeSessionId, cleared);
   }
 
+  /**
+   * Overwrite the match currently open with a copied line-up, leaving the other
+   * match of the day alone. The copy already carries a key per slot, so it
+   * replaces the match outright rather than merging into it — merging two
+   * line-ups produces a third one nobody laid out.
+   * @param match - The line-up to write, already stripped of absentees
+   */
+  function copyIntoActiveMatch(match: MatchDraft) {
+    if (!activeSessionId) return;
+
+    const next = matches.map((current, index) =>
+      index === activeMatchIndex ? match : current
+    );
+    setDraft(activeSessionId, next);
+  }
+
   /** Discard the open day's draft, falling back to the saved copy. */
   function resetActive() {
     if (!activeSessionId) return;
@@ -298,6 +318,7 @@ export function useFormationDraft(
 
   return {
     matches,
+    matchesBySession,
     matchCount: matches.length,
     activeMatchIndex,
     assignment: activeMatch.assignment,
@@ -311,6 +332,7 @@ export function useFormationDraft(
     addMatch,
     removeMatch,
     clearActiveDraft,
+    copyIntoActiveMatch,
     resetActive,
     seedFrom,
     applyDrop,
