@@ -338,3 +338,59 @@ describe("useFormationDraft — trần số đội hình theo số trận của 
     expect(result.current.canAddMatch).toBe(false);
   });
 });
+
+describe("useFormationDraft — nhận một trận được copy", () => {
+  it("ghi đè trận đang mở bằng đội hình được copy", () => {
+    const { result } = renderDraft();
+
+    act(() =>
+      result.current.copyIntoActiveMatch({
+        assignment: { [SLOT]: "char-9" },
+        notes: { [SLOT]: "giữ cửa" },
+      })
+    );
+
+    expect(result.current.assignment[SLOT]).toBe("char-9");
+    expect(result.current.notes).toEqual({ [SLOT]: "giữ cửa" });
+    expect(result.current.dirty).toBe(true);
+  });
+
+  it("không đụng tới trận còn lại của ngày", () => {
+    const { result } = renderFormationHook(
+      () => useFormationDraft([SAVED_SESSION], SESSION_ID, true, vi.fn()),
+      {
+        formation: {
+          activeMatchIndex: 1,
+          drafts: {
+            [SESSION_ID]: [
+              { assignment: { [SLOT]: "char-1" }, notes: {} },
+              { assignment: { [SLOT]: null }, notes: {} },
+            ],
+          },
+        },
+      }
+    );
+
+    act(() =>
+      result.current.copyIntoActiveMatch({
+        assignment: { [SLOT]: "char-9" },
+        notes: {},
+      })
+    );
+
+    expect(result.current.matches[0].assignment[SLOT]).toBe("char-1");
+    expect(result.current.matches[1].assignment[SLOT]).toBe("char-9");
+  });
+
+  it("không làm gì khi chưa mở ngày nào", () => {
+    const { result } = renderFormationHook(() =>
+      useFormationDraft([], null, true, vi.fn())
+    );
+
+    act(() =>
+      result.current.copyIntoActiveMatch({ assignment: {}, notes: {} })
+    );
+
+    expect(result.current.dirty).toBe(false);
+  });
+});

@@ -31,6 +31,8 @@ export interface FormationPoolState {
   otherMatchIds: Set<string>;
   /** Line-up filled into a day that had none, null once it is edited or saved */
   prefill: PrefillResult | null;
+  /** Ids of characters who said they are coming to the open battle */
+  presentIds: Set<string>;
 }
 
 /**
@@ -157,5 +159,6 @@ export function useFormationPool(
     absentIds,
     otherMatchIds,
     prefill: standing ? proposal : null,
+    presentIds,
   };
 }
