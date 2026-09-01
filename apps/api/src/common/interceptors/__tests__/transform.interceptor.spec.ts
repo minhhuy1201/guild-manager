@@ -3,6 +3,7 @@ import { REDIRECT_METADATA } from '@nestjs/common/constants';
 import type { ExecutionContext } from '@nestjs/common';
 import { firstValueFrom, of } from 'rxjs';
 
+import { RAW_RESPONSE_METADATA } from '../../decorators/raw-response.decorator';
 import { TransformInterceptor } from '../transform.interceptor';
 
 /**
@@ -57,5 +58,15 @@ describe('TransformInterceptor', () => {
     await expect(
       intercept(redirectRoute, { url: 'https://discord.com/oauth2/authorize' }),
     ).resolves.toEqual({ url: 'https://discord.com/oauth2/authorize' });
+  });
+
+  it('để nguyên body của route @RawResponse()', async () => {
+    function discordRoute(): void {}
+    Reflect.defineMetadata(RAW_RESPONSE_METADATA, true, discordRoute);
+
+    // Discord đọc `type` ở top level; `{ data: { type: 1 } }` nó bỏ qua không một tiếng động.
+    await expect(intercept(discordRoute, { type: 1 })).resolves.toEqual({
+      type: 1,
+    });
   });
 });
