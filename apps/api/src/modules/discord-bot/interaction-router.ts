@@ -9,13 +9,11 @@ import { commands } from './commands';
 import type {
   CommandDeps,
   CommandReply,
-  MessagePayload,
   UpdateMessageReply,
 } from './commands/command.types';
 import {
   INTERACTION_RESPONSE_TYPE,
   INTERACTION_TYPE,
-  MESSAGE_FLAG,
 } from './discord.constants';
 import type { Interaction } from './interaction.schema';
 
@@ -31,31 +29,6 @@ export type InteractionReply = PongReply | CommandReply | UpdateMessageReply;
 const commandsByName = new Map(
   commands.map((command) => [command.definition.name, command]),
 );
-
-/**
- * Wrap a message body as a new, private reply.
- *
- * Every reply the bot sends is ephemeral: attendance is answered by one person, and a channel full
- * of bot messages helps nobody.
- *
- * @param payload - The message body
- * @returns The reply Discord shows only to the caller
- */
-export function ephemeral(payload: MessagePayload): CommandReply {
-  return {
-    type: INTERACTION_RESPONSE_TYPE.channelMessageWithSource,
-    data: { ...payload, flags: MESSAGE_FLAG.ephemeral },
-  };
-}
-
-/**
- * A private reply that is only a sentence.
- * @param content - The sentence, already in Vietnamese and safe to show verbatim
- * @returns The reply
- */
-export function ephemeralText(content: string): CommandReply {
-  return ephemeral({ content });
-}
 
 /**
  * Turns a validated interaction into the reply Discord expects.
