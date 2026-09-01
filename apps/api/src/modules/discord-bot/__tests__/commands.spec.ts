@@ -3,8 +3,11 @@ import { pingCommand } from '../commands/ping.command';
 import { INTERACTION_RESPONSE_TYPE } from '../discord.constants';
 
 describe('/ping', () => {
-  it('trả một tin nhắn thấy được trong kênh', () => {
-    const reply = pingCommand.execute({ type: 2, data: { name: 'ping' } });
+  it('trả một tin nhắn thấy được trong kênh', async () => {
+    const reply = await pingCommand.execute(
+      { type: 2, data: { name: 'ping' } },
+      {} as never,
+    );
 
     expect(reply.type).toBe(INTERACTION_RESPONSE_TYPE.channelMessageWithSource);
     expect(reply.data.content).toContain('Pong');

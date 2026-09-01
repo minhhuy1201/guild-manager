@@ -10,7 +10,7 @@ import { ApiExcludeController } from '@nestjs/swagger';
 
 import { RawResponse } from '../../common';
 import { DiscordSignatureGuard } from './discord-bot.guard';
-import { routeInteraction, type InteractionReply } from './interaction-router';
+import { InteractionRouter, type InteractionReply } from './interaction-router';
 import { interactionSchema } from './interaction.schema';
 
 /**
@@ -21,6 +21,8 @@ import { interactionSchema } from './interaction.schema';
 @Controller('discord')
 @UseGuards(DiscordSignatureGuard)
 export class DiscordBotController {
+  constructor(private readonly router: InteractionRouter) {}
+
   /**
    * Answer one Discord interaction.
    *
@@ -33,7 +35,7 @@ export class DiscordBotController {
   @Post('interactions')
   @HttpCode(HttpStatus.OK)
   @RawResponse()
-  handleInteraction(@Body() body: unknown): InteractionReply {
-    return routeInteraction(interactionSchema.parse(body));
+  handleInteraction(@Body() body: unknown): Promise<InteractionReply> {
+    return this.router.route(interactionSchema.parse(body));
   }
 }

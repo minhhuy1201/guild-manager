@@ -5,6 +5,8 @@ import { BattleSessionsModule } from '../battle-sessions/battle-sessions.module'
 import { CharactersModule } from '../characters/characters.module';
 import { DiscordBotController } from './discord-bot.controller';
 import { DiscordSignatureGuard } from './discord-bot.guard';
+import { ActorResolver } from './actor-resolver';
+import { InteractionRouter } from './interaction-router';
 
 /**
  * Wires the Discord interaction endpoint.
@@ -16,6 +18,6 @@ import { DiscordSignatureGuard } from './discord-bot.guard';
 @Module({
   imports: [AttendanceModule, BattleSessionsModule, CharactersModule],
   controllers: [DiscordBotController],
-  providers: [DiscordSignatureGuard],
+  providers: [DiscordSignatureGuard, InteractionRouter, ActorResolver],
 })
 export class DiscordBotModule {}
