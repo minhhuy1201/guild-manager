@@ -30,11 +30,20 @@ describe('InteractionRouter', () => {
     });
   });
 
-  it('ném lỗi nêu tên lệnh khi lệnh chưa có trong registry', async () => {
-    // Trả 200 rỗng thì Discord hiện "ứng dụng không phản hồi" và không ai biết vì sao. Ném lỗi để
-    // nó vào log kèm request id.
-    await expect(
-      makeRouter().route({ type: 2, data: { name: 'khong-ton-tai' } }),
-    ).rejects.toThrow('khong-ton-tai');
+  it('lệnh chưa có trong registry thì báo lỗi chung và ghi log', async () => {
+    // Trước đây lỗi thoát ra thành 500. Giờ Discord phải nhận 200 kèm một câu, nếu không nó chỉ
+    // hiện "ứng dụng không phản hồi" — chi tiết vẫn nằm nguyên trong log của router.
+    const reply = await makeRouter().route({
+      type: 2,
+      data: { name: 'khong-ton-tai' },
+    });
+
+    expect(reply).toEqual({
+      type: INTERACTION_RESPONSE_TYPE.channelMessageWithSource,
+      data: {
+        content: 'Có lỗi xảy ra. Thử lại sau hoặc điểm danh trên web.',
+        flags: 64,
+      },
+    });
   });
 });

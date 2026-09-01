@@ -8,12 +8,19 @@ import type {
   CommandDeps,
   MessagePayload,
 } from './commands/command.types';
-import { encodeAttendanceButtonId } from './custom-id';
+import {
+  decodeAttendanceButtonId,
+  encodeAttendanceButtonId,
+} from './custom-id';
 import {
   BUTTON_STYLE,
   COMPONENT_TYPE,
   MAX_ACTION_ROWS,
 } from './discord.constants';
+import {
+  callerDiscordId,
+  type MessageComponentInteraction,
+} from './interaction.schema';
 
 /** Shown when the open week holds no battle day at all. */
 const NO_SESSIONS = 'Tuần này chưa có ngày đánh nào.';
@@ -24,6 +31,14 @@ const NO_SESSIONS = 'Tuần này chưa có ngày đánh nào.';
  * silently.
  */
 const REASON_NOTE = 'Bấm "Không" ở đây sẽ xoá lý do vắng đã ghi trên web.';
+
+/** Shown when a button's custom_id is not one this build knows how to read. */
+const STALE_BUTTON =
+  'Nút này không còn dùng được. Gõ lại /diem-danh để lấy bảng mới.';
+
+/** Shown when the caller lost access between opening the board and pressing a button. */
+const NOT_LINKED =
+  'Bạn chưa được gán nhân vật nào. Nhờ admin thêm Discord ID của bạn.';
 
 /** Who the board is about. The name is shown so an admin marking for others cannot mistake them. */
 export interface BoardTarget {
@@ -156,4 +171,48 @@ export async function buildAttendanceBoard(
       buildRow(session, target.characterId, records.get(session.id)),
     ),
   };
+}
+
+/**
+ * Record one press, then rebuild the board from what the database now holds.
+ *
+ * The `characterId` in the custom_id is client data. It is passed to `AttendanceService.mark`
+ * exactly as a request body would be, and that service — not this function — decides whether this
+ * actor may mark that character. Nothing here re-implements the rule.
+ *
+ * @param interaction - The validated button press
+ * @param deps - Services the handler reads and writes through
+ * @returns The rebuilt board, or a sentence explaining why nothing was recorded
+ * @throws HttpException raised by `AttendanceService.mark`, turned into a message by the router
+ */
+export async function handleAttendanceButton(
+  interaction: MessageComponentInteraction,
+  deps: CommandDeps,
+): Promise<MessagePayload> {
+  const pressed = decodeAttendanceButtonId(interaction.data.custom_id);
+
+  if (!pressed) return { content: STALE_BUTTON };
+
+  const resolved = await deps.actors.resolve(callerDiscordId(interaction));
+
+  if (!resolved) return { content: NOT_LINKED };
+
+  await deps.attendance.mark(
+    {
+      characterId: pressed.characterId,
+      sessionId: pressed.sessionId,
+      isPresent: pressed.isPresent,
+    },
+    resolved.actor,
+  );
+
+  const row = await deps.characters.findById(pressed.characterId);
+
+  if (!row) return { content: STALE_BUTTON };
+
+  return buildAttendanceBoard(
+    { characterId: row.id, characterName: row.name },
+    resolved.actor,
+    deps,
+  );
 }

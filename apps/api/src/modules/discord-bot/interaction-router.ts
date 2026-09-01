@@ -1,10 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, Injectable, Logger } from '@nestjs/common';
 
 import { assertNever } from '../../common';
 import { AttendanceService } from '../attendance/attendance.public';
 import { BattleSessionsService } from '../battle-sessions/battle-sessions.public';
 import { CharactersService } from '../characters/characters.public';
 import { ActorResolver } from './actor-resolver';
+import { handleAttendanceButton } from './attendance-board';
 import { commands } from './commands';
 import type {
   CommandDeps,
@@ -16,6 +17,7 @@ import {
   INTERACTION_TYPE,
 } from './discord.constants';
 import type { Interaction } from './interaction.schema';
+import { ephemeralText } from './reply';
 
 /** The only valid answer to Discord's health check. */
 interface PongReply {
@@ -24,6 +26,9 @@ interface PongReply {
 
 /** Everything the bot may answer an interaction with. */
 export type InteractionReply = PongReply | CommandReply | UpdateMessageReply;
+
+/** Shown when something failed that the user can do nothing about. */
+const UNEXPECTED = 'Có lỗi xảy ra. Thử lại sau hoặc điểm danh trên web.';
 
 /** Built once: the registry never changes after the module is loaded. */
 const commandsByName = new Map(
@@ -46,14 +51,42 @@ export class InteractionRouter {
     private readonly actors: ActorResolver,
   ) {}
 
+  private readonly logger = new Logger(InteractionRouter.name);
+
   /**
-   * Answer one interaction.
+   * Answer one interaction, turning any failure into something Discord can show.
+   *
+   * Discord treats every non-200 as "the application did not respond", which would throw away the
+   * Vietnamese sentence a domain exception already carries. So the reply, not the status code, is
+   * where a refusal is expressed.
+   *
    * @param interaction - The interaction, already validated by `interactionSchema`
    * @returns The reply to send back in the HTTP response body
+   */
+  async route(interaction: Interaction): Promise<InteractionReply> {
+    try {
+      return await this.dispatch(interaction);
+    } catch (error) {
+      // A domain refusal already reads as a sentence meant for the user (architecture.md §3.4).
+      if (error instanceof HttpException) {
+        return ephemeralText(error.message);
+      }
+
+      // Anything else is ours: keep the detail in the log, keep it out of a chat channel.
+      this.logger.error('Interaction Discord thất bại', error as Error);
+
+      return ephemeralText(UNEXPECTED);
+    }
+  }
+
+  /**
+   * Route one interaction to whatever answers it.
+   * @param interaction - The validated interaction
+   * @returns The reply
    * @throws Error when the command name is not in the registry — Discord was told about a command
    *   this build does not have, which is a deploy/registration mismatch, not a user error
    */
-  async route(interaction: Interaction): Promise<InteractionReply> {
+  private async dispatch(interaction: Interaction): Promise<InteractionReply> {
     switch (interaction.type) {
       case INTERACTION_TYPE.ping:
         return { type: INTERACTION_RESPONSE_TYPE.pong };
@@ -71,11 +104,10 @@ export class InteractionRouter {
       }
 
       case INTERACTION_TYPE.messageComponent:
-        // The real handler arrives with the attendance board; until then this is a registration
-        // mismatch, exactly like an unknown command name.
-        throw new Error(
-          `Component Discord chưa được xử lý: ${interaction.data.custom_id}`,
-        );
+        return {
+          type: INTERACTION_RESPONSE_TYPE.updateMessage,
+          data: await handleAttendanceButton(interaction, this.deps),
+        };
 
       default:
         return assertNever(interaction, 'Interaction type ngoài dự kiến');
