@@ -46,10 +46,9 @@ function toCandidates(
 
 /**
  * Copying a line-up onto the open battle. The source is picked automatically —
- * the nearest earlier day holding one, reaching back into the previous week for
- * the first battle of a new week. That previous week is fetched ONLY when the
- * week on screen offers no source of its own, so an ordinary day costs no extra
- * request.
+ * the day right before it, which for the first battle of a week is the last day
+ * of the previous one. That previous week is fetched ONLY for that first battle,
+ * so every other day costs no extra request.
  *
  * Like the prefill, this hook proposes and `useFormationDraft` writes: the copy
  * leaves through `copyIntoActiveMatch` rather than touching the store.
