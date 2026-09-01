@@ -1,6 +1,6 @@
 "use client";
 
-import { RotateCcw, Save } from "lucide-react";
+import { ClipboardCopy, RotateCcw, Save } from "lucide-react";
 
 import { Spinner } from "@/components/shared/spinner";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,12 @@ interface FormationToolbarProps {
   errorMessages?: string[];
   /** Whether this battle still accepts edits */
   editable: boolean;
+  /** Label of the day the copy button would copy from, null when there is none */
+  copySourceLabel: string | null;
+  /** Whether the copy button may be pressed */
+  canCopy: boolean;
+  /** Copy that day's line-up into the match currently open */
+  onCopy: () => void;
   /** Persist the current draft */
   onSave: () => void;
   /** Discard the draft, returning to the saved copy */
@@ -32,6 +38,9 @@ interface FormationToolbarProps {
  * @param saving - Whether either save is in flight
  * @param errorMessages - Messages from the failed saves, if any
  * @param editable - Whether this battle still accepts edits
+ * @param copySourceLabel - Label of the day the copy button would copy from
+ * @param canCopy - Whether the copy button may be pressed
+ * @param onCopy - Copy that day's line-up into the match currently open
  * @param onSave - Persist the current draft
  * @param onReset - Discard the draft
  * @returns The toolbar row
@@ -41,6 +50,9 @@ export function FormationToolbar({
   saving,
   errorMessages = [],
   editable,
+  copySourceLabel,
+  canCopy,
+  onCopy,
   onSave,
   onReset,
 }: FormationToolbarProps) {
@@ -62,6 +74,16 @@ export function FormationToolbar({
       {dirty && errorMessages.length === 0 ? (
         <span className="text-sm text-muted-foreground">Chưa lưu</span>
       ) : null}
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={onCopy}
+        disabled={!canCopy || saving}
+      >
+        <ClipboardCopy />
+        {copySourceLabel ? `Copy từ ${copySourceLabel}` : "Copy đội hình"}
+      </Button>
       <Button
         type="button"
         variant="outline"
