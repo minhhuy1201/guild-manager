@@ -8,6 +8,7 @@ import { AttendanceModule } from './modules/attendance/attendance.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { BattleSessionsModule } from './modules/battle-sessions/battle-sessions.module';
 import { CharactersModule } from './modules/characters/characters.module';
+import { DiscordBotModule } from './modules/discord-bot/discord-bot.module';
 import { HealthModule } from './modules/health/health.module';
 import { TeamBuilderModule } from './modules/team-builder/team-builder.module';
 
@@ -26,6 +27,7 @@ import { TeamBuilderModule } from './modules/team-builder/team-builder.module';
     CharactersModule,
     AttendanceModule,
     TeamBuilderModule,
+    DiscordBotModule,
   ],
 })
 export class AppModule {}
