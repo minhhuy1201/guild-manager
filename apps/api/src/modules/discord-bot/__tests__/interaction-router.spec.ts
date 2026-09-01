@@ -1,4 +1,4 @@
-import { INTERACTION_RESPONSE_TYPE } from '../discord.constants';
+import { INTERACTION_RESPONSE_TYPE, MESSAGE_FLAG } from '../discord.constants';
 import { InteractionRouter } from '../interaction-router';
 
 /**
@@ -42,7 +42,7 @@ describe('InteractionRouter', () => {
       type: INTERACTION_RESPONSE_TYPE.channelMessageWithSource,
       data: {
         content: 'Có lỗi xảy ra. Thử lại sau hoặc điểm danh trên web.',
-        flags: 64,
+        flags: MESSAGE_FLAG.ephemeral,
       },
     });
   });

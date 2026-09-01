@@ -4,7 +4,7 @@ import { GuildRole } from '@guild/shared/enums';
 import { TOKEN_TYPE } from '../../../common';
 import { handleAttendanceButton } from '../attendance-board';
 import type { CommandDeps } from '../commands/command.types';
-import { INTERACTION_RESPONSE_TYPE } from '../discord.constants';
+import { INTERACTION_RESPONSE_TYPE, MESSAGE_FLAG } from '../discord.constants';
 import { InteractionRouter } from '../interaction-router';
 
 const PRESS = {
@@ -99,7 +99,7 @@ describe('lỗi từ AttendanceService', () => {
       type: INTERACTION_RESPONSE_TYPE.channelMessageWithSource,
       data: {
         content: 'Đã quá hạn điểm danh ngày này.',
-        flags: 64,
+        flags: MESSAGE_FLAG.ephemeral,
       },
     });
   });
