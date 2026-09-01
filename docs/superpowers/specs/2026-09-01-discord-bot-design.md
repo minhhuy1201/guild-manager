@@ -96,7 +96,7 @@ Discord, ở đây, đều đọc một khoá ở top level).
 apps/api/src/modules/discord-bot/
 ├── discord-bot.module.ts
 ├── discord-bot.controller.ts     # POST /discord/interactions — mỏng, chỉ gọi router
-├── discord-bot.public.ts         # cửa duy nhất cho module khác (đợt này chưa export gì)
+├── discord-bot.public.ts         # cửa duy nhất cho module khác — export commandDefinitions
 ├── discord-bot.guard.ts          # DiscordSignatureGuard
 ├── verify-signature.ts           # hàm pure, không biết gì về Nest
 ├── interaction-router.ts         # switch theo type, rồi theo tên lệnh; kết thúc assertNever
@@ -111,7 +111,7 @@ apps/api/src/modules/discord-bot/
     ├── interaction-router.spec.ts
     └── ping.command.spec.ts
 
-apps/api/scripts/register-discord-commands.ts
+apps/api/src/scripts/register-discord-commands.ts
 ```
 
 **Một lệnh = một file**, chứa cả phần khai báo gửi lên Discord (`definition`) lẫn phần xử lý
@@ -147,8 +147,8 @@ Cả ba vào `.env.example`, và vào bảng env của [development.md](../../de
 Discord không tự biết bot có lệnh gì. Phải `PUT` danh sách lên trước thì `/ping` mới hiện trong ô
 chat.
 
-`pnpm --filter api discord:register` chạy `scripts/register-discord-commands.ts`, gửi registry trong
-`commands/index.ts` tới
+`pnpm --filter api discord:register` chạy `src/scripts/register-discord-commands.ts`, gửi registry
+trong `commands/index.ts` tới
 `PUT /applications/{DISCORD_CLIENT_ID}/guilds/{DISCORD_GUILD_ID}/commands` với header
 `Authorization: Bot <DISCORD_BOT_TOKEN>`.
 
