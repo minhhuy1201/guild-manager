@@ -39,12 +39,12 @@ function guard(): DiscordSignatureGuard {
 
 /**
  * Build a fake ExecutionContext carrying the headers and raw body of a request.
- * @param headers - Request headers
+ * @param headers - Request headers, as Express exposes them: a repeated header arrives as an array
  * @param body - Raw request body, as Nest's `rawBody` option provides it
  * @returns A context sufficient for the guard
  */
 function contextFor(
-  headers: Record<string, string>,
+  headers: Record<string, string | string[]>,
   body: Buffer | undefined,
 ): ExecutionContext {
   return {
@@ -95,6 +95,20 @@ describe('DiscordSignatureGuard', () => {
         'x-signature-timestamp': timestamp,
       },
       undefined,
+    );
+
+    expect(() => guard().canActivate(context)).toThrow(UnauthorizedException);
+  });
+
+  it('chặn khi header chữ ký bị gửi hai lần — Express gộp thành string[]', () => {
+    // Gửi trùng tên header là cách rẻ nhất để đổi kiểu của nó. Guard loại được nhờ
+    // `typeof === 'string'`, nhưng đây là biên tin cậy duy nhất của bot nên phải có test giữ lại.
+    const context = contextFor(
+      {
+        'x-signature-ed25519': [signature, signature],
+        'x-signature-timestamp': timestamp,
+      },
+      Buffer.from(rawBody),
     );
 
     expect(() => guard().canActivate(context)).toThrow(UnauthorizedException);
