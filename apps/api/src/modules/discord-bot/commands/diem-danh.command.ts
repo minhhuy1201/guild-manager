@@ -1,11 +1,7 @@
-import { buildAttendanceBoard, NOT_LINKED } from '../attendance-board';
-import { ephemeral, ephemeralText } from '../reply';
+import { buildOwnBoard } from '../attendance-board';
 import { callerDiscordId } from '../interaction.schema';
+import { ephemeral } from '../reply';
 import type { CommandReply, SlashCommand } from './command.types';
-
-/** Shown to a rescue admin who has no character of their own to mark. */
-const NO_OWN_CHARACTER =
-  'Tài khoản admin này không gắn với nhân vật nào — dùng /diem-danh-ho.';
 
 /**
  * Attendance for the caller's own character.
@@ -19,26 +15,6 @@ export const diemDanhCommand: SlashCommand = {
     description: 'Điểm danh các ngày đánh trong tuần',
   },
 
-  execute: async (interaction, deps): Promise<CommandReply> => {
-    const resolved = await deps.actors.resolve(callerDiscordId(interaction));
-
-    if (!resolved) return ephemeralText(NOT_LINKED);
-    if (!resolved.characterId) return ephemeralText(NO_OWN_CHARACTER);
-
-    const row = await deps.characters.findById(resolved.characterId);
-
-    if (!row) return ephemeralText(NOT_LINKED);
-
-    const board = await buildAttendanceBoard(
-      {
-        characterId: row.id,
-        characterName: row.name,
-        discordId: row.discordId,
-      },
-      resolved.actor,
-      deps,
-    );
-
-    return ephemeral(board);
-  },
+  execute: async (interaction, deps): Promise<CommandReply> =>
+    ephemeral(await buildOwnBoard(callerDiscordId(interaction), deps)),
 };

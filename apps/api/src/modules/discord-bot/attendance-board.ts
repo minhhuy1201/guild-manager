@@ -43,6 +43,10 @@ const STALE_BUTTON =
 export const NOT_LINKED =
   'Bạn chưa được gán nhân vật nào. Nhờ admin thêm Discord ID của bạn.';
 
+/** Shown to a rescue admin who has no character of their own to mark. */
+const NO_OWN_CHARACTER =
+  'Tài khoản admin này không gắn với nhân vật nào — dùng /diem-danh-ho.';
+
 /** Who the board is about. The name is shown so an admin marking for others cannot mistake them. */
 export interface BoardTarget {
   characterId: string;
@@ -256,6 +260,37 @@ export async function handleAttendanceButton(
   const row = await deps.characters.findById(pressed.characterId);
 
   if (!row) return { content: STALE_BUTTON };
+
+  return buildAttendanceBoard(
+    { characterId: row.id, characterName: row.name, discordId: row.discordId },
+    resolved.actor,
+    deps,
+  );
+}
+
+/**
+ * The attendance board for whoever is acting, resolved from their Discord ID.
+ *
+ * Shared by `/diem-danh` and the "Điểm danh ngay" button on a `/thong-bao` announcement. The two
+ * differ only in how the reply is wrapped, and two copies of this resolve-then-check chain would
+ * drift apart the first time one of the refusals is reworded.
+ *
+ * @param discordId - Discord ID read out of the signed interaction
+ * @param deps - Services the board reads through
+ * @returns The board, or a body explaining why there is none
+ */
+export async function buildOwnBoard(
+  discordId: string,
+  deps: CommandDeps,
+): Promise<MessagePayload> {
+  const resolved = await deps.actors.resolve(discordId);
+
+  if (!resolved) return { content: NOT_LINKED };
+  if (!resolved.characterId) return { content: NO_OWN_CHARACTER };
+
+  const row = await deps.characters.findById(resolved.characterId);
+
+  if (!row) return { content: NOT_LINKED };
 
   return buildAttendanceBoard(
     { characterId: row.id, characterName: row.name, discordId: row.discordId },
