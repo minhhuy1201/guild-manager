@@ -1,4 +1,5 @@
 import { commandDefinitions, commands } from '../commands';
+import { chaoMungCommand } from '../commands/chao-mung.command';
 import { pingCommand } from '../commands/ping.command';
 import { INTERACTION_RESPONSE_TYPE } from '../discord.constants';
 
@@ -17,6 +18,10 @@ describe('/ping', () => {
 describe('registry lệnh', () => {
   it('chứa /ping', () => {
     expect(commands).toContain(pingCommand);
+  });
+
+  it('chứa /chao-mung', () => {
+    expect(commands).toContain(chaoMungCommand);
   });
 
   it('không có hai lệnh trùng tên', () => {

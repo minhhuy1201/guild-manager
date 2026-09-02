@@ -1,4 +1,5 @@
 import { cauHinhKenhCommand } from './cau-hinh-kenh.command';
+import { chaoMungCommand } from './chao-mung.command';
 import type { SlashCommand, SlashCommandDefinition } from './command.types';
 import { diemDanhHoCommand } from './diem-danh-ho.command';
 import { diemDanhCommand } from './diem-danh.command';
@@ -19,6 +20,7 @@ export const commands: readonly SlashCommand[] = [
   thongBaoCommand,
   cauHinhKenhCommand,
   nhacDiemDanhCommand,
+  chaoMungCommand,
 ];
 
 /** Exactly what `discord:register` sends to Discord. */
