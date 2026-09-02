@@ -1,4 +1,5 @@
 import {
+  formatDeadlineLabel,
   formatSessionLabel,
   getActiveWeek,
   getEditableWeeks,
@@ -6,6 +7,7 @@ import {
   guildWarMatchCount,
   guildWarSessionId,
   isDeadlinePassed,
+  isReminderDay,
   isSameWeek,
   isSessionLocked,
   parseWeekStart,
@@ -246,6 +248,64 @@ describe('session-schedule', () => {
     it('tuần quá khứ xa vẫn tính chẵn/lẻ đúng dù số tuần lệch là số âm', () => {
       expect(guildWarMatchCount(vn('2026-01-05T00:00'))).toBe(2);
       expect(guildWarMatchCount(vn('2026-01-12T00:00'))).toBe(1);
+    });
+  });
+
+  describe('ngày nhắc điểm danh', () => {
+    // Bang Chiến Thứ 7 05/09 có hạn 17:00 Thứ 5 03/09 → nhắc sáng Thứ 4 02/09.
+    const guildWarDeadline = vn('2026-09-03T17:00');
+
+    it('đúng vào sáng của ngày liền trước hạn chót', () => {
+      expect(isReminderDay(guildWarDeadline, vn('2026-09-02T09:00'))).toBe(
+        true,
+      );
+    });
+
+    it('sai khi còn hai ngày nữa mới tới hạn', () => {
+      expect(isReminderDay(guildWarDeadline, vn('2026-09-01T09:00'))).toBe(
+        false,
+      );
+    });
+
+    it('sai vào chính ngày hết hạn', () => {
+      expect(isReminderDay(guildWarDeadline, vn('2026-09-03T09:00'))).toBe(
+        false,
+      );
+    });
+
+    it('sai sau khi đã quá hạn', () => {
+      expect(isReminderDay(guildWarDeadline, vn('2026-09-04T09:00'))).toBe(
+        false,
+      );
+    });
+
+    it('so theo ngày dương lịch VN, không theo khoảng 24 giờ', () => {
+      // Cách nhau chưa tới 24 giờ nhưng vẫn là "ngày mai" theo lịch VN.
+      expect(
+        isReminderDay(vn('2026-09-03T01:00'), vn('2026-09-02T23:30')),
+      ).toBe(true);
+    });
+
+    it('nửa đêm giờ VN cắt sang ngày mới, không phải nửa đêm UTC', () => {
+      // 2026-09-02T23:30+07:00 là 16:30 UTC cùng ngày. So bằng giờ UTC thì "ngày mai" sẽ
+      // ra 03/09 và ca này lọt lưới.
+      expect(
+        isReminderDay(vn('2026-09-04T09:00'), vn('2026-09-02T23:30')),
+      ).toBe(false);
+    });
+  });
+
+  describe('nhãn hạn chót', () => {
+    it('dựng giờ, thứ và ngày của hạn chót', () => {
+      expect(formatDeadlineLabel(vn('2026-09-03T17:00'))).toBe(
+        '17:00 · Thứ 5 (03/09)',
+      );
+    });
+
+    it('đệm số 0 cho giờ, phút, ngày và tháng một chữ số', () => {
+      expect(formatDeadlineLabel(vn('2026-09-07T09:05'))).toBe(
+        '09:05 · Thứ 2 (07/09)',
+      );
     });
   });
 });

@@ -9,6 +9,8 @@ const base = {
   DISCORD_REDIRECT_URI: 'http://localhost:3001/api/auth/discord/callback',
   DISCORD_PUBLIC_KEY: 'a'.repeat(64),
   DISCORD_GUILD_ROLE_ID: '999888777666555444',
+  DISCORD_BOT_TOKEN: 'bot-token-value',
+  CRON_SECRET: 'c'.repeat(32),
 };
 
 describe('validateEnv', () => {
@@ -48,6 +50,32 @@ describe('validateEnv', () => {
     delete withoutRole.DISCORD_GUILD_ROLE_ID;
 
     expect(() => validateEnv(withoutRole)).toThrow(
+      /Biến môi trường không hợp lệ/,
+    );
+  });
+
+  // The bot token used to be read only by `discord:register`, outside the app. It became a runtime
+  // requirement when the bot started posting the reminder by itself.
+  it('chết khi thiếu DISCORD_BOT_TOKEN', () => {
+    const withoutToken: Partial<typeof base> = { ...base };
+    delete withoutToken.DISCORD_BOT_TOKEN;
+
+    expect(() => validateEnv(withoutToken)).toThrow(
+      /Biến môi trường không hợp lệ/,
+    );
+  });
+
+  it('chết khi thiếu CRON_SECRET', () => {
+    const withoutCronSecret: Partial<typeof base> = { ...base };
+    delete withoutCronSecret.CRON_SECRET;
+
+    expect(() => validateEnv(withoutCronSecret)).toThrow(
+      /Biến môi trường không hợp lệ/,
+    );
+  });
+
+  it('chết khi CRON_SECRET ngắn hơn 32 ký tự', () => {
+    expect(() => validateEnv({ ...base, CRON_SECRET: 'ngan' })).toThrow(
       /Biến môi trường không hợp lệ/,
     );
   });

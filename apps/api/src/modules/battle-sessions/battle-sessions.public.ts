@@ -11,7 +11,9 @@
 export { BattleSessionsService } from './battle-sessions.service';
 export type { ScheduledSession } from './battle-sessions.service';
 export {
+  formatDeadlineLabel,
   formatSessionLabel,
+  isReminderDay,
   isSameWeek,
   isSessionLocked,
   parseWeekStart,

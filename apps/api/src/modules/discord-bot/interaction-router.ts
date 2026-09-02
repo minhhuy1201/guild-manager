@@ -8,6 +8,9 @@ import { BattleSessionsService } from '../battle-sessions/battle-sessions.public
 import { CharactersService } from '../characters/characters.public';
 import { ActorResolver } from './actor-resolver';
 import { buildOwnBoard, handleAttendanceButton } from './attendance-board';
+import { BotChannelService } from './bot-channel.service';
+import { DiscordRestClient } from './discord-rest';
+import { ReminderService } from './reminder.service';
 import { commands } from './commands';
 import type {
   CommandDeps,
@@ -57,6 +60,9 @@ export class InteractionRouter {
     private readonly characters: CharactersService,
     private readonly actors: ActorResolver,
     private readonly config: ConfigService<Env, true>,
+    private readonly channels: BotChannelService,
+    private readonly reminders: ReminderService,
+    private readonly rest: DiscordRestClient,
   ) {}
 
   private readonly logger = new Logger(InteractionRouter.name);
@@ -156,6 +162,9 @@ export class InteractionRouter {
         webOrigin: this.config.get('WEB_ORIGIN', { infer: true }),
         guildRoleId: this.config.get('DISCORD_GUILD_ROLE_ID', { infer: true }),
       },
+      channels: this.channels,
+      reminders: this.reminders,
+      rest: this.rest,
     };
   }
 }

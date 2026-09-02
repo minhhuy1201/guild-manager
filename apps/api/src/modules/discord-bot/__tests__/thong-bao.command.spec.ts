@@ -7,6 +7,7 @@ import { INTERACTION_RESPONSE_TYPE, MESSAGE_FLAG } from '../discord.constants';
 
 const INTERACTION = {
   type: 2 as const,
+  channel_id: '424242',
   data: { name: 'thong-bao' },
   member: { user: { id: '111' } },
 };

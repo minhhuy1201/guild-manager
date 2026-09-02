@@ -53,6 +53,17 @@ export const envSchema = z.object({
    * Enable Developer Mode, then Server Settings → Roles → right-click the role → Copy Role ID.
    */
   DISCORD_GUILD_ROLE_ID: z.string().min(1),
+  /**
+   * Bot token, sent as `Authorization: Bot <token>` on every outgoing Discord call.
+   * Developer Portal → Bot → Reset Token; shown exactly once.
+   */
+  DISCORD_BOT_TOKEN: z.string().min(1),
+  /**
+   * Shared secret Vercel Cron sends as `Authorization: Bearer <secret>` on the scheduled call.
+   * Required: the endpoint behind it messages the whole guild, so booting without a secret would
+   * mean booting with that endpoint open to anyone who guesses the path.
+   */
+  CRON_SECRET: z.string().min(32),
   /** Timezone used to compute attendance deadlines (see docs/architecture.md section 6). */
   APP_TIMEZONE: z.string().default('Asia/Ho_Chi_Minh'),
 });

@@ -18,6 +18,9 @@ function makeRouter(resolve: unknown = null): InteractionRouter {
     {} as never,
     { resolve: jest.fn().mockResolvedValue(resolve) } as never,
     { get: jest.fn().mockReturnValue('') } as never,
+    {} as never,
+    {} as never,
+    {} as never,
   );
 }
 
@@ -29,7 +32,11 @@ describe('InteractionRouter', () => {
   });
 
   it('gọi đúng lệnh theo tên', async () => {
-    const reply = await makeRouter().route({ type: 2, data: { name: 'ping' } });
+    const reply = await makeRouter().route({
+      type: 2,
+      channel_id: '424242',
+      data: { name: 'ping' },
+    });
 
     expect(reply).toEqual({
       type: INTERACTION_RESPONSE_TYPE.channelMessageWithSource,
@@ -42,6 +49,7 @@ describe('InteractionRouter', () => {
     // hiện "ứng dụng không phản hồi" — chi tiết vẫn nằm nguyên trong log của router.
     const reply = await makeRouter().route({
       type: 2,
+      channel_id: '424242',
       data: { name: 'khong-ton-tai' },
     });
 
@@ -54,7 +62,9 @@ describe('InteractionRouter', () => {
     });
   });
 
-  it('nút trên thông báo mở một message riêng, không ghi đè thông báo chung', async () => {
+  // Nút này nằm trên cả /thong-bao lẫn tin nhắc điểm danh — cả hai đều là tin của cả bang, nên
+  // updateMessage sẽ khiến người bấm đầu tiên xoá tin đó của mọi người.
+  it('nút trên tin gửi cả bang mở một message riêng, không ghi đè tin đó', async () => {
     const reply = await makeRouter().route({
       type: 3,
       data: { custom_id: ANNOUNCEMENT_ATTENDANCE_ID },

@@ -5,5 +5,11 @@
     "deploymentEnabled": {
       "**": false
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/attendance-reminder",
+      "schedule": "0 2 * * *"
+    }
+  ]
 }

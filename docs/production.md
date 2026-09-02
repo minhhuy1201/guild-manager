@@ -79,14 +79,16 @@ by default, and each writes to whatever database it names.
 | `DISCORD_ADMIN_IDS` | The guild admin's Discord ID. **Forget this and nobody can sign in**, because no `Character` has a `discordId` yet |
 | `DISCORD_PUBLIC_KEY` | Public key of the production Discord Application (General Information), 64 hex characters. **Set it before the first deploy that ships the bot**: it is required, so a missing value kills the API at boot — and because the web app has no other backend, the whole site goes down with it |
 | `DISCORD_GUILD_ROLE_ID` | Discord ID of the guild role `/thong-bao` mentions (Server Settings → Roles → Copy Role ID). **Set it before merging the PR that ships the command**: it is required, so a missing value kills the API at boot, and the web app has no other backend |
+| `DISCORD_BOT_TOKEN` | Bot token of **this environment's** Discord Application (Bot → Reset Token) — mark Sensitive. The reminder job posts with it. **Set it before merging the PR that ships the reminder**: required, so a missing value kills the API at boot |
+| `CRON_SECRET` | Secret guarding `GET /api/cron/attendance-reminder`, at least 32 characters (`openssl rand -hex 32`) — mark Sensitive. Vercel attaches it to the scheduled call by itself once the variable exists. **Set it before merging the PR that ships the reminder**: required, so a missing value kills the API at boot |
 | `WEB_ORIGIN` | The web app's real origin (`https://…`) — CORS matches this value exactly |
 | `WEB_PREVIEW_PROJECT` | The web app's Vercel project name (`mmgh-nth`) — makes CORS also accept that project's preview domains. Optional; omit it and only `WEB_ORIGIN` is allowed |
 | `APP_TIMEZONE` | `Asia/Ho_Chi_Minh` |
 
-`DISCORD_BOT_TOKEN` and `DISCORD_GUILD_ID` are deliberately **not** set here. Only
-`pnpm --filter api discord:register` reads them, that script is run by hand from a developer's
-machine, and the runtime never touches them — the same reasoning that keeps `DIRECT_DATABASE_URL`
-out of the env schema. They belong in `apps/api/.env.production` instead, and the script is aimed at
+`DISCORD_GUILD_ID` is deliberately **not** set here. Only
+`pnpm --filter api discord:register` reads it, that script is run by hand from a developer's
+machine, and the runtime never touches it — the same reasoning that keeps `DIRECT_DATABASE_URL`
+out of the env schema. It belongs in `apps/api/.env.production` instead, and the script is aimed at
 that file the same way the Prisma commands are:
 
 ```
@@ -546,6 +548,22 @@ empty importer (`.: {}`) to the lockfile. It is a marker for the updater, not a 
 **A dependency update that touches `apps/api` runs the migration job on merge.** That job is a no-op
 when nothing is pending, so this is safe — but it is the reason a lockfile bump is not "just" a
 lockfile bump.
+
+### Cron nhắc điểm danh
+
+`apps/api/vercel.json` khai báo `GET /api/cron/attendance-reminder` chạy `0 2 * * *` — giờ **UTC**,
+tức 09:00 giờ VN. Vercel tự gắn `Authorization: Bearer $CRON_SECRET` vào lời gọi khi biến đó tồn
+tại; thiếu nó thì API không boot, nên không có trạng thái "cron chạy mà endpoint mở toang".
+
+- Cron **chỉ chạy trên deployment production**. Preview không có cron, local cũng không.
+- Gói Hobby chỉ bảo đảm nổ **trong khoảng giờ** đã hẹn, không đúng phút — thực tế là đâu đó trong
+  09:00–09:59 giờ VN. Luật của job chỉ so ngày dương lịch VN nên cả khoảng đó cho cùng kết quả.
+- Xem lần chạy gần nhất: Vercel → project api → Cron Jobs.
+- Sau lần deploy đầu tiên, gõ `/cau-hinh-kenh` trong channel muốn nhận thông báo. Chưa cấu hình thì
+  job vẫn chạy nhưng chỉ ghi một dòng `warn` rồi dừng — không phải lỗi.
+- Không cần chờ tới sáng hôm sau để kiểm chứng: `/nhac-diem-danh` gọi đúng cùng một hàm.
+- Job **cố ý không chống gửi trùng**. Nếu Vercel nổ hai lần thì bang nhận hai tin giống nhau; một
+  cái ping thừa rẻ hơn một bảng trạng thái "đã gửi hôm nay" phải bảo trì.
 
 ### Health check
 
