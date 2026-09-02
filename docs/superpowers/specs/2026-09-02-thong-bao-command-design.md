@@ -20,6 +20,8 @@ Trong phạm vi:
 - Thông báo công khai dạng Discord embed, mention một role bang cố định.
 - Hai nút: **Điểm danh ngay** (mở bảng điểm danh riêng tư của người bấm) và
   **Mở website** (link button).
+- Đưa giờ đánh vào nhãn của Bang Chiến (`formatSessionLabel`), và dọn hệ quả của
+  nó trên web (§3.8).
 
 Ngoài phạm vi — cố ý không làm:
 
@@ -108,6 +110,48 @@ Một object phẳng, resolve một lần trong `InteractionRouter` từ `Config
 dựng bằng object literal thay vì stub một class của Nest. Khớp quy tắc "Defaults are
 explicit: resolved in one obvious place".
 
+### 3.8 Nhãn Bang Chiến mang giờ đánh
+
+Hôm nay `formatSessionLabel` dựng hai nhãn không đối xứng:
+
+| | Nhãn | Dòng phụ trên web (`getSessionSubtitle`) |
+|---|---|---|
+| Scrim | `Thứ 5 · 20:30` | `VS: Moonlight` |
+| Bang Chiến | `Thứ 7 · Bang Chiến` | `20:00` |
+
+Giờ đánh của scrim nằm trong nhãn, giờ đánh của Bang Chiến nằm ở dòng phụ. Sự bất đối
+xứng đó có giá ngay tại thông báo này: một embed field chỉ có một dòng tiêu đề, nên hoặc
+Bang Chiến mất giờ, hoặc `announcement.ts` phải dựng nhãn riêng — tức là quy ước nhãn thứ
+hai trong dự án.
+
+Chọn hướng còn lại: **giờ vào nhãn, cho cả hai loại.**
+
+```
+Thứ 5 · 20:30            (không đổi)
+Thứ 7 · 20:00 · Bang Chiến   (mới)
+```
+
+Nhãn do `dateTime` sinh ra và không lưu (architecture.md §5), nên đổi hàm là đổi ở mọi
+màn cùng lúc — không có migration, không có hàng nào cũ.
+
+**Hệ quả bắt buộc phải dọn:** `getSessionSubtitle` tồn tại một phần chỉ để bù cho việc
+nhãn thiếu giờ — nhánh Bang Chiến của nó trả về đúng cái giờ vừa chuyển đi. Để nguyên là
+hiện giờ hai lần. Nhánh đó trả về chuỗi rỗng, và bảy chỗ gọi phải bỏ qua dòng phụ rỗng
+thay vì render một dòng trống:
+
+| Chỗ gọi | Cách dọn |
+|---|---|
+| `week-timeline.tsx:84` | đã có biến `subtitle`; bọc `{subtitle && …}` |
+| `attendance-grid.tsx:186` | đã có biến `subtitle`; bọc `{subtitle && …}` |
+| `session-tabs.tsx:72` | đã có biến `subtitle`; bọc `{subtitle && …}` |
+| `member-attendance-card.tsx:208` | bọc `{getSessionSubtitle(...) && …}` |
+| `session-row.tsx:50` | bọc tương tự |
+| `delete-session-dialog.tsx:60` | bọc tương tự |
+| `attendance-summary-card.tsx:158` | nối các mảnh khác rỗng bằng ` · ` thay vì nội suy thẳng — nếu không sẽ ra `" · đã điểm danh 12/30"` |
+
+Đây là mở rộng phạm vi có chủ ý sang `apps/web`, không phải refactor tiện tay: bỏ qua nó
+thì tính năng hiện sai.
+
 ## 4. Hình dạng thông báo
 
 ```
@@ -116,7 +160,7 @@ explicit: resolved in one obvious place".
 │ 📢 LỊCH ĐÁNH TUẦN NÀY
 │ 01/09 – 06/09
 │
-│ 🛡️ Thứ 7 · Bang Chiến    ⚔️ Thứ 5 · 20:30
+│ 🛡️ Thứ 7 · 20:00 · Bang Chiến   ⚔️ Thứ 5 · 20:30
 │ 📅 06/09                 📅 04/09
 │ ⚔️ 2 trận                ⚔️ 2 trận
 │                          🆚 Moonlight
@@ -131,7 +175,8 @@ explicit: resolved in one obvious place".
 
 - Mỗi ngày đánh là một embed field `inline: true` (Discord xếp tối đa 3 field một hàng).
 - `name` = `${icon} ${session.label}` — `label` đã do backend dựng
-  (`formatSessionLabel`), không dựng lại ở đây. Icon: 🛡️ khi `isGuildWar`, ⚔️ còn lại.
+  (`formatSessionLabel`, nay kèm giờ cho cả hai loại — §3.8), không dựng lại ở đây.
+  Icon: 🛡️ khi `isGuildWar`, ⚔️ còn lại.
 - `value` = ngày `dd/MM` từ `dateTime`, số trận từ `matchCount`, và dòng đối thủ chỉ khi
   `opponent` khác null.
 - Khoảng tuần lấy từ `weekStart` của session đầu tiên, đến `weekStart + 5 ngày`
@@ -144,6 +189,9 @@ explicit: resolved in one obvious place".
 
 | File | Thay đổi |
 |---|---|
+| `apps/api/src/modules/battle-sessions/session-schedule.ts` | `formatSessionLabel` — Bang Chiến kèm giờ (§3.8) |
+| `apps/web/features/attendance/lib/session-subtitle.ts` | Bang Chiến trả chuỗi rỗng (§3.8) |
+| 7 component web ở bảng §3.8 | Bỏ qua dòng phụ rỗng |
 | `apps/api/src/config/env.validation.ts` | `DISCORD_GUILD_ROLE_ID: z.string().min(1)` |
 | `apps/api/.env.example` | Biến mới, kèm chú thích lấy ở đâu |
 | `docs/development.md` §3, `docs/production.md` §3 | Một dòng trong bảng env |
@@ -206,6 +254,13 @@ câu tiếng Việt của nó, còn lại thành `UNEXPECTED` + log.
 - `diem-danh.command.spec.ts` — giữ nguyên, chứng minh việc rút `buildOwnBoard` không đổi
   hành vi.
 
+Ngoài discord-bot:
+
+- `battle-sessions/__tests__/session-schedule.spec.ts` — nhãn Bang Chiến đổi thành
+  `Thứ 7 · 20:00 · Bang Chiến`; nhãn scrim không đổi.
+- `attendance/lib/__tests__/session-subtitle.test.ts` (web) — Bang Chiến trả chuỗi rỗng;
+  hai nhánh scrim không đổi.
+
 ## 9. Rủi ro
 
 | Rủi ro | Xử lý |
@@ -214,3 +269,4 @@ câu tiếng Việt của nó, còn lại thành `UNEXPECTED` + log.
 | Nút announcement ghi đè thông báo chung | §3.4; có test riêng khẳng định kiểu phản hồi |
 | Role không mentionable → thông báo không ping ai | §7 bước 3 |
 | Quên `discord:register` → lệnh không hiện | §7 bước 2 |
+| Đổi nhãn để lại dòng phụ rỗng trên 7 màn web | §3.8 liệt kê đủ bảy chỗ; test dòng phụ khẳng định chuỗi rỗng |
