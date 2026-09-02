@@ -173,3 +173,18 @@ model TeamName {
   name      String
   updatedAt DateTime @updatedAt
 }
+
+/// A Discord channel the bot posts to, keyed by what it posts there.
+///
+/// Global configuration like TeamName, hanging off nothing: it is not a property of a week, a
+/// member or a session. Today it holds exactly one row, `ATTENDANCE_REMINDER`.
+///
+/// `purpose` is a String and NOT a Prisma enum on purpose: every enum in this schema has to stay in
+/// step with `packages/shared/enums`, and this value never crosses the network to the web app — so
+/// making it carry that obligation buys nothing.
+model BotChannel {
+  purpose   String   @id
+  /// Discord channel id (a snowflake), written by /cau-hinh-kenh.
+  channelId String
+  updatedAt DateTime @updatedAt
+}
