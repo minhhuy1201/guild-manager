@@ -1,6 +1,6 @@
 import { canManageGuild } from '@guild/shared/lib';
 
-import { buildAttendanceBoard } from '../attendance-board';
+import { buildAttendanceBoard, NOT_LINKED } from '../attendance-board';
 import { COMMAND_OPTION_TYPE } from '../discord.constants';
 import { callerDiscordId, commandOptionValue } from '../interaction.schema';
 import { ephemeralText, publicMessage } from '../reply';
@@ -8,10 +8,6 @@ import type { CommandReply, SlashCommand } from './command.types';
 
 /** Name of the option, used both when registering and when reading the invocation. */
 const TARGET_OPTION = 'nguoi';
-
-/** Shown when nobody assigned the caller's Discord ID to a character yet. */
-const NOT_LINKED =
-  'Bạn chưa được gán nhân vật nào. Nhờ admin thêm Discord ID của bạn.';
 
 /**
  * Shown to a member who tried to mark on someone else's behalf.

@@ -1,11 +1,7 @@
-import { buildAttendanceBoard } from '../attendance-board';
+import { buildAttendanceBoard, NOT_LINKED } from '../attendance-board';
 import { ephemeral, ephemeralText } from '../reply';
 import { callerDiscordId } from '../interaction.schema';
 import type { CommandReply, SlashCommand } from './command.types';
-
-/** Shown when nobody assigned this Discord ID to a character yet. */
-const NOT_LINKED =
-  'Bạn chưa được gán nhân vật nào. Nhờ admin thêm Discord ID của bạn.';
 
 /** Shown to a rescue admin who has no character of their own to mark. */
 const NO_OWN_CHARACTER =

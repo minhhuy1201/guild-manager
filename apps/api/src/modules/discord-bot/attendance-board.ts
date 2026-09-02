@@ -36,8 +36,11 @@ const REASON_NOTE = 'Bấm "Không" ở đây sẽ xoá lý do vắng đã ghi t
 const STALE_BUTTON =
   'Nút này không còn dùng được. Gõ lại /diem-danh để lấy bảng mới.';
 
-/** Shown when the caller lost access between opening the board and pressing a button. */
-const NOT_LINKED =
+/**
+ * Shown whenever a Discord ID resolves to nobody — on a command and on a button press alike.
+ * Exported so the two commands say it in the same words: three copies of one sentence drift.
+ */
+export const NOT_LINKED =
   'Bạn chưa được gán nhân vật nào. Nhờ admin thêm Discord ID của bạn.';
 
 /** Who the board is about. The name is shown so an admin marking for others cannot mistake them. */
@@ -216,6 +219,13 @@ export async function buildAttendanceBoard(
  * The `characterId` in the custom_id is client data. It is passed to `AttendanceService.mark`
  * exactly as a request body would be, and that service — not this function — decides whether this
  * actor may mark that character. Nothing here re-implements the rule.
+ *
+ * The board is rebuilt from the *presser's* capabilities, which matters only on the public
+ * `/diem-danh-ho` message: after the member it is about presses once, the rows for days already past
+ * their deadline disappear, because a member cannot act on those. The admin who posted it re-runs
+ * the command to get them back. Encoding "an admin opened this" in the custom_id would fix the
+ * display, but custom_id is client data, so it would only ever show buttons the service then
+ * refuses — a worse trade than the occasional re-run.
  *
  * @param interaction - The validated button press
  * @param deps - Services the handler reads and writes through

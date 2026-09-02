@@ -38,6 +38,12 @@ lại với trạng thái mới.
   được câu trả lời của mình — một tính năng, không phải lỗ hổng. Riêng **lời từ chối vẫn ephemeral**:
   chỉ người gõ lệnh cần đọc chúng.
 
+  Một hệ quả đã biết của việc dùng chung một tin nhắn: bảng được vẽ lại theo quyền của **người vừa
+  bấm**. Nên sau khi chính chủ (member) bấm một lần, các hàng nút của ngày đã quá hạn biến mất, vì
+  member không thao tác được trên đó — admin muốn lấy lại thì gõ lại lệnh. Nhét "admin mở bảng này"
+  vào `custom_id` sẽ chữa được phần hiển thị, nhưng `custom_id` là dữ liệu client, nên rốt cuộc chỉ
+  bày ra những cái nút mà service sẽ từ chối. Đổi chác đó tệ hơn là thỉnh thoảng gõ lại lệnh.
+
 ```
 ## Điểm danh · Mèo Béo (@meobeo)
 
