@@ -39,6 +39,15 @@ const GUILD_WAR_MATCH_COUNT_EVEN = 2;
 /** Matches played in the weeks in between. */
 const GUILD_WAR_MATCH_COUNT_ODD = 1;
 
+/**
+ * Two digits, the form every label in this file uses.
+ * @param value - A calendar or clock number
+ * @returns The number as a zero-padded two-character string
+ */
+function pad(value: number): string {
+  return String(value).padStart(2, '0');
+}
+
 /** Weekday names indexed straight by `vnWeekday()`; index 0 is empty because ISO counts from 1. */
 const WEEKDAY_NAMES = [
   '',
@@ -234,11 +243,50 @@ export function formatSessionLabel(
 ): string {
   const weekday = WEEKDAY_NAMES[vnWeekday(dateTime)];
   const { hour, minute } = vnParts(dateTime);
-  const time = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+  const time = `${pad(hour)}:${pad(minute)}`;
 
   if (isGuildWar) return `${weekday} · ${time} · Bang Chiến`;
 
   return `${weekday} · ${time}`;
+}
+
+/**
+ * Whether a deadline should be reminded about today.
+ *
+ * The reminder goes out the morning **before** the deadline's own day, so the answer is a
+ * comparison of Vietnam calendar days, not a 24-hour window. A deadline 23 hours away is still
+ * "tomorrow" when it falls on tomorrow's date, and one 25 hours away is not "the day after" when it
+ * does too.
+ *
+ * @param deadline - The session's attendance deadline
+ * @param now - Current moment
+ * @returns true when `deadline` falls on the Vietnam calendar day after `now`'s
+ */
+export function isReminderDay(deadline: Date, now: Date): boolean {
+  const tomorrow = vnParts(shiftVnDate(now, 1, 0, 0));
+  const target = vnParts(deadline);
+
+  return (
+    target.year === tomorrow.year &&
+    target.month === tomorrow.month &&
+    target.day === tomorrow.day
+  );
+}
+
+/**
+ * A deadline written out for a Discord message.
+ *
+ * Built here rather than in the bot module because `WEEKDAY_NAMES` and the way this project spells a
+ * moment both live in this file; a second copy would drift from `formatSessionLabel`.
+ *
+ * @param deadline - The session's attendance deadline
+ * @returns A label like "17:00 · Thứ 5 (03/09)"
+ */
+export function formatDeadlineLabel(deadline: Date): string {
+  const weekday = WEEKDAY_NAMES[vnWeekday(deadline)];
+  const { day, month, hour, minute } = vnParts(deadline);
+
+  return `${pad(hour)}:${pad(minute)} · ${weekday} (${pad(day)}/${pad(month)})`;
 }
 
 /**
