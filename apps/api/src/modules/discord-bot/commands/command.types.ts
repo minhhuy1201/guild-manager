@@ -2,6 +2,9 @@ import type { AttendanceService } from '../../attendance/attendance.public';
 import type { BattleSessionsService } from '../../battle-sessions/battle-sessions.public';
 import type { CharactersService } from '../../characters/characters.public';
 import type { ActorResolver } from '../actor-resolver';
+import type { BotChannelService } from '../bot-channel.service';
+import type { DiscordRestClient } from '../discord-rest';
+import type { ReminderService } from '../reminder.service';
 import type {
   BUTTON_STYLE,
   COMPONENT_TYPE,
@@ -131,6 +134,12 @@ export interface CommandDeps {
   characters: CharactersService;
   actors: ActorResolver;
   links: CommandLinks;
+  /** Where the bot's scheduled announcements go */
+  channels: BotChannelService;
+  /** The reminder run, the very same one the cron endpoint calls */
+  reminders: ReminderService;
+  /** Outgoing Discord calls — needed by a command that posts outside its own reply */
+  rest: DiscordRestClient;
 }
 
 /**

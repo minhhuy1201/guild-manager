@@ -7,6 +7,7 @@ import { MESSAGE_FLAG } from '../discord.constants';
 
 const INTERACTION = {
   type: 2 as const,
+  channel_id: '424242',
   data: {
     name: 'diem-danh-ho',
     options: [{ name: 'nguoi', value: '999' }],

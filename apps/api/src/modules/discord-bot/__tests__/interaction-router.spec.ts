@@ -18,6 +18,9 @@ function makeRouter(resolve: unknown = null): InteractionRouter {
     {} as never,
     { resolve: jest.fn().mockResolvedValue(resolve) } as never,
     { get: jest.fn().mockReturnValue('') } as never,
+    {} as never,
+    {} as never,
+    {} as never,
   );
 }
 
@@ -29,7 +32,11 @@ describe('InteractionRouter', () => {
   });
 
   it('gọi đúng lệnh theo tên', async () => {
-    const reply = await makeRouter().route({ type: 2, data: { name: 'ping' } });
+    const reply = await makeRouter().route({
+      type: 2,
+      channel_id: '424242',
+      data: { name: 'ping' },
+    });
 
     expect(reply).toEqual({
       type: INTERACTION_RESPONSE_TYPE.channelMessageWithSource,
@@ -42,6 +49,7 @@ describe('InteractionRouter', () => {
     // hiện "ứng dụng không phản hồi" — chi tiết vẫn nằm nguyên trong log của router.
     const reply = await makeRouter().route({
       type: 2,
+      channel_id: '424242',
       data: { name: 'khong-ton-tai' },
     });
 

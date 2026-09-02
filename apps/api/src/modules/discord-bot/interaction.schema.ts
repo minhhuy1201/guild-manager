@@ -35,6 +35,12 @@ const pingInteractionSchema = z.object({
 
 const applicationCommandInteractionSchema = z.object({
   type: z.literal(INTERACTION_TYPE.applicationCommand),
+  /**
+   * Channel the command was typed in, snake_case because this is Discord's payload. Required:
+   * `/cau-hinh-kenh` reads it instead of making an admin copy a channel id by hand, and Discord
+   * always sends it for a command used in a server — the bot registers guild commands only.
+   */
+  channel_id: z.string().min(1),
   data: z.object({
     name: z.string().min(1),
     options: z.array(commandOptionSchema).optional(),
