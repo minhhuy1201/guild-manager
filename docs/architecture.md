@@ -144,7 +144,7 @@ Each is `<domain>.module.ts` + `<domain>.controller.ts` + `<domain>.service.ts`,
 | `battle-sessions` | The week's schedule, deadlines, the Guild War session, time rules | Reads signed-in, writes admin |
 | `attendance` | Marking attendance and reading records | Bearer required; reads are guild-wide for everyone, admin bypasses the deadline and marks for others |
 | `team-builder` | Per-match formations, and the team names shown on the grid | Admin |
-| `discord-bot` | The Discord interactions endpoint, the slash command registry, and attendance recorded from Discord (`/diem-danh`, `/diem-danh-ho`) | Discord's Ed25519 signature — no JWT, no session; the identity comes from the signed payload and the write rules stay `AttendanceService`'s |
+| `discord-bot` | The Discord interactions endpoint, the slash command registry, attendance recorded from Discord (`/diem-danh`, `/diem-danh-ho`), and the weekly schedule announcement (`/thong-bao`, admin only) | Discord's Ed25519 signature — no JWT, no session; the identity comes from the signed payload and the write rules stay `AttendanceService`'s |
 
 Endpoints, all behind the `/api` prefix:
 
