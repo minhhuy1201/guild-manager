@@ -13,22 +13,27 @@ import { BotChannelService } from './bot-channel.service';
 import { DiscordRestClient } from './discord-rest';
 import { buildReminder, type DueSession } from './reminder';
 
-/** What one run did — the cron response body, and what `/nhac-diem-danh` reports back. */
-export interface ReminderResult {
-  /** Whether a message was actually posted */
-  sent: boolean;
-  /** Battle days the message covered */
-  sessionCount: number;
-  /** People mentioned, each counted once however many days they are missing from */
-  missingCount: number;
-}
-
-/** Nothing to say, in the shape `run` returns. */
-const NOTHING: ReminderResult = {
-  sent: false,
-  sessionCount: 0,
-  missingCount: 0,
-};
+/**
+ * What one run did — the cron response body, and what `/nhac-diem-danh` reports back.
+ *
+ * A tagged union rather than `{ sent: boolean }`, because the two ways of sending nothing are not
+ * the same event: `no-channel` is waiting on an admin, `nothing-due` is the ordinary quiet morning.
+ * Collapsing them left the caller unable to tell which had happened, so `/nhac-diem-danh` had to
+ * re-read the channel itself just to pick its wording, and the cron response could not say why it
+ * stayed silent.
+ */
+export type ReminderOutcome =
+  | {
+      status: 'sent';
+      /** Battle days the message covered */
+      sessionCount: number;
+      /** People mentioned, each counted once however many days they are missing from */
+      missingCount: number;
+    }
+  /** No channel configured yet — an admin has not run `/cau-hinh-kenh`. */
+  | { status: 'no-channel' }
+  /** Nothing closes tomorrow, or everyone whose deadline does has already answered. */
+  | { status: 'nothing-due' };
 
 /**
  * Finds who still has not answered for a deadline falling tomorrow, and says so in Discord.
@@ -57,10 +62,10 @@ export class ReminderService {
    * deadline does has already answered. A daily "nothing today" is the fastest way to get a channel
    * muted.
    *
-   * @returns What the run did
+   * @returns What the run did, tagged so the caller can tell the two silences apart
    * @throws Error when Discord rejects the message — the caller decides how loud that is
    */
-  async run(): Promise<ReminderResult> {
+  async run(): Promise<ReminderOutcome> {
     const channelId = await this.channels.get();
 
     if (!channelId) {
@@ -68,7 +73,7 @@ export class ReminderService {
         'Chưa cấu hình channel nhắc điểm danh — chạy /cau-hinh-kenh trong channel muốn dùng.',
       );
 
-      return NOTHING;
+      return { status: 'no-channel' };
     }
 
     const now = this.clock.now();
@@ -77,7 +82,7 @@ export class ReminderService {
       isReminderDay(new Date(session.deadline), now),
     );
 
-    if (dueSessions.length === 0) return NOTHING;
+    if (dueSessions.length === 0) return { status: 'nothing-due' };
 
     const [members, records] = await Promise.all([
       this.characters.listRows(),
@@ -104,7 +109,7 @@ export class ReminderService {
       }))
       .filter((day) => day.missing.length > 0);
 
-    if (due.length === 0) return NOTHING;
+    if (due.length === 0) return { status: 'nothing-due' };
 
     await this.rest.postMessage(
       channelId,
@@ -112,7 +117,7 @@ export class ReminderService {
     );
 
     return {
-      sent: true,
+      status: 'sent',
       sessionCount: due.length,
       // By name, not by row: one person missing three days is one person to nudge.
       missingCount: new Set(

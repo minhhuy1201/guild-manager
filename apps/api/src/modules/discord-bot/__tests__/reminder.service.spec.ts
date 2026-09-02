@@ -78,7 +78,7 @@ describe('ReminderService.run', () => {
     const { service, postMessage } = makeService();
 
     await expect(service.run()).resolves.toEqual({
-      sent: true,
+      status: 'sent',
       sessionCount: 1,
       missingCount: 1,
     });
@@ -89,7 +89,7 @@ describe('ReminderService.run', () => {
   it('không gửi gì khi chưa cấu hình channel', async () => {
     const { service, postMessage } = makeService({ channelId: null });
 
-    await expect(service.run()).resolves.toMatchObject({ sent: false });
+    await expect(service.run()).resolves.toEqual({ status: 'no-channel' });
     expect(postMessage).not.toHaveBeenCalled();
   });
 
@@ -99,10 +99,7 @@ describe('ReminderService.run', () => {
       sessions: [session({ deadline: '2026-09-10T10:00:00.000Z' })],
     });
 
-    await expect(service.run()).resolves.toMatchObject({
-      sent: false,
-      sessionCount: 0,
-    });
+    await expect(service.run()).resolves.toEqual({ status: 'nothing-due' });
     expect(postMessage).not.toHaveBeenCalled();
   });
 
@@ -111,10 +108,7 @@ describe('ReminderService.run', () => {
       records: [{ characterId: 'meo-beo', sessionId: 'gw-2026-09-05' }],
     });
 
-    await expect(service.run()).resolves.toMatchObject({
-      sent: false,
-      missingCount: 0,
-    });
+    await expect(service.run()).resolves.toEqual({ status: 'nothing-due' });
     expect(postMessage).not.toHaveBeenCalled();
   });
 
@@ -130,7 +124,7 @@ describe('ReminderService.run', () => {
       ],
     });
 
-    await expect(service.run()).resolves.toMatchObject({ sent: false });
+    await expect(service.run()).resolves.toEqual({ status: 'nothing-due' });
     expect(postMessage).not.toHaveBeenCalled();
   });
 
@@ -144,7 +138,7 @@ describe('ReminderService.run', () => {
     });
 
     await expect(service.run()).resolves.toMatchObject({
-      sent: true,
+      status: 'sent',
       sessionCount: 1,
     });
 

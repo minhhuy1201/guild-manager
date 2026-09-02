@@ -2,7 +2,7 @@ import { Controller, Get, UseGuards } from '@nestjs/common';
 import { ApiExcludeController } from '@nestjs/swagger';
 
 import { CronSecretGuard } from './cron.guard';
-import { ReminderService, type ReminderResult } from './reminder.service';
+import { ReminderService, type ReminderOutcome } from './reminder.service';
 
 /**
  * The scheduled attendance reminder.
@@ -30,10 +30,14 @@ export class ReminderController {
    * The body is not run through `verifyResponse`: this shape is internal to the job, never part of
    * the api ↔ web contract that `packages/shared` owns, and the caller ignores it.
    *
+   * The body carries the outcome's tag, so a run that posted nothing still says which silence it
+   * was — `no-channel` needs an admin, `nothing-due` is an ordinary morning. Reading the Vercel log
+   * to tell those apart was the alternative.
+   *
    * @returns What the run did, wrapped as `{ data }` by the transform interceptor
    */
   @Get('attendance-reminder')
-  run(): Promise<ReminderResult> {
+  run(): Promise<ReminderOutcome> {
     return this.reminders.run();
   }
 }

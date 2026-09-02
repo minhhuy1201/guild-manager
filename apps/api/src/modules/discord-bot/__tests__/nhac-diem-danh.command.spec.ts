@@ -4,7 +4,7 @@ import { TOKEN_TYPE } from '../../../common';
 import type { CommandDeps } from '../commands/command.types';
 import { nhacDiemDanhCommand } from '../commands/nhac-diem-danh.command';
 import { MESSAGE_FLAG } from '../discord.constants';
-import type { ReminderResult } from '../reminder.service';
+import type { ReminderOutcome } from '../reminder.service';
 
 const INTERACTION = {
   type: 2 as const,
@@ -27,22 +27,20 @@ function actor(role: GuildRole): unknown {
 
 /**
  * Build deps around one resolved actor and one reminder outcome.
+ *
+ * No `channels` stub: the command reads nothing of its own any more — every branch of its reply
+ * comes from the outcome `run` reports.
+ *
  * @param resolved - What ActorResolver.resolve returns
- * @param result - What ReminderService.run resolves to
- * @param channelId - What BotChannelService.get resolves to
+ * @param outcome - What ReminderService.run resolves to
  * @returns Stubbed deps plus the `run` mock, for assertions
  */
-function makeDeps(
-  resolved: unknown,
-  result: ReminderResult,
-  channelId: string | null = '424242',
-) {
-  const run = jest.fn().mockResolvedValue(result);
+function makeDeps(resolved: unknown, outcome: ReminderOutcome) {
+  const run = jest.fn().mockResolvedValue(outcome);
 
   const deps = {
     actors: { resolve: jest.fn().mockResolvedValue(resolved) },
     reminders: { run },
-    channels: { get: jest.fn().mockResolvedValue(channelId) },
   } as never as CommandDeps;
 
   return { deps, run };
@@ -51,7 +49,7 @@ function makeDeps(
 describe('/nhac-diem-danh', () => {
   it('báo đã nhắc bao nhiêu người cho bao nhiêu ngày', async () => {
     const { deps } = makeDeps(actor(GuildRole.ADMIN), {
-      sent: true,
+      status: 'sent',
       sessionCount: 2,
       missingCount: 5,
     });
@@ -65,9 +63,7 @@ describe('/nhac-diem-danh', () => {
 
   it('nói rõ khi không còn ai thiếu', async () => {
     const { deps } = makeDeps(actor(GuildRole.ADMIN), {
-      sent: false,
-      sessionCount: 1,
-      missingCount: 0,
+      status: 'nothing-due',
     });
 
     const reply = await nhacDiemDanhCommand.execute(INTERACTION, deps);
@@ -76,23 +72,18 @@ describe('/nhac-diem-danh', () => {
   });
 
   it('chỉ đường khi chưa cấu hình channel', async () => {
-    const { deps, run } = makeDeps(
-      actor(GuildRole.ADMIN),
-      { sent: false, sessionCount: 0, missingCount: 0 },
-      null,
-    );
+    const { deps } = makeDeps(actor(GuildRole.ADMIN), {
+      status: 'no-channel',
+    });
 
     const reply = await nhacDiemDanhCommand.execute(INTERACTION, deps);
 
-    expect(run).not.toHaveBeenCalled();
     expect(reply.data.content).toContain('/cau-hinh-kenh');
   });
 
   it('thành viên thường bị từ chối và không chạy gì', async () => {
     const { deps, run } = makeDeps(actor(GuildRole.MEMBER), {
-      sent: false,
-      sessionCount: 0,
-      missingCount: 0,
+      status: 'nothing-due',
     });
 
     const reply = await nhacDiemDanhCommand.execute(INTERACTION, deps);
@@ -102,11 +93,7 @@ describe('/nhac-diem-danh', () => {
   });
 
   it('Discord ID không gán với ai thì bị từ chối', async () => {
-    const { deps, run } = makeDeps(null, {
-      sent: false,
-      sessionCount: 0,
-      missingCount: 0,
-    });
+    const { deps, run } = makeDeps(null, { status: 'nothing-due' });
 
     await nhacDiemDanhCommand.execute(INTERACTION, deps);
 

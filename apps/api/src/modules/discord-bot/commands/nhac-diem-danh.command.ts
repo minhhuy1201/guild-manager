@@ -1,5 +1,6 @@
 import { canManageGuild } from '@guild/shared/lib';
 
+import { assertNever } from '../../../common';
 import { NOT_LINKED } from '../attendance-board';
 import { callerDiscordId } from '../interaction.schema';
 import { ephemeralText } from '../reply';
@@ -23,8 +24,8 @@ const NOTHING_TO_SAY =
  * a scheduled one cannot disagree about who is missing. Its reason for existing is that the
  * scheduled path is otherwise unverifiable until the next morning.
  *
- * The channel is read here only so the refusal can name the fix; `run` reads it again and is the one
- * that decides.
+ * Every branch below comes from the outcome `run` reports, so this command asks the database
+ * nothing of its own — the run is the single source of truth for what happened, wording included.
  */
 export const nhacDiemDanhCommand: SlashCommand = {
   definition: {
@@ -38,16 +39,22 @@ export const nhacDiemDanhCommand: SlashCommand = {
     if (!resolved) return ephemeralText(NOT_LINKED);
     if (!canManageGuild(resolved.actor.role)) return ephemeralText(ADMIN_ONLY);
 
-    const channelId = await deps.channels.get();
+    const outcome = await deps.reminders.run();
 
-    if (!channelId) return ephemeralText(NO_CHANNEL);
+    switch (outcome.status) {
+      case 'no-channel':
+        return ephemeralText(NO_CHANNEL);
 
-    const result = await deps.reminders.run();
+      case 'nothing-due':
+        return ephemeralText(NOTHING_TO_SAY);
 
-    if (!result.sent) return ephemeralText(NOTHING_TO_SAY);
+      case 'sent':
+        return ephemeralText(
+          `Đã nhắc ${outcome.missingCount} người cho ${outcome.sessionCount} ngày đánh.`,
+        );
 
-    return ephemeralText(
-      `Đã nhắc ${result.missingCount} người cho ${result.sessionCount} ngày đánh.`,
-    );
+      default:
+        return assertNever(outcome, 'Kết quả nhắc điểm danh ngoài dự kiến');
+    }
   },
 };

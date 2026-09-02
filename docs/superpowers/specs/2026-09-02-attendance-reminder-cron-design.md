@@ -85,7 +85,7 @@ Luật này là một luật lịch, nên nó sống ở nơi architecture.md §
 của `deadline` với ngày dương lịch VN của `now + 1 ngày`. Không phải trong module bot.
 
 **Không có gì để nhắc thì không gửi gì.** Không session nào tới hạn, hoặc mọi session tới
-hạn đều đã đủ người trả lời → endpoint trả về `{ sent: false }` và im lặng. Một tin
+hạn đều đã đủ người trả lời → endpoint trả về `{ status: 'nothing-due' }` và im lặng. Một tin
 "hôm nay không có gì" mỗi sáng là cách nhanh nhất khiến người ta tắt thông báo channel.
 
 ### 3.3 Mention phải nằm trong `content`, chi tiết nằm trong embed
@@ -138,7 +138,7 @@ bảng mới, **không** bật RLS hộ — thiếu dòng đó thì bảng chỉ
 Supabase.
 
 Chưa cấu hình channel không phải lỗi cấu hình lúc boot — admin có thể chưa chạy lệnh —
-nên cron gặp bảng rỗng thì **log một dòng warn và dừng**, trả `{ sent: false }`. Nó khác
+nên cron gặp bảng rỗng thì **log một dòng warn và dừng**, trả `{ status: 'no-channel' }`. Nó khác
 `CRON_SECRET` ở chỗ giá trị này không biết được lúc khởi động.
 
 ### 3.5 `/cau-hinh-kenh` lấy channel từ chính interaction, và thử quyền trước khi lưu
@@ -233,6 +233,19 @@ module chỉ để giữ một route là một lớp không mang logic nào.
 mối quan tâm xuyên suốt, và guard này có đúng một người dùng. Có endpoint cron thứ hai
 thì lúc đó mới chuyển ra — theo đúng "Don't create guards speculatively".
 
+### 3.11 Kết quả một lần chạy là union có tag
+
+`run()` trả `ReminderOutcome`, một union ba nhánh: `sent` (kèm `sessionCount`, `missingCount`),
+`no-channel`, `nothing-due`.
+
+Không dùng `{ sent: boolean }` vì **hai kiểu im lặng không phải một sự kiện**: `no-channel` là đang
+chờ admin làm gì đó, `nothing-due` là một buổi sáng bình thường. Gộp chúng lại thì người gọi không
+phân biệt được, và hệ quả cụ thể là `/nhac-diem-danh` phải **đọc lại bảng `BotChannel` lần thứ hai**
+chỉ để chọn câu chữ, còn response của cron thì không nói được vì sao nó im.
+
+Với union, lệnh `switch` trên tag và đóng bằng `assertNever` (quy ước của dự án), không truy vấn gì
+thêm. Thêm một nhánh outcome sau này là lỗi biên dịch tại chỗ cần sửa, không phải một `if` bị quên.
+
 ## 4. Hình dạng message
 
 ```
@@ -276,7 +289,7 @@ thì lúc đó mới chuyển ra — theo đúng "Don't create guards speculativ
 | `discord-bot/discord-rest.ts` | **Mới.** `DiscordRestClient.postMessage(channelId, payload)` |
 | `discord-bot/entry-buttons.ts` | **Mới.** `buildEntryButtons(webOrigin)`, rút ra từ `announcement.ts` (§3.7) |
 | `discord-bot/reminder.ts` | **Mới.** Thuần: `buildReminder(dueSessions, webOrigin)` → `MessagePayload` |
-| `discord-bot/reminder.service.ts` | **Mới.** Chọn session tới hạn, tìm người thiếu, gửi. Trả `{ sent, sessionCount, missingCount }` |
+| `discord-bot/reminder.service.ts` | **Mới.** Chọn session tới hạn, tìm người thiếu, gửi. Trả `ReminderOutcome` (§3.11) |
 | `discord-bot/cron.guard.ts` | **Mới.** So `Authorization: Bearer` với `CRON_SECRET` |
 | `discord-bot/reminder.controller.ts` | **Mới.** `GET /cron/attendance-reminder` |
 | `discord-bot/discord-bot.module.ts` | Đăng ký 4 provider mới + controller mới |
@@ -299,18 +312,19 @@ thì lúc đó mới chuyển ra — theo đúng "Don't create guards speculativ
 1. Vercel `GET /api/cron/attendance-reminder`, `Authorization: Bearer $CRON_SECRET`.
 2. `CronSecretGuard` so secret → sai/thiếu là 401, có log.
 3. `ReminderService.run()`:
-   - `channels.get()` → chưa cấu hình thì warn + `{ sent: false }`.
+   - `channels.get()` → chưa cấu hình thì warn + `{ status: 'no-channel' }`.
    - `battleSessions.listByWeek()`, lọc `isReminderDay(session.deadline, now)`.
-   - Không còn session nào → `{ sent: false }`.
+   - Không còn session nào → `{ status: 'nothing-due' }`.
    - `characters.listRows()` + `attendance.getRecords()`; với mỗi session, người thiếu là
      người không có record cho session đó.
-   - Mọi session đều đủ người → `{ sent: false }`.
+   - Mọi session đều đủ người → `{ status: 'nothing-due' }`.
    - `buildReminder(dueSessions, webOrigin)` → `rest.postMessage(channelId, payload)`.
-4. Trả `{ data: { sent, sessionCount, missingCount } }`.
+4. Trả `{ data: <ReminderOutcome> }` — mang theo tag, nên một lần chạy im lặng vẫn nói được nó là loại im lặng nào.
 
 **`/nhac-diem-danh`:** resolve actor → không admin thì ephemeral từ chối → gọi đúng
-`ReminderService.run()` → trả lời riêng tư theo kết quả ("đã nhắc N người", "chưa cấu hình
-channel", "không ai còn thiếu"). Cùng một hàm với cron, không phải bản sao.
+`ReminderService.run()` → `switch` trên `outcome.status`, ba nhánh ra ba câu trả lời riêng tư, đóng
+bằng `assertNever`. Lệnh **không tự đọc gì từ database**: cùng một hàm với cron, và mọi câu chữ đều
+suy ra từ kết quả hàm đó trả về.
 
 **`/cau-hinh-kenh`:** resolve actor → không admin thì từ chối → `rest.postMessage` một tin
 xác nhận vào `interaction.channel_id` → Discord từ chối thì trả lỗi và không lưu → thành
@@ -347,7 +361,7 @@ thất bại.
   không có `discordId` hiện ở dòng "Chưa liên kết Discord" và không lọt vào mention; số
   đếm `còn N người` tính cả người đó; hàng nút mang cả **Điểm danh ngay** lẫn **Mở
   website** với `WEB_ORIGIN`.
-- `reminder.service.spec.ts` — chưa cấu hình channel → không gọi REST, `sent: false`;
+- `reminder.service.spec.ts` — chưa cấu hình channel → không gọi REST, `status: 'no-channel'`;
   không session nào tới hạn → không gọi REST; mọi session đủ người → không gọi REST;
   session tới hạn còn người thiếu → gọi REST đúng một lần với đúng channel.
 - `cron.guard.spec.ts` — thiếu header, sai secret, sai scheme → 401; đúng → qua.
@@ -379,4 +393,5 @@ thất bại.
 | Nút trên tin nhắc ghi đè chính tin nhắc | §3.8; có test khoá kiểu phản hồi |
 | Danh sách mention vượt 2000 ký tự | Mention là **hợp**, mỗi người một lần (§3.3); bang ~30 người còn cách trần gấp đôi |
 | Quên `discord:register` → hai lệnh mới không hiện | §7 bước 3 |
+| `description` của embed vượt trần 4096 ký tự | Khác `content`, nó không bị chặn bởi thiết kế: mỗi ngày đánh góp một khối gồm heading, dòng hạn và **tên mọi người còn thiếu**. Ở quy mô bang hiện tại (~35 người, 1–2 ngày cùng hạn) nó rơi vào khoảng 500–1000 ký tự, còn cách trần rất xa. Chỉ thành vấn đề khi bang lớn hơn nhiều **và** nhiều ngày đánh cùng đóng một sáng. Cố ý **không** thêm truncation: đó là nhánh code không bao giờ chạy ở quy mô này, tức speculative generality — và nếu Discord có từ chối thật thì `DiscordRestClient` ném kèm nguyên body lỗi của Discord, đủ để chẩn đoán |
 | `/nhac-diem-danh` vượt ngân sách 3 giây của Discord | Nó là lệnh nặng nhất của bot: đọc channel, lịch tuần, danh sách thành viên, bản ghi điểm danh, rồi một lời gọi Discord REST đi ra — và `attendance.getRecords()` gọi `listByWeek()` lần thứ hai bên trong nó. Cron không quan tâm ngân sách này, chỉ lệnh gõ tay mới chịu. Giữ nguyên quyết định đã ghi ở spec `/diem-danh` §9: trả lời thẳng, và **nếu** thực tế có timeout thì chuyển sang deferred + `waitUntil` trong một đợt riêng, không phải cắt bớt truy vấn |
