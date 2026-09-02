@@ -9,6 +9,7 @@ import { FixedClock, TOKEN_TYPE, type JwtPayload } from '../../../common';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { BattleSessionsService } from '../../battle-sessions/battle-sessions.public';
 import { CharactersService } from '../../characters/characters.public';
+import { TeamBuilderService } from '../../team-builder/team-builder.public';
 import { AttendanceService } from '../attendance.service';
 
 /**
@@ -104,6 +105,7 @@ describe('AttendanceService', () => {
     findByDiscordId: jest.Mock;
     findById: jest.Mock;
   };
+  let teamBuilder: { releaseCharacterFromSession: jest.Mock };
 
   /**
    * Make `findById` return the fake schedule with the past-deadline flags computed at `now`,
@@ -132,6 +134,7 @@ describe('AttendanceService', () => {
         prisma as unknown as PrismaService,
         battleSessions as unknown as BattleSessionsService,
         characters as unknown as CharactersService,
+        teamBuilder as unknown as TeamBuilderService,
         new FixedClock(now),
       );
 
@@ -172,6 +175,10 @@ describe('AttendanceService', () => {
         .fn()
         .mockResolvedValue({ id: CHARACTER_ID, role: GuildRole.MEMBER }),
       findById: jest.fn().mockResolvedValue(OWN_ROW),
+    };
+
+    teamBuilder = {
+      releaseCharacterFromSession: jest.fn().mockResolvedValue(0),
     };
 
     stubSchedule(WEDNESDAY);
@@ -227,6 +234,35 @@ describe('AttendanceService', () => {
           },
         }),
       );
+    });
+
+    it('trả lời "Không" thì gỡ luôn khỏi đội hình của ngày đó', async () => {
+      await service.mark(
+        {
+          characterId: CHARACTER_ID,
+          sessionId: SESSION_IDS['Thứ 7 · Bang Chiến'],
+          isPresent: false,
+        },
+        MEMBER,
+      );
+
+      expect(teamBuilder.releaseCharacterFromSession).toHaveBeenCalledWith(
+        SESSION_IDS['Thứ 7 · Bang Chiến'],
+        CHARACTER_ID,
+      );
+    });
+
+    it('trả lời "Có" thì không đụng vào đội hình', async () => {
+      await service.mark(
+        {
+          characterId: CHARACTER_ID,
+          sessionId: SESSION_IDS['Thứ 7 · Bang Chiến'],
+          isPresent: true,
+        },
+        MEMBER,
+      );
+
+      expect(teamBuilder.releaseCharacterFromSession).not.toHaveBeenCalled();
     });
 
     it('từ chối khi không có nhân vật', async () => {
