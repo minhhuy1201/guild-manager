@@ -9,6 +9,16 @@ const SEPARATOR = ':';
 /** How many parts a well-formed attendance custom_id has, prefix included. */
 const PART_COUNT = 4;
 
+/**
+ * custom_id of the "Điểm danh ngay" button on a `/thong-bao` announcement.
+ *
+ * A fixed string rather than an encoded value: the button always means "open the presser's own
+ * board", and who is pressing arrives inside the signed interaction. Two parts behind an `ann`
+ * prefix, so `decodeAttendanceButtonId` — which wants four parts behind `dd` — can never take it
+ * for an attendance button.
+ */
+export const ANNOUNCEMENT_ATTENDANCE_ID = 'ann:diem-danh';
+
 /** What one attendance button carries, since Discord keeps no state between presses. */
 export interface AttendanceButtonId {
   sessionId: string;

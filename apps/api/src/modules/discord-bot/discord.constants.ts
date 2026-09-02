@@ -45,13 +45,23 @@ export const COMPONENT_TYPE = {
  * "you picked Không".
  */
 export const BUTTON_STYLE = {
+  /** Blurple — a call to action that is not an answer to anything */
+  primary: 1,
   /** Grey — the answer that is not currently chosen */
   secondary: 2,
   /** Green — "Có", when it is the current answer */
   success: 3,
   /** Red — "Không", when it is the current answer */
   danger: 4,
+  /** Opens a URL. Carries `url` instead of `custom_id`, and sends no interaction back */
+  link: 5,
 } as const;
+
+/**
+ * Left border of the announcement embed, as Discord's 24-bit integer. Blurple: the announcement is
+ * the bot speaking for itself, not a status the attendance colours above describe.
+ */
+export const EMBED_COLOR = 0x5865f2;
 
 /** Slash command option types. Only the one the bot declares is listed. */
 export const COMMAND_OPTION_TYPE = {

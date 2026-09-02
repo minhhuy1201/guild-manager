@@ -3,6 +3,7 @@ import type { BattleSessionsService } from '../../battle-sessions/battle-session
 import type { CharactersService } from '../../characters/characters.public';
 import type { ActorResolver } from '../actor-resolver';
 import type {
+  BUTTON_STYLE,
   COMPONENT_TYPE,
   INTERACTION_RESPONSE_TYPE,
 } from '../discord.constants';
@@ -27,15 +28,32 @@ export interface SlashCommandOption {
   required: boolean;
 }
 
-/** One button. `custom_id` is snake_case because Discord's payload is read and written verbatim. */
-export interface ButtonComponent {
+/**
+ * A button that sends an interaction back. `custom_id` is snake_case because Discord's payload is
+ * read and written verbatim.
+ */
+export interface CustomIdButton {
   type: (typeof COMPONENT_TYPE)['button'];
-  /** A value from `BUTTON_STYLE` */
+  /** A value from `BUTTON_STYLE`, never `link` */
   style: number;
   label: string;
   custom_id: string;
   disabled?: boolean;
 }
+
+/**
+ * A button that opens a URL. Discord handles the click itself and sends nothing back, which is why
+ * this variant has no `custom_id` to route on.
+ */
+export interface LinkButton {
+  type: (typeof COMPONENT_TYPE)['button'];
+  style: (typeof BUTTON_STYLE)['link'];
+  label: string;
+  url: string;
+}
+
+/** One button of either kind. */
+export type ButtonComponent = CustomIdButton | LinkButton;
 
 /** A horizontal strip of components. Discord allows at most 5 of these per message. */
 export interface ActionRow {
@@ -43,12 +61,37 @@ export interface ActionRow {
   components: ButtonComponent[];
 }
 
+/** One field of an embed. Discord lays up to three `inline` fields side by side on a row. */
+export interface EmbedField {
+  name: string;
+  value: string;
+  inline?: boolean;
+}
+
+/** The framed, coloured block a message may carry alongside its text. */
+export interface EmbedPayload {
+  title: string;
+  description: string;
+  /** Left border colour, a 24-bit integer — see `EMBED_COLOR` */
+  color: number;
+  fields: EmbedField[];
+  footer: { text: string };
+}
+
 /** The body of a message the bot sends or rewrites. */
 export interface MessagePayload {
   content: string;
+  /** Discord allows up to 10; the bot never sends more than one. */
+  embeds?: EmbedPayload[];
   components?: ActionRow[];
   /** A bit field from `MESSAGE_FLAG` */
   flags?: number;
+  /**
+   * What this message is allowed to ping, snake_case because it is Discord's payload. Present to
+   * *close* the default, not to open it: an embed built from admin-entered text could otherwise
+   * carry an `@everyone` nobody intended.
+   */
+  allowed_mentions?: { roles: string[] };
 }
 
 /** A reply that sends a new message. */
@@ -64,6 +107,19 @@ export interface UpdateMessageReply {
 }
 
 /**
+ * Configuration a command may read, resolved from env once by `InteractionRouter`.
+ *
+ * A flat value object rather than `ConfigService`: a command needs exactly these two strings, and a
+ * test builds them as a literal instead of stubbing a Nest provider.
+ */
+export interface CommandLinks {
+  /** Origin of the web app, linked from the announcement */
+  webOrigin: string;
+  /** Discord ID of the guild role `/thong-bao` mentions */
+  guildRoleId: string;
+}
+
+/**
  * What a command is allowed to reach.
  *
  * Passed as an argument rather than injected: `src/scripts/register-discord-commands.ts` imports
@@ -75,6 +131,7 @@ export interface CommandDeps {
   battleSessions: BattleSessionsService;
   characters: CharactersService;
   actors: ActorResolver;
+  links: CommandLinks;
 }
 
 /**

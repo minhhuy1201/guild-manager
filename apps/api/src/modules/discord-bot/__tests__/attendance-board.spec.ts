@@ -3,7 +3,26 @@ import { GuildRole } from '@guild/shared/enums';
 import { TOKEN_TYPE, type JwtPayload } from '../../../common';
 import { buildAttendanceBoard } from '../attendance-board';
 import { BUTTON_STYLE } from '../discord.constants';
-import type { CommandDeps } from '../commands/command.types';
+import type {
+  ActionRow,
+  CommandDeps,
+  CustomIdButton,
+} from '../commands/command.types';
+
+/**
+ * Narrow one action row to the buttons that carry a `custom_id`.
+ *
+ * `ActionRow` also admits link buttons, which the announcement uses; the attendance board never
+ * builds one, so a row here is entirely `CustomIdButton` and the fields below are always present.
+ *
+ * @param row - The row under test
+ * @returns Its custom_id buttons, in order
+ */
+function customIdButtons(row: ActionRow | undefined): CustomIdButton[] {
+  return (row?.components ?? []).filter(
+    (button): button is CustomIdButton => 'custom_id' in button,
+  );
+}
 
 const TARGET = {
   characterId: 'meo-beo-k7ma3x',
@@ -140,12 +159,12 @@ describe('buildAttendanceBoard', () => {
       deps,
     );
 
-    const row = board.components?.[0];
+    const buttons = customIdButtons(board.components?.[0]);
 
-    expect(row?.components).toHaveLength(2);
-    expect(row?.components[0].label).toBe('Thứ 5 · 20:30 · Có');
-    expect(row?.components[1].label).toBe('Thứ 5 · 20:30 · Không');
-    expect(row?.components[0].custom_id).toBe('dd:a:meo-beo-k7ma3x:1');
+    expect(buttons).toHaveLength(2);
+    expect(buttons[0].label).toBe('Thứ 5 · 20:30 · Có');
+    expect(buttons[1].label).toBe('Thứ 5 · 20:30 · Không');
+    expect(buttons[0].custom_id).toBe('dd:a:meo-beo-k7ma3x:1');
   });
 
   it('chưa trả lời thì cả hai nút đều xám', async () => {
@@ -201,7 +220,7 @@ describe('buildAttendanceBoard', () => {
       deps,
     );
 
-    for (const button of board.components![0].components) {
+    for (const button of customIdButtons(board.components![0])) {
       expect(button.disabled).toBeUndefined();
     }
   });
