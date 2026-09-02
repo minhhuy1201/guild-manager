@@ -1,23 +1,30 @@
 import { HttpException, Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
 import { assertNever } from '../../common';
+import type { Env } from '../../config';
 import { AttendanceService } from '../attendance/attendance.public';
 import { BattleSessionsService } from '../battle-sessions/battle-sessions.public';
 import { CharactersService } from '../characters/characters.public';
 import { ActorResolver } from './actor-resolver';
-import { handleAttendanceButton } from './attendance-board';
+import { buildOwnBoard, handleAttendanceButton } from './attendance-board';
 import { commands } from './commands';
 import type {
   CommandDeps,
   CommandReply,
   UpdateMessageReply,
 } from './commands/command.types';
+import { ANNOUNCEMENT_ATTENDANCE_ID } from './custom-id';
 import {
   INTERACTION_RESPONSE_TYPE,
   INTERACTION_TYPE,
 } from './discord.constants';
-import type { Interaction } from './interaction.schema';
-import { ephemeralText } from './reply';
+import {
+  callerDiscordId,
+  type Interaction,
+  type MessageComponentInteraction,
+} from './interaction.schema';
+import { ephemeral, ephemeralText } from './reply';
 
 /** The only valid answer to Discord's health check. */
 interface PongReply {
@@ -49,6 +56,7 @@ export class InteractionRouter {
     private readonly battleSessions: BattleSessionsService,
     private readonly characters: CharactersService,
     private readonly actors: ActorResolver,
+    private readonly config: ConfigService<Env, true>,
   ) {}
 
   private readonly logger = new Logger(InteractionRouter.name);
@@ -104,23 +112,50 @@ export class InteractionRouter {
       }
 
       case INTERACTION_TYPE.messageComponent:
-        return {
-          type: INTERACTION_RESPONSE_TYPE.updateMessage,
-          data: await handleAttendanceButton(interaction, this.deps),
-        };
+        return this.routeComponent(interaction);
 
       default:
         return assertNever(interaction, 'Interaction type ngoài dự kiến');
     }
   }
 
-  /** The services a command may reach, bundled once. */
+  /**
+   * Answer one component press.
+   *
+   * The announcement's button gets a **new** ephemeral message rather than an update. It sits on a
+   * message the whole guild is reading, so updating would replace the announcement itself with the
+   * presser's own board — the first person to press would delete it for everyone. Every other
+   * component is an attendance button, which does sit on a message it is entitled to rewrite.
+   *
+   * @param interaction - The validated button press
+   * @returns The reply Discord shows
+   */
+  private async routeComponent(
+    interaction: MessageComponentInteraction,
+  ): Promise<InteractionReply> {
+    if (interaction.data.custom_id === ANNOUNCEMENT_ATTENDANCE_ID) {
+      return ephemeral(
+        await buildOwnBoard(callerDiscordId(interaction), this.deps),
+      );
+    }
+
+    return {
+      type: INTERACTION_RESPONSE_TYPE.updateMessage,
+      data: await handleAttendanceButton(interaction, this.deps),
+    };
+  }
+
+  /** The services and configuration a command may reach, bundled once. */
   private get deps(): CommandDeps {
     return {
       attendance: this.attendance,
       battleSessions: this.battleSessions,
       characters: this.characters,
       actors: this.actors,
+      links: {
+        webOrigin: this.config.get('WEB_ORIGIN', { infer: true }),
+        guildRoleId: this.config.get('DISCORD_GUILD_ROLE_ID', { infer: true }),
+      },
     };
   }
 }
