@@ -25,6 +25,7 @@ import {
   CharactersService,
   toCharacter,
 } from '../characters/characters.public';
+import { TeamBuilderService } from '../team-builder/team-builder.public';
 import { toAttendanceRecord } from './attendance.codec';
 
 /** Message shown when a non-admin marks attendance for someone else's character. */
@@ -54,6 +55,7 @@ export class AttendanceService {
     private readonly prisma: PrismaService,
     private readonly battleSessions: BattleSessionsService,
     private readonly characters: CharactersService,
+    private readonly teamBuilder: TeamBuilderService,
     private readonly clock: Clock,
   ) {}
 
@@ -183,6 +185,15 @@ export class AttendanceService {
         reason: absenceReason,
       },
     });
+
+    // A member who has just said "Không" must not stay in the day's formation: the team builder
+    // would otherwise keep showing them as placed until someone notices by hand.
+    if (!isPresent) {
+      await this.teamBuilder.releaseCharacterFromSession(
+        sessionId,
+        characterId,
+      );
+    }
 
     return toAttendanceRecord(record);
   }

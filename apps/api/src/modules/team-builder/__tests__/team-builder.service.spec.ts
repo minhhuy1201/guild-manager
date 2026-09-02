@@ -633,3 +633,78 @@ describe('TeamBuilderService.saveFormation', () => {
     });
   });
 });
+
+describe('TeamBuilderService.releaseCharacterFromSession', () => {
+  let service: TeamBuilderService;
+  let prisma: {
+    $transaction: jest.Mock;
+    formationSlot: { deleteMany: jest.Mock; updateMany: jest.Mock };
+  };
+  let battleSessions: { findById: jest.Mock };
+
+  beforeEach(() => {
+    prisma = {
+      $transaction: jest.fn((operations: Promise<unknown>[]) =>
+        Promise.all(operations),
+      ),
+      formationSlot: {
+        deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      },
+    };
+    battleSessions = { findById: jest.fn().mockResolvedValue(SAVED_DAY) };
+
+    service = new TeamBuilderService(
+      prisma as unknown as PrismaService,
+      battleSessions as unknown as BattleSessionsService,
+      { listIds: jest.fn() } as unknown as CharactersService,
+      new FixedClock(WEDNESDAY),
+    );
+  });
+
+  it('xoá ô không có ghi chú và gỡ người khỏi ô còn ghi chú, trong một transaction', async () => {
+    const released = await service.releaseCharacterFromSession(
+      'session-thu',
+      'char-1',
+    );
+
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(prisma.formationSlot.deleteMany).toHaveBeenCalledWith({
+      where: {
+        characterId: 'char-1',
+        match: { sessionId: 'session-thu' },
+        note: null,
+      },
+    });
+    expect(prisma.formationSlot.updateMany).toHaveBeenCalledWith({
+      where: { characterId: 'char-1', match: { sessionId: 'session-thu' } },
+      data: { characterId: null },
+    });
+    expect(released).toBe(2);
+  });
+
+  it('không đụng vào đội hình của trận đã đánh xong', async () => {
+    battleSessions.findById.mockResolvedValue({
+      ...SAVED_DAY,
+      id: 'session-tue',
+      dateTime: vn('2026-07-21T20:30').toISOString(),
+    });
+
+    const released = await service.releaseCharacterFromSession(
+      'session-tue',
+      'char-1',
+    );
+
+    expect(released).toBe(0);
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('trận không còn tồn tại thì không có gì để gỡ', async () => {
+    battleSessions.findById.mockResolvedValue(null);
+
+    await expect(
+      service.releaseCharacterFromSession('session-da-xoa', 'char-1'),
+    ).resolves.toBe(0);
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+});

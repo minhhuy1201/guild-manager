@@ -14,5 +14,8 @@ import { TeamBuilderService } from './team-builder.service';
   imports: [BattleSessionsModule, CharactersModule],
   controllers: [TeamBuilderController],
   providers: [TeamBuilderService],
+  // Attendance writes through this service: answering "Không" takes the member out of the day's
+  // formation, and the slot rules stay in exactly one module.
+  exports: [TeamBuilderService],
 })
 export class TeamBuilderModule {}

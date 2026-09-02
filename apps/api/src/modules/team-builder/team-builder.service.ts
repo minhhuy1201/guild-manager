@@ -246,6 +246,44 @@ export class TeamBuilderService {
   }
 
   /**
+   * Take a character out of every slot of one battle day's formations.
+   * Called when the member answers "Không": a formation must never keep someone who has said they
+   * are not coming. A slot carrying a note keeps the note and only loses its occupant — a note
+   * describes the position, not the person, the same rule `saveFormation` follows when it filters
+   * out deleted members.
+   * A day already played is left alone: its formation is the record of what happened, and
+   * `saveFormation` refuses to edit it too.
+   * @param sessionId - Id of the battle day to clear the character from
+   * @param characterId - The character to take out
+   * @returns Number of slots the character was taken out of; 0 when the day is played or gone
+   */
+  async releaseCharacterFromSession(
+    sessionId: string,
+    characterId: string,
+  ): Promise<number> {
+    const now = this.clock.now();
+    const session = await this.battleSessions.findById(sessionId);
+    if (!session || isSessionLocked(new Date(session.dateTime), now)) return 0;
+
+    const occupied = { characterId, match: { sessionId } };
+
+    // One transaction so no read can see the character gone from the noted slots but still sitting
+    // in the note-less ones. Delete first: afterwards `occupied` matches only the noted slots.
+    const [deleted, cleared] = await this.prisma.$transaction([
+      // A note-less slot holds nothing once its occupant leaves, and such a slot has no row.
+      this.prisma.formationSlot.deleteMany({
+        where: { ...occupied, note: null },
+      }),
+      this.prisma.formationSlot.updateMany({
+        where: occupied,
+        data: { characterId: null },
+      }),
+    ]);
+
+    return deleted.count + cleared.count;
+  }
+
+  /**
    * The team names shown on the formation grid's column headers.
    * Global data: one map for the whole app, not one per week or per battle day.
    * @returns Team number (as a decimal string) → name; teams still on their number are absent
