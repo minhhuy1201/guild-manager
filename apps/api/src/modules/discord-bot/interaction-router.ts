@@ -161,6 +161,17 @@ export class InteractionRouter {
       links: {
         webOrigin: this.config.get('WEB_ORIGIN', { infer: true }),
         guildRoleId: this.config.get('DISCORD_GUILD_ROLE_ID', { infer: true }),
+        channelIds: {
+          bangChien: this.config.get('DISCORD_BANG_CHIEN_CHANNEL_ID', {
+            infer: true,
+          }),
+          nghichThuyHan: this.config.get('DISCORD_NGHICH_THUY_HAN_CHANNEL_ID', {
+            infer: true,
+          }),
+          khamAcc: this.config.get('DISCORD_KHAM_ACC_CHANNEL_ID', {
+            infer: true,
+          }),
+        },
       },
       channels: this.channels,
       reminders: this.reminders,
