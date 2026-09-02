@@ -78,6 +78,7 @@ by default, and each writes to whatever database it names.
 | `DISCORD_REDIRECT_URI` | `https://<api-domain>/api/auth/discord/callback`, declared character for character under OAuth2 → Redirects in the Developer Portal |
 | `DISCORD_ADMIN_IDS` | The guild admin's Discord ID. **Forget this and nobody can sign in**, because no `Character` has a `discordId` yet |
 | `DISCORD_PUBLIC_KEY` | Public key of the production Discord Application (General Information), 64 hex characters. **Set it before the first deploy that ships the bot**: it is required, so a missing value kills the API at boot — and because the web app has no other backend, the whole site goes down with it |
+| `DISCORD_GUILD_ROLE_ID` | Discord ID of the guild role `/thong-bao` mentions (Server Settings → Roles → Copy Role ID). **Set it before merging the PR that ships the command**: it is required, so a missing value kills the API at boot, and the web app has no other backend |
 | `WEB_ORIGIN` | The web app's real origin (`https://…`) — CORS matches this value exactly |
 | `WEB_PREVIEW_PROJECT` | The web app's Vercel project name (`mmgh-nth`) — makes CORS also accept that project's preview domains. Optional; omit it and only `WEB_ORIGIN` is allowed |
 | `APP_TIMEZONE` | `Asia/Ho_Chi_Minh` |

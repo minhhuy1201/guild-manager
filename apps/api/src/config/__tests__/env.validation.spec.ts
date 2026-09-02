@@ -8,6 +8,7 @@ const base = {
   DISCORD_CLIENT_SECRET: 'secret',
   DISCORD_REDIRECT_URI: 'http://localhost:3001/api/auth/discord/callback',
   DISCORD_PUBLIC_KEY: 'a'.repeat(64),
+  DISCORD_GUILD_ROLE_ID: '999888777666555444',
 };
 
 describe('validateEnv', () => {
@@ -38,6 +39,15 @@ describe('validateEnv', () => {
     delete withoutKey.DISCORD_PUBLIC_KEY;
 
     expect(() => validateEnv(withoutKey)).toThrow(
+      /Biến môi trường không hợp lệ/,
+    );
+  });
+
+  it('chết khi thiếu DISCORD_GUILD_ROLE_ID', () => {
+    const withoutRole: Partial<typeof base> = { ...base };
+    delete withoutRole.DISCORD_GUILD_ROLE_ID;
+
+    expect(() => validateEnv(withoutRole)).toThrow(
       /Biến môi trường không hợp lệ/,
     );
   });
