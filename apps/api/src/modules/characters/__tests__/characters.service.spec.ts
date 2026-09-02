@@ -33,10 +33,32 @@ const UNIQUE_VIOLATION = Object.assign(new Error('Unique constraint failed'), {
   code: 'P2002',
 });
 
-/** Prisma's conflict error on the discordId column — a different fix from an id collision. */
+/**
+ * Prisma's conflict error on the discordId column — a different fix from an id collision.
+ *
+ * Copied from what Prisma 7 actually throws through the driver adapter, not hand-shaped: the older
+ * `meta.target` array is gone, and building the double from memory is how this stayed green while
+ * `POST /characters` answered 500 in production.
+ */
 const DISCORD_ID_VIOLATION = Object.assign(
   new Error('Unique constraint failed'),
-  { code: 'P2002', meta: { target: ['discordId'] } },
+  {
+    code: 'P2002',
+    meta: {
+      driverAdapterError: {
+        name: 'DriverAdapterError',
+        cause: {
+          originalCode: '23505',
+          originalMessage:
+            'duplicate key value violates unique constraint "Character_discordId_key"',
+          kind: 'UniqueConstraintViolation',
+          constraint: { index: 'Character_discordId_key' },
+          table: 'Character',
+        },
+      },
+      modelName: 'Character',
+    },
+  },
 );
 
 /** A different Prisma error — the service must let it surface, not swallow it. */
@@ -167,6 +189,43 @@ describe('CharactersService', () => {
         }),
       ).rejects.toThrow(ConflictException);
       expect(prisma.character.create).toHaveBeenCalledTimes(1);
+    });
+
+    it('vẫn báo 409 khi Prisma đổi hình dạng lỗi và ta không nhận ra', async () => {
+      // Phòng thủ cho đúng cái đã xảy ra: `meta` đổi hình dạng, isDiscordIdViolation trả false,
+      // create tưởng đụng khoá chính rồi thử lại — lần hai vỡ y hệt và thoát ra thành 500.
+      // insert() sinh id mới mỗi lần, mà Character chỉ có hai unique constraint, nên P2002 lần thứ
+      // hai chắc chắn là discordId dù đọc được `meta` hay không.
+      const UNRECOGNISED = Object.assign(
+        new Error('Unique constraint failed'),
+        {
+          code: 'P2002',
+          meta: { somethingPrismaChangedLater: true },
+        },
+      );
+      prisma.character.create
+        .mockRejectedValueOnce(UNRECOGNISED)
+        .mockRejectedValueOnce(UNRECOGNISED);
+
+      await expect(
+        service.create({
+          name: 'Mèo Béo',
+          guildClass: GuildClass.CUU_LINH,
+          discordId: '123456789012345678',
+        }),
+      ).rejects.toThrow(ConflictException);
+      expect(prisma.character.create).toHaveBeenCalledTimes(2);
+    });
+
+    it('lỗi không phải trùng khoá ở lần thử lại thì ném nguyên vẹn', async () => {
+      const BOOM = new Error('database sập');
+      prisma.character.create
+        .mockRejectedValueOnce(UNIQUE_VIOLATION)
+        .mockRejectedValueOnce(BOOM);
+
+      await expect(
+        service.create({ name: 'Mèo Béo', guildClass: GuildClass.CUU_LINH }),
+      ).rejects.toThrow('database sập');
     });
 
     it('sinh lại id và thử lần nữa khi đụng khoá chính', async () => {
