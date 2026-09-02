@@ -180,7 +180,7 @@ Zod + `nestjs-zod` for env and DTO validation · `@nestjs/jwt` (access token 1 d
 src/
 ├── common/           # cross-cutting only, no business logic
 │   ├── assert-never.ts   # the exhaustiveness helper every discriminant switch ends in
-│   ├── auth/         # read-bearer-token.ts — shared by the guard and the Discord path
+│   ├── auth/         # read-bearer-token.ts — reading a JWT out of an Authorization header
 │   ├── clock/        # Clock + SystemClock + ClockModule — the only source of "now"
 │   ├── constants/    # REQUEST_ID_HEADER…
 │   ├── decorators/   # current-user.decorator.ts, raw-response.decorator.ts
@@ -241,8 +241,8 @@ Each is `<domain>.module.ts` + `<domain>.controller.ts` + `<domain>.service.ts`,
 `@guild/shared/schemas`, and the object is built through
 `verifyResponse(<shape>Schema, { … } satisfies <Shape>)`: `satisfies` is compile-time only, so an
 `as` cast on a database enum passes it silently. `verifyResponse` parses outside production and is a
-no-op in it. Where the mapping is more than a line, it lives in a `<domain>.codec.ts` beside the
-service (`attendance`, `battle-sessions`, `characters` have one).
+no-op in it. `attendance`, `battle-sessions` and `characters` keep that mapping in a
+`<domain>.codec.ts` beside the service.
 
 | Module | Owns | Access |
 |---|---|---|
@@ -252,7 +252,7 @@ service (`attendance`, `battle-sessions`, `characters` have one).
 | `battle-sessions` | The week's schedule, deadlines, the Guild War session, time rules | Reads signed-in, writes admin |
 | `attendance` | Marking attendance and reading records; a "Không" answer also releases that member from the day's formation, through `team-builder` | Bearer required; reads are guild-wide for everyone, admin bypasses the deadline and marks for others |
 | `team-builder` | Per-match formations, and the team names shown on the grid | Admin |
-| `discord-bot` | The Discord interactions endpoint, the slash command registry, attendance recorded from Discord — by command (`/diem-danh`, `/diem-danh-ho`) **and by button**, since the attendance board and every guild-wide message carry an "Điểm danh ngay" button the router answers as a message-component interaction — the weekly schedule announcement (`/thong-bao`), the announcement channel (`/cau-hinh-kenh`), and the daily attendance reminder — run by Vercel Cron, or by hand with `/nhac-diem-danh`. The last three are admin only | Discord's Ed25519 signature for interactions; `CRON_SECRET` in a bearer header for the scheduled reminder — no JWT, no session; the identity comes from the signed payload and the write rules stay `AttendanceService`'s |
+| `discord-bot` | The Discord interactions endpoint, the slash command registry, attendance recorded from Discord — by command (`/diem-danh`, `/diem-danh-ho`) **and by button**: the private attendance board answers with a Có/Không button per match, and the two guild-wide messages carry one "Điểm danh ngay" button that opens that board, both reaching the router as message-component interactions — the weekly schedule announcement (`/thong-bao`), the announcement channel (`/cau-hinh-kenh`), and the daily attendance reminder — run by Vercel Cron, or by hand with `/nhac-diem-danh`. The last three are admin only | Discord's Ed25519 signature for interactions; `CRON_SECRET` in a bearer header for the scheduled reminder — no JWT, no session; the identity comes from the signed payload and the write rules stay `AttendanceService`'s |
 
 Endpoints, all behind the `/api` prefix:
 
@@ -298,7 +298,7 @@ flowchart TB
     S --> R{"InteractionRouter<br/>switch on the interaction type"}
     R -->|"ping"| P["pong"]
     R -->|"application command"| C["commands/ registry, by name"]
-    R -->|"message component"| BT["attendance board button"]
+    R -->|"message component"| BT["attendance buttons<br/>board Có/Không, or Điểm danh ngay"]
     C --> AR["ActorResolver<br/>Discord ID → Character"]
     BT --> AR
     AR --> SVC["AttendanceService · BattleSessionsService · CharactersService<br/>through each module's *.public.ts"]
