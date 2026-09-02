@@ -83,7 +83,10 @@ More detail (environment variables, common commands, troubleshooting): [`docs/de
 
 The same Discord application also runs a bot, served by `apps/api` itself rather than a separate
 process: Discord `POST`s each slash command to `/api/discord/interactions`, the API verifies the
-Ed25519 signature and answers in the same response. Today it answers one command, `/ping`.
+Ed25519 signature and answers in the same response. It answers `/ping`, plus `/diem-danh` (điểm danh
+cho chính mình) and `/diem-danh-ho @ai-đó` (admin điểm danh hộ người khác) — both reply with a
+private message whose buttons record attendance through the same service the website writes through.
+Lý do vắng mặt vẫn chỉ nhập được trên web.
 
 Adding a command is one file in `apps/api/src/modules/discord-bot/commands/` plus one line in
 `commands/index.ts`, then `pnpm --filter api discord:register` to tell Discord about it.

@@ -3,7 +3,6 @@ import { randomBytes } from 'node:crypto';
 import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { GuildRole } from '@guild/shared/enums';
 import {
   sessionUserSchema,
   type AuthTokens,
@@ -19,6 +18,7 @@ import {
   CharactersService,
   toCharacter,
 } from '../characters/characters.public';
+import { isRescueAdmin, resolveGuildRole } from './actor-identity';
 import {
   ACCESS_TOKEN_TTL,
   AUTH_ERROR,
@@ -105,7 +105,9 @@ export class AuthService {
     if (!profile) return this.errorUrl(AUTH_ERROR.upstream, state.redirect);
 
     const member = await this.characters.findByDiscordId(profile.id);
-    if (!member && !this.isRescueAdmin(profile.id)) {
+    const adminIds = this.config.get('DISCORD_ADMIN_IDS', { infer: true });
+
+    if (!member && !isRescueAdmin(profile.id, adminIds)) {
       return this.errorUrl(AUTH_ERROR.notMember, state.redirect);
     }
 
@@ -200,20 +202,6 @@ export class AuthService {
   }
 
   /**
-   * Whether this Discord ID is on the rescue list.
-   * @param discordId - Discord ID just read from the profile
-   * @returns true when the ID belongs to DISCORD_ADMIN_IDS
-   */
-  private isRescueAdmin(discordId: string): boolean {
-    return this.config
-      .get('DISCORD_ADMIN_IDS', { infer: true })
-      .split(',')
-      .map((value) => value.trim())
-      .filter((value) => value !== '')
-      .includes(discordId);
-  }
-
-  /**
    * Verify the `state` token and read the return path out of it.
    * @param value - The state value Discord echoed back
    * @returns The sanitised return path, or null when the state is unusable
@@ -255,7 +243,10 @@ export class AuthService {
    */
   private async describeSession(discordId: string): Promise<SessionUser> {
     const member = await this.characters.findByDiscordId(discordId);
-    const isRescue = this.isRescueAdmin(discordId);
+    const isRescue = isRescueAdmin(
+      discordId,
+      this.config.get('DISCORD_ADMIN_IDS', { infer: true }),
+    );
 
     if (!member && !isRescue) throw new UnauthorizedException(SESSION_EXPIRED);
 
@@ -265,8 +256,7 @@ export class AuthService {
       discordId,
       discordUsername: row?.discordUsername ?? null,
       discordAvatar: row?.discordAvatar ?? null,
-      // The rescue list beats the database value: an admin must not lock themselves out.
-      role: isRescue ? GuildRole.ADMIN : (member?.role ?? GuildRole.MEMBER),
+      role: resolveGuildRole({ isRescue, memberRole: member?.role ?? null }),
       character: row ? toCharacter(row) : null,
     } satisfies SessionUser);
   }
