@@ -1,13 +1,9 @@
 import { shiftVnDate, vnParts } from '@guild/shared/lib';
 import type { BattleSession } from '@guild/shared/schemas';
 
-import type {
-  ActionRow,
-  CommandLinks,
-  MessagePayload,
-} from './commands/command.types';
-import { ANNOUNCEMENT_ATTENDANCE_ID } from './custom-id';
-import { BUTTON_STYLE, COMPONENT_TYPE, EMBED_COLOR } from './discord.constants';
+import type { CommandLinks, MessagePayload } from './commands/command.types';
+import { EMBED_COLOR } from './discord.constants';
+import { buildEntryButtons } from './entry-buttons';
 
 const TITLE = '📢 LỊCH ĐÁNH TUẦN NÀY';
 
@@ -75,31 +71,6 @@ function toBlock(session: BattleSession): string {
 }
 
 /**
- * The row of buttons under the announcement.
- * @param webOrigin - Origin of the web app
- * @returns One action row holding both buttons
- */
-function buildButtons(webOrigin: string): ActionRow {
-  return {
-    type: COMPONENT_TYPE.actionRow,
-    components: [
-      {
-        type: COMPONENT_TYPE.button,
-        style: BUTTON_STYLE.primary,
-        label: '✅ Điểm danh ngay',
-        custom_id: ANNOUNCEMENT_ATTENDANCE_ID,
-      },
-      {
-        type: COMPONENT_TYPE.button,
-        style: BUTTON_STYLE.link,
-        label: '🌐 Mở website',
-        url: webOrigin,
-      },
-    ],
-  };
-}
-
-/**
  * Build the weekly schedule announcement.
  *
  * Pure: everything it shows arrives in `sessions`, so the whole layout is testable without a
@@ -130,7 +101,7 @@ export function buildAnnouncement(
         footer: { text: FOOTER },
       },
     ],
-    components: [buildButtons(links.webOrigin)],
+    components: [buildEntryButtons(links.webOrigin)],
     allowed_mentions: { roles: [links.guildRoleId] },
   };
 }

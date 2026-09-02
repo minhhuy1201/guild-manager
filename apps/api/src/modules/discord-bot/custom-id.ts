@@ -10,12 +10,13 @@ const SEPARATOR = ':';
 const PART_COUNT = 4;
 
 /**
- * custom_id of the "Điểm danh ngay" button on a `/thong-bao` announcement.
+ * custom_id of the "Điểm danh ngay" button, on both the `/thong-bao` announcement and the daily
+ * attendance reminder.
  *
  * A fixed string rather than an encoded value: the button always means "open the presser's own
- * board", and who is pressing arrives inside the signed interaction. Two parts behind an `ann`
- * prefix, so `decodeAttendanceButtonId` — which wants four parts behind `dd` — can never take it
- * for an attendance button.
+ * board", and who is pressing arrives inside the signed interaction — so the same id works on any
+ * message the bot sends. Two parts behind an `ann` prefix, so `decodeAttendanceButtonId` — which
+ * wants four parts behind `dd` — can never take it for an attendance button.
  */
 export const ANNOUNCEMENT_ATTENDANCE_ID = 'ann:diem-danh';
 
