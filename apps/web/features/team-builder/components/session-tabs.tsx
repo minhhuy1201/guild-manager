@@ -5,7 +5,7 @@ import type { MatchFormation, SessionFormation } from "@guild/shared/schemas";
 
 import { SessionLabel } from "@/components/shared/session-label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getSessionSubtitle } from "@/features/attendance";
+import { getSessionSubtitle, joinSessionMeta } from "@/features/attendance";
 
 interface SessionTabsProps {
   /** Battles of the week, ordered by battle time */
@@ -87,7 +87,7 @@ export function SessionTabs({
                 ) : null}
               </SessionLabel>
               <span className="text-xs font-normal opacity-80">
-                {progress ? `${subtitle} · ${progress}` : subtitle}
+                {joinSessionMeta(subtitle, progress)}
               </span>
             </TabsTrigger>
           );

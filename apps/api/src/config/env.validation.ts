@@ -48,6 +48,11 @@ export const envSchema = z.object({
   DISCORD_PUBLIC_KEY: z
     .string()
     .regex(/^[0-9a-f]{64}$/i, 'DISCORD_PUBLIC_KEY phải là 64 ký tự hex.'),
+  /**
+   * Discord ID of the guild role `/thong-bao` mentions.
+   * Enable Developer Mode, then Server Settings → Roles → right-click the role → Copy Role ID.
+   */
+  DISCORD_GUILD_ROLE_ID: z.string().min(1),
   /** Timezone used to compute attendance deadlines (see docs/architecture.md section 6). */
   APP_TIMEZONE: z.string().default('Asia/Ho_Chi_Minh'),
 });

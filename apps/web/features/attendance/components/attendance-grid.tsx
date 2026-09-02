@@ -187,9 +187,11 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
                     return (
                       <TableHead key={session.id} className="text-center">
                         <SessionLabel session={session} size="sm" />
-                        <span className="block text-xs font-normal text-muted-foreground">
-                          {subtitle}
-                        </span>
+                        {subtitle && (
+                          <span className="block text-xs font-normal text-muted-foreground">
+                            {subtitle}
+                          </span>
+                        )}
                         {passedSessionIds.has(session.id) && (
                           <span className="block text-xs font-normal text-muted-foreground">
                             Đã khóa

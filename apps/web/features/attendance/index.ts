@@ -3,7 +3,7 @@ export { AttendanceFilters } from "./components/attendance-filters";
 export { AttendanceHistoryFilters } from "./components/attendance-history-filters";
 export { AttendanceLogTable } from "./components/attendance-log-table";
 export { AttendanceSummaryDashboard } from "./components/attendance-summary-dashboard";
-export { getSessionSubtitle } from "./lib/session-subtitle";
+export { getSessionSubtitle, joinSessionMeta } from "./lib/session-subtitle";
 export {
   useCharacters,
   useBattleSessions,

@@ -220,21 +220,25 @@ export function guildWarSessionId(weekStart: Date): string {
 /**
  * Build a session's display label from its battle time — the label is NOT stored, so changing the
  * battle time keeps the label correct.
+ *
+ * Both kinds open with weekday and battle time, so a list of days reads down one column. Guild War
+ * then names itself, being the only day of the week that is not a scrim.
+ *
  * @param dateTime - Battle time
  * @param isGuildWar - Whether this is the Guild War session
- * @returns A label like "Thứ 3 · 20:30" or "Thứ 7 · Bang Chiến"
+ * @returns A label like "Thứ 3 · 20:30" or "Thứ 7 · 20:00 · Bang Chiến"
  */
 export function formatSessionLabel(
   dateTime: Date,
   isGuildWar: boolean,
 ): string {
   const weekday = WEEKDAY_NAMES[vnWeekday(dateTime)];
-
-  if (isGuildWar) return `${weekday} · Bang Chiến`;
-
   const { hour, minute } = vnParts(dateTime);
+  const time = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
 
-  return `${weekday} · ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+  if (isGuildWar) return `${weekday} · ${time} · Bang Chiến`;
+
+  return `${weekday} · ${time}`;
 }
 
 /**

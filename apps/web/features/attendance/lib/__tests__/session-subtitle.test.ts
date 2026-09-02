@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { getSessionSubtitle } from "../session-subtitle";
+import { getSessionSubtitle, joinSessionMeta } from "../session-subtitle";
 
 describe("getSessionSubtitle", () => {
   it("trận thường có đối thủ thì hiện tên bang", () => {
@@ -23,13 +23,31 @@ describe("getSessionSubtitle", () => {
     ).toBe("Chưa có đối thủ");
   });
 
-  it("Guild War hiện giờ đánh, không có đối thủ", () => {
+  it("Guild War không còn dòng phụ vì nhãn đã mang giờ đánh", () => {
     expect(
       getSessionSubtitle({
         isGuildWar: true,
         dateTime: "2026-07-25T13:00:00.000Z",
         opponent: null,
       })
-    ).toBe("20:00");
+    ).toBe("");
+  });
+});
+
+describe("joinSessionMeta", () => {
+  it("nối các mảnh bằng dấu chấm giữa", () => {
+    expect(joinSessionMeta("VS: Hắc Long Đường", "đã điểm danh 12/30")).toBe(
+      "VS: Hắc Long Đường · đã điểm danh 12/30"
+    );
+  });
+
+  it("bỏ mảnh rỗng thay vì để lại dấu phân cách thừa", () => {
+    expect(joinSessionMeta("", "đã điểm danh 12/30")).toBe(
+      "đã điểm danh 12/30"
+    );
+    expect(joinSessionMeta("VS: Hắc Long Đường", null)).toBe(
+      "VS: Hắc Long Đường"
+    );
+    expect(joinSessionMeta("", null)).toBe("");
   });
 });

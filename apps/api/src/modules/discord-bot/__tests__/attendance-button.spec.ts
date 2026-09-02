@@ -91,6 +91,7 @@ describe('lỗi từ AttendanceService', () => {
       deps.battleSessions,
       deps.characters,
       deps.actors,
+      { get: jest.fn().mockReturnValue('') } as never,
     );
 
     const reply = await router.route(PRESS);

@@ -55,7 +55,8 @@ export function DeleteSessionDialog({
       // exist because `session` is nullable while `title` is a required string.
       title={session ? `Xoá trận ${session.label}?` : ""}
       description={
-        session && (
+        session &&
+        getSessionSubtitle(session) && (
           <div className="text-sm text-muted-foreground">
             {getSessionSubtitle(session)}
           </div>

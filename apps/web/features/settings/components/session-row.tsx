@@ -46,9 +46,11 @@ export function SessionRow({ session, onEdit, onDelete }: SessionRowProps) {
         <SessionLabel session={session}>
           {session.isGuildWar && <Badge variant="secondary">Bang Chiến</Badge>}
         </SessionLabel>
-        <div className="text-xs text-muted-foreground">
-          {getSessionSubtitle(session)}
-        </div>
+        {getSessionSubtitle(session) && (
+          <div className="text-xs text-muted-foreground">
+            {getSessionSubtitle(session)}
+          </div>
+        )}
         <SessionDeadline session={session} />
       </div>
 

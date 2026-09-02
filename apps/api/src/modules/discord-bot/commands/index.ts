@@ -2,6 +2,7 @@ import type { SlashCommand, SlashCommandDefinition } from './command.types';
 import { diemDanhHoCommand } from './diem-danh-ho.command';
 import { diemDanhCommand } from './diem-danh.command';
 import { pingCommand } from './ping.command';
+import { thongBaoCommand } from './thong-bao.command';
 
 /**
  * Every command the bot answers.
@@ -13,6 +14,7 @@ export const commands: readonly SlashCommand[] = [
   pingCommand,
   diemDanhCommand,
   diemDanhHoCommand,
+  thongBaoCommand,
 ];
 
 /** Exactly what `discord:register` sends to Discord. */
