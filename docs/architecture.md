@@ -7,18 +7,38 @@ This is the structural reference. It does not cover setup or operations:
 
 - [`development.md`](development.md) — running locally, env vars, commands, troubleshooting
 - [`production.md`](production.md) — build, deploy, the real database, operations
-- `superpowers/specs/` — the design spec behind each feature (why a thing is shaped that way)
+- `superpowers/specs/` and `superpowers/plans/` — the design spec and plan behind each feature (why a
+  thing is shaped that way)
+- `custom-spec/` and `custom-plan/` — the same pair for the architecture-review work
+- [`../apps/api/docs/backend.md`](../apps/api/docs/backend.md) and
+  [`../apps/web/docs/frontend.md`](../apps/web/docs/frontend.md) — the *reasoning* behind each app's
+  layout. This file is binding; when the two disagree, those need fixing
 
 ## 1. The system
 
 A guild plays a few matches a week. Members mark themselves "Có/Không" for each match before its
 deadline; admins set the schedule, manage members, and build the roster for each match.
 
-```
-browser ──► apps/web (Next.js)  ──HTTP──►  apps/api (NestJS)  ──►  PostgreSQL
-                  │                              │
-           verifies the JWT                 signs the JWT
-           (AUTH_SECRET)                    (AUTH_SECRET)
+### 1.1 The pieces
+
+```mermaid
+graph LR
+    Browser["Browser"]
+    Discord["Discord"]
+    Cron["Vercel Cron"]
+
+    Web["apps/web · Next.js 16<br/>verifies the JWT"]
+    Api["apps/api · NestJS 11<br/>signs the JWT"]
+    Db[("PostgreSQL<br/>Supabase in production")]
+
+    Browser -->|"page request"| Web
+    Web -->|"HTTP · NEXT_PUBLIC_API_URL"| Api
+    Discord -->|"interaction, Ed25519-signed"| Api
+    Api -->|"bot replies, REST"| Discord
+    Cron -->|"GET + CRON_SECRET"| Api
+    Api -->|"@prisma/adapter-pg, pooled"| Db
+
+    Web -. "one shared AUTH_SECRET" .- Api
 ```
 
 Three properties everything else follows from:
@@ -31,6 +51,76 @@ Three properties everything else follows from:
   pooler, not a transaction pooler — see [`production.md`](production.md) §5. In production it runs
   as a Vercel Function rather than a long-running process, and the constraint still holds because
   Fluid compute keeps the instance, and the pool, alive between invocations.
+
+### 1.2 The stack
+
+Every version below is the one in `package.json` today; the per-app detail lives in §3.1 and §4.1.
+
+```mermaid
+graph TB
+    WEB["<b>apps/web</b> — browser + Node, on Vercel
+    Next.js 16 App Router · React 19
+    Tailwind CSS 4 · shadcn/ui on @base-ui/react
+    TanStack Query — server state
+    Zustand — UI state
+    dnd-kit · recharts · Vitest"]
+
+    API["<b>apps/api</b> — one Vercel Function
+    NestJS 11 on Express
+    nestjs-zod — env + DTO validation
+    @nestjs/jwt · Swagger at /docs
+    Prisma 7 + @prisma/adapter-pg
+    Jest"]
+
+    SHARED["<b>packages/shared</b> — @guild/shared
+    enums · schemas, Zod · lib, the Vietnam clock"]
+
+    Db[("PostgreSQL")]
+
+    WEB --> SHARED
+    API --> SHARED
+    API --> Db
+```
+
+`packages/shared` sits under **both** apps on purpose: it is the only place a shape that crosses the
+network is declared, so the two sides cannot drift. §2 explains how it is built and why.
+
+### 1.3 A request end to end
+
+The browser never calls the API directly. A feature's request functions are **Server Actions**
+(`"use server"`), because the access token lives in an httpOnly cookie that client JavaScript cannot
+read — see §4.2.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant B as Browser
+    participant PX as proxy.ts
+    participant SA as Server Action<br/>features/*/api
+    participant AC as lib/api-client
+    participant NP as NestJS pipeline
+    participant SV as Service
+    participant DB as Prisma → PostgreSQL
+
+    B->>PX: GET /xep-team
+    Note over PX: refreshes the token pair if the access<br/>token expired, then decideAccess:<br/>session required, ADMIN for admin routes
+    PX-->>B: rendered page
+    B->>SA: TanStack Query hook calls the action
+    Note over SA: reads the httpOnly cookie,<br/>builds Authorization: Bearer
+    SA->>AC: apiFetch
+    AC->>NP: HTTP
+    Note over NP: requestIdMiddleware → JwtAuthGuard →<br/>AdminGuard → ZodValidationPipe → controller
+    NP->>SV: validated DTO
+    SV->>DB: query
+    DB-->>SV: rows
+    SV-->>NP: a shape from @guild/shared/schemas
+    NP-->>AC: { data } + x-request-id
+    AC-->>SA: unwrapped data, or ApiError
+    SA-->>B: cached by TanStack Query
+```
+
+Both halves of that pipeline have their own contract: §3.4 for the response envelope, the request id
+and the logging split; §4.3 for the session.
 
 ## 2. Repository layout
 
@@ -89,19 +179,29 @@ Zod + `nestjs-zod` for env and DTO validation · `@nestjs/jwt` (access token 1 d
 ```
 src/
 ├── common/           # cross-cutting only, no business logic
+│   ├── assert-never.ts   # the exhaustiveness helper every discriminant switch ends in
+│   ├── auth/         # read-bearer-token.ts — shared by the guard and the Discord path
+│   ├── clock/        # Clock + SystemClock + ClockModule — the only source of "now"
 │   ├── constants/    # REQUEST_ID_HEADER…
-│   ├── decorators/   # current-user.decorator.ts
+│   ├── decorators/   # current-user.decorator.ts, raw-response.decorator.ts
 │   ├── filters/      # all-exceptions.filter.ts — one error shape for everything
 │   ├── guards/       # jwt-auth.guard.ts, admin.guard.ts
 │   ├── interceptors/ # logging (success path) + transform ({ data })
-│   └── middleware/   # request-id.middleware.ts — mints the id ahead of the guards
-├── config/           # env.validation.ts (Zod, fail-fast at boot), app.config.ts
+│   ├── middleware/   # request-id.middleware.ts — mints the id ahead of the guards
+│   └── index.ts      # the barrel the rest of src/ imports common/ through
+├── config/           # env.validation.ts (Zod, fail-fast at boot), app.config.ts, cors.ts,
+│                  #   response-verification.ts
 ├── infrastructure/
 │   └── prisma/       # PrismaService (@Global PrismaModule) + isHealthy()
 ├── modules/          # the business domain, one mini-app per folder
+├── scripts/          # run by hand, never by the server — discord:register
 ├── app.module.ts
 └── main.ts           # global pipe/filter/interceptor, CORS, Swagger, shutdown hooks
 ```
+
+`common/clock` is the one part of `common/` that registers with DI: `ClockModule` provides `Clock`,
+and **nothing outside that seam calls `new Date()`** to find out what "now" is. That is what makes
+the week and deadline rules testable without freezing the system clock.
 
 Allowed direction of imports:
 
@@ -111,9 +211,11 @@ modules/  ──►  infrastructure/  ──►  config/
     └─────────────────┴──►  common/
 ```
 
-- `common/` and `config/` never import from `modules/` or `infrastructure/` — enforced by ESLint.
+- `common/` and `config/` never import from `modules/` or `infrastructure/` — enforced by ESLint
+  (`no-restricted-imports`, which bans whole directories).
 - A module exposes its code through one `<domain>.public.ts` file; another module imports that, or
-  the `*.module` file for DI registration, never anything else inside — enforced by ESLint.
+  the `*.module` file for DI registration, never anything else inside — enforced by ESLint
+  (`eslint-plugin-boundaries`).
 - Request flow is **Controller → Service → (Repository) → Prisma**. Controllers never touch Prisma.
 - Services hold the business logic. DTOs only validate input. Never return a Prisma model from a
   controller — map it to the response shape from `@guild/shared/schemas`.
@@ -125,16 +227,22 @@ alias it used to have was removed on 2026-08-16 because Vercel does not rewrite 
 and the alias survived into the emitted JavaScript — see [`production.md`](production.md) §4. Do not
 reintroduce it. Shared code is imported by real package name (`@guild/shared/*`).
 
-That removal has a maintenance cost worth knowing about: the two ESLint rules above now match
-**relative** import strings, so each is locked to one directory depth. Adding a directory level under
-`src/` requires adding a matching block in `eslint.config.mjs`, or imports at that depth go
-unchecked — see [`apps/api/docs/backend.md`](../apps/api/docs/backend.md) §4.
+The module boundary is checked on **resolved paths**, not on import strings: each folder under
+`src/modules/` is one `boundaries` element, and only `*.public.ts` and `*.module.ts` may be imported
+from outside it. One rule covers every directory depth, so adding a level under `src/` needs no
+change to `eslint.config.mjs`. `src/__tests__/module-boundary.spec.ts` runs ESLint over fixtures that
+break the boundary on purpose, so the fence itself is tested — see
+[`apps/api/docs/backend.md`](../apps/api/docs/backend.md) §4 for the full reasoning.
 
 ### 3.3 Modules
 
 Each is `<domain>.module.ts` + `<domain>.controller.ts` + `<domain>.service.ts`, with `dto/` and
 `__tests__/` beside it. Response shapes are not declared here — they come from
-`@guild/shared/schemas`, and the object a service builds ends in `satisfies <Shape>`.
+`@guild/shared/schemas`, and the object is built through
+`verifyResponse(<shape>Schema, { … } satisfies <Shape>)`: `satisfies` is compile-time only, so an
+`as` cast on a database enum passes it silently. `verifyResponse` parses outside production and is a
+no-op in it. Where the mapping is more than a line, it lives in a `<domain>.codec.ts` beside the
+service (`attendance`, `battle-sessions`, `characters` have one).
 
 | Module | Owns | Access |
 |---|---|---|
@@ -144,7 +252,7 @@ Each is `<domain>.module.ts` + `<domain>.controller.ts` + `<domain>.service.ts`,
 | `battle-sessions` | The week's schedule, deadlines, the Guild War session, time rules | Reads signed-in, writes admin |
 | `attendance` | Marking attendance and reading records; a "Không" answer also releases that member from the day's formation, through `team-builder` | Bearer required; reads are guild-wide for everyone, admin bypasses the deadline and marks for others |
 | `team-builder` | Per-match formations, and the team names shown on the grid | Admin |
-| `discord-bot` | The Discord interactions endpoint, the slash command registry, attendance recorded from Discord (`/diem-danh`, `/diem-danh-ho`), the weekly schedule announcement (`/thong-bao`), the announcement channel (`/cau-hinh-kenh`), and the daily attendance reminder — run by Vercel Cron, or by hand with `/nhac-diem-danh`. The last three are admin only | Discord's Ed25519 signature for interactions; `CRON_SECRET` in a bearer header for the scheduled reminder — no JWT, no session; the identity comes from the signed payload and the write rules stay `AttendanceService`'s |
+| `discord-bot` | The Discord interactions endpoint, the slash command registry, attendance recorded from Discord — by command (`/diem-danh`, `/diem-danh-ho`) **and by button**, since the attendance board and every guild-wide message carry an "Điểm danh ngay" button the router answers as a message-component interaction — the weekly schedule announcement (`/thong-bao`), the announcement channel (`/cau-hinh-kenh`), and the daily attendance reminder — run by Vercel Cron, or by hand with `/nhac-diem-danh`. The last three are admin only | Discord's Ed25519 signature for interactions; `CRON_SECRET` in a bearer header for the scheduled reminder — no JWT, no session; the identity comes from the signed payload and the write rules stay `AttendanceService`'s |
 
 Endpoints, all behind the `/api` prefix:
 
@@ -170,14 +278,37 @@ Endpoints, all behind the `/api` prefix:
 | `GET` | `/attendance/characters` | Characters for the attendance board (the whole guild, any role) | Bearer |
 | `GET` | `/attendance/records` | Attendance entries of the open week (the whole guild, any role) | Bearer |
 | `GET` | `/attendance/summary` | Yes/no counts per match, no identities. **No caller today** — kept for the attendance dashboard | Bearer |
-| `POST` | `/attendance` | Mark one character for one match (kèm lý do khi trả lời "Không") | Bearer (own character; admin marks for anyone and bypasses the deadline) |
+| `POST` | `/attendance` | Mark one character for one match (with a reason when the answer is "Không") | Bearer (own character; admin marks for anyone and bypasses the deadline) |
 | `GET` | `/team-builder/weeks` | Weeks that still have roster data | Bearer |
 | `GET` | `/team-builder/formations?weekStart=` | Match rosters of a week | Bearer |
 | `PUT` | `/team-builder/formations/:sessionId` | Overwrite one match's roster | Admin |
 | `GET` | `/team-builder/team-names` | Names of the grid's team columns | Admin |
 | `PUT` | `/team-builder/team-names` | Overwrite the whole team name map | Admin |
-| `POST` | `/discord/interactions` | Receive a slash command from Discord and answer it | Discord's Ed25519 signature |
+| `POST` | `/discord/interactions` | Receive an interaction from Discord — slash command or button press — and answer it | Discord's Ed25519 signature |
 | `GET` | `/cron/attendance-reminder` | Post the reminder for every deadline falling tomorrow. `GET` because Vercel Cron only issues GET | `CRON_SECRET` in `Authorization: Bearer` |
+
+The bot's path through the API is deliberately different from the web app's — no JWT, no session,
+one signature check at the door:
+
+```mermaid
+flowchart TB
+    D["Discord"] -->|"POST /api/discord/interactions"| G{"DiscordSignatureGuard<br/>Ed25519 over the raw body"}
+    G -->|"bad signature"| E["401 — the only answer<br/>Discord accepts when saving the URL"]
+    G -->|"ok"| S["interaction.schema — Zod"]
+    S --> R{"InteractionRouter<br/>switch on the interaction type"}
+    R -->|"ping"| P["pong"]
+    R -->|"application command"| C["commands/ registry, by name"]
+    R -->|"message component"| BT["attendance board button"]
+    C --> AR["ActorResolver<br/>Discord ID → Character"]
+    BT --> AR
+    AR --> SVC["AttendanceService · BattleSessionsService · CharactersService<br/>through each module's *.public.ts"]
+    SVC --> DB[("PostgreSQL")]
+```
+
+Two things that path does **not** get its own copy of: identity and the write rules. `ActorResolver`
+turns the signed Discord ID into a `Character`, and the answer is written by the same
+`AttendanceService` the website calls — so a deadline holds identically in both places. A new command
+is one file in `commands/` plus one line in `commands/index.ts`; see §7.
 
 ### 3.4 Cross-cutting contracts
 
@@ -231,13 +362,13 @@ apps/web/
 ├── proxy.ts          # session refresh + admin route guard, runs before every page request
 ├── features/         # all the logic, one folder per feature
 │   └── <feature>/
-│       ├── api/      # request functions (through apiFetch) + query key factory
+│       ├── api/      # "use server" request functions (through apiFetch) + query key factory
 │       ├── hooks/    # TanStack Query hooks
 │       ├── store/    # Zustand, UI state only
 │       ├── lib/      # pure feature logic (labels, derivations)
 │       ├── types/    # feature-internal types
 │       ├── components/
-│       └── index.ts  # the feature's ONLY public surface
+│       └── index.ts  # the feature's public surface (auth adds server.ts + core/, see below)
 ├── components/
 │   ├── ui/           # generated by the shadcn CLI — never hand-edited
 │   ├── shared/       # cross-feature wrappers and the app shell
@@ -249,6 +380,18 @@ apps/web/
 
 Features: `attendance`, `auth`, `members`, `settings`, `team-builder`.
 
+`auth` is the one feature with **three** entry points instead of one, split by runtime rather than by
+public/private, because the split is what the runtimes force:
+
+| Entry point | Runtime | Holds |
+|---|---|---|
+| `index.ts` | anywhere | Components and hooks — safe for a Client Component |
+| `server.ts` | Server Components, Server Actions, Route Handlers | Everything touching cookies: `getSession`, `getAccessToken`, `createSession`, `fetchMe`. Marked `server-only` |
+| `core/index.ts` | Edge | `verifyJwt`, `decideAccess`, the cookie names — no `next/headers`, so `proxy.ts` can load it |
+
+That is not tidiness. Before the split, `members-panel.tsx` importing the barrel for `useSession`
+alone pulled `next/headers` into a Client Component and **broke the whole build**.
+
 Rules, in the order they get broken:
 
 - `app/` is routing and composition only. Logic lives in `features/<feature>/`.
@@ -257,8 +400,14 @@ Rules, in the order they get broken:
 - **`lib/api-client.ts` is the only place that calls `fetch` against the backend.** Feature request
   functions wrap `apiFetch` in `features/<feature>/api/`; components never fetch and never call
   `useQuery` directly — they call the feature's hook.
+- **Those request functions are Server Actions** (`"use server"`), and that is forced, not stylistic:
+  the access token lives in an httpOnly cookie, so only the server can read it and attach
+  `Authorization: Bearer`. It has one visible cost — a `"use server"` file may export nothing but
+  async functions, so the little `authHeader()` helper is duplicated across the four features that
+  need it rather than shared.
 - Errors arrive as `ApiError` with the backend's Vietnamese `message`; render it as-is.
-- Never import another feature's internal file — go through its `index.ts`.
+- Never import another feature's internal file — go through its `index.ts`, or, for `auth`, the
+  runtime-appropriate entry point above.
 - `components/ui/` is generated output. Need a variant? Wrap it in `components/shared/`. Everything
   there comes from the shadcn CLI in its Base UI flavour (`style: "base-nova"`); no Radix, no
   hand-written primitives.
@@ -286,6 +435,31 @@ token has expired but the refresh token has not (the proxy is the only place in 
 write cookies for any request), and it applies `decideAccess` — **every page needs a session** except
 `/dang-nhap`, and admin routes (`/xep-team`, `/thiet-lap`) additionally need the `ADMIN` role.
 
+```mermaid
+sequenceDiagram
+    autonumber
+    participant B as Browser
+    participant W as apps/web
+    participant A as apps/api
+    participant D as Discord
+
+    B->>W: /dang-nhap
+    B->>A: GET /auth/discord
+    A-->>B: redirect to Discord
+    B->>D: authorise
+    D->>A: GET /auth/discord/callback?code
+    Note over A: exchanges the code with Discord,<br/>looks the Discord ID up in Character.discordId<br/>(or DISCORD_ADMIN_IDS)
+    A->>A: store an AuthExchange row, 60s TTL
+    A-->>B: redirect to /dang-nhap/discord?code
+    B->>W: Route Handler, not a page —<br/>a Server Component cannot write cookies
+    W->>A: POST /auth/discord/exchange
+    A-->>W: access token 1d + refresh token 1w
+    W-->>B: both in httpOnly cookies
+```
+
+The single-use code exists because the two apps live on different domains: the API cannot set a
+cookie the web app will read, so it hands the pair over through `AuthExchange` instead.
+
 Hiding nav links is cosmetic. Real enforcement is the proxy plus a `getSession()` check inside each
 admin page's server component — and, ultimately, the guards on the API.
 
@@ -294,15 +468,28 @@ admin page's server component — and, ultimately, the guards on the API.
 Defined in `apps/api/prisma/schema.prisma`; that file is the source of truth and carries the
 reasoning in comments.
 
+```mermaid
+erDiagram
+    Character ||--o{ AttendanceRecord : "answers"
+    BattleSession ||--o{ AttendanceRecord : "is answered for"
+    BattleSession ||--o{ FormationMatch : "is played as"
+    FormationMatch ||--o{ FormationSlot : "has cells"
+    Character ||--o{ FormationSlot : "occupies"
+
+    AuthExchange { }
+    TeamName { }
+    BotChannel { }
 ```
-Character ──< AttendanceRecord >── BattleSession ──< FormationMatch ──< FormationSlot >── Character
-```
+
+The last three hang off nothing on purpose. `TeamName` and `BotChannel` are global configuration, not
+per week and not per battle day; `AuthExchange` holds a `discordId` rather than a foreign key, because
+a rescue admin may match no `Character` at all.
 
 | Model | Notes |
 |---|---|
 | `Character` | Member. Id is a slug of the name plus a random suffix (`meo-beo-k7ma3x`), not a game id. `discordId` is nullable and unique — an admin types it in, and it is what a login resolves against; `role` is `GuildRole` — `ADMIN` or `MEMBER`, the only two roles, defaulting to `MEMBER`; `discordUsername`, `discordAvatar` and `lastLoginAt` are written on each sign-in so an admin can confirm the right person was linked. `discordAvatar` holds Discord's avatar **hash**, not a URL — the CDN URL format belongs to Discord and the web app builds it; it reaches the browser through `/auth/me` only, never through the members list. |
-| `BattleSession` | One match in a week. `weekStart` (Monday 00:00 VN) groups matches into weeks. Guild War uses the deterministic id `gw-<YYYY-MM-DD>` so it can be upserted idempotently; scrims get a `cuid()`. `deadline` is the admin's value for a scrim, capped at 10:00 on the match day; for Guild War it is system-owned (17:00 Thursday). `matchCount` là số trận đánh trong ngày (1 hoặc 2): scrim do admin chọn, mặc định 2; Guild War do hệ thống tính theo luật xen kẽ của tuần. Nó là **trần trên** của số `FormationMatch`, không phải mệnh lệnh — một ngày 2 trận hoàn toàn có thể chỉ xếp một đội hình dùng chung cho cả hai trận. |
-| `AttendanceRecord` | One `(character, session)` pair, unique. The answer is `isPresent Boolean` — `true` = "Có", `false` = "Không"; not answered at all is the absence of a row. `markedAt` updates whenever the answer flips. `markedByCharacterId` records who pressed the button — no relation on purpose, so deleting that person cannot take someone else's entry with them. `reason` là câu giải thích (≤255 ký tự) đi kèm một câu trả lời "Không"; nó luôn `null` khi `isPresent = true`, và server tự quyết giá trị đó chứ không tin body. |
+| `BattleSession` | One match in a week. `weekStart` (Monday 00:00 VN) groups matches into weeks. Guild War uses the deterministic id `gw-<YYYY-MM-DD>` so it can be upserted idempotently; scrims get a `cuid()`. `deadline` is the admin's value for a scrim, capped at 10:00 on the match day; for Guild War it is system-owned (17:00 Thursday). `matchCount` is how many matches the day holds (1 or 2): an admin picks it for a scrim, defaulting to 2, while the system derives it for Guild War from the week's alternating rule. It is an **upper bound** on the number of `FormationMatch` rows, not an instruction — a two-match day may perfectly well be rostered with one formation shared by both. |
+| `AttendanceRecord` | One `(character, session)` pair, unique. The answer is `isPresent Boolean` — `true` = "Có", `false` = "Không"; not answered at all is the absence of a row. `markedAt` updates whenever the answer flips. `markedByCharacterId` records who pressed the button — no relation on purpose, so deleting that person cannot take someone else's entry with them. `reason` is the explanation (≤255 characters) attached to a "Không" answer; it is always `null` when `isPresent = true`, and the server decides that value itself rather than trusting the body. |
 | `AuthExchange` | A single-use code the web app trades for a JWT pair after the API finishes the OAuth callback. Lives 60 seconds; expired rows are swept during the next exchange. Holds `discordId`, not a foreign key, because a rescue admin may match no `Character`. |
 | `FormationSlot` | One cell of the roster grid: a person, a note, or both. A cell that is empty *and* unannotated has no row — that is how "slot 2 is empty" differs from "there is no slot 2". An answer of "Không" takes that member out of every cell of the day (`TeamBuilderService.releaseCharacterFromSession`): an annotated cell keeps its note and only loses its occupant, and a day already played is left untouched. |
 | `TeamName` | Display name of one team column, keyed by team number. Global configuration, not per battle day: the same names apply to every week and every match, which is why it hangs off nothing in the diagram above. A team still showing its plain number has no row. |
@@ -358,6 +545,8 @@ one exception is `prisma/fix-deadlines.ts`, a one-off migration of rows written 
 | **A change to the week or deadline rules** | `session-schedule.ts` and its `__tests__` — nowhere else. The frontend must not re-derive a rule the backend owns. |
 | **A display convention** (state icon, action button, table shell) | Follow, and extend, [`frontend.md`](../apps/web/docs/frontend.md) §6 with a wrapper in `components/shared/`. |
 | **A new Discord slash command** | One file in `src/modules/discord-bot/commands/`, holding both its `definition` and its `execute`, plus one line in `commands/index.ts`. Then `pnpm --filter api discord:register`. Nothing else changes. |
+| **A new Discord button** | A `custom_id` in `discord-bot/custom-id.ts` (encode **and** decode, so a stale button from an old build gets a clear message rather than a crash), plus a branch in `interaction-router.ts`. Never register it — buttons are not commands. |
+| **Anything that needs to know the current time** | Inject `Clock` from `common/clock`. **Never `new Date()`** outside that seam: it is what lets the week and deadline rules be tested without freezing the system clock. |
 | **Something that must run on a schedule** | A `crons` entry in `apps/api/vercel.json` pointing at a `GET` endpoint behind `CronSecretGuard`. **Never `@nestjs/schedule`**: the API is a Vercel Function, so no process is alive to tick and an in-process timer either never fires or fires whenever some unrelated request happens to wake an instance. The schedule is **UTC**, and the Hobby plan only guarantees the hour, not the minute — a rule needing an exact minute does not belong on this schedule. |
 | **Anything with a non-obvious "why"** | A spec in `docs/superpowers/specs/`, then link it from the code comment. |
 
@@ -369,8 +558,12 @@ API, Vitest on the web). There are no end-to-end tests; the `apps/api/test/` har
 
 Recorded so nobody assumes otherwise: no preview deployments (both projects build on `main` only),
 no staging environment, no verified backups, no monitoring or alerting, no application-level rate
-limiting, and no automatic rollback. Migrations are still run by hand — the pipeline ships code,
-never schema. Details and consequences are in [`production.md`](production.md) §6.
+limiting, and no automatic rollback. Details and consequences are in
+[`production.md`](production.md) §6.
+
+Migrations are **not** in that list: the `migrate` job in `ci.yml` applies them after the tests go
+green and before `deploy-api`, so new code never meets the old schema. They are still authored by
+hand, locally with `prisma:migrate`, and committed.
 
 The one scheduled job — the attendance reminder — inherits that gap: it reports only into Vercel's
 Cron Jobs tab and the function log, and nothing alerts when a run fails or silently sends nothing.

@@ -549,21 +549,23 @@ empty importer (`.: {}`) to the lockfile. It is a marker for the updater, not a 
 when nothing is pending, so this is safe — but it is the reason a lockfile bump is not "just" a
 lockfile bump.
 
-### Cron nhắc điểm danh
+### The attendance reminder cron
 
-`apps/api/vercel.json` khai báo `GET /api/cron/attendance-reminder` chạy `0 2 * * *` — giờ **UTC**,
-tức 09:00 giờ VN. Vercel tự gắn `Authorization: Bearer $CRON_SECRET` vào lời gọi khi biến đó tồn
-tại; thiếu nó thì API không boot, nên không có trạng thái "cron chạy mà endpoint mở toang".
+`apps/api/vercel.json` declares `GET /api/cron/attendance-reminder` on `0 2 * * *` — that is **UTC**,
+so 09:00 Vietnam time. Vercel attaches `Authorization: Bearer $CRON_SECRET` to the call by itself once
+the variable exists, and a missing one stops the API booting — so there is no state where the cron
+fires against an unguarded endpoint.
 
-- Cron **chỉ chạy trên deployment production**. Preview không có cron, local cũng không.
-- Gói Hobby chỉ bảo đảm nổ **trong khoảng giờ** đã hẹn, không đúng phút — thực tế là đâu đó trong
-  09:00–09:59 giờ VN. Luật của job chỉ so ngày dương lịch VN nên cả khoảng đó cho cùng kết quả.
-- Xem lần chạy gần nhất: Vercel → project api → Cron Jobs.
-- Sau lần deploy đầu tiên, gõ `/cau-hinh-kenh` trong channel muốn nhận thông báo. Chưa cấu hình thì
-  job vẫn chạy nhưng chỉ ghi một dòng `warn` rồi dừng — không phải lỗi.
-- Không cần chờ tới sáng hôm sau để kiểm chứng: `/nhac-diem-danh` gọi đúng cùng một hàm.
-- Job **cố ý không chống gửi trùng**. Nếu Vercel nổ hai lần thì bang nhận hai tin giống nhau; một
-  cái ping thừa rẻ hơn một bảng trạng thái "đã gửi hôm nay" phải bảo trì.
+- Cron runs **on the production deployment only**. Previews have none, and neither does local.
+- The Hobby plan only guarantees the **hour**, not the minute — in practice somewhere in 09:00–09:59
+  Vietnam time. The job's rule compares Vietnam calendar dates only, so the whole window gives the
+  same answer.
+- Last run: Vercel → the api project → Cron Jobs.
+- After the first deploy, type `/cau-hinh-kenh` in the channel that should receive announcements.
+  With none configured the job still runs, writes one `warn` line and stops — that is not a failure.
+- No need to wait for the next morning to check: `/nhac-diem-danh` calls exactly the same function.
+- The job **deliberately has no duplicate protection**. If Vercel fires twice the guild gets the same
+  message twice; one extra ping is cheaper than maintaining a "sent today" state table.
 
 ### Health check
 
@@ -606,8 +608,8 @@ staging environment, verified backups, monitoring/alerting, application-level ra
 The web Vercel project is still connected to the repository, so `vercel[bot]` keeps writing skipped
 deployments and its two auto-created environments stay on the Environments page (section 4).
 
-Migrations are still run by hand (section 5) — the pipeline deploys code, never schema. A deploy
-whose code expects a column that nobody migrated will fail at runtime, not in CI.
+Migrations are *not* a gap any more: the `migrate` job runs them before `deploy-api` (section 5).
+What is still missing there is a rehearsal — nothing applies a migration anywhere before production.
 
 ## See also
 

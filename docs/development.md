@@ -59,6 +59,7 @@ the app dies immediately with a Vietnamese error message instead of half-running
 | `DATABASE_URL` | ✅ | — | Postgres connection string, used by the runtime **and** the Prisma CLI |
 | `DIRECT_DATABASE_URL` | | empty | Read by the Prisma CLI only (`migrate:prod`, `db:seed`). Leave empty locally |
 | `WEB_ORIGIN` | | `http://localhost:3000` | Origin allowed through CORS |
+| `WEB_PREVIEW_PROJECT` | | empty | The web app's Vercel project name — also lets that project's preview domains through CORS. Leave empty locally |
 | `AUTH_SECRET` | ✅ | — | JWT signing key, at least 32 characters — **must match `apps/web`** |
 | `DISCORD_CLIENT_ID` | ✅ | — | Discord Application client id (Developer Portal → OAuth2) |
 | `DISCORD_CLIENT_SECRET` | ✅ | — | Discord Application client secret — API only, never the web app |
@@ -166,6 +167,8 @@ pnpm --filter web dev    # http://localhost:3000
 | `db:up` / `db:down` / `db:reset` | Postgres container lifecycle |
 | `db:seed` | Load the roster from `seed-data.json` |
 | `db:fix-deadlines` | One-off: bring the open and next week's deadlines back under the cap |
+| `discord:register` | Push the slash-command list to Discord — by hand, never from CI |
+| `migrate:prod` / `migrate:prod:status` | Apply / inspect migrations on the real database (reads `.env.production`) |
 
 ### Frontend (`pnpm --filter web …`)
 

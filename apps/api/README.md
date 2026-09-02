@@ -29,10 +29,12 @@ Sign-in is Discord OAuth2 only — no password is stored anywhere. `DISCORD_CLIE
 `DISCORD_CLIENT_SECRET` and `DISCORD_REDIRECT_URI` are required at boot, and `DISCORD_ADMIN_IDS` is
 the rescue list that gets you in before any `Character` has a `discordId`.
 
-`DISCORD_PUBLIC_KEY` is required at boot too — it verifies the signature on the bot's interaction
-webhook. It has nothing to do with signing in, but a missing or malformed value kills the whole
-process, which takes the web app's backend down with it, so treat it as mandatory even if you never
-touch the bot.
+Four bot variables are required at boot too, and have nothing to do with signing in:
+`DISCORD_PUBLIC_KEY` (verifies the interaction signature), `DISCORD_BOT_TOKEN` (the bot's outgoing
+calls), `DISCORD_GUILD_ROLE_ID` (the role `/thong-bao` mentions) and `CRON_SECRET` (guards the
+reminder endpoint; 32+ characters, and cron never fires locally). A missing or malformed value kills
+the process, which takes the web app's backend down with it — treat all four as mandatory even if you
+never touch the bot.
 
 Full list of environment variables and troubleshooting: [`docs/development.md`](../../docs/development.md).
 
@@ -50,7 +52,7 @@ Full list of environment variables and troubleshooting: [`docs/development.md`](
 | `pnpm prisma:generate` | Regenerate Prisma Client into `src/generated/prisma` (not committed) |
 | `pnpm prisma:migrate` | Create a new migration from schema changes (`migrate dev`) |
 | `pnpm prisma:studio` | Open Prisma Studio |
-| `pnpm migrate:prod` | Apply migrations to the real database through `DIRECT_DATABASE_URL` |
+| `pnpm migrate:prod` | Apply migrations to the real database through `DIRECT_DATABASE_URL`. CI already does this on merge — run it by hand only to inspect or to recover when Actions is down |
 | `pnpm prisma:status` / `pnpm migrate:prod:status` | How many migrations the local / real database is behind |
 | `pnpm db:up` / `pnpm db:down` | Start/stop the PostgreSQL container |
 | `pnpm db:reset` | Wipe the volume and recreate an empty DB (re-run `prisma:migrate` + `db:seed` afterwards) |
@@ -59,8 +61,13 @@ Full list of environment variables and troubleshooting: [`docs/development.md`](
 ## Discord bot
 
 The bot is a module inside this app (`src/modules/discord-bot/`), not a separate service. Discord
-`POST`s every slash command to `/api/discord/interactions`, a guard verifies the Ed25519 signature
-over the raw body, and the router answers in the same HTTP response — Discord allows **3 seconds**.
+`POST`s every interaction — slash command or button press — to `/api/discord/interactions`, a guard
+verifies the Ed25519 signature over the raw body, and the router answers in the same HTTP response —
+Discord allows **3 seconds**.
+
+The daily attendance reminder is not an interaction: Vercel Cron calls
+`GET /api/cron/attendance-reminder` with `CRON_SECRET`, and `/nhac-diem-danh` runs the same code by
+hand. Neither fires locally.
 
 A command is one file in `src/modules/discord-bot/commands/` holding both its `definition` and its
 `execute`, plus one line in `commands/index.ts`. After adding or renaming one, run
