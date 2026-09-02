@@ -87,9 +87,10 @@ export interface MessagePayload {
   /**
    * What this message is allowed to ping, snake_case because it is Discord's payload. Present to
    * *close* the default, not to open it: an embed built from admin-entered text could otherwise
-   * carry an `@everyone` nobody intended.
+   * carry an `@everyone` nobody intended. Each list is declared only by the message that pings that
+   * kind — the announcement names roles, the reminder names users.
    */
-  allowed_mentions?: { roles: string[] };
+  allowed_mentions?: { roles?: string[]; users?: string[] };
 }
 
 /** A reply that sends a new message. */
