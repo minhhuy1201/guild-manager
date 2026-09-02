@@ -79,14 +79,16 @@ by default, and each writes to whatever database it names.
 | `DISCORD_ADMIN_IDS` | The guild admin's Discord ID. **Forget this and nobody can sign in**, because no `Character` has a `discordId` yet |
 | `DISCORD_PUBLIC_KEY` | Public key of the production Discord Application (General Information), 64 hex characters. **Set it before the first deploy that ships the bot**: it is required, so a missing value kills the API at boot — and because the web app has no other backend, the whole site goes down with it |
 | `DISCORD_GUILD_ROLE_ID` | Discord ID of the guild role `/thong-bao` mentions (Server Settings → Roles → Copy Role ID). **Set it before merging the PR that ships the command**: it is required, so a missing value kills the API at boot, and the web app has no other backend |
+| `DISCORD_BOT_TOKEN` | Bot token of **this environment's** Discord Application (Bot → Reset Token) — mark Sensitive. The reminder job posts with it. **Set it before merging the PR that ships the reminder**: required, so a missing value kills the API at boot |
+| `CRON_SECRET` | Secret guarding `GET /api/cron/attendance-reminder`, at least 32 characters (`openssl rand -hex 32`) — mark Sensitive. Vercel attaches it to the scheduled call by itself once the variable exists. **Set it before merging the PR that ships the reminder**: required, so a missing value kills the API at boot |
 | `WEB_ORIGIN` | The web app's real origin (`https://…`) — CORS matches this value exactly |
 | `WEB_PREVIEW_PROJECT` | The web app's Vercel project name (`mmgh-nth`) — makes CORS also accept that project's preview domains. Optional; omit it and only `WEB_ORIGIN` is allowed |
 | `APP_TIMEZONE` | `Asia/Ho_Chi_Minh` |
 
-`DISCORD_BOT_TOKEN` and `DISCORD_GUILD_ID` are deliberately **not** set here. Only
-`pnpm --filter api discord:register` reads them, that script is run by hand from a developer's
-machine, and the runtime never touches them — the same reasoning that keeps `DIRECT_DATABASE_URL`
-out of the env schema. They belong in `apps/api/.env.production` instead, and the script is aimed at
+`DISCORD_GUILD_ID` is deliberately **not** set here. Only
+`pnpm --filter api discord:register` reads it, that script is run by hand from a developer's
+machine, and the runtime never touches it — the same reasoning that keeps `DIRECT_DATABASE_URL`
+out of the env schema. It belongs in `apps/api/.env.production` instead, and the script is aimed at
 that file the same way the Prisma commands are:
 
 ```
