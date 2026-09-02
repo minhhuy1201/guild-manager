@@ -132,6 +132,11 @@ Không dùng bảng key-value kiểu `BotSetting { key, value }`: một cột `v
 sẽ nuốt mọi loại cấu hình tương lai với đủ kiểu dữ liệu và không cột nào tự mô tả được
 mình. Cần cấu hình thứ hai khác kiểu thì đó là bảng thứ hai.
 
+Migration tạo bảng phải mang theo `ALTER TABLE "BotChannel" ENABLE ROW LEVEL SECURITY`
+(production.md §5). `ALTER DEFAULT PRIVILEGES` của migration chặn Data API chỉ tự áp lớp REVOKE cho
+bảng mới, **không** bật RLS hộ — thiếu dòng đó thì bảng chỉ còn một lớp bảo vệ trước Data API của
+Supabase.
+
 Chưa cấu hình channel không phải lỗi cấu hình lúc boot — admin có thể chưa chạy lệnh —
 nên cron gặp bảng rỗng thì **log một dòng warn và dừng**, trả `{ sent: false }`. Nó khác
 `CRON_SECRET` ở chỗ giá trị này không biết được lúc khởi động.
@@ -374,3 +379,4 @@ thất bại.
 | Nút trên tin nhắc ghi đè chính tin nhắc | §3.8; có test khoá kiểu phản hồi |
 | Danh sách mention vượt 2000 ký tự | Mention là **hợp**, mỗi người một lần (§3.3); bang ~30 người còn cách trần gấp đôi |
 | Quên `discord:register` → hai lệnh mới không hiện | §7 bước 3 |
+| `/nhac-diem-danh` vượt ngân sách 3 giây của Discord | Nó là lệnh nặng nhất của bot: đọc channel, lịch tuần, danh sách thành viên, bản ghi điểm danh, rồi một lời gọi Discord REST đi ra — và `attendance.getRecords()` gọi `listByWeek()` lần thứ hai bên trong nó. Cron không quan tâm ngân sách này, chỉ lệnh gõ tay mới chịu. Giữ nguyên quyết định đã ghi ở spec `/diem-danh` §9: trả lời thẳng, và **nếu** thực tế có timeout thì chuyển sang deferred + `waitUntil` trong một đợt riêng, không phải cắt bớt truy vấn |
