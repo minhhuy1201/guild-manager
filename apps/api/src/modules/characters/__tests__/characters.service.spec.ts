@@ -191,6 +191,43 @@ describe('CharactersService', () => {
       expect(prisma.character.create).toHaveBeenCalledTimes(1);
     });
 
+    it('vẫn báo 409 khi Prisma đổi hình dạng lỗi và ta không nhận ra', async () => {
+      // Phòng thủ cho đúng cái đã xảy ra: `meta` đổi hình dạng, isDiscordIdViolation trả false,
+      // create tưởng đụng khoá chính rồi thử lại — lần hai vỡ y hệt và thoát ra thành 500.
+      // insert() sinh id mới mỗi lần, mà Character chỉ có hai unique constraint, nên P2002 lần thứ
+      // hai chắc chắn là discordId dù đọc được `meta` hay không.
+      const UNRECOGNISED = Object.assign(
+        new Error('Unique constraint failed'),
+        {
+          code: 'P2002',
+          meta: { somethingPrismaChangedLater: true },
+        },
+      );
+      prisma.character.create
+        .mockRejectedValueOnce(UNRECOGNISED)
+        .mockRejectedValueOnce(UNRECOGNISED);
+
+      await expect(
+        service.create({
+          name: 'Mèo Béo',
+          guildClass: GuildClass.CUU_LINH,
+          discordId: '123456789012345678',
+        }),
+      ).rejects.toThrow(ConflictException);
+      expect(prisma.character.create).toHaveBeenCalledTimes(2);
+    });
+
+    it('lỗi không phải trùng khoá ở lần thử lại thì ném nguyên vẹn', async () => {
+      const BOOM = new Error('database sập');
+      prisma.character.create
+        .mockRejectedValueOnce(UNIQUE_VIOLATION)
+        .mockRejectedValueOnce(BOOM);
+
+      await expect(
+        service.create({ name: 'Mèo Béo', guildClass: GuildClass.CUU_LINH }),
+      ).rejects.toThrow('database sập');
+    });
+
     it('sinh lại id và thử lần nữa khi đụng khoá chính', async () => {
       prisma.character.create
         .mockRejectedValueOnce(UNIQUE_VIOLATION)

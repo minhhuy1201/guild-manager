@@ -91,7 +91,30 @@ export class CharactersService {
       // The random suffix collided with an existing id — regenerating once is enough.
       if (!isUniqueViolation(error)) throw error;
 
-      return this.insert(input);
+      return this.retryAfterIdCollision(input);
+    }
+  }
+
+  /**
+   * Second and last insert attempt, after a unique violation that did not name the Discord ID.
+   * @param input - Name, class and optionally the Discord ID
+   * @returns The created member
+   * @throws ConflictException when the retry hits a unique constraint too
+   */
+  private async retryAfterIdCollision(
+    input: CreateCharacterInput,
+  ): Promise<GuildMember> {
+    try {
+      return await this.insert(input);
+    } catch (error) {
+      // `insert` generates a fresh id, so the primary key cannot collide twice on the same value,
+      // and Character has exactly two unique constraints — a second P2002 is the Discord ID no
+      // matter which shape Prisma reported it in. Answering 409 here is what stops the next change
+      // to that shape from turning a taken Discord ID back into a 500, the way it already did once.
+      if (isUniqueViolation(error))
+        throw new ConflictException(DISCORD_ID_TAKEN);
+
+      throw error;
     }
   }
 
@@ -238,8 +261,8 @@ function isDiscordIdViolation(error: unknown): boolean {
 
   // Two shapes, because Prisma reports the offending constraint in two different places: through a
   // driver adapter (what this app uses) it is the constraint name, and without one it is the column
-  // list. Reading only `target` is what made a taken Discord ID answer 500 instead of 409 — the
-  // retry below fired on a conflict that could never resolve, and its second failure escaped.
+  // list. Reading only `target` is what made a taken Discord ID answer 500 instead of 409 — `create`
+  // read it as an id collision and retried, on a conflict that could never resolve.
   const constraintName = meta?.driverAdapterError?.cause?.constraint?.index;
   const columns = meta?.target;
 
