@@ -9,6 +9,9 @@ const base = {
   DISCORD_REDIRECT_URI: 'http://localhost:3001/api/auth/discord/callback',
   DISCORD_PUBLIC_KEY: 'a'.repeat(64),
   DISCORD_GUILD_ROLE_ID: '999888777666555444',
+  DISCORD_BANG_CHIEN_CHANNEL_ID: '111222333444555666',
+  DISCORD_NGHICH_THUY_HAN_CHANNEL_ID: '222333444555666777',
+  DISCORD_KHAM_ACC_CHANNEL_ID: '333444555666777888',
   DISCORD_BOT_TOKEN: 'bot-token-value',
   CRON_SECRET: 'c'.repeat(32),
 };
@@ -78,5 +81,21 @@ describe('validateEnv', () => {
     expect(() => validateEnv({ ...base, CRON_SECRET: 'ngan' })).toThrow(
       /Biến môi trường không hợp lệ/,
     );
+  });
+
+  it('chết khi thiếu một trong ba channel id của /chao-mung', () => {
+    // Thiếu biến thì lời chào sẽ trỏ vào <#undefined>. Chết lúc boot rẻ hơn nhiều.
+    for (const key of [
+      'DISCORD_BANG_CHIEN_CHANNEL_ID',
+      'DISCORD_NGHICH_THUY_HAN_CHANNEL_ID',
+      'DISCORD_KHAM_ACC_CHANNEL_ID',
+    ] as const) {
+      const incomplete: Partial<typeof base> = { ...base };
+      delete incomplete[key];
+
+      expect(() => validateEnv(incomplete)).toThrow(
+        /Biến môi trường không hợp lệ/,
+      );
+    }
   });
 });

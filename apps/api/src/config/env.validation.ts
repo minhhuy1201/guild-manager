@@ -54,6 +54,14 @@ export const envSchema = z.object({
    */
   DISCORD_GUILD_ROLE_ID: z.string().min(1),
   /**
+   * Discord channel ids the `/chao-mung` welcome message points a new member at.
+   * Enable Developer Mode, then right-click the channel → Copy Channel ID.
+   * Required: a welcome pointing at `<#undefined>` is worse than a boot that fails.
+   */
+  DISCORD_BANG_CHIEN_CHANNEL_ID: z.string().min(1),
+  DISCORD_NGHICH_THUY_HAN_CHANNEL_ID: z.string().min(1),
+  DISCORD_KHAM_ACC_CHANNEL_ID: z.string().min(1),
+  /**
    * Bot token, sent as `Authorization: Bot <token>` on every outgoing Discord call.
    * Developer Portal → Bot → Reset Token; shown exactly once.
    */
