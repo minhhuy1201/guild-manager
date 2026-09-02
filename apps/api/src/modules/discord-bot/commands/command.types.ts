@@ -61,20 +61,18 @@ export interface ActionRow {
   components: ButtonComponent[];
 }
 
-/** One field of an embed. Discord lays up to three `inline` fields side by side on a row. */
-export interface EmbedField {
-  name: string;
-  value: string;
-  inline?: boolean;
-}
-
-/** The framed, coloured block a message may carry alongside its text. */
+/**
+ * The framed, coloured block a message may carry alongside its text.
+ *
+ * There is deliberately no `fields`: a field is the one part of an embed Discord lays out in
+ * columns, and it renders no markdown heading, so the whole body lives in `description` where `###`
+ * both stacks the entries vertically and makes them legible.
+ */
 export interface EmbedPayload {
   title: string;
   description: string;
   /** Left border colour, a 24-bit integer — see `EMBED_COLOR` */
   color: number;
-  fields: EmbedField[];
   footer: { text: string };
 }
 

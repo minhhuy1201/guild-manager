@@ -42,17 +42,46 @@ describe('buildAnnouncement', () => {
     expect(payload.allowed_mentions).toEqual({ roles: ['999888777'] });
   });
 
-  it('mỗi ngày đánh một field, kèm ngày và số trận', () => {
-    const payload = buildAnnouncement([session()], LINKS);
-    const [field] = payload.embeds![0].fields;
+  it('mỗi ngày đánh là một khối riêng, xếp dọc chứ không xếp cột', () => {
+    // Embed field là thứ Discord xếp thành cột. Cả lịch nằm trong `description`, mỗi ngày mở đầu
+    // bằng một heading, nên chúng luôn nối tiếp nhau theo chiều dọc.
+    const payload = buildAnnouncement(
+      [
+        session(),
+        session({
+          id: 'b',
+          label: 'Thứ 7 · 20:00 · Bang Chiến',
+          isGuildWar: true,
+          opponent: null,
+          dateTime: '2026-09-05T13:00:00.000Z',
+        }),
+      ],
+      LINKS,
+    );
 
-    expect(field.name).toBe('⚔️ Thứ 5 · 20:30');
-    expect(field.value).toContain('📅 03/09');
-    expect(field.value).toContain('🎮 2 trận');
-    expect(field.inline).toBe(true);
+    expect(payload.embeds![0].description.split('\n')).toEqual(
+      expect.arrayContaining([
+        '### ⚔️ Thứ 5 · 20:30',
+        '### 🛡️ Thứ 7 · 20:00 · Bang Chiến',
+      ]),
+    );
   });
 
-  it('Bang Chiến đổi icon và không có dòng đối thủ', () => {
+  it('tên ngày đánh dùng heading để chữ to hơn phần còn lại', () => {
+    const payload = buildAnnouncement([session()], LINKS);
+
+    expect(payload.embeds![0].description).toContain('### ⚔️ Thứ 5 · 20:30');
+  });
+
+  it('chi tiết một ngày gọn trên một dòng dưới tên ngày', () => {
+    const payload = buildAnnouncement([session()], LINKS);
+    const lines = payload.embeds![0].description.split('\n');
+    const detail = lines[lines.indexOf('### ⚔️ Thứ 5 · 20:30') + 1];
+
+    expect(detail).toBe('📅 03/09 · 🎮 2 trận · 🆚 Moonlight');
+  });
+
+  it('Bang Chiến đổi icon và không có phần đối thủ', () => {
     const payload = buildAnnouncement(
       [
         session({
@@ -64,48 +93,47 @@ describe('buildAnnouncement', () => {
       ],
       LINKS,
     );
-    const [field] = payload.embeds![0].fields;
+    const { description } = payload.embeds![0];
+    const lines = description.split('\n');
+    const detail =
+      lines[lines.indexOf('### 🛡️ Thứ 7 · 20:00 · Bang Chiến') + 1];
 
-    expect(field.name).toBe('🛡️ Thứ 7 · 20:00 · Bang Chiến');
-    expect(field.value).not.toContain('🆚');
+    expect(detail).toBe('📅 05/09 · 🎮 2 trận');
   });
 
-  it('scrim có đối thủ thì hiện tên bang', () => {
-    const payload = buildAnnouncement([session()], LINKS);
-
-    expect(payload.embeds![0].fields[0].value).toContain('🆚 Moonlight');
-  });
-
-  it('scrim chưa chốt đối thủ thì bỏ hẳn dòng đó', () => {
+  it('scrim chưa chốt đối thủ thì bỏ hẳn phần đó', () => {
     const payload = buildAnnouncement([session({ opponent: null })], LINKS);
+    const lines = payload.embeds![0].description.split('\n');
+    const detail = lines[lines.indexOf('### ⚔️ Thứ 5 · 20:30') + 1];
 
-    expect(payload.embeds![0].fields[0].value).not.toContain('🆚');
+    expect(detail).toBe('📅 03/09 · 🎮 2 trận');
   });
 
-  it('mô tả khoảng tuần từ thứ 2 đến thứ 7', () => {
+  it('mở đầu bằng khoảng tuần từ thứ 2 đến thứ 7', () => {
     const payload = buildAnnouncement([session()], LINKS);
 
-    expect(payload.embeds![0].description).toBe('31/08 – 05/09');
-  });
-
-  it('ghi chú hướng dẫn là field cuối, không inline', () => {
-    const payload = buildAnnouncement([session()], LINKS);
-    const { fields } = payload.embeds![0];
-    const last = fields[fields.length - 1];
-
-    expect(fields).toHaveLength(2);
-    expect(last.name).toBe('✅ Điểm danh');
-    expect(last.value).toContain('/diem-danh');
-    expect(last.inline).toBe(false);
-  });
-
-  it('tuần rỗng thì nói rõ, và chỉ còn lại ghi chú', () => {
-    const payload = buildAnnouncement([], LINKS);
-
-    expect(payload.embeds![0].description).toBe(
-      'Tuần này chưa có ngày đánh nào.',
+    expect(payload.embeds![0].description.split('\n')[0]).toBe(
+      '**31/08 – 05/09**',
     );
-    expect(payload.embeds![0].fields).toHaveLength(1);
+  });
+
+  it('ghi chú hướng dẫn đứng cuối, cũng là một heading', () => {
+    const payload = buildAnnouncement([session()], LINKS);
+    const headings = payload
+      .embeds![0].description.split('\n')
+      .filter((line) => line.startsWith('### '));
+
+    expect(headings[headings.length - 1]).toBe('### ✅ Điểm danh');
+    expect(payload.embeds![0].description).toContain('/diem-danh');
+  });
+
+  it('tuần rỗng thì nói rõ, và vẫn giữ ghi chú', () => {
+    const payload = buildAnnouncement([], LINKS);
+    const { description } = payload.embeds![0];
+
+    expect(description.split('\n')[0]).toBe('Tuần này chưa có ngày đánh nào.');
+    expect(description).toContain('### ✅ Điểm danh');
+    expect(description).not.toContain('🎮');
   });
 
   it('hai nút: điểm danh mang custom_id hằng số, mở web là link button', () => {

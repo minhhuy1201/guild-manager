@@ -4,7 +4,6 @@ import type { BattleSession } from '@guild/shared/schemas';
 import type {
   ActionRow,
   CommandLinks,
-  EmbedField,
   MessagePayload,
 } from './commands/command.types';
 import { ANNOUNCEMENT_ATTENDANCE_ID } from './custom-id';
@@ -15,9 +14,8 @@ const TITLE = '📢 LỊCH ĐÁNH TUẦN NÀY';
 /** Replaces the date range when the week holds no battle day at all. */
 const NO_SESSIONS = 'Tuần này chưa có ngày đánh nào.';
 
-const HOW_TO_NAME = '✅ Điểm danh';
-
-const HOW_TO_VALUE = [
+const HOW_TO = [
+  '### ✅ Điểm danh',
   'Bấm **Điểm danh ngay** bên dưới, hoặc gõ `/diem-danh` trong chat.',
   'Bận thì chọn **KHÔNG**.',
   'Gặp lỗi đăng nhập thì báo admin.',
@@ -52,28 +50,28 @@ function describeWeek(weekStart: string): string {
 }
 
 /**
- * One battle day as an embed field.
+ * One battle day as a two-line block.
  *
- * The label is the one the backend already built (`formatSessionLabel`), never rebuilt here — a
- * second labelling convention is exactly what this command was written to avoid.
+ * The day's name is a `###` heading: Discord renders it visibly larger than body text, which is the
+ * only size control an embed offers, and a heading always starts its own line — so the days stack
+ * down the message instead of sharing a row.
+ *
+ * The label itself is the one the backend already built (`formatSessionLabel`), never rebuilt here —
+ * a second labelling convention is exactly what this command was written to avoid.
  *
  * @param session - The battle day
- * @returns An inline field, so Discord lays three of them per row
+ * @returns Heading line plus a single detail line
  */
-function toField(session: BattleSession): EmbedField {
+function toBlock(session: BattleSession): string {
   const icon = session.isGuildWar ? '🛡️' : '⚔️';
-  const lines = [
+  const details = [
     `📅 ${formatDayMonth(new Date(session.dateTime))}`,
     `🎮 ${session.matchCount} trận`,
   ];
 
-  if (session.opponent) lines.push(`🆚 ${session.opponent}`);
+  if (session.opponent) details.push(`🆚 ${session.opponent}`);
 
-  return {
-    name: `${icon} ${session.label}`,
-    value: lines.join('\n'),
-    inline: true,
-  };
+  return `### ${icon} ${session.label}\n${details.join(' · ')}`;
 }
 
 /**
@@ -116,23 +114,19 @@ export function buildAnnouncement(
   sessions: readonly BattleSession[],
   links: CommandLinks,
 ): MessagePayload {
-  const howTo: EmbedField = {
-    name: HOW_TO_NAME,
-    value: HOW_TO_VALUE,
-    inline: false,
-  };
+  const heading =
+    sessions.length > 0
+      ? `**${describeWeek(sessions[0].weekStart)}**`
+      : NO_SESSIONS;
 
   return {
     content: `<@&${links.guildRoleId}>`,
     embeds: [
       {
         title: TITLE,
-        description:
-          sessions.length > 0
-            ? describeWeek(sessions[0].weekStart)
-            : NO_SESSIONS,
+        // A blank line between blocks: Discord collapses a heading against the line above it.
+        description: [heading, ...sessions.map(toBlock), HOW_TO].join('\n\n'),
         color: EMBED_COLOR,
-        fields: [...sessions.map(toField), howTo],
         footer: { text: FOOTER },
       },
     ],

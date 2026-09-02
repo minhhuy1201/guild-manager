@@ -158,32 +158,48 @@ thì tính năng hiện sai.
 @Nghịch Nước
 ┌──────────────────────────────────────────
 │ 📢 LỊCH ĐÁNH TUẦN NÀY
-│ 01/09 – 06/09
+│ **31/08 – 05/09**
 │
-│ 🛡️ Thứ 7 · 20:00 · Bang Chiến   ⚔️ Thứ 5 · 20:30
-│ 📅 06/09                 📅 04/09
-│ ⚔️ 2 trận                ⚔️ 2 trận
-│                          🆚 Moonlight
+│ ### ⚔️ Thứ 5 · 20:30
+│ 📅 03/09 · 🎮 2 trận · 🆚 Moonlight
 │
-│ ✅ Điểm danh
-│ Bấm nút bên dưới, hoặc gõ /diem-danh trong chat.
-│ Bận thì chọn KHÔNG.
+│ ### ⚔️ Thứ 6 · 21:00
+│ 📅 04/09 · 🎮 1 trận
+│
+│ ### 🛡️ Thứ 7 · 20:00 · Bang Chiến
+│ 📅 05/09 · 🎮 2 trận
+│
+│ ### ✅ Điểm danh
+│ Bấm **Điểm danh ngay** bên dưới, hoặc gõ /diem-danh trong chat.
+│ Bận thì chọn **KHÔNG**.
 │ Gặp lỗi đăng nhập thì báo admin.
 └─ Guild Manager
 [ ✅ Điểm danh ngay ]  [ 🌐 Mở website ]
 ```
 
-- Mỗi ngày đánh là một embed field `inline: true` (Discord xếp tối đa 3 field một hàng).
-- `name` = `${icon} ${session.label}` — `label` đã do backend dựng
-  (`formatSessionLabel`, nay kèm giờ cho cả hai loại — §3.8), không dựng lại ở đây.
-  Icon: 🛡️ khi `isGuildWar`, ⚔️ còn lại.
-- `value` = ngày `dd/MM` từ `dateTime`, số trận từ `matchCount`, và dòng đối thủ chỉ khi
-  `opponent` khác null.
+**Toàn bộ thân nằm trong `description`, embed không có `fields`.** Hai lý do gộp lại thành
+một quyết định:
+
+- **Field là thứ Discord xếp thành cột.** Ba field `inline` chung một hàng đọc rất khó khi
+  mỗi ngày có ba mẩu thông tin. Nội dung trong `description` thì luôn xếp dọc.
+- **Field name không render markdown heading.** Discord không cho chỉnh cỡ chữ; thứ duy
+  nhất to hơn chữ thường là heading `#` / `##` / `###`, và nó chỉ có tác dụng trong
+  `description`. `###` là mức vừa: to hơn hẳn dòng chi tiết mà không lấn `title`.
+
+Vì vậy `EmbedPayload` **không có** trường `fields` — bỏ hẳn thay vì để đó không dùng.
+
+- Mỗi ngày đánh là hai dòng: heading `### {icon} {label}`, rồi một dòng chi tiết nối bằng
+  ` · `.
+- `label` do backend dựng (`formatSessionLabel`, nay kèm giờ cho cả hai loại — §3.8),
+  không dựng lại ở đây. Icon: 🛡️ khi `isGuildWar`, ⚔️ còn lại.
+- Dòng chi tiết: ngày `dd/MM` từ `dateTime`, số trận từ `matchCount`, và phần đối thủ chỉ
+  khi `opponent` khác null.
+- Các khối cách nhau một dòng trống — Discord dính heading vào dòng ngay trên nó.
 - Khoảng tuần lấy từ `weekStart` của session đầu tiên, đến `weekStart + 5 ngày`
   (`shiftVnDate`) — tuần điểm danh chạy thứ 2 → thứ 7 (architecture.md §6).
-- Ghi chú hướng dẫn là một field cố định cuối embed, không inline.
-- Tuần rỗng: bỏ toàn bộ field ngày đánh, `description` thành "Tuần này chưa có ngày đánh
-  nào." Nút vẫn giữ — người dùng vẫn có thể muốn xem bảng.
+- Ghi chú hướng dẫn là khối cuối, cũng mở đầu bằng `### `.
+- Tuần rỗng: bỏ toàn bộ khối ngày đánh, dòng đầu thành "Tuần này chưa có ngày đánh nào.",
+  ghi chú vẫn giữ. Nút vẫn còn — người dùng vẫn có thể muốn xem bảng.
 
 ## 5. Thay đổi theo file
 
@@ -243,8 +259,9 @@ câu tiếng Việt của nó, còn lại thành `UNEXPECTED` + log.
 
 `apps/api/src/modules/discord-bot/__tests__/`:
 
-- `announcement.spec.ts` — một field mỗi ngày đánh; icon theo `isGuildWar`; dòng đối thủ
-  chỉ xuất hiện khi `opponent` khác null; khoảng tuần đúng; tuần rỗng ra câu thay thế;
+- `announcement.spec.ts` — mỗi ngày đánh một heading `### ` riêng (bằng chứng xếp dọc,
+  không xếp cột); icon theo `isGuildWar`; phần đối thủ chỉ xuất hiện khi `opponent` khác
+  null; khoảng tuần đúng; tuần rỗng ra câu thay thế mà vẫn giữ ghi chú;
   `allowed_mentions.roles` đúng một phần tử; link button mang `WEB_ORIGIN`.
 - `thong-bao.command.spec.ts` — non-admin bị từ chối ephemeral; Discord ID không resolve
   được ra `NOT_LINKED`; admin nhận `publicMessage` với mention role trong `content`.
