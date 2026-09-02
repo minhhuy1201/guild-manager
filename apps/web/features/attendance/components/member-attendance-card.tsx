@@ -204,9 +204,11 @@ export function MemberAttendanceCard() {
                       )}
                     >
                       <SessionLabel session={battleSession} size="md" />
-                      <p className="text-sm text-muted-foreground">
-                        {getSessionSubtitle(battleSession)}
-                      </p>
+                      {getSessionSubtitle(battleSession) && (
+                        <p className="text-sm text-muted-foreground">
+                          {getSessionSubtitle(battleSession)}
+                        </p>
+                      )}
 
                       {/* `mt-auto` pins the answers to the bottom, so a day with a longer
                           subtitle does not leave its buttons higher than its neighbour's. */}

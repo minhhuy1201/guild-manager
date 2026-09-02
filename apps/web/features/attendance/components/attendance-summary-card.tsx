@@ -18,7 +18,7 @@ import {
 import { GUILD_CLASS_IMAGE } from "@/lib/guild-class";
 import { cn } from "@/lib/utils";
 import type { ClassAttendanceSummary } from "../lib/attendance-summary";
-import { getSessionSubtitle } from "../lib/session-subtitle";
+import { getSessionSubtitle, joinSessionMeta } from "../lib/session-subtitle";
 
 /**
  * The three answers, in the order they stack from the left, with the tones §6 of
@@ -155,7 +155,10 @@ export function AttendanceSummaryCard({
           <SessionLabel session={session} />
         </CardTitle>
         <div className="text-xs font-medium text-muted-foreground">
-          {getSessionSubtitle(session)} · đã điểm danh {answered}/{total}
+          {joinSessionMeta(
+            getSessionSubtitle(session),
+            `đã điểm danh ${answered}/${total}`
+          )}
         </div>
       </CardHeader>
       <CardContent>

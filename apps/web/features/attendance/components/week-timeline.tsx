@@ -91,9 +91,11 @@ export function WeekTimeline() {
                 )}
               >
                 <SessionLabel session={session} />
-                <div className="text-xs font-medium text-muted-foreground">
-                  {subtitle}
-                </div>
+                {subtitle && (
+                  <div className="text-xs font-medium text-muted-foreground">
+                    {subtitle}
+                  </div>
+                )}
                 <SessionDeadline session={session} />
                 {closed ? (
                   <StatusBadge tone="danger">
