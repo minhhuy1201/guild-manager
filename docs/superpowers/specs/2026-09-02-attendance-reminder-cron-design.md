@@ -20,7 +20,7 @@ Trong phạm vi:
 - Một message công khai mention đích danh, kèm nút **Điểm danh ngay** sẵn có.
 - Bảng `BotChannel` + lệnh `/cau-hinh-kenh` để chọn channel nhận thông báo.
 - Lệnh `/nhac-diem-danh` chạy tay đúng luồng đó.
-- **Bỏ nút "Mở website"** khỏi `/thong-bao` (§3.7).
+- Rút hàng nút chung của `/thong-bao` và tin nhắc ra một chỗ (§3.7).
 
 Ngoài phạm vi — cố ý không làm:
 
@@ -167,26 +167,27 @@ chạy tay và tự đọc file env — biến chưa bao giờ đi qua `env.vali
 **biến runtime bắt buộc**, vì thiếu nó thì cron chạy nhưng không gửi được gì. Hệ quả vận
 hành: phải set trên host trước khi merge (§7).
 
-### 3.7 Bỏ nút "Mở website" ở cả hai chỗ
+### 3.7 Giữ nút "Mở website", và rút hàng nút ra một chỗ
 
-Hướng đi đã chốt là điểm danh diễn ra **trong Discord**; website còn lại vai trò tra cứu.
-Một nút "Mở website" đặt ngay cạnh "Điểm danh ngay" mời người ta rời khỏi chỗ việc đã làm
-xong được, và mỗi lần rời đi là một lần phải đăng nhập.
+Có cân nhắc bỏ nút link, với lý do điểm danh rồi sẽ diễn ra hẳn trong Discord còn website
+chỉ để tra cứu. Quyết định ngược lại: nút này là **đường vào website duy nhất mà người ta
+gặp hằng ngày**. Bỏ nó không làm ai điểm danh trên Discord nhiều hơn, chỉ làm website
+thành thứ không ai mở nữa.
 
-Nên tin nhắc **không có** nút link, và nút link cũng bị gỡ khỏi `/thong-bao`. Hàng nút của
-cả hai message còn đúng một cái: **✅ Điểm danh ngay**.
+Nên tin nhắc mang **cùng một hàng nút** với `/thong-bao`:
 
-Việc này chạm vào code đã ship, kéo theo:
+```
+[ ✅ Điểm danh ngay ]  [ 🌐 Mở website ]
+```
 
-| Thứ | Xử lý |
-|---|---|
-| `announcement.ts` | `buildButtons` không còn nhận `webOrigin`; hàng nút còn một phần tử |
-| `CommandLinks` | `webOrigin` biến mất, còn trơ `guildRoleId` → **bỏ hẳn type**, `CommandDeps` mang `guildRoleId: string` trực tiếp. Một object tên "links" mà không còn link nào là một cái tên nói dối |
-| `LinkButton`, `BUTTON_STYLE.link` | Xoá. Không còn ai dùng, và `ButtonComponent` trở lại đúng `CustomIdButton`. Cần lại thì git còn đó |
-| `announcement.spec.ts` | Bỏ test khẳng định link button mang `WEB_ORIGIN` |
-| `2026-09-02-thong-bao-command-design.md` | **Sửa spec cũ** — §2, §3.7, §4, §5, §8 đang mô tả hai nút. Để nguyên là spec nói một đằng, code một nẻo |
+Hệ quả: `LinkButton`, `BUTTON_STYLE.link`, `CommandLinks` (`webOrigin` + `guildRoleId`) và
+`announcement.ts` **không đổi gì**, và spec `/thong-bao` cũng không phải sửa.
 
-`WEB_ORIGIN` **vẫn giữ**: nó là origin cho CORS, việc dựng nút chỉ là một chỗ dùng ghé.
+Thay đổi duy nhất trên code đã ship là chỗ *đặt* hàng nút. Hôm nay `buildButtons` là hàm
+private trong `announcement.ts`; nếu `reminder.ts` dựng lại hàng nút đó thì hai bản sao sẽ
+trôi khỏi nhau — đổi nhãn một nút ở một chỗ và quên chỗ kia là chuyện của vài tuần sau.
+Nên hàm chuyển sang `discord-bot/entry-buttons.ts` dưới tên `buildEntryButtons(webOrigin)`,
+và cả hai message cùng gọi nó. Cùng lý do đã rút `buildOwnBoard` ra khỏi `/diem-danh`.
 
 ### 3.8 Nút "Điểm danh ngay" tái dùng nguyên trạng, không thêm route
 
@@ -243,7 +244,7 @@ thì lúc đó mới chuyển ra — theo đúng "Don't create guards speculativ
 │ ⏳ Hạn: 10:00 · Thứ 5 (03/09) · 👥 còn 1 người
 │ Bún Chả
 └─ Guild Manager
-[ ✅ Điểm danh ngay ]
+[ ✅ Điểm danh ngay ]  [ 🌐 Mở website ]
 ```
 
 - Nhãn ngày đánh là `session.label` do backend dựng sẵn, không dựng lại. Icon 🛡️ khi
@@ -268,7 +269,8 @@ thì lúc đó mới chuyển ra — theo đúng "Don't create guards speculativ
 | `battle-sessions/session-schedule.ts` | `isReminderDay`, `formatDeadlineLabel` (+ export ở `battle-sessions.public.ts`) |
 | `discord-bot/bot-channel.service.ts` | **Mới.** `get()` / `set(channelId)` trên `BotChannel` qua Prisma |
 | `discord-bot/discord-rest.ts` | **Mới.** `DiscordRestClient.postMessage(channelId, payload)` |
-| `discord-bot/reminder.ts` | **Mới.** Thuần: `buildReminder(dueSessions)` → `MessagePayload` |
+| `discord-bot/entry-buttons.ts` | **Mới.** `buildEntryButtons(webOrigin)`, rút ra từ `announcement.ts` (§3.7) |
+| `discord-bot/reminder.ts` | **Mới.** Thuần: `buildReminder(dueSessions, webOrigin)` → `MessagePayload` |
 | `discord-bot/reminder.service.ts` | **Mới.** Chọn session tới hạn, tìm người thiếu, gửi. Trả `{ sent, sessionCount, missingCount }` |
 | `discord-bot/cron.guard.ts` | **Mới.** So `Authorization: Bearer` với `CRON_SECRET` |
 | `discord-bot/reminder.controller.ts` | **Mới.** `GET /cron/attendance-reminder` |
@@ -276,15 +278,14 @@ thì lúc đó mới chuyển ra — theo đúng "Don't create guards speculativ
 | `discord-bot/commands/cau-hinh-kenh.command.ts` | **Mới** |
 | `discord-bot/commands/nhac-diem-danh.command.ts` | **Mới** |
 | `discord-bot/commands/index.ts` | Hai dòng |
-| `discord-bot/commands/command.types.ts` | `CommandDeps` bỏ `links`, thêm `guildRoleId`, `reminders`, `channels`; `allowed_mentions.users`; xoá `LinkButton` (§3.7) |
+| `discord-bot/commands/command.types.ts` | `CommandDeps` thêm `reminders`, `channels`; `allowed_mentions` nhận thêm `users` |
 | `discord-bot/interaction-router.ts` | Dựng `deps` mới; `channel_id` đi tiếp tới command |
 | `discord-bot/interaction.schema.ts` | `channel_id` trên nhánh `applicationCommand` |
-| `discord-bot/discord.constants.ts` | Xoá `BUTTON_STYLE.link` (§3.7) |
-| `discord-bot/announcement.ts`, `custom-id.ts` | Bỏ nút link; sửa doc comment (§3.7, §3.8) |
+| `discord-bot/announcement.ts` | Gọi `buildEntryButtons` thay cho hàm private (§3.7) |
+| `discord-bot/custom-id.ts` | Sửa doc comment: nút nay nằm trên hai loại message (§3.8) |
 | `docs/architecture.md` | Bảng endpoint, bảng module, `BotChannel` ở §5, một dòng ở §7 cho "một job chạy định kỳ" |
 | `docs/development.md` §3, `docs/production.md` §3 | Hai biến env mới |
 | `docs/production.md` | Mục vận hành cho cron + Data API grant cho bảng mới |
-| `docs/superpowers/specs/2026-09-02-thong-bao-command-design.md` | Sửa theo việc bỏ nút link (§3.7) |
 
 ## 6. Luồng
 
@@ -299,7 +300,7 @@ thì lúc đó mới chuyển ra — theo đúng "Don't create guards speculativ
    - `characters.listRows()` + `attendance.getRecords()`; với mỗi session, người thiếu là
      người không có record cho session đó.
    - Mọi session đều đủ người → `{ sent: false }`.
-   - `buildReminder(dueSessions)` → `rest.postMessage(channelId, payload)`.
+   - `buildReminder(dueSessions, webOrigin)` → `rest.postMessage(channelId, payload)`.
 4. Trả `{ data: { sent, sessionCount, missingCount } }`.
 
 **`/nhac-diem-danh`:** resolve actor → không admin thì ephemeral từ chối → gọi đúng
@@ -339,7 +340,8 @@ thất bại.
   mention trong `content` chứ không trong embed; một người thiếu hai ngày chỉ xuất hiện
   **một lần** trong `content`; `allowed_mentions.users` khớp đúng danh sách đó; người
   không có `discordId` hiện ở dòng "Chưa liên kết Discord" và không lọt vào mention; số
-  đếm `còn N người` tính cả người đó; hàng nút có đúng một nút và **không** có nút link.
+  đếm `còn N người` tính cả người đó; hàng nút mang cả **Điểm danh ngay** lẫn **Mở
+  website** với `WEB_ORIGIN`.
 - `reminder.service.spec.ts` — chưa cấu hình channel → không gọi REST, `sent: false`;
   không session nào tới hạn → không gọi REST; mọi session đủ người → không gọi REST;
   session tới hạn còn người thiếu → gọi REST đúng một lần với đúng channel.
@@ -350,7 +352,8 @@ thất bại.
   lời riêng tư khác nhau.
 - `interaction-router.spec.ts` (bổ sung) — nút `ANNOUNCEMENT_ATTENDANCE_ID` vẫn trả
   `channelMessageWithSource` + ephemeral, **không** phải `updateMessage`.
-- `announcement.spec.ts` (sửa) — bỏ test link button; khẳng định hàng nút còn đúng một nút.
+- `announcement.spec.ts` — giữ nguyên, chứng minh việc rút `buildEntryButtons` không đổi
+  hành vi của `/thong-bao`.
 - `interaction.schema.spec.ts` (bổ sung) — `channel_id` được đọc ra; thiếu nó thì payload
   lệnh bị từ chối tại biên.
 
@@ -371,4 +374,3 @@ thất bại.
 | Nút trên tin nhắc ghi đè chính tin nhắc | §3.8; có test khoá kiểu phản hồi |
 | Danh sách mention vượt 2000 ký tự | Mention là **hợp**, mỗi người một lần (§3.3); bang ~30 người còn cách trần gấp đôi |
 | Quên `discord:register` → hai lệnh mới không hiện | §7 bước 3 |
-| Bỏ nút link làm spec `/thong-bao` sai | §3.7 sửa spec đó trong cùng PR |
