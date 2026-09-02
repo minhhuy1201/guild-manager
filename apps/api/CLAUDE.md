@@ -40,7 +40,12 @@ The rules that get broken first, in the order they get broken:
   re-exports only, and it never imports from another module — a cycle between two of them is a real
   domain cycle, so extract a third module.
 - **Week and deadline rules live in `modules/battle-sessions/session-schedule.ts`** and its
-  `__tests__`, nowhere else.
+  `__tests__`, nowhere else. That includes `isReminderDay` (which morning the bot nudges people for
+  a deadline) and `formatDeadlineLabel` — a second copy of the weekday names is exactly the drift
+  this rule exists to prevent.
+- **Anything that must run on a schedule is a `crons` entry in `vercel.json`** pointing at a `GET`
+  endpoint behind `CronSecretGuard`, never `@nestjs/schedule`: this app is a Vercel Function, so no
+  process is alive to tick. The schedule is UTC, and the Hobby plan only guarantees the hour.
 - **A Discord slash command is one file** in `modules/discord-bot/commands/`, holding both its
   `definition` (what gets sent to Discord) and its `execute`, plus one line in `commands/index.ts`.
   No business logic lives there — reach other modules through their `*.public.ts` like anything else.

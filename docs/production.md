@@ -549,6 +549,22 @@ empty importer (`.: {}`) to the lockfile. It is a marker for the updater, not a 
 when nothing is pending, so this is safe — but it is the reason a lockfile bump is not "just" a
 lockfile bump.
 
+### Cron nhắc điểm danh
+
+`apps/api/vercel.json` khai báo `GET /api/cron/attendance-reminder` chạy `0 2 * * *` — giờ **UTC**,
+tức 09:00 giờ VN. Vercel tự gắn `Authorization: Bearer $CRON_SECRET` vào lời gọi khi biến đó tồn
+tại; thiếu nó thì API không boot, nên không có trạng thái "cron chạy mà endpoint mở toang".
+
+- Cron **chỉ chạy trên deployment production**. Preview không có cron, local cũng không.
+- Gói Hobby chỉ bảo đảm nổ **trong khoảng giờ** đã hẹn, không đúng phút — thực tế là đâu đó trong
+  09:00–09:59 giờ VN. Luật của job chỉ so ngày dương lịch VN nên cả khoảng đó cho cùng kết quả.
+- Xem lần chạy gần nhất: Vercel → project api → Cron Jobs.
+- Sau lần deploy đầu tiên, gõ `/cau-hinh-kenh` trong channel muốn nhận thông báo. Chưa cấu hình thì
+  job vẫn chạy nhưng chỉ ghi một dòng `warn` rồi dừng — không phải lỗi.
+- Không cần chờ tới sáng hôm sau để kiểm chứng: `/nhac-diem-danh` gọi đúng cùng một hàm.
+- Job **cố ý không chống gửi trùng**. Nếu Vercel nổ hai lần thì bang nhận hai tin giống nhau; một
+  cái ping thừa rẻ hơn một bảng trạng thái "đã gửi hôm nay" phải bảo trì.
+
 ### Health check
 
 ```bash

@@ -144,7 +144,7 @@ Each is `<domain>.module.ts` + `<domain>.controller.ts` + `<domain>.service.ts`,
 | `battle-sessions` | The week's schedule, deadlines, the Guild War session, time rules | Reads signed-in, writes admin |
 | `attendance` | Marking attendance and reading records | Bearer required; reads are guild-wide for everyone, admin bypasses the deadline and marks for others |
 | `team-builder` | Per-match formations, and the team names shown on the grid | Admin |
-| `discord-bot` | The Discord interactions endpoint, the slash command registry, attendance recorded from Discord (`/diem-danh`, `/diem-danh-ho`), and the weekly schedule announcement (`/thong-bao`, admin only) | Discord's Ed25519 signature — no JWT, no session; the identity comes from the signed payload and the write rules stay `AttendanceService`'s |
+| `discord-bot` | The Discord interactions endpoint, the slash command registry, attendance recorded from Discord (`/diem-danh`, `/diem-danh-ho`), the weekly schedule announcement (`/thong-bao`), the announcement channel (`/cau-hinh-kenh`), and the daily attendance reminder — run by Vercel Cron, or by hand with `/nhac-diem-danh`. The last three are admin only | Discord's Ed25519 signature for interactions; `CRON_SECRET` in a bearer header for the scheduled reminder — no JWT, no session; the identity comes from the signed payload and the write rules stay `AttendanceService`'s |
 
 Endpoints, all behind the `/api` prefix:
 
@@ -177,6 +177,7 @@ Endpoints, all behind the `/api` prefix:
 | `GET` | `/team-builder/team-names` | Names of the grid's team columns | Admin |
 | `PUT` | `/team-builder/team-names` | Overwrite the whole team name map | Admin |
 | `POST` | `/discord/interactions` | Receive a slash command from Discord and answer it | Discord's Ed25519 signature |
+| `GET` | `/cron/attendance-reminder` | Post the reminder for every deadline falling tomorrow. `GET` because Vercel Cron only issues GET | `CRON_SECRET` in `Authorization: Bearer` |
 
 ### 3.4 Cross-cutting contracts
 
@@ -305,6 +306,7 @@ Character ──< AttendanceRecord >── BattleSession ──< FormationMatch 
 | `AuthExchange` | A single-use code the web app trades for a JWT pair after the API finishes the OAuth callback. Lives 60 seconds; expired rows are swept during the next exchange. Holds `discordId`, not a foreign key, because a rescue admin may match no `Character`. |
 | `FormationSlot` | One cell of the roster grid: a person, a note, or both. A cell that is empty *and* unannotated has no row — that is how "slot 2 is empty" differs from "there is no slot 2". |
 | `TeamName` | Display name of one team column, keyed by team number. Global configuration, not per battle day: the same names apply to every week and every match, which is why it hangs off nothing in the diagram above. A team still showing its plain number has no row. |
+| `BotChannel` | Which Discord channel the bot posts a given kind of message to, keyed by `purpose`. Global configuration like `TeamName`, which is why it hangs off nothing in the diagram above. Today it holds one row, `ATTENDANCE_REMINDER`, written by `/cau-hinh-kenh`. `purpose` is a `String` and not an enum on purpose: the value never crosses the network to the web app, so it need not stay in step with `packages/shared/enums`. |
 
 The label of a match ("Thứ 3 · 20:30") is **derived from `dateTime`**, never stored, so changing the
 time changes the label everywhere.
@@ -356,6 +358,7 @@ one exception is `prisma/fix-deadlines.ts`, a one-off migration of rows written 
 | **A change to the week or deadline rules** | `session-schedule.ts` and its `__tests__` — nowhere else. The frontend must not re-derive a rule the backend owns. |
 | **A display convention** (state icon, action button, table shell) | Follow, and extend, [`frontend.md`](../apps/web/docs/frontend.md) §6 with a wrapper in `components/shared/`. |
 | **A new Discord slash command** | One file in `src/modules/discord-bot/commands/`, holding both its `definition` and its `execute`, plus one line in `commands/index.ts`. Then `pnpm --filter api discord:register`. Nothing else changes. |
+| **Something that must run on a schedule** | A `crons` entry in `apps/api/vercel.json` pointing at a `GET` endpoint behind `CronSecretGuard`. **Never `@nestjs/schedule`**: the API is a Vercel Function, so no process is alive to tick and an in-process timer either never fires or fires whenever some unrelated request happens to wake an instance. The schedule is **UTC**, and the Hobby plan only guarantees the hour, not the minute — a rule needing an exact minute does not belong on this schedule. |
 | **Anything with a non-obvious "why"** | A spec in `docs/superpowers/specs/`, then link it from the code comment. |
 
 Tests sit next to what they cover: `__tests__/` beside the module or feature folder (Jest on the
@@ -368,6 +371,10 @@ Recorded so nobody assumes otherwise: no preview deployments (both projects buil
 no staging environment, no verified backups, no monitoring or alerting, no application-level rate
 limiting, and no automatic rollback. Migrations are still run by hand — the pipeline ships code,
 never schema. Details and consequences are in [`production.md`](production.md) §6.
+
+The one scheduled job — the attendance reminder — inherits that gap: it reports only into Vercel's
+Cron Jobs tab and the function log, and nothing alerts when a run fails or silently sends nothing.
+That is why `/nhac-diem-danh` exists, to run the same code by hand and see the answer in chat.
 
 CI does exist: `.github/workflows/ci.yml` runs the test suite, lint, Prettier, typecheck and build on
 every push and pull request against `main`, then deploys when `main` is green. The jobs are filtered
