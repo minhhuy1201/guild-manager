@@ -71,10 +71,14 @@ describe('/thong-bao', () => {
   });
 
   it('không đọc lịch khi người gọi không đủ quyền', async () => {
-    const deps = makeDeps(actor(GuildRole.MEMBER));
+    const listByWeek = jest.fn().mockResolvedValue([]);
+    const deps = {
+      ...makeDeps(actor(GuildRole.MEMBER)),
+      battleSessions: { listByWeek },
+    } as unknown as CommandDeps;
 
     await thongBaoCommand.execute(INTERACTION, deps);
 
-    expect(deps.battleSessions.listByWeek).not.toHaveBeenCalled();
+    expect(listByWeek).not.toHaveBeenCalled();
   });
 });
