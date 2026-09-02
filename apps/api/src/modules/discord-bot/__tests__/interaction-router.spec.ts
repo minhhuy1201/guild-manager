@@ -62,7 +62,9 @@ describe('InteractionRouter', () => {
     });
   });
 
-  it('nút trên thông báo mở một message riêng, không ghi đè thông báo chung', async () => {
+  // Nút này nằm trên cả /thong-bao lẫn tin nhắc điểm danh — cả hai đều là tin của cả bang, nên
+  // updateMessage sẽ khiến người bấm đầu tiên xoá tin đó của mọi người.
+  it('nút trên tin gửi cả bang mở một message riêng, không ghi đè tin đó', async () => {
     const reply = await makeRouter().route({
       type: 3,
       data: { custom_id: ANNOUNCEMENT_ATTENDANCE_ID },
