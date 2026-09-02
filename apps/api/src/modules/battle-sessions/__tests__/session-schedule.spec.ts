@@ -115,9 +115,9 @@ describe('session-schedule', () => {
       );
     });
 
-    it('Guild War hiện thứ và chữ Bang Chiến', () => {
+    it('Guild War hiện thứ, giờ đánh và chữ Bang Chiến', () => {
       expect(formatSessionLabel(vn('2026-07-25T20:00'), true)).toBe(
-        'Thứ 7 · Bang Chiến',
+        'Thứ 7 · 20:00 · Bang Chiến',
       );
     });
   });
