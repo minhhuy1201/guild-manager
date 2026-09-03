@@ -89,4 +89,33 @@ describe('InteractionRouter', () => {
       data: { content: NOT_LINKED },
     });
   });
+  it('đọc ba channel id của /chao-mung từ env đúng tên biến', async () => {
+    // Sai tên biến ở đây không làm gãy build; nó chỉ hiện ra thành <#undefined> trong lời chào
+    // đã đăng công khai — nên tên biến được ghim bằng test.
+    const get = jest.fn().mockImplementation((key: string) => `giá-trị:${key}`);
+    const router = new InteractionRouter(
+      {} as never,
+      {} as never,
+      {} as never,
+      { resolve: jest.fn().mockResolvedValue(null) } as never,
+      { get } as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
+
+    await router.route({
+      type: 2,
+      channel_id: '424242',
+      data: { name: 'ping' },
+    });
+
+    for (const key of [
+      'DISCORD_BANG_CHIEN_CHANNEL_ID',
+      'DISCORD_NGHICH_THUY_HAN_CHANNEL_ID',
+      'DISCORD_KHAM_ACC_CHANNEL_ID',
+    ]) {
+      expect(get).toHaveBeenCalledWith(key, { infer: true });
+    }
+  });
 });

@@ -83,7 +83,7 @@ function toBlock(session: BattleSession): string {
  */
 export function buildAnnouncement(
   sessions: readonly BattleSession[],
-  links: CommandLinks,
+  links: Pick<CommandLinks, 'webOrigin' | 'guildRoleId'>,
 ): MessagePayload {
   const heading =
     sessions.length > 0

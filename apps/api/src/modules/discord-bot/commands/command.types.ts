@@ -119,6 +119,18 @@ export interface CommandLinks {
   webOrigin: string;
   /** Discord ID of the guild role `/thong-bao` mentions */
   guildRoleId: string;
+  /**
+   * Channels `/chao-mung` points a new member at. The sect channel is not here: it changes with
+   * every new member, so it arrives as an option rather than as configuration.
+   */
+  channelIds: {
+    /** `#⚔️│bang-chiến` */
+    bangChien: string;
+    /** `#🌊│nghich-thuy-han` */
+    nghichThuyHan: string;
+    /** `#khám-acc` */
+    khamAcc: string;
+  };
 }
 
 /**

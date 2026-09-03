@@ -63,10 +63,12 @@ export const BUTTON_STYLE = {
  */
 export const EMBED_COLOR = 0x5865f2;
 
-/** Slash command option types. Only the one the bot declares is listed. */
+/** Slash command option types. Only the ones the bot declares are listed. */
 export const COMMAND_OPTION_TYPE = {
   /** A guild member picker — the value arrives as a Discord ID string */
   user: 6,
+  /** A channel picker — the value arrives as a channel id string */
+  channel: 7,
 } as const;
 
 /**

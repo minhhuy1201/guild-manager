@@ -67,6 +67,9 @@ the app dies immediately with a Vietnamese error message instead of half-running
 | `DISCORD_ADMIN_IDS` | | empty | Rescue Discord IDs, comma-separated. They always sign in as `ADMIN`, even with no matching `Character` — the only way in before anyone has been linked |
 | `DISCORD_PUBLIC_KEY` | ✅ | — | Application public key (Developer Portal → General Information), 64 hex characters. Verifies the Ed25519 signature on every interaction webhook — **the API refuses to boot without it** |
 | `DISCORD_GUILD_ROLE_ID` | ✅ | — | Discord ID of the guild role `/thong-bao` mentions (Developer Mode → Server Settings → Roles → right-click the role → Copy Role ID) — **the API refuses to boot without it** |
+| `DISCORD_BANG_CHIEN_CHANNEL_ID` | ✅ | — | Channel `#⚔️│bang-chiến`, linked by `/chao-mung` (Developer Mode → right-click the channel → Copy Channel ID) — **the API refuses to boot without it** |
+| `DISCORD_NGHICH_THUY_HAN_CHANNEL_ID` | ✅ | — | Channel `#🌊│nghich-thuy-han`, linked by `/chao-mung` — **the API refuses to boot without it** |
+| `DISCORD_KHAM_ACC_CHANNEL_ID` | ✅ | — | Channel `#khám-acc`, where a new member posts their gear — **the API refuses to boot without it** |
 | `DISCORD_BOT_TOKEN` | ✅ | — | Developer Portal → Bot → Reset Token, shown exactly once. Read by `pnpm --filter api discord:register` **and** by the running app, which posts the daily attendance reminder with it — **the API refuses to boot without it** |
 | `CRON_SECRET` | ✅ | — | Secret guarding `GET /api/cron/attendance-reminder`; Vercel Cron sends it as `Authorization: Bearer …`. At least 32 characters (`openssl rand -hex 32`). Cron never fires locally, so any value of the right length does — **the API refuses to boot without it** |
 | `DISCORD_GUILD_ID` | script only | — | Id of the guild's Discord server (Developer Mode → right-click the server → Copy Server ID). Read by `discord:register` only |
