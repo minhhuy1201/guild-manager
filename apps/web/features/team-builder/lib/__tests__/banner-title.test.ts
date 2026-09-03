@@ -49,6 +49,12 @@ describe("buildBannerTitle", () => {
     );
   });
 
+  it("đếm theo số đội hình đã lưu khi lịch bị rút xuống 1 trận", () => {
+    expect(buildBannerTitle({ ...BASE, scheduledMatchCount: 1 })).toBe(
+      "SCRIM 20:30 03/09 - VS: Bang ABC - trận 1/2"
+    );
+  });
+
   it("ghi số trận của ngày khi ngày chỉ đánh 1 trận", () => {
     expect(
       buildBannerTitle({

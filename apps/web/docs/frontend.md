@@ -453,6 +453,14 @@ the settings row's "Bang Chiến" badge, the team builder tab's lock icon and un
 `label` is built by the API (`architecture.md` §5 — never stored). Never assemble a battle's name on
 the frontend.
 
+**The one exception is a headline that cannot take `label`**: the team builder's formation banner
+(`features/team-builder/components/formation-banner.tsx`) needs `BANG CHIẾN 20:30 03/09`, while
+`label` reads `Thứ 3 · 20:30` — a different shape, not a different name. It composes the line in
+`features/team-builder/lib/banner-title.ts` from `sessionKindLabel(isGuildWar)`, which lives in
+`session-label.tsx` beside the icon and the tint so the two words cannot drift from them, plus
+`formatTime`/`formatDayMonth`. A screen wanting a battle's name still takes `label`; only a headline
+of a fixed shape composes one, and it composes it out of these pieces.
+
 **A screen that puts `SessionLabel` on a `primary` surface has to invert it.** The Guild War's
 `text-primary` *is* that background, so the label disappears — `session-tabs` adds
 `data-active:*:text-primary-foreground` to the selected card to flip its whole content back.
