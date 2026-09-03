@@ -22,6 +22,17 @@ const ICON_CLASS: Record<SessionLabelSize, string> = {
 /** Frame classes for a Guild War, kept beside the label they belong with. */
 const GUILD_WAR_TINT = "border-primary/40 bg-primary/5";
 
+/**
+ * How a battle kind is written in upper case, for a headline that has no room for the
+ * backend's full label. Lives here so the two words cannot drift from the icon and the
+ * tint that mean the same thing.
+ * @param isGuildWar - Whether the battle is the Guild War
+ * @returns "BANG CHIẾN" or "SCRIM"
+ */
+export function sessionKindLabel(isGuildWar: boolean): string {
+  return isGuildWar ? "BANG CHIẾN" : "SCRIM";
+}
+
 export interface SessionLabelProps {
   /** Battle to show; its label, its Guild War flag and its match count are read */
   session: Pick<BattleSession, "label" | "isGuildWar" | "matchCount">;

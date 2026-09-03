@@ -14,6 +14,7 @@ import { ErrorState } from "@/components/shared/error-state";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFormationScreen } from "../hooks/use-formation-screen";
+import { buildBannerTitle } from "../lib/banner-title";
 import { CopyFormationDialog } from "./copy-formation-dialog";
 import { FormationGrid } from "./formation-grid";
 import { FormationToolbar } from "./formation-toolbar";
@@ -121,7 +122,8 @@ export function TeamBuilderScreen() {
 
   // A week with no battles is empty, not broken — say so instead of rendering
   // an empty tab bar over an empty grid.
-  if (screen.selection.sessions.length === 0) {
+  const activeSession = screen.selection.activeSession;
+  if (!activeSession) {
     return (
       <Card>
         <CardContent>
@@ -195,6 +197,16 @@ export function TeamBuilderScreen() {
         />
 
         <FormationGrid
+          bannerTitle={buildBannerTitle({
+            isGuildWar: activeSession.isGuildWar,
+            dateTime: activeSession.dateTime,
+            opponent: activeSession.opponent,
+            activeMatchIndex: screen.draft.activeMatchIndex,
+            draftMatchCount: screen.draft.matchCount,
+            scheduledMatchCount: activeSession.matchCount,
+          })}
+          isGuildWar={activeSession.isGuildWar}
+          locked={activeSession.locked}
           assignment={screen.draft.assignment}
           notes={screen.draft.notes}
           onNoteChange={screen.draft.setNote}
