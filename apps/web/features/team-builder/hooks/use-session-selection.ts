@@ -12,6 +12,8 @@ export interface SessionSelectionState {
   sessions: SessionFormation[];
   /** Battle whose tab is open; null when the week holds no battle */
   activeSessionId: string | null;
+  /** The open battle itself; undefined when the week holds no battle */
+  activeSession: SessionFormation | undefined;
   /** Whether the open battle may still be rearranged */
   editable: boolean;
   /** Open another battle's tab */
@@ -39,5 +41,11 @@ export function useSessionSelection(
     ? isSessionEditable(activeSession, isEditableWeek)
     : false;
 
-  return { sessions, activeSessionId, editable, setActiveSession };
+  return {
+    sessions,
+    activeSessionId,
+    activeSession,
+    editable,
+    setActiveSession,
+  };
 }

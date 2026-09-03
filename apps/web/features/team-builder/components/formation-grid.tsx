@@ -7,12 +7,19 @@ import type { Character, TeamNames } from "@guild/shared/schemas";
 import { Spinner } from "@/components/shared/spinner";
 import { createMockFormation } from "../lib/mock-formation";
 import type { Assignment, Notes, Slot } from "../types/formation";
+import { FormationBanner } from "./formation-banner";
 import { TeamColumn } from "./team-column";
 
 /** Layout is static data, built once at module load. */
 const FORMATION = createMockFormation();
 
 interface FormationGridProps {
+  /** Banner headline shown above the columns */
+  bannerTitle: string;
+  /** Whether the battle on screen is the Guild War — the banner marks it */
+  isGuildWar: boolean;
+  /** Whether the battle on screen is already played — the banner says so */
+  locked: boolean;
   /** Assignment currently shown — a draft, or the saved copy */
   assignment: Assignment;
   /** Full roster indexed by character id */
@@ -39,9 +46,14 @@ interface FormationGridProps {
  * by side. Slots are stored flat and grouped by team here, so changing the team
  * count only means changing the layout builder.
  *
+ * A banner spanning all five columns sits on top, naming the battle and the match.
+ *
  * Takes the assignment as a prop rather than reading the store: what shows is
  * the draft when one exists and the saved copy otherwise, and that merge
  * belongs to the screen hook.
+ * @param bannerTitle - Banner headline shown above the columns
+ * @param isGuildWar - Whether the battle on screen is the Guild War
+ * @param locked - Whether the battle on screen is already played
  * @param assignment - Assignment currently shown
  * @param charactersById - Full roster indexed by character id
  * @param readOnly - Render without drag handles
@@ -54,6 +66,9 @@ interface FormationGridProps {
  * @returns Grid of team columns
  */
 export function FormationGrid({
+  bannerTitle,
+  isGuildWar,
+  locked,
   assignment,
   charactersById,
   readOnly = false,
@@ -96,6 +111,12 @@ export function FormationGrid({
   return (
     <div className="relative">
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-5">
+        <FormationBanner
+          title={bannerTitle}
+          isGuildWar={isGuildWar}
+          locked={locked}
+        />
+
         {teams.map(({ team, slots }) => (
           <TeamColumn
             key={team}

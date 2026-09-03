@@ -17,6 +17,7 @@ describe("useSessionSelection", () => {
     );
 
     expect(result.current.activeSessionId).toBe("thu-7");
+    expect(result.current.activeSession?.sessionId).toBe("thu-7");
   });
 
   it("tuần không có Guild War thì mở ngày đầu tiên", () => {
@@ -50,6 +51,7 @@ describe("useSessionSelection", () => {
     const { result } = renderFormationHook(() => useSessionSelection([], true));
 
     expect(result.current.activeSessionId).toBeNull();
+    expect(result.current.activeSession).toBeUndefined();
     expect(result.current.editable).toBe(false);
   });
 
