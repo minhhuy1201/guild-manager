@@ -40,6 +40,8 @@ function matchPart(
 ): string {
   if (draftMatchCount <= 1) return `${scheduledMatchCount} trận`;
 
+  // Counts against the line-ups on screen, not the schedule: shrinking a day back to one match
+  // in the settings must not renumber a saved second line-up as "trận 2/1".
   return `trận ${activeMatchIndex + 1}/${draftMatchCount}`;
 }
 
