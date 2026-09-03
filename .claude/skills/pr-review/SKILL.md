@@ -43,7 +43,7 @@ See [references/checklist.md](references/checklist.md) for the full printable ch
    HEAD and invalidates the marker, so re-run the review before pushing again.
 
 6. **Opening the PR — always use `@.github/pull_request_template.md`.** Read that file
-   and fill in its sections (`## What & Why`, `## What changes`, `## Tests`, `## Note`,
+   and fill in its sections (`## What & Why`, `## Tests`, `## Note`,
    `## Self-review`) rather
    than inventing a structure. `gh pr create` does NOT apply the template when `--body`
    is passed, so a hand-written body silently drops it and the reviewer loses the
