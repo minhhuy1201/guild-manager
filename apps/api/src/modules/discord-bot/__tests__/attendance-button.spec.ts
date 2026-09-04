@@ -17,15 +17,27 @@ const PRESS = {
   member: { user: { id: '111' } },
 };
 
+/** One battle day, so a board comes back carrying buttons rather than "chưa có ngày đánh nào". */
+const SESSION = {
+  id: 'session-1',
+  label: 'Thứ 5 · 20:30',
+  dateTime: '2026-09-03T13:30:00.000Z',
+  isDeadlinePassed: false,
+  isGuildWar: false,
+  opponent: null,
+};
+
 /**
  * Build deps whose `mark` is observable.
  * @param options.mark - The stub standing in for AttendanceService.mark
  * @param options.resolve - What ActorResolver.resolve returns; defaults to the presser themselves
+ * @param options.sessions - What listByWeek returns; defaults to the one day above
  * @returns Stubbed deps
  */
 function makeDeps(options: {
   mark: jest.Mock;
   resolve?: jest.Mock;
+  sessions?: unknown[];
 }): CommandDeps {
   return {
     actors: {
@@ -47,7 +59,9 @@ function makeDeps(options: {
         discordId: '222',
       }),
     },
-    battleSessions: { listByWeek: jest.fn().mockResolvedValue([]) },
+    battleSessions: {
+      listByWeek: jest.fn().mockResolvedValue(options.sessions ?? [SESSION]),
+    },
     attendance: {
       getRecords: jest.fn().mockResolvedValue([]),
       mark: options.mark,
@@ -113,6 +127,16 @@ describe('bấm nút điểm danh', () => {
     );
 
     expect(boardOf(outcome).content).not.toContain('Chỉ <@222>');
+  });
+
+  it('tuần chưa có ngày đánh thì không nói về nút nào cả', async () => {
+    // Bảng lúc này không mang một cái nút nào, nên câu "chỉ ... bấm được các nút này" là vô nghĩa.
+    const outcome = await handleAttendanceButton(
+      PRESS,
+      makeDeps({ mark: jest.fn().mockResolvedValue(undefined), sessions: [] }),
+    );
+
+    expect(boardOf(outcome).content).not.toContain('bấm được các nút này');
   });
 
   it('custom_id lạ thì nói ra thay vì im lặng', async () => {

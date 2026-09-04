@@ -240,12 +240,16 @@ export async function buildAttendanceBoard(
  *
  * @param board - The board body
  * @param discordId - Discord ID of the person the board is about, when known
- * @returns A new body with the note appended
+ * @returns A new body with the note appended, or the board unchanged when it carries no buttons
  */
 export function withPressNote(
   board: MessagePayload,
   discordId: string | null,
 ): MessagePayload {
+  // A week with no battle day yet produces a board with no buttons at all, and a line about who may
+  // press them reads as a mistake there.
+  if (!board.components?.length) return board;
+
   const who = discordId ? `<@${discordId}>` : 'chủ nhân vật này';
 
   return {

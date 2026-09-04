@@ -44,7 +44,8 @@ lại với trạng thái mới.
   Discord **không** cho phép tắt nút theo từng người xem: một tin nhắn mang đúng một bộ component
   cho tất cả mọi người, nên `disabled` sẽ tắt cả với admin lẫn chính chủ. Thứ duy nhất làm được là
   nói trước bảng dành cho ai — bảng công khai kèm một dòng subtext `Chỉ <@…> và admin bấm được các
-  nút này.` Bảng ephemeral không mang dòng đó: người xem duy nhất của nó đương nhiên được bấm.
+  nút này.` Bảng ephemeral không mang dòng đó: người xem duy nhất của nó đương nhiên được bấm. Bảng
+  của một tuần chưa có ngày đánh nào cũng không, vì lúc đó nó không mang cái nút nào.
 
   Một hệ quả đã biết của việc dùng chung một tin nhắn: bảng được vẽ lại theo quyền của **người vừa
   bấm**. Nên sau khi chính chủ (member) bấm một lần, các hàng nút của ngày đã quá hạn biến mất, vì

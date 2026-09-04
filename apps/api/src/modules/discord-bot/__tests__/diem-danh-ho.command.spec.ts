@@ -27,6 +27,16 @@ function makeDeps(options: {
   target: unknown;
   targetRow?: unknown;
 }): CommandDeps {
+  /** One battle day, so the board comes back carrying buttons. */
+  const session = {
+    id: 'session-1',
+    label: 'Thứ 5 · 20:30',
+    dateTime: '2026-09-03T13:30:00.000Z',
+    isDeadlinePassed: false,
+    isGuildWar: false,
+    opponent: null,
+  };
+
   return {
     actors: {
       resolve: jest.fn().mockResolvedValue({
@@ -42,7 +52,7 @@ function makeDeps(options: {
       findByDiscordId: jest.fn().mockResolvedValue(options.target),
       findById: jest.fn().mockResolvedValue(options.targetRow ?? null),
     },
-    battleSessions: { listByWeek: jest.fn().mockResolvedValue([]) },
+    battleSessions: { listByWeek: jest.fn().mockResolvedValue([session]) },
     attendance: { getRecords: jest.fn().mockResolvedValue([]) },
   } as never;
 }
