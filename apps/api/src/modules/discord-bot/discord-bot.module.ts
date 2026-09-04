@@ -9,6 +9,7 @@ import { CronSecretGuard } from './cron.guard';
 import { DiscordBotController } from './discord-bot.controller';
 import { DiscordSignatureGuard } from './discord-bot.guard';
 import { DiscordRestClient } from './discord-rest';
+import { FormationAnnouncerService } from './formation-announcer.service';
 import { InteractionRouter } from './interaction-router';
 import { ReminderController } from './reminder.controller';
 import { ReminderService } from './reminder.service';
@@ -33,7 +34,11 @@ import { ReminderService } from './reminder.service';
     BotChannelService,
     DiscordRestClient,
     ReminderService,
+    FormationAnnouncerService,
     CronSecretGuard,
   ],
+  // The team builder screen announces a day's line-up through this service; the bot itself never
+  // reaches back into team-builder, so the dependency stays one-way.
+  exports: [FormationAnnouncerService],
 })
 export class DiscordBotModule {}
