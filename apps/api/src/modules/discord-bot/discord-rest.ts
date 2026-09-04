@@ -11,8 +11,11 @@ const DISCORD_API_BASE = 'https://discord.com/api/v10';
 export interface OutgoingFile {
   /** Name Discord shows under the message */
   filename: string;
-  /** Raw bytes of the file */
-  bytes: Uint8Array;
+  /**
+   * Raw bytes of the file. Pinned to an `ArrayBuffer` backing store because that is what `Blob`
+   * accepts — the default `ArrayBufferLike` also admits a `SharedArrayBuffer`, which it does not.
+   */
+  bytes: Uint8Array<ArrayBuffer>;
   /** MIME type, e.g. `image/webp` */
   contentType: string;
 }

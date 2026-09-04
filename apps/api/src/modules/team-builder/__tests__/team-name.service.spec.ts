@@ -1,6 +1,7 @@
 import { FixedClock } from '../../../common';
 import { BattleSessionsService } from '../../battle-sessions/battle-sessions.public';
 import { CharactersService } from '../../characters/characters.public';
+import { FormationAnnouncerService } from '../../discord-bot/discord-bot.public';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { TeamBuilderService } from '../team-builder.service';
 
@@ -51,6 +52,7 @@ describe('TeamBuilderService — tên đội', () => {
       prisma as unknown as PrismaService,
       battleSessions as unknown as BattleSessionsService,
       characters as unknown as CharactersService,
+      {} as unknown as FormationAnnouncerService,
       new FixedClock(NOW),
     );
   });

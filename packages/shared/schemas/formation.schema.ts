@@ -117,3 +117,44 @@ export type MatchFormation = z.infer<typeof matchFormationSchema>;
 export type SessionFormation = z.infer<typeof sessionFormationSchema>;
 
 export type FormationWeek = z.infer<typeof formationWeekSchema>;
+
+/**
+ * Longest a single line-up image may be as a base64 data URL.
+ *
+ * Sized well under the 4.5MB body limit a Vercel Function accepts, with room for two of them: an
+ * announcement that dies at the edge would fail with no Vietnamese sentence to show.
+ */
+export const ANNOUNCEMENT_IMAGE_MAX_CHARS = 3_000_000;
+
+/**
+ * One line-up image on the wire. The format is pinned to webp — the browser encodes it, the API
+ * hands it to Discord, and one constant deciding both is what keeps them from drifting.
+ */
+const announcementImageSchema = z
+  .string()
+  .regex(
+    /^data:image\/webp;base64,[A-Za-z0-9+/]+={0,2}$/,
+    "Ảnh đội hình không hợp lệ.",
+  )
+  .max(ANNOUNCEMENT_IMAGE_MAX_CHARS, "Ảnh đội hình quá lớn.");
+
+/**
+ * Body of POST /team-builder/formations/:sessionId/announce — one image per match laid out, in
+ * match order. `min(1)` because an announcement with no line-up is not one; `max(2)` is the same
+ * ceiling a day's match count carries.
+ */
+export const announceFormationSchema = z.object({
+  images: z
+    .array(announcementImageSchema)
+    .min(1, "Chưa có ảnh đội hình nào để gửi.")
+    .max(2, "Một ngày nhiều nhất 2 trận."),
+});
+
+/** What the announce endpoint answers: how many images reached Discord. */
+export const announcementResultSchema = z.object({
+  imageCount: z.number(),
+});
+
+export type AnnounceFormationInput = z.infer<typeof announceFormationSchema>;
+
+export type AnnouncementResult = z.infer<typeof announcementResultSchema>;

@@ -1,6 +1,8 @@
 import { NotFoundException } from '@nestjs/common';
 import type { BattleSession } from '@guild/shared/schemas';
 
+import { FixedClock } from '../../../common';
+
 import { FormationAnnouncerService } from '../formation-announcer.service';
 
 /** Một ảnh webp tí hon, đúng dạng data URL frontend gửi lên. */
@@ -43,13 +45,13 @@ function build(found: BattleSession | null = session()) {
   const battleSessions = { findById: jest.fn().mockResolvedValue(found) };
   const rest = { postMessageWithFiles: jest.fn().mockResolvedValue(undefined) };
   const config = { get: (key: string) => ENV[key] };
-  const clock = { now: () => new Date('2026-08-19T02:00:00.000Z') };
+  const clock = new FixedClock(new Date('2026-08-19T02:00:00.000Z'));
 
   const service = new FormationAnnouncerService(
     battleSessions as never,
     rest as never,
     config as never,
-    clock as never,
+    clock,
   );
 
   return { service, battleSessions, rest };

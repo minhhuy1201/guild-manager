@@ -3,18 +3,21 @@ import {
   Controller,
   Get,
   Param,
+  Post,
   Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import type {
+  AnnouncementResult,
   FormationWeek,
   SessionFormation,
   TeamNames,
 } from '@guild/shared/schemas';
 
 import { AdminGuard, JwtAuthGuard } from '../../common';
+import { AnnounceFormationDto } from './dto/announce-formation.dto';
 import { SaveFormationDto } from './dto/save-formation.dto';
 import { SaveTeamNamesDto } from './dto/save-team-names.dto';
 import { WeekStartQueryDto } from './dto/week-start-query.dto';
@@ -62,6 +65,21 @@ export class TeamBuilderController {
     @Body() body: SaveFormationDto,
   ): Promise<SessionFormation> {
     return this.teamBuilder.saveFormation(sessionId, body.matches);
+  }
+
+  /**
+   * Announce the day's line-up in Discord, with one image per match.
+   * @param sessionId - Id of the battle day being announced
+   * @param body - images: one `data:image/webp;base64,…` per match, in order
+   * @returns How many images reached Discord
+   */
+  @Post('formations/:sessionId/announce')
+  @ApiOperation({ summary: 'Gửi thông báo đội hình của ngày này vào Discord' })
+  announceFormation(
+    @Param('sessionId') sessionId: string,
+    @Body() body: AnnounceFormationDto,
+  ): Promise<AnnouncementResult> {
+    return this.teamBuilder.announceFormation(sessionId, body.images);
   }
 
   /**
