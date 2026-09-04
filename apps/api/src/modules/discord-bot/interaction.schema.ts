@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { INTERACTION_TYPE } from './discord.constants';
+import { INTERACTION_TYPE, MESSAGE_FLAG } from './discord.constants';
 
 /**
  * These shapes stay in this module instead of `packages/shared`.
@@ -52,6 +52,11 @@ const messageComponentInteractionSchema = z.object({
   type: z.literal(INTERACTION_TYPE.messageComponent),
   // snake_case because this is Discord's payload, read verbatim.
   data: z.object({ custom_id: z.string().min(1) }),
+  /**
+   * The message the component sits on. Only its flags are read, to tell a public board from an
+   * ephemeral one; everything else Discord sends here is ignored.
+   */
+  message: z.object({ flags: z.number().int().optional() }).optional(),
   ...invokerFields,
 });
 
@@ -103,6 +108,24 @@ export function callerDiscordId(
   }
 
   return id;
+}
+
+/**
+ * Whether the pressed button sits on a message only its presser can see.
+ *
+ * A public message is one anybody in the channel can press, so a refusal must not rewrite it. The
+ * flag is a bit field and Discord may set others alongside `ephemeral`, hence the mask rather than
+ * an equality test. A payload without `flags` is a public message.
+ *
+ * @param interaction - The validated button press
+ * @returns true when the message is ephemeral
+ */
+export function isEphemeralPress(
+  interaction: MessageComponentInteraction,
+): boolean {
+  const flags = interaction.message?.flags ?? 0;
+
+  return (flags & MESSAGE_FLAG.ephemeral) !== 0;
 }
 
 /**

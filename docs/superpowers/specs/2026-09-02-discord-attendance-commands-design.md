@@ -36,7 +36,16 @@ lại với trạng thái mới.
   và "ephemeral" là hai thứ loại trừ nhau. Nút công khai vẫn an toàn: mọi lượt bấm đều đi lại qua
   `AttendanceService.mark`, nên người ngoài bấm hộ ai đó sẽ bị từ chối, còn chính chủ thì tự sửa
   được câu trả lời của mình — một tính năng, không phải lỗ hổng. Riêng **lời từ chối vẫn ephemeral**:
-  chỉ người gõ lệnh cần đọc chúng.
+  chỉ người gõ lệnh cần đọc chúng, và điều đó áp dụng cho **cả lượt bấm nút**. Từ chối bằng
+  `updateMessage` sẽ thay nội dung bảng công khai bằng một câu chỉ dành cho một người — tức là một
+  người ngoài bấm nhầm sẽ xoá bảng của cả kênh. Nên `handleAttendanceButton` trả về một kết quả có
+  tag: `board` thì vẽ lại tin nhắn, `refusal` thì gửi tin riêng.
+
+  Discord **không** cho phép tắt nút theo từng người xem: một tin nhắn mang đúng một bộ component
+  cho tất cả mọi người, nên `disabled` sẽ tắt cả với admin lẫn chính chủ. Thứ duy nhất làm được là
+  nói trước bảng dành cho ai — bảng công khai kèm một dòng subtext `Chỉ <@…> và admin bấm được các
+  nút này.` Bảng ephemeral không mang dòng đó: người xem duy nhất của nó đương nhiên được bấm. Bảng
+  của một tuần chưa có ngày đánh nào cũng không, vì lúc đó nó không mang cái nút nào.
 
   Một hệ quả đã biết của việc dùng chung một tin nhắn: bảng được vẽ lại theo quyền của **người vừa
   bấm**. Nên sau khi chính chủ (member) bấm một lần, các hàng nút của ngày đã quá hạn biến mất, vì

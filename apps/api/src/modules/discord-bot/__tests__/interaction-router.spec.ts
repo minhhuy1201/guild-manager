@@ -77,7 +77,9 @@ describe('InteractionRouter', () => {
     });
   });
 
-  it('nút trên bảng điểm danh vẫn ghi đè chính message nó đang nằm', async () => {
+  // Bảng của /diem-danh-ho là tin công khai: từ chối bằng updateMessage sẽ để một người ngoài xoá
+  // bảng của cả kênh, nên lời từ chối luôn là tin riêng. Chỉ khi ghi được mới vẽ lại bảng.
+  it('bấm nút mà bị từ chối thì nhận tin riêng, không ghi đè bảng', async () => {
     const reply = await makeRouter().route({
       type: 3,
       data: { custom_id: 'dd:session-1:char-1:1' },
@@ -85,10 +87,11 @@ describe('InteractionRouter', () => {
     });
 
     expect(reply).toEqual({
-      type: INTERACTION_RESPONSE_TYPE.updateMessage,
-      data: { content: NOT_LINKED },
+      type: INTERACTION_RESPONSE_TYPE.channelMessageWithSource,
+      data: { content: NOT_LINKED, flags: MESSAGE_FLAG.ephemeral },
     });
   });
+
   it('đọc ba channel id của /chao-mung từ env đúng tên biến', async () => {
     // Sai tên biến ở đây không làm gãy build; nó chỉ hiện ra thành <#undefined> trong lời chào
     // đã đăng công khai — nên tên biến được ghim bằng test.

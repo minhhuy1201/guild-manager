@@ -133,8 +133,13 @@ export class InteractionRouter {
    * presser's own board — the first person to press would delete it for everyone. Every other
    * component is an attendance button, which does sit on a message it is entitled to rewrite.
    *
+   * A refusal is answered privately for the same reason: the `/diem-danh-ho` board is public, and a
+   * bystander pressing it must not replace what the channel is reading with a sentence meant for
+   * them alone.
+   *
    * @param interaction - The validated button press
    * @returns The reply Discord shows
+   * @throws Error when the outcome carries a tag this method does not handle
    */
   private async routeComponent(
     interaction: MessageComponentInteraction,
@@ -145,10 +150,21 @@ export class InteractionRouter {
       );
     }
 
-    return {
-      type: INTERACTION_RESPONSE_TYPE.updateMessage,
-      data: await handleAttendanceButton(interaction, this.deps),
-    };
+    const outcome = await handleAttendanceButton(interaction, this.deps);
+
+    switch (outcome.kind) {
+      case 'board':
+        return {
+          type: INTERACTION_RESPONSE_TYPE.updateMessage,
+          data: outcome.body,
+        };
+
+      case 'refusal':
+        return ephemeralText(outcome.message);
+
+      default:
+        return assertNever(outcome, 'Kết quả bấm nút ngoài dự kiến');
+    }
   }
 
   /** The services and configuration a command may reach, bundled once. */

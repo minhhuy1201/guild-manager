@@ -19,6 +19,7 @@ import {
 } from './discord.constants';
 import {
   callerDiscordId,
+  isEphemeralPress,
   type MessageComponentInteraction,
 } from './interaction.schema';
 
@@ -46,6 +47,17 @@ export const NOT_LINKED =
 /** Shown to a rescue admin who has no character of their own to mark. */
 const NO_OWN_CHARACTER =
   'Tài khoản admin này không gắn với nhân vật nào — dùng /diem-danh-ho.';
+
+/**
+ * What one button press produced.
+ *
+ * A refusal is a separate variant rather than a board whose body happens to be a sentence: the
+ * router turns it into a private reply, and rewriting a public `/diem-danh-ho` message with
+ * "you are not linked" would let any bystander wipe the board for everyone.
+ */
+export type AttendanceButtonOutcome =
+  | { kind: 'board'; body: MessagePayload }
+  | { kind: 'refusal'; message: string };
 
 /** Who the board is about. The name is shown so an admin marking for others cannot mistake them. */
 export interface BoardTarget {
@@ -218,6 +230,35 @@ export async function buildAttendanceBoard(
 }
 
 /**
+ * The board plus a line naming who its buttons are for.
+ *
+ * Discord has no way to disable a button for some viewers and not others — a message carries one
+ * set of components for everybody — so a public board is pressable by the whole channel and the
+ * refusal only arrives after the press. Saying up front who it is for is what keeps a bystander
+ * from pressing at all. Ephemeral boards do not carry it: their single viewer is by definition
+ * allowed to press.
+ *
+ * @param board - The board body
+ * @param discordId - Discord ID of the person the board is about, when known
+ * @returns A new body with the note appended, or the board unchanged when it carries no buttons
+ */
+export function withPressNote(
+  board: MessagePayload,
+  discordId: string | null,
+): MessagePayload {
+  // A week with no battle day yet produces a board with no buttons at all, and a line about who may
+  // press them reads as a mistake there.
+  if (!board.components?.length) return board;
+
+  const who = discordId ? `<@${discordId}>` : 'chủ nhân vật này';
+
+  return {
+    ...board,
+    content: `${board.content}\n-# Chỉ ${who} và admin bấm được các nút này.`,
+  };
+}
+
+/**
  * Record one press, then rebuild the board from what the database now holds.
  *
  * The `characterId` in the custom_id is client data. It is passed to `AttendanceService.mark`
@@ -233,20 +274,20 @@ export async function buildAttendanceBoard(
  *
  * @param interaction - The validated button press
  * @param deps - Services the handler reads and writes through
- * @returns The rebuilt board, or a sentence explaining why nothing was recorded
+ * @returns The rebuilt board, or the sentence explaining why nothing was recorded
  * @throws HttpException raised by `AttendanceService.mark`, turned into a message by the router
  */
 export async function handleAttendanceButton(
   interaction: MessageComponentInteraction,
   deps: CommandDeps,
-): Promise<MessagePayload> {
+): Promise<AttendanceButtonOutcome> {
   const pressed = decodeAttendanceButtonId(interaction.data.custom_id);
 
-  if (!pressed) return { content: STALE_BUTTON };
+  if (!pressed) return { kind: 'refusal', message: STALE_BUTTON };
 
   const resolved = await deps.actors.resolve(callerDiscordId(interaction));
 
-  if (!resolved) return { content: NOT_LINKED };
+  if (!resolved) return { kind: 'refusal', message: NOT_LINKED };
 
   await deps.attendance.mark(
     {
@@ -259,13 +300,20 @@ export async function handleAttendanceButton(
 
   const row = await deps.characters.findById(pressed.characterId);
 
-  if (!row) return { content: STALE_BUTTON };
+  if (!row) return { kind: 'refusal', message: STALE_BUTTON };
 
-  return buildAttendanceBoard(
+  const board = await buildAttendanceBoard(
     { characterId: row.id, characterName: row.name, discordId: row.discordId },
     resolved.actor,
     deps,
   );
+
+  return {
+    kind: 'board',
+    body: isEphemeralPress(interaction)
+      ? board
+      : withPressNote(board, row.discordId),
+  };
 }
 
 /**

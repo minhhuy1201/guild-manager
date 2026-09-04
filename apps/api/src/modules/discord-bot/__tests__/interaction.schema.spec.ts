@@ -2,8 +2,25 @@ import {
   callerDiscordId,
   commandOptionValue,
   interactionSchema,
+  isEphemeralPress,
   type ApplicationCommandInteraction,
+  type MessageComponentInteraction,
 } from '../interaction.schema';
+import { MESSAGE_FLAG } from '../discord.constants';
+
+/**
+ * Parse a button press carrying the given message flags.
+ * @param flags - The `flags` field Discord sends on the message, omitted when undefined
+ * @returns The validated press
+ */
+function pressWithFlags(flags?: number): MessageComponentInteraction {
+  return interactionSchema.parse({
+    type: 3,
+    data: { custom_id: 'dd:gw-2026-08-31:meo-beo-k7ma3x:1' },
+    member: { user: { id: '111' } },
+    ...(flags === undefined ? {} : { message: { flags } }),
+  }) as MessageComponentInteraction;
+}
 
 describe('interactionSchema', () => {
   it('đọc được gói PING Discord dùng để kiểm tra endpoint', () => {
@@ -45,6 +62,23 @@ describe('MESSAGE_COMPONENT', () => {
     });
 
     expect(parsed.type).toBe(3);
+  });
+});
+
+describe('isEphemeralPress', () => {
+  it('tin nhắn ephemeral thì đúng', () => {
+    expect(isEphemeralPress(pressWithFlags(MESSAGE_FLAG.ephemeral))).toBe(true);
+  });
+
+  it('đọc theo bit, không so bằng — Discord còn bật cờ khác cùng lúc', () => {
+    // 4096 = SUPPRESS_NOTIFICATIONS; so bằng sẽ đọc nhầm tin ephemeral thành tin công khai.
+    expect(
+      isEphemeralPress(pressWithFlags(MESSAGE_FLAG.ephemeral | 4096)),
+    ).toBe(true);
+  });
+
+  it('không có flags thì coi là tin công khai', () => {
+    expect(isEphemeralPress(pressWithFlags())).toBe(false);
   });
 });
 

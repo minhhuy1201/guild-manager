@@ -27,6 +27,16 @@ function makeDeps(options: {
   target: unknown;
   targetRow?: unknown;
 }): CommandDeps {
+  /** One battle day, so the board comes back carrying buttons. */
+  const session = {
+    id: 'session-1',
+    label: 'Thứ 5 · 20:30',
+    dateTime: '2026-09-03T13:30:00.000Z',
+    isDeadlinePassed: false,
+    isGuildWar: false,
+    opponent: null,
+  };
+
   return {
     actors: {
       resolve: jest.fn().mockResolvedValue({
@@ -42,7 +52,7 @@ function makeDeps(options: {
       findByDiscordId: jest.fn().mockResolvedValue(options.target),
       findById: jest.fn().mockResolvedValue(options.targetRow ?? null),
     },
-    battleSessions: { listByWeek: jest.fn().mockResolvedValue([]) },
+    battleSessions: { listByWeek: jest.fn().mockResolvedValue([session]) },
     attendance: { getRecords: jest.fn().mockResolvedValue([]) },
   } as never;
 }
@@ -91,6 +101,20 @@ describe('/diem-danh-ho', () => {
     const reply = await diemDanhHoCommand.execute(INTERACTION, deps);
 
     expect(reply.data.content).toContain('<@999>');
+  });
+
+  it('nói rõ ai được bấm, vì Discord không tắt nút riêng cho từng người', async () => {
+    // Message mang đúng một bộ component cho mọi người xem, nên cả kênh bấm được. Dòng này là thứ
+    // duy nhất ngăn người ngoài bấm trước khi bị từ chối.
+    const deps = makeDeps({
+      callerRole: GuildRole.ADMIN,
+      target: { id: 'meo-beo-k7ma3x', role: GuildRole.MEMBER },
+      targetRow: { id: 'meo-beo-k7ma3x', name: 'Mèo Béo', discordId: '999' },
+    });
+
+    const reply = await diemDanhHoCommand.execute(INTERACTION, deps);
+
+    expect(reply.data.content).toContain('Chỉ <@999> và admin bấm được');
   });
 
   it('lời từ chối vẫn riêng tư, cả kênh không cần xem ai bị nói không', async () => {
