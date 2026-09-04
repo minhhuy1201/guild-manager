@@ -122,6 +122,7 @@ server nhận gì. Câu từ chối viết tiếng Việt vì frontend hiện th
 | File | Việc |
 |---|---|
 | `config/env.validation.ts` | Thêm `DISCORD_BAO_BAN_CHANNEL_ID: z.string().min(1)` — thiếu thì chết lúc boot, đúng luật “misconfiguration fails loud”. |
+| `discord-bot/vn-format.ts` | `formatVnTime` / `formatVnDayMonth` — tách ra từ bản sao đang nằm riêng trong `announcement.ts`, để hai message không có hai cách viết `dd/MM`. |
 | `discord-bot/formation-announcement.ts` | **Hàm thuần** `buildFormationAnnouncement(input, links): MessagePayload`. Nơi duy nhất giữ mẫu chữ. |
 | `discord-bot/discord-rest.ts` | Thêm `postMessageWithFiles(channelId, payload, files)` — multipart `payload_json` + `files[n]`, Node 24 có sẵn `FormData`/`Blob`. |
 | `discord-bot/formation-announcer.service.ts` | Đọc session qua `BattleSessionsService.findById`, dựng payload, gửi vào channel bang chiến. |
@@ -162,6 +163,7 @@ Thêm `@zumer/snapdom` vào `apps/web`.
 | `components/formation-toolbar.tsx` | Nút mới + props `onAnnounce` / `announcing`. |
 | `components/formation-grid.tsx` | Thêm prop `fixedColumns?: boolean`. |
 | `components/team-builder-screen.tsx` | Ráp modal + capture sheet. |
+| `next.config.ts` | `serverActions.bodySizeLimit: "8mb"` — mặc định 1MB chặn mất hai ảnh. |
 
 ### 5.1 Capture sheet
 
@@ -180,7 +182,12 @@ Mỗi trận vẽ bằng `FormationGrid` với `readOnly`, tiêu đề banner d�
 đúng chỉ số trận đó** — banner đã nằm sẵn trong lưới nên chụp lưới là có luôn banner, đúng yêu cầu
 “kèm cả banner”.
 
-**Sheet chỉ mount khi modal đang mở.** Nhờ vậy tới lúc bấm “Xác nhận” thì nó đã vẽ xong từ lâu,
+Mỗi khung chụp mang thuộc tính `data-formation-capture`; lúc bấm xác nhận, hook đọc thẳng các node
+đó từ document thay vì luồn một mảng ref qua modal — cùng một câu trả lời, ít mảnh động hơn, và
+chính thuộc tính đó là thứ test khẳng định.
+
+**Sheet chỉ mount khi modal đang mở**, và là **anh em** của modal chứ không nằm trong nó: nội dung
+modal đi qua portal, còn tấm chụp phải ở lại cây thường để giữ layout thật. Nhờ vậy tới lúc bấm “Xác nhận” thì nó đã vẽ xong từ lâu,
 không cần bắt tay “đã paint chưa” giữa hook và component; đóng modal là nó biến mất, màn hình chính
 không phải gánh thêm hai lưới suốt phiên làm việc.
 
