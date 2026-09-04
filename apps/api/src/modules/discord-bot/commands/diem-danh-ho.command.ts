@@ -1,6 +1,10 @@
 import { canManageGuild } from '@guild/shared/lib';
 
-import { buildAttendanceBoard, NOT_LINKED } from '../attendance-board';
+import {
+  buildAttendanceBoard,
+  NOT_LINKED,
+  withPressNote,
+} from '../attendance-board';
 import { COMMAND_OPTION_TYPE } from '../discord.constants';
 import { callerDiscordId, commandOptionValue } from '../interaction.schema';
 import { ephemeralText, publicMessage } from '../reply';
@@ -71,7 +75,8 @@ export const diemDanhHoCommand: SlashCommand = {
 
     // Public, unlike every other reply the bot sends: an ephemeral message reaches one viewer, and
     // the whole point here is that the person being marked — mentioned in the heading, so they are
-    // notified — sees it too.
-    return publicMessage(board);
+    // notified — sees it too. The channel can press the buttons as well, so the board says who they
+    // are for; anyone else is refused privately by `handleAttendanceButton`.
+    return publicMessage(withPressNote(board, row.discordId));
   },
 };

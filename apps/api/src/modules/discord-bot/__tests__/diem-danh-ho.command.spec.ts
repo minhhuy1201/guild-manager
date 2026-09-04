@@ -93,6 +93,20 @@ describe('/diem-danh-ho', () => {
     expect(reply.data.content).toContain('<@999>');
   });
 
+  it('nói rõ ai được bấm, vì Discord không tắt nút riêng cho từng người', async () => {
+    // Message mang đúng một bộ component cho mọi người xem, nên cả kênh bấm được. Dòng này là thứ
+    // duy nhất ngăn người ngoài bấm trước khi bị từ chối.
+    const deps = makeDeps({
+      callerRole: GuildRole.ADMIN,
+      target: { id: 'meo-beo-k7ma3x', role: GuildRole.MEMBER },
+      targetRow: { id: 'meo-beo-k7ma3x', name: 'Mèo Béo', discordId: '999' },
+    });
+
+    const reply = await diemDanhHoCommand.execute(INTERACTION, deps);
+
+    expect(reply.data.content).toContain('Chỉ <@999> và admin bấm được');
+  });
+
   it('lời từ chối vẫn riêng tư, cả kênh không cần xem ai bị nói không', async () => {
     const deps = makeDeps({
       callerRole: GuildRole.MEMBER,
