@@ -70,6 +70,7 @@ the app dies immediately with a Vietnamese error message instead of half-running
 | `DISCORD_BANG_CHIEN_CHANNEL_ID` | ✅ | — | Channel `#⚔️│bang-chiến`, linked by `/chao-mung` (Developer Mode → right-click the channel → Copy Channel ID) — **the API refuses to boot without it** |
 | `DISCORD_NGHICH_THUY_HAN_CHANNEL_ID` | ✅ | — | Channel `#🌊│nghich-thuy-han`, linked by `/chao-mung` — **the API refuses to boot without it** |
 | `DISCORD_KHAM_ACC_CHANNEL_ID` | ✅ | — | Channel `#khám-acc`, where a new member posts their gear — **the API refuses to boot without it** |
+| `DISCORD_BAO_BAN_CHANNEL_ID` | ✅ | — | Channel `#🤒│báo-bận`, linked from the formation announcement — **the API refuses to boot without it** |
 | `DISCORD_BOT_TOKEN` | ✅ | — | Developer Portal → Bot → Reset Token, shown exactly once. Read by `pnpm --filter api discord:register` **and** by the running app, which posts the daily attendance reminder with it — **the API refuses to boot without it** |
 | `CRON_SECRET` | ✅ | — | Secret guarding `GET /api/cron/attendance-reminder`; Vercel Cron sends it as `Authorization: Bearer …`. At least 32 characters (`openssl rand -hex 32`). Cron never fires locally, so any value of the right length does — **the API refuses to boot without it** |
 | `DISCORD_GUILD_ID` | script only | — | Id of the guild's Discord server (Developer Mode → right-click the server → Copy Server ID). Read by `discord:register` only |

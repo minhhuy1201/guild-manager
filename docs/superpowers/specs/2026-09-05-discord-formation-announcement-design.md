@@ -16,7 +16,8 @@ hợp, quên ping. Spec này gom cả bốn vào **một nút** trên thanh côn
 - `2026-09-02-thong-bao-command-design.md` — tiền lệ gần nhất: một message công khai có ping role,
   nội dung dựng bằng **hàm thuần** rồi mới đưa cho lớp gửi.
 - `2026-08-07-two-matches-per-day-design.md` — một ngày đánh 1 hoặc 2 trận, mỗi trận một đội hình.
-- Mẫu chữ đang dùng tay: `apps/api/tb.md` (file tạm, xoá sau khi spec này ship).
+- Mẫu chữ đang dùng tay: `apps/api/tb.md` — file tạm, đã xoá khi tính năng này ship; mẫu giờ sống
+  trong `formation-announcement.ts` và có test canh.
 
 ## 1. Nút làm gì
 
@@ -103,7 +104,7 @@ export const ANNOUNCEMENT_IMAGE_MAX_CHARS = 3_000_000;
 
 const announcementImageSchema = z
   .string()
-  .regex(/^data:image\/webp;base64,[A-Za-z0-9+/]+=*$/, "Ảnh đội hình không hợp lệ.")
+  .regex(/^data:image\/webp;base64,[A-Za-z0-9+/]+={0,2}$/, "Ảnh đội hình không hợp lệ.")
   .max(ANNOUNCEMENT_IMAGE_MAX_CHARS, "Ảnh đội hình quá lớn.");
 
 export const announceFormationSchema = z.object({
@@ -129,7 +130,7 @@ server nhận gì. Câu từ chối viết tiếng Việt vì frontend hiện th
 | `discord-bot/discord-bot.public.ts` | Export `FormationAnnouncerService`. |
 | `discord-bot/discord-bot.module.ts` | Khai báo + `exports` service đó. |
 | `team-builder/team-builder.controller.ts` | `@Post('formations/:sessionId/announce')` — class đã có `JwtAuthGuard + AdminGuard`. |
-| `team-builder/team-builder.service.ts` | `announce(sessionId, images)` — chuyển tiếp sang announcer. |
+| `team-builder/team-builder.service.ts` | `announceFormation(sessionId, images)` — chuyển tiếp sang announcer, bọc kết quả bằng `verifyResponse`. |
 | `team-builder/dto/announce-formation.dto.ts` | `createZodDto(announceFormationSchema)`. |
 | `team-builder/team-builder.module.ts` | `imports: [DiscordBotModule]`. |
 
@@ -233,6 +234,8 @@ Vitest (`apps/web`):
 - `formation-toolbar.test.tsx` — nút mới hiện khi `editable`, khoá khi đang gửi.
 - `announce-formation-dialog.test.tsx` — dòng thiếu của từng trận, chặn khi còn draft chưa lưu,
   spinner khi đang gửi.
+- `formation-capture-sheet.test.tsx` — một node chụp cho mỗi trận, lưới bị ép 5 cột, banner nói
+  đúng số thứ tự trận.
 
 `announce-capture.ts` **không có test**: nó chỉ gọi snapDOM, mà snapDOM cần canvas thật, jsdom không
 có. Bọc nó thành một file riêng chính là để phần còn lại test được.
