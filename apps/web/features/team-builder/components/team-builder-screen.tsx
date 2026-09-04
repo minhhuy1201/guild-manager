@@ -13,9 +13,12 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useFormationAnnounce } from "../hooks/use-formation-announce";
 import { useFormationScreen } from "../hooks/use-formation-screen";
 import { buildBannerTitle } from "../lib/banner-title";
+import { AnnounceFormationDialog } from "./announce-formation-dialog";
 import { CopyFormationDialog } from "./copy-formation-dialog";
+import { FormationCaptureSheet } from "./formation-capture-sheet";
 import { FormationGrid } from "./formation-grid";
 import { FormationToolbar } from "./formation-toolbar";
 import { MemberCard } from "./member-card";
@@ -50,6 +53,7 @@ export function TeamBuilderScreen() {
     screen.draft.saveErrorMessage,
     screen.teamNames.saveErrorMessage,
   ].filter((message): message is string => Boolean(message));
+  const announce = useFormationAnnounce(screen.selection.activeSessionId, dirty);
 
   /**
    * Commit both drafts at once. They are independent resources, so they go in
@@ -181,6 +185,8 @@ export function TeamBuilderScreen() {
             onCopy={handleCopy}
             onSave={handleSave}
             onReset={handleReset}
+            announcing={announce.sending}
+            onAnnounce={() => announce.setOpen(true)}
           />
         </div>
 
@@ -190,6 +196,30 @@ export function TeamBuilderScreen() {
           onOpenChange={setConfirmingCopy}
           onConfirm={screen.copy.copy}
         />
+
+        <AnnounceFormationDialog
+          open={announce.open}
+          filledCounts={screen.draft.matches.map(
+            (match) => Object.values(match.assignment).filter(Boolean).length
+          )}
+          slotCount={screen.draft.slotCount}
+          blocked={dirty}
+          sending={announce.sending}
+          onOpenChange={announce.setOpen}
+          onConfirm={announce.confirm}
+        />
+
+        {/* Sibling of the dialog, not a child: the dialog renders through a portal, while the
+            sheet has to stay in the normal tree to keep a real layout to screenshot. */}
+        {announce.open ? (
+          <FormationCaptureSheet
+            session={activeSession}
+            matches={screen.draft.matches}
+            charactersById={screen.pool.charactersById}
+            absentIds={screen.pool.absentIds}
+            names={screen.teamNames.names}
+          />
+        ) : null}
 
         <PrefillBanner
           result={screen.pool.prefill}
