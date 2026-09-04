@@ -5,6 +5,7 @@ import { useMemo } from "react";
 import type { Character, TeamNames } from "@guild/shared/schemas";
 
 import { Spinner } from "@/components/shared/spinner";
+import { cn } from "@/lib/utils";
 import { createMockFormation } from "../lib/mock-formation";
 import type { Assignment, Notes, Slot } from "../types/formation";
 import { FormationBanner } from "./formation-banner";
@@ -38,6 +39,8 @@ interface FormationGridProps {
   onNameChange: (team: number, name: string) => void;
   /** True while a save is in flight — the grid is covered and frozen */
   saving?: boolean;
+  /** Lay the columns out as a fixed five-wide grid, whatever the viewport is */
+  fixedColumns?: boolean;
 }
 
 /**
@@ -63,6 +66,7 @@ interface FormationGridProps {
  * @param names - Team names, keyed by team number
  * @param onNameChange - Called with the committed name of a team
  * @param saving - True while a save is in flight
+ * @param fixedColumns - Lay the columns out five-wide whatever the viewport is
  * @returns Grid of team columns
  */
 export function FormationGrid({
@@ -78,6 +82,7 @@ export function FormationGrid({
   names,
   onNameChange,
   saving = false,
+  fixedColumns = false,
 }: FormationGridProps) {
   const teams = useMemo(() => {
     const grouped = new Map<number, Slot[]>();
@@ -110,7 +115,14 @@ export function FormationGrid({
 
   return (
     <div className="relative">
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-5">
+      <div
+        className={cn(
+          "grid gap-3",
+          fixedColumns
+            ? "grid-cols-5"
+            : "grid-cols-1 md:grid-cols-2 lg:grid-cols-5"
+        )}
+      >
         <FormationBanner
           title={bannerTitle}
           isGuildWar={isGuildWar}
