@@ -24,6 +24,8 @@ function renderToolbar(
       onCopy={vi.fn()}
       onSave={vi.fn()}
       onReset={vi.fn()}
+      announcing={false}
+      onAnnounce={vi.fn()}
       {...props}
     />
   );
@@ -70,5 +72,33 @@ describe("FormationToolbar — nút copy đội hình", () => {
     renderToolbar({ editable: false });
 
     expect(screen.queryByRole("button")).toBeNull();
+  });
+});
+
+describe("FormationToolbar — nút gửi Discord", () => {
+  it("bấm nút thì gọi onAnnounce", () => {
+    const onAnnounce = vi.fn();
+    renderToolbar({ onAnnounce });
+
+    fireEvent.click(screen.getByRole("button", { name: /Gửi Discord/ }));
+
+    expect(onAnnounce).toHaveBeenCalledOnce();
+  });
+
+  it("đang gửi thì khoá nút và nói đang gửi", () => {
+    renderToolbar({ announcing: true });
+
+    const button = screen.getByRole("button", {
+      name: /Đang gửi/,
+    }) as HTMLButtonElement;
+
+    expect(button.disabled).toBe(true);
+  });
+
+  // Trận đã đá xong thì không còn gì để thông báo.
+  it("ngày đã đánh xong thì không có nút gửi", () => {
+    renderToolbar({ editable: false });
+
+    expect(screen.queryByRole("button", { name: /Gửi Discord/ })).toBeNull();
   });
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { ClipboardCopy, RotateCcw, Save } from "lucide-react";
+import { ClipboardCopy, RotateCcw, Save, Send } from "lucide-react";
 
 import { Spinner } from "@/components/shared/spinner";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,10 @@ interface FormationToolbarProps {
   onSave: () => void;
   /** Discard the draft, returning to the saved copy */
   onReset: () => void;
+  /** Whether the Discord announcement is in flight */
+  announcing: boolean;
+  /** Open the confirmation dialog for the Discord announcement */
+  onAnnounce: () => void;
 }
 
 /**
@@ -43,6 +47,8 @@ interface FormationToolbarProps {
  * @param onCopy - Copy that day's line-up into the match currently open
  * @param onSave - Persist the current draft
  * @param onReset - Discard the draft
+ * @param announcing - Whether the Discord announcement is in flight
+ * @param onAnnounce - Open the confirmation dialog for the Discord announcement
  * @returns The toolbar row
  */
 export function FormationToolbar({
@@ -55,6 +61,8 @@ export function FormationToolbar({
   onCopy,
   onSave,
   onReset,
+  announcing,
+  onAnnounce,
 }: FormationToolbarProps) {
   if (!editable) {
     return (
@@ -93,6 +101,16 @@ export function FormationToolbar({
       >
         <RotateCcw />
         Đặt lại
+      </Button>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={onAnnounce}
+        disabled={saving || announcing}
+      >
+        {announcing ? <Spinner /> : <Send />}
+        {announcing ? "Đang gửi..." : "Gửi Discord"}
       </Button>
       <Button
         type="button"
