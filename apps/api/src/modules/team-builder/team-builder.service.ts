@@ -9,6 +9,7 @@ import {
   teamNamesSchema,
 } from '@guild/shared/schemas';
 import type {
+  BattleSession,
   FormationWeek,
   MatchFormation,
   MatchInput,
@@ -253,19 +254,20 @@ export class TeamBuilderService {
    * out deleted members.
    * A day already played is left alone: its formation is the record of what happened, and
    * `saveFormation` refuses to edit it too.
-   * @param sessionId - Id of the battle day to clear the character from
+   * Takes the session rather than its id because the only caller has just read it, and this runs
+   * inside a Discord button press that has three seconds to answer.
+   * @param session - The battle day to clear the character from
    * @param characterId - The character to take out
-   * @returns Number of slots the character was taken out of; 0 when the day is played or gone
+   * @returns Number of slots the character was taken out of; 0 when the day is already played
    */
   async releaseCharacterFromSession(
-    sessionId: string,
+    session: BattleSession,
     characterId: string,
   ): Promise<number> {
     const now = this.clock.now();
-    const session = await this.battleSessions.findById(sessionId);
-    if (!session || isSessionLocked(new Date(session.dateTime), now)) return 0;
+    if (isSessionLocked(new Date(session.dateTime), now)) return 0;
 
-    const occupied = { characterId, match: { sessionId } };
+    const occupied = { characterId, match: { sessionId: session.id } };
 
     // One transaction so no read can see the character gone from the noted slots but still sitting
     // in the note-less ones. Delete first: afterwards `occupied` matches only the noted slots.

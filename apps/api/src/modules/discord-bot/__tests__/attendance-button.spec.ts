@@ -63,7 +63,7 @@ function makeDeps(options: {
       listByWeek: jest.fn().mockResolvedValue(options.sessions ?? [SESSION]),
     },
     attendance: {
-      getRecords: jest.fn().mockResolvedValue([]),
+      getRecordsForSessions: jest.fn().mockResolvedValue([]),
       mark: options.mark,
     },
   } as never;

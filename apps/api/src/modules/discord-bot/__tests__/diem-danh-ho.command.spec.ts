@@ -53,7 +53,7 @@ function makeDeps(options: {
       findById: jest.fn().mockResolvedValue(options.targetRow ?? null),
     },
     battleSessions: { listByWeek: jest.fn().mockResolvedValue([session]) },
-    attendance: { getRecords: jest.fn().mockResolvedValue([]) },
+    attendance: { getRecordsForSessions: jest.fn().mockResolvedValue([]) },
   } as never;
 }
 

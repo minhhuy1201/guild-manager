@@ -50,7 +50,7 @@ function session(overrides: Record<string, unknown>): unknown {
 /**
  * Build deps whose schedule and records are fixed.
  * @param options.sessions - What listByWeek returns
- * @param options.records - What getRecords returns
+ * @param options.records - What getRecordsForSessions returns
  * @returns Stubbed deps
  */
 function makeDeps(options: {
@@ -61,7 +61,9 @@ function makeDeps(options: {
     battleSessions: {
       listByWeek: jest.fn().mockResolvedValue(options.sessions),
     },
-    attendance: { getRecords: jest.fn().mockResolvedValue(options.records) },
+    attendance: {
+      getRecordsForSessions: jest.fn().mockResolvedValue(options.records),
+    },
     characters: {},
     actors: {},
   } as never;
@@ -77,6 +79,24 @@ function actorOf(role: GuildRole): JwtPayload {
 }
 
 describe('buildAttendanceBoard', () => {
+  // Discord gives the whole press three seconds, so the round trips are part of the behaviour: the
+  // board used to derive the week twice, and each derivation writes (it materialises the Guild War).
+  it('chỉ đọc lịch tuần một lần, và đọc bản ghi theo đúng những ngày vừa đọc', async () => {
+    const listByWeek = jest
+      .fn()
+      .mockResolvedValue([session({ id: 'a' }), session({ id: 'b' })]);
+    const getRecordsForSessions = jest.fn().mockResolvedValue([]);
+    const deps = {
+      battleSessions: { listByWeek },
+      attendance: { getRecordsForSessions },
+    } as never as CommandDeps;
+
+    await buildAttendanceBoard(TARGET, actorOf(GuildRole.MEMBER), deps);
+
+    expect(listByWeek).toHaveBeenCalledTimes(1);
+    expect(getRecordsForSessions).toHaveBeenCalledWith(['a', 'b']);
+  });
+
   it('liệt kê mọi ngày đánh kèm trạng thái', async () => {
     const deps = makeDeps({
       sessions: [

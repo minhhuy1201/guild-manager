@@ -246,10 +246,25 @@ describe('AttendanceService', () => {
         MEMBER,
       );
 
+      // The session itself is handed over, not its id: `mark` has already read it, and the team
+      // builder reading it a second time cost a round trip inside Discord's 3-second window.
       expect(teamBuilder.releaseCharacterFromSession).toHaveBeenCalledWith(
-        SESSION_IDS['Thứ 7 · Bang Chiến'],
+        expect.objectContaining({ id: SESSION_IDS['Thứ 7 · Bang Chiến'] }),
         CHARACTER_ID,
       );
+    });
+
+    it('chỉ đọc ngày đánh một lần cho cả việc kiểm tra lẫn việc gỡ đội hình', async () => {
+      await service.mark(
+        {
+          characterId: CHARACTER_ID,
+          sessionId: SESSION_IDS['Thứ 7 · Bang Chiến'],
+          isPresent: false,
+        },
+        MEMBER,
+      );
+
+      expect(battleSessions.findById).toHaveBeenCalledTimes(1);
     });
 
     it('trả lời "Có" thì không đụng vào đội hình', async () => {
