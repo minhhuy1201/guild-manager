@@ -17,8 +17,20 @@ import { FormationGrid } from "./formation-grid";
  */
 export const CAPTURE_NODE_ATTRIBUTE = "data-formation-capture";
 
-/** How wide each captured line-up is rendered, in CSS pixels. */
-const CAPTURE_WIDTH = 1280;
+/**
+ * How wide each captured line-up is rendered, in CSS pixels.
+ *
+ * At 1280 a column left the name roughly 70px, which truncated every member to four or five
+ * characters — while the browser, whose shell is `max-w-[1600px]`, read the same roster at eight or
+ * nine on about 110px. What a slot spends on avatar, gaps and padding does not grow with the column,
+ * so the name keeps most of every pixel added here: 1920 puts it near 150px, past the browser.
+ *
+ * The ceiling on this number is `ANNOUNCEMENT_IMAGE_MAX_CHARS`. The image travels to Discord as
+ * base64 in a JSON body, and the content is the same height whatever the width, so the pixel count —
+ * and the payload with it — grows in step with this constant. 1920 leaves headroom; a further step
+ * should be measured against that limit, not assumed.
+ */
+const CAPTURE_WIDTH = 1920;
 
 interface FormationCaptureSheetProps {
   /** The battle day being announced — the banner is built from it */
