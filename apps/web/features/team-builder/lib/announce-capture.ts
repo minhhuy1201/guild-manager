@@ -5,6 +5,19 @@ import { CAPTURE_NODE_ATTRIBUTE } from "../components/formation-capture-sheet";
 /** Pixel density of the screenshot — 2 keeps the names readable when Discord scales the image. */
 const CAPTURE_SCALE = 2;
 
+/**
+ * Rasterise at 1 device pixel per CSS pixel, so the image is `CAPTURE_WIDTH × CAPTURE_SCALE` wide
+ * on every machine.
+ *
+ * snapDOM otherwise multiplies `scale` by the screen's own `devicePixelRatio`, which puts the
+ * output — and the payload — at the mercy of whoever presses the button: the same formation came
+ * out 2560px wide on a plain monitor and 7680px on a 3x one, and that last one encodes to more
+ * base64 than `ANNOUNCEMENT_IMAGE_MAX_CHARS` allows, so the announcement would be refused for the
+ * admin's choice of screen. Pinning the width was already the point of the capture sheet; this is
+ * the other half of it.
+ */
+const CAPTURE_DPR = 1;
+
 /** WebP quality. High enough that the grid's borders stay clean, low enough to stay small. */
 const CAPTURE_QUALITY = 0.92;
 
@@ -40,6 +53,7 @@ export async function captureFormations(
     nodes.map((node) =>
       snapdom.toWebp(node, {
         scale: CAPTURE_SCALE,
+        dpr: CAPTURE_DPR,
         quality: CAPTURE_QUALITY,
         embedFonts: true,
       })

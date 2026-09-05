@@ -195,7 +195,7 @@ Thêm `@zumer/snapdom` vào `apps/web`.
 | File | Việc |
 |---|---|
 | `components/formation-capture-sheet.tsx` | Container **ngoài màn hình** chứa một `FormationGrid` cho mỗi trận của ngày. |
-| `lib/announce-capture.ts` | `captureFormations(nodes): Promise<string[]>` — snapDOM → webp data URL. |
+| `lib/announce-capture.ts` | `captureFormations(nodes): Promise<string[]>` — snapDOM → webp data URL, `scale: 2` và **`dpr: 1`**. |
 | `components/announce-formation-dialog.tsx` | Modal xác nhận + spinner. |
 | `hooks/use-formation-announce.ts` | Điều phối: mở modal → chụp → mutation → toast. |
 | `api/team-builder-api.ts` | `announceFormation(sessionId, images)`. |
@@ -216,6 +216,11 @@ hoàn toàn thì mọi kích thước bằng 0.
 Bề rộng ghim 1280px và `FormationGrid` nhận `fixedColumns` để dùng `grid-cols-5` thay vì bộ class
 responsive. Không có nó, ảnh sẽ phụ thuộc kích thước cửa sổ người bấm — admin mở máy hẹp thì cả bang
 nhận một tấm ảnh 1 cột cao 10 màn hình.
+
+Nửa còn lại của cùng một vấn đề là **`dpr: 1`** lúc chụp: snapDOM mặc định nhân `scale` lên
+`devicePixelRatio` của màn hình, nên cùng một đội hình ra 2560px trên màn thường và 7680px trên màn
+3x — mà bản 3x mã hoá ra nhiều base64 hơn `ANNOUNCEMENT_IMAGE_MAX_CHARS` cho phép, tức thông báo bị
+từ chối chỉ vì admin dùng màn nào. Ghim `dpr` khoá ảnh ở đúng `1280 × 2 = 2560px` trên mọi máy.
 
 Mỗi trận vẽ bằng `FormationGrid` với `readOnly`, tiêu đề banner dựng bằng `buildBannerTitle` **cho
 đúng chỉ số trận đó** — banner đã nằm sẵn trong lưới nên chụp lưới là có luôn banner, đúng yêu cầu
