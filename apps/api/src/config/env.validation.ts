@@ -62,6 +62,12 @@ export const envSchema = z.object({
   DISCORD_NGHICH_THUY_HAN_CHANNEL_ID: z.string().min(1),
   DISCORD_KHAM_ACC_CHANNEL_ID: z.string().min(1),
   /**
+   * Discord channel id of `#🤒│báo-bận`, linked from the formation announcement so a member who
+   * cannot make it knows where to say so. Required for the same reason as the channels above: a
+   * `<#undefined>` in a message the whole guild reads is worse than a boot that fails.
+   */
+  DISCORD_BAO_BAN_CHANNEL_ID: z.string().min(1),
+  /**
    * Bot token, sent as `Authorization: Bot <token>` on every outgoing Discord call.
    * Developer Portal → Bot → Reset Token; shown exactly once.
    */

@@ -1,6 +1,7 @@
 "use server";
 
 import type {
+  AnnouncementResult,
   FormationWeek,
   MatchFormation,
   SessionFormation,
@@ -110,4 +111,31 @@ export async function saveTeamNames(names: TeamNames): Promise<TeamNames> {
     body: JSON.stringify({ names }),
     headers: await authHeader(),
   });
+}
+
+/** Arguments of `announceFormation`. `sessionId` travels on the URL; only `images` is sent. */
+export interface AnnounceFormationArgs {
+  /** Id of the battle day being announced */
+  sessionId: string;
+  /** One `data:image/webp;base64,…` per match, in match order */
+  images: string[];
+}
+
+/**
+ * Post the day's line-up to Discord, with one image per match.
+ * @param input - sessionId and the captured images
+ * @returns How many images reached Discord
+ * @throws ApiError when signed out, the day is gone (404), or Discord refuses the message
+ */
+export async function announceFormation(
+  input: AnnounceFormationArgs
+): Promise<AnnouncementResult> {
+  return apiFetch<AnnouncementResult>(
+    `/team-builder/formations/${encodeURIComponent(input.sessionId)}/announce`,
+    {
+      method: "POST",
+      body: JSON.stringify({ images: input.images }),
+      headers: await authHeader(),
+    }
+  );
 }

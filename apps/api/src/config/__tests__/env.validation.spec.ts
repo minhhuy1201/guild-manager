@@ -10,6 +10,7 @@ const base = {
   DISCORD_PUBLIC_KEY: 'a'.repeat(64),
   DISCORD_GUILD_ROLE_ID: '999888777666555444',
   DISCORD_BANG_CHIEN_CHANNEL_ID: '111222333444555666',
+  DISCORD_BAO_BAN_CHANNEL_ID: '444555666777888999',
   DISCORD_NGHICH_THUY_HAN_CHANNEL_ID: '222333444555666777',
   DISCORD_KHAM_ACC_CHANNEL_ID: '333444555666777888',
   DISCORD_BOT_TOKEN: 'bot-token-value',
@@ -79,6 +80,16 @@ describe('validateEnv', () => {
 
   it('chết khi CRON_SECRET ngắn hơn 32 ký tự', () => {
     expect(() => validateEnv({ ...base, CRON_SECRET: 'ngan' })).toThrow(
+      /Biến môi trường không hợp lệ/,
+    );
+  });
+
+  // Câu thông báo đội hình render <#id> cho #🤒│báo-bận — thiếu id thì cả bang đọc được một link chết.
+  it('chết khi thiếu DISCORD_BAO_BAN_CHANNEL_ID', () => {
+    const withoutChannel: Partial<typeof base> = { ...base };
+    delete withoutChannel.DISCORD_BAO_BAN_CHANNEL_ID;
+
+    expect(() => validateEnv(withoutChannel)).toThrow(
       /Biến môi trường không hợp lệ/,
     );
   });

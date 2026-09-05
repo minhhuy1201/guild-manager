@@ -58,3 +58,72 @@ describe('DiscordRestClient', () => {
     ).rejects.toThrow('Missing Access');
   });
 });
+
+describe('DiscordRestClient.postMessageWithFiles', () => {
+  it('gửi multipart: payload_json cùng từng file, và khai báo attachments', async () => {
+    const fetchMock = stubFetch({ ok: true });
+    const client = new DiscordRestClient(CONFIG);
+
+    await client.postMessageWithFiles('424242', { content: 'đội hình' }, [
+      {
+        filename: 'doi-hinh-1.webp',
+        bytes: new Uint8Array([1, 2, 3]),
+        contentType: 'image/webp',
+      },
+    ]);
+
+    const [url, init] = fetchMock.mock.calls[0] as [
+      string,
+      { headers: Record<string, string>; body: FormData },
+    ];
+
+    expect(url).toBe('https://discord.com/api/v10/channels/424242/messages');
+    expect(init.body).toBeInstanceOf(FormData);
+    expect(JSON.parse(init.body.get('payload_json') as string)).toEqual({
+      content: 'đội hình',
+      attachments: [{ id: 0, filename: 'doi-hinh-1.webp' }],
+    });
+    expect(init.body.get('files[0]')).toBeInstanceOf(Blob);
+  });
+
+  // Tự đặt Content-Type là mất chuỗi boundary fetch sinh ra, và Discord từ chối cả message.
+  it('không tự đặt Content-Type cho multipart', async () => {
+    const fetchMock = stubFetch({ ok: true });
+    const client = new DiscordRestClient(CONFIG);
+
+    await client.postMessageWithFiles('424242', { content: 'x' }, [
+      {
+        filename: 'a.webp',
+        bytes: new Uint8Array([1]),
+        contentType: 'image/webp',
+      },
+    ]);
+
+    const [, init] = fetchMock.mock.calls[0] as [
+      string,
+      { headers: Record<string, string> },
+    ];
+
+    expect(init.headers.Authorization).toBe('Bot bot-token-value');
+    expect(init.headers['Content-Type']).toBeUndefined();
+  });
+
+  it('ném kèm status và thân lỗi khi Discord từ chối', async () => {
+    stubFetch({
+      ok: false,
+      status: 413,
+      text: '{"message":"Payload too large"}',
+    });
+    const client = new DiscordRestClient(CONFIG);
+
+    await expect(
+      client.postMessageWithFiles('424242', { content: 'x' }, [
+        {
+          filename: 'a.webp',
+          bytes: new Uint8Array([1]),
+          contentType: 'image/webp',
+        },
+      ]),
+    ).rejects.toThrow(/413.*Payload too large/s);
+  });
+});

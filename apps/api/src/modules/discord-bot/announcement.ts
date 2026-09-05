@@ -1,9 +1,10 @@
-import { shiftVnDate, vnParts } from '@guild/shared/lib';
+import { shiftVnDate } from '@guild/shared/lib';
 import type { BattleSession } from '@guild/shared/schemas';
 
 import type { CommandLinks, MessagePayload } from './commands/command.types';
 import { EMBED_COLOR } from './discord.constants';
 import { buildEntryButtons } from './entry-buttons';
+import { formatVnDayMonth } from './vn-format';
 
 const TITLE = '📢 LỊCH ĐÁNH TUẦN NÀY';
 
@@ -23,17 +24,6 @@ const FOOTER = 'Guild Manager';
 const DAYS_TO_WEEK_END = 5;
 
 /**
- * Day and month of an instant, read in Vietnam time.
- * @param date - The instant
- * @returns A `dd/MM` string
- */
-function formatDayMonth(date: Date): string {
-  const { day, month } = vnParts(date);
-
-  return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}`;
-}
-
-/**
  * The week's date range, for the line under the title.
  * @param weekStart - Monday 00:00 of the week, as the API returns it
  * @returns A range like "31/08 – 05/09"
@@ -42,7 +32,7 @@ function describeWeek(weekStart: string): string {
   const start = new Date(weekStart);
   const end = shiftVnDate(start, DAYS_TO_WEEK_END, 0, 0);
 
-  return `${formatDayMonth(start)} – ${formatDayMonth(end)}`;
+  return `${formatVnDayMonth(start)} – ${formatVnDayMonth(end)}`;
 }
 
 /**
@@ -61,7 +51,7 @@ function describeWeek(weekStart: string): string {
 function toBlock(session: BattleSession): string {
   const icon = session.isGuildWar ? '🛡️' : '⚔️';
   const details = [
-    `📅 ${formatDayMonth(new Date(session.dateTime))}`,
+    `📅 ${formatVnDayMonth(new Date(session.dateTime))}`,
     `🎮 ${session.matchCount} trận`,
   ];
 

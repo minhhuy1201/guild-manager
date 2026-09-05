@@ -282,6 +282,7 @@ Endpoints, all behind the `/api` prefix:
 | `GET` | `/team-builder/weeks` | Weeks that still have roster data | Bearer |
 | `GET` | `/team-builder/formations?weekStart=` | Match rosters of a week | Bearer |
 | `PUT` | `/team-builder/formations/:sessionId` | Overwrite one match's roster | Admin |
+| `POST` | `/team-builder/formations/:sessionId/announce` | Post the day's roster images to Discord with the gathering announcement | Admin |
 | `GET` | `/team-builder/team-names` | Names of the grid's team columns | Admin |
 | `PUT` | `/team-builder/team-names` | Overwrite the whole team name map | Admin |
 | `POST` | `/discord/interactions` | Receive an interaction from Discord — slash command or button press — and answer it | Discord's Ed25519 signature |

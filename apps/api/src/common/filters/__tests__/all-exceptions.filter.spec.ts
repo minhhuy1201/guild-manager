@@ -11,6 +11,7 @@ import { REQUEST_ID_HEADER } from '../../constants/http.constant';
 import {
   AllExceptionsFilter,
   describeException,
+  statusOf,
   type ErrorResponseBody,
 } from '../all-exceptions.filter';
 
@@ -142,5 +143,38 @@ describe('AllExceptionsFilter.catch', () => {
     expect(errorLines).toHaveLength(1);
     expect(warnLines).toHaveLength(0);
     expect(errorLines[0].stack).toContain('Error: connect ECONNREFUSED');
+  });
+});
+
+// body-parser ném một Error trần khi body vượt trần, nên trước đây nó rơi vào nhánh "exception lạ"
+// và ra 500 "Lỗi hệ thống" — sai loại lỗi, và không nói được người dùng phải làm gì.
+describe('body vượt trần', () => {
+  /**
+   * Lỗi body-parser ném ra khi request lớn hơn `limit`.
+   * @returns Error mang đúng các trường body-parser gắn vào
+   */
+  function payloadTooLarge(): Error {
+    return Object.assign(new Error('request entity too large'), {
+      type: 'entity.too.large',
+      status: 413,
+    });
+  }
+
+  it('trả 413 chứ không phải 500', () => {
+    expect(statusOf(payloadTooLarge())).toBe(HttpStatus.PAYLOAD_TOO_LARGE);
+  });
+
+  it('nói bằng tiếng Việt là ảnh quá nặng', () => {
+    expect(describeException(payloadTooLarge()).message).toMatch(/quá nặng/);
+  });
+
+  it('exception thường vẫn là 500', () => {
+    expect(statusOf(new Error('connect ECONNREFUSED 5432'))).toBe(
+      HttpStatus.INTERNAL_SERVER_ERROR,
+    );
+  });
+
+  it('HttpException vẫn giữ status của chính nó', () => {
+    expect(statusOf(new UnauthorizedException())).toBe(HttpStatus.UNAUTHORIZED);
   });
 });
