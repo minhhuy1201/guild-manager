@@ -1,8 +1,9 @@
-import { NotFoundException } from '@nestjs/common';
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import type { BattleSession } from '@guild/shared/schemas';
 
 import { FixedClock } from '../../../common';
 
+import { DiscordApiError } from '../discord-rest';
 import { FormationAnnouncerService } from '../formation-announcer.service';
 
 /** Một ảnh webp tí hon, đúng dạng data URL frontend gửi lên. */
@@ -99,5 +100,44 @@ describe('FormationAnnouncerService', () => {
 
     expect(Array.from(files[0].bytes)).toEqual([1, 2, 3]);
     expect(files[0].contentType).toBe('image/webp');
+  });
+});
+
+// Người bấm nút là admin, và "bot chưa được cấp quyền trong channel" là thứ chính họ sửa được trong
+// Discord — nhưng chỉ khi có ai đó nói ra. Trước đây lỗi này về tới trình duyệt dưới dạng 500
+// "Lỗi hệ thống, vui lòng thử lại sau.", còn nguyên nhân nằm trong log server.
+describe('FormationAnnouncerService — Discord từ chối', () => {
+  /**
+   * Dựng service với một REST client luôn ném lỗi Discord.
+   * @param status - Mã lỗi Discord trả về
+   * @returns Service đã sẵn sàng gọi
+   */
+  function buildRefusing(status: number) {
+    const { service, rest } = build();
+    rest.postMessageWithFiles.mockRejectedValue(
+      new DiscordApiError(status, 'channel-bang-chien', '{"code":50013}'),
+    );
+
+    return service;
+  }
+
+  it('403 thành câu tiếng Việt nói admin phải cấp quyền gì', async () => {
+    const service = buildRefusing(403);
+
+    await expect(service.announce('session-1', [IMAGE])).rejects.toThrow(
+      ForbiddenException,
+    );
+    await expect(service.announce('session-1', [IMAGE])).rejects.toThrow(
+      /Send Messages/,
+    );
+  });
+
+  // Mọi mã khác là chuyện của hệ thống, không phải của admin: để nguyên cho filter log kèm stack.
+  it('mã lỗi khác vẫn nổi lên nguyên trạng', async () => {
+    const service = buildRefusing(500);
+
+    await expect(service.announce('session-1', [IMAGE])).rejects.toThrow(
+      DiscordApiError,
+    );
   });
 });

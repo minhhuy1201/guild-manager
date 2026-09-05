@@ -7,6 +7,30 @@ import type { MessagePayload } from './commands/command.types';
 /** Base of Discord's REST API, pinned to the version the payload shapes were written against. */
 const DISCORD_API_BASE = 'https://discord.com/api/v10';
 
+/**
+ * A call Discord refused.
+ *
+ * Carries the status apart from the message so a caller can tell the refusals apart — a 403 is an
+ * admin who has not granted the bot a permission yet and can fix it in Discord, everything else is
+ * the system's problem. The message keeps both the status and the response body, because "the
+ * message never arrived" is otherwise unanswerable from a log.
+ */
+export class DiscordApiError extends Error {
+  constructor(
+    /** HTTP status Discord answered with */
+    readonly status: number,
+    /** Channel the message was meant for */
+    readonly channelId: string,
+    /** Discord's own response body */
+    readonly body: string,
+  ) {
+    super(
+      `Discord từ chối gửi tin vào channel ${channelId} (${status}): ${body}`,
+    );
+    this.name = 'DiscordApiError';
+  }
+}
+
 /** One file travelling with a message — Discord takes them as multipart parts. */
 export interface OutgoingFile {
   /** Name Discord shows under the message */
@@ -58,8 +82,7 @@ export class DiscordRestClient {
    * @param channelId - Channel the message was meant for
    * @param response - Discord's response
    * @returns A promise resolving when the response was fine
-   * @throws Error when Discord rejects the call. The status **and** its response body are both in
-   *   the message: "the reminder never arrived" is otherwise unanswerable from a log
+   * @throws DiscordApiError when Discord rejects the call, carrying its status and response body
    */
   private async ensureAccepted(
     channelId: string,
@@ -67,8 +90,10 @@ export class DiscordRestClient {
   ): Promise<void> {
     if (response.ok) return;
 
-    throw new Error(
-      `Discord từ chối gửi tin vào channel ${channelId} (${response.status}): ${await response.text()}`,
+    throw new DiscordApiError(
+      response.status,
+      channelId,
+      await response.text(),
     );
   }
 

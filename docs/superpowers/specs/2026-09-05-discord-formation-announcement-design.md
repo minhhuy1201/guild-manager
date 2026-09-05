@@ -141,7 +141,7 @@ chứ không bị parser từ chối bằng một con số trần trụi.
 | `common/filters/all-exceptions.filter.ts` | Body vượt trần → **413** kèm câu tiếng Việt, thay vì 500 “Lỗi hệ thống”. |
 | `discord-bot/vn-format.ts` | `formatVnTime` / `formatVnDayMonth` — tách ra từ bản sao đang nằm riêng trong `announcement.ts`, để hai message không có hai cách viết `dd/MM`. |
 | `discord-bot/formation-announcement.ts` | **Hàm thuần** `buildFormationAnnouncement(input, links): MessagePayload`. Nơi duy nhất giữ mẫu chữ. |
-| `discord-bot/discord-rest.ts` | Thêm `postMessageWithFiles(channelId, payload, files)` — multipart `payload_json` + `files[n]`, Node 24 có sẵn `FormData`/`Blob`. |
+| `discord-bot/discord-rest.ts` | Thêm `postMessageWithFiles(channelId, payload, files)` — multipart `payload_json` + `files[n]`, Node 24 có sẵn `FormData`/`Blob`. Lỗi ném ra là `DiscordApiError`, mang status tách riêng. |
 | `discord-bot/formation-announcer.service.ts` | Đọc session qua `BattleSessionsService.findById`, dựng payload, gửi vào channel bang chiến, trả kết quả qua `verifyResponse`. |
 | `discord-bot/formation-announce.controller.ts` | `@Controller('team-builder')` + `@Post('formations/:sessionId/announce')`, khoá bằng `JwtAuthGuard + AdminGuard`. |
 | `discord-bot/dto/announce-formation.dto.ts` | `createZodDto(announceFormationSchema)`. |
@@ -174,9 +174,16 @@ bắt vòng lặp. Không có nó, lỗi này lọt qua cả 6 check CI — jest
 `nest build` chỉ biên dịch, còn `module-boundary.spec.ts` kiểm đường dẫn import chứ không kiểm đồ
 thị DI.
 
-Session không tồn tại → `NotFoundException('Không tìm thấy trận đánh này.')`. Discord từ chối →
-`DiscordRestClient` đã ném kèm status + body; announcer để lỗi nổi lên nguyên trạng, tầng filter biến
-thành 500 và frontend hiện câu tiếng Việt của nó.
+Session không tồn tại → `NotFoundException('Không tìm thấy trận đánh này.')`.
+
+Discord từ chối → `DiscordRestClient` ném `DiscordApiError` mang theo status và body. Announcer chỉ
+dịch **một** trường hợp: **403** → `ForbiddenException` nói thẳng phải bật `Send Messages` và
+`Attach Files` cho bot ở đâu — vì người bấm nút chính là admin sửa được việc đó, đúng lối
+`/cau-hinh-kenh` đang từ chối. Mọi mã khác để nổi lên nguyên trạng: đó là chuyện của hệ thống, và
+filter cần giữ lý do của Discord kèm stack trong log.
+
+Không dịch 403 thì lỗi này về tới trình duyệt dưới dạng 500 “Lỗi hệ thống, vui lòng thử lại sau.”,
+còn nguyên nhân nằm trong log server — admin không có cách nào biết mình chỉ cần bấm một ô tick.
 
 Gửi **một** message mang cả hai ảnh, không phải hai message: không tồn tại trạng thái “gửi được nửa”
 để phải dọn.

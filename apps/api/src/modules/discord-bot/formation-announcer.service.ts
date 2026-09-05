@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { announcementResultSchema } from '@guild/shared/schemas';
 import type { AnnouncementResult } from '@guild/shared/schemas';
@@ -8,7 +12,7 @@ import { verifyResponse } from '../../config';
 import type { Env } from '../../config';
 import { BattleSessionsService } from '../battle-sessions/battle-sessions.public';
 import type { OutgoingFile } from './discord-rest';
-import { DiscordRestClient } from './discord-rest';
+import { DiscordApiError, DiscordRestClient } from './discord-rest';
 import { buildFormationAnnouncement } from './formation-announcement';
 
 /** The only image format the announcement accepts, mirrored by the shared schema. */
@@ -19,6 +23,19 @@ const DATA_URL_PREFIX = `data:${IMAGE_CONTENT_TYPE};base64,`;
 
 /** Shown when the battle the announcement points at no longer exists. */
 const SESSION_NOT_FOUND = 'Không tìm thấy trận đánh này.';
+
+/** Status Discord answers with when the bot lacks a permission in the channel. */
+const DISCORD_FORBIDDEN = 403;
+
+/**
+ * Shown when Discord refuses the post for lack of permission.
+ *
+ * Names the two permissions and where to set them, because the person reading it is the admin who
+ * can grant them — the same reasoning as `/cau-hinh-kenh`'s refusal.
+ */
+const MISSING_PERMISSIONS =
+  'Bot chưa có quyền đăng bài trong channel bang chiến. Vào Discord → Edit Channel → ' +
+  'Permissions, bật Send Messages và Attach Files cho bot, rồi gửi lại.';
 
 /**
  * Turn one incoming data URL into the file Discord is handed.
@@ -62,7 +79,8 @@ export class FormationAnnouncerService {
    * @param images - Line-up images as `data:image/webp;base64,…`, in match order
    * @returns How many images were sent
    * @throws NotFoundException when the battle day does not exist
-   * @throws Error when Discord rejects the message
+   * @throws ForbiddenException when the bot lacks permission to post in the channel
+   * @throws DiscordApiError when Discord rejects the message for any other reason
    */
   async announce(
     sessionId: string,
@@ -87,11 +105,24 @@ export class FormationAnnouncerService {
       },
     );
 
-    await this.rest.postMessageWithFiles(
-      this.config.get('DISCORD_BANG_CHIEN_CHANNEL_ID', { infer: true }),
-      payload,
-      images.map(toFile),
-    );
+    try {
+      await this.rest.postMessageWithFiles(
+        this.config.get('DISCORD_BANG_CHIEN_CHANNEL_ID', { infer: true }),
+        payload,
+        images.map(toFile),
+      );
+    } catch (error) {
+      // Only the permission refusal is translated. Every other status is the system's problem, and
+      // rethrowing it untouched keeps Discord's own reason and a stack in the log.
+      if (
+        error instanceof DiscordApiError &&
+        error.status === DISCORD_FORBIDDEN
+      ) {
+        throw new ForbiddenException(MISSING_PERMISSIONS);
+      }
+
+      throw error;
+    }
 
     return verifyResponse(announcementResultSchema, {
       imageCount: images.length,
