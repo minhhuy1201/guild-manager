@@ -187,14 +187,16 @@ export async function buildAttendanceBoard(
   actor: JwtPayload,
   deps: CommandDeps,
 ): Promise<MessagePayload> {
-  const [sessions, allRecords] = await Promise.all([
-    deps.battleSessions.listByWeek(),
-    deps.attendance.getRecords(),
-  ]);
+  const sessions = await deps.battleSessions.listByWeek();
 
   if (sessions.length === 0) {
     return { content: `${buildHeading(target)}\n\n${NO_SESSIONS}` };
   }
+
+  // Not `getRecords()`, which would derive the week a second time — and materialising it writes.
+  const allRecords = await deps.attendance.getRecordsForSessions(
+    sessions.map((session) => session.id),
+  );
 
   const records = new Map(
     allRecords
@@ -289,16 +291,19 @@ export async function handleAttendanceButton(
 
   if (!resolved) return { kind: 'refusal', message: NOT_LINKED };
 
-  await deps.attendance.mark(
-    {
-      characterId: pressed.characterId,
-      sessionId: pressed.sessionId,
-      isPresent: pressed.isPresent,
-    },
-    resolved.actor,
-  );
-
-  const row = await deps.characters.findById(pressed.characterId);
+  // The character row is only needed for the heading, and `mark` never touches that table — so the
+  // read rides alongside the write instead of waiting for it.
+  const [, row] = await Promise.all([
+    deps.attendance.mark(
+      {
+        characterId: pressed.characterId,
+        sessionId: pressed.sessionId,
+        isPresent: pressed.isPresent,
+      },
+      resolved.actor,
+    ),
+    deps.characters.findById(pressed.characterId),
+  ]);
 
   if (!row) return { kind: 'refusal', message: STALE_BUTTON };
 

@@ -79,8 +79,24 @@ export class AttendanceService {
    */
   async getRecords(): Promise<AttendanceRecord[]> {
     const sessions = await this.battleSessions.listByWeek();
+
+    return this.getRecordsForSessions(sessions.map((session) => session.id));
+  }
+
+  /**
+   * Attendance entries of sessions the caller already holds.
+   *
+   * Split out of `getRecords` for the caller that has just listed the week itself: `listByWeek`
+   * materialises the Guild War, so deriving the week twice meant a second write on every read.
+   *
+   * @param sessionIds - Sessions to read entries for
+   * @returns Their records, newest first
+   */
+  async getRecordsForSessions(
+    sessionIds: string[],
+  ): Promise<AttendanceRecord[]> {
     const records = await this.prisma.attendanceRecord.findMany({
-      where: { sessionId: { in: sessions.map((session) => session.id) } },
+      where: { sessionId: { in: sessionIds } },
       orderBy: { markedAt: 'desc' },
     });
 
@@ -137,16 +153,24 @@ export class AttendanceService {
     const { characterId, sessionId, isPresent, reason } = input;
     const isAdmin = canManageGuild(actor.role);
 
-    if (!(await this.characters.exists(characterId))) {
+    // Three independent reads, so one round trip rather than three: a Discord button press answers
+    // inside the interaction's 3-second window, and this method sits on that path.
+    const [characterExists, own, session] = await Promise.all([
+      this.characters.exists(characterId),
+      this.ownCharacterId(actor),
+      this.battleSessions.findById(sessionId),
+    ]);
+
+    // The guards stay in their original order — the caller must keep seeing the most specific
+    // refusal, not whichever read happened to disqualify first.
+    if (!characterExists) {
       throw new NotFoundException('Không tìm thấy thành viên.');
     }
 
-    const own = await this.ownCharacterId(actor);
     if (!isAdmin && characterId !== own) {
       throw new ForbiddenException(NOT_YOUR_CHARACTER);
     }
 
-    const session = await this.battleSessions.findById(sessionId);
     // Non-admins may only mark the open week; admins may fix other weeks.
     //
     // `findById` returns an entity, so `weekStart` is an ISO string; re-wrapping it through
@@ -189,10 +213,7 @@ export class AttendanceService {
     // A member who has just said "Không" must not stay in the day's formation: the team builder
     // would otherwise keep showing them as placed until someone notices by hand.
     if (!isPresent) {
-      await this.teamBuilder.releaseCharacterFromSession(
-        sessionId,
-        characterId,
-      );
+      await this.teamBuilder.releaseCharacterFromSession(session, characterId);
     }
 
     return toAttendanceRecord(record);
