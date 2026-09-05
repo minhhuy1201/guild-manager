@@ -9,6 +9,20 @@ export type AppConfigService = ConfigService<Env, true>;
 export const API_PREFIX = 'api';
 
 /**
+ * Largest JSON body the API accepts, in bytes.
+ *
+ * Express defaults to 100kb, which the formation announcement blows straight past: it carries one
+ * or two line-up screenshots as base64. Below this the request dies in the body parser — before any
+ * guard, so the caller gets a bare 500 naming nothing.
+ *
+ * Sized **above** `ANNOUNCEMENT_IMAGE_MAX_CHARS × 2` on purpose, so an image that really is too big
+ * is refused by the schema, in Vietnamese, naming the image — and **below** the 4.5MB a Vercel
+ * Function accepts, so the ceiling that bites is this one, identically on a laptop and in
+ * production. `config/__tests__/body-limit.spec.ts` keeps the three numbers in that order.
+ */
+export const JSON_BODY_LIMIT = 4 * 1024 * 1024;
+
+/**
  * Swagger UI path (enabled outside production only).
  * Sits outside `API_PREFIX` — served at `http://localhost:PORT/docs`.
  */

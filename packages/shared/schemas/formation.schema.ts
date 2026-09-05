@@ -121,10 +121,13 @@ export type FormationWeek = z.infer<typeof formationWeekSchema>;
 /**
  * Longest a single line-up image may be as a base64 data URL.
  *
- * Sized well under the 4.5MB body limit a Vercel Function accepts, with room for two of them: an
- * announcement that dies at the edge would fail with no Vietnamese sentence to show.
+ * A day is played over at most 2 matches, so **two** of these travel in one body — that product, not
+ * this number alone, is what has to clear the API's own body limit and stay under the 4.5MB a Vercel
+ * Function accepts. It was first written as 3,000,000, which put two images at 6MB: past the
+ * platform ceiling, where the request dies at the edge with no Vietnamese sentence to show.
+ * `apps/api/src/config/__tests__/body-limit.spec.ts` holds the three numbers in order.
  */
-export const ANNOUNCEMENT_IMAGE_MAX_CHARS = 3_000_000;
+export const ANNOUNCEMENT_IMAGE_MAX_CHARS = 2_000_000;
 
 /**
  * One line-up image on the wire. The format is pinned to webp — the browser encodes it, the API

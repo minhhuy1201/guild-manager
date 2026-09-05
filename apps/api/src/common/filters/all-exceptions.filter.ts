@@ -10,6 +10,17 @@ import type { Request, Response } from 'express';
 
 import { REQUEST_ID_HEADER } from '../constants/http.constant';
 
+/**
+ * What body-parser tags the error with when a request exceeds the configured limit. It throws a
+ * plain `Error`, not an `HttpException`, so without this the filter would read it as an unknown
+ * fault and answer 500 — a server error for what is squarely the caller's.
+ */
+const PAYLOAD_TOO_LARGE_TYPE = 'entity.too.large';
+
+/** Shown when the request body exceeds `JSON_BODY_LIMIT`. */
+const PAYLOAD_TOO_LARGE_MESSAGE =
+  'Ảnh gửi lên quá nặng. Thử lại với ít trận hơn, hoặc báo admin.';
+
 /** At and above this status the error is server-side — log it with a stack. */
 const SERVER_ERROR_STATUS: number = HttpStatus.INTERNAL_SERVER_ERROR;
 
@@ -45,10 +56,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const request = ctx.getRequest<Request>();
     const response = ctx.getResponse<Response>();
 
-    const status: number =
-      exception instanceof HttpException
-        ? exception.getStatus()
-        : HttpStatus.INTERNAL_SERVER_ERROR;
+    const status = statusOf(exception);
 
     const body: ErrorResponseBody = {
       statusCode: status,
@@ -76,6 +84,31 @@ export class AllExceptionsFilter implements ExceptionFilter {
 }
 
 /**
+ * Whether an exception is body-parser refusing an oversized request.
+ * @param exception - Exception to test
+ * @returns True when body-parser rejected the request for its size
+ */
+function isPayloadTooLarge(exception: unknown): boolean {
+  return (
+    exception instanceof Error &&
+    (exception as { type?: unknown }).type === PAYLOAD_TOO_LARGE_TYPE
+  );
+}
+
+/**
+ * The HTTP status an exception answers with.
+ * Exported so `__tests__` can exercise each branch without faking an `ArgumentsHost`.
+ * @param exception - Exception to map
+ * @returns Its own status for an `HttpException`, 413 for an oversized body, 500 otherwise
+ */
+export function statusOf(exception: unknown): number {
+  if (exception instanceof HttpException) return exception.getStatus();
+  if (isPayloadTooLarge(exception)) return HttpStatus.PAYLOAD_TOO_LARGE;
+
+  return HttpStatus.INTERNAL_SERVER_ERROR;
+}
+
+/**
  * Extract the message and error details from an exception.
  * Exported so `__tests__` can exercise each branch directly instead of faking an `ArgumentsHost`.
  * @param exception - Exception to describe
@@ -85,6 +118,10 @@ export function describeException(exception: unknown): {
   message: string;
   errors?: unknown;
 } {
+  if (isPayloadTooLarge(exception)) {
+    return { message: PAYLOAD_TOO_LARGE_MESSAGE };
+  }
+
   if (!(exception instanceof HttpException)) {
     return { message: 'Lỗi hệ thống, vui lòng thử lại sau.' };
   }

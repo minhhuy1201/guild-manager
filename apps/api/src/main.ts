@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory, Reflector } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ZodValidationPipe } from 'nestjs-zod';
 
@@ -13,6 +14,7 @@ import {
 } from './common';
 import {
   API_PREFIX,
+  JSON_BODY_LIMIT,
   SWAGGER_PATH,
   createCorsOptions,
   type Env,
@@ -24,12 +26,21 @@ import {
 async function bootstrap(): Promise<void> {
   // Discord signs the bytes it sent, so the interaction guard needs them unparsed. Nest keeps a
   // copy on `request.rawBody` only when this is on.
-  const app = await NestFactory.create(AppModule, { rawBody: true });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    rawBody: true,
+  });
   const config = app.get<ConfigService<Env, true>>(ConfigService);
 
   // Must be the first thing in the stack: middleware runs before guards, so a request a guard
   // rejects still carries an id into the error body and the response header.
   app.use(requestIdMiddleware);
+
+  // Replaces Express's 100kb default, which the formation announcement's screenshots exceed. It
+  // registers a parser named `jsonParser`, and Nest skips its own default for any parser already
+  // applied by name — so this is a replacement, not a second parser in front of the first. `rawBody`
+  // survives: `useBodyParser` reads it back off the options passed to `create` above, which is what
+  // keeps the Discord signature guard able to see the bytes Discord signed.
+  app.useBodyParser('json', { limit: JSON_BODY_LIMIT });
 
   app.setGlobalPrefix(API_PREFIX);
   app.useGlobalPipes(new ZodValidationPipe());

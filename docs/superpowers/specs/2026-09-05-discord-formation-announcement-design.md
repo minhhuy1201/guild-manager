@@ -101,7 +101,7 @@ cùng lý do đã ghi trong `MessagePayload`.
 
 ```ts
 /** Ảnh đội hình gửi kèm thông báo: data URL webp, base64. */
-export const ANNOUNCEMENT_IMAGE_MAX_CHARS = 3_000_000;
+export const ANNOUNCEMENT_IMAGE_MAX_CHARS = 2_000_000;
 
 const announcementImageSchema = z
   .string()
@@ -119,11 +119,26 @@ export const announcementResultSchema = z.object({ imageCount: z.number() });
 đã có. Định dạng ép **webp** bằng regex — một hằng số duy nhất quyết định cả client chụp gì lẫn
 server nhận gì. Câu từ chối viết tiếng Việt vì frontend hiện thẳng.
 
+**Ba con số phải xếp đúng thứ tự** (`apps/api/src/config/__tests__/body-limit.spec.ts` canh):
+
+```
+ANNOUNCEMENT_IMAGE_MAX_CHARS × 2  <  JSON_BODY_LIMIT  ≤  4.5MB (trần của Vercel Function)
+        4.000.000                <     4.194.304      ≤     4.500.000
+```
+
+Bản đầu đặt trần ảnh 3.000.000 với lý do “thoải mái dưới 4.5MB, đủ chỗ cho hai ảnh” — sai số học:
+hai ảnh là 6MB, vượt luôn trần của Vercel, và request sẽ chết ở edge không kèm câu tiếng Việt nào.
+Trần parser cố tình nằm **trên** cỡ hợp lệ lớn nhất, để ảnh quá to bị schema từ chối bằng tiếng Việt
+chứ không bị parser từ chối bằng một con số trần trụi.
+
 ### 4.2 `apps/api`
 
 | File | Việc |
 |---|---|
 | `config/env.validation.ts` | Thêm `DISCORD_BAO_BAN_CHANNEL_ID: z.string().min(1)` — thiếu thì chết lúc boot, đúng luật “misconfiguration fails loud”. |
+| `config/app.config.ts` | `JSON_BODY_LIMIT` — Express mặc định chỉ 100kb, ảnh base64 vượt xa. |
+| `main.ts` | `app.useBodyParser('json', { limit: JSON_BODY_LIMIT })`, đặt **sau** `requestIdMiddleware` để lỗi body vẫn mang `requestId`. |
+| `common/filters/all-exceptions.filter.ts` | Body vượt trần → **413** kèm câu tiếng Việt, thay vì 500 “Lỗi hệ thống”. |
 | `discord-bot/vn-format.ts` | `formatVnTime` / `formatVnDayMonth` — tách ra từ bản sao đang nằm riêng trong `announcement.ts`, để hai message không có hai cách viết `dd/MM`. |
 | `discord-bot/formation-announcement.ts` | **Hàm thuần** `buildFormationAnnouncement(input, links): MessagePayload`. Nơi duy nhất giữ mẫu chữ. |
 | `discord-bot/discord-rest.ts` | Thêm `postMessageWithFiles(channelId, payload, files)` — multipart `payload_json` + `files[n]`, Node 24 có sẵn `FormData`/`Blob`. |
