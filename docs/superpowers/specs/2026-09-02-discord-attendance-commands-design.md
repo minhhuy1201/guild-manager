@@ -283,6 +283,48 @@ trên serverless Vercel, process có thể bị đóng ngay sau khi response đi
 vào chính ngân sách 3 giây đó. Nếu thực tế có timeout, câu trả lời là chuyển sang deferred +
 `waitUntil` trong một đợt riêng, chứ không phải cắt bớt truy vấn.
 
+### 9.1. Rủi ro đó đã xảy ra thật — 2026-09-06
+
+Một admin dùng `/diem-danh-ho` đổi "Có" → "Không" cho một ngày **đã quá hạn**. Bản ghi trong database
+đổi đúng — website hiện trạng thái mới — còn Discord in "Ứng dụng không phản hồi". Đó là chữ của
+Discord khi endpoint im quá 3 giây; Vercel Function vẫn chạy tiếp và ghi xong sau đó, nên dữ liệu đi
+một đằng còn tin nhắn đi một nẻo.
+
+Đo lại đường bấm nút thì thấy **~13 truy vấn gần như nối đuôi nhau**, và lệnh ghi nằm ở truy vấn thứ
+năm — nên mọi thứ chậm phía sau vẫn để lại dữ liệu đã đổi. Nhánh "Không" tốn thêm 4 round-trip so với
+nhánh "Có" (`releaseCharacterFromSession`), khớp đúng với việc chỉ câu trả lời "Không" chạm trần.
+
+**Đợt sửa đầu (PR #62) đi ngược chỉ dẫn ở trên: nó cắt bớt truy vấn chứ không chuyển sang deferred.**
+Ghi rõ ở đây vì đó là một quyết định đổi ý, không phải một chi tiết triển khai:
+
+- bốn trong số 13 truy vấn là **trùng lặp**, không phải cái giá phải trả — cùng một nhân vật đọc hai
+  lần, cùng một ngày đánh đọc hai lần, và tuần được suy ra hai lần trong đó mỗi lần lại **ghi** (vì
+  `listByWeek` materialise Bang Chiến). Bỏ trùng lặp là việc đúng dù ngân sách 3 giây có tồn tại hay
+  không, nên làm trước là rẻ hơn.
+- deferred kéo `waitUntil` của `@vercel/functions` vào lớp Discord, biến mọi lỗi thành lỗi im lặng
+  (response đã đi rồi), và buộc mọi test bấm nút phải đi qua `DiscordRestClient` — cái giá đó chỉ
+  đáng trả khi đã biết chắc việc cắt truy vấn là không đủ.
+
+Kết quả: độ sâu tuần tự còn ~7. **Việc này rút ngắn công việc chứ không đưa nó ra khỏi đường tới
+hạn** — cold start vẫn nguyên vẹn, và nếu bản thân việc khởi động Nest + Prisma đã ăn hết 3 giây thì
+không truy vấn nào kịp chạy.
+
+### 9.2. Nếu lỗi tái diễn: đọc câu chữ trước, rồi mới sửa
+
+Câu chữ của thông báo là thứ phân biệt hai nguyên nhân hoàn toàn khác nhau. Hỏi người báo lỗi **đúng
+một câu: bot hiện chữ gì**.
+
+| Người dùng thấy | Nghĩa là | Việc phải làm |
+| --- | --- | --- |
+| "Ứng dụng không phản hồi" (chữ xám của Discord, không phải tin nhắn của bot) | Quá 3 giây. Dữ liệu **có thể đã ghi** — kiểm tra trên web trước khi bảo họ bấm lại | Chuyển sang deferred: ACK `type: 6`, rồi `PATCH /webhooks/{application_id}/{token}/messages/@original` cho bảng và `POST /webhooks/{application_id}/{token}` kèm cờ ephemeral cho lời từ chối, tất cả bọc trong `waitUntil` |
+| "Có lỗi xảy ra. Thử lại sau hoặc điểm danh trên web." | Tin nhắn của chính bot: có exception thật sau khi ghi | Đọc log Vercel — có stack trace. Deferred không cứu được gì ở đây |
+| Một câu tiếng Việt khác ("Đã quá hạn…", "Nút này không còn dùng được…") | Một nhánh từ chối chạy đúng như thiết kế | Không có gì để sửa; nếu câu đó sai thì sửa luật, không sửa lớp Discord |
+
+Chuyển sang deferred là một thay đổi kiến trúc của lớp Discord, đụng `INTERACTION_RESPONSE_TYPE`,
+`interaction.schema` (phải đọc thêm `token` và `application_id`), `DiscordRestClient`,
+`InteractionRouter` và toàn bộ test bấm nút — nên nó cần một spec riêng, và §9 này phải được viết lại
+chứ không phải đắp thêm.
+
 ## 10. Test
 
 Jest, đặt trong `src/modules/discord-bot/__tests__/` cạnh code (architecture.md §7). Mọi test dưới
