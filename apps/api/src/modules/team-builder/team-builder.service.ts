@@ -4,13 +4,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
-  announcementResultSchema,
   formationWeekSchema,
   sessionFormationSchema,
   teamNamesSchema,
 } from '@guild/shared/schemas';
 import type {
-  AnnouncementResult,
   FormationWeek,
   MatchFormation,
   MatchInput,
@@ -29,7 +27,6 @@ import {
   weekEndOf,
 } from '../battle-sessions/battle-sessions.public';
 import { CharactersService } from '../characters/characters.public';
-import { FormationAnnouncerService } from '../discord-bot/discord-bot.public';
 import { decodeMatch, encodeMatch } from './formation-grid';
 
 /** Prisma error code for a foreign key violation (here, a slot pointing at a deleted member). */
@@ -47,32 +44,8 @@ export class TeamBuilderService {
     private readonly prisma: PrismaService,
     private readonly battleSessions: BattleSessionsService,
     private readonly characters: CharactersService,
-    private readonly announcer: FormationAnnouncerService,
     private readonly clock: Clock,
   ) {}
-
-  /**
-   * Post the day's line-up into the guild's Discord channel.
-   *
-   * A pass-through on purpose: the images are made in the browser and the message belongs to the
-   * bot, so this module owns neither half — what it owns is the endpoint, because the caller is the
-   * team builder screen and the permission is that screen's admin guard.
-   *
-   * @param sessionId - Battle day being announced
-   * @param images - Line-up images as `data:image/webp;base64,…`, in match order
-   * @returns How many images reached Discord
-   * @throws NotFoundException when the battle day does not exist
-   */
-  async announceFormation(
-    sessionId: string,
-    images: string[],
-  ): Promise<AnnouncementResult> {
-    const imageCount = await this.announcer.announce(sessionId, images);
-
-    return verifyResponse(announcementResultSchema, {
-      imageCount,
-    } satisfies AnnouncementResult);
-  }
 
   /**
    * List the weeks that still hold formation data, newest first.

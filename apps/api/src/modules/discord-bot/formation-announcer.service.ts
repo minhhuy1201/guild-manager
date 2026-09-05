@@ -1,7 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { announcementResultSchema } from '@guild/shared/schemas';
+import type { AnnouncementResult } from '@guild/shared/schemas';
 
 import { Clock } from '../../common';
+import { verifyResponse } from '../../config';
 import type { Env } from '../../config';
 import { BattleSessionsService } from '../battle-sessions/battle-sessions.public';
 import type { OutgoingFile } from './discord-rest';
@@ -61,7 +64,10 @@ export class FormationAnnouncerService {
    * @throws NotFoundException when the battle day does not exist
    * @throws Error when Discord rejects the message
    */
-  async announce(sessionId: string, images: string[]): Promise<number> {
+  async announce(
+    sessionId: string,
+    images: string[],
+  ): Promise<AnnouncementResult> {
     const session = await this.battleSessions.findById(sessionId);
 
     if (!session) throw new NotFoundException(SESSION_NOT_FOUND);
@@ -87,6 +93,8 @@ export class FormationAnnouncerService {
       images.map(toFile),
     );
 
-    return images.length;
+    return verifyResponse(announcementResultSchema, {
+      imageCount: images.length,
+    } satisfies AnnouncementResult);
   }
 }

@@ -1,5 +1,10 @@
 import { announceFormationSchema } from '@guild/shared/schemas';
 
+import { AdminGuard, JwtAuthGuard } from '../../../common';
+import { guardsOf } from '../../../__tests__/guards-of';
+import { FormationAnnounceController } from '../formation-announce.controller';
+import { FormationAnnouncerService } from '../formation-announcer.service';
+
 const IMAGE = 'data:image/webp;base64,AQID';
 
 describe('announceFormationSchema', () => {
@@ -40,5 +45,30 @@ describe('announceFormationSchema', () => {
     expect(announceFormationSchema.safeParse({ images: [huge] }).success).toBe(
       false,
     );
+  });
+});
+
+describe('FormationAnnounceController', () => {
+  it('khoá endpoint cho quản trị viên ở cấp controller', () => {
+    expect(guardsOf(FormationAnnounceController)).toEqual([
+      JwtAuthGuard,
+      AdminGuard,
+    ]);
+  });
+
+  it('chuyển thẳng sessionId và ảnh xuống announcer', async () => {
+    const announcer = {
+      announce: jest.fn().mockResolvedValue({ imageCount: 2 }),
+    };
+    const controller = new FormationAnnounceController(
+      announcer as unknown as FormationAnnouncerService,
+    );
+    const images = [IMAGE, 'data:image/webp;base64,BAUG'];
+
+    await expect(
+      controller.announceFormation('session-1', { images }),
+    ).resolves.toEqual({ imageCount: 2 });
+
+    expect(announcer.announce).toHaveBeenCalledWith('session-1', images);
   });
 });

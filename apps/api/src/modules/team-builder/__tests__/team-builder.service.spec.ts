@@ -3,7 +3,6 @@ import { ConflictException, NotFoundException } from '@nestjs/common';
 import { FixedClock } from '../../../common';
 import { BattleSessionsService } from '../../battle-sessions/battle-sessions.public';
 import { CharactersService } from '../../characters/characters.public';
-import { FormationAnnouncerService } from '../../discord-bot/discord-bot.public';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { TeamBuilderService } from '../team-builder.service';
 
@@ -95,7 +94,6 @@ describe('TeamBuilderService.getFormations', () => {
       prisma as unknown as PrismaService,
       battleSessions as unknown as BattleSessionsService,
       characters as unknown as CharactersService,
-      {} as unknown as FormationAnnouncerService,
       new FixedClock(WEDNESDAY),
     );
   });
@@ -243,7 +241,6 @@ describe('TeamBuilderService.getWeeks', () => {
       prisma as unknown as PrismaService,
       battleSessions as unknown as BattleSessionsService,
       characters as unknown as CharactersService,
-      {} as unknown as FormationAnnouncerService,
       new FixedClock(WEDNESDAY),
     );
   });
@@ -318,7 +315,6 @@ describe('TeamBuilderService.purgeExpiredFormations', () => {
       prisma as unknown as PrismaService,
       {} as unknown as BattleSessionsService,
       {} as unknown as CharactersService,
-      {} as unknown as FormationAnnouncerService,
       new FixedClock(WEDNESDAY),
     );
   });
@@ -409,7 +405,6 @@ describe('TeamBuilderService.saveFormation', () => {
       prisma as unknown as PrismaService,
       battleSessions as unknown as BattleSessionsService,
       characters as unknown as CharactersService,
-      {} as unknown as FormationAnnouncerService,
       new FixedClock(WEDNESDAY),
     );
   });
@@ -663,7 +658,6 @@ describe('TeamBuilderService.releaseCharacterFromSession', () => {
       prisma as unknown as PrismaService,
       battleSessions as unknown as BattleSessionsService,
       { listIds: jest.fn() } as unknown as CharactersService,
-      {} as unknown as FormationAnnouncerService,
       new FixedClock(WEDNESDAY),
     );
   });

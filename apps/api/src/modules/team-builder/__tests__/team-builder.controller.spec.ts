@@ -78,27 +78,3 @@ describe('TeamBuilderController — tên đội', () => {
     expect(teamBuilder.saveTeamNames).toHaveBeenCalledWith(names);
   });
 });
-
-describe('TeamBuilderController.announceFormation', () => {
-  it('chuyển thẳng sessionId và ảnh xuống service', async () => {
-    const teamBuilder = {
-      announceFormation: jest.fn().mockResolvedValue({ imageCount: 2 }),
-    };
-    const controller = new TeamBuilderController(
-      teamBuilder as unknown as TeamBuilderService,
-    );
-    const images = [
-      'data:image/webp;base64,AQID',
-      'data:image/webp;base64,BAUG',
-    ];
-
-    await expect(
-      controller.announceFormation('session-1', { images }),
-    ).resolves.toEqual({ imageCount: 2 });
-
-    expect(teamBuilder.announceFormation).toHaveBeenCalledWith(
-      'session-1',
-      images,
-    );
-  });
-});

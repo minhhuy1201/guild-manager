@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 
 import { BattleSessionsModule } from '../battle-sessions/battle-sessions.module';
 import { CharactersModule } from '../characters/characters.module';
-import { DiscordBotModule } from '../discord-bot/discord-bot.module';
 import { TeamBuilderController } from './team-builder.controller';
 import { TeamBuilderService } from './team-builder.service';
 
@@ -12,9 +11,7 @@ import { TeamBuilderService } from './team-builder.service';
  * the schedule module's responsibility and is not duplicated here.
  */
 @Module({
-  // DiscordBotModule: the "Gửi Discord" button on the team builder screen posts the day's line-up
-  // through FormationAnnouncerService.
-  imports: [BattleSessionsModule, CharactersModule, DiscordBotModule],
+  imports: [BattleSessionsModule, CharactersModule],
   controllers: [TeamBuilderController],
   providers: [TeamBuilderService],
   // Attendance writes through this service: answering "Không" takes the member out of the day's

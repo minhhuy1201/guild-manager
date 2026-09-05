@@ -72,7 +72,7 @@ describe('FormationAnnouncerService', () => {
 
     const sent = await service.announce('session-1', [IMAGE, IMAGE]);
 
-    expect(sent).toBe(2);
+    expect(sent).toEqual({ imageCount: 2 });
     expect(rest.postMessageWithFiles).toHaveBeenCalledTimes(1);
 
     const [channelId, payload, files] = rest.postMessageWithFiles.mock

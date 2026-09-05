@@ -1,7 +1,8 @@
 # Gửi thông báo đội hình vào Discord — Design
 
 Ngày: 2026-09-05 · Phạm vi: `apps/web` (feature `team-builder` mở rộng, thêm `@zumer/snapdom`),
-`apps/api` (module `discord-bot` mở rộng + một endpoint mới trên `team-builder`), `packages/shared`
+`apps/api` (module `discord-bot` mở rộng, thêm một endpoint dưới đường dẫn `team-builder`),
+`packages/shared`
 (một schema mới). Không đụng database, không migration.
 
 Hôm nay admin xếp xong đội hình rồi tự chụp màn hình, tự gõ lại câu thông báo theo mẫu, tự dán vào
@@ -126,22 +127,37 @@ server nhận gì. Câu từ chối viết tiếng Việt vì frontend hiện th
 | `discord-bot/vn-format.ts` | `formatVnTime` / `formatVnDayMonth` — tách ra từ bản sao đang nằm riêng trong `announcement.ts`, để hai message không có hai cách viết `dd/MM`. |
 | `discord-bot/formation-announcement.ts` | **Hàm thuần** `buildFormationAnnouncement(input, links): MessagePayload`. Nơi duy nhất giữ mẫu chữ. |
 | `discord-bot/discord-rest.ts` | Thêm `postMessageWithFiles(channelId, payload, files)` — multipart `payload_json` + `files[n]`, Node 24 có sẵn `FormData`/`Blob`. |
-| `discord-bot/formation-announcer.service.ts` | Đọc session qua `BattleSessionsService.findById`, dựng payload, gửi vào channel bang chiến. |
-| `discord-bot/discord-bot.public.ts` | Export `FormationAnnouncerService`. |
-| `discord-bot/discord-bot.module.ts` | Khai báo + `exports` service đó. |
-| `team-builder/team-builder.controller.ts` | `@Post('formations/:sessionId/announce')` — class đã có `JwtAuthGuard + AdminGuard`. |
-| `team-builder/team-builder.service.ts` | `announceFormation(sessionId, images)` — chuyển tiếp sang announcer, bọc kết quả bằng `verifyResponse`. |
-| `team-builder/dto/announce-formation.dto.ts` | `createZodDto(announceFormationSchema)`. |
-| `team-builder/team-builder.module.ts` | `imports: [DiscordBotModule]`. |
+| `discord-bot/formation-announcer.service.ts` | Đọc session qua `BattleSessionsService.findById`, dựng payload, gửi vào channel bang chiến, trả kết quả qua `verifyResponse`. |
+| `discord-bot/formation-announce.controller.ts` | `@Controller('team-builder')` + `@Post('formations/:sessionId/announce')`, khoá bằng `JwtAuthGuard + AdminGuard`. |
+| `discord-bot/dto/announce-formation.dto.ts` | `createZodDto(announceFormationSchema)`. |
+| `discord-bot/discord-bot.module.ts` | Khai báo service + controller mới. |
 
-**Chiều phụ thuộc:** `team-builder → discord-bot`. Không có cycle vì `discord-bot` không biết
-`team-builder` tồn tại, nên không cần `forwardRef()` — và nếu một ngày nó cần, đó là dấu hiệu phải
-tách module thứ ba chứ không phải nới luật.
+**Endpoint nằm trong `discord-bot`, dù đường dẫn mang tên `team-builder`.**
 
-**Vì sao endpoint nằm ở `team-builder` chứ không phải một controller mới trong `discord-bot`:**
-§7 nói endpoint mới của một domain sẵn có thì thêm method vào controller của domain đó. Người gọi là
-màn xếp đội hình, quyền là quyền admin của màn đó, và class đã gắn sẵn đúng cặp guard. Controller
-của `discord-bot` xác thực bằng chữ ký Ed25519 hoặc bằng cron secret — không dùng lại được.
+Bản đầu của spec này đặt nó ở `team-builder` — §7 nói endpoint mới của một domain sẵn có thì thêm
+method vào controller của domain đó. Cách đó **làm Nest chết ngay lúc boot**: `DiscordBotModule` vốn
+đã import `AttendanceModule` (bot điểm danh hộ), còn `AttendanceModule` import `TeamBuilderModule`
+(trả lời “Không” thì rút người khỏi đội hình). Thêm `DiscordBotModule` vào imports của
+`TeamBuilderModule` khép đúng vòng:
+
+```
+AttendanceModule → TeamBuilderModule → DiscordBotModule → AttendanceModule
+```
+
+Luật của repo cấm `forwardRef()`. Ở đây thậm chí không cần tách module thứ ba: method trên
+`TeamBuilderService` chỉ chuyển tiếp tham số, tức cạnh phụ thuộc đó tồn tại **chỉ để** khép vòng.
+Xoá nó là xong. Mọi thứ request cần — mẫu chữ, REST client, id channel và role — đều đã nằm trong
+`discord-bot`, và không chỗ nào trong luồng này đọc đội hình từ database.
+
+Đường dẫn và Swagger tag vẫn là `team-builder` vì đó là màn hình gọi nó và là tài nguyên nó gọi tên.
+Controller riêng chứ không nhập vào `DiscordBotController` hay `ReminderController`, đúng lý do hai
+cái đó tách nhau: ba kiểu xác thực (chữ ký Ed25519, cron secret, JWT admin) không dùng chung được
+một guard cấp class.
+
+**Lưới bắt lỗi:** `src/__tests__/module-graph.spec.ts` duyệt metadata `imports` của mọi module và
+bắt vòng lặp. Không có nó, lỗi này lọt qua cả 6 check CI — jest không dựng DI container,
+`nest build` chỉ biên dịch, còn `module-boundary.spec.ts` kiểm đường dẫn import chứ không kiểm đồ
+thị DI.
 
 Session không tồn tại → `NotFoundException('Không tìm thấy trận đánh này.')`. Discord từ chối →
 `DiscordRestClient` đã ném kèm status + body; announcer để lỗi nổi lên nguyên trạng, tầng filter biến
