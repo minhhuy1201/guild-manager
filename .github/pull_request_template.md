@@ -1,7 +1,7 @@
 ## What & Why
 
-<!-- The problem this solves, and why now. Link the spec or plan if there is one:
-     docs/custom-spec/<date>-<name>-design.md, docs/custom-plan/<date>-<name>.md -->
+<!-- The problem this solves, and why now. Link the spec if there is one:
+     docs/superpowers/specs/<date>-<name>-design.md, docs/custom-spec/<date>-<name>-design.md -->
 
 ## Tests
 

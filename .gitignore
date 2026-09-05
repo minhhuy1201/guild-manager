@@ -37,10 +37,6 @@ coverage/
 *.swp
 Thumbs.db
 
-# plan docs (local only)
-docs/superpowers/plans/
-docs/custom-plan/
-
 # danh sách thành viên thật cho `pnpm db:seed` (local only)
 # seed-data-example.json vẫn commit — đó là file mẫu để người khác biết định dạng.
 seed-data.json

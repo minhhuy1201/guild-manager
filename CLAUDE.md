@@ -29,7 +29,7 @@ nothing new belongs there: a dependency goes in the app or package that uses it.
 
 Two rules architecture.md does not repeat:
 
-- Comment and code, file name will be English, but the content in docs/superpowers, docs/custom-plan and docs/custom-spec will be Vietnamese
+- Comment and code, file name will be English, but the content in docs/superpowers and docs/custom-spec will be Vietnamese
 - **No `forwardRef()` in NestJS.** A cycle means the logic belongs in a third module.
 
 ## Secrets and `.env`
