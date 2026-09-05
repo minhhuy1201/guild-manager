@@ -286,7 +286,11 @@ vào chính ngân sách 3 giây đó. Nếu thực tế có timeout, câu trả 
 ### 9.1. Rủi ro đó đã xảy ra thật — 2026-09-06
 
 Một admin dùng `/diem-danh-ho` đổi "Có" → "Không" cho một ngày **đã quá hạn**. Bản ghi trong database
-đổi đúng — website hiện trạng thái mới — còn Discord in "Ứng dụng không phản hồi". Đó là chữ của
+đổi đúng — website hiện trạng thái mới — còn Discord in "Ứng dụng không phản hồi".
+
+**Timeout nằm ở lượt bấm nút, không phải ở lượt gõ lệnh** (`MESSAGE_COMPONENT`, không phải
+`APPLICATION_COMMAND`): lệnh chỉ dựng bảng và không ghi gì; chỗ ghi là `handleAttendanceButton`.
+Nói rõ vì hai đường này ACK bằng hai hằng số khác nhau — xem 9.3. Đó là chữ của
 Discord khi endpoint im quá 3 giây; Vercel Function vẫn chạy tiếp và ghi xong sau đó, nên dữ liệu đi
 một đằng còn tin nhắn đi một nẻo.
 
@@ -316,14 +320,35 @@ một câu: bot hiện chữ gì**.
 
 | Người dùng thấy | Nghĩa là | Việc phải làm |
 | --- | --- | --- |
-| "Ứng dụng không phản hồi" (chữ xám của Discord, không phải tin nhắn của bot) | Quá 3 giây. Dữ liệu **có thể đã ghi** — kiểm tra trên web trước khi bảo họ bấm lại | Chuyển sang deferred: ACK `type: 6`, rồi `PATCH /webhooks/{application_id}/{token}/messages/@original` cho bảng và `POST /webhooks/{application_id}/{token}` kèm cờ ephemeral cho lời từ chối, tất cả bọc trong `waitUntil` |
+| "Ứng dụng không phản hồi" (chữ xám của Discord, không phải tin nhắn của bot) | Quá 3 giây. Dữ liệu **có thể đã ghi** — kiểm tra trên web trước khi bảo họ bấm lại | Chuyển sang deferred (xem 9.3) |
 | "Có lỗi xảy ra. Thử lại sau hoặc điểm danh trên web." | Tin nhắn của chính bot: có exception thật sau khi ghi | Đọc log Vercel — có stack trace. Deferred không cứu được gì ở đây |
 | Một câu tiếng Việt khác ("Đã quá hạn…", "Nút này không còn dùng được…") | Một nhánh từ chối chạy đúng như thiết kế | Không có gì để sửa; nếu câu đó sai thì sửa luật, không sửa lớp Discord |
 
-Chuyển sang deferred là một thay đổi kiến trúc của lớp Discord, đụng `INTERACTION_RESPONSE_TYPE`,
+### 9.3. Deferred trông như thế nào, nếu phải làm
+
+**ACK phụ thuộc điểm vào, không phải một hằng số duy nhất** — §3 đã phân đôi việc trả lời thẳng, và
+việc trả lời hoãn cũng phân đôi y hệt:
+
+| Interaction | Trả thẳng (hôm nay) | ACK hoãn | Rồi gửi kết quả bằng |
+| --- | --- | --- | --- |
+| `MESSAGE_COMPONENT` — bấm nút, **chính là đường đã timeout ở 9.1** | `UPDATE_MESSAGE` (7) | `DEFERRED_UPDATE_MESSAGE` (6) — tin nhắn giữ nguyên, không hiện "đang suy nghĩ…" | `PATCH /webhooks/{application_id}/{token}/messages/@original` để vẽ lại bảng |
+| `APPLICATION_COMMAND` — gõ `/diem-danh`, `/diem-danh-ho` | `CHANNEL_MESSAGE_WITH_SOURCE` (4) | `DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE` (5) | cũng `PATCH … /messages/@original`; cờ ephemeral phải đặt ngay ở ACK |
+
+Lời **từ chối** không đi theo `@original` ở nhánh bấm nút: `PATCH` sẽ ghi đè bảng công khai bằng một
+câu chỉ dành cho một người — đúng cái §1 đã cấm. Nó đi bằng một followup riêng,
+`POST /webhooks/{application_id}/{token}` kèm cờ ephemeral. Hai nhánh này ánh xạ 1-1 với
+`AttendanceButtonOutcome` (`board` / `refusal`) đang có, nên luật từ chối không phải sửa.
+
+Trên Vercel, phần việc chạy sau khi response đã đi phải bọc trong `waitUntil` của
+`@vercel/functions`, nếu không function bị đóng băng giữa chừng.
+
+Đây là một thay đổi kiến trúc của lớp Discord, đụng `INTERACTION_RESPONSE_TYPE`,
 `interaction.schema` (phải đọc thêm `token` và `application_id`), `DiscordRestClient`,
-`InteractionRouter` và toàn bộ test bấm nút — nên nó cần một spec riêng, và §9 này phải được viết lại
-chứ không phải đắp thêm.
+`InteractionRouter`, cách `InteractionRouter.route` biến exception thành câu trả lời, và toàn bộ test
+bấm nút — nên nó cần một spec riêng, và §9 này phải được viết lại chứ không phải đắp thêm.
+
+Cái giá phải nói trước: sau khi hoãn, một lỗi ở bước gửi kết quả **không còn hiện ra cho người dùng**
+— họ chỉ thấy bảng đứng yên. Phải bù bằng log.
 
 ## 10. Test
 
