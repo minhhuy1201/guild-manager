@@ -207,20 +207,28 @@ Thêm `@zumer/snapdom` vào `apps/web`.
 ### 5.1 Capture sheet
 
 ```
-fixed left-[-10000px] top-0 w-[1280px] pointer-events-none  (aria-hidden)
+fixed left-[-10000px] top-0 w-[1920px] pointer-events-none  (aria-hidden)
 ```
 
 Đặt lệch ra ngoài khung nhìn chứ **không** `display:none`: snapDOM đọc layout thật, một cây bị ẩn
 hoàn toàn thì mọi kích thước bằng 0.
 
-Bề rộng ghim 1280px và `FormationGrid` nhận `fixedColumns` để dùng `grid-cols-5` thay vì bộ class
+Bề rộng ghim 1920px và `FormationGrid` nhận `fixedColumns` để dùng `grid-cols-5` thay vì bộ class
 responsive. Không có nó, ảnh sẽ phụ thuộc kích thước cửa sổ người bấm — admin mở máy hẹp thì cả bang
 nhận một tấm ảnh 1 cột cao 10 màn hình.
 
+Con số 1920 là bản sửa của 1280 ghi trong bản thiết kế đầu: ở 1280 mỗi ô chỉ chừa cho tên khoảng
+70px, cắt mọi thành viên còn bốn tới năm ký tự — trong khi trên trình duyệt (khung `max-w-[1600px]`)
+cùng danh sách đó đọc được tám tới chín trên khoảng 110px. Phần cố định trong một ô (avatar, gap,
+padding) không giãn theo cột nên tên hưởng gần trọn phần bề rộng thêm vào: 1920 đưa tên lên gần
+150px, vượt cả trình duyệt. Trần của con số này là `ANNOUNCEMENT_IMAGE_MAX_CHARS`; vì chiều cao
+khung chụp không đổi theo bề rộng, số điểm ảnh — và dung lượng theo nó — tăng tuyến tính với bề rộng
+chứ không bình phương.
+
 Nửa còn lại của cùng một vấn đề là **`dpr: 1`** lúc chụp: snapDOM mặc định nhân `scale` lên
-`devicePixelRatio` của màn hình, nên cùng một đội hình ra 2560px trên màn thường và 7680px trên màn
-3x — mà bản 3x mã hoá ra nhiều base64 hơn `ANNOUNCEMENT_IMAGE_MAX_CHARS` cho phép, tức thông báo bị
-từ chối chỉ vì admin dùng màn nào. Ghim `dpr` khoá ảnh ở đúng `1280 × 2 = 2560px` trên mọi máy.
+`devicePixelRatio` của màn hình, nên cùng một đội hình ra một bề rộng trên màn thường và gấp ba trên
+màn 3x — mà bản 3x mã hoá ra nhiều base64 hơn `ANNOUNCEMENT_IMAGE_MAX_CHARS` cho phép, tức thông báo bị
+từ chối chỉ vì admin dùng màn nào. Ghim `dpr` khoá ảnh ở đúng `1920 × 2 = 3840px` trên mọi máy.
 
 Mỗi trận vẽ bằng `FormationGrid` với `readOnly`, tiêu đề banner dựng bằng `buildBannerTitle` **cho
 đúng chỉ số trận đó** — banner đã nằm sẵn trong lưới nên chụp lưới là có luôn banner, đúng yêu cầu
