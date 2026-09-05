@@ -53,7 +53,11 @@ export function TeamBuilderScreen() {
     screen.draft.saveErrorMessage,
     screen.teamNames.saveErrorMessage,
   ].filter((message): message is string => Boolean(message));
-  const announce = useFormationAnnounce(screen.selection.activeSessionId, dirty);
+  const announce = useFormationAnnounce(
+    screen.selection.activeSessionId,
+    screen.draft.matches.length,
+    dirty
+  );
 
   /**
    * Commit both drafts at once. They are independent resources, so they go in

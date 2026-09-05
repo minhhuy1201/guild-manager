@@ -228,7 +228,13 @@ Mỗi trận vẽ bằng `FormationGrid` với `readOnly`, tiêu đề banner d�
 
 Mỗi khung chụp mang thuộc tính `data-formation-capture`; lúc bấm xác nhận, hook đọc thẳng các node
 đó từ document thay vì luồn một mảng ref qua modal — cùng một câu trả lời, ít mảnh động hơn, và
-chính thuộc tính đó là thứ test khẳng định.
+chính thuộc tính đó là thứ test khẳng định. `querySelectorAll` trả theo document order còn sheet
+render các trận theo thứ tự, nên ảnh khớp trận mà không cần sắp xếp gì.
+
+**`readCaptureNodes` nhận số trận mong đợi và ném khi lệch.** Lập luận “document order là đủ” gãy ở
+hai chỗ: hai sheet cùng mount, hoặc sheet chưa mount xong. Lúc đó thông báo sẽ đi tới cả bang với
+một trận bị thiếu, hoặc với ảnh của hai ngày khác nhau — và không có bước nào phía sau bắt được.
+Đếm rẻ hơn nhiều so với hậu quả, nên lệch là từ chối, kèm toast bảo đóng modal mở lại.
 
 **Sheet chỉ mount khi modal đang mở**, và là **anh em** của modal chứ không nằm trong nó: nội dung
 modal đi qua portal, còn tấm chụp phải ở lại cây thường để giữ layout thật. Nhờ vậy tới lúc bấm “Xác nhận” thì nó đã vẽ xong từ lâu,
@@ -256,6 +262,7 @@ có nút nào cả — không thông báo cho một trận đã đá xong. Nút 
 
 | Chuyện gì | Người dùng thấy |
 |---|---|
+| Số khung chụp lệch số trận | Toast đỏ `Chưa chụp được đủ đội hình của ngày này. Đóng rồi mở lại rồi gửi.` |
 | snapDOM ném | Toast đỏ `Không chụp được ảnh đội hình.` |
 | API/Discord từ chối | Toast đỏ với `ApiError.message` (§ web: hiện nguyên văn) |
 | Xong | Toast xanh `Đã gửi thông báo vào Discord.` |
@@ -280,8 +287,12 @@ Vitest (`apps/web`):
 - `formation-capture-sheet.test.tsx` — một node chụp cho mỗi trận, lưới bị ép 5 cột, banner nói
   đúng số thứ tự trận.
 
-`announce-capture.ts` **không có test**: nó chỉ gọi snapDOM, mà snapDOM cần canvas thật, jsdom không
-có. Bọc nó thành một file riêng chính là để phần còn lại test được.
+- `announce-capture.test.ts` — `readCaptureNodes` trả đúng thứ tự, và ném khi thiếu / thừa / chưa
+  có node nào.
+
+Riêng `captureFormations` **không có test**: nó chỉ gọi snapDOM, mà snapDOM cần canvas thật, jsdom
+không có. Bọc nó cùng file với `readCaptureNodes` — thứ test được — chính là để phần còn lại kiểm
+được, với snapDOM bị stub ở tầng import.
 
 ## 7. Tài liệu phải sửa cùng
 

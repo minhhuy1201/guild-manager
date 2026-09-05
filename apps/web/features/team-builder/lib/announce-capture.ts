@@ -21,19 +21,47 @@ const CAPTURE_DPR = 1;
 /** WebP quality. High enough that the grid's borders stay clean, low enough to stay small. */
 const CAPTURE_QUALITY = 0.92;
 
+/** The document held a different number of line-ups than the day being announced. */
+export class CaptureCountError extends Error {
+  constructor(
+    /** How many capture nodes the document actually held */
+    readonly found: number,
+    /** How many the day being announced has */
+    readonly expected: number,
+  ) {
+    super(`Found ${found} capture nodes, expected ${expected}.`);
+    this.name = "CaptureCountError";
+  }
+}
+
 /**
  * The off-screen nodes to screenshot, in match order.
  *
  * Read from the document rather than from refs: the sheet is mounted by the screen while the
  * dialog owns the confirm click, and passing an array of refs between the two only to find the
- * same elements is more moving parts for the same answer.
+ * same elements is more moving parts for the same answer. `querySelectorAll` answers in document
+ * order, and the sheet renders its matches in order, so the nodes line up with the matches without
+ * anything having to sort them.
  *
- * @returns One element per match currently laid out
+ * What that reasoning does not survive is a second sheet in the document, or a sheet that has not
+ * finished mounting — and then the announcement would go out with a match missing or with images
+ * from two different days, to the whole guild, with nothing downstream to catch it. So the count is
+ * checked rather than assumed: a mismatch is somebody's bug, and the only safe answer is to refuse.
+ *
+ * @param expected - How many matches the day being announced holds
+ * @returns One element per match, in match order
+ * @throws CaptureCountError when the document does not hold exactly that many
  */
-export function readCaptureNodes(): HTMLElement[] {
-  return Array.from(
+export function readCaptureNodes(expected: number): HTMLElement[] {
+  const nodes = Array.from(
     document.querySelectorAll<HTMLElement>(`[${CAPTURE_NODE_ATTRIBUTE}]`)
   );
+
+  if (nodes.length !== expected) {
+    throw new CaptureCountError(nodes.length, expected);
+  }
+
+  return nodes;
 }
 
 /**
