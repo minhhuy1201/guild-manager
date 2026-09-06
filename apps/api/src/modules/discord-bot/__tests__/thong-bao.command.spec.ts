@@ -38,7 +38,7 @@ function makeDeps(resolved: unknown): CommandDeps {
 function actor(role: GuildRole): unknown {
   return {
     actor: { sub: '111', role, type: TOKEN_TYPE.access },
-    characterId: 'meo-beo-k7ma3x',
+    character: { id: 'meo-beo-k7ma3x', name: 'Mèo Béo', discordId: '111' },
   };
 }
 

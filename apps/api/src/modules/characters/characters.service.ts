@@ -3,7 +3,6 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import type { GuildRole } from '@guild/shared/enums';
 import type {
   CreateCharacterInput,
   GuildMember,
@@ -146,18 +145,13 @@ export class CharactersService {
 
   /**
    * Look a member up by Discord ID — the entry point of the login flow.
+   * Returns the whole row: `findUnique` on a unique column has already read it, and every caller
+   * that only wanted the role was following up with a second read by id.
    * @param discordId - Discord ID read from the OAuth profile
-   * @returns The member's id and role, or null when nobody has this ID assigned
+   * @returns The member row, or null when nobody has this ID assigned
    */
-  async findByDiscordId(
-    discordId: string,
-  ): Promise<{ id: string; role: GuildRole } | null> {
-    const row = await this.prisma.character.findUnique({
-      where: { discordId },
-      select: { id: true, role: true },
-    });
-
-    return row === null ? null : { id: row.id, role: row.role as GuildRole };
+  async findByDiscordId(discordId: string): Promise<GuildMemberRow | null> {
+    return this.prisma.character.findUnique({ where: { discordId } });
   }
 
   /**

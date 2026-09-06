@@ -42,6 +42,18 @@ export type GuildMemberRow = CharacterRow & {
 };
 
 /**
+ * The role carried by a member row, as the shared enum.
+ * Prisma types the column as its own string literal union; the values come from the database enum,
+ * which is kept in step with `GuildRole`, so the cast is safe. Lives here because translating a
+ * stored row into contract types is the codec's job, and both callers otherwise repeat the cast.
+ * @param row - The member row, null when the Discord ID belongs to nobody
+ * @returns The role, or null when there is no row
+ */
+export function memberRole(row: { role: string } | null): GuildRole | null {
+  return row === null ? null : (row.role as GuildRole);
+}
+
+/**
  * Turn a Character row into the admin-screen object (with the Discord identity).
  * @param row - Row read from Prisma
  * @returns The contract-shaped member, timestamps as ISO strings

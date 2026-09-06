@@ -49,7 +49,11 @@ function makeDeps(options: {
             role: GuildRole.MEMBER,
             type: TOKEN_TYPE.access,
           },
-          characterId: 'meo-beo-k7ma3x',
+          character: {
+            id: 'meo-beo-k7ma3x',
+            name: 'Mèo Béo',
+            discordId: '111',
+          },
         }),
     },
     characters: {
