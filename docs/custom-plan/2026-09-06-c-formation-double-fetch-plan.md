@@ -231,6 +231,12 @@ implementation đặt trong `beforeEach` vẫn còn, và cả 557 test còn lạ
 đúng lỗi mà spec cảnh báo — đổi `enabled` thành `weekStart !== undefined`, và đảo hai nhánh trong
 `QueryBoundary` — xem cả hai đỏ, rồi trả code về.
 
+**Một lỗ hổng plan không thấy, review bắt được.** Ba trạng thái ở bảng đầu plan là ba trạng thái
+*tĩnh*; không dòng nào xét chuyện người dùng **bấm "Thử lại"** lúc query tuần đang lỗi. `refetch()`
+của TanStack bỏ qua `enabled`, còn `combineQueries.refetch` thì refetch cả nhóm, nên đường đó tái
+hiện đúng double fetch này sinh ra để chặn. Đã tái hiện bằng test rồi mới sửa: query đội hình vào
+nhóm dưới dạng một `CombinableQuery` có `refetch` tự bỏ qua khi đang park.
+
 ## Những gì plan này cố ý KHÔNG làm
 
 - **Không** đụng `teamBuilderKeys.formations`. Nhánh `"current"` vẫn đúng cho người gọi thật sự muốn "tuần đang mở mà không cần biết là tuần nào".

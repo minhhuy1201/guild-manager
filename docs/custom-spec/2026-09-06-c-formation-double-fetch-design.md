@@ -107,6 +107,18 @@ sẽ im lặng không làm gì.
 lần lưu — tức là sau khi màn hình đã tải xong và query chắc chắn đang chạy. Không thêm phòng thủ cho
 một trường hợp chưa tồn tại.
 
+### `refetch()` đi xuyên qua `enabled` — nút "Thử lại" phải chặn
+
+Rủi ro thật hơn nằm ở hướng ngược lại. `refetch()` của TanStack **cố tình bỏ qua `enabled`**: nó gọi
+thẳng `query.fetch()`. Mà `combineQueries.refetch` lại refetch **mọi** query trong nhóm, nên nút
+"Thử lại" bấm lúc query tuần đang lỗi sẽ tải đội hình chui qua chỗ park với khoá `"current"`, rồi tải
+lại lần nữa với khoá ngày ngay khi danh sách tuần về — **đúng cái double fetch spec này sinh ra để
+chặn**, chỉ khác đường vào.
+
+Cách chặn: query đội hình vào nhóm dưới dạng một `CombinableQuery` có `refetch` tự bỏ qua khi đang
+park. Lúc đang park thì ở đây không có gì để thử lại: sửa được danh sách tuần là query tự un-park và
+tự chạy. `refetchFormations` dùng chung đúng hàm đó, nên nhánh 409 cũng đi qua cùng một guard.
+
 ## Đo lại
 
 Bỏ **một request đầy đủ** (payload đội hình của cả tuần) ở mỗi lần mở `/xep-team`, và bỏ một entry
