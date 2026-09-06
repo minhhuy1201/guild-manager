@@ -292,18 +292,22 @@ describe('CharactersService', () => {
       );
     });
 
-    it('tra được thành viên theo Discord ID', async () => {
-      prisma.character.findUnique.mockResolvedValue({
-        id: ROW.id,
+    it('tra được thành viên theo Discord ID, trả nguyên hàng', async () => {
+      const linked = {
+        ...ROW,
+        discordId: '123456789012345678',
+        discordUsername: 'meobeo',
         role: GuildRole.ADMIN,
-      });
+      };
+      prisma.character.findUnique.mockResolvedValue(linked);
 
       await expect(
         service.findByDiscordId('123456789012345678'),
-      ).resolves.toEqual({ id: ROW.id, role: GuildRole.ADMIN });
+      ).resolves.toEqual(linked);
+      // No `select`: every caller of this needed more than the id and the role, and was reading the
+      // same row a second time to get it.
       expect(prisma.character.findUnique).toHaveBeenCalledWith({
         where: { discordId: '123456789012345678' },
-        select: { id: true, role: true },
       });
     });
 

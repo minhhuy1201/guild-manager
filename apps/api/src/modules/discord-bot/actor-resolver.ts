@@ -4,7 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { TOKEN_TYPE, type JwtPayload } from '../../common';
 import type { Env } from '../../config';
 import { isRescueAdmin, resolveGuildRole } from '../auth/auth.public';
-import { CharactersService } from '../characters/characters.public';
+import { CharactersService, memberRole } from '../characters/characters.public';
 
 /** An identity the bot may act as, plus the character it belongs to. */
 export interface ResolvedActor {
@@ -47,7 +47,7 @@ export class ActorResolver {
     return {
       actor: {
         sub: discordId,
-        role: resolveGuildRole({ isRescue, memberRole: member?.role ?? null }),
+        role: resolveGuildRole({ isRescue, memberRole: memberRole(member) }),
         type: TOKEN_TYPE.access,
       },
       characterId: member?.id ?? null,

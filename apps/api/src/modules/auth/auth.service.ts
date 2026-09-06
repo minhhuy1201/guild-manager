@@ -16,6 +16,7 @@ import { verifyResponse, type AppConfigService } from '../../config';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import {
   CharactersService,
+  memberRole,
   toCharacter,
 } from '../characters/characters.public';
 import { isRescueAdmin, resolveGuildRole } from './actor-identity';
@@ -256,7 +257,7 @@ export class AuthService {
       discordId,
       discordUsername: row?.discordUsername ?? null,
       discordAvatar: row?.discordAvatar ?? null,
-      role: resolveGuildRole({ isRescue, memberRole: member?.role ?? null }),
+      role: resolveGuildRole({ isRescue, memberRole: memberRole(member) }),
       character: row ? toCharacter(row) : null,
     } satisfies SessionUser);
   }
