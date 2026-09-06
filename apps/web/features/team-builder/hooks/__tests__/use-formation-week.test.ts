@@ -189,6 +189,26 @@ describe("useFormationWeek", () => {
     expect(fetchFormationsMock).not.toHaveBeenCalled();
   });
 
+  it("thử lại khi query tuần đang lỗi vẫn chỉ tải đội hình một lần", async () => {
+    // refetch() của TanStack bỏ qua `enabled`, nên nút "Thử lại" bấm lúc query
+    // tuần đang lỗi có thể chui qua chỗ park và tải lại đúng cái bug này sinh ra
+    // để chặn: một lượt với "current", rồi một lượt nữa với tuần thật.
+    fetchWeeksMock.mockRejectedValueOnce(new ApiError("Hỏng rồi.", 500));
+
+    const { result } = renderFormationHook(() => useFormationWeek());
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(fetchFormationsMock).not.toHaveBeenCalled();
+
+    act(() => {
+      result.current.refetch();
+    });
+
+    await waitFor(() => expect(result.current.weekStart).toBe(OPEN_WEEK));
+    expect(fetchFormationsMock).toHaveBeenCalledTimes(1);
+    expect(fetchFormationsMock).toHaveBeenCalledWith(OPEN_WEEK);
+  });
+
   it("thử lại thì tải lại cả ba query, kể cả query nhân vật", async () => {
     const { result } = renderFormationHook(() => useFormationWeek());
 

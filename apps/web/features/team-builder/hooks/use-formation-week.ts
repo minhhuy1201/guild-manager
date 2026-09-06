@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import type { Character, FormationWeek, SessionFormation } from "@guild/shared/schemas";
 
 import { useAttendanceRecords, useCharacters } from "@/features/attendance";
-import { combineQueries } from "@/lib/query-group";
+import { combineQueries, type CombinableQuery } from "@/lib/query-group";
 import type { AttendanceRecordLike } from "../lib/session-pool";
 import { findActiveWeekStart, isWeekEditable } from "../lib/week-status";
 import { useFormationStore } from "../store/formation-store";
@@ -79,11 +79,25 @@ export function useFormationWeek(): FormationWeekState {
     [recordsQuery.data]
   );
 
+  // Same query, but a retry that respects the park. TanStack's `refetch()` ignores
+  // `enabled`, so a retry pressed while the week list is still failing would fetch the
+  // "current" key straight past the park, then fetch the same payload again under the date
+  // key once the list lands — the very double fetch the park exists to remove. While parked
+  // there is nothing to retry here: fixing the week list un-parks this query on its own.
+  const formationsGroup: CombinableQuery = {
+    isPending: formationsQuery.isPending,
+    isError: formationsQuery.isError,
+    error: formationsQuery.error,
+    refetch: async () => {
+      if (weeksQuery.isSuccess) await formationsQuery.refetch();
+    },
+  };
+
   // recordsQuery stays out of the group: attendance only tints suggestions in the
   // pool, so the screen works without it and it may not block it with a skeleton.
   const state = combineQueries(
-    // formationsQuery goes first: losing it loses what this screen exists to show.
-    [formationsQuery, weeksQuery, charactersQuery],
+    // formationsGroup goes first: losing it loses what this screen exists to show.
+    [formationsGroup, weeksQuery, charactersQuery],
     "Không tải được dữ liệu đội hình."
   );
 
@@ -100,7 +114,7 @@ export function useFormationWeek(): FormationWeekState {
     characters,
     records,
     refetchFormations: () => {
-      void formationsQuery.refetch();
+      void formationsGroup.refetch();
     },
   };
 }
