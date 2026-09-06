@@ -15,7 +15,7 @@ import type {
 import { Clock } from '../../common';
 import { verifyResponse } from '../../config';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
-import { toBattleSession } from './battle-sessions.codec';
+import { toBattleSession, type SessionRow } from './battle-sessions.codec';
 import {
   formatSessionLabel,
   getActiveWeek,
@@ -111,14 +111,14 @@ export class BattleSessionsService {
     const now = this.clock.now();
     const target = parseWeekStart(weekStart, now);
 
-    await this.materializeWeek(target, now);
-
     const rows = await this.prisma.battleSession.findMany({
       ...weekSessionQuery(target),
       include: SESSION_INCLUDE,
     });
 
-    return rows.map((row) => toBattleSession(row, now));
+    const fresh = await this.reconcileGuildWar(target, now, rows);
+
+    return fresh.map((row) => toBattleSession(row, now));
   }
 
   /**
@@ -128,20 +128,66 @@ export class BattleSessionsService {
    * @returns A promise resolving once the week is ready to read
    */
   async ensureWeekMaterialized(week: WeekAnchor): Promise<void> {
-    await this.materializeWeek(week, this.clock.now());
+    if (!this.isEditableWeek(week, this.clock.now())) return;
+
+    const stored = await this.prisma.battleSession.findUnique({
+      where: { id: guildWarSessionId(week) },
+      select: { deadline: true, matchCount: true },
+    });
+
+    if (this.isGuildWarCurrent(stored, week)) return;
+
+    await this.ensureGuildWar(week);
   }
 
   /**
-   * Body of `ensureWeekMaterialized`, split out so `listByWeek` can reuse the exact moment it
-   * already read instead of reading the clock a second time.
-   * @param week - Monday 00:00 marker of the week to materialise
+   * Bring the week's Guild War row in line with the rules the system owns, writing only when it is
+   * actually missing or stale. Reads the week again after a write: `SESSION_INCLUDE` carries counts
+   * only the database can produce.
+   * @param week - Monday 00:00 marker of the week
    * @param now - Current moment
-   * @returns A promise resolving once the week is ready to read
+   * @param rows - Sessions of the week as just read
+   * @returns The rows to build the response from
    */
-  private async materializeWeek(week: WeekAnchor, now: Date): Promise<void> {
-    if (!this.isEditableWeek(week, now)) return;
+  private async reconcileGuildWar(
+    week: WeekAnchor,
+    now: Date,
+    rows: SessionRow[],
+  ): Promise<SessionRow[]> {
+    if (!this.isEditableWeek(week, now)) return rows;
+
+    const stored = rows.find((row) => row.id === guildWarSessionId(week));
+
+    if (this.isGuildWarCurrent(stored ?? null, week)) return rows;
 
     await this.ensureGuildWar(week);
+
+    return this.prisma.battleSession.findMany({
+      ...weekSessionQuery(week),
+      include: SESSION_INCLUDE,
+    });
+  }
+
+  /**
+   * Whether the stored Guild War row already matches what the system owns.
+   * `dateTime` is deliberately not compared: an admin may move the battle time, and `ensureGuildWar`
+   * has never rewritten it.
+   * @param row - The stored Guild War row of the week, null when there is none
+   * @param week - Monday 00:00 marker of the week
+   * @returns true when nothing needs writing
+   */
+  private isGuildWarCurrent(
+    row: { deadline: Date; matchCount: number } | null,
+    week: WeekAnchor,
+  ): boolean {
+    if (!row) return false;
+
+    // `.getTime()`: `guildWarDeadline` builds a new Date on every call, so comparing the references
+    // would always report a mismatch and the write would never actually disappear.
+    return (
+      row.deadline.getTime() === guildWarDeadline(week).getTime() &&
+      row.matchCount === guildWarMatchCount(week)
+    );
   }
 
   /**

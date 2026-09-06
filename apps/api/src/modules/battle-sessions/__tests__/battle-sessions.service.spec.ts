@@ -1,9 +1,14 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { guildWarDeadline } from '@guild/shared/lib';
 
 import { FixedClock } from '../../../common';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { BattleSessionsService } from '../battle-sessions.service';
-import { getEditableWeeks, weekStartOf } from '../session-schedule';
+import {
+  getEditableWeeks,
+  guildWarMatchCount,
+  weekStartOf,
+} from '../session-schedule';
 
 /**
  * Build a Date from Vietnam time (UTC+7) for readability in tests.
@@ -48,6 +53,25 @@ function row(overrides: Record<string, unknown> = {}) {
     _count: { attendanceRecords: 0, formationMatches: 0 },
     ...overrides,
   };
+}
+
+/**
+ * The week's Guild War row exactly as the rules say it should be stored.
+ * Built from the same functions the service uses, so "already correct" cannot drift into a
+ * hand-copied constant that quietly stops matching.
+ * @param overrides - Fields to break on purpose
+ * @returns The Guild War row of WEEK_START
+ */
+function guildWarRow(overrides: Record<string, unknown> = {}) {
+  return row({
+    id: 'gw-2026-07-20',
+    dateTime: vn('2026-07-23T20:30'),
+    deadline: guildWarDeadline(WEEK_START),
+    opponent: null,
+    isGuildWar: true,
+    matchCount: guildWarMatchCount(WEEK_START),
+    ...overrides,
+  });
 }
 
 describe('BattleSessionsService', () => {
@@ -118,6 +142,57 @@ describe('BattleSessionsService', () => {
 
       expect(prisma.battleSession.upsert).not.toHaveBeenCalled();
     });
+
+    it('tuần chưa có Bang Chiến thì sinh ra, đúng một lượt ghi', async () => {
+      prisma.battleSession.findMany.mockResolvedValue([row()]);
+
+      await service.listByWeek();
+
+      expect(prisma.battleSession.upsert).toHaveBeenCalledTimes(1);
+    });
+
+    it('hạn chót sai luật thì trả về bản đã sửa, không phải bản đọc lần đầu', async () => {
+      const stale = guildWarRow({ deadline: vn('2026-07-23T09:00') });
+      prisma.battleSession.findMany
+        .mockResolvedValueOnce([stale])
+        .mockResolvedValueOnce([guildWarRow()]);
+
+      const sessions = await service.listByWeek();
+
+      expect(prisma.battleSession.upsert).toHaveBeenCalledTimes(1);
+      expect(sessions[0].deadline).toBe(
+        guildWarDeadline(WEEK_START).toISOString(),
+      );
+    });
+
+    it('số trận sai luật thì trả về bản đã sửa, không phải bản đọc lần đầu', async () => {
+      const correct = guildWarMatchCount(WEEK_START);
+      prisma.battleSession.findMany
+        .mockResolvedValueOnce([guildWarRow({ matchCount: correct + 1 })])
+        .mockResolvedValueOnce([guildWarRow()]);
+
+      const sessions = await service.listByWeek();
+
+      expect(prisma.battleSession.upsert).toHaveBeenCalledTimes(1);
+      expect(sessions[0].matchCount).toBe(correct);
+    });
+
+    it('mọi thứ đã đúng thì không ghi gì cả', async () => {
+      // Đây là điều thay đổi này hứa: một lượt đọc lịch bình thường không phát lệnh ghi nào.
+      prisma.battleSession.findMany.mockResolvedValue([guildWarRow()]);
+
+      await service.listByWeek();
+
+      expect(prisma.battleSession.upsert).not.toHaveBeenCalled();
+      expect(prisma.battleSession.findMany).toHaveBeenCalledTimes(1);
+    });
+
+    it('tuần ngoài phạm vi xếp lịch chỉ đọc đúng một lần', async () => {
+      await service.listByWeek(LAST_WEEK_START.toISOString());
+
+      expect(prisma.battleSession.findMany).toHaveBeenCalledTimes(1);
+      expect(prisma.battleSession.findUnique).not.toHaveBeenCalled();
+    });
   });
 
   describe('listByWeek nhận mốc tuần từ query', () => {
@@ -177,6 +252,14 @@ describe('BattleSessionsService', () => {
 
     it('tuần đã qua là no-op', async () => {
       await service.ensureWeekMaterialized(LAST_WEEK_START);
+
+      expect(prisma.battleSession.upsert).not.toHaveBeenCalled();
+    });
+
+    it('hàng đã đúng luật thì không ghi lại', async () => {
+      prisma.battleSession.findUnique.mockResolvedValue(guildWarRow());
+
+      await service.ensureWeekMaterialized(WEEK_START);
 
       expect(prisma.battleSession.upsert).not.toHaveBeenCalled();
     });
