@@ -84,15 +84,21 @@ Phần còn lại ở đây là lần **thứ nhất**, và nó có ở mọi re
   └─ thiếu hàng, hoặc lệch một trong hai trường            → upsert, rồi đọc lại
 ```
 
-1. **`ensureGuildWar` nhận thêm hàng đã đọc** và tự quyết định có phát lệnh ghi hay không. Luật
-   "hàng nào là Bang Chiến của tuần này" vẫn là `guildWarSessionId(weekStart)`, không đổi.
+1. **Phép so sánh "đã đúng chưa" là một hàm riêng**, `isGuildWarCurrent(row, week)`, và người gọi
+   quyết định có phát lệnh ghi hay không. `ensureGuildWar` **không đổi**: vẫn `upsert` vô điều kiện,
+   chỉ khác là nay chỉ được gọi khi đã biết là cần. Luật "hàng nào là Bang Chiến của tuần này" vẫn là
+   `guildWarSessionId(weekStart)`, không đổi.
 2. **Trạng thái ổn định: 1 truy vấn, không ghi.** Trạng thái cần sửa: 3 truy vấn (đọc, ghi, đọc lại)
    — đắt hơn hôm nay đúng một lượt, nhưng nó chỉ xảy ra ở tuần mới hoặc hàng cũ.
 3. **Đọc lại sau khi ghi chứ không vá trong bộ nhớ.** `SESSION_INCLUDE` mang theo `_count` của
    `attendanceRecords` và `formationMatches`; dựng lại con số đó bằng tay là chép luật của Prisma
    sang chỗ khác. Nhánh này hiếm, nên trả một round trip để giữ đúng một nguồn sự thật là đáng.
 4. **`ensureWeekMaterialized` (dòng 130) giữ nguyên chữ ký và ngữ nghĩa.** Nó là seam mà
-   `team-builder` dùng để materialise mà không đọc; A1 của đợt 2 đã đặt nó ở đó có chủ đích.
+   `team-builder` dùng để materialise mà không đọc; A1 của đợt 2 đã đặt nó ở đó có chủ đích. Bên
+   trong nó cũng đọc trước rồi mới ghi — một `findUnique` chỉ lấy `deadline` và `matchCount`, rồi hỏi
+   đúng `isGuildWarCurrent` như `listByWeek`. Giữ đối xứng: cùng một câu hỏi thì cùng một hàm trả
+   lời, và seam này cũng thôi phát lệnh ghi khi không có gì lệch. Hàm private `materializeWeek` cũ
+   không còn ai gọi nên đã xoá.
 
 ### Vì sao không bỏ hẳn việc tự sửa
 

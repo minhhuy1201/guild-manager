@@ -86,8 +86,11 @@ hồi. `SessionUser` mà `describeSession` dựng ra vẫn y nguyên: nó vốn 
 Ba nhánh dưới đây phải cho ra đúng kết quả cũ, và là chỗ dễ làm hỏng nhất:
 
 - **Rescue admin không có `Character`.** `describeSession` với `member === null` nhưng
-  `isRescueAdmin` đúng vẫn trả `role: ADMIN`, `character: null`. `resolveGuildRole({ isRescue,
-  memberRole: member?.role ?? null })` đổi thành `... ?? null` đọc từ hàng, ý nghĩa không đổi.
+  `isRescueAdmin` đúng vẫn trả `role: ADMIN`, `character: null`. Chỗ `resolveGuildRole({ isRescue,
+  memberRole: member?.role ?? null })` không còn biên dịch được: `GuildMemberRow.role` khai báo là
+  `string`, còn `resolveGuildRole` nhận `GuildRole | null` — trước đây `findByDiscordId` tự ép kiểu
+  trước khi trả về. Phép ép đó chuyển vào `characters.codec.ts` thành `memberRole(row)`, đúng chỗ
+  các phép ép enum khác đã nằm; ý nghĩa không đổi.
 - **Discord ID chưa gán cho ai.** `resolve` vẫn trả `null`, `NOT_LINKED` vẫn là câu trả lời.
 - **`handleAttendanceButton` gặp hàng đã bị xoá.** Hiện tại `findById` trả `null` → `STALE_BUTTON`.
   Sau thay đổi, hàng được đọc từ `pressed.characterId` **vẫn phải đọc** — đây là nhân vật *được điểm
@@ -96,6 +99,16 @@ Ba nhánh dưới đây phải cho ra đúng kết quả cũ, và là chỗ dễ
 
 Nói rõ điểm cuối vì nó cắt bớt lợi ích: đường bấm nút bớt được lượt đọc bên trong `resolve`, không
 bớt được lượt đọc nhân vật đích.
+
+### Một nhánh từ chối biến mất
+
+`buildOwnBoard` trước đây có hai nhánh: `characterId === null` → `NO_OWN_CHARACTER`, và `findById`
+trả `null` (hàng vừa bị xoá giữa hai lượt đọc) → `NOT_LINKED`. Bỏ lượt đọc thứ hai thì cửa sổ đua ấy
+không còn tồn tại, nên nhánh `NOT_LINKED` thứ hai không còn tới được và đã bị xoá: hàng nào không có
+thì trả `NO_OWN_CHARACTER`.
+
+Đây là **thay đổi hành vi duy nhất nhìn thấy được** của A, và nó chỉ xảy ra trong một cửa sổ mà
+hành vi cũ cũng không đúng hơn (người gọi vẫn có nhân vật, chỉ là hàng vừa bị xoá xong).
 
 ## Rủi ro
 
