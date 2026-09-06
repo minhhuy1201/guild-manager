@@ -10,8 +10,8 @@ import { cn } from "@/lib/utils";
 interface WeekSelectorProps {
   /** The two schedulable weeks: the open one and the next */
   weeks: Week[];
-  /** Monday marker of the week being viewed */
-  value: string;
+  /** Monday marker of the week being viewed; undefined when no week is open */
+  value: string | undefined;
   /** Called when the user switches week */
   onChange: (weekStart: string) => void;
 }
@@ -20,7 +20,7 @@ interface WeekSelectorProps {
  * Pick the week to schedule. There are exactly two options, so two buttons instead of a select — one
  * interaction fewer, and both are visible at once.
  * @param weeks - The two schedulable weeks
- * @param value - Monday marker of the week being viewed
+ * @param value - Monday marker of the week being viewed; undefined when no week is open
  * @param onChange - Called when the user switches week
  * @returns The week picker bar
  */
