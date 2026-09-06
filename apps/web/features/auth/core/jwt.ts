@@ -38,18 +38,41 @@ function fromBase64Url(value: string): Uint8Array<ArrayBuffer> {
 }
 
 /**
- * Build an HMAC-SHA256 CryptoKey from the secret.
+ * Imported keys, one per secret. `verifyJwt` runs on every page request, and AUTH_SECRET is the same
+ * string for the life of the process, so the import is pure repeated work.
+ * Keyed by secret rather than held in a single slot: the secret is a parameter, and a cache that
+ * ignored it would hand one secret another's key.
+ */
+const keyCache = new Map<string, Promise<CryptoKey>>();
+
+/**
+ * Build an HMAC-SHA256 CryptoKey from the secret, reusing the one built earlier for that secret.
+ * The cache holds the promise, not the resolved key, so two concurrent verifies await one import.
  * @param secret - The secret string (AUTH_SECRET, identical to apps/api's)
  * @returns The CryptoKey used to verify signatures
  */
 function importKey(secret: string): Promise<CryptoKey> {
-  return crypto.subtle.importKey(
-    "raw",
-    encoder.encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["verify"]
-  );
+  const cached = keyCache.get(secret);
+  if (cached) return cached;
+
+  const pending = crypto.subtle
+    .importKey(
+      "raw",
+      encoder.encode(secret),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["verify"]
+    )
+    // A rejected import must not stay cached: keeping it would turn one transient failure into
+    // every later verify failing until the process dies. Rethrown, so the caller still sees it.
+    .catch((error: unknown) => {
+      keyCache.delete(secret);
+      throw error;
+    });
+
+  keyCache.set(secret, pending);
+
+  return pending;
 }
 
 /**
