@@ -62,9 +62,14 @@ Tham số `enabled` có từ đầu và chưa call site nào dùng. Đây là se
 
 ## Quyết định
 
-1. **Park query cho tới khi tuần được chốt.** `useFormationWeek` truyền
-   `enabled: weekStart !== undefined`. Nó vốn đã là module duy nhất quyết định tuần nào đang trên màn
+1. **Park query cho tới khi danh sách tuần về.** `useFormationWeek` truyền
+   `enabled: weeksQuery.isSuccess`. Nó vốn đã là module duy nhất quyết định tuần nào đang trên màn
    hình — locality nằm sẵn ở đúng chỗ.
+
+   Điều kiện là "danh sách đã về", **không** phải `weekStart !== undefined`: với danh sách rỗng,
+   `findActiveWeekStart` trả `null` nên `weekStart` mãi `undefined`, query đứng yên vĩnh viễn và màn
+   hình kẹt skeleton. Xem nhánh thứ ba ở §"Behaviour giữ nguyên" — đó là lý do spec này không phải
+   một dòng sửa.
 2. **Không đụng vào `teamBuilderKeys.formations`.** Nhánh `"current"` vẫn đúng cho người gọi thật sự
    muốn "tuần đang mở mà không cần biết là tuần nào"; vấn đề không nằm ở key factory mà ở chỗ gọi nó
    khi chưa có câu trả lời.
@@ -97,6 +102,10 @@ phải "weekStart khác undefined".
 gọi `formationsQuery.refetch()`. Trên một query đang bị park, `refetch` không chạy. Ở thời điểm đó
 tuần chắc chắn đã biết nên không sao, nhưng nếu sau này ai đó gọi `refetchFormations` sớm hơn thì nó
 sẽ im lặng không làm gì.
+
+**Đã kiểm khi implement:** call site duy nhất là `use-formation-draft.ts:314`, trên nhánh 409 của một
+lần lưu — tức là sau khi màn hình đã tải xong và query chắc chắn đang chạy. Không thêm phòng thủ cho
+một trường hợp chưa tồn tại.
 
 ## Đo lại
 

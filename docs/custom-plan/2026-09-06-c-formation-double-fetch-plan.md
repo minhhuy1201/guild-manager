@@ -48,7 +48,7 @@ Nhánh thứ ba là chỗ dễ hỏng nhất và nó **đã** an toàn sẵn: `Q
 **Files:**
 - Modify: `apps/web/features/team-builder/hooks/__tests__/use-formation-week.test.ts`
 
-- [ ] **Step 1: Test "mở màn hình chỉ tải đội hình một lần"**
+- [x] **Step 1: Test "mở màn hình chỉ tải đội hình một lần"**
 
 Đây là test mang toàn bộ giá trị của plan. Nó phải đỏ trước khi có dòng code nào.
 
@@ -65,7 +65,7 @@ it("mở màn hình chỉ tải đội hình đúng một lần", async () => {
 });
 ```
 
-- [ ] **Step 2: Xem nó đỏ đúng lý do**
+- [x] **Step 2: Xem nó đỏ đúng lý do**
 
 ```bash
 pnpm --filter web test -- use-formation-week
@@ -73,7 +73,7 @@ pnpm --filter web test -- use-formation-week
 
 Kỳ vọng: `expected 1, received 2`, và lượt gọi đầu là `undefined`. Nếu đỏ vì lý do khác (mock, timing) thì sửa test trước, đừng đụng code.
 
-- [ ] **Step 3: Commit test đỏ chung với code ở Task 2** — không commit riêng một test đang đỏ.
+- [x] **Step 3: Commit test đỏ chung với code ở Task 2** — không commit riêng một test đang đỏ.
 
 ---
 
@@ -84,7 +84,7 @@ Kỳ vọng: `expected 1, received 2`, và lượt gọi đầu là `undefined`.
 
 **Interfaces:** `FormationWeekState` **không đổi một chữ**. `useFormations` **không đổi** — tham số `enabled` đã có sẵn.
 
-- [ ] **Step 1: Truyền `enabled`**
+- [x] **Step 1: Truyền `enabled`**
 
 `use-formation-week.ts:57`. Trước:
 
@@ -103,7 +103,7 @@ Sau:
 const formationsQuery = useFormations(weekStart, weeksQuery.isSuccess);
 ```
 
-- [ ] **Step 2: Xem test Task 1 xanh**
+- [x] **Step 2: Xem test Task 1 xanh**
 
 ```bash
 pnpm --filter web test -- use-formation-week
@@ -115,7 +115,7 @@ Cả file phải xanh, không riêng test mới. Đặc biệt hai test cũ này
 
 Nếu phải sửa kỳ vọng của một trong hai, dừng lại: đã đổi behaviour.
 
-- [ ] **Step 3: Kiểm và commit**
+- [x] **Step 3: Kiểm và commit**
 
 ```bash
 pnpm --filter web typecheck && pnpm --filter web test && pnpm --filter web lint
@@ -131,7 +131,7 @@ git commit -am "perf(web): load a formation week once instead of twice"
 
 Ba test này không đo hiệu năng, chúng chặn đúng ba cách thay đổi này có thể làm hỏng màn hình.
 
-- [ ] **Step 1: Danh sách tuần rỗng thì màn hình trống, không kẹt loading**
+- [x] **Step 1: Danh sách tuần rỗng thì màn hình trống, không kẹt loading**
 
 ```ts
 it("không tuần nào có dữ liệu thì màn hình trống, không kẹt loading", async () => {
@@ -148,7 +148,7 @@ it("không tuần nào có dữ liệu thì màn hình trống, không kẹt loa
 
 Đây là nhánh mà cách viết `enabled: weekStart !== undefined` sẽ treo vĩnh viễn.
 
-- [ ] **Step 2: Query tuần lỗi thì hiện lỗi, không phải skeleton**
+- [x] **Step 2: Query tuần lỗi thì hiện lỗi, không phải skeleton**
 
 ```ts
 it("query tuần lỗi thì báo lỗi chứ không kẹt skeleton", async () => {
@@ -164,7 +164,7 @@ it("query tuần lỗi thì báo lỗi chứ không kẹt skeleton", async () =>
 
 `isPending` ở đây **vẫn `true`** (query bị park không bao giờ resolve) — đừng khẳng định nó `false`. Thứ bảo vệ màn hình là thứ tự trong `QueryBoundary`, và test kế tiếp mới là chỗ chốt điều đó.
 
-- [ ] **Step 3: `QueryBoundary` xét lỗi trước loading**
+- [x] **Step 3: `QueryBoundary` xét lỗi trước loading**
 
 Thêm vào `apps/web/components/shared/__tests__/query-boundary.test.tsx` nếu file đã có; nếu chưa, tạo file đó với đúng test này.
 
@@ -186,7 +186,7 @@ it("vừa lỗi vừa đang tải thì hiện lỗi, không hiện skeleton", ()
 
 Kiểm trước xem file test đã tồn tại chưa và `@testing-library/jest-dom` có sẵn không; nếu không, khẳng định bằng `expect(screen.queryByText("skeleton")).toBeNull()` thay vì matcher của jest-dom.
 
-- [ ] **Step 4: Kiểm và commit**
+- [x] **Step 4: Kiểm và commit**
 
 ```bash
 pnpm --filter web typecheck && pnpm --filter web test && pnpm --filter web lint
@@ -197,13 +197,13 @@ git commit -am "test(web): pin the loading and error branches of a parked format
 
 ### Task 4: Chốt lại
 
-- [ ] **Step 1: Chạy full**
+- [x] **Step 1: Chạy full**
 
 ```bash
 pnpm --filter web test && pnpm --filter web typecheck && pnpm --filter web lint && pnpm --filter web build
 ```
 
-- [ ] **Step 2: Đối chiếu spec với code, trả lời bằng code chứ không bằng trí nhớ**
+- [x] **Step 2: Đối chiếu spec với code, trả lời bằng code chứ không bằng trí nhớ**
 
 1. Mở `/xep-team` phát mấy request `formations`?
 2. Danh sách tuần rỗng thì màn hình ra gì?
@@ -211,13 +211,25 @@ pnpm --filter web test && pnpm --filter web typecheck && pnpm --filter web lint 
 
 Câu 3 là rủi ro spec đã nêu. Nếu hôm nay không có call site nào như vậy thì ghi nhận và đi tiếp; **không** thêm phòng thủ cho một trường hợp chưa tồn tại.
 
-- [ ] **Step 3: Sửa spec nếu code khác spec**
+- [x] **Step 3: Sửa spec nếu code khác spec**
 
 Chỗ nào code khác spec thì sửa spec trước rồi mới đi tiếp. Riêng điều kiện `enabled` thì spec §"Quyết định" điểm 1 viết `enabled: weekStart !== undefined`, còn §"Behaviour giữ nguyên" lại nói điều kiện đúng là "danh sách tuần đã về". Hai chỗ này mâu thuẫn nhau trong chính spec — **sửa điểm 1 cho khớp với cái đã implement**.
 
-- [ ] **Step 4: Không đụng `docs/architecture.md` và `apps/web/docs/frontend.md`**
+- [x] **Step 4: Không đụng `docs/architecture.md` và `apps/web/docs/frontend.md`**
 
 Không có convention mới nào được thêm: `enabled` là API sẵn có của TanStack Query, dùng đúng chỗ nó sinh ra để dùng.
+
+## Lệch so với plan khi thực thi
+
+**`clearMocks: true` trong `apps/web/vitest.config.ts`.** Test đầu tiên của Task 1 đỏ ở con số **4**
+chứ không phải 2: `mock.calls` không được xoá giữa các test, nên `toHaveBeenCalledTimes` đang đếm cả
+lượt gọi của test trước. Không có nó thì test chốt số lần tải là vô nghĩa. Chỉ `mock.calls` bị xoá,
+implementation đặt trong `beforeEach` vẫn còn, và cả 557 test còn lại vẫn xanh.
+
+**Hai test "xanh ngay" đã được kiểm bằng cách bẻ code.** Test tuần rỗng và test thứ tự nhánh của
+`QueryBoundary` không đỏ trước khi sửa vì chúng canh nhánh mà code cũ vô tình đi đúng. Đã dựng lại
+đúng lỗi mà spec cảnh báo — đổi `enabled` thành `weekStart !== undefined`, và đảo hai nhánh trong
+`QueryBoundary` — xem cả hai đỏ, rồi trả code về.
 
 ## Những gì plan này cố ý KHÔNG làm
 
