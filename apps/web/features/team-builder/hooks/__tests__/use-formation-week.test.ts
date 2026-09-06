@@ -78,6 +78,17 @@ describe("useFormationWeek", () => {
     expect(result.current.isEditableWeek).toBe(true);
   });
 
+  it("mở màn hình chỉ tải đội hình đúng một lần", async () => {
+    const { result } = renderFormationHook(() => useFormationWeek());
+
+    await waitFor(() => expect(result.current.isPending).toBe(false));
+
+    // Hôm nay là hai lượt: một lượt với `undefined` khi chưa biết tuần nào, rồi
+    // một lượt nữa với chính tuần đó ngay khi danh sách tuần về.
+    expect(fetchFormationsMock).toHaveBeenCalledTimes(1);
+    expect(fetchFormationsMock).toHaveBeenCalledWith(OPEN_WEEK);
+  });
+
   it("tuần đã qua thì khoá sửa", async () => {
     const { result } = renderFormationHook(() => useFormationWeek(), {
       formation: { selectedWeekStart: PAST_WEEK },
@@ -151,6 +162,51 @@ describe("useFormationWeek", () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(result.current.errorMessage).toBe("Phiên đăng nhập đã hết hạn.");
+  });
+
+  it("không tuần nào có dữ liệu thì màn hình trống, không kẹt loading", async () => {
+    // Nhánh mà điều kiện "weekStart khác undefined" sẽ treo vĩnh viễn:
+    // findActiveWeekStart([]) trả null, nên tuần không bao giờ được chốt.
+    fetchWeeksMock.mockResolvedValue([]);
+    fetchFormationsMock.mockResolvedValue([]);
+
+    const { result } = renderFormationHook(() => useFormationWeek());
+
+    await waitFor(() => expect(result.current.isPending).toBe(false));
+    expect(result.current.sessions).toEqual([]);
+    expect(fetchFormationsMock).toHaveBeenCalledWith(undefined);
+  });
+
+  it("query tuần lỗi thì báo lỗi chứ không gọi query đội hình", async () => {
+    fetchWeeksMock.mockRejectedValue(
+      new ApiError("Phiên đăng nhập đã hết hạn.", 401)
+    );
+
+    const { result } = renderFormationHook(() => useFormationWeek());
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.errorMessage).toBe("Phiên đăng nhập đã hết hạn.");
+    expect(fetchFormationsMock).not.toHaveBeenCalled();
+  });
+
+  it("thử lại khi query tuần đang lỗi vẫn chỉ tải đội hình một lần", async () => {
+    // refetch() của TanStack bỏ qua `enabled`, nên nút "Thử lại" bấm lúc query
+    // tuần đang lỗi có thể chui qua chỗ park và tải lại đúng cái bug này sinh ra
+    // để chặn: một lượt với "current", rồi một lượt nữa với tuần thật.
+    fetchWeeksMock.mockRejectedValueOnce(new ApiError("Hỏng rồi.", 500));
+
+    const { result } = renderFormationHook(() => useFormationWeek());
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(fetchFormationsMock).not.toHaveBeenCalled();
+
+    act(() => {
+      result.current.refetch();
+    });
+
+    await waitFor(() => expect(result.current.weekStart).toBe(OPEN_WEEK));
+    expect(fetchFormationsMock).toHaveBeenCalledTimes(1);
+    expect(fetchFormationsMock).toHaveBeenCalledWith(OPEN_WEEK);
   });
 
   it("thử lại thì tải lại cả ba query, kể cả query nhân vật", async () => {

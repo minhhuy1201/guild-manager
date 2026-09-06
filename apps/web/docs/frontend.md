@@ -708,7 +708,12 @@ function to test them through, and `components/shared/session-label.tsx`, becaus
 which icon and which colour appear can only be checked by rendering it.
 `@testing-library/react` has no `jest-dom` beside it — assert with
 Vitest's own matchers. `vitest.config.ts` pins `TZ=Asia/Ho_Chi_Minh`, because half the logic under
-test is about Vietnamese-time boundaries and it must not depend on the machine running it.
+test is about Vietnamese-time boundaries and it must not depend on the machine running it, and sets
+`clearMocks: true` so `mock.calls` starts empty in every `it()`. Without it a
+`toHaveBeenCalledTimes` silently counts the previous test's calls as well, which is exactly how a
+duplicate-request assertion can pass while the duplicate is still there. Only the recorded calls are
+cleared, so an implementation set in a `beforeEach` survives — never write a test that relies on
+call counts carrying over from an earlier one.
 
 What is worth testing here is the pure `lib/` layer — `assignment`, `formation-diff`, `prefill`,
 `pool`, `session-status`, `date-parts`, `session-subtitle` — plus `lib/api-client.ts`. Extracting

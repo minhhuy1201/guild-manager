@@ -62,9 +62,14 @@ Tham số `enabled` có từ đầu và chưa call site nào dùng. Đây là se
 
 ## Quyết định
 
-1. **Park query cho tới khi tuần được chốt.** `useFormationWeek` truyền
-   `enabled: weekStart !== undefined`. Nó vốn đã là module duy nhất quyết định tuần nào đang trên màn
+1. **Park query cho tới khi danh sách tuần về.** `useFormationWeek` truyền
+   `enabled: weeksQuery.isSuccess`. Nó vốn đã là module duy nhất quyết định tuần nào đang trên màn
    hình — locality nằm sẵn ở đúng chỗ.
+
+   Điều kiện là "danh sách đã về", **không** phải `weekStart !== undefined`: với danh sách rỗng,
+   `findActiveWeekStart` trả `null` nên `weekStart` mãi `undefined`, query đứng yên vĩnh viễn và màn
+   hình kẹt skeleton. Xem nhánh thứ ba ở §"Behaviour giữ nguyên" — đó là lý do spec này không phải
+   một dòng sửa.
 2. **Không đụng vào `teamBuilderKeys.formations`.** Nhánh `"current"` vẫn đúng cho người gọi thật sự
    muốn "tuần đang mở mà không cần biết là tuần nào"; vấn đề không nằm ở key factory mà ở chỗ gọi nó
    khi chưa có câu trả lời.
@@ -97,6 +102,22 @@ phải "weekStart khác undefined".
 gọi `formationsQuery.refetch()`. Trên một query đang bị park, `refetch` không chạy. Ở thời điểm đó
 tuần chắc chắn đã biết nên không sao, nhưng nếu sau này ai đó gọi `refetchFormations` sớm hơn thì nó
 sẽ im lặng không làm gì.
+
+**Đã kiểm khi implement:** call site duy nhất là `use-formation-draft.ts:314`, trên nhánh 409 của một
+lần lưu — tức là sau khi màn hình đã tải xong và query chắc chắn đang chạy. Không thêm phòng thủ cho
+một trường hợp chưa tồn tại.
+
+### `refetch()` đi xuyên qua `enabled` — nút "Thử lại" phải chặn
+
+Rủi ro thật hơn nằm ở hướng ngược lại. `refetch()` của TanStack **cố tình bỏ qua `enabled`**: nó gọi
+thẳng `query.fetch()`. Mà `combineQueries.refetch` lại refetch **mọi** query trong nhóm, nên nút
+"Thử lại" bấm lúc query tuần đang lỗi sẽ tải đội hình chui qua chỗ park với khoá `"current"`, rồi tải
+lại lần nữa với khoá ngày ngay khi danh sách tuần về — **đúng cái double fetch spec này sinh ra để
+chặn**, chỉ khác đường vào.
+
+Cách chặn: query đội hình vào nhóm dưới dạng một `CombinableQuery` có `refetch` tự bỏ qua khi đang
+park. Lúc đang park thì ở đây không có gì để thử lại: sửa được danh sách tuần là query tự un-park và
+tự chạy. `refetchFormations` dùng chung đúng hàm đó, nên nhánh 409 cũng đi qua cùng một guard.
 
 ## Đo lại
 
