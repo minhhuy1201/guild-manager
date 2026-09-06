@@ -4,7 +4,11 @@ import { ConfigService } from '@nestjs/config';
 import { TOKEN_TYPE, type JwtPayload } from '../../common';
 import type { Env } from '../../config';
 import { isRescueAdmin, resolveGuildRole } from '../auth/auth.public';
-import { CharactersService, memberRole } from '../characters/characters.public';
+import {
+  CharactersService,
+  memberRole,
+  type GuildMemberRow,
+} from '../characters/characters.public';
 
 /** An identity the bot may act as, plus the character it belongs to. */
 export interface ResolvedActor {
@@ -13,8 +17,12 @@ export interface ResolvedActor {
    * it is a value object here, not a token.
    */
   actor: JwtPayload;
-  /** The caller's own character, null for a rescue admin who was never assigned one. */
-  characterId: string | null;
+  /**
+   * The caller's own character row, null for a rescue admin who was never assigned one.
+   * The whole row rather than the id: `findByDiscordId` has already read it, and every caller went
+   * on to read the same row again by id.
+   */
+  character: GuildMemberRow | null;
 }
 
 /**
@@ -50,7 +58,7 @@ export class ActorResolver {
         role: resolveGuildRole({ isRescue, memberRole: memberRole(member) }),
         type: TOKEN_TYPE.access,
       },
-      characterId: member?.id ?? null,
+      character: member,
     };
   }
 }

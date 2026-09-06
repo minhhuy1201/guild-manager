@@ -22,12 +22,13 @@ const config = {
 const now = new Date('2026-08-24T10:00:00.000Z');
 const clock = { now: () => now } as never;
 
-/** A Character row sufficient to build a SessionUser. */
+/** A Character row sufficient to build a SessionUser, as `findByDiscordId` returns it. */
 const ROW = {
   id: 'meo-beo-k7ma3x',
   name: 'Mèo Béo',
   guildClass: GuildClass.THIET_Y,
   discordUsername: 'meobeo',
+  role: GuildRole.MEMBER,
 };
 
 /**
@@ -77,7 +78,7 @@ function makeService(overrides: {
   const characters = {
     findByDiscordId: jest.fn().mockResolvedValue(null),
     touchLogin: jest.fn().mockResolvedValue(undefined),
-    findById: jest.fn().mockResolvedValue(ROW),
+    findById: jest.fn().mockResolvedValue(null),
     ...overrides.characters,
   };
 
@@ -159,9 +160,7 @@ describe('AuthService.handleCallback', () => {
   it('phát mã đổi và ghi lần đăng nhập khi Discord ID khớp thành viên', async () => {
     const { service, jwt, prisma, characters } = makeService({
       characters: {
-        findByDiscordId: jest
-          .fn()
-          .mockResolvedValue({ id: ROW.id, role: GuildRole.MEMBER }),
+        findByDiscordId: jest.fn().mockResolvedValue(ROW),
       },
     });
     jwt.verifyAsync.mockResolvedValue({
@@ -205,9 +204,7 @@ describe('AuthService.exchange', () => {
   it('ép vai ADMIN cho Discord ID trong danh sách cứu hộ', async () => {
     const { service, prisma, characters } = makeService({
       characters: {
-        findByDiscordId: jest
-          .fn()
-          .mockResolvedValue({ id: ROW.id, role: GuildRole.MEMBER }),
+        findByDiscordId: jest.fn().mockResolvedValue(ROW),
       },
       authExchange: {
         findUnique: jest.fn().mockResolvedValue({
@@ -227,6 +224,23 @@ describe('AuthService.exchange', () => {
     });
     expect(characters.findByDiscordId).toHaveBeenCalledWith(RESCUE_ID);
     expect(prisma.authExchange.deleteMany).toHaveBeenCalled();
+  });
+
+  it('chỉ đọc bảng Character đúng một lần cho mỗi phiên', async () => {
+    // Phiên đăng nhập trước đây đọc cùng một hàng hai lần: một lần theo discordId, một lần theo id.
+    const { service, characters } = makeService({
+      characters: { findByDiscordId: jest.fn().mockResolvedValue(ROW) },
+      authExchange: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValue({ id: 'ma', discordId: '123456789012345678' }),
+      },
+    });
+
+    await service.exchange({ code: 'ma' });
+
+    expect(characters.findByDiscordId).toHaveBeenCalledTimes(1);
+    expect(characters.findById).not.toHaveBeenCalled();
   });
 });
 
@@ -249,7 +263,7 @@ describe('AuthService.refresh', () => {
       characters: {
         findByDiscordId: jest
           .fn()
-          .mockResolvedValue({ id: ROW.id, role: GuildRole.ADMIN }),
+          .mockResolvedValue({ ...ROW, role: GuildRole.ADMIN }),
       },
     });
     jwt.verifyAsync.mockResolvedValue({

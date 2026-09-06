@@ -339,11 +339,12 @@ export async function buildOwnBoard(
   const resolved = await deps.actors.resolve(discordId);
 
   if (!resolved) return { content: NOT_LINKED };
-  if (!resolved.characterId) return { content: NO_OWN_CHARACTER };
 
-  const row = await deps.characters.findById(resolved.characterId);
+  // `resolve` already read the row; there is no second lookup left to fail, so the "row vanished"
+  // refusal that used to sit here is gone with it.
+  const row = resolved.character;
 
-  if (!row) return { content: NOT_LINKED };
+  if (!row) return { content: NO_OWN_CHARACTER };
 
   return buildAttendanceBoard(
     { characterId: row.id, characterName: row.name, discordId: row.discordId },

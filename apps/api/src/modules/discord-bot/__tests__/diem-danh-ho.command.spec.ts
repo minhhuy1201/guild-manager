@@ -15,18 +15,24 @@ const INTERACTION = {
   member: { user: { id: '111' } },
 };
 
+/** The mentioned member's row — one read now hands back everything the board needs. */
+const TARGET_ROW = {
+  id: 'meo-beo-k7ma3x',
+  name: 'Mèo Béo',
+  discordId: '999',
+  role: GuildRole.MEMBER,
+};
+
 /**
  * Build deps for a caller of the given role pointing at a target.
  * @param options.callerRole - Role the caller acts with
- * @param options.target - What findByDiscordId returns for the mentioned user
- * @param options.targetRow - What findById returns for that character
- * @returns Stubbed deps
+ * @param options.target - The mentioned user's row, as findByDiscordId returns it
+ * @returns The deps, plus the CharactersService stub so a test can count its calls
  */
-function makeDeps(options: {
-  callerRole: GuildRole;
-  target: unknown;
-  targetRow?: unknown;
-}): CommandDeps {
+function makeDeps(options: { callerRole: GuildRole; target: unknown }): {
+  deps: CommandDeps;
+  characters: Record<string, jest.Mock>;
+} {
   /** One battle day, so the board comes back carrying buttons. */
   const session = {
     id: 'session-1',
@@ -37,7 +43,11 @@ function makeDeps(options: {
     opponent: null,
   };
 
-  return {
+  const characters = {
+    findByDiscordId: jest.fn().mockResolvedValue(options.target),
+    findById: jest.fn().mockResolvedValue(null),
+  };
+  const deps = {
     actors: {
       resolve: jest.fn().mockResolvedValue({
         actor: {
@@ -45,16 +55,15 @@ function makeDeps(options: {
           role: options.callerRole,
           type: TOKEN_TYPE.access,
         },
-        characterId: 'admin-abc123',
+        character: { id: 'admin-abc123', name: 'Admin', discordId: '111' },
       }),
     },
-    characters: {
-      findByDiscordId: jest.fn().mockResolvedValue(options.target),
-      findById: jest.fn().mockResolvedValue(options.targetRow ?? null),
-    },
+    characters,
     battleSessions: { listByWeek: jest.fn().mockResolvedValue([session]) },
     attendance: { getRecordsForSessions: jest.fn().mockResolvedValue([]) },
   } as never;
+
+  return { deps, characters };
 }
 
 describe('/diem-danh-ho', () => {
@@ -66,24 +75,25 @@ describe('/diem-danh-ho', () => {
   });
 
   it('admin thấy bảng của người được mention', async () => {
-    const deps = makeDeps({
+    const { deps, characters } = makeDeps({
       callerRole: GuildRole.ADMIN,
-      target: { id: 'meo-beo-k7ma3x', role: GuildRole.MEMBER },
-      targetRow: { id: 'meo-beo-k7ma3x', name: 'Mèo Béo', discordId: '999' },
+      target: TARGET_ROW,
     });
 
     const reply = await diemDanhHoCommand.execute(INTERACTION, deps);
 
     expect(reply.data.content).toContain('Mèo Béo');
+    // One read of the target, not two: `findByDiscordId` already returned the whole row.
+    expect(characters.findByDiscordId).toHaveBeenCalledTimes(1);
+    expect(characters.findById).not.toHaveBeenCalled();
   });
 
   it('bảng hiện công khai cho cả kênh, không phải riêng người gõ lệnh', async () => {
     // Tin ephemeral chỉ ĐÚNG MỘT người xem được, nên để người được điểm danh hộ thấy thì bắt buộc
     // phải công khai. Cờ ephemeral quay lại đây là hỏng đúng cái yêu cầu của tính năng.
-    const deps = makeDeps({
+    const { deps } = makeDeps({
       callerRole: GuildRole.ADMIN,
-      target: { id: 'meo-beo-k7ma3x', role: GuildRole.MEMBER },
-      targetRow: { id: 'meo-beo-k7ma3x', name: 'Mèo Béo', discordId: '999' },
+      target: TARGET_ROW,
     });
 
     const reply = await diemDanhHoCommand.execute(INTERACTION, deps);
@@ -92,10 +102,9 @@ describe('/diem-danh-ho', () => {
   });
 
   it('nhắc tên người được điểm danh để họ nhận được thông báo', async () => {
-    const deps = makeDeps({
+    const { deps } = makeDeps({
       callerRole: GuildRole.ADMIN,
-      target: { id: 'meo-beo-k7ma3x', role: GuildRole.MEMBER },
-      targetRow: { id: 'meo-beo-k7ma3x', name: 'Mèo Béo', discordId: '999' },
+      target: TARGET_ROW,
     });
 
     const reply = await diemDanhHoCommand.execute(INTERACTION, deps);
@@ -106,10 +115,9 @@ describe('/diem-danh-ho', () => {
   it('nói rõ ai được bấm, vì Discord không tắt nút riêng cho từng người', async () => {
     // Message mang đúng một bộ component cho mọi người xem, nên cả kênh bấm được. Dòng này là thứ
     // duy nhất ngăn người ngoài bấm trước khi bị từ chối.
-    const deps = makeDeps({
+    const { deps } = makeDeps({
       callerRole: GuildRole.ADMIN,
-      target: { id: 'meo-beo-k7ma3x', role: GuildRole.MEMBER },
-      targetRow: { id: 'meo-beo-k7ma3x', name: 'Mèo Béo', discordId: '999' },
+      target: TARGET_ROW,
     });
 
     const reply = await diemDanhHoCommand.execute(INTERACTION, deps);
@@ -118,9 +126,9 @@ describe('/diem-danh-ho', () => {
   });
 
   it('lời từ chối vẫn riêng tư, cả kênh không cần xem ai bị nói không', async () => {
-    const deps = makeDeps({
+    const { deps } = makeDeps({
       callerRole: GuildRole.MEMBER,
-      target: { id: 'meo-beo-k7ma3x', role: GuildRole.MEMBER },
+      target: TARGET_ROW,
     });
 
     const reply = await diemDanhHoCommand.execute(INTERACTION, deps);
@@ -130,9 +138,9 @@ describe('/diem-danh-ho', () => {
 
   it('member bị từ chối trước khi thấy bảng', async () => {
     // AttendanceService chỉ từ chối lúc GHI. Bảng thì hiện ra trước đó, nên chỗ này phải chặn sớm.
-    const deps = makeDeps({
+    const { deps } = makeDeps({
       callerRole: GuildRole.MEMBER,
-      target: { id: 'meo-beo-k7ma3x', role: GuildRole.MEMBER },
+      target: TARGET_ROW,
     });
 
     const reply = await diemDanhHoCommand.execute(INTERACTION, deps);
@@ -142,7 +150,7 @@ describe('/diem-danh-ho', () => {
   });
 
   it('nói rõ khi người được mention chưa được gán nhân vật', async () => {
-    const deps = makeDeps({ callerRole: GuildRole.ADMIN, target: null });
+    const { deps } = makeDeps({ callerRole: GuildRole.ADMIN, target: null });
 
     const reply = await diemDanhHoCommand.execute(INTERACTION, deps);
 

@@ -56,8 +56,7 @@ export const diemDanhHoCommand: SlashCommand = {
       throw new Error(`Thiếu option ${TARGET_OPTION} của /diem-danh-ho.`);
     }
 
-    const target = await deps.characters.findByDiscordId(targetDiscordId);
-    const row = target ? await deps.characters.findById(target.id) : null;
+    const row = await deps.characters.findByDiscordId(targetDiscordId);
 
     if (!row) {
       return ephemeralText(`<@${targetDiscordId}> chưa được gán nhân vật nào.`);

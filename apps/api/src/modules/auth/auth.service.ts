@@ -251,14 +251,14 @@ export class AuthService {
 
     if (!member && !isRescue) throw new UnauthorizedException(SESSION_EXPIRED);
 
-    const row = member ? await this.characters.findById(member.id) : null;
-
+    // `findByDiscordId` hands back the whole row, so the session is built from the one read that
+    // already happened rather than a second lookup by id.
     return verifyResponse(sessionUserSchema, {
       discordId,
-      discordUsername: row?.discordUsername ?? null,
-      discordAvatar: row?.discordAvatar ?? null,
+      discordUsername: member?.discordUsername ?? null,
+      discordAvatar: member?.discordAvatar ?? null,
       role: resolveGuildRole({ isRescue, memberRole: memberRole(member) }),
-      character: row ? toCharacter(row) : null,
+      character: member ? toCharacter(member) : null,
     } satisfies SessionUser);
   }
 
