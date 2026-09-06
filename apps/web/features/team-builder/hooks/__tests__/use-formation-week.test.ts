@@ -164,6 +164,31 @@ describe("useFormationWeek", () => {
     expect(result.current.errorMessage).toBe("Phiên đăng nhập đã hết hạn.");
   });
 
+  it("không tuần nào có dữ liệu thì màn hình trống, không kẹt loading", async () => {
+    // Nhánh mà điều kiện "weekStart khác undefined" sẽ treo vĩnh viễn:
+    // findActiveWeekStart([]) trả null, nên tuần không bao giờ được chốt.
+    fetchWeeksMock.mockResolvedValue([]);
+    fetchFormationsMock.mockResolvedValue([]);
+
+    const { result } = renderFormationHook(() => useFormationWeek());
+
+    await waitFor(() => expect(result.current.isPending).toBe(false));
+    expect(result.current.sessions).toEqual([]);
+    expect(fetchFormationsMock).toHaveBeenCalledWith(undefined);
+  });
+
+  it("query tuần lỗi thì báo lỗi chứ không gọi query đội hình", async () => {
+    fetchWeeksMock.mockRejectedValue(
+      new ApiError("Phiên đăng nhập đã hết hạn.", 401)
+    );
+
+    const { result } = renderFormationHook(() => useFormationWeek());
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.errorMessage).toBe("Phiên đăng nhập đã hết hạn.");
+    expect(fetchFormationsMock).not.toHaveBeenCalled();
+  });
+
   it("thử lại thì tải lại cả ba query, kể cả query nhân vật", async () => {
     const { result } = renderFormationHook(() => useFormationWeek());
 
