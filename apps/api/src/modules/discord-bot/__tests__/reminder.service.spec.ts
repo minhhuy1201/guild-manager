@@ -43,12 +43,19 @@ interface Options {
  */
 function makeService(options: Options = {}) {
   const postMessage = jest.fn().mockResolvedValue(undefined);
+  const listByWeek = jest
+    .fn()
+    .mockResolvedValue(options.sessions ?? [session()]);
+  // Both are stubbed so the suite reads the same records whichever one the service picks; which one
+  // it must pick is asserted on its own.
+  const getRecords = jest.fn().mockResolvedValue(options.records ?? []);
+  const getRecordsForSessions = jest
+    .fn()
+    .mockResolvedValue(options.records ?? []);
 
   const service = new ReminderService(
-    {
-      listByWeek: jest.fn().mockResolvedValue(options.sessions ?? [session()]),
-    } as never,
-    { getRecords: jest.fn().mockResolvedValue(options.records ?? []) } as never,
+    { listByWeek } as never,
+    { getRecords, getRecordsForSessions } as never,
     {
       listRows: jest
         .fn()
@@ -70,7 +77,13 @@ function makeService(options: Options = {}) {
     { get: () => 'https://mmgh-nth.vercel.app' } as never,
   );
 
-  return { service, postMessage };
+  return {
+    service,
+    postMessage,
+    listByWeek,
+    getRecords,
+    getRecordsForSessions,
+  };
 }
 
 describe('ReminderService.run', () => {
@@ -149,6 +162,44 @@ describe('ReminderService.run', () => {
 
     expect(payload.embeds[0].description).toContain('Bang Chiến');
     expect(payload.embeds[0].description).not.toContain('Thứ 5 · 20:30');
+  });
+
+  it('bản ghi của người khác trong cùng ngày không tính là mình đã trả lời', async () => {
+    const { service } = makeService({
+      members: [
+        { id: 'meo-beo', name: 'Mèo Béo', discordId: '111' },
+        { id: 'cho-gay', name: 'Chó Gầy', discordId: '222' },
+      ],
+      records: [{ characterId: 'meo-beo', sessionId: 'gw-2026-09-05' }],
+    });
+
+    await expect(service.run()).resolves.toMatchObject({
+      status: 'sent',
+      missingCount: 1,
+    });
+  });
+
+  it('một lượt nhắc chỉ suy ra tuần một lần', async () => {
+    const { service, listByWeek, getRecords, getRecordsForSessions } =
+      makeService({
+        sessions: [
+          session(),
+          // Hạn 17:00 Thứ 3 08/09 — chưa tới hạn, nhưng vẫn thuộc tuần đang đọc.
+          session({
+            id: 's1',
+            label: 'Thứ 5 · 20:30',
+            isGuildWar: false,
+            deadline: '2026-09-08T10:00:00.000Z',
+          }),
+        ],
+      });
+
+    await service.run();
+
+    expect(listByWeek).toHaveBeenCalledTimes(1);
+    expect(getRecords).not.toHaveBeenCalled();
+    // The whole week, not just the due days: narrowing what is read is a separate change.
+    expect(getRecordsForSessions).toHaveBeenCalledWith(['gw-2026-09-05', 's1']);
   });
 
   it('đếm mỗi người một lần dù thiếu nhiều ngày', async () => {
