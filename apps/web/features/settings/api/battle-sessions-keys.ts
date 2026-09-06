@@ -5,6 +5,6 @@
 export const settingsKeys = {
   all: ["settings"] as const,
   weeks: () => [...settingsKeys.all, "weeks"] as const,
-  sessions: (weekStart: string) =>
-    [...settingsKeys.all, "sessions", weekStart] as const,
+  sessions: (weekStart?: string) =>
+    [...settingsKeys.all, "sessions", weekStart ?? "current"] as const,
 };

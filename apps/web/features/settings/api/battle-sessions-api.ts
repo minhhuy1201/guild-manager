@@ -40,16 +40,17 @@ export async function fetchSettingsWeeks(): Promise<Week[]> {
 
 /**
  * Get one week's sessions.
- * @param weekStart - Monday marker of the week (ISO string)
+ * @param weekStart - Monday marker of the week (ISO string); omitted = the open week
  * @returns Sessions ordered by battle time
  */
 export async function fetchWeekSessions(
-  weekStart: string
+  weekStart?: string
 ): Promise<BattleSession[]> {
-  return apiFetch<BattleSession[]>(
-    `/battle-sessions?weekStart=${encodeURIComponent(weekStart)}`,
-    { headers: await authHeader() }
-  );
+  const query = weekStart ? `?weekStart=${encodeURIComponent(weekStart)}` : "";
+
+  return apiFetch<BattleSession[]>(`/battle-sessions${query}`, {
+    headers: await authHeader(),
+  });
 }
 
 /**

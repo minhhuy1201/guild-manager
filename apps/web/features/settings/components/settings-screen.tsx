@@ -24,9 +24,16 @@ export function SettingsScreen() {
   const weeksQuery = useSettingsWeeks();
   const [selectedWeek, setSelectedWeek] = useState<string | null>(null);
 
+  // Undefined until the admin picks a week: the backend already defaults to the open one, so the
+  // sessions request starts alongside the week list instead of waiting for it. The key stays
+  // `"current"` even after the weeks arrive - swapping it for that Monday would split one week
+  // across two cache entries and refetch.
+  const sessionsQuery = useWeekSessions(selectedWeek ?? undefined);
+
   const weeks = weeksQuery.data ?? [];
-  const weekStart = selectedWeek ?? weeks[0]?.weekStart ?? null;
-  const sessionsQuery = useWeekSessions(weekStart);
+  // Display only: with no explicit pick, the week on screen is the open one.
+  const viewedWeek =
+    selectedWeek ?? weeks.find((week) => week.isActive)?.weekStart;
 
   const [editing, setEditing] = useState<BattleSession | null>(null);
   const [formOpen, setFormOpen] = useState(false);
@@ -41,44 +48,40 @@ export function SettingsScreen() {
     <Card>
       <CardContent className="flex flex-col gap-4">
         <QueryBoundary state={state} skeleton={<SettingsSkeleton />}>
-          {/* Narrowing only: useWeekSessions is disabled while weekStart is null,
-              so the group stays pending and this branch never renders empty. */}
-          {weekStart !== null && (
-            <>
-              <div>
-                <h1 className="text-lg font-semibold">Thiết lập lịch đánh</h1>
-                <p className="text-sm text-muted-foreground">
-                  Sửa được lịch của tuần này và tuần sau. Trận Bang Chiến do hệ
-                  thống tạo sẵn, chỉ đổi được giờ đánh.
-                </p>
-              </div>
+          <>
+            <div>
+              <h1 className="text-lg font-semibold">Thiết lập lịch đánh</h1>
+              <p className="text-sm text-muted-foreground">
+                Sửa được lịch của tuần này và tuần sau. Trận Bang Chiến do hệ
+                thống tạo sẵn, chỉ đổi được giờ đánh.
+              </p>
+            </div>
 
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <WeekSelector
-                  weeks={weeks}
-                  value={weekStart}
-                  onChange={setSelectedWeek}
-                />
-                <CreateButton
-                  label="Thêm trận scrim"
-                  icon={<CalendarPlus className="size-4" />}
-                  onClick={() => {
-                    setEditing(null);
-                    setFormOpen(true);
-                  }}
-                />
-              </div>
-
-              <SessionList
-                sessions={sessionsQuery.data ?? []}
-                onEdit={(session) => {
-                  setEditing(session);
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <WeekSelector
+                weeks={weeks}
+                value={viewedWeek}
+                onChange={setSelectedWeek}
+              />
+              <CreateButton
+                label="Thêm trận scrim"
+                icon={<CalendarPlus className="size-4" />}
+                onClick={() => {
+                  setEditing(null);
                   setFormOpen(true);
                 }}
-                onDelete={setDeleting}
               />
-            </>
-          )}
+            </div>
+
+            <SessionList
+              sessions={sessionsQuery.data ?? []}
+              onEdit={(session) => {
+                setEditing(session);
+                setFormOpen(true);
+              }}
+              onDelete={setDeleting}
+            />
+          </>
         </QueryBoundary>
       </CardContent>
 

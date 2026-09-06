@@ -21,13 +21,14 @@ export function useSettingsWeeks() {
 
 /**
  * Query one week's sessions.
- * @param weekStart - Monday marker of the week; omitted disables the query
+ * Omitting `weekStart` reads the open week under the `"current"` key, so the screen can fetch
+ * sessions in parallel with the week list instead of waiting to learn which week that is.
+ * @param weekStart - Monday marker of the week; omitted = the open week
  * @returns The TanStack query result (data is the session list)
  */
-export function useWeekSessions(weekStart: string | null) {
+export function useWeekSessions(weekStart?: string) {
   return useQuery({
-    queryKey: settingsKeys.sessions(weekStart ?? ""),
-    queryFn: () => fetchWeekSessions(weekStart as string),
-    enabled: weekStart !== null,
+    queryKey: settingsKeys.sessions(weekStart),
+    queryFn: () => fetchWeekSessions(weekStart),
   });
 }
