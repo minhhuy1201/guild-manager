@@ -36,6 +36,20 @@ export type ReminderOutcome =
   | { status: 'nothing-due' };
 
 /**
+ * Key identifying one person's answer for one battle day.
+ *
+ * `:` is safe as the separator: a Character id is a slug (`meo-beo-k7ma3x`) and a BattleSession id is
+ * `gw-<YYYY-MM-DD>` or a cuid, so no two pairs can compose the same key.
+ *
+ * @param sessionId - Battle day the answer belongs to
+ * @param characterId - Person who answered
+ * @returns The composed key
+ */
+function answerKey(sessionId: string, characterId: string): string {
+  return `${sessionId}:${characterId}`;
+}
+
+/**
  * Finds who still has not answered for a deadline falling tomorrow, and says so in Discord.
  *
  * Both the cron endpoint and `/nhac-diem-danh` call `run`: a scheduled reminder and a hand-run one
@@ -86,22 +100,24 @@ export class ReminderService {
 
     const [members, records] = await Promise.all([
       this.characters.listRows(),
-      this.attendance.getRecords(),
+      // Not `getRecords()`, which would derive the week a second time — and materialising it writes.
+      // The whole week, not just `dueSessions`: narrowing what is read is a separate change.
+      this.attendance.getRecordsForSessions(
+        sessions.map((session) => session.id),
+      ),
     ]);
+
+    // A record existing is the whole test: answering "Không" is answering. The set holds the pair
+    // and nothing else, so `isPresent` cannot creep into that rule.
+    const answered = new Set(
+      records.map((record) => answerKey(record.sessionId, record.characterId)),
+    );
 
     const due: DueSession[] = dueSessions
       .map((session) => ({
         session,
-        // A record existing is the whole test: answering "Không" is answering.
         missing: members
-          .filter(
-            (member) =>
-              !records.some(
-                (record) =>
-                  record.sessionId === session.id &&
-                  record.characterId === member.id,
-              ),
-          )
+          .filter((member) => !answered.has(answerKey(session.id, member.id)))
           .map((member) => ({
             name: member.name,
             discordId: member.discordId,
