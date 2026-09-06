@@ -37,7 +37,7 @@
 - Đổi: `findByDiscordId(discordId: string): Promise<GuildMemberRow | null>` (trước: `Promise<{ id: string; role: GuildRole } | null>`).
 - `findById` **không đổi** — vẫn có người gọi tra theo id.
 
-- [ ] **Step 1: Đổi `findByDiscordId`**
+- [x] **Step 1: Đổi `findByDiscordId`**
 
 ```ts
 /**
@@ -54,17 +54,17 @@ async findByDiscordId(discordId: string): Promise<GuildMemberRow | null> {
 
 Bỏ `select`, bỏ phép cast `row.role as GuildRole` và phép dựng lại object.
 
-- [ ] **Step 2: Sửa chỗ đọc `role` trong `apps/api/src/modules/attendance/attendance.service.ts`**
+- [x] **Step 2: Sửa chỗ đọc `role` trong `apps/api/src/modules/attendance/attendance.service.ts`**
 
 `ownCharacterId` (dòng ~227) chỉ đọc `member?.id ?? null` — **không đổi gì**, nó vẫn biên dịch và vẫn đúng.
 
 Ghi nhận một đánh đổi có thật: `mark()` nay đọc thêm vài cột cho cùng một hàng. Cùng số round trip, nhiều byte hơn một chút. Chấp nhận — đó là cái giá của việc bỏ hẳn hàm nông thứ hai.
 
-- [ ] **Step 3: Cập nhật `characters.service.spec.ts`**
+- [x] **Step 3: Cập nhật `characters.service.spec.ts`**
 
 Test nào đang khẳng định `findByDiscordId` trả đúng `{ id, role }` thì đổi sang khẳng định nó trả cả hàng. Thêm một test: gọi `findByDiscordId` **không** kèm `select`, tức là hàng trả về có `discordUsername`.
 
-- [ ] **Step 4: Kiểm và commit**
+- [x] **Step 4: Kiểm và commit**
 
 ```bash
 pnpm --filter api typecheck
@@ -74,6 +74,11 @@ git commit -am "refactor(api): return the whole character row from findByDiscord
 ```
 
 Typecheck ở bước này **sẽ báo lỗi** ở `auth.service.ts` và `diem-danh-ho.command.ts` nếu chúng đọc field không còn tồn tại — chúng chỉ đọc `.id` và `.role`, cả hai vẫn có, nên dự kiến là **xanh**. Nếu đỏ, đọc lỗi trước khi sửa: nó đang chỉ ra một call site spec chưa liệt kê.
+
+**Thực tế đã đỏ**, ở đúng hai chỗ đó nhưng vì lý do khác: `GuildMemberRow.role` khai báo là `string`,
+còn `resolveGuildRole` nhận `GuildRole | null` — phép ép kiểu mà `findByDiscordId` từng làm hộ nay
+không còn. Phép ép chuyển vào `characters.codec.ts` thành `memberRole(row)` (export qua
+`characters.public.ts`), chỗ các phép ép enum khác vốn đã nằm. Spec A đã ghi lại điều này.
 
 ---
 
@@ -92,7 +97,7 @@ Typecheck ở bước này **sẽ báo lỗi** ở `auth.service.ts` và `diem-d
 **Interfaces:**
 - Đổi: `ResolvedActor.characterId: string | null` → `ResolvedActor.character: GuildMemberRow | null`.
 
-- [ ] **Step 1: Đổi `ResolvedActor` và `resolve`**
+- [x] **Step 1: Đổi `ResolvedActor` và `resolve`**
 
 ```ts
 /** An identity the bot may act as, plus the character it belongs to. */
@@ -105,7 +110,7 @@ export interface ResolvedActor {
 
 Trong `resolve`, `characterId: member?.id ?? null` thành `character: member`. Phần `resolveGuildRole({ isRescue, memberRole: member?.role ?? null })` **không đổi**.
 
-- [ ] **Step 2: `buildOwnBoard` bỏ lượt `findById`**
+- [x] **Step 2: `buildOwnBoard` bỏ lượt `findById`**
 
 `attendance-board.ts:335`. Trước:
 
@@ -126,11 +131,11 @@ if (!row) return { content: NO_OWN_CHARACTER };
 
 Đây là **thay đổi duy nhất có thể nhìn thấy được** trong Task 2, và nó chỉ xảy ra trong một cửa sổ đua mà hôm nay cũng không xử lý đúng. Nếu người review thấy không chấp nhận được thì dừng lại và hỏi, đừng tự chọn.
 
-- [ ] **Step 3: `handleAttendanceButton` giữ nguyên `Promise.all`**
+- [x] **Step 3: `handleAttendanceButton` giữ nguyên `Promise.all`**
 
 `attendance-board.ts:296`. **Không đụng vào.** `pressed.characterId` là nhân vật *được điểm danh hộ*, không phải người bấm — nó không nằm trong `ResolvedActor`. Spec A §"Behaviour giữ nguyên" nói rõ điểm này.
 
-- [ ] **Step 4: `diem-danh-ho.command.ts` bỏ cặp `await` nối đuôi**
+- [x] **Step 4: `diem-danh-ho.command.ts` bỏ cặp `await` nối đuôi**
 
 Dòng 59–60. Trước:
 
@@ -147,7 +152,7 @@ const row = await deps.characters.findByDiscordId(targetDiscordId);
 
 Nhánh `if (!row)` và câu tiếng Việt của nó giữ nguyên từng chữ.
 
-- [ ] **Step 5: `describeSession` bỏ lượt `findById`**
+- [x] **Step 5: `describeSession` bỏ lượt `findById`**
 
 `auth.service.ts:245`. Trước:
 
@@ -161,7 +166,7 @@ Sau: `row` chính là `member`. Object `verifyResponse(sessionUserSchema, { ... 
 
 Giữ nguyên `resolveGuildRole({ isRescue, memberRole: member?.role ?? null })` và nhánh ném `UnauthorizedException(SESSION_EXPIRED)`.
 
-- [ ] **Step 6: Cập nhật test**
+- [x] **Step 6: Cập nhật test**
 
 Mọi stub `actors.resolve` trả `{ actor, characterId }` đổi sang `{ actor, character }` với một hàng đầy đủ. Mọi stub `characters.findById` chỉ tồn tại để phục vụ lượt đọc thứ hai thì bỏ đi — **trừ** stub trong `attendance-button.spec.ts`, chỗ đó vẫn cần (Step 3).
 
@@ -170,7 +175,7 @@ Thêm hai test khẳng định điều plan này hứa:
 1. `auth.service.spec.ts`: `describeSession` chạy đúng **một** lượt đọc `Character` — đếm bằng số lần gọi stub.
 2. `diem-danh-ho.command.spec.ts`: như trên cho đường lệnh.
 
-- [ ] **Step 7: Kiểm và commit**
+- [x] **Step 7: Kiểm và commit**
 
 ```bash
 pnpm --filter api typecheck && pnpm --filter api test && pnpm --filter api lint
@@ -189,7 +194,7 @@ git commit -am "perf(api): read a discord identity in one round trip"
 - `listByWeek`, `ensureWeekMaterialized`, `readWeekSessions`: **chữ ký không đổi**. Chỉ đổi bên trong.
 - Thêm private: `isGuildWarCurrent(row, week)`.
 
-- [ ] **Step 1: Thêm phép so sánh "đã đúng chưa"**
+- [x] **Step 1: Thêm phép so sánh "đã đúng chưa"**
 
 ```ts
 /**
@@ -215,7 +220,7 @@ private isGuildWarCurrent(
 }
 ```
 
-- [ ] **Step 2: Đảo thứ tự trong `listByWeek`**
+- [x] **Step 2: Đảo thứ tự trong `listByWeek`**
 
 ```ts
 async listByWeek(weekStart?: string): Promise<BattleSession[]> {
@@ -266,7 +271,7 @@ private async reconcileGuildWar<T extends { id: string; deadline: Date; matchCou
 
 Nếu generic + cast khiến kiểu khó đọc, bỏ generic và khai báo kiểu hàng tường minh — **ưu tiên đọc được hơn ngắn**. Không được để `as any` lọt vào.
 
-- [ ] **Step 3: `ensureWeekMaterialized` cũng đọc trước khi ghi**
+- [x] **Step 3: `ensureWeekMaterialized` cũng đọc trước khi ghi**
 
 ```ts
 async ensureWeekMaterialized(week: WeekAnchor): Promise<void> {
@@ -286,11 +291,11 @@ async ensureWeekMaterialized(week: WeekAnchor): Promise<void> {
 
 Giữ tính đối xứng với `listByWeek`: cùng một câu hỏi, cùng một hàm trả lời. `materializeWeek` private cũ không còn ai gọi thì xoá đi — nếu còn, đừng để lại một hàm chết.
 
-- [ ] **Step 4: `ensureGuildWar` không đổi**
+- [x] **Step 4: `ensureGuildWar` không đổi**
 
 Vẫn `upsert` vô điều kiện. Nó nay chỉ được gọi khi đã biết là cần. Giữ nguyên comment giải thích vì sao `dateTime` không bị ghi đè.
 
-- [ ] **Step 5: Test — đây là phần quan trọng nhất của task**
+- [x] **Step 5: Test — đây là phần quan trọng nhất của task**
 
 Trong `battle-sessions.service.spec.ts`, bốn test bám đúng bốn nhánh spec B nêu:
 
@@ -301,7 +306,7 @@ Trong `battle-sessions.service.spec.ts`, bốn test bám đúng bốn nhánh spe
 
 Thêm một test cho tuần ngoài phạm vi xếp lịch: không đọc thừa, không ghi.
 
-- [ ] **Step 6: Kiểm và commit**
+- [x] **Step 6: Kiểm và commit**
 
 ```bash
 pnpm --filter api typecheck && pnpm --filter api test && pnpm --filter api lint
@@ -315,13 +320,13 @@ git commit -am "perf(api): stop writing on every read of a battle week"
 **Files:**
 - Modify (chỉ khi cần): `docs/custom-spec/2026-09-06-a-identity-read-design.md`, `docs/custom-spec/2026-09-06-b-week-read-write-design.md`
 
-- [ ] **Step 1: Chạy full**
+- [x] **Step 1: Chạy full**
 
 ```bash
 pnpm --filter api test && pnpm --filter api typecheck && pnpm --filter api lint && pnpm --filter api build
 ```
 
-- [ ] **Step 2: Đối chiếu spec với code đã viết**
+- [x] **Step 2: Đối chiếu spec với code đã viết**
 
 Ba câu hỏi, trả lời bằng code chứ không bằng trí nhớ:
 
@@ -331,11 +336,11 @@ Ba câu hỏi, trả lời bằng code chứ không bằng trí nhớ:
 
 Chỗ nào code khác spec thì **sửa spec trước rồi mới đi tiếp** — CLAUDE.md yêu cầu spec, plan, code và test khớp nhau trước khi gọi là xong.
 
-- [ ] **Step 3: Không đụng `docs/architecture.md`**
+- [x] **Step 3: Không đụng `docs/architecture.md`**
 
 Đã cân nhắc và kết luận là không: §6 mô tả *kết quả* ("một hàng cũ tự sửa"), và kết quả đó không đổi. Nếu ai đó thấy cần sửa, đó là dấu hiệu behaviour đã bị đổi ở đâu đó — quay lại Task 3.
 
-- [ ] **Step 4: Commit phần còn lại nếu có**
+- [x] **Step 4: Commit phần còn lại nếu có**
 
 ```bash
 git commit -am "docs(spec): reconcile the A/B specs with what shipped"
