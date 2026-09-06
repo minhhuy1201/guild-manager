@@ -55,7 +55,12 @@ export function useFormationWeek(): FormationWeekState {
   const weekStart = selectedWeekStart ?? activeWeekStart ?? undefined;
   const isEditableWeek = isWeekEditable(weekStart, activeWeekStart);
 
-  const formationsQuery = useFormations(weekStart);
+  // Parked until the week list lands. Until then `weekStart` is undefined, which the key
+  // factory maps to "current" — a perfectly valid key, so the query would fetch the open week
+  // and then fetch the very same payload again under the date key the moment the list arrives.
+  // The condition is "the list arrived", not "weekStart is set": an empty list leaves
+  // `weekStart` undefined forever, and this query must still run and come back empty.
+  const formationsQuery = useFormations(weekStart, weeksQuery.isSuccess);
   const charactersQuery = useCharacters();
   const recordsQuery = useAttendanceRecords();
 

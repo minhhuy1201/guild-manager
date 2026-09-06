@@ -78,6 +78,17 @@ describe("useFormationWeek", () => {
     expect(result.current.isEditableWeek).toBe(true);
   });
 
+  it("mở màn hình chỉ tải đội hình đúng một lần", async () => {
+    const { result } = renderFormationHook(() => useFormationWeek());
+
+    await waitFor(() => expect(result.current.isPending).toBe(false));
+
+    // Hôm nay là hai lượt: một lượt với `undefined` khi chưa biết tuần nào, rồi
+    // một lượt nữa với chính tuần đó ngay khi danh sách tuần về.
+    expect(fetchFormationsMock).toHaveBeenCalledTimes(1);
+    expect(fetchFormationsMock).toHaveBeenCalledWith(OPEN_WEEK);
+  });
+
   it("tuần đã qua thì khoá sửa", async () => {
     const { result } = renderFormationHook(() => useFormationWeek(), {
       formation: { selectedWeekStart: PAST_WEEK },
