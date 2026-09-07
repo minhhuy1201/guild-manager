@@ -62,7 +62,8 @@ export class CharactersController {
   }
 
   /**
-   * Delete a member along with all their attendance history and formation slots.
+   * Delete a member along with all their attendance history.
+   * Their formation cells are emptied rather than removed, so the notes on them survive.
    * @param id - Member id
    * @returns A promise resolving once they are deleted
    */

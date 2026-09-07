@@ -157,7 +157,10 @@ model FormationSlot {
   note        String?
 
   match     FormationMatch @relation(fields: [matchId], references: [id], onDelete: Cascade)
-  character Character?     @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  /// SetNull, not Cascade: deleting a member must empty the cells they held, not delete them —
+  /// the note belongs to the position. `CharactersService.remove` deletes the note-less ones in the
+  /// same transaction, which is what keeps the "empty and note-less has NO row" rule above true.
+  character Character?     @relation(fields: [characterId], references: [id], onDelete: SetNull)
 
   @@id([matchId, slotId])
   @@index([characterId])

@@ -13,8 +13,9 @@ interface DeleteMemberDialogProps {
 }
 
 /**
- * Confirm deleting a member. It says plainly that the history goes too, because the database cascades
- * and there is no way back.
+ * Confirm deleting a member. It says plainly that the attendance history goes too, because the
+ * database cascades and there is no way back - and that the formation cells do not, because their
+ * notes describe the position rather than the person.
  * @param member - Member about to be deleted; null closes the dialog
  * @param onClose - Called when the dialog closes
  * @returns The delete confirmation dialog
@@ -43,8 +44,9 @@ export function DeleteMemberDialog({
       }}
     >
       <div className="text-sm">
-        Toàn bộ lịch sử điểm danh và các ô đội hình đã xếp của thành viên này sẽ
-        mất theo, kể cả tuần cũ — không khôi phục được.
+        Toàn bộ lịch sử điểm danh của thành viên này sẽ mất theo, kể cả tuần cũ
+        — không khôi phục được. Các ô đội hình đã xếp chỉ bị bỏ trống, ghi chú
+        trên ô vẫn còn.
       </div>
     </ConfirmDeleteDialog>
   );

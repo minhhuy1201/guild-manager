@@ -97,6 +97,7 @@ describe('CharactersService', () => {
       update: jest.Mock<Promise<typeof ROW>, [UpdateArgs]>;
       delete: jest.Mock;
     };
+    formationSlot: { deleteMany: jest.Mock };
     $transaction: jest.Mock;
   };
 
@@ -116,8 +117,10 @@ describe('CharactersService', () => {
           .mockResolvedValue(ROW),
         delete: jest.fn().mockResolvedValue(ROW),
       },
+      formationSlot: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
       // An interactive transaction hands the callback a client; here it is the same double, which
-      // is what makes "the count and the write see one state" observable in a unit test.
+      // is what makes "the admin count, the slot cleanup and the delete see one state" observable
+      // in a unit test.
       $transaction: jest.fn((run: (client: unknown) => unknown) => run(prisma)),
     };
     service = new CharactersService(prisma as unknown as PrismaService);
@@ -379,13 +382,16 @@ describe('CharactersService', () => {
       expect(prisma.character.update).not.toHaveBeenCalled();
     });
 
-    it('không cho xoá quản trị viên cuối cùng', async () => {
+    it('không cho xoá quản trị viên cuối cùng, và không dọn ô đội hình nào', async () => {
       otherAdmins(0);
 
       await expect(service.remove(ADMIN_ROW.id)).rejects.toThrow(
         BadRequestException,
       );
       expect(prisma.character.delete).not.toHaveBeenCalled();
+      // Transaction có rollback thật, nhưng lời từ chối thì không nên chạm vào bảng của module
+      // khác ngay từ đầu - đây là thứ giữ đúng thứ tự guard-trước-ghi trong `remove`.
+      expect(prisma.formationSlot.deleteMany).not.toHaveBeenCalled();
     });
 
     it('hạ quyền được khi còn quản trị viên khác', async () => {
@@ -452,6 +458,24 @@ describe('CharactersService', () => {
   });
 
   describe('remove', () => {
+    it('xoá ô đội hình trống người và không ghi chú, cùng một transaction', async () => {
+      await service.remove(ROW.id);
+
+      expect(prisma.formationSlot.deleteMany).toHaveBeenCalledWith({
+        where: { characterId: ROW.id, note: null },
+      });
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    });
+
+    it('không đụng ô có ghi chú - khoá ngoại tự gỡ người, ghi chú ở lại', async () => {
+      await service.remove(ROW.id);
+
+      const [args] = prisma.formationSlot.deleteMany.mock.calls[0] as [
+        { where: { note: string | null } },
+      ];
+      expect(args.where.note).toBeNull();
+    });
+
     it('xoá theo id', async () => {
       await service.remove(ROW.id);
 
