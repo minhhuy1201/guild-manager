@@ -194,20 +194,26 @@ both are plain generated code and keeping one copy avoids a stale build after sw
 > **Coming from an older checkout:** the compose file used to live in `apps/api/`, which put its
 > container and its data volume under the Compose project `api`. The move to the root renames the
 > project, so the old container blocks the new one by name and the old volume is no longer the one
-> being read. Clear it once:
+> being read. Do this once, starting with the old container:
 >
 > ```bash
-> docker rm -f guild-manager-db                   # the container from the old project
-> docker volume rm api_guild-manager-db-data      # only after copying anything you still want
+> docker rm -f guild-manager-db     # the container from the old project
 > ```
 >
-> Then `pnpm --filter api db:up` + `prisma:migrate` + `db:seed` rebuild the database from scratch.
-> To keep the existing rows instead, copy the volume across before removing it:
+> To keep the rows you already have, copy the old volume into the new one:
 >
 > ```bash
 > docker volume create guild-manager-db-data
 > docker run --rm -v api_guild-manager-db-data:/from:ro -v guild-manager-db-data:/to \
 >   alpine sh -c 'cp -a /from/. /to/'
+> ```
+>
+> Or skip the copy and rebuild from scratch with `pnpm --filter api db:up` + `prisma:migrate` +
+> `db:seed`. Either way the old volume is now dead weight, so drop it last — and only once the new
+> setup is up and you have seen your data:
+>
+> ```bash
+> docker volume rm api_guild-manager-db-data
 > ```
 
 Migrations and seeding still run on the host (`pnpm --filter api prisma:migrate`, `db:seed`) — they
