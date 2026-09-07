@@ -11,6 +11,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/lib/api-client";
 import { MutationDialog, type MutationDialogProps } from "../mutation-dialog";
 
+// The write protocol recovers an expired session by navigating, which needs a router; these suites
+// render outside one.
+const refresh = vi.hoisted(() => vi.fn());
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
+
+
 // The dialog mounts in a portal; a leftover one gives the next case two buttons with the same name.
 afterEach(cleanup);
 
@@ -145,5 +151,20 @@ describe("MutationDialog", () => {
     rerender(<MutationDialog {...props} run={run} open />);
 
     expect(screen.queryByText("Máy chủ đang bận.")).toBeNull();
+  });
+
+  it("401 thì làm mới phiên thay vì báo lỗi trong dialog", async () => {
+    // Mở dialog rồi để đó qua đêm: access token hết hạn, refresh vẫn còn. Chỉ điều hướng mới đổi
+    // được cặp token, nên báo "Bạn cần đăng nhập." rồi dừng là mời người ta bấm lại vào chỗ hỏng.
+    renderDialog({
+      run: async () => {
+        throw new ApiError("Bạn cần đăng nhập.", 401);
+      },
+    });
+
+    clickSubmit();
+
+    await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
+    expect(screen.queryByText("Bạn cần đăng nhập.")).toBeNull();
   });
 });

@@ -8,6 +8,7 @@ import { SessionLabel } from "@/components/shared/session-label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TableHead, TableRow } from "@/components/ui/table";
+import { useSessionRecovery } from "@/hooks/use-session-recovery";
 import { useTablePagination } from "@/hooks/use-table-pagination";
 import { getSessionSubtitle } from "../lib/session-subtitle";
 import {
@@ -56,6 +57,7 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
   const { data: sessions } = useBattleSessions();
   const { data: records } = useAttendanceRecords();
   const { mutateAsync: mark, error: markError } = useMarkAttendance();
+  const recoverSession = useSessionRecovery();
   const state = useAttendanceBoard();
 
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -149,13 +151,17 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
     }
 
     setSavingId(character.id);
-    // The error surfaces through the mutation's `markError`, so swallow it here to avoid a stray promise.
+    // The error surfaces through the mutation's `markError`, so it is caught here only to keep the
+    // promise from going stray - and to spot the one failure that is not about this write at all.
     const saved = await Promise.all(
       changes.map(({ sessionId, isPresent }) => {
         const input = { characterId: character.id, sessionId, isPresent };
         return mark(input);
       })
-    ).catch(() => null);
+    ).catch((error: unknown) => {
+      recoverSession(error);
+      return null;
+    });
     setSavingId(null);
 
     if (saved) handleCancel();

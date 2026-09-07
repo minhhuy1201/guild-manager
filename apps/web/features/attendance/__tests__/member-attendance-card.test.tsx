@@ -60,6 +60,12 @@ vi.mock("@/components/shared/toast", () => ({ toastSuccess, toastError }));
 
 import { MemberAttendanceCard } from "../components/member-attendance-card";
 
+// The write protocol recovers an expired session by navigating, which needs a router; these suites
+// render outside one.
+const refresh = vi.hoisted(() => vi.fn());
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
+
+
 /**
  * Build a battle session with only the fields the card reads.
  * @param id - Session id, also used to build its label
@@ -228,6 +234,23 @@ describe("MemberAttendanceCard", () => {
       sessionId: "sess-1",
       isPresent: true,
     });
+  });
+
+  it("access token hết hạn qua đêm thì làm mới phiên, không chỉ báo lỗi", async () => {
+    // Tab mở từ tối hôm trước: access sống 1 ngày, refresh sống 7. Server Action đọc cookie rồi gọi
+    // API thẳng, không có bước làm mới nào, nên bấm lại vẫn 401 y hệt — đọc như "app hỏng".
+    markState.mutateAsync.mockRejectedValueOnce(
+      new ApiError("Bạn cần đăng nhập.", 401)
+    );
+
+    render(<MemberAttendanceCard />);
+    await act(async () => {
+      fireEvent.click(answerButton("sess-1", "Có"));
+    });
+
+    expect(refresh).toHaveBeenCalledTimes(1);
+    expect(toastError).toHaveBeenCalledTimes(1);
+    expect(toastError.mock.calls[0][0]).toContain("Bấm lại");
   });
 
   it("ghi xong thì báo thành công bằng toast, kèm câu trả lời và tên trận", async () => {
