@@ -2,14 +2,62 @@ import type { BattleSession } from '@guild/shared/schemas';
 
 import { formatDeadlineLabel } from '../battle-sessions/battle-sessions.public';
 import type { MessagePayload } from './commands/command.types';
-import { EMBED_COLOR } from './discord.constants';
+import {
+  EMBED_COLOR,
+  MAX_CONTENT_LENGTH,
+  MAX_EMBED_DESCRIPTION_LENGTH,
+} from './discord.constants';
 import { buildEntryButtons } from './entry-buttons';
+import { takeWithinLimit } from './message-limits';
 
 const TITLE = '⏰ CHƯA ĐIỂM DANH';
 
 const LEAD = '⏰ **Nhắc điểm danh** — mấy ngày dưới đây hết hạn vào ngày mai.';
 
 const FOOTER = 'Guild Manager';
+
+/** Separator between mentions in `content`. */
+const MENTION_SEPARATOR = ' ';
+
+/** Blank line between day blocks: Discord collapses a heading against the line above it. */
+const BLOCK_SEPARATOR = '\n\n';
+
+/**
+ * Characters reserved in each day's block for everything that is not a name: the heading, the
+ * deadline line, and the "Chưa liên kết Discord:" prefix. Generous on purpose - the outer trim is
+ * what guarantees the message is valid, this only decides how the budget is shared out.
+ */
+const BLOCK_RESERVE = 200;
+
+/**
+ * How many characters one day's block may spend on each of its two name lists.
+ *
+ * Split evenly across the due days so three crowded days still produce three readable blocks
+ * instead of one long one and two counts.
+ *
+ * @param dayCount - How many battle days the message covers
+ * @returns The character budget for one name list
+ */
+function nameBudget(dayCount: number): number {
+  const perDay = Math.floor(MAX_EMBED_DESCRIPTION_LENGTH / dayCount);
+
+  // Two lists per day: the people who can be mentioned, and the people who cannot.
+  return Math.max(0, Math.floor((perDay - BLOCK_RESERVE) / 2));
+}
+
+/**
+ * Join names, naming the count of anyone who did not fit.
+ * @param names - Member names
+ * @param limit - Characters available
+ * @returns The joined names, within budget
+ */
+function joinNames(names: string[], limit: number): string {
+  return takeWithinLimit(names, {
+    separator: ', ',
+    limit,
+    more: (count) => `và ${count} người nữa`,
+  }).text;
+}
 
 /** One member who has not answered for a battle day. */
 export interface MissingMember {
@@ -34,10 +82,14 @@ export interface DueSession {
  * Names, not mentions: a mention inside an embed notifies nobody, so spending its characters here
  * would only make the message longer. The pings live in `content`.
  *
+ * Both name lists are trimmed: a guild of a few hundred would otherwise put one day's block past
+ * the 4096 characters an embed description is allowed, and Discord answers 400 for the whole message.
+ *
  * @param due - The battle day and who is missing from it
+ * @param limit - Characters this block may spend on each of its name lists
  * @returns Heading, a detail line, the names, and the unlinked line when there is one
  */
-function toBlock(due: DueSession): string {
+function toBlock(due: DueSession, limit: number): string {
   const icon = due.session.isGuildWar ? '🛡️' : '⚔️';
   const deadline = formatDeadlineLabel(new Date(due.session.deadline));
 
@@ -47,14 +99,20 @@ function toBlock(due: DueSession): string {
   const lines = [
     `### ${icon} ${due.session.label}`,
     `⏳ Hạn: ${deadline} · 👥 còn ${due.missing.length} người`,
-    linked.map((member) => member.name).join(', '),
+    joinNames(
+      linked.map((member) => member.name),
+      limit,
+    ),
   ];
 
   // Named rather than dropped: nobody can ping them, so an admin has to — and has to know they
   // exist before they can.
   if (unlinked.length > 0) {
     lines.push(
-      `Chưa liên kết Discord: ${unlinked.map((member) => member.name).join(', ')}`,
+      `Chưa liên kết Discord: ${joinNames(
+        unlinked.map((member) => member.name),
+        limit,
+      )}`,
     );
   }
 
@@ -66,7 +124,8 @@ function toBlock(due: DueSession): string {
  *
  * The union rather than a list per battle day: somebody missing three days would otherwise be
  * mentioned three times, and three days' worth of mentions is where a 2000-character message body
- * runs out.
+ * runs out. The union alone is not enough at guild scale, which is why `buildReminder` also trims
+ * the list it produces.
  *
  * @param due - The due battle days
  * @returns Discord IDs, in the order they were first met
@@ -100,18 +159,41 @@ export function buildReminder(
 ): MessagePayload {
   const ids = mentionedIds(due);
 
+  // Trimmed to what Discord accepts, rather than sent and refused: a 400 here means no reminder went
+  // out at all that morning, inside a cron job nobody is watching.
+  const mentions = takeWithinLimit(
+    ids.map((id) => `<@${id}>`),
+    {
+      separator: MENTION_SEPARATOR,
+      // The lead line and the newline joining it to the mentions.
+      limit: MAX_CONTENT_LENGTH - LEAD.length - 1,
+      more: (count) => `và ${count} người nữa`,
+    },
+  );
+  // `kept` is a prefix, so the same slice of `ids` is exactly who ended up in the text. Permitting a
+  // ping for someone the message never mentions would be noise in the payload and nothing more.
+  const mentionedUsers = ids.slice(0, mentions.kept.length);
+
+  const description = takeWithinLimit(
+    due.map((day) => toBlock(day, nameBudget(due.length))),
+    {
+      separator: BLOCK_SEPARATOR,
+      limit: MAX_EMBED_DESCRIPTION_LENGTH,
+      more: (count) => `… và ${count} ngày đánh nữa, xem trên web.`,
+    },
+  ).text;
+
   return {
-    content: `${LEAD}\n${ids.map((id) => `<@${id}>`).join(' ')}`,
+    content: `${LEAD}\n${mentions.text}`,
     embeds: [
       {
         title: TITLE,
-        // A blank line between blocks: Discord collapses a heading against the line above it.
-        description: due.map(toBlock).join('\n\n'),
+        description,
         color: EMBED_COLOR,
         footer: { text: FOOTER },
       },
     ],
     components: [buildEntryButtons(webOrigin)],
-    allowed_mentions: { users: ids },
+    allowed_mentions: { users: mentionedUsers },
   };
 }

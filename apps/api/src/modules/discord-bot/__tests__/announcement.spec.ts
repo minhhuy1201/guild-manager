@@ -2,7 +2,10 @@ import type { BattleSession } from '@guild/shared/schemas';
 
 import { buildAnnouncement } from '../announcement';
 import { ANNOUNCEMENT_ATTENDANCE_ID } from '../custom-id';
-import { BUTTON_STYLE } from '../discord.constants';
+import {
+  BUTTON_STYLE,
+  MAX_EMBED_DESCRIPTION_LENGTH,
+} from '../discord.constants';
 
 const LINKS = {
   webOrigin: 'https://mmgh-nth.vercel.app',
@@ -156,5 +159,27 @@ describe('buildAnnouncement', () => {
 
   it('thông báo không ephemeral — cả bang phải thấy', () => {
     expect(buildAnnouncement([session()], LINKS).flags).toBeUndefined();
+  });
+
+  describe('giới hạn ký tự của Discord', () => {
+    it('description không vượt 4096 ký tự, và vẫn giữ phần hướng dẫn', () => {
+      const many = Array.from({ length: 200 }, (_, index) =>
+        session({
+          id: `s${index}`,
+          label: `Thứ 5 · 20:30 · trận số ${index}`,
+          opponent: `Đối thủ có tên khá dài số ${index}`,
+        }),
+      );
+
+      const payload = buildAnnouncement(many, LINKS);
+      const description = payload.embeds?.[0].description ?? '';
+
+      expect(description.length).toBeLessThanOrEqual(
+        MAX_EMBED_DESCRIPTION_LENGTH,
+      );
+      // Phần hướng dẫn là lý do tin nhắn này tồn tại — cắt nó đi thì còn lại một danh sách câm.
+      expect(description).toContain('Điểm danh ngay');
+      expect(description).toContain('ngày đánh nữa');
+    });
   });
 });

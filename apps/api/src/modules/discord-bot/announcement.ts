@@ -2,8 +2,9 @@ import { shiftVnDate } from '@guild/shared/lib';
 import type { BattleSession } from '@guild/shared/schemas';
 
 import type { CommandLinks, MessagePayload } from './commands/command.types';
-import { EMBED_COLOR } from './discord.constants';
+import { EMBED_COLOR, MAX_EMBED_DESCRIPTION_LENGTH } from './discord.constants';
 import { buildEntryButtons } from './entry-buttons';
+import { takeWithinLimit } from './message-limits';
 import { formatVnDayMonth } from './vn-format';
 
 const TITLE = '📢 LỊCH ĐÁNH TUẦN NÀY';
@@ -22,6 +23,9 @@ const FOOTER = 'Guild Manager';
 
 /** An attendance week runs Monday 00:00 → Saturday 23:59 (architecture.md §6). */
 const DAYS_TO_WEEK_END = 5;
+
+/** Blank line between blocks: Discord collapses a heading against the line above it. */
+const BLOCK_SEPARATOR = '\n\n';
 
 /**
  * The week's date range, for the line under the title.
@@ -80,13 +84,27 @@ export function buildAnnouncement(
       ? `**${describeWeek(sessions[0].weekStart)}**`
       : NO_SESSIONS;
 
+  // The heading and the instructions are kept whole and the day list absorbs any trimming: an
+  // announcement that has lost "how to answer" is a list nobody can act on, and Discord refuses the
+  // whole message past 4096 characters rather than truncating it for us.
+  const days = takeWithinLimit(sessions.map(toBlock), {
+    separator: BLOCK_SEPARATOR,
+    limit:
+      MAX_EMBED_DESCRIPTION_LENGTH -
+      heading.length -
+      HOW_TO.length -
+      2 * BLOCK_SEPARATOR.length,
+    more: (count) => `… và ${count} ngày đánh nữa, xem trên web.`,
+  }).text;
+
   return {
     content: `<@&${links.guildRoleId}>`,
     embeds: [
       {
         title: TITLE,
-        // A blank line between blocks: Discord collapses a heading against the line above it.
-        description: [heading, ...sessions.map(toBlock), HOW_TO].join('\n\n'),
+        description: [heading, days, HOW_TO]
+          .filter((part) => part.length > 0)
+          .join(BLOCK_SEPARATOR),
         color: EMBED_COLOR,
         footer: { text: FOOTER },
       },

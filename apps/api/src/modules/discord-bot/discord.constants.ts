@@ -77,6 +77,12 @@ export const COMMAND_OPTION_TYPE = {
  */
 export const MAX_ACTION_ROWS = 5;
 
+/** Discord rejects the whole message when `content` exceeds this. */
+export const MAX_CONTENT_LENGTH = 2000;
+
+/** Discord rejects the whole message when an embed's `description` exceeds this. */
+export const MAX_EMBED_DESCRIPTION_LENGTH = 4096;
+
 /** Discord rejects the whole message when a component's custom_id exceeds this. */
 export const MAX_CUSTOM_ID_LENGTH = 100;
 
