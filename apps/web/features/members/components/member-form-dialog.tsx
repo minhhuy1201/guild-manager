@@ -31,6 +31,8 @@ import {
   useCreateMember,
   useUpdateMember,
 } from "../hooks/use-member-mutations";
+import { useMembers } from "../hooks/use-members";
+import { isLastAdmin } from "../lib/last-admin";
 
 interface MemberFormDialogProps {
   /** Whether the dialog is open */
@@ -85,10 +87,16 @@ function MemberForm({ member, onDone }: MemberFormProps) {
 
   const createMutation = useCreateMember();
   const updateMutation = useUpdateMember();
+  // Already in the cache: the table behind this dialog runs the same query.
+  const { data: members } = useMembers();
 
-  // A role is meaningless without a Discord ID; and nobody may demote themselves.
+  const isLast = member !== null && isLastAdmin(members ?? [], member);
+  // A role is meaningless without a Discord ID; nobody may demote themselves; and the guild must
+  // keep an admin. The last of those three is enforced by the API - this only shows the wall early.
   const isRoleLocked =
-    discordId.trim() === "" || member?.discordId === session?.discordId;
+    discordId.trim() === "" ||
+    member?.discordId === session?.discordId ||
+    isLast;
 
   return (
     <MutationForm
@@ -170,9 +178,10 @@ function MemberForm({ member, onDone }: MemberFormProps) {
           </Select>
           {isRoleLocked && (
             <p className="text-xs text-muted-foreground">
-              {member.discordId === session?.discordId
-                ? "Không thể tự đổi quyền của chính mình."
-                : "Cần gán Discord ID trước khi đổi quyền."}
+              {roleLockReason(
+                member.discordId === session?.discordId,
+                isLast,
+              )}
             </p>
           )}
         </div>
@@ -203,6 +212,20 @@ function MemberForm({ member, onDone }: MemberFormProps) {
       </div>
     </MutationForm>
   );
+}
+
+/**
+ * Why the role picker is locked, in the order the reasons matter to the person reading.
+ * @param isSelf - Whether the member being edited is the signed-in admin
+ * @param isLast - Whether this is the guild's last admin
+ * @returns The Vietnamese sentence under the picker
+ */
+function roleLockReason(isSelf: boolean, isLast: boolean): string {
+  if (isSelf) return "Không thể tự đổi quyền của chính mình.";
+  if (isLast)
+    return "Đây là quản trị viên cuối cùng. Hãy chỉ định một quản trị viên khác trước.";
+
+  return "Cần gán Discord ID trước khi đổi quyền.";
 }
 
 interface GuildClassOptionProps {

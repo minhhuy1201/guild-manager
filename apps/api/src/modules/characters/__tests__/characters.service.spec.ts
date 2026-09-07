@@ -1,4 +1,8 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { GuildClass, GuildRole } from '@guild/shared/enums';
 
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
@@ -88,10 +92,12 @@ describe('CharactersService', () => {
     character: {
       findMany: jest.Mock;
       findUnique: jest.Mock;
+      count: jest.Mock;
       create: jest.Mock<Promise<typeof ROW>, [CreateArgs]>;
       update: jest.Mock<Promise<typeof ROW>, [UpdateArgs]>;
       delete: jest.Mock;
     };
+    $transaction: jest.Mock;
   };
 
   beforeEach(() => {
@@ -99,6 +105,9 @@ describe('CharactersService', () => {
       character: {
         findMany: jest.fn().mockResolvedValue([ROW]),
         findUnique: jest.fn().mockResolvedValue(ROW),
+        // Nobody else is an admin unless a test says so — the safe default for a guard that
+        // counts what is left.
+        count: jest.fn().mockResolvedValue(0),
         create: jest
           .fn<Promise<typeof ROW>, [CreateArgs]>()
           .mockResolvedValue(ROW),
@@ -107,6 +116,9 @@ describe('CharactersService', () => {
           .mockResolvedValue(ROW),
         delete: jest.fn().mockResolvedValue(ROW),
       },
+      // An interactive transaction hands the callback a client; here it is the same double, which
+      // is what makes "the count and the write see one state" observable in a unit test.
+      $transaction: jest.fn((run: (client: unknown) => unknown) => run(prisma)),
     };
     service = new CharactersService(prisma as unknown as PrismaService);
   });
@@ -345,6 +357,97 @@ describe('CharactersService', () => {
           lastLoginAt: at,
         },
       });
+    });
+  });
+
+  describe('quản trị viên cuối cùng', () => {
+    /** The row under the knife, when it is an admin. */
+    const ADMIN_ROW = { ...ROW, role: GuildRole.ADMIN };
+
+    /** Say how many *other* admins the guild still has. */
+    function otherAdmins(count: number): void {
+      prisma.character.findUnique.mockResolvedValue(ADMIN_ROW);
+      prisma.character.count.mockResolvedValue(count);
+    }
+
+    it('không cho hạ quyền quản trị viên cuối cùng', async () => {
+      otherAdmins(0);
+
+      await expect(
+        service.update(ADMIN_ROW.id, { role: GuildRole.MEMBER }),
+      ).rejects.toThrow(BadRequestException);
+      expect(prisma.character.update).not.toHaveBeenCalled();
+    });
+
+    it('không cho xoá quản trị viên cuối cùng', async () => {
+      otherAdmins(0);
+
+      await expect(service.remove(ADMIN_ROW.id)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(prisma.character.delete).not.toHaveBeenCalled();
+    });
+
+    it('hạ quyền được khi còn quản trị viên khác', async () => {
+      otherAdmins(1);
+
+      await service.update(ADMIN_ROW.id, { role: GuildRole.MEMBER });
+
+      expect(prisma.character.update).toHaveBeenCalledWith({
+        where: { id: ADMIN_ROW.id },
+        data: { role: GuildRole.MEMBER },
+      });
+    });
+
+    it('xoá được khi còn quản trị viên khác', async () => {
+      otherAdmins(1);
+
+      await service.remove(ADMIN_ROW.id);
+
+      expect(prisma.character.delete).toHaveBeenCalledWith({
+        where: { id: ADMIN_ROW.id },
+      });
+    });
+
+    it('không chặn khi người bị xoá không phải quản trị viên', async () => {
+      // A guild whose only admins are DISCORD_ADMIN_IDS rescue IDs has zero admin rows. Deleting an
+      // ordinary member there must still work — the guard is about losing an admin, not about the
+      // count being zero.
+      prisma.character.findUnique.mockResolvedValue(ROW);
+      prisma.character.count.mockResolvedValue(0);
+
+      await service.remove(ROW.id);
+
+      expect(prisma.character.delete).toHaveBeenCalled();
+    });
+
+    it('không chặn PATCH không đụng role, kể cả trên quản trị viên cuối cùng', async () => {
+      otherAdmins(0);
+
+      await service.update(ADMIN_ROW.id, { name: 'Mèo Mập' });
+
+      expect(prisma.character.update).toHaveBeenCalled();
+      // Renaming someone cannot cost a COUNT over the whole table.
+      expect(prisma.character.count).not.toHaveBeenCalled();
+    });
+
+    it('không chặn khi role được gửi lên vẫn là ADMIN', async () => {
+      otherAdmins(0);
+
+      await service.update(ADMIN_ROW.id, { role: GuildRole.ADMIN });
+
+      expect(prisma.character.update).toHaveBeenCalled();
+      expect(prisma.character.count).not.toHaveBeenCalled();
+    });
+
+    it('đếm và ghi trong cùng một transaction', async () => {
+      // Two admins each deleting the other: both counts read "2 admins" and both deletes run, and
+      // the guild lands on zero. One transaction per write is what closes that window.
+      otherAdmins(1);
+
+      await service.remove(ADMIN_ROW.id);
+
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
     });
   });
 

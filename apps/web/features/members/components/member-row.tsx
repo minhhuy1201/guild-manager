@@ -25,6 +25,8 @@ const ROLE_BADGE_VARIANT: Record<
 interface MemberRowProps {
   /** Member of this row */
   member: GuildMember;
+  /** Whether deleting this member would leave the guild with no admin */
+  isLastAdmin: boolean;
   /** Called on Edit */
   onEdit: (member: GuildMember) => void;
   /** Called on Delete */
@@ -34,11 +36,17 @@ interface MemberRowProps {
 /**
  * One member row in the management table. Read-only: every change goes through the member form.
  * @param props.member - Member of this row
+ * @param props.isLastAdmin - Whether deleting this member would leave the guild with no admin
  * @param props.onEdit - Called on Edit
  * @param props.onDelete - Called on Delete
  * @returns The table row
  */
-export function MemberRow({ member, onEdit, onDelete }: MemberRowProps) {
+export function MemberRow({
+  member,
+  isLastAdmin,
+  onEdit,
+  onDelete,
+}: MemberRowProps) {
   return (
     <TableRow>
       <TableCell className="font-medium">{member.name}</TableCell>
@@ -73,7 +81,12 @@ export function MemberRow({ member, onEdit, onDelete }: MemberRowProps) {
             onClick={() => onEdit(member)}
           />
           <DeleteAction
-            label={`Xoá ${member.name}`}
+            label={
+              isLastAdmin
+                ? `Không thể xoá ${member.name}: đây là quản trị viên cuối cùng`
+                : `Xoá ${member.name}`
+            }
+            disabled={isLastAdmin}
             onClick={() => onDelete(member)}
           />
         </RowActions>
