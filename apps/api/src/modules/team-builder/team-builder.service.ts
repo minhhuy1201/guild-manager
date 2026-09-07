@@ -19,7 +19,10 @@ import type {
 
 import { Clock } from '../../common';
 import { verifyResponse } from '../../config';
-import { PrismaService } from '../../infrastructure/prisma/prisma.service';
+import {
+  PrismaService,
+  type PrismaTransactionClient,
+} from '../../infrastructure/prisma/prisma.service';
 import {
   BattleSessionsService,
   isSameWeek,
@@ -256,31 +259,38 @@ export class TeamBuilderService {
    * `saveFormation` refuses to edit it too.
    * Takes the session rather than its id because the only caller has just read it, and this runs
    * inside a Discord button press that has three seconds to answer.
+   *
+   * Writes through the client it is given, the way `CharactersService.listIds` reads through one.
+   * The caller owns the transaction because the caller owns the invariant: recording "Không" and
+   * emptying the day's cells have to land or fail together, and only the caller knows what else
+   * belongs in that unit.
+   *
    * @param session - The battle day to clear the character from
    * @param characterId - The character to take out
+   * @param client - Prisma client to write through; must be inside a transaction
    * @returns Number of slots the character was taken out of; 0 when the day is already played
    */
   async releaseCharacterFromSession(
     session: BattleSession,
     characterId: string,
+    client: PrismaTransactionClient,
   ): Promise<number> {
     const now = this.clock.now();
     if (isSessionLocked(new Date(session.dateTime), now)) return 0;
 
     const occupied = { characterId, match: { sessionId: session.id } };
 
-    // One transaction so no read can see the character gone from the noted slots but still sitting
-    // in the note-less ones. Delete first: afterwards `occupied` matches only the noted slots.
-    const [deleted, cleared] = await this.prisma.$transaction([
-      // A note-less slot holds nothing once its occupant leaves, and such a slot has no row.
-      this.prisma.formationSlot.deleteMany({
-        where: { ...occupied, note: null },
-      }),
-      this.prisma.formationSlot.updateMany({
-        where: occupied,
-        data: { characterId: null },
-      }),
-    ]);
+    // Delete first: afterwards `occupied` matches only the noted slots. Both statements run on the
+    // caller's transaction, so no read can see the character gone from the noted slots but still
+    // sitting in the note-less ones.
+    // A note-less slot holds nothing once its occupant leaves, and such a slot has no row.
+    const deleted = await client.formationSlot.deleteMany({
+      where: { ...occupied, note: null },
+    });
+    const cleared = await client.formationSlot.updateMany({
+      where: occupied,
+      data: { characterId: null },
+    });
 
     return deleted.count + cleared.count;
   }

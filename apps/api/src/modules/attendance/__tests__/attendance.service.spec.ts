@@ -88,6 +88,7 @@ describe('AttendanceService', () => {
   /** Build the service with a fixed clock — a few tests need a moment other than WEDNESDAY. */
   let makeService: (now: Date) => AttendanceService;
   let prisma: {
+    $transaction: jest.Mock;
     attendanceRecord: {
       upsert: jest.Mock;
       findMany: jest.Mock;
@@ -160,6 +161,9 @@ describe('AttendanceService', () => {
         findMany: jest.fn().mockResolvedValue([]),
         groupBy: jest.fn().mockResolvedValue([]),
       },
+      // An interactive transaction hands the callback a client and rolls back when it throws; the
+      // double runs the callback and lets the rejection through, which is the observable half.
+      $transaction: jest.fn((run: (client: unknown) => unknown) => run(prisma)),
     };
 
     battleSessions = {
@@ -251,6 +255,8 @@ describe('AttendanceService', () => {
       expect(teamBuilder.releaseCharacterFromSession).toHaveBeenCalledWith(
         expect.objectContaining({ id: SESSION_IDS['Thứ 7 · Bang Chiến'] }),
         CHARACTER_ID,
+        // The transaction client, so the record and the formation land or fail together.
+        prisma,
       );
     });
 
@@ -384,6 +390,47 @@ describe('AttendanceService', () => {
       );
 
       expect(record.isPresent).toBe(true);
+    });
+  });
+
+  describe('ghi "Không" và gỡ khỏi đội hình', () => {
+    it('cả hai nằm trong một transaction', async () => {
+      await service.mark(
+        {
+          characterId: CHARACTER_ID,
+          sessionId: SESSION_IDS['Thứ 7 · Bang Chiến'],
+          isPresent: false,
+        },
+        MEMBER,
+      );
+
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+      // The release writes through the client the transaction handed out, not a second connection
+      // looking at another moment.
+      const [, , client] = teamBuilder.releaseCharacterFromSession.mock
+        .calls[0] as [unknown, string, unknown];
+      expect(client).toBe(prisma);
+    });
+
+    it('bước gỡ đội hình hỏng thì câu trả lời "Không" không được commit', async () => {
+      // Trước đây là hai round trip rời nhau: câu thứ hai hỏng thì request trả 500 nhưng bản ghi đã
+      // commit, còn người đó vẫn nằm trong đội hình — đúng trạng thái mà comment ngay phía trên nói
+      // là không được phép tồn tại.
+      teamBuilder.releaseCharacterFromSession.mockRejectedValue(
+        new Error('mất kết nối'),
+      );
+
+      await expect(
+        service.mark(
+          {
+            characterId: CHARACTER_ID,
+            sessionId: SESSION_IDS['Thứ 7 · Bang Chiến'],
+            isPresent: false,
+          },
+          MEMBER,
+        ),
+      ).rejects.toThrow('mất kết nối');
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
     });
   });
 

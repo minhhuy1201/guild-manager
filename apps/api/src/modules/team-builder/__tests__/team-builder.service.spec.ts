@@ -646,21 +646,20 @@ describe('TeamBuilderService.releaseCharacterFromSession', () => {
   };
 
   let service: TeamBuilderService;
-  let prisma: {
-    $transaction: jest.Mock;
+  /** The transaction client the caller hands in — this method opens none of its own. */
+  let tx: {
     formationSlot: { deleteMany: jest.Mock; updateMany: jest.Mock };
   };
+  let prisma: { $transaction: jest.Mock };
 
   beforeEach(() => {
-    prisma = {
-      $transaction: jest.fn((operations: Promise<unknown>[]) =>
-        Promise.all(operations),
-      ),
+    tx = {
       formationSlot: {
         deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
     };
+    prisma = { $transaction: jest.fn() };
     service = new TeamBuilderService(
       prisma as unknown as PrismaService,
       {} as unknown as BattleSessionsService,
@@ -669,21 +668,24 @@ describe('TeamBuilderService.releaseCharacterFromSession', () => {
     );
   });
 
-  it('xoá ô không có ghi chú và gỡ người khỏi ô còn ghi chú, trong một transaction', async () => {
+  it('xoá ô không có ghi chú và gỡ người khỏi ô còn ghi chú, qua client được truyền vào', async () => {
     const released = await service.releaseCharacterFromSession(
       THURSDAY_SESSION,
       'char-1',
+      tx as never,
     );
 
-    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
-    expect(prisma.formationSlot.deleteMany).toHaveBeenCalledWith({
+    // No transaction of its own: the caller owns the unit of work, so that recording "Không" and
+    // emptying the cells land or fail together.
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(tx.formationSlot.deleteMany).toHaveBeenCalledWith({
       where: {
         characterId: 'char-1',
         match: { sessionId: 'session-thu' },
         note: null,
       },
     });
-    expect(prisma.formationSlot.updateMany).toHaveBeenCalledWith({
+    expect(tx.formationSlot.updateMany).toHaveBeenCalledWith({
       where: { characterId: 'char-1', match: { sessionId: 'session-thu' } },
       data: { characterId: null },
     });
@@ -698,9 +700,11 @@ describe('TeamBuilderService.releaseCharacterFromSession', () => {
         dateTime: vn('2026-07-21T20:30').toISOString(),
       },
       'char-1',
+      tx as never,
     );
 
     expect(released).toBe(0);
-    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(tx.formationSlot.deleteMany).not.toHaveBeenCalled();
+    expect(tx.formationSlot.updateMany).not.toHaveBeenCalled();
   });
 });

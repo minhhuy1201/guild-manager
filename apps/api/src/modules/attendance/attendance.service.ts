@@ -204,29 +204,42 @@ export class AttendanceService {
     }
 
     const absenceReason = resolveReason(isPresent, reason);
-    const record = await this.prisma.attendanceRecord.upsert({
-      where: { characterId_sessionId: { characterId, sessionId } },
-      create: {
-        characterId,
-        sessionId,
-        isPresent,
-        markedAt: now,
-        markedByCharacterId: own,
-        reason: absenceReason,
-      },
-      update: {
-        isPresent,
-        markedAt: now,
-        markedByCharacterId: own,
-        reason: absenceReason,
-      },
-    });
 
-    // A member who has just said "Không" must not stay in the day's formation: the team builder
-    // would otherwise keep showing them as placed until someone notices by hand.
-    if (!isPresent) {
-      await this.teamBuilder.releaseCharacterFromSession(session, characterId);
-    }
+    // One transaction, because "answered Không" and "still in the day's formation" is a state the
+    // comment below says must not exist. As two round trips it could: the answer committed, the
+    // release failed on a timeout or an exhausted pool, and the request answered 500 with the
+    // formation left untouched and no way to notice but by eye.
+    const record = await this.prisma.$transaction(async (tx) => {
+      const written = await tx.attendanceRecord.upsert({
+        where: { characterId_sessionId: { characterId, sessionId } },
+        create: {
+          characterId,
+          sessionId,
+          isPresent,
+          markedAt: now,
+          markedByCharacterId: own,
+          reason: absenceReason,
+        },
+        update: {
+          isPresent,
+          markedAt: now,
+          markedByCharacterId: own,
+          reason: absenceReason,
+        },
+      });
+
+      // A member who has just said "Không" must not stay in the day's formation: the team builder
+      // would otherwise keep showing them as placed until someone notices by hand.
+      if (!isPresent) {
+        await this.teamBuilder.releaseCharacterFromSession(
+          session,
+          characterId,
+          tx,
+        );
+      }
+
+      return written;
+    });
 
     return toAttendanceRecord(record);
   }
