@@ -14,7 +14,11 @@ import {
   useCreateSession,
   useUpdateSession,
 } from "../hooks/use-session-mutations";
-import { fromInputValue, toInputValue } from "../lib/datetime-input";
+import {
+  fromInputValue,
+  toInstant,
+  toInputValue,
+} from "../lib/datetime-input";
 import { willDropFormation } from "../lib/match-count";
 import { DateTimeField } from "./date-time-field";
 import { MatchCountField } from "./match-count-field";
@@ -101,7 +105,7 @@ function SessionForm({ session, onDone }: SessionFormProps) {
 
     if (deadlineTouched || value === "") return;
 
-    const cap = deadlineCapFor(new Date(value));
+    const cap = deadlineCapFor(toInstant(value));
     setDeadline(toInputValue(cap.toISOString()));
   }
 
@@ -142,7 +146,7 @@ function SessionForm({ session, onDone }: SessionFormProps) {
     // attribute for the browser to enforce — this check stands in for it.
     if (
       !isGuildWar &&
-      !isWithinDeadlineCap(new Date(deadline), new Date(dateTime))
+      !isWithinDeadlineCap(toInstant(deadline), toInstant(dateTime))
     ) {
       throw new Error(DEADLINE_CAP_MESSAGE);
     }
