@@ -45,8 +45,13 @@ Three properties everything else follows from:
 
 - **The web app never touches the database.** It only calls the API through `NEXT_PUBLIC_API_URL`.
   Connection strings are a server-side secret; there are no `NEXT_PUBLIC_SUPABASE_*` variables.
-- **Both apps share one `AUTH_SECRET`.** The API signs JWTs, the web app verifies them. If the
-  values differ you can log in but every admin route bounces you back to the home page.
+- **Both apps share one `AUTH_SECRET`.** The API signs JWTs, the web app verifies them. If the values
+  differ, the login itself succeeds and the cookies are written, but the web app can verify neither
+  the access nor the refresh token - both are checked with its own secret - so **every** page, not
+  just the admin ones, bounces you to the login page. Signing in again does the same thing, because
+  the next token is signed with the same mismatched secret. `proxy.ts` tells a signature it does not
+  recognise apart from an expiry and says so on the login page (`WEB_AUTH_ERROR.sessionInvalid`);
+  before that it was a silent loop.
 - **The API holds a pg pool and reuses it across requests.** That is why production uses a session
   pooler, not a transaction pooler — see [`production.md`](production.md) §5. In production it runs
   as a Vercel Function rather than a long-running process, and the constraint still holds because

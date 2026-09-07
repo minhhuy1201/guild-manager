@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   ACCESS_TOKEN_COOKIE,
   REFRESH_TOKEN_COOKIE,
+  WEB_AUTH_ERROR,
 } from "@/features/auth/core";
 import {
   DEFAULT_PAYLOAD,
@@ -13,6 +14,7 @@ import {
   expiresIn,
   signToken,
 } from "@/features/auth/core/__tests__/sign-token";
+
 import { ROUTES } from "@/config/routes";
 import { proxy } from "@/proxy";
 
@@ -175,6 +177,37 @@ describe("proxy", () => {
     );
   });
 
+  describe("khi chữ ký không phải của mình", () => {
+    it("nói ra thay vì im lặng như một phiên hết hạn", async () => {
+      // AUTH_SECRET lệch giữa hai app: cả access lẫn refresh đều verify bằng secret của web, nên cả
+      // hai hỏng cùng lúc và người dùng bị đá về đăng nhập ngay sau khi vừa đăng nhập xong.
+      const foreign = await signToken({ secret: "secret-cua-app-khac" });
+
+      const response = await proxy(
+        request(ROUTES.attendance, { access: foreign, refresh: foreign })
+      );
+
+      const location = new URL(response.headers.get("location") ?? "");
+      expect(location.pathname).toBe(ROUTES.login);
+      expect(location.searchParams.get("error")).toBe(
+        WEB_AUTH_ERROR.sessionInvalid
+      );
+      expect(refreshRequest).not.toHaveBeenCalled();
+    });
+
+    it("phiên hết hạn bình thường thì không mang mã lỗi nào", async () => {
+      const response = await proxy(
+        request(ROUTES.attendance, {
+          access: await token(-10),
+          refresh: await token(-10),
+        })
+      );
+
+      const location = new URL(response.headers.get("location") ?? "");
+      expect(location.searchParams.get("error")).toBeNull();
+    });
+  });
+
   it("vẫn cho khách vào trang đăng nhập", async () => {
     const response = await proxy(request(ROUTES.login));
 
@@ -204,6 +237,17 @@ describe("proxy", () => {
       );
 
       expect(response.status).toBe(307);
+    });
+
+    it("cũng là lỗi cấu hình, nên cũng nói ra", async () => {
+      const response = await proxy(
+        request(ROUTES.attendance, { access: await token(3600) })
+      );
+
+      const location = new URL(response.headers.get("location") ?? "");
+      expect(location.searchParams.get("error")).toBe(
+        WEB_AUTH_ERROR.sessionInvalid
+      );
     });
   });
 });
