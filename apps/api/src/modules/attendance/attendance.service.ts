@@ -74,11 +74,17 @@ export class AttendanceService {
   }
 
   /**
-   * Attendance entries of the open week — the whole guild's, whoever is asking.
-   * @returns Every record of the open week, newest first
+   * Attendance entries of one week — the whole guild's, whoever is asking.
+   *
+   * The History screen reads past weeks through this, which is why the week is a parameter rather
+   * than always the open one: without it, a week rolling over at 22:00 Saturday took the finished
+   * week off every member's screen with no way to look it up again.
+   *
+   * @param weekStart - Any instant inside the week to read; omitted means the open week
+   * @returns Every record of that week, newest first
    */
-  async getRecords(): Promise<AttendanceRecord[]> {
-    const sessions = await this.battleSessions.listByWeek();
+  async getRecords(weekStart?: string): Promise<AttendanceRecord[]> {
+    const sessions = await this.battleSessions.listByWeek(weekStart);
 
     return this.getRecordsForSessions(sessions.map((session) => session.id));
   }

@@ -283,7 +283,7 @@ Endpoints, all behind the `/api` prefix:
 | `PATCH` | `/battle-sessions/:id` | Edit a match | Admin |
 | `DELETE` | `/battle-sessions/:id` | Delete a scrim (Guild War cannot be deleted) | Admin |
 | `GET` | `/attendance/characters` | Characters for the attendance board (the whole guild, any role) | Bearer |
-| `GET` | `/attendance/records` | Attendance entries of the open week (the whole guild, any role) | Bearer |
+| `GET` | `/attendance/records?weekStart=` | Attendance entries of a week, the open one by default (the whole guild, any role) | Bearer |
 | `GET` | `/attendance/summary` | Yes/no counts per match, no identities. **No caller today** — kept for the attendance dashboard | Bearer |
 | `POST` | `/attendance` | Mark one character for one match (with a reason when the answer is "Không") | Bearer (own character; admin marks for anyone and bypasses the deadline) |
 | `GET` | `/team-builder/weeks` | Weeks that still have roster data | Bearer |

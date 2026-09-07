@@ -27,12 +27,15 @@ export interface AttendanceBoardState {
  * Aggregates the four attendance queries (characters, sessions, records, week)
  * into a single loading/error state, so both the attendance screen and the
  * history screen branch on the same values instead of duplicating the logic.
+ * @param weekStart - Week the caller reads (ISO); null, the default, is the open week
  * @returns Combined pending/error state plus a refetch-all callback
  */
-export function useAttendanceBoard(): AttendanceBoardState {
+export function useAttendanceBoard(
+  weekStart: string | null = null
+): AttendanceBoardState {
   const characters = useCharacters();
-  const sessions = useBattleSessions();
-  const records = useAttendanceRecords();
+  const sessions = useBattleSessions(weekStart);
+  const records = useAttendanceRecords(weekStart);
   const week = useCurrentWeek();
 
   return combineQueries(

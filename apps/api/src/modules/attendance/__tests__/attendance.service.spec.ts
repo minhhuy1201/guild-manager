@@ -557,6 +557,24 @@ describe('AttendanceService', () => {
       expect(args.where.characterId).toBeUndefined();
     });
 
+    it('đọc đúng tuần được truyền, không phải tuần đang mở', async () => {
+      prisma.attendanceRecord.findMany.mockResolvedValue([]);
+
+      await service.getRecords('2026-08-31T00:00:00.000Z');
+
+      expect(battleSessions.listByWeek).toHaveBeenCalledWith(
+        '2026-08-31T00:00:00.000Z',
+      );
+    });
+
+    it('không truyền gì thì vẫn là tuần đang mở', async () => {
+      prisma.attendanceRecord.findMany.mockResolvedValue([]);
+
+      await service.getRecords();
+
+      expect(battleSessions.listByWeek).toHaveBeenCalledWith(undefined);
+    });
+
     it('dựng record qua codec — markedAt ra ISO string', async () => {
       prisma.attendanceRecord.findMany.mockResolvedValue([
         {

@@ -8,6 +8,10 @@ import { useInvalidate } from "@/hooks/use-invalidate";
 import { matchesRosterFilter } from "@/lib/roster-filter";
 import { attendanceKeys } from "../api/attendance-keys";
 import {
+  historyWeekOptions,
+  type HistoryWeekOption,
+} from "../lib/history-weeks";
+import {
   fetchAttendanceRecords,
   fetchBattleSessions,
   fetchCharacters,
@@ -31,13 +35,14 @@ export function useCharacters() {
 }
 
 /**
- * Query the week's battle sessions.
+ * Query one week's battle sessions.
+ * @param weekStart - Monday 00:00 of the week (ISO); null, the default, is the open week
  * @returns The TanStack query result (data is the session list)
  */
-export function useBattleSessions() {
+export function useBattleSessions(weekStart: string | null = null) {
   return useQuery({
-    queryKey: attendanceKeys.sessions(),
-    queryFn: fetchBattleSessions,
+    queryKey: attendanceKeys.sessionsOf(weekStart),
+    queryFn: () => fetchBattleSessions(weekStart),
   });
 }
 
@@ -53,13 +58,14 @@ export function useCurrentWeek() {
 }
 
 /**
- * Query every attendance record.
+ * Query one week's attendance records.
+ * @param weekStart - Monday 00:00 of the week (ISO); null, the default, is the open week
  * @returns The TanStack query result (data is a map of records by key)
  */
-export function useAttendanceRecords() {
+export function useAttendanceRecords(weekStart: string | null = null) {
   return useQuery({
-    queryKey: attendanceKeys.records(),
-    queryFn: fetchAttendanceRecords,
+    queryKey: attendanceKeys.recordsOf(weekStart),
+    queryFn: () => fetchAttendanceRecords(weekStart),
   });
 }
 
@@ -84,6 +90,46 @@ export function useFilteredCharacters(
   );
 }
 
+/** The History screen's week picker, resolved against the weeks actually on offer. */
+export interface HistoryWeek {
+  /** Weeks the picker lists, the open one first. */
+  options: HistoryWeekOption[];
+  /** The chosen week, null while the open one is selected. */
+  selected: HistoryWeekOption | null;
+  /** What the queries key on and send: null is the open week. */
+  weekStart: string | null;
+  setWeekStart: (value: string | null) => void;
+}
+
+/**
+ * The History screen's week selection.
+ *
+ * A stored week that is no longer on offer resolves to null - the open week - the same way
+ * `useSessionFilter` resolves a deleted session, so the picker and the table never disagree.
+ * @returns The week options, the resolved selection and its setter
+ */
+export function useHistoryWeek(): HistoryWeek {
+  const { data: current } = useCurrentWeek();
+  const weekStart = useAttendanceFilterStore((s) => s.weekStart);
+  const setWeekStart = useAttendanceFilterStore((s) => s.setWeekStart);
+
+  const options = useMemo(
+    () => (current ? historyWeekOptions(current.weekStart) : []),
+    [current]
+  );
+  const selected =
+    options.find((option) => option.weekStart === weekStart) ?? null;
+
+  return {
+    options,
+    selected,
+    // The open week is sent as "no week": that is what keeps its cache entry shared with the
+    // Attendance screen, which reads the same data without ever choosing a week.
+    weekStart: selected?.isCurrent ? null : (selected?.weekStart ?? null),
+    setWeekStart,
+  };
+}
+
 interface SessionFilter {
   /** The week's sessions, empty while the query has no data. */
   sessions: BattleSession[];
@@ -100,7 +146,8 @@ interface SessionFilter {
  * @returns The week's sessions, the resolved selection and its setter
  */
 export function useSessionFilter(): SessionFilter {
-  const { data: sessions } = useBattleSessions();
+  const { weekStart } = useHistoryWeek();
+  const { data: sessions } = useBattleSessions(weekStart);
   const sessionId = useAttendanceFilterStore((s) => s.sessionId);
   const setSessionId = useAttendanceFilterStore((s) => s.setSessionId);
 

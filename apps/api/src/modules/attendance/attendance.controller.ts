@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type {
   AttendanceRecord,
@@ -9,6 +9,7 @@ import type {
 import { CurrentUser, JwtAuthGuard, type JwtPayload } from '../../common';
 import { AttendanceService } from './attendance.service';
 import { MarkAttendanceDto } from './dto/mark-attendance.dto';
+import { WeekStartQueryDto } from './dto/week-start-query.dto';
 
 /**
  * Attendance — every route needs a session: attendance is guild-wide information, readable by any
@@ -32,13 +33,14 @@ export class AttendanceController {
   }
 
   /**
-   * Attendance entries of the open week — the whole guild's, for every signed-in caller.
+   * Attendance entries of one week — the whole guild's, for every signed-in caller.
+   * @param query - Optional `weekStart`; omitted means the open week
    * @returns The attendance records
    */
   @Get('records')
-  @ApiOperation({ summary: 'Lượt điểm danh của tuần đang mở' })
-  getRecords(): Promise<AttendanceRecord[]> {
-    return this.attendance.getRecords();
+  @ApiOperation({ summary: 'Lượt điểm danh của một tuần' })
+  getRecords(@Query() query: WeekStartQueryDto): Promise<AttendanceRecord[]> {
+    return this.attendance.getRecords(query.weekStart);
   }
 
   /**

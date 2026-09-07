@@ -9,12 +9,40 @@ import type { AttendancePresenceFilter } from "../lib/presence-filter";
 
 let sessions: BattleSession[] = [];
 
+/** The two weeks the picker offers under test: the open one and the one before it. */
+const WEEKS = [
+  {
+    weekStart: "2026-08-24T00:00:00.000Z",
+    label: "24/08 - 29/08",
+    isCurrent: true,
+  },
+  {
+    weekStart: "2026-08-17T00:00:00.000Z",
+    label: "17/08 - 22/08",
+    isCurrent: false,
+  },
+];
+
 vi.mock("../hooks/use-attendance", async () => {
   const { useAttendanceFilterStore } = await import(
     "../store/attendance-filter-store"
   );
 
   return {
+    /** The real store wiring, with only the query behind it replaced. */
+    useHistoryWeek: () => {
+      const weekStart = useAttendanceFilterStore((s) => s.weekStart);
+      const setWeekStart = useAttendanceFilterStore((s) => s.setWeekStart);
+      const selected =
+        WEEKS.find((week) => week.weekStart === weekStart) ?? null;
+
+      return {
+        options: WEEKS,
+        selected,
+        weekStart: selected?.isCurrent ? null : (selected?.weekStart ?? null),
+        setWeekStart,
+      };
+    },
     /** The real store wiring, with only the query behind it replaced. */
     useSessionFilter: () => {
       const sessionId = useAttendanceFilterStore((s) => s.sessionId);
@@ -64,6 +92,7 @@ const EMPTY_STATE = {
   filters: { attendance: EMPTY_FILTER, history: EMPTY_FILTER },
   presence: "all" as AttendancePresenceFilter,
   sessionId: null as string | null,
+  weekStart: null as string | null,
 };
 
 /** The "Xoá bộ lọc" button. */
@@ -73,9 +102,10 @@ function clearAll(): HTMLButtonElement {
 
 /** The store slice the History screen owns. */
 function historyState() {
-  const { filters, presence, sessionId } = useAttendanceFilterStore.getState();
+  const { filters, presence, sessionId, weekStart } =
+    useAttendanceFilterStore.getState();
 
-  return { filter: filters.history, presence, sessionId };
+  return { filter: filters.history, presence, sessionId, weekStart };
 }
 
 afterEach(cleanup);
@@ -132,6 +162,28 @@ describe("AttendanceHistoryFilters - xoá bộ lọc", () => {
     expect(clearAll().disabled).toBe(false);
   });
 
+  it("chọn tuần cũ là nút mở khoá", () => {
+    useAttendanceFilterStore.setState({ weekStart: WEEKS[1].weekStart });
+
+    render(<AttendanceHistoryFilters />);
+
+    expect(clearAll().disabled).toBe(false);
+  });
+
+  it("chọn lại tuần đang mở thì nút vẫn khoá - đó là mặc định", () => {
+    useAttendanceFilterStore.setState({ weekStart: WEEKS[0].weekStart });
+
+    render(<AttendanceHistoryFilters />);
+
+    expect(clearAll().disabled).toBe(true);
+  });
+
+  it("hiện nhãn tuần đang mở để không phải tự suy ra", () => {
+    render(<AttendanceHistoryFilters />);
+
+    expect(screen.getAllByText(`Tuần này · ${WEEKS[0].label}`).length).toBeGreaterThan(0);
+  });
+
   it("chọn ngày đánh là nút mở khoá", () => {
     useAttendanceFilterStore.setState({ sessionId: SESSION.id });
 
@@ -148,7 +200,7 @@ describe("AttendanceHistoryFilters - xoá bộ lọc", () => {
     expect(clearAll().disabled).toBe(true);
   });
 
-  it("một cú bấm xoá cả bốn thứ cùng lúc", async () => {
+  it("một cú bấm xoá cả năm thứ cùng lúc, tuần về tuần đang mở", async () => {
     useAttendanceFilterStore.setState({
       filters: {
         ...EMPTY_STATE.filters,
@@ -156,6 +208,7 @@ describe("AttendanceHistoryFilters - xoá bộ lọc", () => {
       },
       presence: "absent",
       sessionId: SESSION.id,
+      weekStart: WEEKS[1].weekStart,
     });
 
     render(<AttendanceHistoryFilters />);
@@ -167,6 +220,7 @@ describe("AttendanceHistoryFilters - xoá bộ lọc", () => {
       filter: { search: "", guildClasses: [] },
       presence: "all",
       sessionId: null,
+      weekStart: null,
     });
   });
 

@@ -10,6 +10,7 @@ import { useAttendanceBoard } from "../hooks/use-attendance-board";
 import {
   useAttendanceRecords,
   useFilteredCharacters,
+  useHistoryWeek,
   useSessionFilter,
 } from "../hooks/use-attendance";
 import { maxClassSize, summarizeByClass } from "../lib/attendance-summary";
@@ -25,7 +26,7 @@ const GRID = "grid gap-4 sm:grid-cols-2 lg:grid-cols-3";
 const SKELETON_CARDS = 3;
 
 /**
- * Per-class attendance for every battle day of the open week: one card per day, seven horizontal
+ * Per-class attendance for every battle day of the selected week: one card per day, seven horizontal
  * bars per card.
  *
  * It follows the screen's roster search and its session picker, but deliberately not its class and
@@ -34,10 +35,11 @@ const SKELETON_CARDS = 3;
  * @returns The dashboard grid, or the loading/error/empty branch
  */
 export function AttendanceSummaryDashboard() {
-  const { data: records } = useAttendanceRecords();
+  const { weekStart } = useHistoryWeek();
+  const { data: records } = useAttendanceRecords(weekStart);
   const { sessions, selectedSession } = useSessionFilter();
   const characters = useFilteredCharacters(SCOPE);
-  const state = useAttendanceBoard();
+  const state = useAttendanceBoard(weekStart);
 
   const shownSessions = useMemo(
     () => (selectedSession ? [selectedSession] : sessions),

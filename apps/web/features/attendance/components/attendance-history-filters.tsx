@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, FilterX } from "lucide-react";
+import { CalendarDays, CalendarRange, FilterX } from "lucide-react";
 
 import { ClearableSelectTrigger } from "@/components/shared/clearable-select-trigger";
 import { FilterAllIcon } from "@/components/shared/filter-all-icon";
@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { isRosterFilterActive } from "@/lib/roster-filter";
-import { useSessionFilter } from "../hooks/use-attendance";
+import { useHistoryWeek, useSessionFilter } from "../hooks/use-attendance";
 import {
   PRESENCE_FILTER_LABEL,
   PRESENCE_FILTER_OPTIONS,
@@ -87,10 +87,38 @@ function SessionOption({ label, allLabel = "Tất cả" }: SessionOptionProps) {
   );
 }
 
+interface WeekOptionProps {
+  /** The week as "07/09 - 12/09" */
+  label: string;
+  /** Whether this is the week currently open for marking */
+  isCurrent: boolean;
+}
+
 /**
- * The History screen's filter bar: the shared roster filter plus a presence and a session picker.
- * Those two live here rather than in `RosterFilterBar` because only this screen lists recorded
- * answers — the Attendance grid already shows every session and both answers at once.
+ * One week option: a calendar mark, the date range, and a note on the open week.
+ * The open week is named rather than left to be inferred - "07/09 - 12/09" alone does not tell a
+ * member whether the row they are looking at is the one they can still answer.
+ * @param label - The week as a date range
+ * @param isCurrent - Whether this is the open week
+ * @returns The icon and label pair
+ */
+function WeekOption({ label, isCurrent }: WeekOptionProps) {
+  return (
+    <span className="flex items-center gap-2">
+      <CalendarRange className={`${OPTION_ICON} text-muted-foreground`} />
+      {isCurrent ? `Tuần này · ${label}` : label}
+    </span>
+  );
+}
+
+/**
+ * The History screen's filter bar: the shared roster filter plus a week, a session and a presence
+ * picker. Those three live here rather than in `RosterFilterBar` because only this screen lists
+ * recorded answers — the Attendance grid already shows every session and both answers at once.
+ *
+ * The week picker is not a filter like the other two: it chooses which week is fetched, while they
+ * narrow what came back. It sits with them because to the person using the screen there is no
+ * difference.
  * @returns The filter card
  */
 export function AttendanceHistoryFilters() {
@@ -99,29 +127,68 @@ export function AttendanceHistoryFilters() {
   const presence = useAttendanceFilterStore((s) => s.presence);
   const setPresence = useAttendanceFilterStore((s) => s.setPresence);
   const resetFilters = useAttendanceFilterStore((s) => s.resetHistoryFilters);
+  const { options: weeks, selected: selectedWeek, setWeekStart } =
+    useHistoryWeek();
   const { sessions, selectedSession, setSessionId } = useSessionFilter();
+
+  // The open week is the default, so the picker shows it whenever nothing else is chosen.
+  const shownWeek = selectedWeek ?? weeks[0] ?? null;
 
   // `selectedSession`, not the raw `sessionId`: a stored id whose session was deleted shows as
   // "Tất cả ngày đánh" and filters nothing, so there is nothing for the button to clear either.
   const isFiltered =
     isRosterFilterActive(filter) ||
     presence !== "all" ||
-    selectedSession !== null;
+    selectedSession !== null ||
+    (selectedWeek !== null && !selectedWeek.isCurrent);
 
   return (
     <Card>
       <CardContent>
         {/*
-          Four equal columns: the roster filter spans two of them and splits that span in two with
-          the same gap, so all four controls end up exactly the same width.
+          Five equal columns: the roster filter spans two of them and splits that span in two with
+          the same gap, so all five controls end up exactly the same width.
         */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <RosterFilterBar
             idPrefix={SCOPE}
             value={filter}
             onChange={(next) => setFilter(SCOPE, next)}
             className="sm:col-span-2"
           />
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor={`${SCOPE}-week`}>Tuần</Label>
+            <Select
+              value={shownWeek?.weekStart ?? ""}
+              onValueChange={(next) => setWeekStart(String(next))}
+            >
+              <ClearableSelectTrigger
+                id={`${SCOPE}-week`}
+                isActive={shownWeek !== null && !shownWeek.isCurrent}
+                clearLabel="Về tuần này"
+                onClear={() => setWeekStart(null)}
+              >
+                <SelectValue>
+                  {shownWeek ? (
+                    <WeekOption
+                      label={shownWeek.label}
+                      isCurrent={shownWeek.isCurrent}
+                    />
+                  ) : null}
+                </SelectValue>
+              </ClearableSelectTrigger>
+              <SelectContent alignItemWithTrigger={false}>
+                {weeks.map((week) => (
+                  <SelectItem key={week.weekStart} value={week.weekStart}>
+                    <WeekOption
+                      label={week.label}
+                      isCurrent={week.isCurrent}
+                    />
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor={`${SCOPE}-session`}>Ngày đánh</Label>
             <Select
