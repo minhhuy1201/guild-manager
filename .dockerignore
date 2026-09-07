@@ -1,0 +1,4 @@
+# The dev image copies nothing but package.json; keeping the build context small makes `docker
+# compose build` instant instead of streaming the whole workspace to the daemon.
+*
+!package.json

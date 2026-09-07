@@ -3,6 +3,14 @@ const FALLBACK_API_URL = "http://localhost:3001/api";
 
 const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL;
 
+// Server-side only override, set by the `dev` profile of docker-compose.yml: inside the web
+// container the API answers on `http://api:3001/api`, while the browser must keep calling the
+// published `localhost:3001`. Next inlines `NEXT_PUBLIC_*` into the client bundle and leaves every
+// other `process.env` lookup there as undefined, so this one module resolves to the internal URL on
+// the server and to the public one in the browser. Unset everywhere else, containers included in
+// production, where server and browser share one origin.
+const internalApiUrl = process.env.API_INTERNAL_URL;
+
 // `NEXT_PUBLIC_*` is inlined into the bundle at build time and never re-read at runtime, so a missing
 // value in production means the build is already broken: every request would quietly point at
 // localhost. Throw here so `next build` fails at deploy instead of surfacing in production.
@@ -14,6 +22,8 @@ if (process.env.NODE_ENV === "production" && !configuredApiUrl) {
 
 /**
  * Base URL of the backend API.
- * Set through `NEXT_PUBLIC_API_URL`; defaults to the local API on port 3001.
+ * Set through `NEXT_PUBLIC_API_URL`, overridden server-side by `API_INTERNAL_URL`; defaults to the
+ * local API on port 3001.
  */
-export const API_BASE_URL = configuredApiUrl ?? FALLBACK_API_URL;
+export const API_BASE_URL =
+  internalApiUrl ?? configuredApiUrl ?? FALLBACK_API_URL;

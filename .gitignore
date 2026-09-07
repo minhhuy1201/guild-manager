@@ -48,8 +48,6 @@ seed-data.json
 .cache/
 .turbo/
 *.pem
-.vercel
-.env*
 
 # Local approval marker written by the pr-review skill — per-developer state,
 # never shared: a committed marker would hand everyone an approval they never made.

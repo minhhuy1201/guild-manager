@@ -10,7 +10,7 @@ places people usually get stuck.
 |---|---|---|
 | Node.js | 24 | pinned in `.nvmrc`; `engines.node` + `engineStrict` make a wrong version fail `pnpm install` |
 | pnpm | 12 | pinned in the root `package.json` (`packageManager`); `corepack enable pnpm` picks up that exact version |
-| Docker | any supported release | only used to run PostgreSQL (Podman works, see section 4) |
+| Docker | any supported release | runs PostgreSQL, and optionally the whole stack (section 5). Podman runs the database too, see section 4 |
 | `openssl` | | to generate `AUTH_SECRET` |
 
 The root `package.json` declares no scripts, so there is nothing to run from the repo root. Run an
@@ -45,6 +45,13 @@ Generate a key and put it in **both** files:
 openssl rand -hex 32
 ```
 
+A third env file, `.env` at the repo root, configures the database container. It is optional — the
+compose file carries the same defaults — so copy it only to change them:
+
+```bash
+cp .env.example .env
+```
+
 ## 3. Environment variables
 
 ### `apps/api/.env`
@@ -76,9 +83,18 @@ the app dies immediately with a Vietnamese error message instead of half-running
 | `DISCORD_GUILD_ID` | script only | — | Id of the guild's Discord server (Developer Mode → right-click the server → Copy Server ID). Read by `discord:register` only |
 | `DISCORD_ENV_FILE` | script only | `.env` | Which file `discord:register` reads. Local and production are two **different** Discord Applications, so production registers with `DISCORD_ENV_FILE=.env.production`. Exactly one file is loaded, never merged — a named file that is missing is an error, not a silent fall back to `.env` |
 | `APP_TIMEZONE` | | `Asia/Ho_Chi_Minh` | Timezone used to compute attendance deadlines |
-| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` / `POSTGRES_PORT` | | postgres/postgres/guild_manager/5432 | Read by `docker-compose.yml` only — **must match `DATABASE_URL`** |
 
 `DIRECT_DATABASE_URL` is deliberately **absent** from `envSchema`: the runtime must never touch it.
+
+### `.env` at the repo root
+
+Read by `docker-compose.yml` alone, and optional: every value has the same default in the compose
+file. Copy it from `.env.example` when the defaults do not suit you.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | postgres/postgres/guild_manager | Credentials of the dev database container — **must match `DATABASE_URL`** in `apps/api/.env` |
+| `POSTGRES_PORT` | `5432` | Host port the container publishes. Change it when 5432 is taken, and change the port in `DATABASE_URL` to match |
 
 ### `apps/web/.env.local`
 
@@ -86,6 +102,7 @@ the app dies immediately with a Vietnamese error message instead of half-running
 |---|---|
 | `AUTH_SECRET` | Verifies the JWT signed by the API (HMAC-SHA256) — must equal the API's value |
 | `NEXT_PUBLIC_API_URL` | Backend base URL, defaults to `http://localhost:3001/api` |
+| `API_INTERNAL_URL` | Server-side override of the URL above, set by the Docker `dev` profile only: the browser calls the API on `localhost`, the web container calls it as `api`. Leave it unset when running on the host |
 
 The web app **never** connects to the database. There are no Supabase variables on the web side.
 
@@ -131,7 +148,8 @@ dropped from the file. Remove those through the admin UI, where you can see what
 > **Container runtime:** the `db:*` scripts call `docker compose`. On a machine using Podman instead
 > of Docker, export `DOCKER_HOST=unix:///run/user/$UID/podman/podman.sock` (the Podman socket must be
 > running: `systemctl --user start podman.socket`), or switch those three scripts to `podman compose`
-> in `apps/api/package.json` — `docker-compose.yml` is shared and needs no changes.
+> in `apps/api/package.json` — `docker-compose.yml` is shared and needs no changes. The `dev` profile
+> of section 5 is Docker-only: it builds an image, which `podman compose` does not do the same way.
 >
 > If both are installed you must pick one: each runtime keeps its own containers and volumes, so
 > `podman compose up` and `docker compose up` create two different databases and whichever starts
@@ -139,12 +157,42 @@ dropped from the file. Remove those through the admin UI, where you can see what
 
 ## 5. Running in development
 
-Two terminals:
+Two ways, same result. On the host, in two terminals:
 
 ```bash
 pnpm --filter api dev    # http://localhost:3001/api — watch mode
 pnpm --filter web dev    # http://localhost:3000
 ```
+
+Or the whole stack in Docker, one terminal, from the repo root:
+
+```bash
+docker compose --profile dev up          # database + API + web
+docker compose --profile dev down        # stop everything
+```
+
+Both apps hot-reload: the workspace is bind-mounted, so `nest start --watch` and `next dev` see a
+save on the host the same way they do outside a container. The ports and URLs are identical, and
+`apps/api/.env` / `apps/web/.env.local` are the same env files — the profile only overrides
+`DATABASE_URL` (the database is `db`, not `localhost`) and sets `API_INTERNAL_URL` for the web
+container.
+
+What the profile adds beyond the `db` service:
+
+| Service | Role |
+|---|---|
+| `deps` | Runs `pnpm install` and builds `@guild/shared` into the shared `node_modules` volumes, then exits. `api` and `web` wait for it, so the two never install concurrently over one lockfile |
+| `api` | `pnpm --filter api dev` on port 3001, started once `db` is healthy |
+| `web` | `pnpm --filter web dev` on port 3000 |
+
+`node_modules` and `apps/web/.next` live in named volumes, never on the host: the containers install
+Linux binaries (Prisma, SWC, Tailwind) that would otherwise overwrite the host's.
+The first `up` therefore installs the workspace once inside Docker, which takes a minute; later
+starts reuse the volume. Prisma Client and `packages/shared/dist` **are** written to the host, since
+both are plain generated code and keeping one copy avoids a stale build after switching modes.
+
+Migrations and seeding still run on the host (`pnpm --filter api prisma:migrate`, `db:seed`) — they
+reach the same database through the published port.
 
 - Health check: `curl http://localhost:3001/api/health` → `{"status":"ok","db":"up",...}`
 - Swagger UI: <http://localhost:3001/docs> (JSON spec at `/docs-json`) — disabled when `NODE_ENV=production`
@@ -168,7 +216,7 @@ pnpm --filter web dev    # http://localhost:3000
 | `prisma:generate` | Regenerate the Prisma Client |
 | `prisma:migrate` | `migrate dev` — create a new migration from schema changes |
 | `prisma:studio` | Open Prisma Studio |
-| `db:up` / `db:down` / `db:reset` | Postgres container lifecycle |
+| `db:up` / `db:down` / `db:reset` | Postgres container lifecycle (`docker compose -f ../../docker-compose.yml`, `db` service only) |
 | `db:seed` | Load the roster from `seed-data.json` |
 | `db:fix-deadlines` | One-off: bring the open and next week's deadlines back under the cap |
 | `discord:register` | Push the slash-command list to Discord — by hand, never from CI |
@@ -234,6 +282,9 @@ Never commit: `.env*` (except `.env.example`), `apps/api/src/generated/`, `dist/
 | CORS blocks requests from the web app | `WEB_ORIGIN` must match the origin you are actually browsing (port included) |
 | Port 3000/3001 already in use | Change `PORT` (api) and `NEXT_PUBLIC_API_URL` (web) to match |
 | `db:up` fails with a socket error on Podman | `DOCKER_HOST` is missing — see section 4 |
+| `docker compose --profile dev up` fails on `env_file` | `apps/api/.env` or `apps/web/.env.local` does not exist yet — see section 2 |
+| A dependency added on the host is missing inside the containers | `deps` only installs on `up`; run `docker compose --profile dev up -d --force-recreate deps` (or restart the stack) after changing a `package.json` |
+| Port 3000/3001 already in use when starting the profile | A host-side `pnpm dev` is still running — the two modes publish the same ports and cannot share them |
 
 ## See also
 
