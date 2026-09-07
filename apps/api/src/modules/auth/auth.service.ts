@@ -92,8 +92,12 @@ export class AuthService {
     state?: string;
     error?: string;
   }): Promise<string> {
-    if (query.error || !query.code || !query.state) {
-      return this.errorUrl(AUTH_ERROR.denied, '/');
+    // Two different stories, and telling the second as the first is how someone following a stale
+    // authorize link was told they had pressed Cancel. `error` is Discord reporting the user's
+    // choice; a callback with no `code` or no `state` is a link that no longer works.
+    if (query.error) return this.errorUrl(AUTH_ERROR.denied, '/');
+    if (!query.code || !query.state) {
+      return this.errorUrl(AUTH_ERROR.expired, '/');
     }
 
     const state = await this.readState(query.state);

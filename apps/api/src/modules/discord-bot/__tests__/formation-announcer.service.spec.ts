@@ -1,4 +1,8 @@
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import type { BattleSession } from '@guild/shared/schemas';
 
 import { FixedClock } from '../../../common';
@@ -68,6 +72,25 @@ describe('FormationAnnouncerService', () => {
     expect(rest.postMessageWithFiles).not.toHaveBeenCalled();
   });
 
+  it('số ảnh không khớp số trận thì từ chối, không gửi gì', async () => {
+    // Client có CaptureCountError canh chỗ này, server thì không — và đây là biên tin cậy thật.
+    const { service, rest } = build(session({ matchCount: 2 }));
+
+    await expect(service.announce('session-1', [IMAGE])).rejects.toThrow(
+      BadRequestException,
+    );
+    expect(rest.postMessageWithFiles).not.toHaveBeenCalled();
+  });
+
+  it('thừa ảnh cũng bị từ chối', async () => {
+    const { service, rest } = build(session({ matchCount: 1 }));
+
+    await expect(service.announce('session-1', [IMAGE, IMAGE])).rejects.toThrow(
+      BadRequestException,
+    );
+    expect(rest.postMessageWithFiles).not.toHaveBeenCalled();
+  });
+
   it('gửi đúng channel bang chiến, một message mang mọi ảnh', async () => {
     const { service, rest } = build();
 
@@ -88,7 +111,8 @@ describe('FormationAnnouncerService', () => {
   });
 
   it('giải mã base64 thành bytes thật, bỏ tiền tố data URL', async () => {
-    const { service, rest } = build();
+    // Một trận, một ảnh: số ảnh phải khớp `matchCount`, nên ca này khai một ngày một trận.
+    const { service, rest } = build(session({ matchCount: 1 }));
 
     await service.announce('session-1', [IMAGE]);
 
@@ -113,7 +137,7 @@ describe('FormationAnnouncerService — Discord từ chối', () => {
    * @returns Service đã sẵn sàng gọi
    */
   function buildRefusing(status: number) {
-    const { service, rest } = build();
+    const { service, rest } = build(session({ matchCount: 1 }));
     rest.postMessageWithFiles.mockRejectedValue(
       new DiscordApiError(status, 'channel-bang-chien', '{"code":50013}'),
     );

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -12,7 +13,7 @@ import { verifyResponse } from '../../config';
 import type { Env } from '../../config';
 import { BattleSessionsService } from '../battle-sessions/battle-sessions.public';
 import type { OutgoingFile } from './discord-rest';
-import { DiscordApiError, DiscordRestClient } from './discord-rest';
+import { DiscordRestClient, isDiscordForbidden } from './discord-rest';
 import { buildFormationAnnouncement } from './formation-announcement';
 
 /** The only image format the announcement accepts, mirrored by the shared schema. */
@@ -24,8 +25,9 @@ const DATA_URL_PREFIX = `data:${IMAGE_CONTENT_TYPE};base64,`;
 /** Shown when the battle the announcement points at no longer exists. */
 const SESSION_NOT_FOUND = 'Không tìm thấy trận đánh này.';
 
-/** Status Discord answers with when the bot lacks a permission in the channel. */
-const DISCORD_FORBIDDEN = 403;
+/** Shown when the caller sent a different number of images than the day has matches. */
+const IMAGE_COUNT_MISMATCH =
+  'Số ảnh đội hình không khớp số trận của ngày đánh này. Hãy tải lại trang xếp team rồi thử lại.';
 
 /**
  * Shown when Discord refuses the post for lack of permission.
@@ -79,6 +81,7 @@ export class FormationAnnouncerService {
    * @param images - Line-up images as `data:image/webp;base64,…`, in match order
    * @returns How many images were sent
    * @throws NotFoundException when the battle day does not exist
+   * @throws BadRequestException when the image count does not match the day's match count
    * @throws ForbiddenException when the bot lacks permission to post in the channel
    * @throws DiscordApiError when Discord rejects the message for any other reason
    */
@@ -89,6 +92,13 @@ export class FormationAnnouncerService {
     const session = await this.battleSessions.findById(sessionId);
 
     if (!session) throw new NotFoundException(SESSION_NOT_FOUND);
+
+    // The browser checks this too (`CaptureCountError`), but the browser is not a trust boundary:
+    // a mismatch here means the guild would be shown a line-up with a match missing, or images from
+    // two different days, with nothing downstream to catch it.
+    if (images.length !== session.matchCount) {
+      throw new BadRequestException(IMAGE_COUNT_MISMATCH);
+    }
 
     const payload = buildFormationAnnouncement(
       {
@@ -114,10 +124,7 @@ export class FormationAnnouncerService {
     } catch (error) {
       // Only the permission refusal is translated. Every other status is the system's problem, and
       // rethrowing it untouched keeps Discord's own reason and a stack in the log.
-      if (
-        error instanceof DiscordApiError &&
-        error.status === DISCORD_FORBIDDEN
-      ) {
+      if (isDiscordForbidden(error)) {
         throw new ForbiddenException(MISSING_PERMISSIONS);
       }
 

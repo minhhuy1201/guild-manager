@@ -9,4 +9,4 @@
 export { DiscordLoginButton } from "./components/discord-login-button";
 export { UserMenu } from "./components/user-menu";
 export { useSession, sessionKeys } from "./hooks/use-session";
-export { loginErrorMessage } from "./lib/login-error";
+export { loginErrorMessage, WEB_AUTH_ERROR } from "./lib/login-error";

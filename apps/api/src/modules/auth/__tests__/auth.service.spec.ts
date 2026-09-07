@@ -138,6 +138,18 @@ describe('AuthService.handleCallback', () => {
     expect(url).toContain(`error=${AUTH_ERROR.denied}`);
   });
 
+  it('callback thiếu code hoặc state là phiên hết hạn, không phải huỷ', async () => {
+    // Một dòng gộp ba tình huống từng nói với người theo link authorize cũ rằng họ đã bấm Huỷ.
+    const { service } = makeService({});
+
+    await expect(service.handleCallback({ state: 's' })).resolves.toContain(
+      `error=${AUTH_ERROR.expired}`,
+    );
+    await expect(service.handleCallback({ code: 'c' })).resolves.toContain(
+      `error=${AUTH_ERROR.expired}`,
+    );
+  });
+
   it('đá về trang đăng nhập khi state hỏng', async () => {
     const { service, jwt } = makeService({});
     jwt.verifyAsync.mockRejectedValue(new Error('bad signature'));
