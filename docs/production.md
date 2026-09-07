@@ -106,8 +106,9 @@ production application: saving a tunnel URL there would send every real slash co
 Exactly one env file is ever loaded, never merged, so a missing `.env.production` fails loudly
 instead of quietly registering production's commands against the development application.
 
-The `POSTGRES_*` variables are for `docker-compose.yml` in development only; production does not need
-them.
+The `POSTGRES_*` variables live in the repo root's `.env` and are for `docker-compose.yml` in
+development only; production does not need them. Neither does `API_INTERNAL_URL`, which only exists
+so the web container can reach the API container.
 
 ### `apps/web`
 

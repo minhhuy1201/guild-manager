@@ -1,0 +1,42 @@
+# Base image behind the `dev` profile of docker-compose.yml: Node and pnpm, no application code.
+# The workspace is bind-mounted at runtime, so editing a file never rebuilds this image — only a
+# change to the Node version or to `packageManager` does.
+ARG NODE_VERSION=24
+
+FROM node:${NODE_VERSION}-bookworm-slim
+
+# Prisma's CLI links against OpenSSL, which the slim image leaves out.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends openssl ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Corepack caches the pnpm binary here instead of under the building user's home, so the `node` user
+# finds it at runtime rather than re-downloading pnpm on every container start. It stays writable
+# because bumping `packageManager` must still be able to fetch the new version.
+ENV COREPACK_HOME=/usr/local/corepack
+
+# The only file copied in: its `packageManager` field pins the pnpm version, so corepack activates
+# exactly the one the workspace expects instead of a second version hardcoded here.
+COPY package.json ./
+# `pnpm --version` is what pulls pnpm's platform-native binary, which `prepare` alone leaves for the
+# first real run — inside a container with no writable cache that first run is where it would fail.
+RUN corepack enable \
+  && corepack prepare --activate \
+  && pnpm --version \
+  && chown -R node:node "${COREPACK_HOME}"
+
+# Every directory the containers write to is a named volume. Docker seeds an empty volume from the
+# image path it covers, ownership included, so creating them here as `node` is what keeps the
+# containers from writing root-owned files.
+RUN mkdir -p \
+    /app/node_modules \
+    /app/apps/api/node_modules \
+    /app/apps/web/node_modules /app/apps/web/.next \
+    /app/packages/shared/node_modules \
+  && chown -R node:node /app
+
+# uid 1000, matching the first login user on a typical Linux desktop — the bind-mounted workspace
+# stays writable from both sides.
+USER node

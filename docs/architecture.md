@@ -136,8 +136,15 @@ guild-manager/
 │   └── web/        # Next.js 16 App Router + Tailwind 4 + shadcn/ui → http://localhost:3000
 ├── packages/
 │   └── shared/     # Enums + Zod schemas shared by both apps (@guild/shared)
+├── docker/         # Dockerfile.dev and the initdb SQL behind docker-compose.yml
 └── docs/           # This file, development, production, specs and plans
 ```
+
+`docker-compose.yml` sits at the root because its `dev` profile runs all three parts together, with
+the workspace bind-mounted for hot reload; without the profile it starts PostgreSQL alone, which is
+what `pnpm --filter api db:up` does. Running the stack in Docker is a convenience, never a
+requirement — nothing in the apps knows about it beyond `API_INTERNAL_URL`, the server-side API URL
+the web container needs. See [`development.md`](development.md) §5.
 
 ### `packages/shared` — the contract
 

@@ -1,0 +1,117 @@
+# Local development stack. Two ways in:
+#
+#   docker compose up -d db            → PostgreSQL only, what `pnpm --filter api db:up` runs
+#   docker compose --profile dev up    → PostgreSQL + API + web, hot reload on all three
+#
+# Only `db` is profile-less, so it starts either way while `deps`, `api` and `web` need `--profile
+# dev`. The POSTGRES_* values below come from the root `.env` (see .env.example); they must agree
+# with DATABASE_URL in apps/api/.env, which is what the host-side Prisma CLI reads.
+name: guild-manager
+
+# Shared shape of the three Node containers. `environment` is deliberately not in here: a service
+# that declares its own would replace this block rather than extend it.
+x-node-dev: &node-dev
+  build:
+    context: .
+    dockerfile: docker/Dockerfile.dev
+  image: guild-manager-dev
+  profiles: [dev]
+  user: node
+  working_dir: /app
+  volumes:
+    # The workspace itself, so a save on the host reaches the watcher inside the container.
+    - .:/app
+    # Everything the container installs instead lives in a volume: node_modules holds binaries built
+    # for this image (Prisma, SWC, Tailwind), and .next would otherwise fight with a host-side
+    # `pnpm --filter web dev` writing the same directory. `apps/api/dist` is deliberately *not* a
+    # volume: `nest start` deletes and recreates it, which fails with EBUSY on a mount point.
+    - node-modules-root:/app/node_modules
+    - node-modules-api:/app/apps/api/node_modules
+    - node-modules-web:/app/apps/web/node_modules
+    - node-modules-shared:/app/packages/shared/node_modules
+    - web-next:/app/apps/web/.next
+
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: guild-manager-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-guild_manager}
+      # Cần thiết để tên nhân vật tiếng Việt sort/so sánh đúng.
+      LANG: C.UTF-8
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - guild-manager-db-data:/var/lib/postgresql/data
+      # Chạy một lần lúc initdb (database trống): tạo role `anon` / `authenticated` của Supabase
+      # để migration chặn Data API replay được ở local.
+      - ./docker/initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-guild_manager}',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Installs the workspace into the shared node_modules volumes and builds @guild/shared, then
+  # exits. One container doing it once is what keeps `api` and `web` from running two concurrent
+  # `pnpm install` over the same lockfile.
+  deps:
+    <<: *node-dev
+    container_name: guild-manager-deps
+    command: sh -c "pnpm install --frozen-lockfile && pnpm --filter @guild/shared build"
+
+  api:
+    <<: *node-dev
+    container_name: guild-manager-api
+    command: pnpm --filter api dev
+    env_file:
+      - apps/api/.env
+    environment:
+      # Overrides the localhost URL in apps/api/.env: on this network the database is `db`, and the
+      # host port mapping does not apply.
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-guild_manager}?schema=public
+    ports:
+      - '3001:3001'
+    depends_on:
+      db:
+        condition: service_healthy
+      deps:
+        condition: service_completed_successfully
+
+  web:
+    <<: *node-dev
+    container_name: guild-manager-web
+    command: pnpm --filter web dev
+    env_file:
+      - apps/web/.env.local
+    environment:
+      # The browser reaches the API on localhost:3001 (NEXT_PUBLIC_API_URL), but this container has
+      # to call it by service name — see apps/web/config/api.ts.
+      API_INTERNAL_URL: http://api:3001/api
+    ports:
+      - '3000:3000'
+    depends_on:
+      deps:
+        condition: service_completed_successfully
+      # Start order only: `next dev` compiles on the first request, but a Server Component
+      # rendering before the API is up would fail that request with a connection error.
+      api:
+        condition: service_started
+
+volumes:
+  # Explicitly named so `db:reset` can drop it by name, and so it keeps its identity if the compose
+  # project is ever renamed.
+  guild-manager-db-data:
+    name: guild-manager-db-data
+  node-modules-root:
+  node-modules-api:
+  node-modules-web:
+  node-modules-shared:
+  web-next:

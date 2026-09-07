@@ -10,7 +10,7 @@ Stack, layering, modules, the endpoint list and the response contract are in
 ```bash
 cp .env.example .env      # fill in AUTH_SECRET (openssl rand -hex 32) and the DISCORD_* values
 pnpm install              # postinstall runs `prisma generate` automatically
-pnpm db:up                # start PostgreSQL with Docker (docker-compose.yml)
+pnpm db:up                # start PostgreSQL with Docker (../../docker-compose.yml)
 pnpm prisma:migrate       # create the tables
 pnpm db:seed              # load the roster from seed-data.json at the repo root
 pnpm dev                  # http://localhost:3001/api
@@ -81,13 +81,17 @@ whole path works. The tunnel URL changes every time you start one — that is th
 
 ## Dev database
 
-`docker-compose.yml` starts `postgres:17-alpine` (container `guild-manager-db`); data lives in the
-`guild-manager-db-data` volume, so stopping the container does not lose data — use `pnpm db:reset`
-to wipe it for real.
+The compose file lives at the repo root (`../../docker-compose.yml`) because its `dev` profile also
+runs this API and the web app; the `db:*` scripts here point at it with `-f`. It starts
+`postgres:17-alpine` (container `guild-manager-db`); data lives in the `guild-manager-db-data`
+volume, so stopping the container does not lose data — use `pnpm db:reset` to wipe it for real.
 
-Connection details are read from `.env` (`POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` /
-`POSTGRES_PORT`) and default to matching `DATABASE_URL` in `.env.example`. If you change the
-user/password/port you **must update both places**.
+Connection details are read from the **root** `.env` (`POSTGRES_USER` / `POSTGRES_PASSWORD` /
+`POSTGRES_DB` / `POSTGRES_PORT`, see `../../.env.example`) and default to matching `DATABASE_URL` in
+`.env.example` here. If you change the user/password/port you **must update both places**.
+
+Running the whole stack in Docker instead of two terminals is
+[`docs/development.md`](../../docs/development.md) §5.
 
 > The `db:*` scripts call `docker compose`. On a machine using Podman instead of Docker, set
 > `DOCKER_HOST=unix:///run/user/$UID/podman/podman.sock` before `pnpm db:up` (or export it in your

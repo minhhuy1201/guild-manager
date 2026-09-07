@@ -16,7 +16,7 @@ How the pieces fit together, and where new code belongs: [`docs/architecture.md`
 |---|---|
 | Node.js | 24 (pinned in `.nvmrc`) |
 | pnpm | 12 (pinned in `package.json` → `packageManager`; `corepack enable pnpm` picks up that exact version) |
-| Docker | to run PostgreSQL locally |
+| Docker | to run PostgreSQL locally — or the whole stack, see below |
 | A Discord application | sign-in is Discord OAuth2 only — there are no passwords, and the same application backs the bot |
 
 ## Running locally
@@ -44,6 +44,16 @@ pnpm --filter api db:seed
 pnpm --filter api dev     # http://localhost:3001/api  (Swagger: /docs)
 pnpm --filter web dev     # http://localhost:3000
 ```
+
+Or run all three in Docker instead — one terminal, from the repo root, replacing `db:up` in step 5
+and the two terminals of step 6:
+
+```bash
+docker compose --profile dev up
+```
+
+Same ports, same env files, hot reload on both apps. `prisma:migrate` and `db:seed` still run from
+the host against that same database. Details in [`docs/development.md`](docs/development.md) §5.
 
 Quick check: `curl http://localhost:3001/api/health` must return `"db": "up"`.
 
