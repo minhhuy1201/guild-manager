@@ -191,6 +191,25 @@ The first `up` therefore installs the workspace once inside Docker, which takes 
 starts reuse the volume. Prisma Client and `packages/shared/dist` **are** written to the host, since
 both are plain generated code and keeping one copy avoids a stale build after switching modes.
 
+> **Coming from an older checkout:** the compose file used to live in `apps/api/`, which put its
+> container and its data volume under the Compose project `api`. The move to the root renames the
+> project, so the old container blocks the new one by name and the old volume is no longer the one
+> being read. Clear it once:
+>
+> ```bash
+> docker rm -f guild-manager-db                   # the container from the old project
+> docker volume rm api_guild-manager-db-data      # only after copying anything you still want
+> ```
+>
+> Then `pnpm --filter api db:up` + `prisma:migrate` + `db:seed` rebuild the database from scratch.
+> To keep the existing rows instead, copy the volume across before removing it:
+>
+> ```bash
+> docker volume create guild-manager-db-data
+> docker run --rm -v api_guild-manager-db-data:/from:ro -v guild-manager-db-data:/to \
+>   alpine sh -c 'cp -a /from/. /to/'
+> ```
+
 Migrations and seeding still run on the host (`pnpm --filter api prisma:migrate`, `db:seed`) — they
 reach the same database through the published port.
 
@@ -216,7 +235,7 @@ reach the same database through the published port.
 | `prisma:generate` | Regenerate the Prisma Client |
 | `prisma:migrate` | `migrate dev` — create a new migration from schema changes |
 | `prisma:studio` | Open Prisma Studio |
-| `db:up` / `db:down` / `db:reset` | Postgres container lifecycle (`docker compose -f ../../docker-compose.yml`, `db` service only) |
+| `db:up` / `db:down` / `db:reset` | Postgres container lifecycle (`docker compose -f ../../docker-compose.yml`, `db` service only). `db:down` **stops** the container rather than removing it — the compose file is shared with the `dev` profile now, and `docker compose down` there would take the API and web containers with it |
 | `db:seed` | Load the roster from `seed-data.json` |
 | `db:fix-deadlines` | One-off: bring the open and next week's deadlines back under the cap |
 | `discord:register` | Push the slash-command list to Discord — by hand, never from CI |

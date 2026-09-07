@@ -100,6 +100,10 @@ services:
     depends_on:
       deps:
         condition: service_completed_successfully
+      # Start order only: `next dev` compiles on the first request, but a Server Component
+      # rendering before the API is up would fail that request with a connection error.
+      api:
+        condition: service_started
 
 volumes:
   # Explicitly named so `db:reset` can drop it by name, and so it keeps its identity if the compose
