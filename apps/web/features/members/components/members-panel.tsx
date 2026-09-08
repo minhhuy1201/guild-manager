@@ -13,6 +13,7 @@ import { useTablePagination } from "@/hooks/use-table-pagination";
 import { combineQueries } from "@/lib/query-group";
 import { matchesRosterFilter, type RosterFilter } from "@/lib/roster-filter";
 import { useMembers } from "../hooks/use-members";
+import { isLastAdmin } from "../lib/last-admin";
 import { DeleteMemberDialog } from "./delete-member-dialog";
 import { MemberFormDialog } from "./member-form-dialog";
 import { MemberRow } from "./member-row";
@@ -94,6 +95,9 @@ export function MembersPanel() {
           <MemberRow
             key={member.id}
             member={member}
+            // Read from the unfiltered list: a class filter hiding the other admin must not make
+            // this one look like the last.
+            isLastAdmin={isLastAdmin(allMembers, member)}
             onEdit={(target) => {
               setEditing(target);
               setFormOpen(true);

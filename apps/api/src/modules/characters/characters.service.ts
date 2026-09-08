@@ -1,8 +1,10 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { GuildRole } from '@guild/shared/enums';
 import type {
   CreateCharacterInput,
   GuildMember,
@@ -37,6 +39,10 @@ const NOT_FOUND = 'Không tìm thấy thành viên.';
 
 /** Message when the Discord ID already belongs to another member. */
 const DISCORD_ID_TAKEN = 'Discord ID này đã được gán cho thành viên khác.';
+
+/** Message when the change would leave the guild with no admin at all. */
+const LAST_ADMIN =
+  'Đây là quản trị viên cuối cùng. Hãy chỉ định một quản trị viên khác trước khi hạ quyền hoặc xoá.';
 
 /** Member CRUD for admins — the controller locks every endpoint behind JwtAuthGuard. */
 @Injectable()
@@ -129,10 +135,7 @@ export class CharactersService {
     await this.ensureExists(id);
 
     try {
-      const row = await this.prisma.character.update({
-        where: { id },
-        data: input,
-      });
+      const row = await this.write(id, input);
 
       return toGuildMember(row);
     } catch (error) {
@@ -141,6 +144,29 @@ export class CharactersService {
         throw new ConflictException(DISCORD_ID_TAKEN);
       throw error;
     }
+  }
+
+  /**
+   * Apply the update, guarding the admin count only when the change can drop it.
+   * A rename must not cost a COUNT over the whole table, and a role staying `ADMIN` removes nobody.
+   * @param id - Member id
+   * @param input - Fields to change
+   * @returns The updated Character row
+   * @throws BadRequestException when this would demote the last admin
+   */
+  private async write(
+    id: string,
+    input: UpdateCharacterInput,
+  ): Promise<GuildMemberRow> {
+    if (input.role === undefined || input.role === GuildRole.ADMIN) {
+      return this.prisma.character.update({ where: { id }, data: input });
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      await this.ensureNotLastAdmin(tx, id);
+
+      return tx.character.update({ where: { id }, data: input });
+    });
   }
 
   /**
@@ -193,7 +219,11 @@ export class CharactersService {
   async remove(id: string): Promise<void> {
     await this.ensureExists(id);
 
-    await this.prisma.character.delete({ where: { id } });
+    await this.prisma.$transaction(async (tx) => {
+      await this.ensureNotLastAdmin(tx, id);
+
+      await tx.character.delete({ where: { id } });
+    });
   }
 
   /**
@@ -227,6 +257,43 @@ export class CharactersService {
     });
 
     return toGuildMember(row);
+  }
+
+  /**
+   * Assert that losing this member does not leave the guild without an admin.
+   *
+   * Reads and counts through the client it is given, so a caller inside a transaction sees the same
+   * state its own write will land on. Without that, two admins deleting each other at the same
+   * moment both read "one other admin left" and both succeed, and the guild lands on zero - a state
+   * only an env-variable change and a redeploy can undo.
+   *
+   * `DISCORD_ADMIN_IDS` is deliberately not counted. Those are infrastructure rescue IDs, not
+   * `Character` rows; counting them would let the last real admin be demoted, which is the very
+   * thing this guard exists to stop.
+   *
+   * @param client - Prisma client to read through, the same one the write will use
+   * @param id - Member about to be demoted or deleted
+   * @returns A promise resolving when the guild keeps at least one admin
+   * @throws BadRequestException when this is the last admin
+   */
+  private async ensureNotLastAdmin(
+    client: PrismaTransactionClient,
+    id: string,
+  ): Promise<void> {
+    const target = await client.character.findUnique({
+      where: { id },
+      select: { role: true },
+    });
+
+    // Only losing an admin can empty the admin set. A guild running purely on rescue IDs has zero
+    // admin rows, and deleting an ordinary member there must still work.
+    if (target?.role !== GuildRole.ADMIN) return;
+
+    const others = await client.character.count({
+      where: { role: GuildRole.ADMIN, id: { not: id } },
+    });
+
+    if (others === 0) throw new BadRequestException(LAST_ADMIN);
   }
 
   /**
