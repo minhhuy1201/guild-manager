@@ -78,9 +78,21 @@ export async function proxy(request: NextRequest) {
     // session ending; this one cannot be fixed by signing in again, because the next token will be
     // signed with the same mismatched secret - which is why it gets a sentence of its own instead of
     // the silent loop it used to produce.
-    isMisconfigured =
-      (accessToken !== undefined && access.status === "invalid") ||
-      (refreshToken !== undefined && refresh?.status === "invalid");
+    //
+    // One token that cleared the signature check settles it the other way: the secret is ours, so
+    // whatever went wrong after that - a corrupted access cookie, a refresh the API turned down -
+    // is not a configuration fault and must not be reported as one. `expired` counts, because
+    // `readJwt` only reaches it once the signature has passed.
+    const signatureVerified =
+      access.status === "expired" ||
+      refresh?.status === "valid" ||
+      refresh?.status === "expired";
+
+    // With no signature verified, every token the browser did send is an `invalid` one, so holding
+    // any token at all is what makes this a mismatch rather than a first visit. Truthiness, not
+    // `!== undefined`: an empty cookie is a cookie the browser holds but no token anyone signed, and
+    // it is already what `refresh` above treats as nothing.
+    isMisconfigured = !signatureVerified && Boolean(accessToken || refreshToken);
   }
 
   // Reaching here means there is no usable access token and no way to refresh.

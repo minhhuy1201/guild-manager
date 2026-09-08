@@ -206,6 +206,34 @@ describe("proxy", () => {
       const location = new URL(response.headers.get("location") ?? "");
       expect(location.searchParams.get("error")).toBeNull();
     });
+
+    it("một chữ ký hợp lệ là đủ để không đổ cho cấu hình", async () => {
+      // Access cookie hỏng nhưng refresh vẫn ký đúng secret của mình, và API từ chối refresh (sập,
+      // hoặc chủ thẻ vừa bị gỡ khỏi bang). Secret rõ ràng không sai - đừng bảo người ta đi báo admin.
+      refreshRequest.mockRejectedValue(new Error("API sập"));
+
+      const response = await proxy(
+        request(ROUTES.attendance, {
+          access: "khong-phai-jwt",
+          refresh: await token(3600),
+        })
+      );
+
+      const location = new URL(response.headers.get("location") ?? "");
+      expect(location.searchParams.get("error")).toBeNull();
+    });
+
+    it("cookie rỗng không phải là token ai đó đã ký", async () => {
+      // Ô cookie có mặt nhưng trống rỗng: không có chữ ký nào sai cả, nên đừng đổ cho cấu hình.
+      const req = request(ROUTES.attendance);
+      req.cookies.set(ACCESS_TOKEN_COOKIE, "");
+      req.cookies.set(REFRESH_TOKEN_COOKIE, "");
+
+      const response = await proxy(req);
+
+      const location = new URL(response.headers.get("location") ?? "");
+      expect(location.searchParams.get("error")).toBeNull();
+    });
   });
 
   it("vẫn cho khách vào trang đăng nhập", async () => {
