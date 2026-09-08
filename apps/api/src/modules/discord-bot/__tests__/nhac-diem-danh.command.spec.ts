@@ -4,6 +4,7 @@ import { TOKEN_TYPE } from '../../../common';
 import type { CommandDeps } from '../commands/command.types';
 import { nhacDiemDanhCommand } from '../commands/nhac-diem-danh.command';
 import { MESSAGE_FLAG } from '../discord.constants';
+import { DiscordApiError } from '../discord-rest';
 import type { ReminderOutcome } from '../reminder.service';
 
 const INTERACTION = {
@@ -98,5 +99,34 @@ describe('/nhac-diem-danh', () => {
     await nhacDiemDanhCommand.execute(INTERACTION, deps);
 
     expect(run).not.toHaveBeenCalled();
+  });
+
+  it('Discord từ chối vì thiếu quyền thì nói phải làm gì', async () => {
+    // Cùng tình huống 403 mà /cau-hinh-kenh và formation-announcer đã dịch. Ở đây nó từng thoát ra
+    // thành câu "Có lỗi xảy ra..." chung chung, và admin không có cách nào biết vì sao.
+    const { deps, run } = makeDeps(actor(GuildRole.ADMIN), {
+      status: 'nothing-due',
+    });
+    run.mockRejectedValue(
+      new DiscordApiError(403, '424242', 'Missing Permissions'),
+    );
+
+    const reply = await nhacDiemDanhCommand.execute(INTERACTION, deps);
+
+    expect(reply.data.content).toContain('quyền');
+    expect(reply.data.flags).toBe(MESSAGE_FLAG.ephemeral);
+  });
+
+  it('lỗi khác của Discord vẫn nổi lên nguyên trạng', async () => {
+    const { deps, run } = makeDeps(actor(GuildRole.ADMIN), {
+      status: 'nothing-due',
+    });
+    run.mockRejectedValue(
+      new DiscordApiError(500, '424242', 'Internal Server Error'),
+    );
+
+    await expect(
+      nhacDiemDanhCommand.execute(INTERACTION, deps),
+    ).rejects.toThrow(DiscordApiError);
   });
 });

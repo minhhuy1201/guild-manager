@@ -4,6 +4,7 @@ import { TOKEN_TYPE } from '../../../common';
 import { cauHinhKenhCommand } from '../commands/cau-hinh-kenh.command';
 import type { CommandDeps } from '../commands/command.types';
 import { MESSAGE_FLAG } from '../discord.constants';
+import { DiscordApiError } from '../discord-rest';
 
 const INTERACTION = {
   type: 2 as const,
@@ -56,10 +57,10 @@ describe('/cau-hinh-kenh', () => {
   });
 
   // Sai quyền phải lộ ra ngay lúc cấu hình, không phải 9h sáng hôm sau trong log không ai đọc.
-  it('không lưu gì khi Discord từ chối tin xác nhận', async () => {
+  it('không lưu gì khi Discord từ chối vì thiếu quyền, và nói rõ phải sửa gì', async () => {
     const postMessage = jest
       .fn()
-      .mockRejectedValue(new Error('Discord từ chối (403)'));
+      .mockRejectedValue(new DiscordApiError(403, '424242', 'Missing Access'));
     const { deps, set } = makeDeps(actor(GuildRole.ADMIN), postMessage);
 
     const reply = await cauHinhKenhCommand.execute(INTERACTION, deps);
@@ -67,6 +68,20 @@ describe('/cau-hinh-kenh', () => {
     expect(set).not.toHaveBeenCalled();
     expect(reply.data.flags).toBe(MESSAGE_FLAG.ephemeral);
     expect(reply.data.content).toContain('quyền');
+  });
+
+  // Lỗi hệ thống từng đội lốt lỗi phân quyền, đẩy admin đi sửa một cái không hỏng.
+  it('lỗi khác của Discord cũng không lưu, nhưng không đổ cho phân quyền', async () => {
+    const postMessage = jest
+      .fn()
+      .mockRejectedValue(new DiscordApiError(500, '424242', 'Server Error'));
+    const { deps, set } = makeDeps(actor(GuildRole.ADMIN), postMessage);
+
+    const reply = await cauHinhKenhCommand.execute(INTERACTION, deps);
+
+    expect(set).not.toHaveBeenCalled();
+    expect(reply.data.content).not.toContain('quyền');
+    expect(reply.data.content).toContain('chưa lưu');
   });
 
   it('thành viên thường bị từ chối, và chỉ mình họ thấy', async () => {

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { ErrorNotice } from "@/components/shared/error-notice";
 import { Card, CardContent } from "@/components/ui/card";
 import { DiscordLoginButton, loginErrorMessage } from "@/features/auth";
 
@@ -28,11 +29,7 @@ export default async function LoginPage({
         <p className="text-sm text-muted-foreground">
           Đăng nhập bằng Discord để xem và điểm danh lịch đánh trong tuần.
         </p>
-        {message && (
-          <p className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            {message}
-          </p>
-        )}
+        {message && <ErrorNotice message={message} />}
         <DiscordLoginButton redirect={redirect} />
       </CardContent>
     </Card>

@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { ROUTES } from "@/config/routes";
+import { WEB_AUTH_ERROR } from "@/features/auth";
 import { getSession } from "@/features/auth/server";
 import { SettingsTabs } from "@/features/settings";
 
@@ -19,7 +20,11 @@ export const metadata: Metadata = {
  */
 export default async function SettingsPage() {
   const session = await getSession();
-  if (!session || !canManageGuild(session.role)) redirect(ROUTES.attendance);
+  // With the reason, not bare: someone just demoted from ADMIN opens an old bookmark and would
+  // otherwise watch a page they use every day silently vanish.
+  if (!session || !canManageGuild(session.role)) {
+    redirect(`${ROUTES.attendance}?error=${WEB_AUTH_ERROR.adminOnly}`);
+  }
 
   return <SettingsTabs />;
 }

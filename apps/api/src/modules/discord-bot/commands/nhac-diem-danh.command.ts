@@ -2,8 +2,10 @@ import { canManageGuild } from '@guild/shared/lib';
 
 import { assertNever } from '../../../common';
 import { NOT_LINKED } from '../attendance-board';
+import { isDiscordForbidden } from '../discord-rest';
 import { callerDiscordId } from '../interaction.schema';
 import { ephemeralText } from '../reply';
+import type { ReminderOutcome } from '../reminder.service';
 import type { CommandReply, SlashCommand } from './command.types';
 
 /** Shown to a member who tried to run the reminder. */
@@ -12,6 +14,16 @@ const ADMIN_ONLY = 'Chỉ admin mới chạy được lệnh nhắc.';
 /** Shown when no channel has been configured yet — the fix is one command away. */
 const NO_CHANNEL =
   'Chưa có channel nào để nhắc. Gõ /cau-hinh-kenh trong channel muốn dùng.';
+
+/**
+ * Shown when Discord refuses the reminder post for lack of permission.
+ *
+ * The same refusal `/cau-hinh-kenh` already translates, worded for this command: the channel was
+ * configured once and something changed since, so the fix is to check it or configure it again.
+ */
+const CANNOT_POST =
+  'Bot không gửi được tin vào channel nhắc điểm danh. Kiểm tra bot còn thấy channel đó và có ' +
+  'quyền Send Messages không, hoặc chạy lại /cau-hinh-kenh trong channel muốn dùng.';
 
 /** Shown when nothing is due, or everyone whose deadline is due has already answered. */
 const NOTHING_TO_SAY =
@@ -39,7 +51,16 @@ export const nhacDiemDanhCommand: SlashCommand = {
     if (!resolved) return ephemeralText(NOT_LINKED);
     if (!canManageGuild(resolved.actor.role)) return ephemeralText(ADMIN_ONLY);
 
-    const outcome = await deps.reminders.run();
+    // `run` posts to Discord and lets a refusal through; its JSDoc leaves how loud that is to the
+    // caller. Loud here means one sentence naming the action, not the router's generic apology.
+    let outcome: ReminderOutcome;
+    try {
+      outcome = await deps.reminders.run();
+    } catch (error) {
+      if (isDiscordForbidden(error)) return ephemeralText(CANNOT_POST);
+
+      throw error;
+    }
 
     switch (outcome.status) {
       case 'no-channel':

@@ -31,6 +31,24 @@ export class DiscordApiError extends Error {
   }
 }
 
+/** Status Discord answers with when the bot lacks a permission in the channel. */
+export const DISCORD_FORBIDDEN = 403;
+
+/**
+ * Whether this error is Discord refusing a post for lack of permission.
+ *
+ * Three callers translate that refusal - `/cau-hinh-kenh`, the roster announcement and
+ * `/nhac-diem-danh` - and each says something different about which channel and which permission,
+ * so only the detection is shared. Copying the `instanceof` plus the status a third time is what
+ * `CLAUDE.md` calls the sign of a missed extraction.
+ *
+ * @param error - The caught error
+ * @returns true when Discord answered 403
+ */
+export function isDiscordForbidden(error: unknown): boolean {
+  return error instanceof DiscordApiError && error.status === DISCORD_FORBIDDEN;
+}
+
 /** One file travelling with a message — Discord takes them as multipart parts. */
 export interface OutgoingFile {
   /** Name Discord shows under the message */

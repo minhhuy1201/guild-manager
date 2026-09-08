@@ -2,6 +2,7 @@ import { canManageGuild } from '@guild/shared/lib';
 import { Logger } from '@nestjs/common';
 
 import { NOT_LINKED } from '../attendance-board';
+import { isDiscordForbidden } from '../discord-rest';
 import { callerDiscordId } from '../interaction.schema';
 import { ephemeralText } from '../reply';
 import type { CommandReply, SlashCommand } from './command.types';
@@ -13,10 +14,21 @@ const ADMIN_ONLY = 'Chỉ admin mới đặt được channel thông báo.';
 const CONFIRMATION =
   '✅ Channel này đã được đặt làm nơi bot nhắc điểm danh hằng ngày.';
 
-/** Shown when Discord refuses that confirmation post. */
+/** Shown when Discord refuses that confirmation post for lack of permission. */
 const CANNOT_POST =
   'Bot không gửi được tin vào channel này. Kiểm tra bot có thấy channel và có quyền ' +
   'Send Messages không, rồi chạy lại lệnh.';
+
+/**
+ * Shown when the confirmation post failed for any other reason.
+ *
+ * Separate from `CANNOT_POST` because telling an admin to check a permission that is already correct
+ * sends them looking for a fault that is not theirs. Deliberately says nothing about *why*: this
+ * branch covers a 500, a 429 and a network failure alike, so any more specific wording would be
+ * wrong for two of the three. What both messages share is the part that matters: nothing was saved.
+ */
+const CANNOT_REACH =
+  'Discord đang gặp sự cố nên chưa lưu gì cả. Thử lại lệnh sau ít phút.';
 
 /** Shown once the channel is stored. */
 const SAVED = 'Đã lưu. Từ giờ bot sẽ nhắc điểm danh trong channel này.';
@@ -57,7 +69,11 @@ export const cauHinhKenhCommand: SlashCommand = {
         error as Error,
       );
 
-      return ephemeralText(CANNOT_POST);
+      // Every failure still aborts — see the note above on why nothing is saved until the bot has
+      // proved it can post. Only which sentence the admin reads depends on the reason.
+      return ephemeralText(
+        isDiscordForbidden(error) ? CANNOT_POST : CANNOT_REACH,
+      );
     }
 
     await deps.channels.set(channelId);

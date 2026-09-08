@@ -1,5 +1,3 @@
-import { snapdom } from "@zumer/snapdom";
-
 import { CAPTURE_NODE_ATTRIBUTE } from "../components/formation-capture-sheet";
 
 /** Pixel density of the screenshot — 2 keeps the names readable when Discord scales the image. */
@@ -70,6 +68,10 @@ export function readCaptureNodes(expected: number): HTMLElement[] {
  * Fonts are embedded because the image is read on somebody else's machine: without them Discord
  * shows the grid in a fallback face, with every name a different width.
  *
+ * snapDOM is imported here rather than at the top of the module: it is only ever used by this one
+ * function, behind the "Thông báo đội hình" button an admin presses rarely, and a static import put
+ * it in the first bundle of every visit to /xep-team.
+ *
  * @param nodes - Elements to capture, in match order
  * @returns One `data:image/webp;base64,…` per node, in the same order
  * @throws Error when the browser cannot rasterise a node
@@ -77,6 +79,8 @@ export function readCaptureNodes(expected: number): HTMLElement[] {
 export async function captureFormations(
   nodes: HTMLElement[]
 ): Promise<string[]> {
+  const { snapdom } = await import("@zumer/snapdom");
+
   const images = await Promise.all(
     nodes.map((node) =>
       snapdom.toWebp(node, {
