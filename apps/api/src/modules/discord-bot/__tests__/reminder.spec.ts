@@ -1,5 +1,9 @@
 import type { BattleSession } from '@guild/shared/schemas';
 
+import {
+  MAX_CONTENT_LENGTH,
+  MAX_EMBED_DESCRIPTION_LENGTH,
+} from '../discord.constants';
 import { buildReminder, type DueSession } from '../reminder';
 
 const WEB_ORIGIN = 'https://mmgh-nth.vercel.app';
@@ -122,5 +126,65 @@ describe('buildReminder', () => {
 
     expect(row?.components).toHaveLength(2);
     expect(row?.components[1]).toMatchObject({ url: WEB_ORIGIN });
+  });
+
+  describe('giới hạn ký tự của Discord', () => {
+    /**
+     * Một ngày đánh thiếu rất nhiều người, đủ để tràn cả hai giới hạn.
+     * @param count - Số người còn thiếu
+     * @returns Ngày đánh kèm danh sách thiếu
+     */
+    function crowded(count: number): DueSession {
+      return {
+        session: session(),
+        missing: Array.from({ length: count }, (_, index) => ({
+          // Tên dài như tên thật của bang, không phải 'a'.
+          name: `Thành Viên Số ${index} Tên Hơi Dài`,
+          // Xâu chuỗi chứ không cộng số: 1e17 vượt Number.MAX_SAFE_INTEGER, cộng vào thì nhiều
+          // index cho ra cùng một id và tập người bị thiếu teo lại.
+          discordId: `10000000000${String(index).padStart(7, '0')}`,
+        })),
+      };
+    }
+
+    it('content không vượt 2000 ký tự dù bang đông đến đâu', () => {
+      // Comment ở reminder.ts đã gọi tên đúng rủi ro này nhưng không có dòng nào xử lý: Discord trả
+      // 400, DiscordApiError nổi lên thô, và sáng hôm đó không có tin nhắn nhắc nào.
+      const payload = buildReminder([crowded(300)], WEB_ORIGIN);
+
+      expect(payload.content.length).toBeLessThanOrEqual(MAX_CONTENT_LENGTH);
+      expect(payload.content).toContain('người nữa');
+    });
+
+    it('chỉ cho phép ping đúng những người thật sự được nhắc tới', () => {
+      const payload = buildReminder([crowded(300)], WEB_ORIGIN);
+
+      const mentioned = payload.allowed_mentions?.users ?? [];
+      expect(mentioned.length).toBeGreaterThan(0);
+      expect(mentioned.length).toBeLessThan(300);
+      for (const id of mentioned) {
+        expect(payload.content).toContain(`<@${id}>`);
+      }
+    });
+
+    it('embed description không vượt 4096 ký tự', () => {
+      const payload = buildReminder([crowded(300)], WEB_ORIGIN);
+
+      expect(payload.embeds?.[0].description.length).toBeLessThanOrEqual(
+        MAX_EMBED_DESCRIPTION_LENGTH,
+      );
+    });
+
+    it('nhiều ngày dồn lại cũng không tràn', () => {
+      const payload = buildReminder(
+        [crowded(120), crowded(120), crowded(120)],
+        WEB_ORIGIN,
+      );
+
+      expect(payload.content.length).toBeLessThanOrEqual(MAX_CONTENT_LENGTH);
+      expect(payload.embeds?.[0].description.length).toBeLessThanOrEqual(
+        MAX_EMBED_DESCRIPTION_LENGTH,
+      );
+    });
   });
 });
