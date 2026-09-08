@@ -569,6 +569,15 @@ no staging environment, no verified backups, no monitoring or alerting, no appli
 limiting, and no automatic rollback. Details and consequences are in
 [`production.md`](production.md) §6.
 
+**No optimistic locking on the roster.** `PUT /team-builder/formations/:sessionId` and
+`PUT /team-builder/team-names` both clear by key and rebuild from the payload; neither compares
+against what the client read when it opened the page. Two admins editing the same battle day means
+the later save wins and the earlier one's work disappears with no conflict, no warning and no merge.
+This is an accepted risk, not an oversight: the guild runs one or two admins, and a version column
+plus a conflict flow on the UI is a large cost for a situation that has not happened. Revisit it the
+moment three or more admins edit the same day regularly - see
+[`custom-spec/2026-09-07-flow-audit-overview.md`](custom-spec/2026-09-07-flow-audit-overview.md) AD5.
+
 Migrations are **not** in that list: the `migrate` job in `ci.yml` applies them after the tests go
 green and before `deploy-api`, so new code never meets the old schema. They are still authored by
 hand, locally with `prisma:migrate`, and committed.
