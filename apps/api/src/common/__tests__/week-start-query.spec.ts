@@ -1,5 +1,7 @@
 import { weekStartQuerySchema } from '@guild/shared/schemas';
 
+// Lives beside `common/dto/week-start-query.dto.ts` rather than in one module: the schema is
+// what all four week-scoped endpoints share, so its contract is not any single module's.
 describe('weekStartQuerySchema', () => {
   it('không gửi weekStart là hợp lệ', () => {
     expect(weekStartQuerySchema.parse({})).toEqual({});
