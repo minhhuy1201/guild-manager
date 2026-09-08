@@ -3,10 +3,11 @@ import { shiftVnDate, vnParts } from "@guild/shared/lib";
 /**
  * How many weeks back the History screen offers, the open one included.
  *
- * Eight, to match the 56-day retention the roster already applies: further back there is nothing
- * left to cross-check a disputed week against.
+ * Three: the open week, the one that just closed, and the one before it. That covers the only
+ * question anyone actually asks - "tuần rồi tôi có điểm danh không?" - and stops the picker from
+ * turning into a long list of weeks nobody reopens.
  */
-export const HISTORY_WEEK_COUNT = 8;
+export const HISTORY_WEEK_COUNT = 3;
 
 /** Days from Monday to the Saturday that closes the attendance week. */
 const MONDAY_TO_SATURDAY = 5;
