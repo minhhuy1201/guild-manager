@@ -177,6 +177,15 @@ save on the host the same way they do outside a container. The ports and URLs ar
 `DATABASE_URL` (the database is `db`, not `localhost`) and sets `API_INTERNAL_URL` for the web
 container.
 
+> **Why the api `dev` script passes `--no-shell`.** By default `nest start --watch` launches the app
+> through `sh -c`, so the process it holds a handle on is the shell, not Node. To kill the app on
+> rebuild it then walks the process tree with the `ps` command, which `node:24-bookworm-slim` does
+> not ship. The kill silently reached only the shell, Node was orphaned to PID 1 still holding 3001,
+> and every later rebuild died with `EADDRINUSE`, permanently, until the container was recreated.
+> `--no-shell` makes the app a direct child of the CLI, so the handle it holds is the process it has
+> to kill and no `ps` lookup is involved. Do not drop the flag; installing `procps` in the image
+> would paper over the same hole.
+
 What the profile adds beyond the `db` service:
 
 | Service | Role |
@@ -310,6 +319,7 @@ Never commit: `.env*` (except `.env.example`), `apps/api/src/generated/`, `dist/
 | `docker compose --profile dev up` fails on `env_file` | `apps/api/.env` or `apps/web/.env.local` does not exist yet — see section 2 |
 | A dependency added on the host is missing inside the containers | `deps` only installs on `up`; run `docker compose --profile dev up -d --force-recreate deps` (or restart the stack) after changing a `package.json` |
 | Port 3000/3001 already in use when starting the profile | A host-side `pnpm dev` is still running — the two modes publish the same ports and cannot share them |
+| `EADDRINUSE :::3001` inside `guild-manager-api` after a save, then on every save after that | An earlier app process was orphaned instead of killed and still holds the port. `docker compose restart api` clears it; if it comes back, check that `apps/api`'s `dev` script still passes `--no-shell` (see section 5) |
 
 ## See also
 
