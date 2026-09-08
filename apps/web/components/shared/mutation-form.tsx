@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useSessionRecovery } from "@/hooks/use-session-recovery";
 import { errorMessageOf } from "@/lib/error-message";
 import { useReportMutationPending } from "./mutation-pending";
 
@@ -50,6 +51,10 @@ export interface MutationFormProps {
  * It holds its own pending flag rather than taking one: `member-form-dialog`
  * has two mutations to fold into one flag, and folding is exactly what should
  * not be repeated per caller.
+ *
+ * The same reasoning puts the expired-session recovery here: every dialog in the
+ * app writes through a Server Action, and none of them can renew a token on
+ * their own.
  * @param title - Dialog title
  * @param description - Optional line under the title
  * @param submitLabel - Confirm button label while idle
@@ -79,6 +84,7 @@ export function MutationForm({
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
   const reportPending = useReportMutationPending();
+  const recoverSession = useSessionRecovery();
 
   /**
    * Run the write, then either close or show what went wrong.
@@ -94,7 +100,11 @@ export function MutationForm({
     try {
       await run();
     } catch (caught) {
-      setError(errorMessageOf(caught, fallbackError));
+      // A 401 is not this write failing, it is the session having run out while the dialog sat open.
+      // The recovery navigates so the proxy can renew the pair; pressing save again then works.
+      if (!recoverSession(caught)) {
+        setError(errorMessageOf(caught, fallbackError));
+      }
       return;
     } finally {
       // Both flags drop however the write ended. The shell's copy matters most

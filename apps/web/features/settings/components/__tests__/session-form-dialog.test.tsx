@@ -8,6 +8,11 @@ import type { BattleSession } from "@guild/shared/schemas";
 
 import { SessionFormDialog } from "../session-form-dialog";
 
+// The write protocol recovers an expired session by navigating, which needs a router; these suites
+// render outside one.
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+
+
 // The request module is a "use server" file reaching into httpOnly cookies; jsdom cannot load it,
 // and this test is about the form's fields, not about the write.
 vi.mock("../../api/battle-sessions-api", () => ({

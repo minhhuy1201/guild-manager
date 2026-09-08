@@ -29,6 +29,11 @@ vi.mock("../hooks/use-attendance", () => ({
 
 import { AttendanceGrid } from "../components/attendance-grid";
 
+// The write protocol recovers an expired session by navigating, which needs a router; these suites
+// render outside one.
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+
+
 afterEach(cleanup);
 
 /**

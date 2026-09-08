@@ -13,6 +13,7 @@ import { QueryBoundary } from "@/components/shared/query-boundary";
 import { SessionLabel } from "@/components/shared/session-label";
 import { Spinner } from "@/components/shared/spinner";
 import { toastError, toastSuccess } from "@/components/shared/toast";
+import { useSessionRecovery } from "@/hooks/use-session-recovery";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -82,6 +83,7 @@ export function MemberAttendanceCard() {
   const { data: sessions } = useBattleSessions();
   const { data: records } = useAttendanceRecords();
   const { mutateAsync: mark, isPending, variables } = useMarkAttendance();
+  const recoverSession = useSessionRecovery();
   const board = useAttendanceBoard();
 
   const battleSessions = sessions ?? [];
@@ -114,6 +116,9 @@ export function MemberAttendanceCard() {
         `Đã điểm danh "${attendanceLabel(isPresent)}" cho ${battleSession.label}.`
       );
     } catch (error) {
+      // A 401 here is an access token that ran out while the tab sat open; only a navigation can
+      // renew it, so saying "lỗi" and stopping would be wrong.
+      if (recoverSession(error)) return;
       toastError(
         error instanceof ApiError ? error.message : FALLBACK_ERROR_MESSAGE
       );
@@ -142,6 +147,9 @@ export function MemberAttendanceCard() {
       });
       toastSuccess(`Đã lưu lý do cho ${battleSession.label}.`);
     } catch (error) {
+      // A 401 here is an access token that ran out while the tab sat open; only a navigation can
+      // renew it, so saying "lỗi" and stopping would be wrong.
+      if (recoverSession(error)) return;
       toastError(
         error instanceof ApiError ? error.message : FALLBACK_ERROR_MESSAGE
       );
