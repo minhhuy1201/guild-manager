@@ -211,16 +211,35 @@ export class CharactersService {
   }
 
   /**
-   * Delete a member along with all their attendance and formation slots (cascade in the database).
+   * Delete a member: their attendance history goes with them, their formation slots keep their notes.
+   *
+   * `FormationSlot.characterId` is `SetNull`, so deleting a member empties the cells they occupied
+   * instead of removing them - a note describes the position, not the person, which is the rule
+   * `TeamBuilderService.releaseCharacterFromSession` already follows when someone answers "Không".
+   * The cells that carried no note hold nothing once their occupant is gone, and `schema.prisma`
+   * says such a cell has no row, so they are deleted here first.
+   *
+   * That `deleteMany` writes a table `team-builder` owns. It is here because the alternative is a
+   * cycle: `team-builder` already depends on `characters` (`listIds`), so `characters` cannot import
+   * it back, and a third module for one statement buys nothing. Both writes share one transaction,
+   * so no read sees the member gone while their empty cells remain.
+   *
    * @param id - Member id
    * @returns A promise resolving once they are deleted
    * @throws NotFoundException when no such member exists
+   * @throws BadRequestException when this is the last admin
    */
   async remove(id: string): Promise<void> {
     await this.ensureExists(id);
 
     await this.prisma.$transaction(async (tx) => {
+      // The guard runs before any write: the transaction would roll the deleteMany back anyway,
+      // but refusing first keeps the rejected path from touching another module's table at all.
       await this.ensureNotLastAdmin(tx, id);
+
+      await tx.formationSlot.deleteMany({
+        where: { characterId: id, note: null },
+      });
 
       await tx.character.delete({ where: { id } });
     });
