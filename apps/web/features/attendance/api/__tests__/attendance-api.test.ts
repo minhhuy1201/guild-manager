@@ -11,8 +11,12 @@ vi.mock("@/features/auth/server", () => ({
   getAccessToken: () => Promise.resolve(ACCESS_TOKEN),
 }));
 
-const { fetchAttendanceRecords, fetchCurrentWeek, markAttendance } =
-  await import("../attendance-api");
+const {
+  fetchAttendanceRecords,
+  fetchBattleSessions,
+  fetchCurrentWeek,
+  markAttendance,
+} = await import("../attendance-api");
 
 /**
  * Build a fake fetch returning a specific response.
@@ -129,5 +133,35 @@ describe("attendance-api", () => {
         isPresent: true,
       })
     ).rejects.toThrowError("Đã quá hạn điểm danh ngày này.");
+  });
+
+  describe("đọc theo tuần", () => {
+    it("không truyền tuần thì gọi endpoint trần", async () => {
+      const fetchMock = mockFetch({ status: 200, body: { data: [] } });
+
+      await fetchAttendanceRecords();
+      await fetchBattleSessions();
+
+      expect(fetchMock.mock.calls[0][0]).toMatch(/\/attendance\/records$/);
+      expect(fetchMock.mock.calls[1][0]).toMatch(/\/battle-sessions$/);
+    });
+
+    it("gửi weekStart cho cả record lẫn ngày đánh", async () => {
+      const fetchMock = mockFetch({ status: 200, body: { data: [] } });
+      const weekStart = "2026-08-30T17:00:00.000Z";
+
+      await fetchAttendanceRecords(weekStart);
+      await fetchBattleSessions(weekStart);
+
+      const [records, sessions] = fetchMock.mock.calls.map(
+        (call: unknown[]) => call[0] as string
+      );
+      expect(records).toContain(
+        `/attendance/records?weekStart=${encodeURIComponent(weekStart)}`
+      );
+      expect(sessions).toContain(
+        `/battle-sessions?weekStart=${encodeURIComponent(weekStart)}`
+      );
+    });
   });
 });

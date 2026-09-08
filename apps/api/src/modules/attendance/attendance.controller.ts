@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type {
   AttendanceRecord,
@@ -6,7 +6,12 @@ import type {
   Character,
 } from '@guild/shared/schemas';
 
-import { CurrentUser, JwtAuthGuard, type JwtPayload } from '../../common';
+import {
+  CurrentUser,
+  JwtAuthGuard,
+  WeekStartQueryDto,
+  type JwtPayload,
+} from '../../common';
 import { AttendanceService } from './attendance.service';
 import { MarkAttendanceDto } from './dto/mark-attendance.dto';
 
@@ -32,23 +37,25 @@ export class AttendanceController {
   }
 
   /**
-   * Attendance entries of the open week — the whole guild's, for every signed-in caller.
+   * Attendance entries of one week — the whole guild's, for every signed-in caller.
+   * @param query - Optional `weekStart`; omitted means the open week
    * @returns The attendance records
    */
   @Get('records')
-  @ApiOperation({ summary: 'Lượt điểm danh của tuần đang mở' })
-  getRecords(): Promise<AttendanceRecord[]> {
-    return this.attendance.getRecords();
+  @ApiOperation({ summary: 'Lượt điểm danh của một tuần' })
+  getRecords(@Query() query: WeekStartQueryDto): Promise<AttendanceRecord[]> {
+    return this.attendance.getRecords(query.weekStart);
   }
 
   /**
-   * Yes/no tallies per session in the open week.
+   * Yes/no tallies per session in one week.
+   * @param query - Optional `weekStart`; omitted means the open week
    * @returns Tallies per session
    */
   @Get('summary')
-  @ApiOperation({ summary: 'Số người đã điểm danh mỗi trận' })
-  getSummary(): Promise<AttendanceSummary[]> {
-    return this.attendance.getSummary();
+  @ApiOperation({ summary: 'Số người đã điểm danh mỗi trận trong một tuần' })
+  getSummary(@Query() query: WeekStartQueryDto): Promise<AttendanceSummary[]> {
+    return this.attendance.getSummary(query.weekStart);
   }
 
   /**

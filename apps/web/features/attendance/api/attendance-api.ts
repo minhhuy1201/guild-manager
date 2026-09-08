@@ -43,11 +43,23 @@ export async function fetchCharacters(): Promise<Character[]> {
 }
 
 /**
- * Get the battle sessions of the open week.
+ * Turn an optional week into the query string the two week-scoped endpoints take.
+ * @param weekStart - Monday 00:00 of the week (ISO); null or undefined means the open week
+ * @returns "?weekStart=…", or an empty string for the open week
+ */
+function weekQuery(weekStart?: string | null): string {
+  return weekStart ? `?weekStart=${encodeURIComponent(weekStart)}` : "";
+}
+
+/**
+ * Get the battle sessions of one week.
+ * @param weekStart - Monday 00:00 of the week (ISO); omitted means the open week
  * @returns The session list
  */
-export async function fetchBattleSessions(): Promise<BattleSession[]> {
-  return apiFetch<BattleSession[]>("/battle-sessions", {
+export async function fetchBattleSessions(
+  weekStart?: string | null
+): Promise<BattleSession[]> {
+  return apiFetch<BattleSession[]>(`/battle-sessions${weekQuery(weekStart)}`, {
     headers: await authHeader(),
   });
 }
@@ -65,16 +77,18 @@ export async function fetchCurrentWeek(): Promise<Week> {
 }
 
 /**
- * Get the open week's attendance records — the whole guild's, whoever is signed in.
+ * Get one week's attendance records — the whole guild's, whoever is signed in.
  * The API returns an array; components look records up by (character, session), so it is turned into a map.
+ * @param weekStart - Monday 00:00 of the week (ISO); omitted means the open week
  * @returns A map of records keyed by `recordKey`
  */
-export async function fetchAttendanceRecords(): Promise<
-  Record<string, AttendanceRecord>
-> {
-  const records = await apiFetch<AttendanceRecord[]>("/attendance/records", {
-    headers: await authHeader(),
-  });
+export async function fetchAttendanceRecords(
+  weekStart?: string | null
+): Promise<Record<string, AttendanceRecord>> {
+  const records = await apiFetch<AttendanceRecord[]>(
+    `/attendance/records${weekQuery(weekStart)}`,
+    { headers: await authHeader() }
+  );
 
   return Object.fromEntries(
     records.map((record) => [

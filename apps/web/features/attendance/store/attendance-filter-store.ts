@@ -17,8 +17,15 @@ interface AttendanceFilterState {
   sessionId: string | null;
   setSessionId: (value: string | null) => void;
   /**
-   * Clear every filter the History screen owns in one write — its roster filter, the presence and
-   * the session. History-only, like the two fields it resets: the Attendance grid has no such
+   * Week the History screen is reading; null means the open week. Unlike the other three this one
+   * chooses *which data is fetched* rather than narrowing what was already fetched - which is why
+   * changing it changes a query key.
+   */
+  weekStart: string | null;
+  setWeekStart: (value: string | null) => void;
+  /**
+   * Clear every filter the History screen owns in one write — its roster filter, the presence, the
+   * session and the week. History-only, like the fields it resets: the Attendance grid has no such
    * button, so a scoped `resetFilters(scope)` would carry a branch nothing calls.
    */
   resetHistoryFilters: () => void;
@@ -43,10 +50,15 @@ export const useAttendanceFilterStore = create<AttendanceFilterState>((set) => (
   setPresence: (value) => set({ presence: value }),
   sessionId: null,
   setSessionId: (value) => set({ sessionId: value }),
+  weekStart: null,
+  // Clearing the session alongside it: an id from the week being left resolves to nothing anyway,
+  // and leaving it set would show the picker filtering on a day that is not on screen.
+  setWeekStart: (value) => set({ weekStart: value, sessionId: null }),
   resetHistoryFilters: () =>
     set((state) => ({
       filters: { ...state.filters, history: EMPTY_FILTER },
       presence: "all",
       sessionId: null,
+      weekStart: null,
     })),
 }));

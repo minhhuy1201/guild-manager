@@ -14,10 +14,9 @@ import type {
   TeamNames,
 } from '@guild/shared/schemas';
 
-import { AdminGuard, JwtAuthGuard } from '../../common';
+import { AdminGuard, JwtAuthGuard, WeekStartQueryDto } from '../../common';
 import { SaveFormationDto } from './dto/save-formation.dto';
 import { SaveTeamNamesDto } from './dto/save-team-names.dto';
-import { WeekStartQueryDto } from './dto/week-start-query.dto';
 import { TeamBuilderService } from './team-builder.service';
 
 @ApiTags('team-builder')

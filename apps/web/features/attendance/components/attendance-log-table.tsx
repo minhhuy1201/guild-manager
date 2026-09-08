@@ -18,6 +18,7 @@ import {
   useBattleSessions,
   useCharacters,
   useFilteredCharacters,
+  useHistoryWeek,
   useSessionFilter,
 } from "../hooks/use-attendance";
 import { matchesPresenceFilter } from "../lib/presence-filter";
@@ -45,16 +46,18 @@ const COLUMN_CLASSES = [
 
 /**
  * The attendance history table: who marked what, for which session, yes/no, and when.
- * Filtered by the History screen's filters (search + class + presence + session), newest first.
+ * Reads the week the History screen has selected, and filters it by that screen's filters
+ * (search + class + presence + session), newest first.
  * @returns The history table card
  */
 export function AttendanceLogTable() {
-  const { data: records } = useAttendanceRecords();
+  const { weekStart } = useHistoryWeek();
+  const { data: records } = useAttendanceRecords(weekStart);
   const { data: characters } = useCharacters();
-  const { data: sessions } = useBattleSessions();
-  const state = useAttendanceBoard();
+  const { data: sessions } = useBattleSessions(weekStart);
+  const state = useAttendanceBoard(weekStart);
   const presence = useAttendanceFilterStore((s) => s.presence);
-  const { selectedSession } = useSessionFilter();
+  const { selectedSession } = useSessionFilter(weekStart);
 
   const characterMap = useMemo(
     () => new Map((characters ?? []).map((c) => [c.id, c])),

@@ -191,6 +191,7 @@ src/
 │   ├── clock/        # Clock + SystemClock + ClockModule — the only source of "now"
 │   ├── constants/    # REQUEST_ID_HEADER…
 │   ├── decorators/   # current-user.decorator.ts, raw-response.decorator.ts
+│   ├── dto/         # week-start-query.dto.ts — the `?weekStart=` every week-scoped GET takes
 │   ├── filters/      # all-exceptions.filter.ts — one error shape for everything
 │   ├── guards/       # jwt-auth.guard.ts, admin.guard.ts
 │   ├── interceptors/ # logging (success path) + transform ({ data })
@@ -283,8 +284,8 @@ Endpoints, all behind the `/api` prefix:
 | `PATCH` | `/battle-sessions/:id` | Edit a match | Admin |
 | `DELETE` | `/battle-sessions/:id` | Delete a scrim (Guild War cannot be deleted) | Admin |
 | `GET` | `/attendance/characters` | Characters for the attendance board (the whole guild, any role) | Bearer |
-| `GET` | `/attendance/records` | Attendance entries of the open week (the whole guild, any role) | Bearer |
-| `GET` | `/attendance/summary` | Yes/no counts per match, no identities. **No caller today** — kept for the attendance dashboard | Bearer |
+| `GET` | `/attendance/records?weekStart=` | Attendance entries of a week, the open one by default (the whole guild, any role) | Bearer |
+| `GET` | `/attendance/summary?weekStart=` | Yes/no counts per match of a week, the open one by default, no identities. **No caller today** — kept for the attendance dashboard | Bearer |
 | `POST` | `/attendance` | Mark one character for one match (with a reason when the answer is "Không") | Bearer (own character; admin marks for anyone and bypasses the deadline) |
 | `GET` | `/team-builder/weeks` | Weeks that still have roster data | Bearer |
 | `GET` | `/team-builder/formations?weekStart=` | Match rosters of a week | Bearer |

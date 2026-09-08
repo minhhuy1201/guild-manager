@@ -13,13 +13,12 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { BattleSession, Week } from '@guild/shared/schemas';
 
-import { AdminGuard, JwtAuthGuard } from '../../common';
+import { AdminGuard, JwtAuthGuard, WeekStartQueryDto } from '../../common';
 import { BattleSessionsService } from './battle-sessions.service';
 import {
   CreateBattleSessionDto,
   UpdateBattleSessionDto,
 } from './dto/battle-session.dto';
-import { WeekStartQueryDto } from './dto/week-start-query.dto';
 
 /**
  * The battle schedule — reading needs only a session, writing needs an admin, so the auth guard sits
