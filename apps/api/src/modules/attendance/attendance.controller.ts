@@ -6,10 +6,14 @@ import type {
   Character,
 } from '@guild/shared/schemas';
 
-import { CurrentUser, JwtAuthGuard, type JwtPayload } from '../../common';
+import {
+  CurrentUser,
+  JwtAuthGuard,
+  WeekStartQueryDto,
+  type JwtPayload,
+} from '../../common';
 import { AttendanceService } from './attendance.service';
 import { MarkAttendanceDto } from './dto/mark-attendance.dto';
-import { WeekStartQueryDto } from './dto/week-start-query.dto';
 
 /**
  * Attendance — every route needs a session: attendance is guild-wide information, readable by any
@@ -44,13 +48,14 @@ export class AttendanceController {
   }
 
   /**
-   * Yes/no tallies per session in the open week.
+   * Yes/no tallies per session in one week.
+   * @param query - Optional `weekStart`; omitted means the open week
    * @returns Tallies per session
    */
   @Get('summary')
-  @ApiOperation({ summary: 'Số người đã điểm danh mỗi trận' })
-  getSummary(): Promise<AttendanceSummary[]> {
-    return this.attendance.getSummary();
+  @ApiOperation({ summary: 'Số người đã điểm danh mỗi trận trong một tuần' })
+  getSummary(@Query() query: WeekStartQueryDto): Promise<AttendanceSummary[]> {
+    return this.attendance.getSummary(query.weekStart);
   }
 
   /**

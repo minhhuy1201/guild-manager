@@ -143,10 +143,16 @@ interface SessionFilter {
  * A stored id matching no session — the admin deleted it while the filter was set — resolves to
  * null, so the picker and the table agree on "every session" instead of one showing "Tất cả" and the
  * other showing nothing.
+ *
+ * The week is a parameter rather than read from `useHistoryWeek` in here: every caller already holds
+ * it, and reaching for it internally made components that need both run the week hook twice.
+ *
+ * @param weekStart - Week whose sessions to offer (ISO); null, the default, is the open week
  * @returns The week's sessions, the resolved selection and its setter
  */
-export function useSessionFilter(): SessionFilter {
-  const { weekStart } = useHistoryWeek();
+export function useSessionFilter(
+  weekStart: string | null = null
+): SessionFilter {
   const { data: sessions } = useBattleSessions(weekStart);
   const sessionId = useAttendanceFilterStore((s) => s.sessionId);
   const setSessionId = useAttendanceFilterStore((s) => s.setSessionId);

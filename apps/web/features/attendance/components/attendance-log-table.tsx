@@ -57,7 +57,7 @@ export function AttendanceLogTable() {
   const { data: sessions } = useBattleSessions(weekStart);
   const state = useAttendanceBoard(weekStart);
   const presence = useAttendanceFilterStore((s) => s.presence);
-  const { selectedSession } = useSessionFilter();
+  const { selectedSession } = useSessionFilter(weekStart);
 
   const characterMap = useMemo(
     () => new Map((characters ?? []).map((c) => [c.id, c])),

@@ -37,7 +37,7 @@ const SKELETON_CARDS = 3;
 export function AttendanceSummaryDashboard() {
   const { weekStart } = useHistoryWeek();
   const { data: records } = useAttendanceRecords(weekStart);
-  const { sessions, selectedSession } = useSessionFilter();
+  const { sessions, selectedSession } = useSessionFilter(weekStart);
   const characters = useFilteredCharacters(SCOPE);
   const state = useAttendanceBoard(weekStart);
 

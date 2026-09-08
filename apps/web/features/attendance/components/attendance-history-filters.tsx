@@ -127,9 +127,14 @@ export function AttendanceHistoryFilters() {
   const presence = useAttendanceFilterStore((s) => s.presence);
   const setPresence = useAttendanceFilterStore((s) => s.setPresence);
   const resetFilters = useAttendanceFilterStore((s) => s.resetHistoryFilters);
-  const { options: weeks, selected: selectedWeek, setWeekStart } =
-    useHistoryWeek();
-  const { sessions, selectedSession, setSessionId } = useSessionFilter();
+  const {
+    options: weeks,
+    selected: selectedWeek,
+    weekStart,
+    setWeekStart,
+  } = useHistoryWeek();
+  const { sessions, selectedSession, setSessionId } =
+    useSessionFilter(weekStart);
 
   // The open week is the default, so the picker shows it whenever nothing else is chosen.
   const shownWeek = selectedWeek ?? weeks[0] ?? null;

@@ -531,6 +531,24 @@ describe('AttendanceService', () => {
         { sessionId: 'session-sat', coCount: 3, khongCount: 1 },
       ]);
     });
+
+    it('đọc đúng tuần được truyền, không phải tuần đang mở', async () => {
+      prisma.attendanceRecord.groupBy.mockResolvedValue([]);
+
+      await service.getSummary('2026-08-31T00:00:00.000Z');
+
+      expect(battleSessions.listByWeek).toHaveBeenCalledWith(
+        '2026-08-31T00:00:00.000Z',
+      );
+    });
+
+    it('không truyền gì thì vẫn là tuần đang mở', async () => {
+      prisma.attendanceRecord.groupBy.mockResolvedValue([]);
+
+      await service.getSummary();
+
+      expect(battleSessions.listByWeek).toHaveBeenCalledWith(undefined);
+    });
   });
 
   describe('getRecords', () => {

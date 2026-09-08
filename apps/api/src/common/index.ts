@@ -5,6 +5,7 @@ export * from './constants/auth.constant';
 export * from './constants/http.constant';
 export * from './decorators/current-user.decorator';
 export * from './decorators/raw-response.decorator';
+export * from './dto/week-start-query.dto';
 export * from './filters/all-exceptions.filter';
 export * from './guards/admin.guard';
 export * from './guards/jwt-auth.guard';

@@ -110,11 +110,17 @@ export class AttendanceService {
   }
 
   /**
-   * Yes/no tallies per session in the open week.
-   * @returns Tallies per session, carrying no identities
+   * Yes/no tallies per session in one week.
+   *
+   * Takes the week for the same reason `getRecords` does, and deliberately with the same signature:
+   * the two answer the same question at different resolutions, so one of them silently pinned to
+   * the open week would make a caller that passes a week to both quietly disagree with itself.
+   *
+   * @param weekStart - Any instant inside the week to read; omitted means the open week
+   * @returns Tallies per session of that week, carrying no identities
    */
-  async getSummary(): Promise<AttendanceSummary[]> {
-    const sessions = await this.battleSessions.listByWeek();
+  async getSummary(weekStart?: string): Promise<AttendanceSummary[]> {
+    const sessions = await this.battleSessions.listByWeek(weekStart);
     const grouped = await this.prisma.attendanceRecord.groupBy({
       by: ['sessionId', 'isPresent'],
       where: { sessionId: { in: sessions.map((session) => session.id) } },
