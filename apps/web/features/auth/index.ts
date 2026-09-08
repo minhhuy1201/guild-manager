@@ -9,4 +9,6 @@
 export { DiscordLoginButton } from "./components/discord-login-button";
 export { UserMenu } from "./components/user-menu";
 export { useSession, sessionKeys } from "./hooks/use-session";
-export { loginErrorMessage, WEB_AUTH_ERROR } from "./lib/login-error";
+export { loginErrorMessage } from "./lib/login-error";
+// From `core/`, not `lib/`: that is where the codes moved when `proxy.ts` started setting one.
+export { WEB_AUTH_ERROR } from "./core/auth-error";

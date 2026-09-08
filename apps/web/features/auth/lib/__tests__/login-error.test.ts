@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { loginErrorMessage, WEB_AUTH_ERROR } from "../login-error";
+import { WEB_AUTH_ERROR } from "../../core/auth-error";
+import { loginErrorMessage } from "../login-error";
 
 describe("loginErrorMessage", () => {
   it("dịch mã lỗi backend sang câu tiếng Việt", () => {

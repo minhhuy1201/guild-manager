@@ -1,20 +1,12 @@
+import { WEB_AUTH_ERROR } from "../core/auth-error";
+
 /** The sentence used when the backend sends an error code not in the table. */
 const FALLBACK = "Không đăng nhập được, vui lòng thử lại.";
 
 /**
- * Codes the web app puts on `?error=` itself, for a redirect it decided on its own.
- * Separate from `AUTH_ERROR` on the API because no request ever carries these - they are the answer
- * to "why am I suddenly on a different page".
- */
-export const WEB_AUTH_ERROR = {
-  /** An admin-only page was opened by someone who is not (or is no longer) an admin */
-  adminOnly: "khong-du-quyen",
-} as const;
-
-/**
  * The Vietnamese sentence for each error code that can appear on `?error=`.
  * The backend's codes must match `AUTH_ERROR` in `apps/api/src/modules/auth/auth.constant.ts`; the
- * web app's own are in `WEB_AUTH_ERROR` above.
+ * web app's own live in `core/auth-error.ts`.
  */
 const MESSAGES: Record<string, string> = {
   "tu-choi": "Bạn đã huỷ đăng nhập bằng Discord.",
@@ -24,6 +16,8 @@ const MESSAGES: Record<string, string> = {
   "discord-loi": "Không kết nối được Discord, vui lòng thử lại sau.",
   [WEB_AUTH_ERROR.adminOnly]:
     "Trang đó chỉ dành cho quản trị viên. Nếu bạn vừa bị đổi quyền, hãy liên hệ quản trị viên.",
+  [WEB_AUTH_ERROR.sessionInvalid]:
+    "Phiên đăng nhập không hợp lệ. Hãy đăng nhập lại — nếu vẫn không vào được, cấu hình máy chủ có thể đang sai, hãy báo quản trị viên.",
 };
 
 /**

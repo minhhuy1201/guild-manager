@@ -3,7 +3,8 @@
  * `proxy.ts` is the main consumer — it runs on the Edge and so cannot load `api/session.ts`, which is
  * why the auth module's seam is split by runtime rather than by public/private.
  */
-export { verifyJwt, type JwtPayload } from "./jwt";
+export { readJwt, verifyJwt, type JwtPayload, type JwtResult } from "./jwt";
+export { WEB_AUTH_ERROR } from "./auth-error";
 export { decideAccess, type AccessDecision } from "./access";
 export { exchangeRequest, refreshRequest } from "./auth-api";
 export {

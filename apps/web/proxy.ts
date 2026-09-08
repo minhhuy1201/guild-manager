@@ -8,9 +8,10 @@ import {
   AUTH_COOKIE_OPTIONS,
   REFRESH_TOKEN_COOKIE,
   REFRESH_TOKEN_MAX_AGE,
+  WEB_AUTH_ERROR,
   decideAccess,
+  readJwt,
   refreshRequest,
-  verifyJwt,
   type AccessDecision,
 } from "@/features/auth/core";
 import { ROUTES } from "@/config/routes";
@@ -18,10 +19,11 @@ import { ROUTES } from "@/config/routes";
 /**
  * Read AUTH_SECRET, complaining loudly when it is missing.
  *
- * Without it no token verifies, so an admin who has just signed in is still bounced off the admin
- * routes — a symptom identical to an expired session and easy to chase in the wrong place. It does not
- * throw because the proxy runs before **every** page: throwing would take down the public attendance
- * page too, while the misconfiguration only affects the admin part. `getAuthSecret()` in
+ * Without it no token verifies, so someone who has just signed in is bounced off **every** page, not
+ * only the admin ones - a symptom identical to an expired session and easy to chase in the wrong
+ * place, which is why the redirect now carries `WEB_AUTH_ERROR.sessionInvalid`. It does not throw
+ * because the proxy runs before every page: throwing would answer them all with a stack trace rather
+ * than a sentence somebody can act on. `getAuthSecret()` in
  * `features/auth/api/session.ts` deliberately does the opposite (it throws) because a failing Server
  * Component only breaks that one page — do not "fix" the two to match.
  *
@@ -32,7 +34,7 @@ function readAuthSecret(): string | undefined {
 
   if (!secret) {
     console.error(
-      "Thiếu biến môi trường AUTH_SECRET — không verify được token, mọi route quản trị sẽ bị chặn."
+      "Thiếu biến môi trường AUTH_SECRET — không verify được token, mọi trang đều bị đá về đăng nhập."
     );
   }
 
@@ -54,25 +56,50 @@ export async function proxy(request: NextRequest) {
   const accessToken = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
   const refreshToken = request.cookies.get(REFRESH_TOKEN_COOKIE)?.value;
 
+  // Without a secret nothing can verify, which is a misconfiguration and not a dead session.
+  let isMisconfigured = !secret;
+
   if (secret) {
-    const access = await verifyJwt(accessToken, secret);
-    if (access) return decide(request, access.role, NextResponse.next());
+    const access = await readJwt(accessToken, secret);
+    if (access.status === "valid") {
+      return decide(request, access.payload.role, NextResponse.next());
+    }
 
-    const refresh = refreshToken ? await verifyJwt(refreshToken, secret) : null;
+    const refresh = refreshToken ? await readJwt(refreshToken, secret) : null;
 
-    if (refresh && refreshToken) {
+    if (refresh?.status === "valid" && refreshToken) {
       const tokens = await refreshRequest(refreshToken).catch(() => null);
       if (tokens) {
         return decide(request, tokens.user.role, renewSession(request, tokens));
       }
     }
+
+    // A token the browser is holding whose signature is not ours. An expired one is an ordinary
+    // session ending; this one cannot be fixed by signing in again, because the next token will be
+    // signed with the same mismatched secret - which is why it gets a sentence of its own instead of
+    // the silent loop it used to produce.
+    //
+    // One token that cleared the signature check settles it the other way: the secret is ours, so
+    // whatever went wrong after that - a corrupted access cookie, a refresh the API turned down -
+    // is not a configuration fault and must not be reported as one. `expired` counts, because
+    // `readJwt` only reaches it once the signature has passed.
+    const signatureVerified =
+      access.status === "expired" ||
+      refresh?.status === "valid" ||
+      refresh?.status === "expired";
+
+    // With no signature verified, every token the browser did send is an `invalid` one, so holding
+    // any token at all is what makes this a mismatch rather than a first visit. Truthiness, not
+    // `!== undefined`: an empty cookie is a cookie the browser holds but no token anyone signed, and
+    // it is already what `refresh` above treats as nothing.
+    isMisconfigured = !signatureVerified && Boolean(accessToken || refreshToken);
   }
 
   // Reaching here means there is no usable access token and no way to refresh.
   const response =
     decideAccess({ pathname: request.nextUrl.pathname, role: null }) === "allow"
       ? NextResponse.next()
-      : NextResponse.redirect(loginUrl(request));
+      : NextResponse.redirect(loginUrl(request, isMisconfigured));
 
   // Clear the broken/expired cookies so they are not sent again on later requests.
   if (accessToken) response.cookies.delete(ACCESS_TOKEN_COOKIE);
@@ -106,11 +133,15 @@ function decide(
 /**
  * The login page URL, carrying the path the user was heading to.
  * @param request - The request being handled
+ * @param isMisconfigured - Whether the session failed for a reason signing in again cannot fix
  * @returns The absolute login page URL
  */
-function loginUrl(request: NextRequest): URL {
+function loginUrl(request: NextRequest, isMisconfigured: boolean): URL {
   const url = new URL(ROUTES.login, request.url);
   url.searchParams.set("redirect", request.nextUrl.pathname);
+  if (isMisconfigured) {
+    url.searchParams.set("error", WEB_AUTH_ERROR.sessionInvalid);
+  }
 
   return url;
 }

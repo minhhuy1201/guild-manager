@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { verifyJwt } from "../jwt";
+import { readJwt, verifyJwt } from "../jwt";
 import {
   DEFAULT_PAYLOAD,
   expiresIn,
@@ -133,5 +133,46 @@ describe("verifyJwt - cache khoá HMAC", () => {
     await expect(verifyJwt(token, secret)).resolves.not.toBeNull();
 
     expect(importKey).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("readJwt", () => {
+  it("phân biệt được token hết hạn với token sai chữ ký", async () => {
+    // Đây là cả điểm của hàm: `verifyJwt` trả null cho cả hai, nên proxy không thể nói khác nhau,
+    // và AUTH_SECRET lệch đọc y hệt một phiên hết hạn bình thường.
+    const expired = await signToken({
+      payload: { ...DEFAULT_PAYLOAD, exp: expiresIn(-10) },
+      secret: SECRET,
+    });
+    const wrongSecret = await signToken({ secret: "secret-khac-hoan-toan" });
+
+    await expect(readJwt(expired, SECRET)).resolves.toEqual({
+      status: "expired",
+    });
+    await expect(readJwt(wrongSecret, SECRET)).resolves.toEqual({
+      status: "invalid",
+    });
+  });
+
+  it("trả payload khi token hợp lệ", async () => {
+    const exp = expiresIn(3600);
+    const token = await signToken({
+      payload: { ...DEFAULT_PAYLOAD, exp },
+      secret: SECRET,
+    });
+
+    await expect(readJwt(token, SECRET)).resolves.toEqual({
+      status: "valid",
+      payload: { ...DEFAULT_PAYLOAD, exp },
+    });
+  });
+
+  it("không có token, hoặc token rác, đều là invalid", async () => {
+    await expect(readJwt(undefined, SECRET)).resolves.toEqual({
+      status: "invalid",
+    });
+    await expect(readJwt("khong-phai-jwt", SECRET)).resolves.toEqual({
+      status: "invalid",
+    });
   });
 });

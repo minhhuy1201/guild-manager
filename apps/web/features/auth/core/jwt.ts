@@ -75,6 +75,70 @@ function importKey(secret: string): Promise<CryptoKey> {
   return pending;
 }
 
+/** Why a token was not accepted, or the payload when it was. */
+export type JwtResult =
+  /** Signature checks out and the token is still in date */
+  | { status: "valid"; payload: JwtPayload }
+  /** Signature checks out; the clock has passed `exp` */
+  | { status: "expired" }
+  /** Missing, malformed, wrong algorithm, or signed with another secret */
+  | { status: "invalid" };
+
+/** The failure shared by every branch that cannot even get to a signature check. */
+const INVALID: JwtResult = { status: "invalid" };
+
+/**
+ * Verify a JWT and say **why** it was refused.
+ *
+ * `verifyJwt` collapses every refusal into null, which is right for "may this request proceed" and
+ * wrong for "what should the person be told": a token signed with another secret and a token that
+ * simply ran out are the same answer there, so an `AUTH_SECRET` mismatch between the two apps reads
+ * exactly like an ordinary expiry - a redirect to the login page, forever, with no explanation.
+ *
+ * @param token - Token from the cookie (may be undefined)
+ * @param secret - The secret the backend signs with
+ * @returns The payload, or the reason it was refused
+ */
+export async function readJwt(
+  token: string | undefined,
+  secret: string
+): Promise<JwtResult> {
+  if (!token) return INVALID;
+
+  const [header, body, signature] = token.split(".");
+  if (!header || !body || !signature) return INVALID;
+
+  try {
+    const { alg } = JSON.parse(
+      new TextDecoder().decode(fromBase64Url(header))
+    ) as { alg?: string };
+    if (alg !== EXPECTED_ALG) return INVALID;
+
+    const key = await importKey(secret);
+    const valid = await crypto.subtle.verify(
+      "HMAC",
+      key,
+      fromBase64Url(signature),
+      encoder.encode(`${header}.${body}`)
+    );
+    if (!valid) return INVALID;
+
+    const payload = JSON.parse(
+      new TextDecoder().decode(fromBase64Url(body))
+    ) as JwtPayload;
+
+    if (typeof payload.sub !== "string" || typeof payload.exp !== "number") {
+      return INVALID;
+    }
+    // Past `exp` the signature was still ours, so this is a session that ran out, not a broken one.
+    if (payload.exp * 1000 <= Date.now()) return { status: "expired" };
+
+    return { status: "valid", payload };
+  } catch {
+    return INVALID;
+  }
+}
+
 /**
  * Verify a JWT's signature and expiry.
  * @param token - Token from the cookie (may be undefined)
@@ -85,37 +149,7 @@ export async function verifyJwt(
   token: string | undefined,
   secret: string
 ): Promise<JwtPayload | null> {
-  if (!token) return null;
+  const result = await readJwt(token, secret);
 
-  const [header, body, signature] = token.split(".");
-  if (!header || !body || !signature) return null;
-
-  try {
-    const { alg } = JSON.parse(
-      new TextDecoder().decode(fromBase64Url(header))
-    ) as { alg?: string };
-    if (alg !== EXPECTED_ALG) return null;
-
-    const key = await importKey(secret);
-    const valid = await crypto.subtle.verify(
-      "HMAC",
-      key,
-      fromBase64Url(signature),
-      encoder.encode(`${header}.${body}`)
-    );
-    if (!valid) return null;
-
-    const payload = JSON.parse(
-      new TextDecoder().decode(fromBase64Url(body))
-    ) as JwtPayload;
-
-    if (typeof payload.sub !== "string" || typeof payload.exp !== "number") {
-      return null;
-    }
-    if (payload.exp * 1000 <= Date.now()) return null;
-
-    return payload;
-  } catch {
-    return null;
-  }
+  return result.status === "valid" ? result.payload : null;
 }
