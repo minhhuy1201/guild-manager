@@ -61,6 +61,27 @@ export function vnParts(date: Date): VnParts {
 }
 
 /**
+ * The UTC instant a Vietnam wall clock reading points at - the inverse of `vnParts`.
+ *
+ * Exists so a caller holding calendar parts (a form field, a parsed string) can reach an instant
+ * without touching the offset, which stays unexported for the reason the module header gives.
+ *
+ * @param parts - Calendar parts as read on a Vietnam clock
+ * @returns The real UTC Date
+ */
+export function fromVnParts(parts: VnParts): Date {
+  const vn = Date.UTC(
+    parts.year,
+    parts.month - 1,
+    parts.day,
+    parts.hour,
+    parts.minute
+  );
+
+  return new Date(vn - VN_OFFSET_MS);
+}
+
+/**
  * Shift an instant by `deltaDays` days, then pin it to a given Vietnam hour/minute.
  * @param base - Source instant (real UTC)
  * @param deltaDays - Days to add (negative moves back)
