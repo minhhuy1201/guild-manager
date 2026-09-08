@@ -363,16 +363,28 @@ báo lỗi thay vì cắt thì phải là một câu tiếng Việt cụ thể, 
 `nhac-diem-danh.command.ts:36-59` gọi `deps.reminders.run()` cũng không bọc. Kênh bị xoá hoặc bot mất
 quyền gửi thì admin nhận câu chung "Có lỗi xảy ra...".
 
-Trong khi đó cùng tình huống 403 đó đã được xử lý đúng ở hai chỗ khác:
+Trong khi đó cùng tình huống 403 đó đã được xử lý ở hai chỗ khác:
 
 - `cau-hinh-kenh.command.ts:17-19, 51-61` - có `CANNOT_POST`.
 - `formation-announcer.service.ts:114-125` - cũng vậy.
 
-Hai chỗ làm đúng, một chỗ quên. Đúng loại bất đối xứng mà `CLAUDE.md` gọi là dấu hiệu của một phần
+Hai chỗ có xử lý, một chỗ quên. Đúng loại bất đối xứng mà `CLAUDE.md` gọi là dấu hiệu của một phần
 trích xuất bị bỏ sót.
 
 **Sửa:** bắt `DiscordApiError` với status 403 và dịch giống hệt hai chỗ kia. Nếu làm, cân nhắc rút
 luôn phần dịch đó ra một chỗ dùng chung thay vì chép lần thứ ba.
+
+### Đính chính sau khi thực hiện
+
+Bản rà soát nói `cau-hinh-kenh` là một trong hai chỗ "làm đúng". Đọc lại lúc sửa thì không phải: nó
+`catch` **mọi** lỗi rồi trả `CANNOT_POST` bất kể status, nên Discord trả 500 cũng bị báo cho admin
+thành lỗi phân quyền - đẩy người ta đi sửa một thứ không hỏng. Chỉ `formation-announcer` thật sự
+kiểm status.
+
+Vì vậy DC2 làm rộng hơn một bậc so với mô tả ban đầu: `isDiscordForbidden` được dùng ở **cả ba**
+chỗ, và `cau-hinh-kenh` tách câu trả lời làm hai - 403 giữ nguyên `CANNOT_POST`, còn lại là
+`CANNOT_REACH` ("Discord đang gặp sự cố nên chưa lưu gì cả"). Hành vi *huỷ toàn bộ lệnh khi post
+thất bại* giữ nguyên: nó là chủ ý, vì chưa chứng minh được bot post nổi thì không được lưu channel.
 
 ---
 

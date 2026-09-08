@@ -5,6 +5,7 @@ import { NOT_LINKED } from '../attendance-board';
 import { isDiscordForbidden } from '../discord-rest';
 import { callerDiscordId } from '../interaction.schema';
 import { ephemeralText } from '../reply';
+import type { ReminderOutcome } from '../reminder.service';
 import type { CommandReply, SlashCommand } from './command.types';
 
 /** Shown to a member who tried to run the reminder. */
@@ -52,7 +53,7 @@ export const nhacDiemDanhCommand: SlashCommand = {
 
     // `run` posts to Discord and lets a refusal through; its JSDoc leaves how loud that is to the
     // caller. Loud here means one sentence naming the action, not the router's generic apology.
-    let outcome;
+    let outcome: ReminderOutcome;
     try {
       outcome = await deps.reminders.run();
     } catch (error) {
