@@ -525,6 +525,40 @@ where relkind = 'r' and relnamespace = 'public'::regnamespace order by relname;
 
 ## 6. Operations
 
+### What protects `main`
+
+A **repository ruleset** named `main protection`, not the older branch protection UI. Read it with
+`gh api repos/minhhuy1201/guild-manager/rulesets`, and note that
+`gh api repos/.../rules/branches/main` shows **ruleset rules only** — a legacy branch protection
+rule does not appear there, so during any migration between the two, both endpoints have to be read.
+
+| Rule | What it does |
+|---|---|
+| Restrict deletions, block force pushes | `main` cannot be deleted or rewritten |
+| Require a pull request | No direct push. 0 approvals required — a solo repository cannot self-approve, and a rule that always needs a bypass teaches the habit of bypassing |
+| Require conversation resolution | Every review thread answered before merge |
+| Require status checks (8) | The six from CI, plus `Dependency review` and `Trivy scan`. Branches must be up to date with `main` first |
+| **Require code scanning results** | `CodeQL` and `Trivy`, security alerts at `all`, other alerts at `errors`. This is the rule branch protection had no equivalent for |
+| Require signed commits | SSH signing; GitHub signs its own squash/rebase commits |
+| Require linear history | Merge commits are refused, so `squash` and `rebase` are the only methods offered |
+
+**Bypass: `Repository admin` (`actor_id` 5), mode `always`.** Every rule above is therefore advisory
+for the maintainer. That is a deliberate escape hatch for a one-person repository, and it is also
+the reason the approval count is 0: if routine work needed a bypass, the bypass would stop being
+exceptional, and the code scanning rule would get waved through with everything else.
+
+**Two names that are easy to confuse.** The status check is `Trivy scan` — a job in
+[`security.yml`](../.github/workflows/security.yml), green whenever the scan finishes without a
+`CRITICAL`. The code scanning tool is `Trivy` — the `runs[].tool.driver.name` in the uploaded SARIF,
+which the code scanning rule reads. They gate on different things: the first asks whether the
+scanner ran, the second asks what it found. A scanner that dies produces no alerts, which is
+indistinguishable from a clean scan, so both rules are needed.
+
+**Alerts dismissed rather than fixed** are recorded in the Security tab with a reason, never in a
+`.trivyignore`. `DS-0026` (no `HEALTHCHECK` in `docker/Dockerfile.dev`) is dismissed as *won't fix*:
+that container is local development only and never runs in production. A dismissal is visible and
+reversible; a file nobody re-reads is neither.
+
 ### Automated dependency and security checks
 
 Six things run on their own; none of them can deploy, so the worst any of them does is open a PR,
@@ -562,11 +596,8 @@ source and would keep running.
 one Security tab holds everything rather than dependency findings living somewhere else. The part
 that does not overlap is `misconfig` and `secret` over files no other tool here opens.
 
-A Dependabot PR is an ordinary PR: `main` is protected, so the same six required checks must pass
+A Dependabot PR is an ordinary PR: `main` is protected, so the same eight required checks must pass
 before it can be merged. Nothing reaches production without going through the pipeline in section 4.
-Dependency review and Trivy run on it too, but neither is a *required* check yet — they report and
-can fail their own job, and turning either into a merge gate is a branch-protection change, not a
-workflow change.
 
 **Why there is a root `package.json`.** Security updates do not read the `directories` list in
 `dependabot.yml` — they target the manifest path recorded on the alert, which for a pnpm workspace is
