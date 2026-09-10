@@ -527,21 +527,31 @@ where relkind = 'r' and relnamespace = 'public'::regnamespace order by relname;
 
 ### Automated dependency and security checks
 
-Four things run on their own; none of them can deploy, so the worst any of them does is open a PR or
-raise an alert.
+Six things run on their own; none of them can deploy, so the worst any of them does is open a PR,
+raise an alert or fail a pull request.
 
 | What | Where it lives | What it does |
 |---|---|---|
 | Dependabot version updates | [`.github/dependabot.yml`](../.github/dependabot.yml) | Weekly PRs for `apps/api`, `apps/web`, `packages/shared` and the GitHub Actions the workflows use. Minor and patch bumps are grouped into one PR per package; majors come one at a time, because those are the ones worth reading. |
 | Dependabot security updates | Repository setting | Out-of-band PRs for advisories, ignoring the weekly schedule. Enabled together with vulnerability alerts. |
 | CodeQL | [`.github/workflows/codeql.yml`](../.github/workflows/codeql.yml) | Static analysis on every PR and push to `main`, plus weekly. Follows data across the repo, which is a different question from `pnpm lint` — ESLint reads one file at a time. Findings land in the Security tab. |
+| Dependency review | [`.github/workflows/security.yml`](../.github/workflows/security.yml) | Reads the lockfile diff of a pull request and fails it when a dependency arrives carrying a `high` or worse advisory. Dependabot covers the same advisories, but only once the dependency is already on `main` — this is the gate in front of it. |
+| Trivy | [`.github/workflows/security.yml`](../.github/workflows/security.yml) | One filesystem scan on every PR and push to `main`, plus weekly, running three scanners: `vuln` over `pnpm-lock.yaml`, `secret` over the whole tree, and `misconfig` over `docker/Dockerfile.dev` — the last is the one nothing else here reads. `HIGH` and above land in the Security tab; only `CRITICAL` fails the job. Vulnerabilities with no released fix are skipped: a PR cannot act on them. |
 | Secret scanning + push protection | Repository setting | Blocks a push that carries a recognised credential, instead of reporting it after the fact. This is the automated half of the rule in the root `CLAUDE.md`: never commit credentials. |
 
-All four are free because the repository is **public**. Making it private would take CodeQL and secret
-scanning with it unless GitHub Advanced Security is bought.
+All six are free because the repository is **public**. Making it private would take CodeQL, secret
+scanning and dependency review with it unless GitHub Advanced Security is bought; Trivy is open
+source and would keep running.
 
-A Dependabot PR is an ordinary PR: `main` is protected, so the same six checks must pass before it can
-be merged. Nothing reaches production without going through the pipeline in section 4.
+**Why Trivy on top of Dependabot.** Its `vuln` scanner genuinely overlaps — that is deliberate, so
+one Security tab holds everything rather than dependency findings living somewhere else. The part
+that does not overlap is `misconfig` and `secret` over files no other tool here opens.
+
+A Dependabot PR is an ordinary PR: `main` is protected, so the same six required checks must pass
+before it can be merged. Nothing reaches production without going through the pipeline in section 4.
+Dependency review and Trivy run on it too, but neither is a *required* check yet — they report and
+can fail their own job, and turning either into a merge gate is a branch-protection change, not a
+workflow change.
 
 **Why there is a root `package.json`.** Security updates do not read the `directories` list in
 `dependabot.yml` — they target the manifest path recorded on the alert, which for a pnpm workspace is
