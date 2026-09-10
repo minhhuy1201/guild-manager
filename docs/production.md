@@ -536,12 +536,27 @@ raise an alert or fail a pull request.
 | Dependabot security updates | Repository setting | Out-of-band PRs for advisories, ignoring the weekly schedule. Enabled together with vulnerability alerts. |
 | CodeQL | [`.github/workflows/codeql.yml`](../.github/workflows/codeql.yml) | Static analysis on every PR and push to `main`, plus weekly. Follows data across the repo, which is a different question from `pnpm lint` — ESLint reads one file at a time. Findings land in the Security tab. |
 | Dependency review | [`.github/workflows/security.yml`](../.github/workflows/security.yml) | Reads the lockfile diff of a pull request and fails it when a dependency arrives carrying a `high` or worse advisory. Dependabot covers the same advisories, but only once the dependency is already on `main` — this is the gate in front of it. |
-| Trivy | [`.github/workflows/security.yml`](../.github/workflows/security.yml) | One filesystem scan on every PR and push to `main`, plus weekly, running three scanners: `vuln` over `pnpm-lock.yaml`, `secret` over the whole tree, and `misconfig` over `docker/Dockerfile.dev` — the last is the one nothing else here reads. `HIGH` and above land in the Security tab; only `CRITICAL` fails the job. Vulnerabilities with no released fix are skipped: a PR cannot act on them. The Trivy binary version is pinned in the workflow rather than left to the action's default, which lags far enough behind to read this workspace's `pnpm-lock.yaml` and find nothing — **Dependabot bumps the action but never that input**, so check it whenever the action moves. |
+| Trivy | [`.github/workflows/security.yml`](../.github/workflows/security.yml) | One filesystem scan on every PR and push to `main`, plus weekly, running three scanners: `vuln` over `pnpm-lock.yaml`, `secret` over the whole tree, and `misconfig` over `docker/Dockerfile.dev` — the last is the one nothing else here reads. **Every** severity lands in the Security tab; only `CRITICAL` fails the job, and a vulnerability with no released fix is skipped because a PR cannot act on it. Two traps below. |
 | Secret scanning + push protection | Repository setting | Blocks a push that carries a recognised credential, instead of reporting it after the fact. This is the automated half of the rule in the root `CLAUDE.md`: never commit credentials. |
 
 All six are free because the repository is **public**. Making it private would take CodeQL, secret
 scanning and dependency review with it unless GitHub Advanced Security is bought; Trivy is open
 source and would keep running.
+
+**Two traps in the Trivy step, both of which have already cost a wrong conclusion.**
+
+1. *The Trivy binary version is pinned in the workflow*, not left to the action's default. That
+   default lags far enough behind to read this workspace's `pnpm-lock.yaml` and find nothing, which
+   is exactly what shipped first. **Dependabot bumps the `uses:` ref but never a `with:` input**, so
+   the pin goes stale silently — check it whenever the action itself moves.
+2. *The SARIF pass passes no `severity`, deliberately.* The action's entrypoint runs
+   `unset TRIVY_SEVERITY` whenever the format is sarif, so the input is inert there and the report
+   always carries every severity. Keeping it that way is also correct: GitHub re-derives its own
+   severity from the CVSS score rather than reusing Trivy's label, so filtering on Trivy's scale
+   before upload filters on the wrong scale. Let everything reach the Security tab and let a branch
+   ruleset's code scanning threshold decide what blocks a merge — that decision can then change
+   without re-scanning. The second pass (`format: table`) does honour `severity`, and is the only
+   place the input does anything.
 
 **Why Trivy on top of Dependabot.** Its `vuln` scanner genuinely overlaps — that is deliberate, so
 one Security tab holds everything rather than dependency findings living somewhere else. The part
