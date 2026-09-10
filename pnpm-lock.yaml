@@ -334,6 +334,9 @@ importers:
       '@types/react-dom':
         specifier: ^19
         version: 19.2.3(@types/react@19.2.17)
+      '@types/semver':
+        specifier: ^7.8.0
+        version: 7.8.0
       eslint:
         specifier: ^9
         version: 9.39.5(jiti@2.7.0)(supports-color@8.1.1)
@@ -343,6 +346,9 @@ importers:
       jsdom:
         specifier: ^26.1.0
         version: 26.1.0(supports-color@8.1.1)
+      semver:
+        specifier: ^7.8.5
+        version: 7.8.5
       shadcn:
         specifier: ^4.21.0
         version: 4.21.0(supports-color@8.1.1)(typescript@5.9.3)
@@ -2187,6 +2193,9 @@ packages:
 
   '@types/react@19.2.17':
     resolution: {integrity: sha512-MXfmqaVPEVgkBT/aY0aGCkRWWtByiYQXo3xdQ8r5RzuFrPiRn8Gar2tQdXSUQ2GKV3bkXckek89V8wQBY2Q/Aw==}
+
+  '@types/semver@7.8.0':
+    resolution: {integrity: sha512-1mAINjtQCXXeLkJ9ehXkwOcBpqtLxiVtKhpUf83DdRNdQKV0iXZpaHYqRr7nj+wvxuJzoAmAwXI+sCNMv1CzLQ==}
 
   '@types/send@1.2.1':
     resolution: {integrity: sha512-arsCikDvlU99zl1g69TcAB3mzZPpxgw0UQnaHeC1Nwb015xp8bknZv5rIfri9xTOcMuaVgvabfIRA7PSZVuZIQ==}
@@ -8622,6 +8631,8 @@ snapshots:
   '@types/react@19.2.17':
     dependencies:
       csstype: 3.2.3
+
+  '@types/semver@7.8.0': {}
 
   '@types/send@1.2.1':
     dependencies:

@@ -59,7 +59,9 @@ updates:
       # "10.9.1 → 10.10.0" — a minor by its reckoning, a major against this package's own ^9.
       # The grouped PR then rewrites the range to ^10 and every web lint job fails.
       #
-      # Drop this entry once eslint-plugin-react supports ESLint 10.
+      # Nobody has to remember to revisit this: apps/web/__tests__/eslint-pin.test.ts reads
+      # the plugin's peer range and fails the day it accepts ESLint 10. Drop this entry,
+      # raise apps/web to "eslint": "^10", and delete that test.
       - dependency-name: eslint
         versions: [">=10"]
 
