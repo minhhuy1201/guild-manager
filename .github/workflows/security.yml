@@ -70,6 +70,12 @@ jobs:
       - name: Scan the workspace
         uses: aquasecurity/trivy-action@v0.36.0
         with:
+          # Pinned because the action's own default lags: v0.36.0 installs Trivy v0.70.0, which
+          # reads this workspace's `pnpm-lock.yaml` and reports nothing. v0.74.0 finds the
+          # advisories that are actually in it. Dependabot's github-actions updater bumps the
+          # `uses:` ref above but never an input, so this line goes stale silently — check it when
+          # the action itself is bumped.
+          version: v0.74.0
           scan-type: fs
           scan-ref: .
           scanners: vuln,secret,misconfig
@@ -99,6 +105,8 @@ jobs:
           TRIVY_SKIP_JAVA_DB_UPDATE: "true"
         uses: aquasecurity/trivy-action@v0.36.0
         with:
+          # Must match the first pass, or the two report on different rule sets.
+          version: v0.74.0
           scan-type: fs
           scan-ref: .
           scanners: vuln,secret,misconfig
