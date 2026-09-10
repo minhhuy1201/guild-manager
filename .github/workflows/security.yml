@@ -81,7 +81,18 @@ jobs:
           scanners: vuln,secret,misconfig
           format: sarif
           output: trivy-results.sarif
-          severity: HIGH,CRITICAL
+          # No `severity:` here, on purpose. The action's entrypoint does `unset TRIVY_SEVERITY`
+          # whenever the format is sarif (unless `limit-severities-for-sarif: true`), so the input
+          # is silently dead on this step and the report always carries every severity. It read as
+          # a working filter for two pull requests before the log line "Building SARIF report with
+          # all severities" gave it away.
+          #
+          # Keeping it that way is also the better default: GitHub does not reuse Trivy's severity
+          # label, it re-derives its own from the CVSS score in the SARIF, so filtering on Trivy's
+          # scale before upload filters on the wrong scale. Everything goes to the Security tab and
+          # a branch ruleset's code scanning threshold decides what blocks a merge — a decision
+          # that can be changed later without dropping data here first.
+          #
           # A vulnerability with no released fix is not something a pull request can act on.
           ignore-unfixed: true
           exit-code: 0
@@ -96,9 +107,11 @@ jobs:
           # close CodeQL's alerts alongside its own.
           category: trivy
 
-      # Second pass over the same tree, this one able to fail. CRITICAL only: HIGH lands in the
-      # Security tab to be read, CRITICAL stops the pull request. The database is already on disk
-      # from the first pass, so this costs a few seconds and no network.
+      # Second pass over the same tree, this one able to fail. `format: table` does not take the
+      # sarif branch above, so `severity:` is honoured here and this is the only place it does
+      # anything: everything reaches the Security tab, CRITICAL stops the pull request. The
+      # database is already on disk from the first pass, so this costs a few seconds and no
+      # network.
       - name: Fail on a critical finding
         env:
           TRIVY_SKIP_DB_UPDATE: "true"
