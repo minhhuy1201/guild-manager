@@ -1,15 +1,16 @@
 # Dependabot: version updates for the three workspace packages and for the actions CI runs.
 #
-# This is a pnpm workspace with no root package.json, so each package is listed by directory —
-# there is no single manifest at "/" for Dependabot to start from. The lockfile at the repo root
-# is shared, so an update to one package still resolves against the whole workspace.
+# The root package.json is a marker with no dependencies: it exists only so the npm updater has a
+# manifest to anchor pnpm-lock.yaml to. Nothing resolves from it, so each workspace package is
+# still listed by directory. The lockfile at the repo root is shared, so an update to one package
+# resolves against the whole workspace — and Dependabot reads a package's *current* version from
+# that shared lockfile, not from the package's own range. See the apps/web block below.
 version: 2
 
 updates:
   - package-ecosystem: npm
     directories:
       - /apps/api
-      - /apps/web
       - /packages/shared
     schedule:
       interval: weekly
@@ -28,6 +29,39 @@ updates:
     commit-message:
       prefix: chore
       include: scope
+
+  # apps/web is its own block for one reason: the eslint ignore below must not reach apps/api.
+  # The cost is a second PR most weeks; the alternative is freezing eslint for the whole
+  # workspace. Everything else here mirrors the block above on purpose.
+  - package-ecosystem: npm
+    directory: /apps/web
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Asia/Ho_Chi_Minh
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore
+      include: scope
+    ignore:
+      # eslint-plugin-react 7.37 (pulled in by eslint-config-next) still calls the
+      # `context.getFilename()` that ESLint 10 removed, so linting apps/web on 10 dies with
+      # "contextOrFilename.getFilename is not a function" before it reports a single rule.
+      #
+      # Without this, the bump comes back every week: apps/api sits on eslint 10, the shared
+      # lockfile is where Dependabot reads the current version from, so it offers apps/web
+      # "10.9.1 → 10.10.0" — a minor by its reckoning, a major against this package's own ^9.
+      # The grouped PR then rewrites the range to ^10 and every web lint job fails.
+      #
+      # Drop this entry once eslint-plugin-react supports ESLint 10.
+      - dependency-name: eslint
+        versions: [">=10"]
 
   - package-ecosystem: github-actions
     directory: /
