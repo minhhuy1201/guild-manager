@@ -50,8 +50,11 @@ before anything else happens.
 
 ## Shipping
 
-- **`main` is protected.** No direct push, no force-push: every change is a PR that the six CI checks
-  must pass. The branch is deleted on merge.
+- **`main` is protected by a repository ruleset**, not the older branch protection UI. No direct
+  push, no force-push, no deletion; every change is a PR that **eight** CI checks must pass, on a
+  branch that is up to date with `main`. Commits must be signed and history stays linear, so
+  `squash` and `rebase` are the only merge methods offered. The branch is deleted on merge.
+  [`docs/production.md`](docs/production.md) §6 owns the full list and the reasoning.
 - **A merged PR touching `apps/api` migrates the production database, then deploys** — that order is
   the point, so new code never meets the old schema. Migrations are created locally with
   `prisma:migrate` and committed; CI applies them. Never run `migrate deploy` against production by

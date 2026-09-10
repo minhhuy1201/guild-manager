@@ -301,7 +301,7 @@ pnpm --filter api lint && pnpm --filter api typecheck && pnpm --filter api test
 pnpm --filter web lint && pnpm --filter web typecheck && pnpm --filter web test
 ```
 
-That is the whole of what the six CI checks run, minus the two builds.
+That is the whole of what the six *code* checks run, minus the two builds. Two more run on a pull request without a local equivalent — dependency review and Trivy — for eight required checks in total; see [`production.md`](production.md) §6.
 
 Never commit: `.env*` (except `.env.example`), `apps/api/src/generated/`, `dist/`, `.next/`.
 
