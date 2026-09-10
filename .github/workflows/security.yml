@@ -1,0 +1,108 @@
+# Two scanners that answer questions CodeQL does not.
+#
+#   Dependency review — reads the lockfile diff of a pull request and refuses a dependency that
+#   arrives carrying a known advisory. Dependabot already raises alerts, but only *after* the
+#   dependency is on `main`; this is the gate in front of it.
+#
+#   Trivy — one filesystem scan covering three scanners: `vuln` (the lockfile, overlapping
+#   Dependabot on purpose so a finding shows up in the Security tab beside everything else),
+#   `secret`, and `misconfig`, which is the one nothing else here does — `docker/Dockerfile.dev` is
+#   read by neither ESLint, CodeQL nor Dependabot. (A verified local run shows `docker-compose.yml`
+#   is NOT a misconfig target: Trivy has no Compose policy pack. It is covered by `secret` only.)
+#
+# Dependency review is free because the repository is public; Trivy is open source and free either
+# way. Neither can deploy; the worst either does is fail a pull request.
+name: Security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Monday 03:11 UTC — an hour after CodeQL, so a weekly Monday morning does not start with two
+    # scans competing for the same runner minutes. Trivy's advisory database keeps moving, so
+    # last week's clean scan says nothing about this week.
+    - cron: "11 3 * * 1"
+
+concurrency:
+  group: security-${{ github.ref }}
+  # Same shape as ci.yml, for a different reason: a run on `main` is the one that refreshes the
+  # Security tab, and cancelling it half way leaves the previous scan's alerts standing as if they
+  # were current. On a branch the newest push is the only one worth scanning.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  dependency-review:
+    name: Dependency review
+    # Nothing to diff outside a pull request: the action compares the base commit against the head.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Only for the summary comment below.
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/dependency-review-action@v5.0.0
+        with:
+          # `moderate` and below are noise for a guild roster app whose only network surface is its
+          # own API. Raise this if that stops being true.
+          fail-on-severity: high
+          # Licences are deliberately not checked. This is a private-use repository with no
+          # redistribution, so a licence rule here would only produce failures nobody acts on.
+          comment-summary-in-pr: on-failure
+
+  trivy:
+    name: Trivy scan
+    runs-on: ubuntu-latest
+    permissions:
+      # Uploading the SARIF into the Security tab is a write; nothing else is needed.
+      security-events: write
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v7
+
+      # First pass writes the report. `exit-code: 0` keeps it from failing the job before the
+      # upload step runs — the Security tab is the reporting surface, and the gate is the second
+      # pass below.
+      - name: Scan the workspace
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret,misconfig
+          format: sarif
+          output: trivy-results.sarif
+          severity: HIGH,CRITICAL
+          # A vulnerability with no released fix is not something a pull request can act on.
+          ignore-unfixed: true
+          exit-code: 0
+
+      - name: Upload the results
+        # `always()` so a failed scan still reports whatever it managed to find.
+        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-results.sarif
+          # Keeps these findings in their own set, so a scan that stops running does not silently
+          # close CodeQL's alerts alongside its own.
+          category: trivy
+
+      # Second pass over the same tree, this one able to fail. CRITICAL only: HIGH lands in the
+      # Security tab to be read, CRITICAL stops the pull request. The database is already on disk
+      # from the first pass, so this costs a few seconds and no network.
+      - name: Fail on a critical finding
+        env:
+          TRIVY_SKIP_DB_UPDATE: "true"
+          TRIVY_SKIP_JAVA_DB_UPDATE: "true"
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret,misconfig
+          format: table
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: 1
