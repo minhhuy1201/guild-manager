@@ -22,8 +22,9 @@ export interface SessionSelectionState {
 
 /**
  * Resolve which battle tab is open. The stored id only wins while that battle
- * is still on screen, so deleting a battle or switching week falls back to a
- * sensible default instead of leaving the screen pointing at nothing.
+ * is still on screen, so deleting a battle or switching week falls back to
+ * today's battle, then the Guild War, instead of leaving the screen pointing at
+ * nothing.
  * @param sessions - Battles of the week on screen
  * @param isEditableWeek - Whether the week on screen is open for edits
  * @returns The open battle, its editability, and the tab setter
@@ -35,7 +36,14 @@ export function useSessionSelection(
   const storedActiveId = useFormationStore((s) => s.activeSessionId);
   const setActiveSession = useFormationStore((s) => s.setActiveSession);
 
-  const activeSessionId = resolveActiveSessionId(sessions, storedActiveId);
+  // Read fresh on every render rather than pinned in state: nothing here is
+  // cached across the midnight boundary, and `isSameVnDay` reads the same
+  // Vietnam calendar day on the server and in the browser, so no hydration gap.
+  const activeSessionId = resolveActiveSessionId(
+    sessions,
+    storedActiveId,
+    new Date()
+  );
   const activeSession = sessions.find((s) => s.sessionId === activeSessionId);
   const editable = activeSession
     ? isSessionEditable(activeSession, isEditableWeek)
