@@ -117,3 +117,20 @@ export function shiftVnDate(
 export function atVnTime(base: Date, hour: number, minute: number): Date {
   return shiftVnDate(base, 0, hour, minute);
 }
+
+/**
+ * Whether two instants fall on the same calendar day in Vietnam time.
+ * @param a - First instant (real UTC)
+ * @param b - Second instant (real UTC)
+ * @returns true when both land on the same Vietnam year/month/day
+ */
+export function isSameVnDay(a: Date, b: Date): boolean {
+  const left = vnParts(a);
+  const right = vnParts(b);
+
+  return (
+    left.year === right.year &&
+    left.month === right.month &&
+    left.day === right.day
+  );
+}

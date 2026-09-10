@@ -4,6 +4,7 @@ import {
   atVnTime,
   deadlineCapFor,
   guildWarDeadline,
+  isSameVnDay,
   isWithinDeadlineCap,
   vnParts,
   vnWeekday,
@@ -133,5 +134,29 @@ describe("vnParts", () => {
       hour: 0,
       minute: 30,
     });
+  });
+});
+
+describe("isSameVnDay", () => {
+  it("hai mốc khác giờ trong cùng một ngày VN là cùng ngày", () => {
+    expect(isSameVnDay(vn("2026-07-21T00:00"), vn("2026-07-21T23:59"))).toBe(
+      true
+    );
+  });
+
+  it("so theo ngày VN chứ không theo ngày UTC", () => {
+    // Both fall on the 20th in UTC, but 17:30 UTC is already the 21st in Vietnam.
+    expect(
+      isSameVnDay(
+        new Date("2026-07-20T10:00:00Z"),
+        new Date("2026-07-20T17:30:00Z")
+      )
+    ).toBe(false);
+  });
+
+  it("cùng ngày và tháng nhưng khác năm thì không phải cùng ngày", () => {
+    expect(isSameVnDay(vn("2026-07-21T08:00"), vn("2025-07-21T08:00"))).toBe(
+      false
+    );
   });
 });
