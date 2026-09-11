@@ -4,6 +4,9 @@ packages:
 
 # Node 24 chỉ là gợi ý nếu không ai ép: `engines.node` của mỗi package thành lỗi cài đặt thật.
 allowBuilds:
+  # jest-haste-map kéo @parcel/watcher vào từ jest 30.5; nó đã có sẵn binary prebuilt theo
+  # nền tảng (@parcel/watcher-linux-x64-glibc, …) nên bước node-gyp là thừa.
+  '@parcel/watcher': false
   '@prisma/engines': true
   '@scarf/scarf': false
   prisma: true
