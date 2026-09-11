@@ -64,11 +64,17 @@ anywhere. Create an application at <https://discord.com/developers/applications>
 `http://localhost:3001/api/auth/discord/callback` under OAuth2 → Redirects, then fill
 `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` and `DISCORD_REDIRECT_URI` in `apps/api/.env`.
 
-Four more variables belong to the bot rather than to sign-in, and the API still **refuses to boot**
+Eight more variables belong to the bot rather than to sign-in, and the API still **refuses to boot**
 without any of them — since it is also the web app's backend, a missing value takes the whole site
-down: `DISCORD_PUBLIC_KEY` (General Information → Public Key), `DISCORD_BOT_TOKEN` (Bot → Reset
-Token), `DISCORD_GUILD_ROLE_ID` (the role `/thong-bao` mentions) and `CRON_SECRET` (any 32+
-characters locally — cron never fires outside production).
+down:
+
+- `DISCORD_PUBLIC_KEY` (General Information → Public Key) — verifies the interaction signature
+- `DISCORD_BOT_TOKEN` (Bot → Reset Token) — the bot's outgoing calls
+- `DISCORD_GUILD_ROLE_ID` — the role `/thong-bao` mentions
+- `DISCORD_BANG_CHIEN_CHANNEL_ID`, `DISCORD_NGHICH_THUY_HAN_CHANNEL_ID`,
+  `DISCORD_KHAM_ACC_CHANNEL_ID` — the channels `/chao-mung` points a new member at
+- `DISCORD_BAO_BAN_CHANNEL_ID` — the channel the roster announcement links to
+- `CRON_SECRET` (any 32+ characters locally — cron never fires outside production)
 
 A login resolves against `Character.discordId`, a column an admin fills in by hand, so a fresh
 database lets nobody in. Put your own Discord ID in `DISCORD_ADMIN_IDS` — those ids always sign in as
@@ -103,12 +109,14 @@ process: Discord `POST`s each interaction — a slash command or a button press 
 | `/diem-danh` | Mark your own attendance |
 | `/diem-danh-ho @someone` | Mark attendance for someone else (admin) |
 | `/thong-bao` | Post the week's schedule (admin) |
-| `/cau-hinh-kenh` | Choose the channel announcements go to (admin) |
+| `/cau-hinh-kenh` | Make the current channel the one the bot posts reminders in (admin) |
 | `/nhac-diem-danh` | Run the attendance reminder by hand (admin) |
+| `/chao-mung @someone #sect-channel` | Welcome a new member, linking the channels they need (admin) |
 
 Both attendance commands reply with a private message whose buttons record attendance through the
 same service the website writes through. An absence reason can still only be typed on the website.
-A Vercel Cron job posts the same reminder every morning for deadlines falling the next day.
+A Vercel Cron job posts the same reminder every morning for deadlines falling the next day, and
+`/xep-team` can push the day's roster images into the announcement channel from the website.
 
 Adding a command is one file in `apps/api/src/modules/discord-bot/commands/` plus one line in
 `commands/index.ts`, then `pnpm --filter api discord:register` to tell Discord about it.
@@ -117,7 +125,7 @@ Adding a command is one file in `apps/api/src/modules/discord-bot/commands/` plu
 ## Contributing
 
 `main` is protected: no direct pushes, no force-pushes. Every change goes through a pull request that
-the six CI checks must pass, and the branch is deleted on merge.
+the eight CI checks must pass, and the branch is deleted on merge.
 
 ```bash
 git checkout -b <type>/<kebab-case-description>   # feat, fix, refactor, chore, docs, test, ci…
@@ -146,4 +154,5 @@ terminal never reaches it, and branch protection on `main` remains the real enfo
 | [`CLAUDE.md`](CLAUDE.md) | Code conventions for humans and AI agents; [`apps/api/CLAUDE.md`](apps/api/CLAUDE.md) and [`apps/web/CLAUDE.md`](apps/web/CLAUDE.md) add the per-app rules |
 | [`apps/api/docs/backend.md`](apps/api/docs/backend.md) | Backend structure: layers, dependency rules, conventions |
 | [`apps/web/docs/frontend.md`](apps/web/docs/frontend.md) | Frontend structure: data-flow rules, components, UI conventions |
-| `docs/superpowers/specs/` | Design specs per feature |
+| `docs/superpowers/specs/` and `docs/superpowers/plans/` | The design spec and plan behind each feature |
+| `docs/custom-spec/` and `docs/custom-plan/` | The same pair for the architecture-review work |

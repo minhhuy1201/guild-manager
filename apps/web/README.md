@@ -19,11 +19,13 @@ Requires `apps/api` to already be running at `http://localhost:3001/api` (see [`
 |---|---|
 | `AUTH_SECRET` | Verifies JWTs signed by the API (HMAC-SHA256) — **must match** the API's value |
 | `NEXT_PUBLIC_API_URL` | Backend base URL, defaults to `http://localhost:3001/api` |
+| `API_INTERNAL_URL` | Server-side override of the URL above, set by the Docker `dev` profile only. Leave it unset on the host |
 
 The web app never connects to the database and holds no accounts — sign-in is Discord OAuth2, driven
 entirely by the backend (`DISCORD_CLIENT_ID` / `DISCORD_CLIENT_SECRET`); the web app only verifies the
 token it receives. Every page needs a session except `/dang-nhap`; `/xep-team` and `/thiet-lap`
-additionally need the `ADMIN` role (`proxy.ts`).
+additionally need the `ADMIN` role — `proxy.ts` decides with the rules in
+`features/auth/core/access.ts`, and each admin page re-checks the role on the server.
 
 ## Commands
 

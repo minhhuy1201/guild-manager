@@ -29,12 +29,14 @@ Sign-in is Discord OAuth2 only — no password is stored anywhere. `DISCORD_CLIE
 `DISCORD_CLIENT_SECRET` and `DISCORD_REDIRECT_URI` are required at boot, and `DISCORD_ADMIN_IDS` is
 the rescue list that gets you in before any `Character` has a `discordId`.
 
-Four bot variables are required at boot too, and have nothing to do with signing in:
+Eight bot variables are required at boot too, and have nothing to do with signing in:
 `DISCORD_PUBLIC_KEY` (verifies the interaction signature), `DISCORD_BOT_TOKEN` (the bot's outgoing
-calls), `DISCORD_GUILD_ROLE_ID` (the role `/thong-bao` mentions) and `CRON_SECRET` (guards the
-reminder endpoint; 32+ characters, and cron never fires locally). A missing or malformed value kills
-the process, which takes the web app's backend down with it — treat all four as mandatory even if you
-never touch the bot.
+calls), `DISCORD_GUILD_ROLE_ID` (the role `/thong-bao` mentions), the three channel ids
+`/chao-mung` links to (`DISCORD_BANG_CHIEN_CHANNEL_ID`, `DISCORD_NGHICH_THUY_HAN_CHANNEL_ID`,
+`DISCORD_KHAM_ACC_CHANNEL_ID`), `DISCORD_BAO_BAN_CHANNEL_ID` (linked from the roster announcement)
+and `CRON_SECRET` (guards the reminder endpoint; 32+ characters, and cron never fires locally). A
+missing or malformed value kills the process, which takes the web app's backend down with it — treat
+all eight as mandatory even if you never touch the bot.
 
 Full list of environment variables and troubleshooting: [`docs/development.md`](../../docs/development.md).
 
@@ -57,6 +59,7 @@ Full list of environment variables and troubleshooting: [`docs/development.md`](
 | `pnpm db:up` / `pnpm db:down` | Start/stop the PostgreSQL container |
 | `pnpm db:reset` | Wipe the volume and recreate an empty DB (re-run `prisma:migrate` + `db:seed` afterwards) |
 | `pnpm db:seed` | Load the roster from `seed-data.json` (upsert on **name**, safe to re-run) |
+| `pnpm db:fix-deadlines` | One-off: bring the open and next week's deadlines back under the cap |
 
 ## Discord bot
 
@@ -65,9 +68,14 @@ The bot is a module inside this app (`src/modules/discord-bot/`), not a separate
 verifies the Ed25519 signature over the raw body, and the router answers in the same HTTP response —
 Discord allows **3 seconds**.
 
-The daily attendance reminder is not an interaction: Vercel Cron calls
-`GET /api/cron/attendance-reminder` with `CRON_SECRET`, and `/nhac-diem-danh` runs the same code by
-hand. Neither fires locally.
+Two things the bot does are not interactions:
+
+- **The daily attendance reminder** — Vercel Cron calls `GET /api/cron/attendance-reminder` with
+  `CRON_SECRET` (02:00 UTC, see `vercel.json`), and `/nhac-diem-danh` runs the same code by hand.
+  Cron never fires locally.
+- **The roster announcement** — `/xep-team` on the website posts
+  `POST /api/team-builder/formations/:sessionId/announce`, which sends the day's roster images to
+  the configured channel.
 
 A command is one file in `src/modules/discord-bot/commands/` holding both its `definition` and its
 `execute`, plus one line in `commands/index.ts`. After adding or renaming one, run

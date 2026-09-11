@@ -249,6 +249,7 @@ reach the same database through the published port.
 | `test` | Unit tests (Jest) |
 | `prisma:generate` | Regenerate the Prisma Client |
 | `prisma:migrate` | `migrate dev` — create a new migration from schema changes |
+| `prisma:status` | How many migrations the local database is behind |
 | `prisma:studio` | Open Prisma Studio |
 | `db:up` / `db:down` / `db:reset` | Postgres container lifecycle (`docker compose -f ../../docker-compose.yml`, `db` service only). `db:down` **stops** the container rather than removing it — the compose file is shared with the `dev` profile now, and `docker compose down` there would take the API and web containers with it |
 | `db:seed` | Load the roster from `seed-data.json` |
