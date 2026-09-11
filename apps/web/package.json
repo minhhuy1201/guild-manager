@@ -41,17 +41,17 @@
     "@tailwindcss/postcss": "^4",
     "@tanstack/react-query-devtools": "^5.102.6",
     "@testing-library/react": "^16.3.3",
-    "@types/node": "^20",
+    "@types/node": "^26.5.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/semver": "^7.8.0",
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
-    "jsdom": "^26.1.0",
+    "jsdom": "^30.0.1",
     "semver": "^7.8.5",
     "shadcn": "^4.21.0",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "vitest": "^4.1.11"
+    "vitest": "^5.0.0"
   }
 }
