@@ -4,7 +4,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { guildWarDeadline, isWithinDeadlineCap } from '@guild/shared/lib';
-import { DEADLINE_CAP_MESSAGE, weekSchema } from '@guild/shared/schemas';
+import {
+  DEADLINE_CAP_MESSAGE,
+  GUILD_WAR_DEADLINE_LABEL,
+  weekSchema,
+} from '@guild/shared/schemas';
 import type {
   BattleSession,
   CreateBattleSessionInput,
@@ -315,7 +319,7 @@ export class BattleSessionsService {
     }
     if (current.isGuildWar && input.deadline !== undefined) {
       throw new BadRequestException(
-        'Hạn chót của trận Bang Chiến cố định 17:00 Thứ 5, không sửa được.',
+        `Hạn chót của trận Bang Chiến cố định ${GUILD_WAR_DEADLINE_LABEL}, không sửa được.`,
       );
     }
     if (current.isGuildWar && input.matchCount !== undefined) {

@@ -73,7 +73,7 @@ const SESSIONS = [
     id: 'session-sat',
     label: 'Thứ 7 · Bang Chiến',
     dateTime: vn('2026-07-25T20:00').toISOString(),
-    deadline: vn('2026-07-23T17:00').toISOString(),
+    deadline: vn('2026-07-24T12:00').toISOString(),
     isGuildWar: true,
     opponent: null,
     weekStart: vn('2026-07-20T00:00').toISOString(),
@@ -355,8 +355,8 @@ describe('AttendanceService', () => {
       expect(record.sessionId).toBe(SESSION_IDS['Thứ 3 · 20:30']);
     });
 
-    it('sau 17:00 Thứ 5 thì khóa cả Guild War Thứ 7', async () => {
-      const justPastDeadline = vn('2026-07-23T17:01');
+    it('sau 12:00 Thứ 6 thì khóa cả Guild War Thứ 7', async () => {
+      const justPastDeadline = vn('2026-07-24T12:01');
       stubSchedule(justPastDeadline);
 
       await expect(

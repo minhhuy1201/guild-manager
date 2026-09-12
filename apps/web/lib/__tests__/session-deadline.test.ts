@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   atVnTime,
   deadlineCapFor,
+  defaultDeadlineFor,
   guildWarDeadline,
   isSameVnDay,
   isWithinDeadlineCap,
@@ -70,19 +71,53 @@ describe("isWithinDeadlineCap", () => {
   });
 });
 
+describe("defaultDeadlineFor", () => {
+  it("trận tối Thứ 5 có hạn mặc định 12:00 Thứ 4", () => {
+    expect(defaultDeadlineFor(vn("2026-09-10T20:30")).toISOString()).toBe(
+      vn("2026-09-09T12:00").toISOString()
+    );
+  });
+
+  it("trận sáng sớm vẫn lấy 12:00 hôm trước", () => {
+    expect(defaultDeadlineFor(vn("2026-09-10T08:00")).toISOString()).toBe(
+      vn("2026-09-09T12:00").toISOString()
+    );
+  });
+
+  it("qua ranh giới tháng vẫn ra đúng ngày", () => {
+    expect(defaultDeadlineFor(vn("2026-10-01T20:30")).toISOString()).toBe(
+      vn("2026-09-30T12:00").toISOString()
+    );
+  });
+
+  it("luôn nằm trong trần, kể cả trận sát nửa đêm", () => {
+    for (const battle of [
+      "2026-09-10T00:30",
+      "2026-09-10T08:00",
+      "2026-09-10T20:30",
+    ]) {
+      const dateTime = vn(battle);
+
+      expect(isWithinDeadlineCap(defaultDeadlineFor(dateTime), dateTime)).toBe(
+        true
+      );
+    }
+  });
+});
+
 describe("guildWarDeadline", () => {
-  it("luôn là 17:00 Thứ 5 của tuần", () => {
+  it("luôn là 12:00 Thứ 6 của tuần", () => {
     expect(guildWarDeadline(vn("2026-07-20T00:00")).toISOString()).toBe(
-      vn("2026-07-23T17:00").toISOString()
+      vn("2026-07-24T12:00").toISOString()
     );
     expect(guildWarDeadline(vn("2026-07-27T00:00")).toISOString()).toBe(
-      vn("2026-07-30T17:00").toISOString()
+      vn("2026-07-31T12:00").toISOString()
     );
   });
 
   it("tuần vắt qua mốc đổi tháng vẫn ra đúng ngày", () => {
     expect(guildWarDeadline(vn("2026-06-29T00:00")).toISOString()).toBe(
-      vn("2026-07-02T17:00").toISOString()
+      vn("2026-07-03T12:00").toISOString()
     );
   });
 });

@@ -61,19 +61,25 @@ ngày VN", và cả khoảng đó nằm gọn trong một ngày.
 
 ### 3.2 Luật chọn ngày đánh: hạn chót rơi vào ngày mai
 
+> **Cập nhật 2026-09-12:** luật này đã đổi sang mốc 12:00 (hạn từ 12:00 nhắc cùng ngày, trước 12:00
+> nhắc hôm trước) và hạn Bang Chiến thành 12:00 thứ 6. Xem
+> [spec 2026-09-12](2026-09-12-deadline-noon-before-battle-design.md) §3.2 đến §3.4. Bảng dưới đã
+> sửa theo luật mới; phần lập luận về `listByWeek()` và việc gộp một message vẫn đúng.
+
 Cron chạy mỗi sáng và tự hỏi *hôm nay nhắc cho ngày nào*. Câu trả lời không phải "ngày
 đánh nào là ngày mai" mà **"ngày đánh nào có `deadline` rơi vào ngày mai"** — hạn chót
 mới là thứ khoá cột lại, và nó không trùng ngày đánh:
 
 | Ngày đánh | Hạn chót | Nhắc lúc |
 |---|---|---|
-| Bang Chiến, thứ 7 20:00 | thứ 5 17:00 (hệ thống sở hữu) | **9h sáng thứ 4** |
-| Scrim thứ 5 20:30 | thứ 5 10:00 (trần trên) | **9h sáng thứ 4** |
-| Scrim thứ 2 20:00 | thứ 2 10:00 | 9h sáng **Chủ nhật** |
+| Bang Chiến, thứ 7 20:00 | thứ 6 12:00 (hệ thống sở hữu) | **9h sáng thứ 6** |
+| Scrim thứ 5 20:30, để mặc định | thứ 4 12:00 | **9h sáng thứ 4** |
+| Scrim thứ 5 20:30, kéo tới trần | thứ 5 10:00 | **9h sáng thứ 4** |
+| Scrim thứ 2 20:00, để mặc định | Chủ nhật 12:00 | 9h sáng **Chủ nhật** |
 
-Hai dòng đầu cho thấy vì sao một message chứ không phải mỗi ngày đánh một message: hạn
-Bang Chiến và hạn scrim thứ 5 rơi cùng một ngày rất thường xuyên, và hai message là hai
-lần ping cho cùng một việc.
+Vì sao một message chứ không phải mỗi ngày đánh một message: hạn của nhiều ngày đánh
+khác nhau rất thường rơi vào cùng một buổi nhắc, và hai message là hai lần ping cho cùng
+một việc.
 
 Dòng thứ ba là lý do dùng `listByWeek()` (tuần đang mở) chứ không phải "tuần chứa hôm
 nay": tuần sau mở lúc 22:00 thứ 7, nên đến sáng Chủ nhật `getActiveWeek` đã trả về tuần

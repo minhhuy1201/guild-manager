@@ -13,6 +13,7 @@ export type { ScheduledSession } from './battle-sessions.service';
 export {
   formatDeadlineLabel,
   formatSessionLabel,
+  isDeadlinePassed,
   isReminderDay,
   isSameWeek,
   isSessionLocked,

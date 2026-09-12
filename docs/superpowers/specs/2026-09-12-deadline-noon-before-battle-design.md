@@ -144,10 +144,12 @@ cần nói hôm nay hay ngày mai. Comment "falls tomorrow" trong `reminder.ts` 
 | `apps/web/features/settings/components/session-form-dialog.tsx` | Điền sẵn bằng `defaultDeadlineFor`; `defaultTime` 12:00; dùng hằng số Bang Chiến |
 | `apps/api/src/modules/battle-sessions/battle-sessions.service.ts` | Lỗi 400 Bang Chiến dùng hằng số chung |
 | `apps/api/src/modules/battle-sessions/session-schedule.ts` | `isReminderDay` theo mốc 12:00 |
+| `apps/api/src/modules/battle-sessions/battle-sessions.public.ts` | Export `isDeadlinePassed` cho module bot |
 | `apps/api/src/modules/discord-bot/reminder.service.ts` | Lọc trận đã hết hạn |
 | `apps/api/src/modules/discord-bot/reminder.ts` | `LEAD` mới, sửa comment |
 | `apps/api/prisma/schema.prisma` | Comment của `BattleSession.deadline` (không tạo migration) |
 | `docs/architecture.md` | §5 bảng `BattleSession`, §6 luật deadline và luật nhắc |
+| `apps/web/docs/frontend.md` | Đoạn "Time and deadlines": form gọi `isWithinDeadlineCap` và `defaultDeadlineFor` |
 | `docs/superpowers/specs/2026-09-02-attendance-reminder-cron-design.md` | Bảng §3.2, trỏ sang spec này |
 
 ## 5. Test

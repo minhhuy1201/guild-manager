@@ -6,6 +6,7 @@ import type { Env } from '../../config';
 import { AttendanceService } from '../attendance/attendance.public';
 import {
   BattleSessionsService,
+  isDeadlinePassed,
   isReminderDay,
 } from '../battle-sessions/battle-sessions.public';
 import { CharactersService } from '../characters/characters.public';
@@ -32,7 +33,7 @@ export type ReminderOutcome =
     }
   /** No channel configured yet — an admin has not run `/cau-hinh-kenh`. */
   | { status: 'no-channel' }
-  /** Nothing closes tomorrow, or everyone whose deadline does has already answered. */
+  /** Nothing is due for a reminder today, or everyone has already answered for what is. */
   | { status: 'nothing-due' };
 
 /**
@@ -50,7 +51,7 @@ function answerKey(sessionId: string, characterId: string): string {
 }
 
 /**
- * Finds who still has not answered for a deadline falling tomorrow, and says so in Discord.
+ * Finds who still has not answered for a deadline due for a reminder today, and says so in Discord.
  *
  * Both the cron endpoint and `/nhac-diem-danh` call `run`: a scheduled reminder and a hand-run one
  * must not be able to disagree about who is missing.
@@ -72,9 +73,9 @@ export class ReminderService {
   /**
    * Post the reminder, if there is anything to remind about.
    *
-   * Silence is a normal outcome, not a failure: no deadline falls tomorrow, or everyone whose
-   * deadline does has already answered. A daily "nothing today" is the fastest way to get a channel
-   * muted.
+   * Silence is a normal outcome, not a failure: no deadline is due for a reminder today, or everyone
+   * has already answered for the ones that are. A daily "nothing today" is the fastest way to get a
+   * channel muted.
    *
    * @returns What the run did, tagged so the caller can tell the two silences apart
    * @throws Error when Discord rejects the message — the caller decides how loud that is
@@ -92,9 +93,13 @@ export class ReminderService {
 
     const now = this.clock.now();
     const sessions = await this.battleSessions.listByWeek();
-    const dueSessions = sessions.filter((session) =>
-      isReminderDay(new Date(session.deadline), now),
-    );
+    // A reminder day can be the deadline's own day, so a hand-run `/nhac-diem-danh` in the afternoon
+    // would otherwise ping people who can no longer answer.
+    const dueSessions = sessions.filter((session) => {
+      const deadline = new Date(session.deadline);
+
+      return isReminderDay(deadline, now) && !isDeadlinePassed(deadline, now);
+    });
 
     if (dueSessions.length === 0) return { status: 'nothing-due' };
 

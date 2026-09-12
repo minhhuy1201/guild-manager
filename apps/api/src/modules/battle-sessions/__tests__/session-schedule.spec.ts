@@ -252,29 +252,48 @@ describe('session-schedule', () => {
   });
 
   describe('ngày nhắc điểm danh', () => {
-    // Bang Chiến Thứ 7 05/09 có hạn 17:00 Thứ 5 03/09 → nhắc sáng Thứ 4 02/09.
-    const guildWarDeadline = vn('2026-09-03T17:00');
+    // Bang Chiến Thứ 7 05/09 có hạn 12:00 Thứ 6 04/09 → nhắc 9h sáng Thứ 6 04/09.
+    const guildWarDeadline = vn('2026-09-04T12:00');
 
-    it('đúng vào sáng của ngày liền trước hạn chót', () => {
-      expect(isReminderDay(guildWarDeadline, vn('2026-09-02T09:00'))).toBe(
+    it('hạn từ 12:00 trở đi được nhắc sáng cùng ngày', () => {
+      expect(isReminderDay(guildWarDeadline, vn('2026-09-04T09:00'))).toBe(
         true,
       );
     });
 
-    it('sai khi còn hai ngày nữa mới tới hạn', () => {
-      expect(isReminderDay(guildWarDeadline, vn('2026-09-01T09:00'))).toBe(
-        false,
+    it('cron trễ tới 09:59 vẫn cho cùng kết quả', () => {
+      expect(isReminderDay(guildWarDeadline, vn('2026-09-04T09:59'))).toBe(
+        true,
       );
     });
 
-    it('sai vào chính ngày hết hạn', () => {
+    it('hạn 12:00 ngày mai thì hôm nay chưa nhắc', () => {
       expect(isReminderDay(guildWarDeadline, vn('2026-09-03T09:00'))).toBe(
         false,
       );
     });
 
+    it('hạn 11:59 ngày mai được nhắc sáng hôm nay', () => {
+      expect(
+        isReminderDay(vn('2026-09-05T11:59'), vn('2026-09-04T09:00')),
+      ).toBe(true);
+    });
+
+    it('hạn 11:59 hôm nay không nhắc lại, vì đã nhắc hôm qua', () => {
+      expect(
+        isReminderDay(vn('2026-09-04T11:59'), vn('2026-09-04T09:00')),
+      ).toBe(false);
+    });
+
+    it('hạn đúng trần 10:00 ngày đánh được nhắc hôm trước', () => {
+      const cap = vn('2026-09-10T10:00');
+
+      expect(isReminderDay(cap, vn('2026-09-09T09:00'))).toBe(true);
+      expect(isReminderDay(cap, vn('2026-09-10T09:00'))).toBe(false);
+    });
+
     it('sai sau khi đã quá hạn', () => {
-      expect(isReminderDay(guildWarDeadline, vn('2026-09-04T09:00'))).toBe(
+      expect(isReminderDay(guildWarDeadline, vn('2026-09-05T09:00'))).toBe(
         false,
       );
     });

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import type { ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { BattleSession } from "@guild/shared/schemas";
@@ -21,7 +21,10 @@ vi.mock("../../api/battle-sessions-api", () => ({
   deleteBattleSession: vi.fn(),
 }));
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+});
 
 // React only batches and flushes state updates inside act() when it knows it is under test.
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
@@ -80,5 +83,35 @@ describe("SessionFormDialog", () => {
     expect(
       screen.getByText(/hệ thống tự tính theo tuần, không sửa được/)
     ).toBeTruthy();
+  });
+
+  it("Bang Chiến ghi hạn chót 12:00 Thứ 6", () => {
+    renderDialog(GUILD_WAR);
+
+    expect(
+      screen.getByText("12:00 Thứ 6 - cố định, không sửa được.")
+    ).toBeTruthy();
+  });
+
+  it("chọn ngày đánh thì hạn chót tự điền 12:00 hôm trước", () => {
+    // Only Date is faked: the calendar opens on the current month, and the popover still needs real
+    // timers to settle.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-09-01T09:00:00+07:00"));
+    renderDialog(null);
+
+    // The dialog renders through a portal, so its fields live under `document`, not the container.
+    fireEvent.click(document.querySelector("#session-date-time")!);
+    // `CalendarDayButton` stamps every day with its `vi` locale date.
+    const thursday = new Date(2026, 8, 10).toLocaleDateString("vi");
+    fireEvent.click(document.querySelector(`[data-day="${thursday}"]`)!);
+
+    expect(
+      document.querySelector("#session-deadline")?.textContent
+    ).toContain("09/09/2026");
+    expect(
+      (screen.getByLabelText("Hạn chót điểm danh — giờ") as HTMLInputElement)
+        .value
+    ).toBe("12:00");
   });
 });

@@ -70,8 +70,8 @@ model BattleSession {
   /// When the battle takes place.
   dateTime   DateTime
   /// Attendance deadline. Scrim: set by an admin, at most 10:00 on the battle day
-  /// (the backend rejects rather than clamps). Guild War: system-set to 17:00 Thursday
-  /// of the same week, not editable.
+  /// (the backend rejects rather than clamps); the form prefills 12:00 the day before.
+  /// Guild War: system-set to 12:00 Friday of the same week, not editable.
   deadline   DateTime
   /// Opponent guild name. Null for a Guild War and for a scrim with no opponent yet.
   opponent   String?

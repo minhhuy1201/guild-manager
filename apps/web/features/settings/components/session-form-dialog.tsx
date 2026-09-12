@@ -3,8 +3,12 @@
 import { useRef, useState } from "react";
 import { AlarmClock, CalendarClock, Save, Swords } from "lucide-react";
 
-import { deadlineCapFor, isWithinDeadlineCap } from "@guild/shared/lib";
-import { DEADLINE_CAP_MESSAGE, type BattleSession } from "@guild/shared/schemas";
+import { defaultDeadlineFor, isWithinDeadlineCap } from "@guild/shared/lib";
+import {
+  DEADLINE_CAP_MESSAGE,
+  GUILD_WAR_DEADLINE_LABEL,
+  type BattleSession,
+} from "@guild/shared/schemas";
 
 import { FieldLabel } from "@/components/shared/field-label";
 import { MutationDialogShell } from "@/components/shared/mutation-dialog";
@@ -28,7 +32,7 @@ import { ReduceMatchCountDialog } from "./reduce-match-count-dialog";
 const DEFAULT_BATTLE_TIME = "20:30";
 // A day is played over two matches unless an admin says otherwise.
 const DEFAULT_MATCH_COUNT = 2;
-const DEFAULT_DEADLINE_TIME = "10:00";
+const DEFAULT_DEADLINE_TIME = "12:00";
 
 interface SessionFormDialogProps {
   /** Whether the dialog is open */
@@ -97,7 +101,7 @@ function SessionForm({ session, onDone }: SessionFormProps) {
 
   /**
    * Change the battle time, also prefilling the deadline while the user has not edited it.
-   * The prefilled value is the cap itself — the latest that is still valid.
+   * The prefilled value is noon the day before (`defaultDeadlineFor`), which is always within the cap.
    * @param value - New value of the battle time field
    */
   function handleDateTimeChange(value: string) {
@@ -105,8 +109,8 @@ function SessionForm({ session, onDone }: SessionFormProps) {
 
     if (deadlineTouched || value === "") return;
 
-    const cap = deadlineCapFor(toInstant(value));
-    setDeadline(toInputValue(cap.toISOString()));
+    const suggested = defaultDeadlineFor(toInstant(value));
+    setDeadline(toInputValue(suggested.toISOString()));
   }
 
   /**
@@ -227,7 +231,7 @@ function SessionForm({ session, onDone }: SessionFormProps) {
         <div className="flex flex-col gap-1.5">
           <FieldLabel icon={<AlarmClock />}>Hạn chót điểm danh</FieldLabel>
           <p className="text-sm text-muted-foreground">
-            17:00 Thứ 5 — cố định, không sửa được.
+            {GUILD_WAR_DEADLINE_LABEL} - cố định, không sửa được.
           </p>
         </div>
       ) : (

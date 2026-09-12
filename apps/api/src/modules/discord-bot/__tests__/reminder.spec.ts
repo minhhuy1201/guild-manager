@@ -47,6 +47,13 @@ const SCRIM: DueSession = {
 };
 
 describe('buildReminder', () => {
+  // Một tin có thể gồm cả trận hết hạn hôm nay lẫn trận hết hạn sáng mai, nên câu mở đầu không nói ngày.
+  it('câu mở đầu không nói hôm nay hay ngày mai', () => {
+    expect(buildReminder([GUILD_WAR], WEB_ORIGIN).content).toMatch(
+      /^⏰ \*\*Nhắc điểm danh\*\* - mấy ngày dưới đây sắp hết hạn điểm danh\.\n/,
+    );
+  });
+
   // Discord chỉ báo cho mention nằm trong văn bản message; mention trong embed không đánh thức ai.
   it('đặt mention trong content, không phải trong embed', () => {
     const payload = buildReminder([GUILD_WAR], WEB_ORIGIN);
