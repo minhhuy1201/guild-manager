@@ -27,6 +27,7 @@ export function AttendanceScreen({ role }: AttendanceScreenProps) {
   return (
     <>
       <PageHeader
+        banner="attendance"
         title="Điểm danh"
         description="Chọn Có hoặc Không cho từng trận trong tuần, trước hạn chót của trận đó."
       />

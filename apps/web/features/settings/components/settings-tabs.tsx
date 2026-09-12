@@ -28,6 +28,7 @@ export function SettingsTabs() {
   return (
     <>
       <PageHeader
+        banner="settings"
         title="Thiết lập"
         description="Lịch đánh trong tuần và danh sách thành viên của bang."
       />

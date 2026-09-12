@@ -30,6 +30,7 @@ export default async function AttendanceHistoryPage() {
   return (
     <>
       <PageHeader
+        banner="history"
         title="Lịch sử điểm danh"
         description="Câu trả lời của cả bang theo từng trận và từng lưu phái."
       />

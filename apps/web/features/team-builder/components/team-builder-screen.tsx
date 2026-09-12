@@ -151,6 +151,7 @@ export function TeamBuilderScreen() {
     >
       <div className="flex flex-col gap-4">
         <PageHeader
+          banner="teamBuilder"
           title="Xếp đội hình bang chiến"
           actions={
             <WeekPicker
