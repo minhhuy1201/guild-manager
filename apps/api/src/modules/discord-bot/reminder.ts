@@ -12,7 +12,9 @@ import { takeWithinLimit } from './message-limits';
 
 const TITLE = '⏰ CHƯA ĐIỂM DANH';
 
-const LEAD = '⏰ **Nhắc điểm danh** — mấy ngày dưới đây hết hạn vào ngày mai.';
+// Says neither "today" nor "tomorrow": one message can hold a deadline closing this afternoon and one
+// closing tomorrow morning, and every block already prints its full deadline.
+const LEAD = '⏰ **Nhắc điểm danh** - mấy ngày dưới đây sắp hết hạn điểm danh.';
 
 const FOOTER = 'Guild Manager';
 
@@ -66,7 +68,7 @@ export interface MissingMember {
   discordId: string | null;
 }
 
-/** One battle day whose deadline falls tomorrow, with everyone still missing from it. */
+/** One battle day due for a reminder today, with everyone still missing from it. */
 export interface DueSession {
   session: BattleSession;
   missing: MissingMember[];
@@ -147,7 +149,7 @@ function mentionedIds(due: readonly DueSession[]): string[] {
  * The mentions live in `content` rather than inside the embed, because Discord only notifies people
  * for mentions in the message text.
  *
- * @param due - Battle days whose deadline falls tomorrow, each with everyone still missing. Never
+ * @param due - Battle days due for a reminder today, each with everyone still missing. Never
  *   empty, and never carrying an empty `missing`: `ReminderService` drops those first, so a message
  *   that says nothing is never built
  * @param webOrigin - Origin of the web app, for the link button

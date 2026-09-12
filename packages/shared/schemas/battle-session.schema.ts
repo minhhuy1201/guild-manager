@@ -24,6 +24,9 @@ const opponent = z
 export const DEADLINE_CAP_MESSAGE =
   "Hạn chót điểm danh không được muộn hơn 10:00 sáng ngày đánh.";
 
+/** When a Guild War's system-owned deadline falls - shared by the API's 400 and the form's hint. */
+export const GUILD_WAR_DEADLINE_LABEL = "12:00 Thứ 6";
+
 /**
  * Message shown when the week marker on the query string cannot be parsed.
  *

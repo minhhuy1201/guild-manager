@@ -1,10 +1,14 @@
 import type { BattleSession } from '@guild/shared/schemas';
 
 import { FixedClock } from '../../../common';
+import type { MessagePayload } from '../commands/command.types';
 import { ReminderService } from '../reminder.service';
 
-/** 09:00 giờ VN Thứ 4 02/09/2026 — sáng trước hạn 17:00 Thứ 5 03/09. */
-const NOW = new Date('2026-09-02T02:00:00.000Z');
+/** 09:00 giờ VN Thứ 6 04/09/2026 - sáng cùng ngày với hạn 12:00 của Bang Chiến. */
+const NOW = new Date('2026-09-04T02:00:00.000Z');
+
+/** 14:00 giờ VN Thứ 6 04/09 - vẫn là ngày nhắc của hạn 12:00, nhưng hạn đó đã khoá. */
+const AFTERNOON = new Date('2026-09-04T07:00:00.000Z');
 
 /**
  * A battle session carrying the fields the service reads.
@@ -16,8 +20,8 @@ function session(overrides: Partial<BattleSession> = {}): BattleSession {
     id: 'gw-2026-09-05',
     label: 'Thứ 7 · 20:00 · Bang Chiến',
     dateTime: '2026-09-05T13:00:00.000Z',
-    // 17:00 giờ VN Thứ 5 03/09 — rơi vào "ngày mai" so với NOW.
-    deadline: '2026-09-03T10:00:00.000Z',
+    // 12:00 giờ VN Thứ 6 04/09 - từ 12:00 trở đi nên được nhắc sáng cùng ngày.
+    deadline: '2026-09-04T05:00:00.000Z',
     isDeadlinePassed: false,
     isGuildWar: true,
     opponent: null,
@@ -34,6 +38,7 @@ interface Options {
   sessions?: BattleSession[];
   records?: { characterId: string; sessionId: string; isPresent?: boolean }[];
   members?: { id: string; name: string; discordId: string | null }[];
+  now?: Date;
 }
 
 /**
@@ -73,7 +78,7 @@ function makeService(options: Options = {}) {
         ),
     } as never,
     { postMessage } as never,
-    new FixedClock(NOW),
+    new FixedClock(options.now ?? NOW),
     { get: () => 'https://mmgh-nth.vercel.app' } as never,
   );
 
@@ -106,11 +111,43 @@ describe('ReminderService.run', () => {
     expect(postMessage).not.toHaveBeenCalled();
   });
 
-  it('không gửi gì khi không ngày nào tới hạn vào mai', async () => {
+  it('không gửi gì khi không ngày nào tới lượt nhắc hôm nay', async () => {
     const { service, postMessage } = makeService({
       // Hạn 17:00 Thứ 5 10/09 — còn hơn một ngày nữa.
       sessions: [session({ deadline: '2026-09-10T10:00:00.000Z' })],
     });
+
+    await expect(service.run()).resolves.toEqual({ status: 'nothing-due' });
+    expect(postMessage).not.toHaveBeenCalled();
+  });
+
+  // Luật mới nhắc cả trong ngày hết hạn, nên /nhac-diem-danh chạy tay buổi chiều sẽ gặp hạn đã qua.
+  it('bỏ trận đã quá hạn dù hôm nay là ngày nhắc của nó', async () => {
+    const { service, postMessage } = makeService({
+      now: AFTERNOON,
+      sessions: [
+        session(),
+        // 18:00 giờ VN Thứ 6 04/09 - còn mở.
+        session({
+          id: 's1',
+          label: 'Thứ 6 · 20:30',
+          isGuildWar: false,
+          deadline: '2026-09-04T11:00:00.000Z',
+        }),
+      ],
+    });
+
+    await expect(service.run()).resolves.toEqual({
+      status: 'sent',
+      sessionCount: 1,
+      missingCount: 1,
+    });
+    const [, payload] = postMessage.mock.calls[0] as [string, MessagePayload];
+    expect(payload.embeds?.[0].description).not.toContain('Bang Chiến');
+  });
+
+  it('chỉ còn trận đã quá hạn thì không gửi gì', async () => {
+    const { service, postMessage } = makeService({ now: AFTERNOON });
 
     await expect(service.run()).resolves.toEqual({ status: 'nothing-due' });
     expect(postMessage).not.toHaveBeenCalled();

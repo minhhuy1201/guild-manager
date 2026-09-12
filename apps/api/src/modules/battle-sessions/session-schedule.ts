@@ -7,7 +7,12 @@
  * Since 2026-08 the schedule is entered by admins into the database; this file only keeps the week
  * markers, the fixed Guild War session and the display label format.
  */
-import { shiftVnDate, vnParts, vnWeekday } from '@guild/shared/lib';
+import {
+  isSameVnDay,
+  shiftVnDate,
+  vnParts,
+  vnWeekday,
+} from '@guild/shared/lib';
 
 /** ISO weekday as `vnWeekday()` reports it: 1=Mon, ..., 7=Sun. */
 const MONDAY = 1;
@@ -22,6 +27,13 @@ const SATURDAY_OFFSET_FROM_MONDAY = 5;
 /** Fixed battle time of the Guild War. */
 const GUILD_WAR_HOUR = 20;
 const GUILD_WAR_MINUTE = 0;
+
+/**
+ * Deadlines at or after this hour are reminded about the same morning; earlier ones the morning
+ * before. Noon rather than 10:00: Vercel Hobby fires the 09:00 cron anywhere up to 09:59, so a
+ * same-day reminder for a 10:00 deadline could land a minute before it closes.
+ */
+const REMINDER_CUTOFF_HOUR = 12;
 
 /** Milliseconds in a week — the alternation counts whole weeks between two Monday markers. */
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -253,24 +265,18 @@ export function formatSessionLabel(
 /**
  * Whether a deadline should be reminded about today.
  *
- * The reminder goes out the morning **before** the deadline's own day, so the answer is a
- * comparison of Vietnam calendar days, not a 24-hour window. A deadline 23 hours away is still
- * "tomorrow" when it falls on tomorrow's date, and one 25 hours away is not "the day after" when it
- * does too.
+ * A deadline from 12:00 on is reminded about the morning of its own day; an earlier one the morning
+ * before, since the 09:00 cron would otherwise reach it too late or after it closed. The answer is a
+ * comparison of Vietnam calendar days, not a 24-hour window.
  *
  * @param deadline - The session's attendance deadline
  * @param now - Current moment
- * @returns true when `deadline` falls on the Vietnam calendar day after `now`'s
+ * @returns true when today is the reminder day for `deadline`
  */
 export function isReminderDay(deadline: Date, now: Date): boolean {
-  const tomorrow = vnParts(shiftVnDate(now, 1, 0, 0));
-  const target = vnParts(deadline);
+  const daysAhead = vnParts(deadline).hour >= REMINDER_CUTOFF_HOUR ? 0 : 1;
 
-  return (
-    target.year === tomorrow.year &&
-    target.month === tomorrow.month &&
-    target.day === tomorrow.day
-  );
+  return isSameVnDay(deadline, shiftVnDate(now, daysAhead, 0, 0));
 }
 
 /**
