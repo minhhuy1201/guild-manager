@@ -572,7 +572,7 @@ a selected state. The convention:
 - **Selected** — a solid `primary` surface with `primary-foreground` text: navy on white in the
   light theme, inverted in the dark one. Both in-page selections follow it: the default
   `TabsTrigger` and the team builder's session cards.
-- **Current page in the header nav** — *not* a primary surface: navigation is not an in-page
+- **Current page in the header nav** - *not* a primary surface: navigation is not an in-page
   selection. The item keeps its ghost button, takes `text-foreground`, a `jade` icon and a 2px
   `jade` bar under it (`main-nav.tsx`). Only colour and opacity change, so the row never shifts.
 
@@ -596,7 +596,7 @@ let the active branch declare its own `hover:`.
 bg-muted` and an active tab on `bg-background` sank into the page. The `default` variant of
 `components/ui/tabs.tsx` therefore uses:
 
-- **Track** — `border border-border bg-card` (`dark:bg-foreground/5`). On the warm plane a tinted
+- **Track** - `border border-border bg-card` (`dark:bg-foreground/5`). On the warm plane a tinted
   track had to be heavy (`bg-foreground/20`) before its fill separated from the page at all, and at
   that weight it read as a dark bar under a minimal header. The track is now drawn the way every
   other bordered control is (see "The surface behind a hovered or selected control"): the card's
