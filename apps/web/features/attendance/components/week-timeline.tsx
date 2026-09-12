@@ -12,6 +12,7 @@ import {
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { REVEAL_CLASS, revealStyle } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { getSessionSubtitle } from "../lib/session-subtitle";
 import { useAttendanceBoard } from "../hooks/use-attendance-board";
@@ -79,7 +80,7 @@ export function WeekTimeline() {
         </div>
 
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          {battleSessions.map((session) => {
+          {battleSessions.map((session, index) => {
             const closed = session.isDeadlinePassed;
             const subtitle = getSessionSubtitle(session);
             return (
@@ -87,8 +88,10 @@ export function WeekTimeline() {
                 key={session.id}
                 className={cn(
                   "flex flex-col gap-1.5 rounded-lg border p-3",
-                  sessionTintClass(session.isGuildWar)
+                  sessionTintClass(session.isGuildWar),
+                  REVEAL_CLASS
                 )}
+                style={revealStyle(index)}
               >
                 <SessionLabel session={session} />
                 {subtitle && (

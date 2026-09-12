@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useSession } from "@/features/auth";
 import { ApiError } from "@/lib/api-client";
+import { REVEAL_CLASS, revealStyle } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { useAttendanceBoard } from "../hooks/use-attendance-board";
 import { useDeadlineRefresh } from "../hooks/use-deadline-refresh";
@@ -187,7 +188,7 @@ export function MemberAttendanceCard() {
               // The week timeline's own grid, so a day sits in the same column in both cards and
               // the eye travels straight down from the day to its two buttons.
               <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {battleSessions.map((battleSession) => {
+                {battleSessions.map((battleSession, index) => {
                   const current =
                     recordMap[recordKey(character.id, battleSession.id)]
                       ?.isPresent ?? null;
@@ -208,8 +209,10 @@ export function MemberAttendanceCard() {
                       key={battleSession.id}
                       className={cn(
                         "flex flex-col gap-1.5 rounded-lg border p-3",
-                        tileTone
+                        tileTone,
+                        REVEAL_CLASS
                       )}
+                      style={revealStyle(index)}
                     >
                       <SessionLabel session={battleSession} size="md" />
                       {getSessionSubtitle(battleSession) && (

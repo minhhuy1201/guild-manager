@@ -13,6 +13,11 @@
     --duration-base: 200ms;
     --duration-slow: 320ms;
     --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
+    /* Entrance of a freshly loaded item (`lib/motion.ts`) and the skeleton's sweep. `backwards`,
+       never `both`: a transform left on an element after it lands makes it the containing block
+       of every `position: fixed` descendant - the team builder's drag overlay among them. */
+    --animate-reveal: reveal var(--duration-slow) var(--ease-out-soft) backwards;
+    --animate-shimmer: shimmer 1.6s linear infinite;
     /* Serif for page titles and the guild name only; every other line of UI text stays sans. */
     --font-heading: var(--font-noto-serif), ui-serif, Georgia, serif;
     --font-sans: var(--font-be-vietnam-pro), ui-sans-serif, system-ui, sans-serif;
@@ -236,16 +241,71 @@
 
 @layer base {
   body {
+    /* The plane is not flat white: a jade and a gold glow at the top corners and a paper grain
+       (fractal noise, ~3% ink) under everything. Fixed, so the grain does not scroll with the page. */
     background-color: var(--background);
+    background-image:
+      radial-gradient(60rem 36rem at 0% -8%, color-mix(in oklab, var(--jade) 10%, transparent), transparent 70%),
+      radial-gradient(50rem 32rem at 100% -6%, color-mix(in oklab, var(--gold) 12%, transparent), transparent 70%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.16 0 0 0 0 0.14 0 0 0 0 0.1 0.07 0 0 0 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-attachment: fixed;
   }
+
+  /* Switching page: each block of the new page settles in, one beat after the one above it. */
+  main > * {
+    animation: page-enter var(--duration-slow) var(--ease-out-soft) backwards;
+  }
+  main > :nth-child(2) { animation-delay: 60ms; }
+  main > :nth-child(3) { animation-delay: 120ms; }
+  main > :nth-child(4) { animation-delay: 180ms; }
+  main > :nth-child(n + 5) { animation-delay: 240ms; }
+
+  /* Rows arriving in any table - first load, a new page, a new filter result. Opacity only: a row
+     that moved would make the table jump (frontend.md §6, Tables). */
+  [data-slot="table-body"] > tr {
+    animation: fade-in-soft var(--duration-slow) var(--ease-out-soft) backwards;
+  }
+  [data-slot="table-body"] > tr:nth-child(2) { animation-delay: 25ms; }
+  [data-slot="table-body"] > tr:nth-child(3) { animation-delay: 50ms; }
+  [data-slot="table-body"] > tr:nth-child(4) { animation-delay: 75ms; }
+  [data-slot="table-body"] > tr:nth-child(5) { animation-delay: 100ms; }
+  [data-slot="table-body"] > tr:nth-child(6) { animation-delay: 125ms; }
+  [data-slot="table-body"] > tr:nth-child(7) { animation-delay: 150ms; }
+  [data-slot="table-body"] > tr:nth-child(8) { animation-delay: 175ms; }
+  [data-slot="table-body"] > tr:nth-child(9) { animation-delay: 200ms; }
+  [data-slot="table-body"] > tr:nth-child(n + 10) { animation-delay: 225ms; }
 }
 
-/* Answered once for the whole app, never repeated at a call site. */
+/* Every keyframe ends on `transform: none`, and every use fills `backwards` - see --animate-reveal. */
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes reveal {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes fade-in-soft {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* The highlight sits in the middle of a gradient twice the element's width and crosses left to right. */
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -100% 0; }
+}
+
+/* Answered once for the whole app, never repeated at a call site. The delay goes too: a staggered
+   list would otherwise still hold its items back after the animation itself is gone. */
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
     *::after {
         animation-duration: 0.01ms !important;
+        animation-delay: 0s !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
     }
