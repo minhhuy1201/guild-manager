@@ -345,6 +345,39 @@ successful write is `await`ed inside `run` itself, in plain order.
 
 System-wide, so screens look like one app. **Extend this section when you add a convention.**
 
+### Palette roles
+
+[`docs/design-direction.md`](../../../docs/design-direction.md) is the brief; the tokens live in
+`app/globals.css`. Every colour has one job:
+
+| Token | Job |
+|---|---|
+| Warm neutrals (`--background`, `--card`, `--border`, `--muted-foreground` …) | Surfaces and text. One hue (85) for every grey - never mix in a cool one. |
+| `primary` (navy) | Primary actions, selected tabs, a battle's name (`SessionLabel`). |
+| `jade` | The accent: current page in the nav, focus ring (`--ring`), the guild seal, the page divider's diamond, hover edge of the session cards. |
+| `gold` | Important highlights only: the formation banner's frame, the login ornament. Never a state. |
+| emerald / `destructive` / amber | Attendance state only: "Có" / "Không" / not answered yet. Never decoration. |
+
+Gold and amber stay apart by saturation: amber is a vivid state colour, gold a muted accent.
+
+**Team columns** (`features/team-builder/lib/team-colors.ts`) tint the same palette rather than
+bringing hues of their own: teams 1-5 jade, 6-7 the warm neutral, 8 navy, 9-10 gold. The header
+sits at `/15` to `/30`, the border a step stronger, the surface at `/5` to `/10`, and the text is
+always `foreground`.
+
+### Page header → `PageHeader`, serif title
+
+Every page opens with `components/shared/page-header.tsx` (`<PageHeader title description?
+actions? />`): the page's one `<h1>` in `font-heading` (Noto Serif), an optional one-sentence
+description, page-wide controls on the right (the team builder's week picker), and the
+`OrnamentDivider` (a hairline with a small jade diamond) closing the block. A section title inside
+a card is an `<h2>`, in the sans face.
+
+`font-heading` is for headings only: `PageHeader`, the guild name (`site-header`, login page), the
+formation banner, and `DialogTitle` (shadcn wires it there). Everything else stays Be Vietnam Pro.
+The guild's mark is `GuildSeal` (`components/shared/guild-seal.tsx`), in two named sizes like
+`SessionLabel`.
+
 ### Binary state → an icon, never words
 
 Any column or card showing a **Có/Không, Đạt/Không, Bật/Tắt** style state uses a coloured round
@@ -524,8 +557,11 @@ a selected state. The convention:
 - **Neutral hover** — `hover:bg-foreground/5` (the `ghost` and `outline` buttons, table rows);
   `bg-foreground/10` while a popup is open.
 - **Selected** — a solid `primary` surface with `primary-foreground` text: navy on white in the
-  light theme, inverted in the dark one. All three places follow it: the default `TabsTrigger`, the
-  header nav, and the team builder's session cards.
+  light theme, inverted in the dark one. Both in-page selections follow it: the default
+  `TabsTrigger` and the team builder's session cards.
+- **Current page in the header nav** — *not* a primary surface: navigation is not an in-page
+  selection. The item keeps its ghost button, takes `text-foreground`, a `jade` icon and a 2px
+  `jade` bar under it (`main-nav.tsx`). Only colour and opacity change, so the row never shifts.
 
 `--muted` and `--secondary` still carry *text* (`text-muted-foreground`) and badges; neither is a
 surface for signalling state.
@@ -547,11 +583,11 @@ let the active branch declare its own `hover:`.
 bg-muted` and an active tab on `bg-background` sank into the page. The `default` variant of
 `components/ui/tabs.tsx` therefore uses:
 
-- **Track** — `bg-foreground/20 dark:bg-foreground/5`. The alpha differs per theme on purpose:
-  `--background` is 0.964 in the light theme, so a 5% tint measured 1.05:1 against the page and was
-  invisible; 20% brings it to 1.23:1. In the dark theme that same 5% is already 1.63:1. No ring — at
-  this strength the tint alone draws the shape, and `--border` (0.922) would sit *lighter* than the
-  track.
+- **Track** — `border border-border bg-card` (`dark:bg-foreground/5`). On the warm plane a tinted
+  track had to be heavy (`bg-foreground/20`) before its fill separated from the page at all, and at
+  that weight it read as a dark bar under a minimal header. The track is now drawn the way every
+  other bordered control is (see "The surface behind a hovered or selected control"): the card's
+  near-white surface, the thin border drawing the edge, the navy pill inside carrying the selection.
 - **Selected tab** — `bg-primary text-primary-foreground font-semibold`; the rest keep plain
   `text-foreground`. Not `text-muted-foreground`: on that track it measures 3.4:1 in the dark theme,
   and the filled pill already carries the hierarchy without dimming the other labels.
