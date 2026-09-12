@@ -3,6 +3,7 @@
 import type { GuildRole } from "@guild/shared/enums";
 import { canManageGuild } from "@guild/shared/lib";
 
+import { PageHeader } from "@/components/shared/page-header";
 import { WeekTimeline } from "./week-timeline";
 import { AttendanceFilters } from "./attendance-filters";
 import { AttendanceGrid } from "./attendance-grid";
@@ -25,6 +26,11 @@ export function AttendanceScreen({ role }: AttendanceScreenProps) {
 
   return (
     <>
+      <PageHeader
+        banner="attendance"
+        title="Điểm danh"
+        description="Chọn Có hoặc Không cho từng trận trong tuần, trước hạn chót của trận đó."
+      />
       <WeekTimeline />
       <MemberAttendanceCard />
       <AttendanceFilters scope="attendance" />

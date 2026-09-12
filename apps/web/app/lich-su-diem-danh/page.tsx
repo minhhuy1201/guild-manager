@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
+import { PageHeader } from "@/components/shared/page-header";
 import { ROUTES } from "@/config/routes";
 import {
   AttendanceHistoryFilters,
@@ -28,6 +29,11 @@ export default async function AttendanceHistoryPage() {
 
   return (
     <>
+      <PageHeader
+        banner="history"
+        title="Lịch sử điểm danh"
+        description="Câu trả lời của cả bang theo từng trận và từng lưu phái."
+      />
       <AttendanceHistoryFilters />
       <AttendanceSummaryDashboard />
       <AttendanceLogTable />

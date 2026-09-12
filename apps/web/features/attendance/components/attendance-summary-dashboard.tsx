@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { QueryBoundary } from "@/components/shared/query-boundary";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { REVEAL_CLASS, revealStyle } from "@/lib/motion";
 import { useAttendanceBoard } from "../hooks/use-attendance-board";
 import {
   useAttendanceRecords,
@@ -82,12 +83,19 @@ export function AttendanceSummaryDashboard() {
       ) : (
         <div className={GRID}>
           {shownSessions.map((session, index) => (
-            <AttendanceSummaryCard
+            // A one-cell grid, so the card still stretches to the row's height like a direct grid
+            // item would.
+            <div
               key={session.id}
-              session={session}
-              rows={summaries[index]}
-              domainMax={domainMax}
-            />
+              className={`grid ${REVEAL_CLASS}`}
+              style={revealStyle(index)}
+            >
+              <AttendanceSummaryCard
+                session={session}
+                rows={summaries[index]}
+                domainMax={domainMax}
+              />
+            </div>
           ))}
         </div>
       )}

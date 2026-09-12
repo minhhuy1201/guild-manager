@@ -345,6 +345,52 @@ successful write is `await`ed inside `run` itself, in plain order.
 
 System-wide, so screens look like one app. **Extend this section when you add a convention.**
 
+### Palette roles
+
+[`docs/design-direction.md`](../../../docs/design-direction.md) is the brief; the tokens live in
+`app/globals.css`. Every colour has one job:
+
+| Token | Job |
+|---|---|
+| Warm neutrals (`--background`, `--card`, `--border`, `--muted-foreground` …) | Surfaces and text. One hue (85) for every grey - never mix in a cool one. |
+| `primary` (navy) | Primary actions, selected tabs, a battle's name (`SessionLabel`). |
+| `jade` | The accent: current page in the nav, focus ring (`--ring`), the guild seal, the page divider's diamond, hover edge of the session cards. |
+| `gold` | Important highlights only: the formation banner's frame, the login ornament. Never a state. |
+| emerald / `destructive` / amber | Attendance state only: "Có" / "Không" / not answered yet. Never decoration. |
+
+Gold and amber stay apart by saturation: amber is a vivid state colour, gold a muted accent.
+
+**Team columns** (`features/team-builder/lib/team-colors.ts`) tint the same palette rather than
+bringing hues of their own: teams 1-5 jade, 6-7 the warm neutral, 8 navy, 9-10 gold. The header
+sits at `/15` to `/30`, the border a step stronger, the surface at `/5` to `/10`, and the text is
+always `foreground`.
+
+### Page header → `PageHeader` on its banner
+
+Every page opens with `components/shared/page-header.tsx` (`<PageHeader banner title description?
+actions? />`): a `rounded-2xl` strip holding the page's scene, the page's one `<h1>` in white
+`font-heading` (Noto Serif), an optional one-sentence description, page-wide controls at the bottom
+right (the team builder's week picker), and the `OrnamentDivider` (a hairline with a small jade
+diamond, `surface="image"`) closing the block. A section title inside a card is an `<h2>`, in the
+sans face.
+
+- **`banner` is required** and names an entry of `PAGE_BANNERS` (`lib/page-banners.ts`): the
+  picture, the `objectPosition` that crops the game's logo out of the strip on a wide screen, and
+  the `tint` shown while it loads. A new page adds its scene there; the pictures live in
+  `public/img/bg/`.
+- **Two scrims** (rising from the bottom, and from the left) sit between the picture and the text,
+  so white text reads on a night scene and a daylight one alike. No text goes on a picture without
+  them.
+- **`BannerImage`** draws the picture: `next/image` with `fill` and `preload`, transparent until
+  `onLoad`, then an opacity fade over the tint. The login page's full-screen backdrop
+  (`LOGIN_BACKDROP`) uses it too.
+- **Pictures stop at the header.** Tables, the formation grid and forms stay on plain surfaces.
+
+`font-heading` is for headings only: `PageHeader`, the guild name (`site-header`, login page), the
+formation banner, and `DialogTitle` (shadcn wires it there). Everything else stays Be Vietnam Pro.
+The guild's mark is `GuildSeal` (`components/shared/guild-seal.tsx`), in two named sizes like
+`SessionLabel`.
+
 ### Binary state → an icon, never words
 
 Any column or card showing a **Có/Không, Đạt/Không, Bật/Tắt** style state uses a coloured round
@@ -524,8 +570,11 @@ a selected state. The convention:
 - **Neutral hover** — `hover:bg-foreground/5` (the `ghost` and `outline` buttons, table rows);
   `bg-foreground/10` while a popup is open.
 - **Selected** — a solid `primary` surface with `primary-foreground` text: navy on white in the
-  light theme, inverted in the dark one. All three places follow it: the default `TabsTrigger`, the
-  header nav, and the team builder's session cards.
+  light theme, inverted in the dark one. Both in-page selections follow it: the default
+  `TabsTrigger` and the team builder's session cards.
+- **Current page in the header nav** - *not* a primary surface: navigation is not an in-page
+  selection. The item keeps its ghost button, takes `text-foreground`, a `jade` icon and a 2px
+  `jade` bar under it (`main-nav.tsx`). Only colour and opacity change, so the row never shifts.
 
 `--muted` and `--secondary` still carry *text* (`text-muted-foreground`) and badges; neither is a
 surface for signalling state.
@@ -547,11 +596,11 @@ let the active branch declare its own `hover:`.
 bg-muted` and an active tab on `bg-background` sank into the page. The `default` variant of
 `components/ui/tabs.tsx` therefore uses:
 
-- **Track** — `bg-foreground/20 dark:bg-foreground/5`. The alpha differs per theme on purpose:
-  `--background` is 0.964 in the light theme, so a 5% tint measured 1.05:1 against the page and was
-  invisible; 20% brings it to 1.23:1. In the dark theme that same 5% is already 1.63:1. No ring — at
-  this strength the tint alone draws the shape, and `--border` (0.922) would sit *lighter* than the
-  track.
+- **Track** - `border border-border bg-card` (`dark:bg-foreground/5`). On the warm plane a tinted
+  track had to be heavy (`bg-foreground/20`) before its fill separated from the page at all, and at
+  that weight it read as a dark bar under a minimal header. The track is now drawn the way every
+  other bordered control is (see "The surface behind a hovered or selected control"): the card's
+  near-white surface, the thin border drawing the edge, the navy pill inside carrying the selection.
 - **Selected tab** — `bg-primary text-primary-foreground font-semibold`; the rest keep plain
   `text-foreground`. Not `text-muted-foreground`: on that track it measures 3.4:1 in the dark theme,
   and the filled pill already carries the hierarchy without dimming the other labels.
@@ -628,9 +677,11 @@ Four tokens in `app/globals.css` are the app's whole motion vocabulary:
 Tailwind 4 has an `--ease-*` namespace, so `--ease-out-soft` gives the `ease-out-soft` class; it has
 **no** `--duration-*` namespace, so a duration is written `duration-[var(--duration-base)]`.
 
-**Motion may change opacity and colour only, never geometry** — no `translate`, no `height`, no
-`scale` on table content. A transition that moves something is exactly what makes the layout jump.
-Two exceptions. One is a popup in a portal (`SelectContent`, `DropdownMenuContent`,
+**Motion never changes the geometry of the layout**: no `height`, no `width`, no `scale` on table
+content, and no `translate` on anything already in place. A transition that moves something is
+exactly what makes the layout jump. An element *arriving* may rise a few pixels as it fades in (see
+"Entrance and data reveal" below), because a transform does not reflow its neighbours. Beyond that,
+two exceptions. One is a popup in a portal (`SelectContent`, `DropdownMenuContent`,
 `DialogContent`): it sits outside the layout flow, so it may slide in. `SelectContent` rises from
 below (`data-open:slide-in-from-bottom-8`) over `--duration-slow`, and needs
 `alignItemWithTrigger={false}` — in align-to-item mode the popup covers the trigger and its
@@ -658,6 +709,32 @@ there only duplicates the accessible name.
 **A mutation error keeps its slot.** An error line rendered above or below a table lives inside a
 wrapper with a fixed minimum height (`min-h-*`), so the error appearing does not push the table or the
 pagination bar down — see `members-panel` and `attendance-grid`.
+
+### Entrance and data reveal
+
+Data arrives, it does not snap in. Four pieces, all CSS, in `app/globals.css` and `lib/motion.ts`;
+`--animate-reveal` and `--animate-shimmer` join the four motion tokens above.
+
+| What | How | Moves |
+|---|---|---|
+| A new page | every direct child of `<main>` runs `page-enter`, staggered 60ms by `nth-child` | fade + 6px rise |
+| Rows of any table | `[data-slot="table-body"] > tr` runs `fade-in-soft`, staggered 25ms up to the tenth row | opacity only (see *Tables*) |
+| Tiles and cards of loaded data | `REVEAL_CLASS` + `revealStyle(index)` from `lib/motion.ts`, 40ms steps, capped at the ninth item | fade + 4px rise |
+| Waiting | `Skeleton` sweeps a highlight across (`animate-shimmer`) instead of pulsing | background only |
+
+- **Every entrance fills `backwards`, never `both`, and every keyframe ends on `transform: none`.**
+  A transform left on an element after it lands makes it the containing block of each
+  `position: fixed` descendant: the team builder's `DragOverlay` and the Discord capture sheet would
+  then be placed against the page block instead of the viewport.
+- **The formation grid never reveals.** It is screenshotted for the Discord announcement and dragged
+  over; a column caught mid-fade would be sent half transparent. The team builder gets the page
+  entrance and nothing else.
+- Used today by `week-timeline`, `member-attendance-card`, `attendance-summary-dashboard` and
+  `session-list`. A new list of loaded data takes the same helper, never a delay of its own. A
+  component without a `className` prop is wrapped (the dashboard wraps each card in a one-cell
+  `grid`, so it still stretches to the row).
+- The reduced-motion rule in `globals.css` also zeroes `animation-delay`; otherwise a staggered list
+  would still hold its items back after the animation itself is gone.
 
 ### Tables
 

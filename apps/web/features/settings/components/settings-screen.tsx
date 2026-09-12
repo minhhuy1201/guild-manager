@@ -50,7 +50,7 @@ export function SettingsScreen() {
         <QueryBoundary state={state} skeleton={<SettingsSkeleton />}>
           <>
             <div>
-              <h1 className="text-lg font-semibold">Thiết lập lịch đánh</h1>
+              <h2 className="text-lg font-semibold">Thiết lập lịch đánh</h2>
               <p className="text-sm text-muted-foreground">
                 Sửa được lịch của tuần này và tuần sau. Trận Bang Chiến do hệ
                 thống tạo sẵn, chỉ đổi được giờ đánh.

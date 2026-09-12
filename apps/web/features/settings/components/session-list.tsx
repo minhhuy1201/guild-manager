@@ -3,6 +3,7 @@
 import type { BattleSession } from "@guild/shared/schemas";
 
 import { EmptyState } from "@/components/shared/empty-state";
+import { REVEAL_CLASS, revealStyle } from "@/lib/motion";
 import { SessionRow } from "./session-row";
 
 interface SessionListProps {
@@ -31,13 +32,14 @@ export function SessionList({
 
   return (
     <div className="flex flex-col gap-2">
-      {sessions.map((session) => (
-        <SessionRow
+      {sessions.map((session, index) => (
+        <div
           key={session.id}
-          session={session}
-          onEdit={onEdit}
-          onDelete={onDelete}
-        />
+          className={REVEAL_CLASS}
+          style={revealStyle(index)}
+        >
+          <SessionRow session={session} onEdit={onEdit} onDelete={onDelete} />
+        </div>
       ))}
 
       {!hasScrim && <EmptyState message="Tuần này chưa có trận scrim nào." />}

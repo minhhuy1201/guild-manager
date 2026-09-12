@@ -11,6 +11,7 @@ import {
 
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
+import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFormationAnnounce } from "../hooks/use-formation-announce";
@@ -149,14 +150,17 @@ export function TeamBuilderScreen() {
       onDragCancel={screen.dnd.cancelDrag}
     >
       <div className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h1 className="text-lg font-semibold">Xếp đội hình bang chiến</h1>
-          <WeekPicker
-            weeks={screen.week.weeks}
-            value={screen.week.weekStart}
-            onChange={screen.week.setWeek}
-          />
-        </div>
+        <PageHeader
+          banner="teamBuilder"
+          title="Xếp đội hình bang chiến"
+          actions={
+            <WeekPicker
+              weeks={screen.week.weeks}
+              value={screen.week.weekStart}
+              onChange={screen.week.setWeek}
+            />
+          }
+        />
 
         <SessionTabs
           sessions={screen.selection.sessions}
