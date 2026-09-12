@@ -6,25 +6,29 @@ This application is a guild management platform for the guild "Mèo Mập Giang 
 Nghịch Thuỷ Hàn (逆水寒), a Chinese wuxia MMORPG.
 
 It is a productivity application first: members answer attendance, admins set the schedule,
-manage members and build formations. The wuxia identity is a quiet accent on top of that, never
-the point of a screen.
+manage members and build formations. The wuxia identity frames that work; it never gets in the way
+of reading it.
 
 The design should feel like:
 
-> "A premium, minimal guild management application with a subtle wuxia soul."
+> "A premium guild management application that lives inside the game's world."
 
 ## UI Balance
 
-- 85% minimal modern application
-- 10% subtle Chinese wuxia atmosphere
-- 5% Nghịch Thuỷ Hàn identity
+- 70% modern application
+- 20% wuxia atmosphere
+- 10% Nghịch Thuỷ Hàn identity
 
-Usability and information clarity always win over immersion.
+The original brief (`prompt.md`, 85/10/5, no background imagery) was extended by the guild on
+2026-09-13: the first minimal pass read as too plain, so each page now opens on a scene from the
+game, and data arrives with motion instead of snapping in. Usability and information clarity still
+win over immersion.
 
 ## Visual Direction
 
 - Clean layouts, strong visual hierarchy, generous spacing
-- Warm neutral surfaces (a silk/stone tone), thin borders, almost no shadow
+- Warm neutral surfaces (a silk/stone tone) with a faint jade and gold glow and a paper grain on the
+  page plane; thin borders, almost no shadow
 - A minimal palette with fixed roles:
 
 | Colour | Role |
@@ -40,24 +44,42 @@ saturation.
 - Typography: Be Vietnam Pro for all UI text; Noto Serif (`font-heading`) for headings only -
   page titles, dialog titles and the guild name. Both cover Vietnamese fully.
 
+## Imagery
+
+- **One scene per page, in the page's banner** - the strip behind the page title. A dark scrim
+  keeps the white title readable whatever the scene's light. Data (tables, the formation grid)
+  never sits on a picture.
+- **The login page** is the one full-screen scene, behind a translucent card.
+- Pictures fade in over their dominant colour; they never pop in on a white box.
+- Scenes come from the game (`apps/web/public/img/bg/`); the crop keeps the game's logo out of the
+  strip on wide screens.
+
+## Motion
+
+Motion says "the data is arriving", nothing more:
+
+- A new page settles in block by block
+- Loaded tiles, cards and table rows arrive one beat after another
+- Skeletons shimmer while waiting
+- Everything is short (≤ 320ms per item), and `prefers-reduced-motion` turns all of it off
+
 ## Where the wuxia identity lives
 
-Only in small, deliberate places:
-
-- The guild seal in the header and on the login page (a square mark, thin jade border)
+- The page banners and the login scene
+- The guild seal in the header and on the login page (a square mark, thin jade edge)
 - The game name `逆水寒` as a small muted caption beside the guild name
-- Serif page titles
-- A thin section divider with one small jade diamond under each page title
+- Serif page titles, and the thin section divider with one small diamond
 - Jade as the selected-navigation colour
 
 ## Avoid
 
-- Heavy Chinese patterns, dragons, fantasy artwork
-- Large background illustrations, ink painting backgrounds, clouds and mist effects
-- Excessive gold decorations or gold borders
+- Pictures behind data: tables, grids, forms stay on plain surfaces
+- Animated or looping backgrounds, particle effects, clouds and mist effects
+- Dragons, heavy Chinese patterns, excessive gold decorations or gold borders
 - Calligraphy fonts for UI text
-- Particle effects, animated backgrounds, excessive animations
 - Game-like HUD interfaces
+- Infinite animations other than the skeleton's shimmer
 - Sacrificing usability for immersion
 
-The source brief is `prompt.md` at the repository root; this file is its binding summary.
+The source brief is `prompt.md` at the repository root, as extended above; this file is its
+binding summary.
