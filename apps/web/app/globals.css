@@ -13,7 +13,8 @@
     --duration-base: 200ms;
     --duration-slow: 320ms;
     --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
-    --font-heading: var(--font-sans);
+    /* Serif for page titles and the guild name only; every other line of UI text stays sans. */
+    --font-heading: var(--font-noto-serif), ui-serif, Georgia, serif;
     --font-sans: var(--font-be-vietnam-pro), ui-sans-serif, system-ui, sans-serif;
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
@@ -40,6 +41,10 @@
     --color-secondary: var(--secondary);
     --color-primary-foreground: var(--primary-foreground);
     --color-primary: var(--primary);
+    --color-jade-foreground: var(--jade-foreground);
+    --color-jade: var(--jade);
+    --color-gold-foreground: var(--gold-foreground);
+    --color-gold: var(--gold);
     --color-popover-foreground: var(--popover-foreground);
     --color-popover: var(--popover);
     --color-card-foreground: var(--card-foreground);
@@ -54,7 +59,7 @@
     --radius-3xl: calc(var(--radius) * 2.2);
     --radius-4xl: calc(var(--radius) * 2.6);
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    --font-serif: var(--font-be-vietnam-pro), ui-sans-serif, system-ui, sans-serif;
+    --font-serif: var(--font-noto-serif), ui-serif, Georgia, serif;
     --radius: 0.5rem;
     --tracking-tighter: calc(var(--tracking-normal) - 0.05em);
     --tracking-tight: calc(var(--tracking-normal) - 0.025em);
@@ -82,26 +87,35 @@
 }
 
 :root {
-    /* The page sits on a gray plane; cards, popovers and the header are the white
-       surfaces lifted off it. Keep --background darker than --card, always. */
-    --background: oklch(0.936 0.004 270.758);
-    --foreground: oklch(0.286 0.017 270.758);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.286 0.017 270.758);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.286 0.017 270.758);
-    --primary: oklch(0.344 0.094 270.46);
-    --primary-foreground: oklch(0.984 0.005 247.876);
-    --secondary: oklch(0.962 0.003 270.758);
-    --secondary-foreground: oklch(0.344 0.094 270.46);
-    --muted: oklch(0.962 0.003 270.758);
-    --muted-foreground: oklch(0.522 0.012 270.758);
-    --accent: oklch(0.955 0.006 270.758);
-    --accent-foreground: oklch(0.286 0.017 270.758);
+    /* A warm silk plane with near-white surfaces lifted off it by a thin border, not by shadow.
+       Every neutral shares one warm hue (85); only the navy primary and the two accents leave it.
+       Keep --background darker than --card, always. */
+    --background: oklch(0.968 0.006 85);
+    --foreground: oklch(0.255 0.012 70);
+    --card: oklch(0.995 0.002 85);
+    --card-foreground: oklch(0.255 0.012 70);
+    --popover: oklch(0.995 0.002 85);
+    --popover-foreground: oklch(0.255 0.012 70);
+    /* Navy stays the working colour: primary actions and every selected tab. */
+    --primary: oklch(0.34 0.085 268);
+    --primary-foreground: oklch(0.985 0.004 85);
+    --secondary: oklch(0.945 0.006 85);
+    --secondary-foreground: oklch(0.34 0.085 268);
+    --muted: oklch(0.945 0.006 85);
+    /* 0.5 keeps muted text above 4.5:1 on both the plane and the card. */
+    --muted-foreground: oklch(0.5 0.012 70);
+    --accent: oklch(0.945 0.006 85);
+    --accent-foreground: oklch(0.255 0.012 70);
     --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.888 0.006 270.758);
-    --input: oklch(0.888 0.006 270.758);
-    --ring: oklch(0.708 0 0);
+    --border: oklch(0.905 0.008 85);
+    --input: oklch(0.88 0.008 85);
+    /* Jade is the accent: active navigation, the guild seal, section dividers, the focus ring.
+       Gold marks the few important highlights and is never a state - amber is "not answered". */
+    --jade: oklch(0.54 0.075 170);
+    --jade-foreground: oklch(0.985 0.004 85);
+    --gold: oklch(0.7 0.085 80);
+    --gold-foreground: oklch(0.255 0.012 70);
+    --ring: oklch(0.54 0.075 170);
     --chart-1: oklch(0.286 0.017 270.758);
     --chart-2: oklch(0.283 0.064 270.718);
     --chart-3: oklch(0.344 0.094 270.46);
@@ -120,24 +134,25 @@
        every shade of --destructive it defines. */
     --destructive-foreground: oklch(1.0000 0 0);
     --font-sans: var(--font-be-vietnam-pro), ui-sans-serif, system-ui, sans-serif;
-    --font-serif: var(--font-be-vietnam-pro), ui-sans-serif, system-ui, sans-serif;
+    --font-serif: var(--font-noto-serif), ui-serif, Georgia, serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    --shadow-color: #1a2137;
-    --shadow-opacity: 0.08;
+    /* Shadows carry the plane's warm hue and stay faint: the border draws the edge. */
+    --shadow-color: #2a241c;
+    --shadow-opacity: 0.06;
     --shadow-blur: 3px;
     --shadow-spread: 0px;
     --shadow-offset-x: 0;
     --shadow-offset-y: 1px;
     --letter-spacing: 0em;
     --spacing: 0.24rem;
-    --shadow-2xs: 0 1px 2px 0px hsl(225.5172 35.8025% 15.8824% / 0.04);
-    --shadow-xs: 0 1px 2px 0px hsl(225.5172 35.8025% 15.8824% / 0.05);
-    --shadow-sm: 0 1px 2px 0px hsl(225.5172 35.8025% 15.8824% / 0.06), 0 2px 4px -1px hsl(225.5172 35.8025% 15.8824% / 0.08);
-    --shadow: 0 1px 2px 0px hsl(225.5172 35.8025% 15.8824% / 0.06), 0 2px 4px -1px hsl(225.5172 35.8025% 15.8824% / 0.08);
-    --shadow-md: 0 1px 2px 0px hsl(225.5172 35.8025% 15.8824% / 0.06), 0 4px 8px -2px hsl(225.5172 35.8025% 15.8824% / 0.09);
-    --shadow-lg: 0 1px 2px 0px hsl(225.5172 35.8025% 15.8824% / 0.06), 0 8px 16px -4px hsl(225.5172 35.8025% 15.8824% / 0.1);
-    --shadow-xl: 0 1px 2px 0px hsl(225.5172 35.8025% 15.8824% / 0.06), 0 16px 24px -8px hsl(225.5172 35.8025% 15.8824% / 0.12);
-    --shadow-2xl: 0 24px 48px -12px hsl(225.5172 35.8025% 15.8824% / 0.18);
+    --shadow-2xs: 0 1px 2px 0px hsl(35 20% 14% / 0.03);
+    --shadow-xs: 0 1px 2px 0px hsl(35 20% 14% / 0.04);
+    --shadow-sm: 0 1px 2px 0px hsl(35 20% 14% / 0.04);
+    --shadow: 0 1px 2px 0px hsl(35 20% 14% / 0.05), 0 2px 4px -1px hsl(35 20% 14% / 0.05);
+    --shadow-md: 0 1px 2px 0px hsl(35 20% 14% / 0.05), 0 4px 8px -2px hsl(35 20% 14% / 0.07);
+    --shadow-lg: 0 1px 2px 0px hsl(35 20% 14% / 0.05), 0 8px 16px -4px hsl(35 20% 14% / 0.08);
+    --shadow-xl: 0 1px 2px 0px hsl(35 20% 14% / 0.05), 0 16px 24px -8px hsl(35 20% 14% / 0.1);
+    --shadow-2xl: 0 24px 48px -12px hsl(35 20% 14% / 0.16);
     --tracking-normal: 0em;
 }
 
@@ -160,7 +175,11 @@
     --destructive: oklch(0.600 0.210 25.000);
     --border: oklch(1 0 0 / 14%);
     --input: oklch(1 0 0 / 18%);
-    --ring: oklch(0.556 0 0);
+    --jade: oklch(0.72 0.08 170);
+    --jade-foreground: oklch(0.223 0.014 270.758);
+    --gold: oklch(0.78 0.085 80);
+    --gold-foreground: oklch(0.223 0.014 270.758);
+    --ring: oklch(0.72 0.08 170);
     --chart-1: oklch(0.488 0.243 264.376);
     --chart-2: oklch(0.696 0.17 162.48);
     --chart-3: oklch(0.769 0.188 70.08);
@@ -177,7 +196,7 @@
     --destructive-foreground: oklch(0.9851 0 0);
     --radius: 0.375rem;
     --font-sans: var(--font-be-vietnam-pro), ui-sans-serif, system-ui, sans-serif;
-    --font-serif: var(--font-be-vietnam-pro), ui-sans-serif, system-ui, sans-serif;
+    --font-serif: var(--font-noto-serif), ui-serif, Georgia, serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     --shadow-color: #000000;
     --shadow-opacity: 0.05;
