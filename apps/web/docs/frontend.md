@@ -231,7 +231,8 @@ Current shared building blocks: `action-buttons`, `confirm-delete-dialog`, `date
 `error-state`, `guild-class-filter-select`, `guild-class-icon`, `main-nav`, `mutation-dialog`,
 `mutation-form`, `mutation-pending`, `page-size-select`, `password-input`, `query-boundary`,
 `roster-filter-bar`, `session-label`, `site-header`, `status-badge`, `status-icon`, `toast`,
-`table-pagination`, `table-pagination-bar`, `table-skeleton`, `unsaved-changes-bar`.
+`table-pagination`, `table-pagination-bar`, `table-skeleton`, `unsaved-changes-bar`,
+`mobile-tab-bar`, `nav-items`.
 
 ### The query group of a screen
 
@@ -592,6 +593,10 @@ a selected state. The convention:
 - **Current page in the header nav** - *not* a primary surface: navigation is not an in-page
   selection. The item keeps its ghost button, takes `text-foreground`, a `jade` icon and a 2px
   `jade` bar under it (`main-nav.tsx`). Only colour and opacity change, so the row never shifts.
+  Below `sm` the header keeps only the seal and the avatar, and the same entries (`nav-items.ts`)
+  move to `mobile-tab-bar.tsx`, fixed to the bottom of the screen with a short name under each icon;
+  the jade bar sits on its top edge. Its height is reserved through `--app-bottom-inset`
+  (`globals.css`): the body pads by it and every sticky bottom bar sits above it.
 
 `--muted` and `--secondary` still carry *text* (`text-muted-foreground`) and badges; neither is a
 surface for signalling state.
@@ -659,8 +664,9 @@ The `border-dashed` left in the app is the drag-and-drop drop-zone border (`memb
 A screen that builds a draft before writing it (the team builder, the attendance grid) keeps its Save and its discard
 button in **`components/shared/unsaved-changes-bar.tsx`**, rendered only while there is something to
 save: "N thay đổi chưa lưu · Đặt lại · Lưu", the save's error in place of the count. It is
-`sticky bottom-*` at the end of the screen's column, so the button stays in reach wherever the
-page is scrolled, and **never `fixed`**: sticky leaves the last row of content uncovered, and it
+`sticky` at the end of the screen's column, `--app-bottom-inset` plus a small gap from the bottom
+(so it clears the phone's tab bar), so the button stays in reach wherever the page is scrolled,
+and **never `fixed`**: sticky leaves the last row of content uncovered, and it
 creates no containing block for the `position: fixed` elements of the screen (see *Entrance and
 data reveal*). The team builder also binds Ctrl+S / Cmd+S to the same save (`useSaveShortcut`).
 
@@ -787,7 +793,10 @@ Data arrives, it does not snap in. Four pieces, all CSS, in `app/globals.css` an
   of `td` cells: it stays in view above the rows, and it adds no `th` to the column count.
 - Paging → `use-table-pagination` (client-side, resets to page 1 when the filter changes) rendered
   with `table-pagination-bar` / `page-size-select`. The pagination bar **always** renders, even at one
-  page, so filtering does not move the layout.
+  page, so filtering does not move the layout. Below `sm` the page numbers hide and only the four
+  arrows stay: eleven cells of `size-10` are wider than a phone, and a strip that overflows the page
+  widens the whole layout viewport - the phone then zooms out, and the fixed tab bar lands below the
+  fold. The "trang x/y" count beside it still says where you are.
 
 ---
 
