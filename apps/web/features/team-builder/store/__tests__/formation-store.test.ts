@@ -25,6 +25,7 @@ describe("useFormationStore", () => {
   beforeEach(() => {
     useFormationStore.setState({
       drafts: {},
+      history: {},
       activeSessionId: null,
       activeMatchIndex: 0,
       selectedWeekStart: null,
@@ -204,6 +205,103 @@ describe("useFormationStore", () => {
       const draft = useFormationStore.getState().drafts.sat[0];
       expect(draft.assignment["team-1-pos-2"]).toBe("char-9");
       expect(draft.notes).toEqual({ "team-1-pos-2": "chừa cho X" });
+    });
+  });
+
+  describe("undo", () => {
+    const EDITED: MatchDraft[] = [{ assignment: {}, notes: { x: "y" } }];
+
+    it("trả nháp về đúng bước trước và bỏ bước đó khỏi lịch sử", () => {
+      const { setDraft, pushUndo } = useFormationStore.getState();
+      setDraft("sat", ONE_MATCH);
+      pushUndo("sat", { draft: ONE_MATCH, matchIndex: 0, mergeKey: null });
+      setDraft("sat", EDITED);
+
+      useFormationStore.getState().undo("sat");
+
+      const state = useFormationStore.getState();
+      expect(state.drafts.sat).toBe(ONE_MATCH);
+      expect(state.history.sat).toEqual([]);
+    });
+
+    it("bước đầu tiên của ngày thì bỏ hẳn nháp, quay về bản đã lưu", () => {
+      const { setDraft, pushUndo } = useFormationStore.getState();
+      pushUndo("sat", { draft: undefined, matchIndex: 0, mergeKey: null });
+      setDraft("sat", EDITED);
+
+      useFormationStore.getState().undo("sat");
+
+      expect(useFormationStore.getState().drafts.sat).toBeUndefined();
+    });
+
+    it("mở lại đúng trận vừa sửa, để thấy được thứ vừa hoàn tác", () => {
+      const { setDraft, pushUndo, setActiveMatch } = useFormationStore.getState();
+      pushUndo("sat", { draft: ONE_MATCH, matchIndex: 1, mergeKey: null });
+      setDraft("sat", EDITED);
+      setActiveMatch(0);
+
+      useFormationStore.getState().undo("sat");
+
+      expect(useFormationStore.getState().activeMatchIndex).toBe(1);
+    });
+
+    it("các bước liền nhau cùng mergeKey gộp làm một, giữ trạng thái trước bước đầu", () => {
+      const { pushUndo } = useFormationStore.getState();
+      pushUndo("sat", { draft: undefined, matchIndex: 0, mergeKey: "note" });
+      pushUndo("sat", { draft: EDITED, matchIndex: 0, mergeKey: "note" });
+
+      expect(useFormationStore.getState().history.sat).toEqual([
+        { draft: undefined, matchIndex: 0, mergeKey: "note" },
+      ]);
+    });
+
+    it("mergeKey null thì luôn là một bước riêng", () => {
+      const { pushUndo } = useFormationStore.getState();
+      pushUndo("sat", { draft: undefined, matchIndex: 0, mergeKey: null });
+      pushUndo("sat", { draft: EDITED, matchIndex: 0, mergeKey: null });
+
+      expect(useFormationStore.getState().history.sat).toHaveLength(2);
+    });
+
+    it("không còn bước nào thì không đổi gì", () => {
+      useFormationStore.getState().setDraft("sat", EDITED);
+
+      useFormationStore.getState().undo("sat");
+
+      expect(useFormationStore.getState().drafts.sat).toBe(EDITED);
+    });
+
+    it("lịch sử của từng ngày tách biệt nhau", () => {
+      const { setDraft, pushUndo } = useFormationStore.getState();
+      pushUndo("sat", { draft: undefined, matchIndex: 0, mergeKey: null });
+      setDraft("sat", EDITED);
+      pushUndo("thu", { draft: undefined, matchIndex: 0, mergeKey: null });
+      setDraft("thu", EDITED);
+
+      useFormationStore.getState().undo("sat");
+
+      const state = useFormationStore.getState();
+      expect(state.drafts.sat).toBeUndefined();
+      expect(state.drafts.thu).toBe(EDITED);
+    });
+
+    it("clearDraft bỏ luôn lịch sử của ngày đó", () => {
+      const { setDraft, pushUndo, clearDraft } = useFormationStore.getState();
+      pushUndo("sat", { draft: undefined, matchIndex: 0, mergeKey: null });
+      setDraft("sat", EDITED);
+
+      clearDraft("sat");
+
+      expect(useFormationStore.getState().history.sat).toBeUndefined();
+    });
+
+    it("đổi tuần thì bỏ hết lịch sử của tuần cũ", () => {
+      const { pushUndo, setWeek } = useFormationStore.getState();
+      pushUndo("sat", { draft: undefined, matchIndex: 0, mergeKey: null });
+
+      setWeek("2026-07-13T00:00:00.000Z");
+
+      expect(useFormationStore.getState().history).toEqual({});
     });
   });
 });

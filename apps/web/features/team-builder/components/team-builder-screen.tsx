@@ -18,6 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useFormationAnnounce } from "../hooks/use-formation-announce";
 import { useFormationScreen } from "../hooks/use-formation-screen";
 import { useSaveShortcut } from "../hooks/use-save-shortcut";
+import { useUndoShortcut } from "../hooks/use-undo-shortcut";
 import { buildBannerTitle } from "../lib/banner-title";
 import { AbsentBanner } from "./absent-banner";
 import { AnnounceFormationDialog } from "./announce-formation-dialog";
@@ -99,6 +100,8 @@ export function TeamBuilderScreen() {
   }
 
   useSaveShortcut(handleSave, showSaveBar && !saving);
+  // Not while saving: a save that succeeds drops the draft, taking an undo made meanwhile with it.
+  useUndoShortcut(screen.draft.undo, screen.draft.canUndo && !saving);
 
   // Drafts live in memory, so leaving the page would silently drop them.
   useEffect(() => {

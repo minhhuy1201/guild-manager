@@ -10,11 +10,15 @@ import { useTeamNameStore } from "../../store/team-name-store";
 
 /** Store state a test may want in place before the first render. */
 interface SeedState {
-  /** Formation store fields — drafts, open day, open match, week */
+  /** Formation store fields — drafts, undo steps, open day, open match, week */
   formation?: Partial<
     Pick<
       ReturnType<typeof useFormationStore.getState>,
-      "drafts" | "activeSessionId" | "activeMatchIndex" | "selectedWeekStart"
+      | "drafts"
+      | "history"
+      | "activeSessionId"
+      | "activeMatchIndex"
+      | "selectedWeekStart"
     >
   >;
   /** Pool filter fields — search keyword and guild class filter */
@@ -46,6 +50,7 @@ export function renderFormationHook<T>(
 ): RenderHookResult<T, void> {
   useFormationStore.setState({
     drafts: {},
+    history: {},
     activeSessionId: null,
     activeMatchIndex: 0,
     selectedWeekStart: null,

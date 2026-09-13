@@ -110,3 +110,35 @@ cập nhật theo.
       "Đặt lại" của `formation-toolbar`.
 - [x] `pnpm --filter web test`, `lint`, `typecheck`.
 - [x] Mở màn thật ở 1440px và 390px (Chromium headless trên stack Docker local) để xác nhận bố cục.
+
+---
+
+## Bổ sung 2026-09-14
+
+### Thanh Lưu không dính trên stack Docker local
+
+Chủ bang báo thanh Lưu nằm cuối trang (cả Xếp team lẫn lưới Điểm danh). Dựng lại trên màn thật:
+`bottom` tính ra `auto` vì `--app-bottom-inset` rỗng. Turbopack trong container `web` vẫn phục vụ
+`globals.css` bản trước #110 từ cache trong volume `guild-manager_web-next` (sống qua cả restart,
+không nhận cả khi file được ghi lại). Bản build production có đủ biến. **Code không đổi**: xoá volume
+cache là hết; `docs/development.md` §9 thêm dòng xử lý sự cố.
+
+### Task 9: Ctrl+Z hoàn tác (spec TB1, mục bổ sung)
+
+**Files:** `store/formation-store.ts`, `hooks/use-formation-draft.ts`, `hooks/use-undo-shortcut.ts`
+(mới), `team-builder-screen.tsx` + test
+
+- Store giữ `history` theo ngày: mỗi bước là nháp trước thao tác (`undefined` = chưa có nháp), trận
+  đang mở, và `mergeKey`. `clearDraft` (Lưu, Đặt lại) và `setWeek` bỏ lịch sử.
+- `editActiveDraft` là chỗ duy nhất ghi bước: mọi thao tác sửa nháp đi qua nó, thao tác không đổi gì
+  thì không có bước. "Không đổi gì" so theo nội dung (`isDayDirty`), vì dọn sạch và copy luôn dựng
+  mảng mới. Ghi chú dùng `mergeKey` theo trận + ô để gộp các phím gõ liền nhau.
+- Phím tắt bỏ qua phím trong ô nhập (hoàn tác chữ của trình duyệt) và trong dialog (đội hình nằm khuất
+  phía sau).
+- [x] Test đỏ store: undo về bước trước; bước đầu bỏ nháp; mở lại trận vừa sửa; gộp theo `mergeKey`;
+      lịch sử tách theo ngày; `clearDraft` và đổi tuần bỏ lịch sử.
+- [x] Test đỏ hook: kéo thả rồi undo hết dirty; undo ngược thứ tự; gõ liền một ghi chú là một bước;
+      thêm trận 2, dọn sạch undo được; thao tác không đổi gì, Đặt lại, Lưu, ngày khoá thì `canUndo` false.
+- [x] Test đỏ phím tắt: Ctrl+Z, Cmd+Z, Caps Lock; không bắt khi đang gõ trong ô nhập, khi Ctrl+Shift+Z,
+      khi không có gì để hoàn tác.
+- [x] `apps/web/docs/frontend.md` §6 nhắc Ctrl+Z.

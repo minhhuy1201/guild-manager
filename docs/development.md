@@ -319,6 +319,7 @@ Never commit: `.env*` (except `.env.example`), `apps/api/src/generated/`, `dist/
 | `db:up` fails with a socket error on Podman | `DOCKER_HOST` is missing — see section 4 |
 | `docker compose --profile dev up` fails on `env_file` | `apps/api/.env` or `apps/web/.env.local` does not exist yet — see section 2 |
 | A dependency added on the host is missing inside the containers | `deps` only installs on `up`; run `docker compose --profile dev up -d --force-recreate deps` (or restart the stack) after changing a `package.json` |
+| A change to `apps/web/app/globals.css` never reaches the browser in the `dev` profile, even after a restart (new utilities show up, new rules in the file do not) | Turbopack serves the file from its cache in the `guild-manager_web-next` volume, which outlives the container. `docker compose --profile dev rm -sf web api deps && docker volume rm guild-manager_web-next && docker compose --profile dev up -d` rebuilds it (`api` and `deps` mount the same volume, so they have to go too) |
 | Port 3000/3001 already in use when starting the profile | A host-side `pnpm dev` is still running — the two modes publish the same ports and cannot share them |
 | `EADDRINUSE :::3001` inside `guild-manager-api` after a save, then on every save after that | An earlier app process was orphaned instead of killed and still holds the port. `docker compose restart api` clears it; if it comes back, check that `apps/api`'s `dev` script still passes `--no-shell` (see section 5) |
 

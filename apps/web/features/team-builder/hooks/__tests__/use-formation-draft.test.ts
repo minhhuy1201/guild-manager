@@ -441,6 +441,162 @@ describe("useFormationDraft — nhận một trận được copy", () => {
   });
 });
 
+describe("useFormationDraft - hoàn tác (Ctrl+Z)", () => {
+  /** Move the saved character from its slot to the next one. */
+  function moveToSecondSlot(result: ReturnType<typeof renderDraft>["result"]) {
+    act(() =>
+      result.current.applyDrop({ kind: "slot", slotId: SLOT }, "char-1", {
+        kind: "slot",
+        slotId: "team-1-pos-2",
+      })
+    );
+  }
+
+  it("chưa sửa gì thì không có gì để hoàn tác", () => {
+    const { result } = renderDraft();
+
+    expect(result.current.canUndo).toBe(false);
+  });
+
+  it("kéo thả rồi hoàn tác thì về đúng bản đã lưu và hết dirty", () => {
+    const { result } = renderDraft();
+    moveToSecondSlot(result);
+    expect(result.current.canUndo).toBe(true);
+
+    act(() => result.current.undo());
+
+    expect(result.current.assignment[SLOT]).toBe("char-1");
+    expect(result.current.dirty).toBe(false);
+    expect(result.current.canUndo).toBe(false);
+  });
+
+  it("hoàn tác từng bước, ngược thứ tự đã làm", () => {
+    const { result } = renderDraft();
+    moveToSecondSlot(result);
+    act(() => result.current.setNote(SLOT, "vào sau"));
+
+    act(() => result.current.undo());
+
+    expect(result.current.notes[SLOT]).toBeUndefined();
+    expect(result.current.assignment["team-1-pos-2"]).toBe("char-1");
+  });
+
+  // Mỗi phím gõ là một lần setNote; hoàn tác từng chữ một thì phải bấm Ctrl+Z cả chục lần.
+  it("gõ liền một ghi chú thì một lần hoàn tác xoá cả ghi chú", () => {
+    const { result } = renderDraft();
+    act(() => result.current.setNote(SLOT, "v"));
+    act(() => result.current.setNote(SLOT, "và"));
+    act(() => result.current.setNote(SLOT, "vào"));
+
+    act(() => result.current.undo());
+
+    expect(result.current.notes[SLOT]).toBeUndefined();
+    expect(result.current.dirty).toBe(false);
+  });
+
+  it("ghi chú của hai ô khác nhau là hai bước", () => {
+    const { result } = renderDraft();
+    act(() => result.current.setNote(SLOT, "giữ buồng"));
+    act(() => result.current.setNote("team-1-pos-2", "vào sau"));
+
+    act(() => result.current.undo());
+
+    expect(result.current.notes[SLOT]).toBe("giữ buồng");
+    expect(result.current.notes["team-1-pos-2"]).toBeUndefined();
+  });
+
+  it("thêm trận 2 rồi hoàn tác thì còn một trận, mở lại trận 1", () => {
+    const { result } = renderDraft();
+    act(() => result.current.addMatch());
+
+    act(() => result.current.undo());
+
+    expect(result.current.matchCount).toBe(1);
+    expect(result.current.activeMatchIndex).toBe(0);
+  });
+
+  it("dọn sạch rồi hoàn tác thì trả lại đội hình", () => {
+    const { result } = renderDraft();
+    act(() => result.current.clearActiveDraft());
+
+    act(() => result.current.undo());
+
+    expect(result.current.assignment[SLOT]).toBe("char-1");
+  });
+
+  // Bấm "dọn sạch" lần hai không đổi gì trên màn; nếu nó thành một bước thì Ctrl+Z đầu tiên như bị liệt.
+  it("dọn sạch hai lần thì một lần hoàn tác đã trả lại đội hình", () => {
+    const { result } = renderDraft();
+    act(() => result.current.clearActiveDraft());
+    act(() => result.current.clearActiveDraft());
+
+    act(() => result.current.undo());
+
+    expect(result.current.assignment[SLOT]).toBe("char-1");
+    expect(result.current.canUndo).toBe(false);
+  });
+
+  it("copy đúng đội hình đang có thì không thêm bước hoàn tác", () => {
+    const { result } = renderDraft();
+
+    act(() =>
+      result.current.copyIntoActiveMatch({
+        assignment: { ...result.current.assignment },
+        notes: {},
+      })
+    );
+
+    expect(result.current.canUndo).toBe(false);
+    expect(useFormationStore.getState().drafts[SESSION_ID]).toBeUndefined();
+  });
+
+  it("thao tác không đổi gì thì không thêm bước hoàn tác", () => {
+    const { result } = renderDraft();
+
+    act(() =>
+      result.current.applyDrop({ kind: "slot", slotId: SLOT }, "char-1", null)
+    );
+
+    expect(result.current.canUndo).toBe(false);
+  });
+
+  it("đặt lại thì không còn gì để hoàn tác", () => {
+    const { result } = renderDraft();
+    moveToSecondSlot(result);
+
+    act(() => result.current.resetActive());
+
+    expect(result.current.canUndo).toBe(false);
+  });
+
+  it("lưu xong thì không hoàn tác được về trước lúc lưu", async () => {
+    saveFormationMock.mockResolvedValue(SAVED_SESSION);
+    const { result } = renderDraft();
+    moveToSecondSlot(result);
+
+    await act(async () => {
+      await result.current.handleSave();
+    });
+
+    expect(result.current.canUndo).toBe(false);
+  });
+
+  it("ngày đã khoá thì không hoàn tác", () => {
+    const { result } = renderFormationHook(
+      () => useFormationDraft([SAVED_SESSION], SESSION_ID, false, vi.fn()),
+      {
+        formation: {
+          history: {
+            [SESSION_ID]: [{ draft: undefined, matchIndex: 0, mergeKey: null }],
+          },
+        },
+      }
+    );
+
+    expect(result.current.canUndo).toBe(false);
+  });
+});
+
 describe("useFormationDraft - gỡ người đã báo nghỉ", () => {
   it("gỡ họ khỏi trận đang mở, ngày thành chưa lưu", () => {
     const { result } = renderDraft();
