@@ -21,9 +21,16 @@ if (process.env.NODE_ENV === "production" && !configuredApiUrl) {
 }
 
 /**
- * Base URL of the backend API.
- * Set through `NEXT_PUBLIC_API_URL`, overridden server-side by `API_INTERNAL_URL`; defaults to the
+ * Base URL of the backend API as the browser reaches it, for every URL the app hands to the browser
+ * to follow itself (the Discord login link). Set through `NEXT_PUBLIC_API_URL`; defaults to the
  * local API on port 3001.
  */
-export const API_BASE_URL =
-  internalApiUrl ?? configuredApiUrl ?? FALLBACK_API_URL;
+export const PUBLIC_API_URL = configuredApiUrl ?? FALLBACK_API_URL;
+
+/**
+ * Base URL for the requests this app makes itself (`apiFetch`). On the server it takes
+ * `API_INTERNAL_URL` when set; in the browser that lookup is undefined, so it is `PUBLIC_API_URL`.
+ * Never render it into markup: a Server Component would hand the browser a host only the containers
+ * can resolve.
+ */
+export const API_BASE_URL = internalApiUrl ?? PUBLIC_API_URL;
