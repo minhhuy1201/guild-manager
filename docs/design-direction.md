@@ -19,9 +19,10 @@ The design should feel like:
 - 20% wuxia atmosphere
 - 10% Nghịch Thuỷ Hàn identity
 
-The original brief (85/10/5, no background imagery) was extended by the guild on 2026-09-13: the first minimal pass read as too plain, so each page now opens on a scene from the
-game, and data arrives with motion instead of snapping in. Usability and information clarity still
-win over immersion.
+The original brief (85/10/5, no background imagery) was extended by the guild on 2026-09-13: the
+first minimal pass read as too plain, so each page now opens on a scene from the game, and data
+arrives with motion instead of snapping in. Usability and information clarity still win over
+immersion.
 
 ## Visual Direction
 
