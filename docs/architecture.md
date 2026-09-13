@@ -388,7 +388,7 @@ apps/web/
 │   ├── shared/       # cross-feature wrappers and the app shell
 │   └── providers.tsx # QueryClientProvider
 ├── hooks/            # cross-feature hooks (use-table-pagination)
-├── config/           # routes.ts (ROUTES), api.ts (API_BASE_URL)
+├── config/           # routes.ts (ROUTES), api.ts (FETCH_API_URL, PUBLIC_API_URL)
 └── lib/              # api-client.ts (apiFetch + ApiError), format.ts, guild-class.ts, utils.ts
 ```
 

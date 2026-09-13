@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "@/config/api";
+import { PUBLIC_API_URL } from "@/config/api";
 import { DiscordIcon } from "@/components/shared/discord-icon";
 import { Button } from "@/components/ui/button";
 
@@ -17,7 +17,10 @@ interface DiscordLoginButtonProps {
 export function DiscordLoginButton({
   redirect = "/",
 }: DiscordLoginButtonProps) {
-  const href = `${API_BASE_URL}/auth/discord?redirect=${encodeURIComponent(redirect)}`;
+  // The public URL, not `FETCH_API_URL`: this renders on the server, but the browser follows the
+  // link, and under the Docker dev profile the server's own URL points at a host only the
+  // containers can resolve.
+  const href = `${PUBLIC_API_URL}/auth/discord?redirect=${encodeURIComponent(redirect)}`;
 
   return (
     <Button size="lg" nativeButton={false} render={<a href={href} />}>

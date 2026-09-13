@@ -56,7 +56,7 @@ apps/web/
 │   └── providers.tsx               # QueryClientProvider + TooltipProvider
 │
 ├── hooks/                          # cross-feature hooks (use-table-pagination, use-invalidate)
-├── config/                         # routes.ts (ROUTES), api.ts (API_BASE_URL)
+├── config/                         # routes.ts (ROUTES), api.ts (FETCH_API_URL, PUBLIC_API_URL)
 ├── lib/                            # api-client.ts, cache-graph.ts, format.ts, guild-class.ts, utils.ts
 ├── components.json                 # shadcn config (style: base-nova, lucide icons)
 ├── vitest.config.ts
@@ -154,9 +154,13 @@ up, keep `pnpm --filter @guild/shared build --watch` running beside it.
 
 ### The API boundary
 
-`apiFetch` does three things so no one else has to: it prefixes `API_BASE_URL`, unwraps the
+`apiFetch` does three things so no one else has to: it prefixes `FETCH_API_URL`, unwraps the
 backend's `{ data }` envelope (with `204` returning `undefined`), and turns any error status into an
 `ApiError` carrying the backend's **Vietnamese** message.
+
+A URL the browser follows by itself (the Discord login link) takes `PUBLIC_API_URL` instead, never
+`FETCH_API_URL`: under the Docker `dev` profile the latter resolves, on the server, to a host only
+the containers can reach, and a Server Component would render it straight into the page.
 
 **Render that message as-is.** The backend writes error text meant for the user; re-wording it in
 the UI just creates two vocabularies for the same failure.
@@ -764,7 +768,7 @@ Data arrives, it does not snap in. Four pieces, all CSS, in `app/globals.css` an
 | Component | `PascalCase`, matching the file name | `AttendanceRow`, `StatusIcon` |
 | Hook | `camelCase` with a `use` prefix | `useAttendanceBoard` |
 | Type / interface | `PascalCase`, **no** `I` prefix | `SessionUser`, `StatusIconProps` |
-| Constant | `SCREAMING_SNAKE_CASE` | `ROUTES`, `API_BASE_URL`, `ACCESS_TOKEN_COOKIE` |
+| Constant | `SCREAMING_SNAKE_CASE` | `ROUTES`, `FETCH_API_URL`, `ACCESS_TOKEN_COOKIE` |
 | Boolean | `is` / `has` / `should` / `can` prefix | `isDeadlinePassed` |
 | Query key factory | `<feature>Keys` in `<feature>-keys.ts` | `memberKeys`, `attendanceKeys` |
 | Barrel `index.ts` | one per feature, nothing else | |

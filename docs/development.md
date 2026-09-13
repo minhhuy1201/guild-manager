@@ -102,7 +102,7 @@ file. Copy it from `.env.example` when the defaults do not suit you.
 |---|---|
 | `AUTH_SECRET` | Verifies the JWT signed by the API (HMAC-SHA256) — must equal the API's value |
 | `NEXT_PUBLIC_API_URL` | Backend base URL, defaults to `http://localhost:3001/api` |
-| `API_INTERNAL_URL` | Server-side override of the URL above, set by the Docker `dev` profile only: the browser calls the API on `localhost`, the web container calls it as `api`. Leave it unset when running on the host |
+| `API_INTERNAL_URL` | Server-side override of the URL above for the requests the web server makes itself, set by the Docker `dev` profile only: the browser calls the API on `localhost`, the web container calls it as `api`. A link the browser follows (the Discord login) always uses `NEXT_PUBLIC_API_URL` (`PUBLIC_API_URL` in `config/api.ts`). Leave it unset when running on the host |
 
 The web app **never** connects to the database. There are no Supabase variables on the web side.
 
