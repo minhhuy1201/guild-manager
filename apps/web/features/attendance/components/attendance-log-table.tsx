@@ -23,6 +23,7 @@ import {
 } from "../hooks/use-attendance";
 import { matchesPresenceFilter } from "../lib/presence-filter";
 import { useAttendanceFilterStore } from "../store/attendance-filter-store";
+import { AttendanceHistoryFilters } from "./attendance-history-filters";
 import { AttendanceStatusIcon } from "./attendance-status-icon";
 import { CharacterName } from "./character-name";
 
@@ -47,7 +48,8 @@ const COLUMN_CLASSES = [
 /**
  * The attendance history table: who marked what, for which session, yes/no, and when.
  * Reads the week the History screen has selected, and filters it by that screen's filters
- * (search + class + presence + session), newest first.
+ * (search + class + presence + session), newest first. The filters that only this table follows
+ * sit in its own header (`AttendanceHistoryFilters`).
  * @returns The history table card
  */
 export function AttendanceLogTable() {
@@ -96,11 +98,12 @@ export function AttendanceLogTable() {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="gap-4">
         <CardTitle>
           Lịch sử điểm danh
           {!state.isPending && !state.isError && ` (${rows.length})`}
         </CardTitle>
+        <AttendanceHistoryFilters />
       </CardHeader>
       <CardContent>
         <DataTable

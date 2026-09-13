@@ -3,6 +3,7 @@ import { Swords } from "lucide-react";
 
 import type { BattleSession } from "@guild/shared/schemas";
 
+import { DeadlineCountdown } from "@/components/shared/deadline-countdown";
 import { Badge } from "@/components/ui/badge";
 import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -79,12 +80,13 @@ export function SessionLabel({
 }
 
 export interface SessionDeadlineProps {
-  /** Battle whose deadline is shown; only its deadline is read */
-  session: Pick<BattleSession, "deadline">;
+  /** Battle whose deadline is shown; its deadline and the API's lock are read */
+  session: Pick<BattleSession, "deadline" | "isDeadlinePassed">;
 }
 
 /**
- * The "Hạn chót: …" line of a battle.
+ * The "Hạn chót: …" line of a battle, and while the battle is still open, how long is left
+ * ("· còn 5 giờ", `DeadlineCountdown`): an absolute time makes the reader do the subtraction.
  *
  * Returns the whole line, wrapper included: the two screens showing it write
  * it identically down to the class, so there is nothing left for a caller to
@@ -96,6 +98,12 @@ export function SessionDeadline({ session }: SessionDeadlineProps) {
   return (
     <div className="text-xs text-muted-foreground">
       Hạn chót: {formatDateTime(session.deadline)}
+      {!session.isDeadlinePassed && (
+        <>
+          {" · "}
+          <DeadlineCountdown deadline={session.deadline} />
+        </>
+      )}
     </div>
   );
 }

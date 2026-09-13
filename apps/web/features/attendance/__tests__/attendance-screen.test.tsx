@@ -14,28 +14,29 @@ vi.mock("../components/attendance-grid", () => ({
 vi.mock("../components/member-attendance-card", () => ({
   MemberAttendanceCard: () => <div data-testid="member-card" />,
 }));
+// The scene is next/image; what is under test is which blocks the screen stacks.
+vi.mock("@/components/shared/banner-image", () => ({ BannerImage: () => null }));
 
 import { AttendanceScreen } from "../components/attendance-screen";
 
 afterEach(cleanup);
 
 describe("AttendanceScreen", () => {
-  it("member thấy thẻ của mình rồi tới bộ lọc và lưới chỉ đọc", () => {
+  it("member thấy thẻ của mình rồi tới lưới chỉ đọc", () => {
     render(<AttendanceScreen role={GuildRole.MEMBER} />);
 
     expect(screen.getByTestId("member-card")).toBeTruthy();
-    expect(screen.getByTestId("filters")).toBeTruthy();
     expect(screen.getByTestId("grid").dataset.admin).toBe("false");
   });
 
-  // Lịch tuần đã gộp vào thẻ cá nhân: trang chỉ còn một lưới ô ngày, và việc chính đứng đầu trang.
-  it("thẻ tuần của bạn đứng đầu, rồi tới bộ lọc và lưới", () => {
+  // Lịch tuần đã gộp vào thẻ cá nhân, và bộ lọc đã vào card của bảng: trang chỉ còn hai khối.
+  it("thẻ tuần của bạn đứng đầu, rồi tới card bảng, không còn thẻ lọc riêng", () => {
     const { container } = render(<AttendanceScreen role={GuildRole.MEMBER} />);
     const order = [...container.querySelectorAll("[data-testid]")].map(
       (node) => node.getAttribute("data-testid")
     );
 
-    expect(order).toEqual(["member-card", "filters", "grid"]);
+    expect(order).toEqual(["member-card", "grid"]);
   });
 
   it("admin cũng thấy thẻ cá nhân, và lưới cho sửa được", () => {

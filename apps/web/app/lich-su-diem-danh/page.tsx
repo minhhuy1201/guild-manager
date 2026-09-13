@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
 import { ROUTES } from "@/config/routes";
 import {
-  AttendanceHistoryFilters,
+  AttendanceHistoryScope,
   AttendanceLogTable,
   AttendanceSummaryDashboard,
 } from "@/features/attendance";
@@ -19,7 +19,8 @@ export const metadata: Metadata = {
  * Route "/lich-su-diem-danh" — the attendance history page.
  * The whole guild's history, for every signed-in member: attendance is shared information, so the
  * page is the same whatever the role.
- * @returns The filters, the per-class summary dashboard and the attendance history table
+ * @returns The week and battle day pickers, the per-class summary dashboard and the attendance
+ * history table (which carries its own filters)
  */
 export default async function AttendanceHistoryPage() {
   const session = await getSession();
@@ -31,10 +32,11 @@ export default async function AttendanceHistoryPage() {
     <>
       <PageHeader
         banner="history"
+        size="compact"
         title="Lịch sử điểm danh"
         description="Câu trả lời của cả bang theo từng trận và từng lưu phái."
       />
-      <AttendanceHistoryFilters />
+      <AttendanceHistoryScope />
       <AttendanceSummaryDashboard />
       <AttendanceLogTable />
     </>

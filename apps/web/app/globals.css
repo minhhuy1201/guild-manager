@@ -228,6 +228,7 @@
   body {
     @apply text-foreground;
     letter-spacing: var(--tracking-normal);
+    padding-bottom: var(--app-bottom-inset);
     }
   html {
     @apply font-sans;
@@ -237,6 +238,20 @@
        preference intact, unlike a hard px value. */
     font-size: 120%;
     }
+}
+
+/* Room at the bottom of the page taken by the phone's fixed tab bar (`mobile-tab-bar.tsx`): its
+   height plus the home indicator's safe area. Zero unless the bar is actually there - below `sm`
+   (40rem) and signed in - so the login page keeps its full height. The body pads by it, and the
+   sticky save bars sit above it, so nothing ends up under the tab bar. */
+:root {
+  --app-bottom-inset: 0px;
+}
+
+@media (width < 40rem) {
+  :root:has([data-slot="mobile-tab-bar"]) {
+    --app-bottom-inset: calc(var(--spacing) * 16 + env(safe-area-inset-bottom));
+  }
 }
 
 @layer base {
