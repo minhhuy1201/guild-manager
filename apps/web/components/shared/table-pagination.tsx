@@ -23,6 +23,9 @@ const ELLIPSIS = "ellipsis" as const;
 /** Sentinel marking a blank filler cell, so the strip keeps a constant width. */
 const BLANK = "blank" as const;
 
+/** Hides a cell of the page-number strip on a phone, where only the arrows fit. */
+const PHONE_HIDDEN = "max-sm:hidden";
+
 /** One cell of the page strip: a page number, an ellipsis, or a blank filler. */
 export type PageSlot = number | typeof ELLIPSIS | typeof BLANK;
 
@@ -158,11 +161,14 @@ export function TablePagination({
           </PaginationLink>
         </PaginationItem>
 
+        {/* Below `sm` the numbers hide and the four arrows stay: eleven `size-10` cells are wider
+            than a phone, and a strip that overflows widens the whole page, which the phone then
+            zooms out to fit. The bar's "trang x/y" count still says where you are. */}
         {getPageSlots(page, pageCount, siblings).map((slot, index) => {
           switch (slot) {
             case ELLIPSIS:
               return (
-                <PaginationItem key={`ellipsis-${index}`}>
+                <PaginationItem key={`ellipsis-${index}`} className={PHONE_HIDDEN}>
                   <PaginationEllipsis />
                 </PaginationItem>
               );
@@ -170,13 +176,13 @@ export function TablePagination({
               // Same footprint as a page cell, no content and no tab stop:
               // this is what keeps the strip's width constant.
               return (
-                <PaginationItem key={`blank-${index}`}>
+                <PaginationItem key={`blank-${index}`} className={PHONE_HIDDEN}>
                   <span className="block size-10" aria-hidden />
                 </PaginationItem>
               );
             default:
               return (
-                <PaginationItem key={slot}>
+                <PaginationItem key={slot} className={PHONE_HIDDEN}>
                   <PaginationLink
                     href="#"
                     isActive={slot === page}

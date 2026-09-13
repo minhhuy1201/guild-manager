@@ -1,80 +1,64 @@
 "use client";
 
-import { Check, Swords, X } from "lucide-react";
+import { attendanceLabel } from "@guild/shared/enums";
 import type {
   AttendanceRecord,
   BattleSession,
   Character,
 } from "@guild/shared/schemas";
 
-import {
-  EditAction,
-  RowActionButton,
-  RowActions,
-} from "@/components/shared/action-buttons";
-import { Spinner } from "@/components/shared/spinner";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import type { GridDraft } from "../lib/grid-draft";
 import { recordKey } from "../lib/record-key";
-import {
-  STICKY_ACTION_COLUMN,
-  STICKY_NAME_COLUMN,
-} from "../lib/sticky-columns";
+import { STICKY_NAME_COLUMN } from "../lib/sticky-columns";
 import { AttendanceStatusIcon } from "./attendance-status-icon";
 import { CharacterName } from "./character-name";
 
-/** Draft state of a row being edited: sessionId → answer (undefined = not marked yet). */
-export type AttendanceDraft = Record<string, boolean | undefined>;
+/** How an unanswered cell is named to a screen reader. */
+const UNANSWERED_LABEL = "Chưa điểm danh";
 
 interface AttendanceRowProps {
   /** Character of this row */
   character: Character;
   /** Battle sessions (the columns) */
   sessions: BattleSession[];
-  /** The viewer may edit — without it the row has no action column at all */
-  canEdit: boolean;
   /** Current records keyed by (characterId__sessionId) */
   recordMap: Record<string, AttendanceRecord>;
-  /** Ids of days past their deadline (their columns are locked) */
-  lockedSessionIds: Set<string>;
-  /** Every day is locked — disable the edit button */
-  allLocked: boolean;
-  /** Whether this row is in editing mode */
-  isEditing: boolean;
-  /** This row's attendance write is in flight — show a spinner instead of the tick */
-  isSaving: boolean;
-  /** Draft state (only used while isEditing) */
-  draft: AttendanceDraft;
-  /** Start editing this row */
-  onStartEdit: (character: Character) => void;
-  /** Change one cell's draft answer */
-  onDraftChange: (sessionId: string, isPresent: boolean) => void;
-  /** Cancel editing and reset */
-  onCancel: () => void;
-  /** Confirm and save the changes */
-  onConfirm: (character: Character) => void;
+  /** The viewer may change answers — an admin; a member only reads the grid */
+  canEdit: boolean;
+  /** A save is in flight, so no cell may be pressed */
+  disabled: boolean;
+  /** The grid's unsaved answers */
+  draft: GridDraft;
+  /** Press one cell */
+  onCellClick: (character: Character, session: BattleSession) => void;
 }
 
 /**
- * One attendance row: read-only by default, switchable to editing.
- * The last column holds the actions (a pencil when read-only, Cancel/Confirm while editing); a
- * viewer who may not edit gets no such column, matching a header rendered without it.
+ * One attendance row: the character, then one cell per battle day.
+ *
+ * For an admin every cell is a button - pressing it moves the answer on (the grid owns the cycle
+ * and the draft). The cell always shows its answer as the status icon, so it reads the same on a
+ * touch screen, where nothing ever hovers. A changed cell shows the draft's answer inside a
+ * `primary` ring until it is saved or discarded.
+ * @param character - Character of this row
+ * @param sessions - Battle sessions, one cell each
+ * @param recordMap - Current records
+ * @param canEdit - Whether the viewer may change answers
+ * @param disabled - Whether a save is in flight
+ * @param draft - The grid's unsaved answers
+ * @param onCellClick - Press one cell
  * @returns The character's attendance row
  */
 export function AttendanceRow({
   character,
   sessions,
-  canEdit,
   recordMap,
-  lockedSessionIds,
-  allLocked,
-  isEditing,
-  isSaving,
+  canEdit,
+  disabled,
   draft,
-  onStartEdit,
-  onDraftChange,
-  onCancel,
-  onConfirm,
+  onCellClick,
 }: AttendanceRowProps) {
   return (
     <TableRow>
@@ -83,142 +67,68 @@ export function AttendanceRow({
       </TableCell>
 
       {sessions.map((session) => {
-        const currentRecord = recordMap[recordKey(character.id, session.id)];
-        const sessionLocked = lockedSessionIds.has(session.id);
-        // A locked column always renders read-only, even while the row is being edited.
-        const showToggle = isEditing && !sessionLocked;
+        const key = recordKey(character.id, session.id);
+        const record = recordMap[key];
+        const change = draft[key];
+        const shown = change?.isPresent ?? record?.isPresent;
+        const isChanged = change !== undefined;
+        const answerLabel =
+          shown === undefined ? UNANSWERED_LABEL : attendanceLabel(shown);
+
         return (
           <TableCell key={session.id} className="text-center">
-            {showToggle ? (
-              <AttendanceToggle
-                value={draft[session.id]}
-                onSelect={(isPresent) => onDraftChange(session.id, isPresent)}
-              />
-            ) : (
-              <div className="flex flex-col items-center gap-0.5">
-                <StatusBadge isPresent={currentRecord?.isPresent} />
-                {/* Read-only on purpose: the reason is the absent member's own words, and letting an
-                    admin edit it would mean carrying a draft string per cell of the whole grid. */}
-                {currentRecord?.reason && (
-                  <span
-                    className="block max-w-32 truncate text-xs text-muted-foreground"
-                    title={currentRecord.reason}
-                  >
-                    {currentRecord.reason}
-                  </span>
-                )}
-              </div>
-            )}
+            <div className="flex flex-col items-center gap-0.5">
+              {canEdit ? (
+                <button
+                  type="button"
+                  aria-label={`${character.name}, ${session.label}: ${answerLabel}. Bấm để đổi.`}
+                  data-changed={isChanged}
+                  disabled={disabled}
+                  onClick={() => onCellClick(character, session)}
+                  className={cn(
+                    "flex size-9 cursor-pointer items-center justify-center rounded-full outline-none",
+                    "transition-colors duration-[var(--duration-fast)] hover:bg-foreground/5",
+                    "focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-default disabled:opacity-60",
+                    isChanged && "ring-2 ring-primary"
+                  )}
+                >
+                  <AnswerMark isPresent={shown} />
+                </button>
+              ) : (
+                <AnswerMark isPresent={shown} />
+              )}
+              {/* Read-only on purpose: the reason is the absent member's own words. It belongs to the
+                  stored answer, so it steps aside while the cell holds a different one. */}
+              {!isChanged && record?.reason && (
+                <span
+                  className="block max-w-32 truncate text-xs text-muted-foreground"
+                  title={record.reason}
+                >
+                  {record.reason}
+                </span>
+              )}
+            </div>
           </TableCell>
         );
       })}
-
-      {canEdit && (
-        <TableCell className={STICKY_ACTION_COLUMN}>
-          {isEditing ? (
-            <RowActions className="gap-1.5">
-              <RowActionButton
-                label="Huỷ"
-                icon={<X className="size-4" />}
-                disabled={isSaving}
-                onClick={onCancel}
-              />
-              <RowActionButton
-                label="Xác nhận điểm danh"
-                icon={
-                  isSaving ? <Spinner size="sm" /> : <Check className="size-4" />
-                }
-                variant="default"
-                disabled={isSaving}
-                onClick={() => onConfirm(character)}
-              />
-            </RowActions>
-          ) : (
-            <EditAction
-              label="Điểm danh"
-              disabled={allLocked}
-              onClick={() => onStartEdit(character)}
-            />
-          )}
-        </TableCell>
-      )}
     </TableRow>
   );
 }
 
-interface StatusBadgeProps {
-  /** Current answer (when already marked) */
+interface AnswerMarkProps {
+  /** The answer shown, undefined when there is none */
   isPresent?: boolean;
 }
 
 /**
- * Read-only attendance badge, shown as a coloured icon.
- * @returns An emerald swords (yes) / red cross (no) icon, or "—" when unmarked
+ * One cell's answer, as the coloured status icon every screen uses for it.
+ * @param isPresent - The answer shown
+ * @returns An emerald swords (yes) / red cross (no) icon, or "—" when unanswered
  */
-function StatusBadge({ isPresent }: StatusBadgeProps) {
-  // `false` is a real answer, so the unmarked branch must test undefined explicitly.
+function AnswerMark({ isPresent }: AnswerMarkProps) {
+  // `false` is a real answer, so the unanswered branch must test undefined explicitly.
   if (isPresent === undefined) {
     return <span className="text-muted-foreground">—</span>;
   }
   return <AttendanceStatusIcon isPresent={isPresent} />;
-}
-
-interface AttendanceToggleProps {
-  /** Current answer (when already picked) */
-  value?: boolean;
-  onSelect: (isPresent: boolean) => void;
-}
-
-/**
- * The yes/no button pair for one attendance cell (editing mode only).
- *
- * Unlike the read-only `StatusBadge`, this one spells out "Có"/"Không": it is a control the user is
- * about to press, and the swords icon marks "đi đánh" the same way `SessionLabel` marks a battle.
- * Each button rests as a neutral icon and only on hover widens and takes its own colour — red for
- * "Không", emerald for "Có" — so a week with many sessions still fits across the grid. The picked
- * side stays filled, which is the only thing that says what was chosen once the pointer leaves.
- * @returns A two-button segmented control
- */
-function AttendanceToggle({ value, onSelect }: AttendanceToggleProps) {
-  return (
-    // A fixed-width slot: the buttons grow inside it, so the column keeps its width on hover.
-    // Without it the whole table shifts every time the pointer crosses a cell.
-    <div className="mx-auto flex w-32 justify-center">
-      <div className="inline-flex overflow-hidden rounded-lg border">
-        <button
-          type="button"
-          aria-pressed={value === false}
-          onClick={() => onSelect(false)}
-          className={cn(
-            "group/no flex w-9 cursor-pointer items-center justify-start gap-2 overflow-hidden px-2 py-1.5 text-sm font-medium whitespace-nowrap transition-all duration-[var(--duration-base)] ease-out-soft hover:w-22",
-            value === false
-              ? "bg-destructive text-white"
-              : "text-foreground hover:bg-destructive/10 hover:text-destructive"
-          )}
-        >
-          <X className="size-4 shrink-0" />
-          {/* Hidden outright at rest: clipping with overflow alone still leaks a sliver of the word. */}
-          <span className="opacity-0 transition-opacity duration-[var(--duration-base)] group-hover/no:opacity-100">
-            Không
-          </span>
-        </button>
-        <button
-          type="button"
-          aria-pressed={value === true}
-          onClick={() => onSelect(true)}
-          className={cn(
-            "group/yes flex w-9 cursor-pointer items-center justify-end gap-2 overflow-hidden border-l px-2 py-1.5 text-sm font-medium whitespace-nowrap transition-all duration-[var(--duration-base)] ease-out-soft hover:w-18",
-            value === true
-              ? "bg-emerald-500 text-white"
-              : "text-foreground hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:text-emerald-400"
-          )}
-        >
-          <span className="opacity-0 transition-opacity duration-[var(--duration-base)] group-hover/yes:opacity-100">
-            Có
-          </span>
-          <Swords className="size-4 shrink-0" />
-        </button>
-      </div>
-    </div>
-  );
 }

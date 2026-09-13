@@ -392,7 +392,7 @@ function DayTile({
 
 /**
  * Colours of the picked answer. Emerald "Có" and destructive "Không" are the marks the admin grid's
- * `AttendanceToggle` already uses (frontend.md §6), so both screens read as one app.
+ * cells already show (frontend.md §6), so both screens read as one app.
  */
 const SELECTED_CLASS = {
   co: "border-transparent bg-emerald-500 text-white hover:bg-emerald-500/90 dark:bg-emerald-600",

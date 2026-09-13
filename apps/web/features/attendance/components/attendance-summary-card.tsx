@@ -145,8 +145,10 @@ export function AttendanceSummaryCard({
   // `useId` returns a value with characters an SVG id and a `url(#…)` reference cannot carry —
   // the same reason `ChartContainer` strips them from its own chart id.
   const clipId = useId().replace(/[^a-zA-Z0-9_-]/g, "");
-  const answered = rows.reduce((sum, row) => sum + row.co + row.khong, 0);
-  const total = rows.reduce((sum, row) => sum + row.total, 0);
+  // The three counts in words, so the day's answer reads without hovering a bar.
+  const co = rows.reduce((sum, row) => sum + row.co, 0);
+  const khong = rows.reduce((sum, row) => sum + row.khong, 0);
+  const chuaTraLoi = rows.reduce((sum, row) => sum + row.chuaTraLoi, 0);
 
   return (
     <Card className={cn(sessionTintClass(session.isGuildWar))}>
@@ -157,7 +159,7 @@ export function AttendanceSummaryCard({
         <div className="text-xs font-medium text-muted-foreground">
           {joinSessionMeta(
             getSessionSubtitle(session),
-            `đã điểm danh ${answered}/${total}`
+            `Có ${co} · Không ${khong} · Chưa ${chuaTraLoi}`
           )}
         </div>
       </CardHeader>
