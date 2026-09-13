@@ -101,9 +101,10 @@ phía trên, không dính khi cuộn xuống kho.
 
 ### Đề xuất
 
-- Từ `lg` trở lên: bố cục hai cột. Trái là `FormationGrid`, phải là `MemberPool` sticky
-  (`sticky top-<chiều cao header>`, cao theo viewport, danh sách tự cuộn bên trong). Dưới `lg` giữ
-  thứ tự hiện tại.
+- ~~Từ `lg` trở lên: bố cục hai cột, `MemberPool` sticky bên phải.~~ **Bỏ (2026-09-13, theo quyết
+  định của chủ bang sau khi xem bản dựng):** cột kho bên phải làm lưới đội hình hẹp lại, tên nhân
+  vật bị co và khó đọc. `MemberPool` giữ nguyên chỗ cũ, dưới `FormationGrid`. Quãng kéo ngắn đi nhờ
+  lưới thấp hơn (TB3 thu gọn ghi chú, TB7 thu gọn banner).
 - Thanh hành động dính đáy màn hình, chỉ hiện khi `dirty`: "N thay đổi chưa lưu · Đặt lại · Lưu".
   Toolbar trên cùng giữ Copy và Gửi Discord.
 - Phím tắt Ctrl+S (Cmd+S trên macOS) gọi cùng hàm `handleSave`, chặn hộp thoại lưu trang của trình
@@ -111,7 +112,8 @@ phía trên, không dính khi cuộn xuống kho.
 
 ### Tiêu chí chấp nhận
 
-- Ở 1440px, kéo một người từ kho vào bất kỳ ô nào của 10 đội mà không cần cuộn trang.
+- ~~Ở 1440px, kéo một người từ kho vào bất kỳ ô nào của 10 đội mà không cần cuộn trang.~~ Bỏ cùng
+  bố cục hai cột.
 - Khi có thay đổi chưa lưu, nút Lưu luôn nhìn thấy dù đang cuộn ở đâu.
 - `DragOverlay` vẫn bám con trỏ đúng: thanh sticky và cột sticky không được tạo containing block cho
   phần tử `position: fixed` (xem ghi chú `backwards` trong `globals.css`).
@@ -171,6 +173,7 @@ request (lý do đã ghi trong comment hiện tại).
 
 - Gõ vào ô rồi click ra ngoài: chữ vẫn còn, nút Lưu và chữ "chưa lưu" vẫn hiện.
 - Bấm Lưu hoặc Enter: gửi request, toast thành công, nút và chữ "chưa lưu" biến mất.
+- Bấm Enter khi chữ trong ô (sau khi trim) trùng với lý do đã lưu: không gửi request, không toast.
 - Lưu lỗi: chữ đã gõ được giữ nguyên (như hiện tại).
 
 ---
@@ -376,7 +379,8 @@ tiếng Việt, nút về trang Điểm danh). `error.tsx` là client component,
 
 - `member-pool.tsx`: dãy chip đếm theo lưu phái ("Tố Vấn 4 · …"), bấm chip thì bật lọc lưu phái
   tương ứng trong `pool-filter-store`.
-- `team-column.tsx`: header mỗi đội hiện số người "4/6".
+- ~~`team-column.tsx`: header mỗi đội hiện số người "4/6".~~ **Bỏ (2026-09-13, theo quyết định của
+  chủ bang sau khi xem bản dựng).**
 
 ---
 
@@ -385,9 +389,12 @@ tiếng Việt, nút về trang Điểm danh). `error.tsx` là client component,
 **Tác động: trung bình. Rủi ro: thấp.**
 
 `slot-cell.tsx:79`: mỗi ô dành `w-2/5` cho `SlotNoteInput`, nên 60 textarea luôn hiện và tên nhân
-vật bị cắt. Đề xuất: ô chưa có ghi chú chỉ hiện một nút icon nhỏ, bấm vào mới mở ô nhập; ô đã có
-ghi chú thì hiện chữ (bấm vào để sửa). Chế độ chỉ đọc chỉ hiện ghi chú khi có. Không đổi
-`FormationCaptureSheet`: ảnh gửi Discord vẫn hiện ghi chú như hiện tại.
+vật bị cắt. ~~Đề xuất: ô chưa có ghi chú chỉ hiện một nút icon nhỏ, bấm vào mới mở ô nhập; ô đã có
+ghi chú thì hiện chữ (bấm vào để sửa). Chế độ chỉ đọc chỉ hiện ghi chú khi có.~~
+
+**Bỏ (2026-09-13, theo quyết định của chủ bang sau khi xem bản dựng):** ghi chú phải đứng bên phải
+thành viên tương ứng, không xuống hàng. Cột ghi chú `w-2/5` giữ nguyên như cũ, cả trên màn hình lẫn
+trong ảnh gửi Discord.
 
 ---
 

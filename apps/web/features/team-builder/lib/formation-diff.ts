@@ -1,45 +1,70 @@
 import type { Assignment, MatchDraft, Notes } from "../types/formation";
 
 /**
- * Whether a draft differs from what the server has stored.
+ * How many slots hold a different person in the draft than on the server.
  * Compares contents rather than tracking a flag, so dragging someone away and
  * back counts as no change. Sixty keys per comparison is cheap enough to run
  * on every render.
- * @param draft - Draft for this battle, undefined when it was never touched
+ * @param draft - Assignment of the draft match
  * @param saved - Assignment as last read from the server
- * @returns true when the draft holds unsaved changes
+ * @returns Number of slots that differ
  */
-function isDirty(
-  draft: Assignment | undefined,
-  saved: Assignment
-): boolean {
-  if (!draft) return false;
-
+function countSlotChanges(draft: Assignment, saved: Assignment): number {
   const keys = new Set([...Object.keys(draft), ...Object.keys(saved)]);
+  let count = 0;
 
   for (const key of keys) {
-    if ((draft[key] ?? null) !== (saved[key] ?? null)) return true;
+    if ((draft[key] ?? null) !== (saved[key] ?? null)) count += 1;
   }
 
-  return false;
+  return count;
 }
 
 /**
- * Whether two note maps differ. A slot with nothing written carries no key, so
+ * How many slot notes differ. A slot with nothing written carries no key, so
  * a key holding "" counts as the same thing as no key at all — typing into a
  * note and clearing it again must not leave the day dirty.
  * @param draft - Notes of the draft match
  * @param saved - Notes as last read from the server
- * @returns true when the two differ
+ * @returns Number of notes that differ
  */
-function notesDiffer(draft: Notes, saved: Notes): boolean {
+function countNoteChanges(draft: Notes, saved: Notes): number {
   const keys = new Set([...Object.keys(draft), ...Object.keys(saved)]);
+  let count = 0;
 
   for (const key of keys) {
-    if ((draft[key] ?? "").trim() !== (saved[key] ?? "").trim()) return true;
+    if ((draft[key] ?? "").trim() !== (saved[key] ?? "").trim()) count += 1;
   }
 
-  return false;
+  return count;
+}
+
+/**
+ * How many edits separate a day's draft from what the server has stored: one
+ * per slot holding someone else, one per note, and one for a match 2 added or
+ * removed. The match itself counts once rather than slot by slot - a new match
+ * 2 starts as a copy of match 1, and "twelve changes" for one button press
+ * would read as a mistake.
+ * @param draft - Draft for the day, undefined when it was never touched
+ * @param saved - Matches as last read from the server
+ * @returns Number of unsaved edits, 0 when the day is clean
+ */
+export function countDayChanges(
+  draft: MatchDraft[] | undefined,
+  saved: MatchDraft[]
+): number {
+  if (!draft) return 0;
+
+  const shared = Math.min(draft.length, saved.length);
+  let count = draft.length === saved.length ? 0 : 1;
+
+  for (let index = 0; index < shared; index += 1) {
+    count +=
+      countSlotChanges(draft[index].assignment, saved[index].assignment) +
+      countNoteChanges(draft[index].notes, saved[index].notes);
+  }
+
+  return count;
 }
 
 /**
@@ -54,12 +79,5 @@ export function isDayDirty(
   draft: MatchDraft[] | undefined,
   saved: MatchDraft[]
 ): boolean {
-  if (!draft) return false;
-  if (draft.length !== saved.length) return true;
-
-  return draft.some(
-    (match, index) =>
-      isDirty(match.assignment, saved[index].assignment) ||
-      notesDiffer(match.notes, saved[index].notes)
-  );
+  return countDayChanges(draft, saved) > 0;
 }

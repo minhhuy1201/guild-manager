@@ -5,7 +5,8 @@ import type { SessionFormation } from "@guild/shared/schemas";
 
 import { ApiError } from "@/lib/api-client";
 import { resolveActiveMatchIndex } from "../lib/active-match";
-import { isDayDirty } from "../lib/formation-diff";
+import { removeCharacters } from "../lib/assignment";
+import { countDayChanges, isDayDirty } from "../lib/formation-diff";
 import { FORMATION } from "../lib/mock-formation";
 import { fromWire, fromWireMatches, toWireMatches } from "../lib/wire";
 import { useFormationStore } from "../store/formation-store";
@@ -42,6 +43,8 @@ export interface FormationDraftState {
   dirty: boolean;
   /** Every day of the week that differs from its saved copy */
   dirtySessionIds: Set<string>;
+  /** How many edits the open day holds over its saved copy, 0 when clean */
+  changeCount: number;
   /** Whether another match may still be added — capped by the day's own match count */
   canAddMatch: boolean;
   /** Number of slots in the layout */
@@ -58,6 +61,8 @@ export interface FormationDraftState {
   clearActiveDraft: () => void;
   /** Overwrite the match currently open with a copied line-up */
   copyIntoActiveMatch: (match: MatchDraft) => void;
+  /** Take the given characters out of the match currently open */
+  removeFromActiveMatch: (characterIds: Set<string>) => void;
   /** Discard the open day's draft, falling back to the saved copy */
   resetActive: () => void;
   /** Fill a day that has no draft yet with a proposed line-up */
@@ -145,6 +150,14 @@ export function useFormationDraft(
       (activeSessionId ? matchesBySession[activeSessionId] : null) ??
       EMPTY_MATCHES,
     [activeSessionId, matchesBySession]
+  );
+
+  const changeCount = useMemo(
+    () =>
+      activeSessionId
+        ? countDayChanges(drafts[activeSessionId], savedBySession[activeSessionId])
+        : 0,
+    [activeSessionId, drafts, savedBySession]
   );
 
   // The day itself sets the ceiling: a one-match day can never hold a second formation, while a
@@ -287,6 +300,27 @@ export function useFormationDraft(
     setDraft(activeSessionId, next);
   }
 
+  /**
+   * Take the given characters out of the match currently open, leaving the
+   * other match of the day alone - the dropped-out marks are computed for the
+   * open match only. Nothing is written when none of them is placed, so the
+   * call cannot leave behind a draft equal to the saved copy.
+   * @param characterIds - Characters to send back to the pool
+   */
+  function removeFromActiveMatch(characterIds: Set<string>) {
+    if (!activeSessionId) return;
+
+    const next = removeCharacters(activeMatch.assignment, characterIds);
+    if (next === activeMatch.assignment) return;
+
+    setDraft(
+      activeSessionId,
+      matches.map((match, index) =>
+        index === activeMatchIndex ? { ...match, assignment: next } : match
+      )
+    );
+  }
+
   /** Discard the open day's draft, falling back to the saved copy. */
   function resetActive() {
     if (!activeSessionId) return;
@@ -325,6 +359,7 @@ export function useFormationDraft(
     notes: activeMatch.notes,
     dirty: activeSessionId ? dirtySessionIds.has(activeSessionId) : false,
     dirtySessionIds,
+    changeCount,
     canAddMatch: editable && matches.length < maxMatches,
     slotCount: FORMATION.slots.length,
     setActiveMatch,
@@ -333,6 +368,7 @@ export function useFormationDraft(
     removeMatch,
     clearActiveDraft,
     copyIntoActiveMatch,
+    removeFromActiveMatch,
     resetActive,
     seedFrom,
     applyDrop,

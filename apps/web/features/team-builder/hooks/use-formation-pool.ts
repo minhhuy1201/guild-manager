@@ -3,8 +3,13 @@
 import { useEffect, useMemo } from "react";
 import type { Character, SessionFormation } from "@guild/shared/schemas";
 
+import type { RosterFilter } from "@/lib/roster-filter";
 import { FORMATION } from "../lib/mock-formation";
-import { selectPoolCharacters } from "../lib/pool";
+import {
+  countByGuildClass,
+  selectPoolCharacters,
+  type GuildClassCount,
+} from "../lib/pool";
 import {
   buildPrefill,
   isPrefillShowing,
@@ -19,10 +24,15 @@ import { useFormationStore } from "../store/formation-store";
 import { usePoolFilterStore } from "../store/pool-filter-store";
 import type { Assignment, MatchDraft } from "../types/formation";
 
+/** The pool before the admin's filters, which is what the class chips count. */
+const NO_FILTER: RosterFilter = { search: "", guildClasses: [] };
+
 /** Who can still be placed into the open match, and what the banner proposes. */
 export interface FormationPoolState {
   /** Characters still available to place, already filtered */
   pool: Character[];
+  /** Members left to place per guild class, ignoring the filters */
+  classCounts: GuildClassCount[];
   /** Every character of the roster, by id — for rendering a placed card */
   charactersById: Map<string, Character>;
   /** Placed members who have since said they are not coming */
@@ -74,11 +84,22 @@ export function useFormationPool(
     [records, activeSessionId]
   );
 
-  const pool = useMemo(() => {
-    const present = selectPresentCharacters(characters, presentIds);
+  const present = useMemo(
+    () => selectPresentCharacters(characters, presentIds),
+    [characters, presentIds]
+  );
 
-    return selectPoolCharacters(present, assignment, { search, guildClasses });
-  }, [characters, presentIds, assignment, search, guildClasses]);
+  const pool = useMemo(
+    () => selectPoolCharacters(present, assignment, { search, guildClasses }),
+    [present, assignment, search, guildClasses]
+  );
+
+  // Counted before the filters: a chip exists to pick a filter, so it has to say how many are
+  // left of its class whatever is filtered right now.
+  const classCounts = useMemo(
+    () => countByGuildClass(selectPoolCharacters(present, assignment, NO_FILTER)),
+    [present, assignment]
+  );
 
   const charactersById = useMemo(
     () => new Map(characters.map((character) => [character.id, character])),
@@ -155,6 +176,7 @@ export function useFormationPool(
 
   return {
     pool,
+    classCounts,
     charactersById,
     absentIds,
     otherMatchIds,

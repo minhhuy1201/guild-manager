@@ -160,6 +160,22 @@ describe("useFormationPool — pool", () => {
     expect(result.current.pool).toEqual([]);
   });
 
+  // Chip lưu phái là để chọn lọc, nên phải cho biết mỗi lưu phái còn bao nhiêu người trước khi lọc.
+  it("classCounts đếm người còn lại theo lưu phái, bỏ qua bộ lọc", () => {
+    const { result } = renderPool(
+      {
+        assignment: { [SLOT]: "char-1" },
+        matches: [{ assignment: { [SLOT]: "char-1" }, notes: {} }],
+      },
+      { poolFilter: { search: "Cường", guildClasses: [GuildClass.THIET_Y] } }
+    );
+
+    expect(result.current.classCounts).toEqual([
+      { guildClass: GuildClass.THIET_Y, count: 1 },
+      { guildClass: GuildClass.TO_VAN, count: 1 },
+    ]);
+  });
+
   it("charactersById tra được mọi người trong bang, kể cả người đã nghỉ", () => {
     const { result } = renderPool({ records: [] });
 

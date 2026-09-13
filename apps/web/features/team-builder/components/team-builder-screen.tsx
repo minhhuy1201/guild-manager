@@ -12,11 +12,14 @@ import {
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
 import { PageHeader } from "@/components/shared/page-header";
+import { UnsavedChangesBar } from "@/components/shared/unsaved-changes-bar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFormationAnnounce } from "../hooks/use-formation-announce";
 import { useFormationScreen } from "../hooks/use-formation-screen";
+import { useSaveShortcut } from "../hooks/use-save-shortcut";
 import { buildBannerTitle } from "../lib/banner-title";
+import { AbsentBanner } from "./absent-banner";
 import { AnnounceFormationDialog } from "./announce-formation-dialog";
 import { CopyFormationDialog } from "./copy-formation-dialog";
 import { FormationCaptureSheet } from "./formation-capture-sheet";
@@ -50,6 +53,11 @@ export function TeamBuilderScreen() {
     screen.draft.dirtySessionIds.size > 0 || screen.teamNames.dirty;
   const dirty = screen.draft.dirty || screen.teamNames.dirty;
   const saving = screen.draft.saving || screen.teamNames.saving;
+  const editable = screen.selection.editable;
+  const changeCount = screen.draft.changeCount + screen.teamNames.changeCount;
+  // A day already played has no Save, exactly as before the bar existed: its formation cannot be
+  // written, so a save from there would only meet the lock.
+  const showSaveBar = editable && dirty;
   const errorMessages = [
     screen.draft.saveErrorMessage,
     screen.teamNames.saveErrorMessage,
@@ -84,11 +92,13 @@ export function TeamBuilderScreen() {
     screen.copy.copy();
   }
 
-  /** Discard both drafts — the toolbar's "Đặt lại" covers everything it can save. */
+  /** Discard both drafts - the save bar's "Đặt lại" covers everything it can save. */
   function handleReset() {
     screen.draft.resetActive();
     screen.teamNames.reset();
   }
+
+  useSaveShortcut(handleSave, showSaveBar && !saving);
 
   // Drafts live in memory, so leaving the page would silently drop them.
   useEffect(() => {
@@ -152,6 +162,7 @@ export function TeamBuilderScreen() {
       <div className="flex flex-col gap-4">
         <PageHeader
           banner="teamBuilder"
+          size="compact"
           title="Xếp đội hình bang chiến"
           actions={
             <WeekPicker
@@ -186,13 +197,10 @@ export function TeamBuilderScreen() {
           <FormationToolbar
             dirty={dirty}
             saving={saving}
-            errorMessages={errorMessages}
-            editable={screen.selection.editable}
+            editable={editable}
             copySourceLabel={screen.copy.sourceLabel}
             canCopy={screen.copy.canCopy}
             onCopy={handleCopy}
-            onSave={handleSave}
-            onReset={handleReset}
             announcing={announce.sending}
             onAnnounce={() => announce.setOpen(true)}
           />
@@ -234,6 +242,13 @@ export function TeamBuilderScreen() {
           onClear={screen.draft.clearActiveDraft}
         />
 
+        <AbsentBanner
+          count={editable ? screen.pool.absentIds.size : 0}
+          onRemove={() =>
+            screen.draft.removeFromActiveMatch(screen.pool.absentIds)
+          }
+        />
+
         <FormationGrid
           bannerTitle={buildBannerTitle({
             isGuildWar: activeSession.isGuildWar,
@@ -252,15 +267,27 @@ export function TeamBuilderScreen() {
           onNameChange={screen.teamNames.setName}
           saving={saving}
           charactersById={screen.pool.charactersById}
-          readOnly={!screen.selection.editable}
+          readOnly={!editable}
           absentIds={screen.pool.absentIds}
         />
         <MemberPool
           pool={screen.pool.pool}
-          readOnly={!screen.selection.editable}
+          classCounts={screen.pool.classCounts}
+          readOnly={!editable}
           otherMatchIds={screen.pool.otherMatchIds}
           activeMatchIndex={screen.draft.activeMatchIndex}
         />
+
+        {showSaveBar ? (
+          <UnsavedChangesBar
+            message={`${changeCount} thay đổi chưa lưu`}
+            resetLabel="Đặt lại"
+            saving={saving}
+            errorMessages={errorMessages}
+            onSave={handleSave}
+            onReset={handleReset}
+          />
+        ) : null}
       </div>
 
       <DragOverlay>

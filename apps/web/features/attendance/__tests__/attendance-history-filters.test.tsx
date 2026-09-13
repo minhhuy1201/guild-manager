@@ -59,6 +59,7 @@ vi.mock("../hooks/use-attendance", async () => {
 });
 
 import { AttendanceHistoryFilters } from "../components/attendance-history-filters";
+import { AttendanceHistoryScope } from "../components/attendance-history-scope";
 import { useAttendanceFilterStore } from "../store/attendance-filter-store";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
@@ -110,12 +111,93 @@ function historyState() {
 
 afterEach(cleanup);
 
-describe("AttendanceHistoryFilters - xoá bộ lọc", () => {
-  beforeEach(() => {
-    sessions = [SESSION];
-    useAttendanceFilterStore.setState(EMPTY_STATE);
+beforeEach(() => {
+  sessions = [SESSION];
+  useAttendanceFilterStore.setState(EMPTY_STATE);
+});
+
+describe("AttendanceHistoryScope - bộ lọc của cả trang", () => {
+  // Tuần và ngày đánh chọn dữ liệu cho cả biểu đồ lẫn bảng, nên đứng trên cùng.
+  it("chỉ có Tuần và Ngày đánh", () => {
+    render(<AttendanceHistoryScope />);
+
+    expect(screen.getByLabelText("Tuần")).toBeTruthy();
+    expect(screen.getByLabelText("Ngày đánh")).toBeTruthy();
+    expect(screen.queryByLabelText("Tìm kiếm")).toBeNull();
+    expect(screen.queryByLabelText("Trạng thái")).toBeNull();
   });
 
+  it("hiện nhãn tuần đang mở để không phải tự suy ra", () => {
+    render(<AttendanceHistoryScope />);
+
+    expect(screen.getAllByText(`Tuần này · ${WEEKS[0].label}`).length).toBeGreaterThan(0);
+  });
+
+  it("chưa lọc ngày đánh thì không có nút xoá riêng của nó", () => {
+    render(<AttendanceHistoryScope />);
+
+    expect(screen.queryByLabelText("Xoá lọc ngày đánh")).toBeNull();
+  });
+
+  it("bấm X của ngày đánh thì chỉ ngày đánh trở lại Tất cả", async () => {
+    useAttendanceFilterStore.setState({
+      presence: "absent",
+      sessionId: SESSION.id,
+    });
+
+    render(<AttendanceHistoryScope />);
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText("Xoá lọc ngày đánh"));
+    });
+
+    expect(historyState().sessionId).toBeNull();
+    expect(historyState().presence).toBe("absent");
+  });
+
+  it("ngày đánh đã bị xoá thì cũng không có X - trên màn hình nó đang là Tất cả", () => {
+    useAttendanceFilterStore.setState({ sessionId: "sess-deleted" });
+
+    render(<AttendanceHistoryScope />);
+
+    expect(screen.queryByLabelText("Xoá lọc ngày đánh")).toBeNull();
+  });
+});
+
+describe("AttendanceHistoryFilters - bộ lọc của bảng", () => {
+  // Biểu đồ không theo ba bộ lọc này, nên chúng nằm với bảng chứ không đứng trên biểu đồ.
+  it("có tìm kiếm, lưu phái và trạng thái, không có Tuần và Ngày đánh", () => {
+    render(<AttendanceHistoryFilters />);
+
+    expect(screen.getByLabelText("Tìm kiếm")).toBeTruthy();
+    expect(screen.getByLabelText("Lưu phái")).toBeTruthy();
+    expect(screen.getByLabelText("Trạng thái")).toBeTruthy();
+    expect(screen.queryByLabelText("Tuần")).toBeNull();
+    expect(screen.queryByLabelText("Ngày đánh")).toBeNull();
+  });
+
+  it("chưa lọc trạng thái thì không có nút xoá riêng của nó", () => {
+    render(<AttendanceHistoryFilters />);
+
+    expect(screen.queryByLabelText("Xoá lọc trạng thái")).toBeNull();
+  });
+
+  it("bấm X của trạng thái thì chỉ trạng thái trở lại Tất cả", async () => {
+    useAttendanceFilterStore.setState({
+      presence: "present",
+      sessionId: SESSION.id,
+    });
+
+    render(<AttendanceHistoryFilters />);
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText("Xoá lọc trạng thái"));
+    });
+
+    expect(historyState().presence).toBe("all");
+    expect(historyState().sessionId).toBe(SESSION.id);
+  });
+});
+
+describe("AttendanceHistoryFilters - xoá bộ lọc", () => {
   it("chưa lọc gì thì nút bị khoá, không mời gọi bấm vào chỗ trống", () => {
     render(<AttendanceHistoryFilters />);
 
@@ -178,12 +260,6 @@ describe("AttendanceHistoryFilters - xoá bộ lọc", () => {
     expect(clearAll().disabled).toBe(true);
   });
 
-  it("hiện nhãn tuần đang mở để không phải tự suy ra", () => {
-    render(<AttendanceHistoryFilters />);
-
-    expect(screen.getAllByText(`Tuần này · ${WEEKS[0].label}`).length).toBeGreaterThan(0);
-  });
-
   it("chọn ngày đánh là nút mở khoá", () => {
     useAttendanceFilterStore.setState({ sessionId: SESSION.id });
 
@@ -241,55 +317,5 @@ describe("AttendanceHistoryFilters - xoá bộ lọc", () => {
       search: "giữ nguyên",
       guildClasses: [GuildClass.TO_VAN],
     });
-  });
-
-  it("chưa lọc ngày đánh thì không có nút xoá riêng của nó", () => {
-    render(<AttendanceHistoryFilters />);
-
-    expect(screen.queryByLabelText("Xoá lọc ngày đánh")).toBeNull();
-  });
-
-  it("bấm X của ngày đánh thì chỉ ngày đánh trở lại Tất cả", async () => {
-    useAttendanceFilterStore.setState({
-      presence: "absent",
-      sessionId: SESSION.id,
-    });
-
-    render(<AttendanceHistoryFilters />);
-    await act(async () => {
-      fireEvent.click(screen.getByLabelText("Xoá lọc ngày đánh"));
-    });
-
-    expect(historyState().sessionId).toBeNull();
-    expect(historyState().presence).toBe("absent");
-  });
-
-  it("chưa lọc trạng thái thì không có nút xoá riêng của nó", () => {
-    render(<AttendanceHistoryFilters />);
-
-    expect(screen.queryByLabelText("Xoá lọc trạng thái")).toBeNull();
-  });
-
-  it("bấm X của trạng thái thì chỉ trạng thái trở lại Tất cả", async () => {
-    useAttendanceFilterStore.setState({
-      presence: "present",
-      sessionId: SESSION.id,
-    });
-
-    render(<AttendanceHistoryFilters />);
-    await act(async () => {
-      fireEvent.click(screen.getByLabelText("Xoá lọc trạng thái"));
-    });
-
-    expect(historyState().presence).toBe("all");
-    expect(historyState().sessionId).toBe(SESSION.id);
-  });
-
-  it("ngày đánh đã bị xoá thì cũng không có X — trên màn hình nó đang là Tất cả", () => {
-    useAttendanceFilterStore.setState({ sessionId: "sess-deleted" });
-
-    render(<AttendanceHistoryFilters />);
-
-    expect(screen.queryByLabelText("Xoá lọc ngày đánh")).toBeNull();
   });
 });

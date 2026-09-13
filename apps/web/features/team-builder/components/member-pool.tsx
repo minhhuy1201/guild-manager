@@ -8,13 +8,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { POOL_DROPPABLE_ID, type PoolDropData } from "../lib/dnd-data";
+import { toggleGuildClass, type GuildClassCount } from "../lib/pool";
 import { usePoolFilterStore } from "../store/pool-filter-store";
 import { DraggableMember } from "./draggable-member";
+import { PoolClassChips } from "./pool-class-chips";
 import { PoolFilters } from "./pool-filters";
 
 interface MemberPoolProps {
   /** Members available for the battle on screen, already filtered */
   pool: Character[];
+  /** Members left to place per guild class, before the filters */
+  classCounts: GuildClassCount[];
   /** Hide the pool entirely — a past week or a battle already fought */
   readOnly?: boolean;
   /** Ids of members already placed in the day's other match */
@@ -29,6 +33,7 @@ interface MemberPoolProps {
  * here without any extra bookkeeping. Dropping a card back onto this area frees
  * their slot.
  * @param pool - Members available for the battle, already filtered
+ * @param classCounts - Members left per guild class, before the filters
  * @param readOnly - Hide the pool entirely
  * @param otherMatchIds - Ids of members already placed in the day's other match
  * @param activeMatchIndex - Which match is on screen, 0-based
@@ -36,6 +41,7 @@ interface MemberPoolProps {
  */
 export function MemberPool({
   pool,
+  classCounts,
   readOnly = false,
   otherMatchIds,
   activeMatchIndex,
@@ -49,6 +55,7 @@ export function MemberPool({
 
   const search = usePoolFilterStore((state) => state.search);
   const guildClasses = usePoolFilterStore((state) => state.guildClasses);
+  const setFilter = usePoolFilterStore((state) => state.setFilter);
 
   // Hooks run first: calling useDroppable conditionally would be a React error.
   if (readOnly) return null;
@@ -62,6 +69,17 @@ export function MemberPool({
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <PoolFilters />
+
+        <PoolClassChips
+          counts={classCounts}
+          selected={guildClasses}
+          onToggle={(guildClass) =>
+            setFilter({
+              search,
+              guildClasses: toggleGuildClass(guildClasses, guildClass),
+            })
+          }
+        />
 
         <div
           ref={setNodeRef}

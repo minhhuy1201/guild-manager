@@ -1,5 +1,13 @@
 import { Lock, Swords } from "lucide-react";
 
+import { cn } from "@/lib/utils";
+
+/**
+ * How much room the banner takes. `compact` is the screen's, where the day tab right above already
+ * names the battle; `tall` is the Discord image's, where the banner is the only headline.
+ */
+export type FormationBannerSize = "compact" | "tall";
+
 interface FormationBannerProps {
   /** Headline text, already built by `buildBannerTitle` */
   title: string;
@@ -7,6 +15,8 @@ interface FormationBannerProps {
   isGuildWar: boolean;
   /** Battle already played — the formation below can only be read */
   locked: boolean;
+  /** How much room the banner takes */
+  size: FormationBannerSize;
 }
 
 /**
@@ -14,7 +24,8 @@ interface FormationBannerProps {
  * which match of the day the grid below belongs to.
  *
  * Lives inside the grid and spans every column, so it lines up with the columns instead
- * of with the page; its height is about two slot cells and grows when the line wraps.
+ * of with the page. `tall` is about two slot cells high and grows when the line wraps;
+ * `compact` is one line of text, since on screen it repeats what the day tab says.
  *
  * Both kinds of battle share one frame - the wording already says which one this is, and a
  * second colour would compete with the team headers right underneath. It is the one headline
@@ -26,16 +37,27 @@ interface FormationBannerProps {
  * @param title - Headline text
  * @param isGuildWar - Whether the battle is the Guild War
  * @param locked - Whether the battle is already played
+ * @param size - How much room the banner takes
  * @returns The banner row
  */
 export function FormationBanner({
   title,
   isGuildWar,
   locked,
+  size,
 }: FormationBannerProps) {
+  const isTall = size === "tall";
+
   return (
-    <h2 className="col-span-full flex min-h-24 flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-xl border border-t-2 border-gold/60 border-t-gold bg-card px-4 py-3 text-center font-heading text-xl font-semibold tracking-wide text-primary sm:text-2xl">
-      {isGuildWar ? <Swords className="size-6 shrink-0" /> : null}
+    <h2
+      className={cn(
+        "col-span-full flex flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-xl border border-t-2 border-gold/60 border-t-gold bg-card px-4 text-center font-heading font-semibold tracking-wide text-primary",
+        isTall ? "min-h-24 py-3 text-xl sm:text-2xl" : "py-1.5 text-base sm:text-lg"
+      )}
+    >
+      {isGuildWar ? (
+        <Swords className={cn("shrink-0", isTall ? "size-6" : "size-5")} />
+      ) : null}
       {title}
       {locked ? (
         <span className="inline-flex items-center gap-1 font-sans text-base font-medium text-muted-foreground">

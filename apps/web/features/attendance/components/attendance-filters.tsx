@@ -1,7 +1,10 @@
 "use client";
 
+import { Hourglass } from "lucide-react";
+
 import { RosterFilterBar } from "@/components/shared/roster-filter-bar";
-import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   useAttendanceFilterStore,
   type AttendanceFilterScope,
@@ -15,22 +18,48 @@ interface AttendanceFiltersProps {
 /**
  * The filter bar: search by character name and pick classes.
  * Reads and writes the store slice for `scope`, so two screens never share filter values.
+ *
+ * The Attendance screen adds one quick filter beside them, "Chưa điểm danh": the question an admin
+ * asks the grid most, a day or two before a battle, is who has not answered yet.
+ *
+ * Bare, without a card of its own: it sits in the header of the card of the table it filters, so
+ * the page has one block fewer and nobody wonders what the filters act on.
  * @param scope - The screen using the filters
- * @returns The filter card
+ * @returns The filter row
  */
 export function AttendanceFilters({ scope }: AttendanceFiltersProps) {
   const filter = useAttendanceFilterStore((s) => s.filters[scope]);
   const setFilter = useAttendanceFilterStore((s) => s.setFilter);
+  const unansweredOnly = useAttendanceFilterStore((s) => s.unansweredOnly);
+  const setUnansweredOnly = useAttendanceFilterStore(
+    (s) => s.setUnansweredOnly
+  );
 
   return (
-    <Card>
-      <CardContent>
-        <RosterFilterBar
-          idPrefix={scope}
-          value={filter}
-          onChange={(next) => setFilter(scope, next)}
-        />
-      </CardContent>
-    </Card>
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+      <RosterFilterBar
+        idPrefix={scope}
+        value={filter}
+        onChange={(next) => setFilter(scope, next)}
+        className="flex-1"
+      />
+      {scope === "attendance" ? (
+        <Button
+          type="button"
+          variant="outline"
+          size="lg"
+          aria-pressed={unansweredOnly}
+          onClick={() => setUnansweredOnly(!unansweredOnly)}
+          // A filter that is on takes the selected surface (frontend.md §6), hover included.
+          className={cn(
+            unansweredOnly &&
+              "border-primary bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
+          )}
+        >
+          <Hourglass />
+          Chưa điểm danh
+        </Button>
+      ) : null}
+    </div>
   );
 }

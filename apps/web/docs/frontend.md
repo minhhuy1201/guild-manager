@@ -231,7 +231,8 @@ Current shared building blocks: `action-buttons`, `confirm-delete-dialog`, `date
 `error-state`, `guild-class-filter-select`, `guild-class-icon`, `main-nav`, `mutation-dialog`,
 `mutation-form`, `mutation-pending`, `page-size-select`, `password-input`, `query-boundary`,
 `roster-filter-bar`, `session-label`, `site-header`, `status-badge`, `status-icon`, `toast`,
-`table-pagination`, `table-pagination-bar`, `table-skeleton`.
+`table-pagination`, `table-pagination-bar`, `table-skeleton`, `unsaved-changes-bar`,
+`mobile-tab-bar`, `nav-items`.
 
 ### The query group of a screen
 
@@ -279,11 +280,16 @@ into one store.
 its create button, with the same labels turned `sr-only`. A real difference in *content* still stays
 outside the component — the create button is members' own JSX, not a prop.
 
+**A table's filters sit in the header of the table's own card**, never in a card of their own
+above it: `attendance-filters` in the attendance grid, `attendance-history-filters` in the history
+table. A filter that acts on a whole page (the history screen's week and battle day) stands above
+everything it acts on, in its own card (`attendance-history-scope`).
+
 A screen that stacks several filters ends its bar with **one "Xoá bộ lọc" button that clears all of
 them in a single store write** — `attendance-history-filters` is the worked example, resetting the
 roster filter, the presence and the session at once. The button is always rendered and `disabled`
-while nothing is set, the way `formation-toolbar` holds its "Đặt lại": one that appears and
-disappears makes the card change height as soon as the first filter is typed. Whether the roster
+while nothing is set: one that appears and disappears makes the card change height as soon as the
+first filter is typed. Whether the roster
 half counts as set is `isRosterFilterActive` (`lib/roster-filter.ts`), which trims the keyword for
 the same reason `matchesRosterFilter` does — a box holding only spaces filters nothing. A filter
 whose value no longer resolves (a session since deleted) is **not** counted: it already reads as
@@ -378,6 +384,10 @@ right (the team builder's week picker), and the `OrnamentDivider` (a hairline wi
 diamond, `surface="image"`) closing the block. A section title inside a card is an `<h2>`, in the
 sans face.
 
+- **`size` is required** (`tall` | `compact`), so no page inherits a height by accident. `tall` is
+  the attendance page's, where members land from a Discord link; `compact` is the daily tools'
+  (history, team builder, settings), where the tall strip left almost a third of a phone's screen
+  to decoration. Same scene, same scrims, same title size - only the strip and its padding shrink.
 - **`banner` is required** and names an entry of `PAGE_BANNERS` (`lib/page-banners.ts`): the
   picture, the `objectPosition` that crops the game's logo out of the strip on a wide screen, and
   the `tint` shown while it loads. A new page adds its scene there; the pictures live in
@@ -416,16 +426,20 @@ red cross — through `features/attendance/components/attendance-status-icon.tsx
 read-only cells) and the history table (`attendance-log-table`) render. Reading a row and pressing a
 button then use one vocabulary: swords means "đi đánh" everywhere on the screen.
 
-**This rule covers *displaying* a state only.** The cell being edited in `attendance-row`
-(`AttendanceToggle`) is a control about to be pressed, so it carries words: "Không" with a
-destructive `X`, "Có" with an emerald `Swords` — the same mark `SessionLabel` gives a battle. At rest
-each button shrinks to the width of its icon (`w-9`) and only widens on hover.
+**The admin grid presses the icon itself.** In `attendance-row` an admin's cell is a round button
+holding the same status icon, so its answer reads without a hover (a touch screen has none).
+Pressing it moves the answer on - unanswered → "Có" → "Không" → "Có"; there is no way back to
+unanswered, since the API has one write per cell and no delete. The moves collect in one draft over
+the whole grid (`clickCell`, `lib/grid-draft.ts`); a changed cell shows the draft's answer inside a
+`primary` ring, and the grid's `UnsavedChangesBar` ("N ô đã đổi · Huỷ · Lưu") writes them all at
+once. A partial failure keeps only the failed cells in the draft.
 
 The member card (`member-attendance-card`) answers the same two questions with the same two marks,
 as full `Button`s: a member sees their own day tiles and has room for the words, where the admin grid
 has one narrow column per day. A member gets **both**, in that order — the card they answer in, then
-the same guild-wide grid an admin sees, minus its action column (`AttendanceGrid isAdmin={false}`),
-so reading what everyone else picked never means being able to edit it. The picked side is filled — emerald for "Có", destructive for "Không"
+the same guild-wide grid an admin sees, its cells drawn as marks rather than buttons
+(`AttendanceGrid isAdmin={false}`), so reading what everyone else picked never means being able to
+edit it. The picked side is filled - emerald for "Có", destructive for "Không"
 — and the icon becomes a `Spinner` while that answer is being written.
 
 A member's tile **carries its own answer in its surface**: emerald for "Có", `destructive` for
@@ -434,19 +448,25 @@ because "still waiting for you" is neither a success nor a failure. The border t
 strength, the background at `/5`: a week of tiles is a lot of surface, and a fill as strong as the
 border would drown the text and the buttons on it.
 
-The answer owns the whole tile, which is why the member card is the one place that does **not** call
-`sessionTintClass` — a Guild War is still named there by `SessionLabel`'s swords, and by the tinted
-tile in the week timeline directly above.
+The answer owns the whole tile, which is why an answering tile does **not** call `sessionTintClass` —
+a Guild War is still named there by `SessionLabel`'s swords. An account with no character linked has
+no answer to show, so its tiles are read-only and take the tint instead.
 
-That card repeats the **week timeline's grid** (`grid gap-2 sm:grid-cols-2 lg:grid-cols-3`, the same
-tile frame and `sessionTintClass`), so a day keeps its column in both cards and the eye drops
-straight from the day to its two buttons. The answers close the tile, "Có" above "Không", each the
-full width of the tile — the widest possible target on a phone, and two equal buttons whose words are
-not. `mt-auto` on their column pins them to the bottom, so a longer subtitle cannot leave one tile's
-answers higher than its neighbour's.
+The member card is also **the week's schedule** ("Tuần này của bạn"): there is no separate timeline.
+Its header names the character and the week (`DateRange`), then says what is left to do - "Bạn còn
+**N trận** chưa điểm danh" (`countUnanswered`: open battles without an answer) or "Bạn đã điểm danh đủ
+tuần này". Each tile (`grid gap-2 sm:grid-cols-2 lg:grid-cols-3`) carries the battle, its subtitle,
+`SessionDeadline` and a "Còn hạn / Đã khoá" badge, then the answers. The answers close the tile,
+"Có" above "Không", each the full width of the tile - the widest possible target on a phone, and two
+equal buttons whose words are not. `mt-auto` on their column pins them to the bottom, so a longer
+subtitle cannot leave one tile's answers higher than its neighbour's.
+
+The absence reason under a "Không" (`absence-reason-input`) is saved by Enter or by its own small
+"Lưu", never by blur. While its text differs from the stored reason it shows that "Lưu" and a
+"chưa lưu" note, so clicking away never reads as saved; with nothing changed, Enter sends nothing.
 
 > Not to be confused with `status-badge.tsx`: a badge **has words** and is for descriptive labels
-> ("Đã khóa" / "Đang mở" on the week timeline), not for binary state.
+> ("Đã khoá" / "Còn hạn" on a member card tile), not for binary state.
 
 ### Guild class → an icon with a tooltip
 
@@ -488,11 +508,15 @@ Four screens show a battle by name, and all four recognise the Guild War the sam
 
 - `SessionLabel` is **one inline row** — the `Swords` icon when `isGuildWar`, `text-primary`, the
   backend-built `label`, in that order. `size` is `"sm"` (`size-3.5`, a narrow cell: the attendance
-  column head, a team builder tab) or `"md"` (`size-4`, a list row: the week timeline, the settings
+  column head, a team builder tab) or `"md"` (`size-4`, a list row: the member card, the settings
   schedule). Two named values, not a free `className` — a third size means adding a value here, not
   a class at the call site.
-- `SessionDeadline` is the whole `Hạn chót: …` line, wrapper class included. Only the week timeline
-  and the settings row show it.
+- `SessionDeadline` is the whole `Hạn chót: …` line, wrapper class included. Only the member card's
+  tiles and the settings row show it. While the battle is open it adds "· còn N ngày / giờ / phút"
+  (`DeadlineCountdown`, from `timeLeft` in `lib/time-left.ts`): the phrase keeps its own clock and
+  ticks once a minute, so nothing around it re-renders, and under a day left it turns semibold
+  `primary` (amber is "not answered", red is "Không"). The lock is still the API's
+  `isDeadlinePassed`; a client clock already past the deadline reads "sắp khoá", never "đã khoá".
 - `sessionTintClass(isGuildWar)` returns `border-primary/40 bg-primary/5` for the Guild War, to be
   merged into whatever frame the screen already draws.
 
@@ -544,9 +568,11 @@ battle day, one horizontal bar per guild class, three stacked segments.
   `<title>` in place of the avatar's tooltip and `alt`. It sits on an opaque `card` disc with the
   standard border: the images are transparent PNGs and would otherwise lose their edge on the Guild
   War card's tinted surface.
-- **A chart follows the roster search and the session picker, not the class and presence filters**:
-  those two are the chart's own axes, and filtering by them empties the very comparison the card is
-  for.
+- **A chart follows the page-wide week and session pickers only, and counts the whole guild.** The
+  filters on people - search, class, answer - narrow the history table and sit in that table's card
+  header (`attendance-history-filters`), while the week and the battle day stand above both
+  (`attendance-history-scope`): class and answer are the chart's own axes, and a filter placed
+  above a chart that ignores it reads as a bug.
 
 ### Control sizes
 
@@ -582,6 +608,10 @@ a selected state. The convention:
 - **Current page in the header nav** - *not* a primary surface: navigation is not an in-page
   selection. The item keeps its ghost button, takes `text-foreground`, a `jade` icon and a 2px
   `jade` bar under it (`main-nav.tsx`). Only colour and opacity change, so the row never shifts.
+  Below `sm` the header keeps only the seal and the avatar, and the same entries (`nav-items.ts`)
+  move to `mobile-tab-bar.tsx`, fixed to the bottom of the screen with a short name under each icon;
+  the jade bar sits on its top edge. Its height is reserved through `--app-bottom-inset`
+  (`globals.css`): the body pads by it and every sticky bottom bar sits above it.
 
 `--muted` and `--secondary` still carry *text* (`text-muted-foreground`) and badges; neither is a
 surface for signalling state.
@@ -644,6 +674,34 @@ outside one, call it directly.
 The `border-dashed` left in the app is the drag-and-drop drop-zone border (`member-pool`, `slot-cell`,
 `prefill-banner`), not an empty state.
 
+### A missing page or a crash → `app/not-found.tsx`, `app/error.tsx`
+
+Both are the app's own, inside the root layout (header, tab bar and footer stay): the guild seal
+at its `lg` size, a one-line heading in `font-heading`, one short sentence, and the way back to the
+attendance page. The error boundary adds "Thử lại", which calls `reset()`, and never prints the
+thrown message - it is written for developers; the `digest`, when there is one, is shown so an admin
+can quote it.
+
+### Unsaved work → a save bar pinned to the bottom
+
+A screen that builds a draft before writing it (the team builder, the attendance grid) keeps its Save and its discard
+button in **`components/shared/unsaved-changes-bar.tsx`**, rendered only while there is something to
+save: "N thay đổi chưa lưu · Đặt lại · Lưu", the save's error in place of the count. It is
+`sticky` at the end of the screen's column, `--app-bottom-inset` plus a small gap from the bottom
+(so it clears the phone's tab bar), so the button stays in reach wherever the page is scrolled,
+and **never `fixed`**: sticky leaves the last row of content uncovered, and it
+creates no containing block for the `position: fixed` elements of the screen (see *Entrance and
+data reveal*). The team builder also binds Ctrl+S / Cmd+S to the same save (`useSaveShortcut`).
+
+The actions that are not about saving (copy a line-up, announce on Discord) stay in the screen's
+toolbar at the top. An action that must not run on unsaved work is disabled while the draft is
+dirty and says why in a tooltip, rather than opening a dialog only to refuse.
+
+On the team builder the formation grid comes in two layouts (`FormationLayout`): `screen` keeps the
+formation banner to one line, since the day tab right above it already names the battle; `capture` -
+the image posted to Discord, read without the tabs around it - keeps five columns whatever the window
+and the tall banner as its only headline.
+
 ### Feedback after a write → a toast
 
 One `<Toaster position="top-center" theme="light" />` lives in `components/providers.tsx`; a screen
@@ -668,7 +726,8 @@ Which of the two feedback shapes:
   changes one button's fill, which is too quiet to read as "saved".
 - **A write inside a table or a dialog** → the inline error line that keeps its slot (see *Motion*,
   "A mutation error keeps its slot"). The row is already in view and a toast would pull the eye off
-  it — `attendance-grid` and `members-panel`.
+  it - `members-panel`. The attendance grid writes from its save bar instead, and the bar carries
+  the error in place of its count.
 
 ### Motion
 
@@ -688,14 +747,12 @@ Tailwind 4 has an `--ease-*` namespace, so `--ease-out-soft` gives the `ease-out
 content, and no `translate` on anything already in place. A transition that moves something is
 exactly what makes the layout jump. An element *arriving* may rise a few pixels as it fades in (see
 "Entrance and data reveal" below), because a transform does not reflow its neighbours. Beyond that,
-two exceptions. One is a popup in a portal (`SelectContent`, `DropdownMenuContent`,
-`DialogContent`): it sits outside the layout flow, so it may slide in. `SelectContent` rises from
-below (`data-open:slide-in-from-bottom-8`) over `--duration-slow`, and needs
+one exception: a popup in a portal (`SelectContent`, `DropdownMenuContent`, `DialogContent`) sits
+outside the layout flow, so it may slide in. `SelectContent` rises from below
+(`data-open:slide-in-from-bottom-8`) over `--duration-slow`, and needs
 `alignItemWithTrigger={false}` — in align-to-item mode the popup covers the trigger and its
-animation is switched off. The other is `AttendanceToggle`, whose buttons animate their width on
-hover (`--duration-base`); it is allowed only because it lives in a fixed-width slot (`w-32`), so
-the motion stops inside the cell and the table column never resizes. Animating geometry inside a
-table requires pinning the slot like that — otherwise the table jumps.
+animation is switched off. Animating geometry inside a table would need a fixed-width slot around
+it - otherwise the table jumps.
 
 `prefers-reduced-motion: reduce` is answered **once**, at the end of `globals.css`, for the whole app —
 never repeated at a call site.
@@ -715,7 +772,7 @@ there only duplicates the accessible name.
 
 **A mutation error keeps its slot.** An error line rendered above or below a table lives inside a
 wrapper with a fixed minimum height (`min-h-*`), so the error appearing does not push the table or the
-pagination bar down — see `members-panel` and `attendance-grid`.
+pagination bar down - see `members-panel`.
 
 ### Entrance and data reveal
 
@@ -736,7 +793,7 @@ Data arrives, it does not snap in. Four pieces, all CSS, in `app/globals.css` an
 - **The formation grid never reveals.** It is screenshotted for the Discord announcement and dragged
   over; a column caught mid-fade would be sent half transparent. The team builder gets the page
   entrance and nothing else.
-- Used today by `week-timeline`, `member-attendance-card`, `attendance-summary-dashboard` and
+- Used today by `member-attendance-card`, `attendance-summary-dashboard` and
   `session-list`. A new list of loaded data takes the same helper, never a delay of its own. A
   component without a `className` prop is wrapped (the dashboard wraps each card in a one-cell
   `grid`, so it still stretches to the row).
@@ -752,13 +809,17 @@ Data arrives, it does not snap in. Four pieces, all CSS, in `app/globals.css` an
 - `columns` must equal the header's `<th>` count. A table whose column count follows the data must
   pin that count in **one** variable shared by header and body — see `attendance-grid`.
 - A column only some viewers get (an action column behind a role) disappears from the **header, the
-  row and `columns` together**, on one flag passed to both — `attendance-grid` drops its "Điểm danh"
-  column for a member through `AttendanceRow`'s `canEdit`. Rendering a disabled or empty cell instead
-  keeps a column that says nothing; leaving `columns` behind breaks every `colSpan` in
-  `table-body-state`.
+  row and `columns` together**, on one flag passed to both. Rendering a disabled or empty cell
+  instead keeps a column that says nothing; leaving `columns` behind breaks every `colSpan` in
+  `table-body-state`. (The attendance grid no longer has one: an admin presses the cells.)
+- A row that summarises the columns (the attendance grid's "Cả bang" totals) is a second header row
+  of `td` cells: it stays in view above the rows, and it adds no `th` to the column count.
 - Paging → `use-table-pagination` (client-side, resets to page 1 when the filter changes) rendered
   with `table-pagination-bar` / `page-size-select`. The pagination bar **always** renders, even at one
-  page, so filtering does not move the layout.
+  page, so filtering does not move the layout. Below `sm` the page numbers hide and only the four
+  arrows stay: eleven cells of `size-10` are wider than a phone, and a strip that overflows the page
+  widens the whole layout viewport - the phone then zooms out, and the fixed tab bar lands below the
+  fold. The "trang x/y" count beside it still says where you are.
 
 ---
 

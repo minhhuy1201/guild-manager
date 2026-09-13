@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Be_Vietnam_Pro, Noto_Serif } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { SiteFooter } from "@/components/shared/site-footer";
@@ -24,6 +24,14 @@ const notoSerif = Noto_Serif({
 export const metadata: Metadata = {
   title: "Mèo Mập Giang Hồ",
   description: "Điểm danh bang hội — Mèo Mập Giang Hồ",
+};
+
+// `viewportFit: "cover"` makes iOS report the home indicator's height through
+// `env(safe-area-inset-bottom)`, which the phone's tab bar pads by; without it the value is 0.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

@@ -24,27 +24,27 @@ const DEFAULT_TEAM_COLORS: TeamColors = {
  * hue of its own. Text stays `foreground` on every header: the tints are too light to need inverting.
  */
 const JADE: TeamColors = {
-  header: "bg-jade/20 text-foreground",
-  border: "border-jade/40",
-  background: "bg-jade/5",
+  header: "bg-jade/30 text-foreground",
+  border: "border-jade/60",
+  background: "bg-jade/10",
 };
 
 const STONE: TeamColors = {
-  header: "bg-foreground/10 text-foreground",
-  border: "border-foreground/20",
-  background: "bg-foreground/[0.03]",
+  header: "bg-foreground/15 text-foreground",
+  border: "border-foreground/30",
+  background: "bg-foreground/[0.06]",
 };
 
 const NAVY: TeamColors = {
-  header: "bg-primary/15 text-foreground",
-  border: "border-primary/30",
-  background: "bg-primary/5",
+  header: "bg-primary/25 text-foreground",
+  border: "border-primary/50",
+  background: "bg-primary/10",
 };
 
 const GOLD: TeamColors = {
-  header: "bg-gold/30 text-foreground",
-  border: "border-gold/60",
-  background: "bg-gold/10",
+  header: "bg-gold/45 text-foreground",
+  border: "border-gold/80",
+  background: "bg-gold/20",
 };
 
 /**

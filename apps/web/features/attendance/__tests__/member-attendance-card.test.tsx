@@ -24,6 +24,11 @@ const boardState = {
   refetch: vi.fn(),
 };
 
+const WEEK = {
+  weekStart: "2026-08-24T00:00:00.000Z",
+  weekEnd: "2026-08-30T00:00:00.000Z",
+};
+
 let character: Character | null = CHARACTER;
 let sessions: BattleSession[] = [];
 let records: Record<string, AttendanceRecord> = {};
@@ -49,6 +54,7 @@ vi.mock("../hooks/use-deadline-refresh", () => ({
   useDeadlineRefresh: () => {},
 }));
 vi.mock("../hooks/use-attendance", () => ({
+  useCurrentWeek: () => ({ data: WEEK }),
   useBattleSessions: () => ({ data: sessions }),
   useAttendanceRecords: () => ({ data: records }),
   useMarkAttendance: () => markState,
@@ -153,7 +159,8 @@ describe("MemberAttendanceCard", () => {
     toastError.mockClear();
   });
 
-  it("tài khoản chưa gắn nhân vật thì chỉ thấy lời nhắn, không thấy ô ngày nào", () => {
+  // Thẻ này đã gánh luôn lịch tuần, nên tài khoản chưa có nhân vật vẫn phải thấy lịch.
+  it("tài khoản chưa gắn nhân vật vẫn thấy lịch tuần, chỉ đọc, kèm lời nhắn", () => {
     character = null;
 
     render(<MemberAttendanceCard />);
@@ -163,15 +170,52 @@ describe("MemberAttendanceCard", () => {
         "Tài khoản chưa được gán nhân vật, liên hệ quản trị viên."
       )
     ).toBeTruthy();
-    expect(screen.queryByText("Trận sess-1")).toBeNull();
+    expect(screen.getByText("Trận sess-1")).toBeTruthy();
+    expect(tileOf("sess-1").querySelectorAll("button")).toHaveLength(0);
   });
 
-  it("tuần chưa có trận nào thì báo rỗng dưới tên nhân vật", () => {
+  it("tiêu đề là tuần này của bạn, kèm tên nhân vật và khoảng tuần", () => {
+    render(<MemberAttendanceCard />);
+
+    expect(screen.getByText("Tuần này của bạn")).toBeTruthy();
+    expect(document.body.textContent).toContain("Mèo Mập");
+    expect(document.body.textContent).toContain("24/08/2026");
+    expect(document.body.textContent).toContain("30/08/2026");
+  });
+
+  it("nói còn bao nhiêu trận chưa điểm danh", () => {
+    sessions = [
+      makeSession("sess-1"),
+      makeSession("sess-2"),
+      makeSession("sess-3", { isDeadlinePassed: true }),
+    ];
+
+    render(<MemberAttendanceCard />);
+
+    expect(document.body.textContent).toContain("Bạn còn 2 trận chưa điểm danh");
+  });
+
+  it("trả lời đủ thì nói đã điểm danh đủ tuần này", () => {
+    records = makeRecords("sess-1", true);
+
+    render(<MemberAttendanceCard />);
+
+    expect(document.body.textContent).toContain("Bạn đã điểm danh đủ tuần này");
+  });
+
+  it("mỗi ô ngày có hạn chót và trạng thái còn hạn", () => {
+    render(<MemberAttendanceCard />);
+
+    expect(tileOf("sess-1").textContent).toContain("Hạn chót:");
+    expect(tileOf("sess-1").textContent).toContain("Còn hạn");
+  });
+
+  it("tuần chưa có trận nào thì báo rỗng", () => {
     sessions = [];
 
     render(<MemberAttendanceCard />);
 
-    expect(screen.getByText("Điểm danh của Mèo Mập")).toBeTruthy();
+    expect(screen.getByText("Tuần này của bạn")).toBeTruthy();
     expect(screen.getByText("Tuần này chưa có trận nào.")).toBeTruthy();
   });
 
@@ -362,9 +406,9 @@ describe("MemberAttendanceCard", () => {
     render(<MemberAttendanceCard />);
 
     const input = screen.getByLabelText("Lý do vắng") as HTMLInputElement;
-    expect(input.placeholder).toBe("Lý do vắng — Enter để lưu");
+    expect(input.placeholder).toBe("Lý do vắng - Enter để lưu");
     expect(input.title).toBe(
-      "Nhập lý do rồi bấm Enter để lưu. Bỏ trống cũng được, Esc để huỷ thay đổi."
+      "Nhập lý do rồi bấm Enter hoặc nút Lưu để lưu. Bỏ trống cũng được, Esc để huỷ thay đổi."
     );
   });
 
@@ -409,6 +453,21 @@ describe("MemberAttendanceCard", () => {
     expect(markState.mutateAsync).not.toHaveBeenCalled();
   });
 
+  it("Enter khi lý do chưa đổi thì không gửi gì", async () => {
+    records = makeRecords("sess-1", false, "Bận đi công tác");
+
+    render(<MemberAttendanceCard />);
+
+    const input = screen.getByLabelText("Lý do vắng");
+    fireEvent.change(input, { target: { value: " Bận đi công tác " } });
+    await act(async () => {
+      fireEvent.keyDown(input, { key: "Enter" });
+    });
+
+    expect(markState.mutateAsync).not.toHaveBeenCalled();
+    expect(toastSuccess).not.toHaveBeenCalled();
+  });
+
   it("lưu lỗi thì giữ nguyên chữ đang gõ để không phải gõ lại", async () => {
     records = makeRecords("sess-1", false);
     markState.mutateAsync = vi
@@ -425,6 +484,64 @@ describe("MemberAttendanceCard", () => {
 
     expect(toastError).toHaveBeenCalledWith("Đã quá hạn điểm danh ngày này.");
     expect(input.value).toBe("Ốm");
+  });
+
+  // Click ra ngoài là chuyện vô tình: không lưu, nhưng cũng không được để người dùng tưởng đã lưu.
+  it("gõ lý do rồi click ra ngoài thì chữ vẫn còn, kèm nút Lưu và chữ chưa lưu", () => {
+    records = makeRecords("sess-1", false);
+
+    render(<MemberAttendanceCard />);
+
+    const input = screen.getByLabelText("Lý do vắng") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "Ốm" } });
+    fireEvent.blur(input);
+
+    expect(input.value).toBe("Ốm");
+    expect(screen.getByText("chưa lưu")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Lưu lý do" })).toBeTruthy();
+    expect(markState.mutateAsync).not.toHaveBeenCalled();
+  });
+
+  it("bấm Lưu gửi lý do kèm câu trả lời Không", async () => {
+    records = makeRecords("sess-1", false);
+
+    render(<MemberAttendanceCard />);
+
+    fireEvent.change(screen.getByLabelText("Lý do vắng"), {
+      target: { value: "Ốm" },
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Lưu lý do" }));
+    });
+
+    expect(markState.mutateAsync).toHaveBeenCalledWith({
+      characterId: "char-1",
+      sessionId: "sess-1",
+      isPresent: false,
+      reason: "Ốm",
+    });
+  });
+
+  it("lưu xong thì nút Lưu và chữ chưa lưu biến mất", () => {
+    records = makeRecords("sess-1", false);
+    const { rerender } = render(<MemberAttendanceCard />);
+    fireEvent.change(screen.getByLabelText("Lý do vắng"), {
+      target: { value: "Ốm" },
+    });
+
+    records = makeRecords("sess-1", false, "Ốm");
+    rerender(<MemberAttendanceCard />);
+
+    expect(screen.queryByText("chưa lưu")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Lưu lý do" })).toBeNull();
+  });
+
+  it("chưa sửa gì thì không có nút Lưu", () => {
+    records = makeRecords("sess-1", false, "Bận đi công tác");
+
+    render(<MemberAttendanceCard />);
+
+    expect(screen.queryByRole("button", { name: "Lưu lý do" })).toBeNull();
   });
 
   it("ngày đã khoá thì chỉ hiện lý do dạng chữ, không có ô nhập", () => {

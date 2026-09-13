@@ -46,6 +46,30 @@ function unassign(assignment: Assignment, slotId: string): Assignment {
 }
 
 /**
+ * Empty every slot held by one of the given characters, sending them back to
+ * the pool - the "Gỡ ra" of the dropped-out banner.
+ * @param assignment - Current assignment
+ * @param characterIds - Characters to take out of the formation
+ * @returns A new assignment, or `assignment` itself when none of them was placed
+ */
+export function removeCharacters(
+  assignment: Assignment,
+  characterIds: Set<string>
+): Assignment {
+  const heldSlotIds = Object.entries(assignment)
+    .filter(([, characterId]) => characterId !== null && characterIds.has(characterId))
+    .map(([slotId]) => slotId);
+
+  // Same contract as applyDrop: an untouched reference tells the caller nothing changed.
+  if (heldSlotIds.length === 0) return assignment;
+
+  const next = { ...assignment };
+  for (const slotId of heldSlotIds) next[slotId] = null;
+
+  return next;
+}
+
+/**
  * Exchange the occupants of two slots.
  * @param assignment - Current assignment
  * @param slotIdA - First slot
