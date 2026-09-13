@@ -19,8 +19,7 @@ The design should feel like:
 - 20% wuxia atmosphere
 - 10% Nghịch Thuỷ Hàn identity
 
-The original brief (`prompt.md`, 85/10/5, no background imagery) was extended by the guild on
-2026-09-13: the first minimal pass read as too plain, so each page now opens on a scene from the
+The original brief (85/10/5, no background imagery) was extended by the guild on 2026-09-13: the first minimal pass read as too plain, so each page now opens on a scene from the
 game, and data arrives with motion instead of snapping in. Usability and information clarity still
 win over immersion.
 
@@ -51,6 +50,9 @@ saturation.
   never sits on a picture.
 - **The login page** is the one full-screen scene, behind a translucent card.
 - Pictures fade in over their dominant colour; they never pop in on a white box.
+- The site is public, so the artwork is credited to NetEase in the footer of every page, with a line
+  saying the site is a non-commercial guild page not affiliated with NetEase. A credit is not a
+  licence: if NetEase asks, the pictures come down (they are all listed in `lib/page-banners.ts`).
 - Scenes come from the game (`apps/web/public/img/bg/`); the crop keeps the game's logo out of the
   strip on wide screens.
 
@@ -81,5 +83,5 @@ Motion says "the data is arriving", nothing more:
 - Infinite animations other than the skeleton's shimmer
 - Sacrificing usability for immersion
 
-The source brief is `prompt.md` at the repository root, as extended above; this file is its
-binding summary.
+This file is the binding design brief; the plans in `docs/custom-plan/2026-09-13-*` record how it
+was reached.
