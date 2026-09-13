@@ -1,6 +1,6 @@
 # Plan: redesign "minimal wuxia" cho apps/web
 
-Nguồn: `prompt.md` (chuẩn) và `docs/design-direction.md` (bản tóm tắt có tính ràng buộc).
+Nguồn: brief ban đầu `prompt.md` (đã xoá ở #106, nội dung được giữ lại trong `docs/design-direction.md`) và `docs/design-direction.md` (bản có tính ràng buộc).
 
 ## Mục tiêu
 
