@@ -280,6 +280,11 @@ into one store.
 its create button, with the same labels turned `sr-only`. A real difference in *content* still stays
 outside the component — the create button is members' own JSX, not a prop.
 
+**A table's filters sit in the header of the table's own card**, never in a card of their own
+above it: `attendance-filters` in the attendance grid, `attendance-history-filters` in the history
+table. A filter that acts on a whole page (the history screen's week and battle day) stands above
+everything it acts on, in its own card (`attendance-history-scope`).
+
 A screen that stacks several filters ends its bar with **one "Xoá bộ lọc" button that clears all of
 them in a single store write** — `attendance-history-filters` is the worked example, resetting the
 roster filter, the presence and the session at once. The button is always rendered and `disabled`
@@ -379,6 +384,10 @@ right (the team builder's week picker), and the `OrnamentDivider` (a hairline wi
 diamond, `surface="image"`) closing the block. A section title inside a card is an `<h2>`, in the
 sans face.
 
+- **`size` is required** (`tall` | `compact`), so no page inherits a height by accident. `tall` is
+  the attendance page's, where members land from a Discord link; `compact` is the daily tools'
+  (history, team builder, settings), where the tall strip left almost a third of a phone's screen
+  to decoration. Same scene, same scrims, same title size - only the strip and its padding shrink.
 - **`banner` is required** and names an entry of `PAGE_BANNERS` (`lib/page-banners.ts`): the
   picture, the `objectPosition` that crops the game's logo out of the strip on a wide screen, and
   the `tint` shown while it loads. A new page adds its scene there; the pictures live in
@@ -503,7 +512,11 @@ Four screens show a battle by name, and all four recognise the Guild War the sam
   schedule). Two named values, not a free `className` — a third size means adding a value here, not
   a class at the call site.
 - `SessionDeadline` is the whole `Hạn chót: …` line, wrapper class included. Only the member card's
-  tiles and the settings row show it.
+  tiles and the settings row show it. While the battle is open it adds "· còn N ngày / giờ / phút"
+  (`DeadlineCountdown`, from `timeLeft` in `lib/time-left.ts`): the phrase keeps its own clock and
+  ticks once a minute, so nothing around it re-renders, and under a day left it turns semibold
+  `primary` (amber is "not answered", red is "Không"). The lock is still the API's
+  `isDeadlinePassed`; a client clock already past the deadline reads "sắp khoá", never "đã khoá".
 - `sessionTintClass(isGuildWar)` returns `border-primary/40 bg-primary/5` for the Guild War, to be
   merged into whatever frame the screen already draws.
 
@@ -555,9 +568,11 @@ battle day, one horizontal bar per guild class, three stacked segments.
   `<title>` in place of the avatar's tooltip and `alt`. It sits on an opaque `card` disc with the
   standard border: the images are transparent PNGs and would otherwise lose their edge on the Guild
   War card's tinted surface.
-- **A chart follows the roster search and the session picker, not the class and presence filters**:
-  those two are the chart's own axes, and filtering by them empties the very comparison the card is
-  for.
+- **A chart follows the page-wide week and session pickers only, and counts the whole guild.** The
+  filters on people - search, class, answer - narrow the history table and sit in that table's card
+  header (`attendance-history-filters`), while the week and the battle day stand above both
+  (`attendance-history-scope`): class and answer are the chart's own axes, and a filter placed
+  above a chart that ignores it reads as a bug.
 
 ### Control sizes
 
@@ -658,6 +673,14 @@ outside one, call it directly.
 
 The `border-dashed` left in the app is the drag-and-drop drop-zone border (`member-pool`, `slot-cell`,
 `prefill-banner`), not an empty state.
+
+### A missing page or a crash → `app/not-found.tsx`, `app/error.tsx`
+
+Both are the app's own, inside the root layout (header, tab bar and footer stay): the guild seal
+at its `lg` size, a one-line heading in `font-heading`, one short sentence, and the way back to the
+attendance page. The error boundary adds "Thử lại", which calls `reset()`, and never prints the
+thrown message - it is written for developers; the `digest`, when there is one, is shown so an admin
+can quote it.
 
 ### Unsaved work → a save bar pinned to the bottom
 

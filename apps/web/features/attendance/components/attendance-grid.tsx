@@ -34,6 +34,7 @@ import { getSessionSubtitle } from "../lib/session-subtitle";
 import { STICKY_NAME_COLUMN } from "../lib/sticky-columns";
 import { countUnanswered } from "../lib/unanswered";
 import { useAttendanceFilterStore } from "../store/attendance-filter-store";
+import { AttendanceFilters } from "./attendance-filters";
 import { AttendanceRow } from "./attendance-row";
 import { AttendanceStatusIcon } from "./attendance-status-icon";
 
@@ -216,8 +217,9 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="gap-4">
         <CardTitle>Điểm danh theo ngày đánh</CardTitle>
+        <AttendanceFilters scope="attendance" />
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         {!state.isError && !state.isPending && battleSessions.length > 0 && (
