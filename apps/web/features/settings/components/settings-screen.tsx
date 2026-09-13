@@ -49,13 +49,11 @@ export function SettingsScreen() {
       <CardContent className="flex flex-col gap-4">
         <QueryBoundary state={state} skeleton={<SettingsSkeleton />}>
           <>
-            <div>
-              <h2 className="text-lg font-semibold">Thiết lập lịch đánh</h2>
-              <p className="text-sm text-muted-foreground">
-                Sửa được lịch của tuần này và tuần sau. Trận Bang Chiến do hệ
-                thống tạo sẵn, chỉ đổi được giờ đánh.
-              </p>
-            </div>
+            {/* No heading: the tab right above already names the panel. */}
+            <p className="text-sm text-muted-foreground">
+              Sửa được lịch của tuần này và tuần sau. Trận Bang Chiến do hệ thống
+              tạo sẵn, chỉ đổi được giờ đánh.
+            </p>
 
             <div className="flex flex-wrap items-center justify-between gap-2">
               <WeekSelector

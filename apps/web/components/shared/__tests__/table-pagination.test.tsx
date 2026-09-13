@@ -86,6 +86,26 @@ describe("TablePagination", () => {
     expect(atPageOne).toBeGreaterThan(-1);
   });
 
+  // Mười một ô size-10 rộng hơn màn điện thoại: dải số tràn ra làm cả trang bị thu nhỏ, và thanh
+  // tab cố định ở đáy rơi xuống dưới màn hình. Vị trí trang đã có dòng "trang x/y" bên cạnh nói.
+  it("dưới sm chỉ còn bốn nút mũi tên, các ô số trang đều ẩn", () => {
+    const { container } = render(
+      <TablePagination page={4} pageCount={8} onPageChange={() => {}} />
+    );
+    const items = Array.from(container.querySelectorAll("li"));
+    const arrows = items.filter((item) => item.querySelector("[aria-label]"));
+    const slots = items.filter((item) => !item.querySelector("[aria-label]"));
+
+    expect(arrows).toHaveLength(4);
+    expect(arrows.some((item) => item.className.includes("max-sm:hidden"))).toBe(
+      false
+    );
+    expect(slots).toHaveLength(TOTAL_SLOTS);
+    expect(slots.every((item) => item.className.includes("max-sm:hidden"))).toBe(
+      true
+    );
+  });
+
   it("vẫn render khi chỉ có một trang, bốn nút điều hướng đều bị chặn", () => {
     render(<TablePagination page={1} pageCount={1} onPageChange={() => {}} />);
 

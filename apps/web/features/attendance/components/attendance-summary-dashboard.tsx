@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import type { Character } from "@guild/shared/schemas";
 
 import { EmptyState } from "@/components/shared/empty-state";
 import { QueryBoundary } from "@/components/shared/query-boundary";
@@ -10,37 +11,40 @@ import { REVEAL_CLASS, revealStyle } from "@/lib/motion";
 import { useAttendanceBoard } from "../hooks/use-attendance-board";
 import {
   useAttendanceRecords,
-  useFilteredCharacters,
+  useCharacters,
   useHistoryWeek,
   useSessionFilter,
 } from "../hooks/use-attendance";
 import { maxClassSize, summarizeByClass } from "../lib/attendance-summary";
 import { AttendanceSummaryCard } from "./attendance-summary-card";
 
-/** The scope whose filters this dashboard follows — the History screen's. */
-const SCOPE = "history";
-
-/** Grid of the week's days, the same one the week timeline and the member card use. */
+/** Grid of the week's days, the same one the member card uses. */
 const GRID = "grid gap-4 sm:grid-cols-2 lg:grid-cols-3";
 
 /** Placeholder cards while loading — as many as a week usually has sessions. */
 const SKELETON_CARDS = 3;
 
+/** Stable stand-in while the roster has not loaded, so the memos below do not rerun. */
+const EMPTY_ROSTER: Character[] = [];
+
 /**
  * Per-class attendance for every battle day of the selected week: one card per day, seven horizontal
  * bars per card.
  *
- * It follows the screen's roster search and its session picker, but deliberately not its class and
- * presence filters: those two are the chart's own axes — filtering by class would leave a single
- * bar, filtering by presence would drop the segments the card exists to compare.
+ * It counts the whole guild and follows only the page-wide pickers above it, the week and the
+ * battle day. The filters on people - search, class, answer - narrow the history table instead and
+ * sit in its header: the chart answers "how many of the guild are coming, by class", and a name, a
+ * class or an answer filtered out of that would empty the very comparison the card is for.
  * @returns The dashboard grid, or the loading/error/empty branch
  */
 export function AttendanceSummaryDashboard() {
   const { weekStart } = useHistoryWeek();
   const { data: records } = useAttendanceRecords(weekStart);
   const { sessions, selectedSession } = useSessionFilter(weekStart);
-  const characters = useFilteredCharacters(SCOPE);
+  const { data: roster } = useCharacters();
   const state = useAttendanceBoard(weekStart);
+
+  const characters = roster ?? EMPTY_ROSTER;
 
   const shownSessions = useMemo(
     () => (selectedSession ? [selectedSession] : sessions),
@@ -75,7 +79,7 @@ export function AttendanceSummaryDashboard() {
               message={
                 shownSessions.length === 0
                   ? "Tuần này chưa có ngày đánh nào."
-                  : "Không có thành viên phù hợp với bộ lọc."
+                  : "Bang chưa có thành viên nào."
               }
             />
           </CardContent>

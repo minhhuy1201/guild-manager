@@ -1,28 +1,30 @@
 "use client";
 
-import { useState } from "react";
-import { Swords, X } from "lucide-react";
+import { Clock, Lock, Swords, X } from "lucide-react";
 import { attendanceLabel } from "@guild/shared/enums";
-import {
-  ATTENDANCE_REASON_MAX_LENGTH,
-  type BattleSession,
-} from "@guild/shared/schemas";
+import type { AttendanceRecord, BattleSession } from "@guild/shared/schemas";
 
+import { DateRange } from "@/components/shared/date-range";
 import { EmptyState } from "@/components/shared/empty-state";
 import { QueryBoundary } from "@/components/shared/query-boundary";
-import { SessionLabel } from "@/components/shared/session-label";
+import {
+  SessionDeadline,
+  SessionLabel,
+  sessionTintClass,
+} from "@/components/shared/session-label";
 import { Spinner } from "@/components/shared/spinner";
+import { StatusBadge } from "@/components/shared/status-badge";
 import { toastError, toastSuccess } from "@/components/shared/toast";
 import { useSessionRecovery } from "@/hooks/use-session-recovery";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useSession } from "@/features/auth";
 import { ApiError } from "@/lib/api-client";
 import { REVEAL_CLASS, revealStyle } from "@/lib/motion";
@@ -32,10 +34,13 @@ import { useDeadlineRefresh } from "../hooks/use-deadline-refresh";
 import {
   useAttendanceRecords,
   useBattleSessions,
+  useCurrentWeek,
   useMarkAttendance,
 } from "../hooks/use-attendance";
 import { getSessionSubtitle } from "../lib/session-subtitle";
 import { recordKey } from "../lib/record-key";
+import { countUnanswered } from "../lib/unanswered";
+import { AbsenceReasonInput } from "./absence-reason-input";
 
 /** The two options of an attendance entry, in display order. */
 const CHOICES = [true, false];
@@ -46,15 +51,9 @@ const SKELETON_ROWS = 3;
 /** Shown when the write fails with something other than an `ApiError`. */
 const FALLBACK_ERROR_MESSAGE = "Không điểm danh được, thử lại giúp mình.";
 
-/**
- * Placeholder of the reason field. It names the key rather than describing the field, because the
- * field is the only control on this screen that a click does not save.
- */
-const REASON_PLACEHOLDER = "Lý do vắng — Enter để lưu";
-
-/** The whole contract of the reason field, shown as a tooltip and as the native `title`. */
-const REASON_HINT =
-  "Nhập lý do rồi bấm Enter để lưu. Bỏ trống cũng được, Esc để huỷ thay đổi.";
+/** Shown in place of the summary to an account no admin has linked to a character yet. */
+const NO_CHARACTER_MESSAGE =
+  "Tài khoản chưa được gán nhân vật, liên hệ quản trị viên.";
 
 /**
  * Surface of a day tile, by the answer recorded for it: the tile says its own state before a single
@@ -65,9 +64,9 @@ const REASON_HINT =
  * week of tiles is a lot of surface, and a fill as strong as the border would drown the text and
  * the buttons sitting on it.
  *
- * This is why the member tile does not take `sessionTintClass` the way the week timeline does — the
- * answer owns both the border and the fill, and the Guild War is still named by `SessionLabel`'s
- * swords and by the tinted tile in the timeline right above.
+ * This is why an answering tile does not take `sessionTintClass` — the answer owns both the border
+ * and the fill, and the Guild War is still named by `SessionLabel`'s swords. A tile with nobody to
+ * answer for (no character linked) has no answer to show, so it takes the tint instead.
  */
 const TILE_TONE = {
   co: "border-emerald-500 bg-emerald-500/5",
@@ -75,12 +74,22 @@ const TILE_TONE = {
   chuaTraLoi: "border-amber-500 bg-amber-500/5",
 } as const;
 
+/** The mutation's current variables — which session and which answer are being written. */
+type PendingWrite = { sessionId: string; isPresent: boolean } | undefined;
+
 /**
- * The member's attendance screen: their own character only, one row per session.
- * @returns The personal attendance card
+ * The member's week: the schedule of the open week and their own answers, in one card. It used to
+ * be two grids of the same day tiles — a read-only timeline, then this card with the buttons — so
+ * a member opened the page onto the same week twice. Now every tile carries the day, its deadline,
+ * whether it is still open, and the answer.
+ *
+ * An account with no character linked still needs the schedule, so it sees the same tiles read-only
+ * under a line telling it to ask an admin.
+ * @returns The "Tuần này của bạn" card
  */
 export function MemberAttendanceCard() {
   const { data: session } = useSession();
+  const { data: week } = useCurrentWeek();
   const { data: sessions } = useBattleSessions();
   const { data: records } = useAttendanceRecords();
   const { mutateAsync: mark, isPending, variables } = useMarkAttendance();
@@ -170,122 +179,220 @@ export function MemberAttendanceCard() {
         </Card>
       }
     >
-      {character === null ? (
-        <Card>
-          <CardContent>
-            <EmptyState message="Tài khoản chưa được gán nhân vật, liên hệ quản trị viên." />
-          </CardContent>
-        </Card>
-      ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle>Điểm danh của {character.name}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {battleSessions.length === 0 ? (
-              <EmptyState message="Tuần này chưa có trận nào." />
-            ) : (
-              // The week timeline's own grid, so a day sits in the same column in both cards and
-              // the eye travels straight down from the day to its two buttons.
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {battleSessions.map((battleSession, index) => {
-                  const current =
-                    recordMap[recordKey(character.id, battleSession.id)]
-                      ?.isPresent ?? null;
-                  const savedReason =
-                    recordMap[recordKey(character.id, battleSession.id)]
-                      ?.reason ?? "";
-                  // `null` is "not answered yet", and `false` is a real answer — so the branch on
-                  // null has to come first.
-                  const tileTone =
-                    current === null
-                      ? TILE_TONE.chuaTraLoi
-                      : current
-                        ? TILE_TONE.co
-                        : TILE_TONE.khong;
-
-                  return (
-                    <div
-                      key={battleSession.id}
-                      className={cn(
-                        "flex flex-col gap-1.5 rounded-lg border p-3",
-                        tileTone,
-                        REVEAL_CLASS
-                      )}
-                      style={revealStyle(index)}
-                    >
-                      <SessionLabel session={battleSession} size="md" />
-                      {getSessionSubtitle(battleSession) && (
-                        <p className="text-sm text-muted-foreground">
-                          {getSessionSubtitle(battleSession)}
-                        </p>
-                      )}
-
-                      {/* `mt-auto` pins the answers to the bottom, so a day with a longer
-                          subtitle does not leave its buttons higher than its neighbour's. */}
-                      <div className="mt-auto flex flex-col gap-2 pt-2">
-                        {battleSession.isDeadlinePassed ? (
-                          <>
-                            <span className="text-center text-sm text-muted-foreground">
-                              Đã khoá
-                            </span>
-                            {savedReason !== "" && (
-                              <span className="text-center text-sm text-muted-foreground italic">
-                                Lý do: {savedReason}
-                              </span>
-                            )}
-                          </>
-                        ) : (
-                          <>
-                            {CHOICES.map((isPresent) => (
-                              <AttendanceChoiceButton
-                                key={String(isPresent)}
-                                isPresent={isPresent}
-                                isSelected={current === isPresent}
-                                isSaving={
-                                  isPending &&
-                                  variables?.sessionId === battleSession.id &&
-                                  variables.isPresent === isPresent
-                                }
-                                // Both answers of every day wait: a second write while one is in
-                                // flight would leave the spinner on the wrong button.
-                                disabled={isPending}
-                                onSelect={() =>
-                                  void handleMark(battleSession, isPresent)
-                                }
-                              />
-                            ))}
-                            {current === false && (
-                              // Remounting on the stored value resets the field once a save lands,
-                              // while a failed save keeps the typed text — the stored value did not
-                              // change, so there is no remount.
-                              <AbsenceReasonInput
-                                key={`${battleSession.id}:${savedReason}`}
-                                savedReason={savedReason}
-                                disabled={isPending}
-                                onSubmit={(reason) =>
-                                  void handleSaveReason(battleSession, reason)
-                                }
-                              />
-                            )}
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+      <Card>
+        <CardHeader>
+          <CardTitle>Tuần này của bạn</CardTitle>
+          {/* No separator between the two: on a phone the pair wraps, and a dot left hanging at
+              the end of the first line reads as a typo. */}
+          <CardDescription className="flex flex-wrap items-center gap-x-3">
+            {character ? <span>{character.name}</span> : null}
+            {week ? (
+              <DateRange start={week.weekStart} end={week.weekEnd} withYear />
+            ) : null}
+          </CardDescription>
+          {battleSessions.length > 0 ? (
+            <WeekSummary
+              unanswered={
+                character
+                  ? countUnanswered(battleSessions, recordMap, character.id)
+                  : null
+              }
+            />
+          ) : null}
+        </CardHeader>
+        <CardContent>
+          {battleSessions.length === 0 ? (
+            <EmptyState message="Tuần này chưa có trận nào." />
+          ) : (
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {battleSessions.map((battleSession, index) => (
+                <DayTile
+                  key={battleSession.id}
+                  battleSession={battleSession}
+                  index={index}
+                  record={
+                    character
+                      ? recordMap[recordKey(character.id, battleSession.id)]
+                      : undefined
+                  }
+                  canAnswer={character !== null}
+                  isPending={isPending}
+                  pendingWrite={variables}
+                  onMark={(isPresent) =>
+                    void handleMark(battleSession, isPresent)
+                  }
+                  onSaveReason={(reason) =>
+                    void handleSaveReason(battleSession, reason)
+                  }
+                />
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </QueryBoundary>
+  );
+}
+
+interface WeekSummaryProps {
+  /** Open battles the member has not answered; null when no character is linked */
+  unanswered: number | null;
+}
+
+/**
+ * The line under the card's title: what is left to do this week, or why there is nothing to do.
+ * @param unanswered - Open battles left to answer, null when no character is linked
+ * @returns The summary line
+ */
+function WeekSummary({ unanswered }: WeekSummaryProps) {
+  if (unanswered === null) {
+    return <p className="text-sm text-muted-foreground">{NO_CHARACTER_MESSAGE}</p>;
+  }
+
+  if (unanswered === 0) {
+    return <p className="text-sm">Bạn đã điểm danh đủ tuần này.</p>;
+  }
+
+  return (
+    <p className="text-sm">
+      Bạn còn <strong className="font-semibold">{unanswered} trận</strong> chưa
+      điểm danh.
+    </p>
+  );
+}
+
+interface DayTileProps {
+  /** Battle this tile shows */
+  battleSession: BattleSession;
+  /** Position in the week, for the staggered entrance */
+  index: number;
+  /** The member's recorded answer, undefined when there is none or no character */
+  record: Pick<AttendanceRecord, "isPresent" | "reason"> | undefined;
+  /** Whether a character is linked, so there is someone to answer for */
+  canAnswer: boolean;
+  /** Whether any attendance write is in flight */
+  isPending: boolean;
+  /** Which session and answer that write is for */
+  pendingWrite: PendingWrite;
+  /** Record an answer for this battle */
+  onMark: (isPresent: boolean) => void;
+  /** Save the absence reason for this battle */
+  onSaveReason: (reason: string) => void;
+}
+
+/**
+ * One battle day of the week: its name, subtitle, deadline and open/locked badge, then the
+ * member's two answers while the day is open — or the reason already given once it is locked.
+ * @param battleSession - Battle this tile shows
+ * @param index - Position in the week
+ * @param record - The member's recorded answer
+ * @param canAnswer - Whether a character is linked
+ * @param isPending - Whether a write is in flight
+ * @param pendingWrite - Which session and answer that write is for
+ * @param onMark - Record an answer
+ * @param onSaveReason - Save the absence reason
+ * @returns The tile
+ */
+function DayTile({
+  battleSession,
+  index,
+  record,
+  canAnswer,
+  isPending,
+  pendingWrite,
+  onMark,
+  onSaveReason,
+}: DayTileProps) {
+  const current = record?.isPresent ?? null;
+  const savedReason = record?.reason ?? "";
+  const isLocked = battleSession.isDeadlinePassed;
+  const subtitle = getSessionSubtitle(battleSession);
+  // `null` is "not answered yet", and `false` is a real answer — so the branch on null has to come
+  // first.
+  const tone = !canAnswer
+    ? sessionTintClass(battleSession.isGuildWar)
+    : current === null
+      ? TILE_TONE.chuaTraLoi
+      : current
+        ? TILE_TONE.co
+        : TILE_TONE.khong;
+
+  return (
+    <div
+      className={cn(
+        "flex flex-col gap-1.5 rounded-lg border p-3",
+        tone,
+        REVEAL_CLASS
+      )}
+      style={revealStyle(index)}
+    >
+      <SessionLabel session={battleSession} size="md" />
+      {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
+      <SessionDeadline session={battleSession} />
+      <div>
+        {isLocked ? (
+          <StatusBadge tone="danger">
+            <Lock className="size-3.5" />
+            Đã khoá
+          </StatusBadge>
+        ) : (
+          <StatusBadge tone="success">
+            <Clock className="size-3.5" />
+            Còn hạn
+          </StatusBadge>
+        )}
+      </div>
+
+      {/* `mt-auto` pins the answers to the bottom, so a day with a longer subtitle does not leave
+          its buttons higher than its neighbour's. */}
+      {canAnswer ? (
+        <div className="mt-auto flex flex-col gap-2 pt-2">
+          {isLocked ? (
+            savedReason !== "" && (
+              <span className="text-center text-sm text-muted-foreground italic">
+                Lý do: {savedReason}
+              </span>
+            )
+          ) : (
+            <>
+              {CHOICES.map((isPresent) => (
+                <AttendanceChoiceButton
+                  key={String(isPresent)}
+                  isPresent={isPresent}
+                  isSelected={current === isPresent}
+                  isSaving={
+                    isPending &&
+                    pendingWrite?.sessionId === battleSession.id &&
+                    pendingWrite.isPresent === isPresent
+                  }
+                  // Both answers of every day wait: a second write while one is in flight would
+                  // leave the spinner on the wrong button.
+                  disabled={isPending}
+                  onSelect={() => onMark(isPresent)}
+                />
+              ))}
+              {current === false && (
+                // Remounting on the stored value resets the field once a save lands, while a
+                // failed save keeps the typed text — the stored value did not change, so there
+                // is no remount.
+                <AbsenceReasonInput
+                  key={`${battleSession.id}:${savedReason}`}
+                  savedReason={savedReason}
+                  disabled={isPending}
+                  onSubmit={onSaveReason}
+                />
+              )}
+            </>
+          )}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
 /**
  * Colours of the picked answer. Emerald "Có" and destructive "Không" are the marks the admin grid's
- * `AttendanceToggle` already uses (frontend.md §6), so both screens read as one app.
+ * cells already show (frontend.md §6), so both screens read as one app.
  */
 const SELECTED_CLASS = {
   co: "border-transparent bg-emerald-500 text-white hover:bg-emerald-500/90 dark:bg-emerald-600",
@@ -336,62 +443,5 @@ function AttendanceChoiceButton({
       </span>
       {attendanceLabel(isPresent)}
     </Button>
-  );
-}
-
-interface AbsenceReasonInputProps {
-  /** Reason already stored for this session — "" when none was given */
-  savedReason: string;
-  /** A write is already in flight, so this one may not start */
-  disabled: boolean;
-  /** Send the typed reason; the caller performs the write and shows the toast */
-  onSubmit: (reason: string) => void;
-}
-
-/**
- * The one-line reason that goes with a "Không" answer.
- *
- * Enter sends and Escape restores what is stored — blur does neither: leaving the field is something
- * that happens by accident, and here it would fire a request rather than touch a local draft the way
- * the team builder's name field does. Nothing on screen would say that, so the placeholder names the
- * key and the tooltip spells out the whole contract, Escape included.
- * @returns The reason input
- */
-function AbsenceReasonInput({
-  savedReason,
-  disabled,
-  onSubmit,
-}: AbsenceReasonInputProps) {
-  const [value, setValue] = useState(savedReason);
-
-  return (
-    <Tooltip>
-      <TooltipTrigger
-        render={
-          <Input
-            value={value}
-            disabled={disabled}
-            aria-label="Lý do vắng"
-            placeholder={REASON_PLACEHOLDER}
-            title={REASON_HINT}
-            maxLength={ATTENDANCE_REASON_MAX_LENGTH}
-            className="h-8 text-sm"
-            onChange={(event) => setValue(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                onSubmit(value);
-                return;
-              }
-              if (event.key === "Escape") {
-                setValue(savedReason);
-                event.currentTarget.blur();
-              }
-            }}
-          />
-        }
-      />
-      <TooltipContent>{REASON_HINT}</TooltipContent>
-    </Tooltip>
   );
 }
