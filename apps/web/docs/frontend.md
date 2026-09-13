@@ -555,9 +555,11 @@ battle day, one horizontal bar per guild class, three stacked segments.
   `<title>` in place of the avatar's tooltip and `alt`. It sits on an opaque `card` disc with the
   standard border: the images are transparent PNGs and would otherwise lose their edge on the Guild
   War card's tinted surface.
-- **A chart follows the roster search and the session picker, not the class and presence filters**:
-  those two are the chart's own axes, and filtering by them empties the very comparison the card is
-  for.
+- **A chart follows the page-wide week and session pickers only, and counts the whole guild.** The
+  filters on people - search, class, answer - narrow the history table and sit in that table's card
+  header (`attendance-history-filters`), while the week and the battle day stand above both
+  (`attendance-history-scope`): class and answer are the chart's own axes, and a filter placed
+  above a chart that ignores it reads as a bug.
 
 ### Control sizes
 

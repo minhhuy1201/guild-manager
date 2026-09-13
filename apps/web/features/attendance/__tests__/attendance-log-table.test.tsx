@@ -93,6 +93,13 @@ vi.mock("../api/attendance-api", () => ({
 import { AttendanceLogTable } from "../components/attendance-log-table";
 import { useAttendanceFilterStore } from "../store/attendance-filter-store";
 
+// The filter bar inside the card holds Base UI selects, which measure themselves on mount.
+(globalThis as { ResizeObserver?: unknown }).ResizeObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
+
 /**
  * Render the table with its own query client, then wait for the first rows.
  * @returns The number of body rows currently rendered
@@ -171,6 +178,18 @@ describe("AttendanceLogTable", () => {
     const rowCount = await renderTable();
 
     expect(rowCount()).toBe(4);
+  });
+
+  // Tìm kiếm, lưu phái và trạng thái chỉ lọc bảng này, nên nằm ngay trong header của nó.
+  it("thanh lọc của bảng nằm trong chính thẻ bảng", async () => {
+    await renderTable();
+
+    const card = screen
+      .getByText(/Lịch sử điểm danh \(\d+\)/)
+      .closest("[data-slot=card]") as HTMLElement;
+
+    expect(card.querySelector("#history-search")).not.toBeNull();
+    expect(card.querySelector("#history-presence")).not.toBeNull();
   });
 
   it("hiện lý do vắng, và dấu gạch ở lượt không có lý do", async () => {
