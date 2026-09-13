@@ -389,6 +389,9 @@ sans face.
   `onLoad`, then an opacity fade over the tint. The login page's full-screen backdrop
   (`LOGIN_BACKDROP`) uses it too.
 - **Pictures stop at the header.** Tables, the formation grid and forms stay on plain surfaces.
+- **Every picture is credited once, in `SiteFooter`** (`components/shared/site-footer.tsx`, in the
+  root layout, so the public login page carries it too). Another scene from the game needs nothing
+  more; a picture from any other source adds its credit to that line.
 
 `font-heading` is for headings only: `PageHeader`, the guild name (`site-header`, login page), the
 formation banner, and `DialogTitle` (shadcn wires it there). Everything else stays Be Vietnam Pro.
