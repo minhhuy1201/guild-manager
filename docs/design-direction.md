@@ -49,6 +49,9 @@ saturation.
 - **One scene per page, in the page's banner** - the strip behind the page title. A dark scrim
   keeps the white title readable whatever the scene's light. Data (tables, the formation grid)
   never sits on a picture.
+- The banner comes in two heights: tall on the attendance page, where members arrive, and compact
+  on the tools used every day (history, team builder, settings), so their data starts higher. Still
+  one scene per page.
 - **The login page** is the one full-screen scene, behind a translucent card.
 - Pictures fade in over their dominant colour; they never pop in on a white box.
 - The site is public, so the artwork is credited to NetEase in the footer of every page, with a line

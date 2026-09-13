@@ -145,6 +145,20 @@ describe("AttendanceGrid — bố cục", () => {
     expect(screen.queryByRole("columnheader", { name: "Điểm danh" })).toBeNull();
   });
 
+  // Bộ lọc nằm trong card nó lọc, không đứng thành một khối riêng phía trên.
+  it("thanh lọc nằm trong card của bảng", () => {
+    render(<AttendanceGrid isAdmin={false} />);
+
+    const card = screen
+      .getByText("Điểm danh theo ngày đánh")
+      .closest("[data-slot=card]") as HTMLElement;
+
+    expect(card.querySelector("#attendance-search")).not.toBeNull();
+    expect(card.querySelector("[aria-pressed]")?.textContent).toContain(
+      "Chưa điểm danh"
+    );
+  });
+
   // Bang có vài chục người: 10 dòng một trang bắt admin lật trang liên tục.
   it("mở ra 50 dòng mỗi trang", () => {
     filtered = Array.from({ length: 60 }, (_, index) =>

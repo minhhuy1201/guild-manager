@@ -117,10 +117,25 @@ describe("SessionLabel", () => {
 });
 
 describe("SessionDeadline", () => {
-  it("hiện hạn chót đã định dạng", () => {
+  it("trận đã khoá chỉ hiện hạn chót đã định dạng", () => {
     const deadline = "2026-08-22T12:00:00.000Z";
-    const { container } = render(<SessionDeadline session={{ deadline }} />);
+    const { container } = render(
+      <SessionDeadline session={{ deadline, isDeadlinePassed: true }} />
+    );
 
     expect(container.textContent).toBe(`Hạn chót: ${formatDateTime(deadline)}`);
+  });
+
+  // Giờ tuyệt đối bắt người đọc tự trừ; trận còn mở thì nói luôn còn bao lâu.
+  it("trận còn mở thì thêm còn bao lâu", () => {
+    const deadline = new Date(
+      Date.now() + (3 * 24 + 1) * 60 * 60 * 1000
+    ).toISOString();
+    const { container } = render(
+      <SessionDeadline session={{ deadline, isDeadlinePassed: false }} />
+    );
+
+    expect(container.textContent).toContain(`Hạn chót: ${formatDateTime(deadline)}`);
+    expect(container.textContent).toContain("còn 3 ngày");
   });
 });
