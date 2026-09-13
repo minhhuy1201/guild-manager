@@ -25,7 +25,7 @@ interface AttendanceRowProps {
   sessions: BattleSession[];
   /** Current records keyed by (characterId__sessionId) */
   recordMap: Record<string, AttendanceRecord>;
-  /** The viewer may change answers — an admin; a member only reads the grid */
+  /** The viewer may change answers - an admin; a member only reads the grid */
   canEdit: boolean;
   /** A save is in flight, so no cell may be pressed */
   disabled: boolean;

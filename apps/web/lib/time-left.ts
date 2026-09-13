@@ -6,7 +6,7 @@ const DAY_MS = 24 * HOUR_MS;
 export interface TimeLeft {
   /** "còn 2 ngày", "còn 5 giờ", "còn 45 phút" or "sắp khoá" */
   label: string;
-  /** Less than a day left — the deadline line takes the accent */
+  /** Less than a day left - the deadline line takes the accent */
   isUrgent: boolean;
 }
 

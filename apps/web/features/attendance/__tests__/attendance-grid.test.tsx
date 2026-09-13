@@ -121,7 +121,7 @@ beforeEach(() => {
   useAttendanceFilterStore.setState({ unansweredOnly: false });
 });
 
-describe("AttendanceGrid — bố cục", () => {
+describe("AttendanceGrid - bố cục", () => {
   it("số cột header không đổi giữa lúc tải và lúc có 4 trận", () => {
     boardState.isPending = true;
     sessions = [];
@@ -171,7 +171,7 @@ describe("AttendanceGrid — bố cục", () => {
   });
 });
 
-describe("AttendanceGrid — hàng tổng", () => {
+describe("AttendanceGrid - hàng tổng", () => {
   it("mỗi ngày đếm Có, Không, Chưa trên toàn bang, không theo bộ lọc", () => {
     roster = [makeCharacter("1"), makeCharacter("2"), makeCharacter("3")];
     filtered = [roster[0]];
@@ -185,7 +185,7 @@ describe("AttendanceGrid — hàng tổng", () => {
   });
 });
 
-describe("AttendanceGrid — lọc Chưa điểm danh", () => {
+describe("AttendanceGrid - lọc Chưa điểm danh", () => {
   it("chỉ giữ người còn trận mở chưa trả lời", () => {
     records = makeRecord("1", "a", true);
     useAttendanceFilterStore.setState({ unansweredOnly: true });
@@ -197,7 +197,7 @@ describe("AttendanceGrid — lọc Chưa điểm danh", () => {
   });
 });
 
-describe("AttendanceGrid — phân trang khi đang lọc", () => {
+describe("AttendanceGrid - phân trang khi đang lọc", () => {
   // Lưu xong thì bản ghi được tải lại thành object mới, dù những người trong danh sách lọc không đổi.
   it("tải lại bản ghi mà danh sách lọc vẫn là những người cũ thì không nhảy về trang 1", () => {
     filtered = Array.from({ length: 60 }, (_, index) =>
@@ -216,7 +216,7 @@ describe("AttendanceGrid — phân trang khi đang lọc", () => {
   });
 });
 
-describe("AttendanceGrid — admin bấm thẳng vào ô", () => {
+describe("AttendanceGrid - admin bấm thẳng vào ô", () => {
   it("bấm xoay vòng Có, Không, rồi lại Có", () => {
     render(<AttendanceGrid isAdmin />);
 

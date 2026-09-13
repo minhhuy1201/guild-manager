@@ -16,7 +16,8 @@ lý do vắng không còn âm thầm bỏ chữ khi người dùng click ra ngo�
 - Tài khoản chưa gán nhân vật vẫn thấy lịch tuần: các ô ở chế độ chỉ đọc, tô `sessionTintClass` như
   timeline cũ, kèm câu "liên hệ quản trị viên" thay cho dòng tóm tắt.
 - `AbsenceReasonInput` tách ra `absence-reason-input.tsx`. Khi chữ trong ô khác lý do đã lưu (so
-  sau khi trim): hiện nút "Lưu" và chữ "chưa lưu". Enter vẫn lưu, Esc vẫn khôi phục, blur không làm gì.
+  sau khi trim): hiện nút "Lưu" và chữ "chưa lưu". Enter vẫn lưu (chữ chưa đổi thì không gửi gì), Esc
+  vẫn khôi phục, blur không làm gì.
 
 ## Quyết định khi làm
 

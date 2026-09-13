@@ -42,7 +42,7 @@ function countNoteChanges(draft: Notes, saved: Notes): number {
 /**
  * How many edits separate a day's draft from what the server has stored: one
  * per slot holding someone else, one per note, and one for a match 2 added or
- * removed. The match itself counts once rather than slot by slot — a new match
+ * removed. The match itself counts once rather than slot by slot - a new match
  * 2 starts as a copy of match 1, and "twelve changes" for one button press
  * would read as a mistake.
  * @param draft - Draft for the day, undefined when it was never touched

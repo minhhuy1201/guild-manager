@@ -406,7 +406,7 @@ describe("MemberAttendanceCard", () => {
     render(<MemberAttendanceCard />);
 
     const input = screen.getByLabelText("Lý do vắng") as HTMLInputElement;
-    expect(input.placeholder).toBe("Lý do vắng — Enter để lưu");
+    expect(input.placeholder).toBe("Lý do vắng - Enter để lưu");
     expect(input.title).toBe(
       "Nhập lý do rồi bấm Enter hoặc nút Lưu để lưu. Bỏ trống cũng được, Esc để huỷ thay đổi."
     );
@@ -451,6 +451,21 @@ describe("MemberAttendanceCard", () => {
 
     expect(input.value).toBe("Bận đi công tác");
     expect(markState.mutateAsync).not.toHaveBeenCalled();
+  });
+
+  it("Enter khi lý do chưa đổi thì không gửi gì", async () => {
+    records = makeRecords("sess-1", false, "Bận đi công tác");
+
+    render(<MemberAttendanceCard />);
+
+    const input = screen.getByLabelText("Lý do vắng");
+    fireEvent.change(input, { target: { value: " Bận đi công tác " } });
+    await act(async () => {
+      fireEvent.keyDown(input, { key: "Enter" });
+    });
+
+    expect(markState.mutateAsync).not.toHaveBeenCalled();
+    expect(toastSuccess).not.toHaveBeenCalled();
   });
 
   it("lưu lỗi thì giữ nguyên chữ đang gõ để không phải gõ lại", async () => {

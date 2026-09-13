@@ -97,7 +97,7 @@ function cellButton(): HTMLButtonElement {
 
 afterEach(cleanup);
 
-describe("AttendanceRow — chỉ đọc", () => {
+describe("AttendanceRow - chỉ đọc", () => {
   it("hiện lý do vắng dưới trạng thái", () => {
     renderRow({ recordMap: makeRecordMap("Bận đi công tác"), canEdit: false });
 
@@ -118,7 +118,7 @@ describe("AttendanceRow — chỉ đọc", () => {
   });
 });
 
-describe("AttendanceRow — admin bấm thẳng vào ô", () => {
+describe("AttendanceRow - admin bấm thẳng vào ô", () => {
   it("ô là một nút, đọc được trạng thái mà không cần hover", () => {
     renderRow();
 

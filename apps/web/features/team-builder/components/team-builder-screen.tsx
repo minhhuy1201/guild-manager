@@ -92,7 +92,7 @@ export function TeamBuilderScreen() {
     screen.copy.copy();
   }
 
-  /** Discard both drafts — the save bar's "Đặt lại" covers everything it can save. */
+  /** Discard both drafts - the save bar's "Đặt lại" covers everything it can save. */
   function handleReset() {
     screen.draft.resetActive();
     screen.teamNames.reset();

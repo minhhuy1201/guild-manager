@@ -38,7 +38,7 @@ function tab(name: RegExp): HTMLElement {
   return screen.getByRole("tab", { name });
 }
 
-describe("SettingsTabs — tab nằm trên URL", () => {
+describe("SettingsTabs - tab nằm trên URL", () => {
   it("không có ?tab thì mở tab lịch đánh", () => {
     render(<SettingsTabs />);
 
@@ -83,7 +83,7 @@ describe("SettingsTabs — tab nằm trên URL", () => {
   });
 });
 
-describe("SettingsTabs — không lặp tên tab", () => {
+describe("SettingsTabs - không lặp tên tab", () => {
   it("tab thành viên không còn tiêu đề trùng tên tab, vẫn giữ dòng mô tả", () => {
     params = new URLSearchParams("tab=members");
 

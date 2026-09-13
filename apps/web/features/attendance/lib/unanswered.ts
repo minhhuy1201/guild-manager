@@ -4,7 +4,7 @@ import { recordKey } from "./record-key";
 
 /**
  * How many battles of the week a character can still answer and has not: the number the member
- * card leads with. A battle the API already locked is left out — it can no longer be answered, so
+ * card leads with. A battle the API already locked is left out - it can no longer be answered, so
  * counting it would nag about something nobody can fix.
  * @param sessions - Battles of the week, with the lock the API computed
  * @param records - Recorded answers, keyed by `recordKey`

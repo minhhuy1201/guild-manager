@@ -439,7 +439,7 @@ as full `Button`s: a member sees their own day tiles and has room for the words,
 has one narrow column per day. A member gets **both**, in that order — the card they answer in, then
 the same guild-wide grid an admin sees, its cells drawn as marks rather than buttons
 (`AttendanceGrid isAdmin={false}`), so reading what everyone else picked never means being able to
-edit it. The picked side is filled — emerald for "Có", destructive for "Không"
+edit it. The picked side is filled - emerald for "Có", destructive for "Không"
 — and the icon becomes a `Spinner` while that answer is being written.
 
 A member's tile **carries its own answer in its surface**: emerald for "Có", `destructive` for
@@ -457,13 +457,13 @@ Its header names the character and the week (`DateRange`), then says what is lef
 **N trận** chưa điểm danh" (`countUnanswered`: open battles without an answer) or "Bạn đã điểm danh đủ
 tuần này". Each tile (`grid gap-2 sm:grid-cols-2 lg:grid-cols-3`) carries the battle, its subtitle,
 `SessionDeadline` and a "Còn hạn / Đã khoá" badge, then the answers. The answers close the tile,
-"Có" above "Không", each the full width of the tile — the widest possible target on a phone, and two
+"Có" above "Không", each the full width of the tile - the widest possible target on a phone, and two
 equal buttons whose words are not. `mt-auto` on their column pins them to the bottom, so a longer
 subtitle cannot leave one tile's answers higher than its neighbour's.
 
 The absence reason under a "Không" (`absence-reason-input`) is saved by Enter or by its own small
 "Lưu", never by blur. While its text differs from the stored reason it shows that "Lưu" and a
-"chưa lưu" note, so clicking away never reads as saved.
+"chưa lưu" note, so clicking away never reads as saved; with nothing changed, Enter sends nothing.
 
 > Not to be confused with `status-badge.tsx`: a badge **has words** and is for descriptive labels
 > ("Đã khoá" / "Còn hạn" on a member card tile), not for binary state.
@@ -726,7 +726,7 @@ Which of the two feedback shapes:
   changes one button's fill, which is too quiet to read as "saved".
 - **A write inside a table or a dialog** → the inline error line that keeps its slot (see *Motion*,
   "A mutation error keeps its slot"). The row is already in view and a toast would pull the eye off
-  it — `members-panel`. The attendance grid writes from its save bar instead, and the bar carries
+  it - `members-panel`. The attendance grid writes from its save bar instead, and the bar carries
   the error in place of its count.
 
 ### Motion
@@ -752,7 +752,7 @@ outside the layout flow, so it may slide in. `SelectContent` rises from below
 (`data-open:slide-in-from-bottom-8`) over `--duration-slow`, and needs
 `alignItemWithTrigger={false}` — in align-to-item mode the popup covers the trigger and its
 animation is switched off. Animating geometry inside a table would need a fixed-width slot around
-it — otherwise the table jumps.
+it - otherwise the table jumps.
 
 `prefers-reduced-motion: reduce` is answered **once**, at the end of `globals.css`, for the whole app —
 never repeated at a call site.
@@ -772,7 +772,7 @@ there only duplicates the accessible name.
 
 **A mutation error keeps its slot.** An error line rendered above or below a table lives inside a
 wrapper with a fixed minimum height (`min-h-*`), so the error appearing does not push the table or the
-pagination bar down — see `members-panel`.
+pagination bar down - see `members-panel`.
 
 ### Entrance and data reveal
 

@@ -49,7 +49,7 @@ const PLACEHOLDER_DAY_COLUMNS = 4;
 const PAGE_SIZE = 50;
 
 /** Mobile hint above the grid. */
-const SWIPE_HINT = "Vuốt ngang để xem các ngày đánh khác — cột tên luôn hiện.";
+const SWIPE_HINT = "Vuốt ngang để xem các ngày đánh khác - cột tên luôn hiện.";
 
 /** Shown when a save fails with something that carries no sentence of its own. */
 const SAVE_FALLBACK_ERROR = "Không lưu được điểm danh, thử lại giúp mình.";
@@ -62,7 +62,7 @@ const EMPTY_ROSTER: Character[] = [];
 const EMPTY_DRAFT: GridDraft = {};
 
 interface AttendanceGridProps {
-  /** The viewer is an admin — they may change any answer, past deadlines included. */
+  /** The viewer is an admin - they may change any answer, past deadlines included. */
   isAdmin: boolean;
 }
 
@@ -178,7 +178,7 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
   };
 
   /**
-   * Write every changed cell, in parallel — one attendance write per cell, as the API takes them.
+   * Write every changed cell, in parallel - one attendance write per cell, as the API takes them.
    * A partial failure keeps exactly the cells that failed in the draft, so pressing Save again
    * retries them and nothing else, and says why the first one failed.
    * @returns A promise settled once every write has settled

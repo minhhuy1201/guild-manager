@@ -124,7 +124,8 @@ export function TeamNameField({
       onChange={(event) => setText(event.target.value)}
       onBlur={commit}
       onKeyDown={(event) => {
-        if (event.key === "Enter") commit();
+        // Blur rather than commit: blur already commits, and calling both wrote the name twice.
+        if (event.key === "Enter") event.currentTarget.blur();
         if (event.key === "Escape") cancel();
       }}
       maxLength={TEAM_NAME_MAX_LENGTH}

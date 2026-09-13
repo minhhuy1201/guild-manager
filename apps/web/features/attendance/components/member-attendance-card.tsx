@@ -64,7 +64,7 @@ const NO_CHARACTER_MESSAGE =
  * week of tiles is a lot of surface, and a fill as strong as the border would drown the text and
  * the buttons sitting on it.
  *
- * This is why an answering tile does not take `sessionTintClass` — the answer owns both the border
+ * This is why an answering tile does not take `sessionTintClass` - the answer owns both the border
  * and the fill, and the Guild War is still named by `SessionLabel`'s swords. A tile with nobody to
  * answer for (no character linked) has no answer to show, so it takes the tint instead.
  */
@@ -74,12 +74,12 @@ const TILE_TONE = {
   chuaTraLoi: "border-amber-500 bg-amber-500/5",
 } as const;
 
-/** The mutation's current variables — which session and which answer are being written. */
+/** The mutation's current variables - which session and which answer are being written. */
 type PendingWrite = { sessionId: string; isPresent: boolean } | undefined;
 
 /**
  * The member's week: the schedule of the open week and their own answers, in one card. It used to
- * be two grids of the same day tiles — a read-only timeline, then this card with the buttons — so
+ * be two grids of the same day tiles - a read-only timeline, then this card with the buttons - so
  * a member opened the page onto the same week twice. Now every tile carries the day, its deadline,
  * whether it is still open, and the answer.
  *
@@ -282,7 +282,7 @@ interface DayTileProps {
 
 /**
  * One battle day of the week: its name, subtitle, deadline and open/locked badge, then the
- * member's two answers while the day is open — or the reason already given once it is locked.
+ * member's two answers while the day is open - or the reason already given once it is locked.
  * @param battleSession - Battle this tile shows
  * @param index - Position in the week
  * @param record - The member's recorded answer
@@ -307,7 +307,7 @@ function DayTile({
   const savedReason = record?.reason ?? "";
   const isLocked = battleSession.isDeadlinePassed;
   const subtitle = getSessionSubtitle(battleSession);
-  // `null` is "not answered yet", and `false` is a real answer — so the branch on null has to come
+  // `null` is "not answered yet", and `false` is a real answer - so the branch on null has to come
   // first.
   const tone = !canAnswer
     ? sessionTintClass(battleSession.isGuildWar)
@@ -373,7 +373,7 @@ function DayTile({
               ))}
               {current === false && (
                 // Remounting on the stored value resets the field once a save lands, while a
-                // failed save keeps the typed text — the stored value did not change, so there
+                // failed save keeps the typed text - the stored value did not change, so there
                 // is no remount.
                 <AbsenceReasonInput
                   key={`${battleSession.id}:${savedReason}`}

@@ -19,7 +19,7 @@ function chip(): HTMLButtonElement {
   return screen.getByRole("button", { name: "Chưa điểm danh" }) as HTMLButtonElement;
 }
 
-describe("AttendanceFilters — chip Chưa điểm danh", () => {
+describe("AttendanceFilters - chip Chưa điểm danh", () => {
   it("bấm chip thì bật lọc, bấm lần nữa thì tắt", () => {
     render(<AttendanceFilters scope="attendance" />);
 

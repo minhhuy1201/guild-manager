@@ -173,6 +173,7 @@ request (lý do đã ghi trong comment hiện tại).
 
 - Gõ vào ô rồi click ra ngoài: chữ vẫn còn, nút Lưu và chữ "chưa lưu" vẫn hiện.
 - Bấm Lưu hoặc Enter: gửi request, toast thành công, nút và chữ "chưa lưu" biến mất.
+- Bấm Enter khi chữ trong ô (sau khi trim) trùng với lý do đã lưu: không gửi request, không toast.
 - Lưu lỗi: chữ đã gõ được giữ nguyên (như hiện tại).
 
 ---

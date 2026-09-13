@@ -112,7 +112,7 @@ describe("FormationToolbar — nút gửi Discord", () => {
   });
 });
 
-describe("FormationToolbar — lưu và đặt lại", () => {
+describe("FormationToolbar - lưu và đặt lại", () => {
   // Hai nút này nằm ở thanh dính đáy, để luôn thấy dù đang cuộn ở đâu.
   it("không còn nút Lưu và Đặt lại ở toolbar", () => {
     renderToolbar({ dirty: true });

@@ -38,28 +38,28 @@ export function AttendanceFilters({ scope }: AttendanceFiltersProps) {
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
       <RosterFilterBar
-          idPrefix={scope}
-          value={filter}
-          onChange={(next) => setFilter(scope, next)}
-          className="flex-1"
-        />
-        {scope === "attendance" ? (
-          <Button
-            type="button"
-            variant="outline"
-            size="lg"
-            aria-pressed={unansweredOnly}
-            onClick={() => setUnansweredOnly(!unansweredOnly)}
-            // A filter that is on takes the selected surface (frontend.md §6), hover included.
-            className={cn(
-              unansweredOnly &&
-                "border-primary bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
-            )}
-          >
-            <Hourglass />
-            Chưa điểm danh
-          </Button>
-        ) : null}
+        idPrefix={scope}
+        value={filter}
+        onChange={(next) => setFilter(scope, next)}
+        className="flex-1"
+      />
+      {scope === "attendance" ? (
+        <Button
+          type="button"
+          variant="outline"
+          size="lg"
+          aria-pressed={unansweredOnly}
+          onClick={() => setUnansweredOnly(!unansweredOnly)}
+          // A filter that is on takes the selected surface (frontend.md §6), hover included.
+          className={cn(
+            unansweredOnly &&
+              "border-primary bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
+          )}
+        >
+          <Hourglass />
+          Chưa điểm danh
+        </Button>
+      ) : null}
     </div>
   );
 }

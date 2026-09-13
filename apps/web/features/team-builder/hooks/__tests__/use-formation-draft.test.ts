@@ -441,7 +441,7 @@ describe("useFormationDraft — nhận một trận được copy", () => {
   });
 });
 
-describe("useFormationDraft — gỡ người đã báo nghỉ", () => {
+describe("useFormationDraft - gỡ người đã báo nghỉ", () => {
   it("gỡ họ khỏi trận đang mở, ngày thành chưa lưu", () => {
     const { result } = renderDraft();
 

@@ -9,7 +9,7 @@ import { useEffect, useEffectEvent } from "react";
  * screen the shortcut means "save the formation", and a dialog offering to download the HTML is
  * never what the admin wanted.
  * @param onSave - The save the Save button runs
- * @param enabled - Whether a save may start now — something unsaved, nothing in flight
+ * @param enabled - Whether a save may start now - something unsaved, nothing in flight
  */
 export function useSaveShortcut(onSave: () => void, enabled: boolean) {
   const handleKeyDown = useEffectEvent((event: KeyboardEvent) => {

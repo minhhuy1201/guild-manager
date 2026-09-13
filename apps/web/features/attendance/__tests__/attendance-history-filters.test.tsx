@@ -154,7 +154,7 @@ describe("AttendanceHistoryScope - bộ lọc của cả trang", () => {
     expect(historyState().presence).toBe("absent");
   });
 
-  it("ngày đánh đã bị xoá thì cũng không có X — trên màn hình nó đang là Tất cả", () => {
+  it("ngày đánh đã bị xoá thì cũng không có X - trên màn hình nó đang là Tất cả", () => {
     useAttendanceFilterStore.setState({ sessionId: "sess-deleted" });
 
     render(<AttendanceHistoryScope />);

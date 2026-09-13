@@ -14,7 +14,7 @@ interface MainNavProps {
 
 /**
  * The main navigation bar in the header, highlighting the active item by pathname.
- * `adminOnly` items only render for an admin — the actual access control is the proxy's and the
+ * `adminOnly` items only render for an admin - the actual access control is the proxy's and the
  * server layout's job.
  *
  * From `sm` up only: on a phone four icons without words were hard to tell apart, so there the

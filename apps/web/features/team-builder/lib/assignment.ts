@@ -47,7 +47,7 @@ function unassign(assignment: Assignment, slotId: string): Assignment {
 
 /**
  * Empty every slot held by one of the given characters, sending them back to
- * the pool — the "Gỡ ra" of the dropped-out banner.
+ * the pool - the "Gỡ ra" of the dropped-out banner.
  * @param assignment - Current assignment
  * @param characterIds - Characters to take out of the formation
  * @returns A new assignment, or `assignment` itself when none of them was placed

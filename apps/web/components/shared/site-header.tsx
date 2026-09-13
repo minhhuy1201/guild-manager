@@ -68,7 +68,7 @@ export async function SiteHeader() {
               <GuildName />
             </div>
           )}
-          {/* Signed out there is nowhere to navigate to — every route needs a session — so the
+          {/* Signed out there is nowhere to navigate to - every route needs a session - so the
               header is just the guild name. */}
           {session && (
             <div className="ml-auto flex shrink-0 items-center gap-2.5">

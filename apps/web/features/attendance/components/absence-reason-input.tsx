@@ -15,14 +15,14 @@ import {
  * Placeholder of the reason field. It names the key rather than describing the field, because the
  * field is the only control on this screen that a click on an answer does not save.
  */
-const REASON_PLACEHOLDER = "Lý do vắng — Enter để lưu";
+const REASON_PLACEHOLDER = "Lý do vắng - Enter để lưu";
 
 /** The whole contract of the reason field, shown as a tooltip and as the native `title`. */
 const REASON_HINT =
   "Nhập lý do rồi bấm Enter hoặc nút Lưu để lưu. Bỏ trống cũng được, Esc để huỷ thay đổi.";
 
 interface AbsenceReasonInputProps {
-  /** Reason already stored for this session — "" when none was given */
+  /** Reason already stored for this session - "" when none was given */
   savedReason: string;
   /** A write is already in flight, so this one may not start */
   disabled: boolean;
@@ -33,10 +33,12 @@ interface AbsenceReasonInputProps {
 /**
  * The one-line reason that goes with a "Không" answer.
  *
- * Enter or the Save button sends, Escape restores what is stored — blur does neither: leaving the
- * field is something that happens by accident, and here it would fire a request rather than touch a
- * local draft. What blur must not do either is leave the member believing the text was kept, so
- * while the field differs from what is stored it carries a small Save button and a "chưa lưu" note.
+ * Enter or the Save button sends, but only while the text differs from what is stored, so an Enter
+ * on an untouched field is no request and no toast. Escape restores what is stored - blur does
+ * neither: leaving the field is something that happens by accident, and here it would fire a
+ * request rather than touch a local draft. What blur must not do either is leave the member
+ * believing the text was kept, so while the field differs from what is stored it carries a small
+ * Save button and a "chưa lưu" note.
  *
  * The caller remounts this component on the stored value (`key`), so a save that lands resets it
  * and hides both marks, while a failed save keeps the typed text.
@@ -72,7 +74,7 @@ export function AbsenceReasonInput({
                 onKeyDown={(event) => {
                   if (event.key === "Enter") {
                     event.preventDefault();
-                    onSubmit(value);
+                    if (isUnsaved) onSubmit(value);
                     return;
                   }
                   if (event.key === "Escape") {

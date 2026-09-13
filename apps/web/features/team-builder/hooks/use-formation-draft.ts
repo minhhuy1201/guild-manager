@@ -302,7 +302,7 @@ export function useFormationDraft(
 
   /**
    * Take the given characters out of the match currently open, leaving the
-   * other match of the day alone — the dropped-out marks are computed for the
+   * other match of the day alone - the dropped-out marks are computed for the
    * open match only. Nothing is written when none of them is placed, so the
    * call cannot leave behind a draft equal to the saved copy.
    * @param characterIds - Characters to send back to the pool

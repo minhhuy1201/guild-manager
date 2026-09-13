@@ -18,11 +18,11 @@ export interface NavItem {
   shortLabel: string;
   /** Icon shown before the name */
   icon: LucideIcon;
-  /** Shown to admins only — display alone; the proxy and the API do the real gating */
+  /** Shown to admins only - display alone; the proxy and the API do the real gating */
   adminOnly: boolean;
 }
 
-/** The main navigation, in display order — shared by the header nav and the phone's tab bar. */
+/** The main navigation, in display order - shared by the header nav and the phone's tab bar. */
 export const NAV_ITEMS: readonly NavItem[] = [
   {
     href: ROUTES.attendance,

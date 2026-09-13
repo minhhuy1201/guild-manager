@@ -17,7 +17,7 @@ import { useHistoryWeek, useSessionFilter } from "../hooks/use-attendance";
 /** The scope these pickers write; the History screen is the only caller. */
 const SCOPE = "history";
 
-/** Sentinel value of the "Tất cả" session row. Not a session id — never stored. */
+/** Sentinel value of the "Tất cả" session row. Not a session id - never stored. */
 const ALL_SESSIONS = "all";
 
 /** Icon size in the select, matching the shared "Tất cả" icon. */
