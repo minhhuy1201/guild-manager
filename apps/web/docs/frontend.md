@@ -416,16 +416,20 @@ red cross — through `features/attendance/components/attendance-status-icon.tsx
 read-only cells) and the history table (`attendance-log-table`) render. Reading a row and pressing a
 button then use one vocabulary: swords means "đi đánh" everywhere on the screen.
 
-**This rule covers *displaying* a state only.** The cell being edited in `attendance-row`
-(`AttendanceToggle`) is a control about to be pressed, so it carries words: "Không" with a
-destructive `X`, "Có" with an emerald `Swords` — the same mark `SessionLabel` gives a battle. At rest
-each button shrinks to the width of its icon (`w-9`) and only widens on hover.
+**The admin grid presses the icon itself.** In `attendance-row` an admin's cell is a round button
+holding the same status icon, so its answer reads without a hover (a touch screen has none).
+Pressing it moves the answer on - unanswered → "Có" → "Không" → "Có"; there is no way back to
+unanswered, since the API has one write per cell and no delete. The moves collect in one draft over
+the whole grid (`clickCell`, `lib/grid-draft.ts`); a changed cell shows the draft's answer inside a
+`primary` ring, and the grid's `UnsavedChangesBar` ("N ô đã đổi · Huỷ · Lưu") writes them all at
+once. A partial failure keeps only the failed cells in the draft.
 
 The member card (`member-attendance-card`) answers the same two questions with the same two marks,
 as full `Button`s: a member sees their own day tiles and has room for the words, where the admin grid
 has one narrow column per day. A member gets **both**, in that order — the card they answer in, then
-the same guild-wide grid an admin sees, minus its action column (`AttendanceGrid isAdmin={false}`),
-so reading what everyone else picked never means being able to edit it. The picked side is filled — emerald for "Có", destructive for "Không"
+the same guild-wide grid an admin sees, its cells drawn as marks rather than buttons
+(`AttendanceGrid isAdmin={false}`), so reading what everyone else picked never means being able to
+edit it. The picked side is filled — emerald for "Có", destructive for "Không"
 — and the icon becomes a `Spinner` while that answer is being written.
 
 A member's tile **carries its own answer in its surface**: emerald for "Có", `destructive` for
@@ -652,7 +656,7 @@ The `border-dashed` left in the app is the drag-and-drop drop-zone border (`memb
 
 ### Unsaved work → a save bar pinned to the bottom
 
-A screen that builds a draft before writing it (the team builder) keeps its Save and its discard
+A screen that builds a draft before writing it (the team builder, the attendance grid) keeps its Save and its discard
 button in **`components/shared/unsaved-changes-bar.tsx`**, rendered only while there is something to
 save: "N thay đổi chưa lưu · Đặt lại · Lưu", the save's error in place of the count. It is
 `sticky bottom-*` at the end of the screen's column, so the button stays in reach wherever the
@@ -693,7 +697,8 @@ Which of the two feedback shapes:
   changes one button's fill, which is too quiet to read as "saved".
 - **A write inside a table or a dialog** → the inline error line that keeps its slot (see *Motion*,
   "A mutation error keeps its slot"). The row is already in view and a toast would pull the eye off
-  it — `attendance-grid` and `members-panel`.
+  it — `members-panel`. The attendance grid writes from its save bar instead, and the bar carries
+  the error in place of its count.
 
 ### Motion
 
@@ -713,14 +718,12 @@ Tailwind 4 has an `--ease-*` namespace, so `--ease-out-soft` gives the `ease-out
 content, and no `translate` on anything already in place. A transition that moves something is
 exactly what makes the layout jump. An element *arriving* may rise a few pixels as it fades in (see
 "Entrance and data reveal" below), because a transform does not reflow its neighbours. Beyond that,
-two exceptions. One is a popup in a portal (`SelectContent`, `DropdownMenuContent`,
-`DialogContent`): it sits outside the layout flow, so it may slide in. `SelectContent` rises from
-below (`data-open:slide-in-from-bottom-8`) over `--duration-slow`, and needs
+one exception: a popup in a portal (`SelectContent`, `DropdownMenuContent`, `DialogContent`) sits
+outside the layout flow, so it may slide in. `SelectContent` rises from below
+(`data-open:slide-in-from-bottom-8`) over `--duration-slow`, and needs
 `alignItemWithTrigger={false}` — in align-to-item mode the popup covers the trigger and its
-animation is switched off. The other is `AttendanceToggle`, whose buttons animate their width on
-hover (`--duration-base`); it is allowed only because it lives in a fixed-width slot (`w-32`), so
-the motion stops inside the cell and the table column never resizes. Animating geometry inside a
-table requires pinning the slot like that — otherwise the table jumps.
+animation is switched off. Animating geometry inside a table would need a fixed-width slot around
+it — otherwise the table jumps.
 
 `prefers-reduced-motion: reduce` is answered **once**, at the end of `globals.css`, for the whole app —
 never repeated at a call site.
@@ -740,7 +743,7 @@ there only duplicates the accessible name.
 
 **A mutation error keeps its slot.** An error line rendered above or below a table lives inside a
 wrapper with a fixed minimum height (`min-h-*`), so the error appearing does not push the table or the
-pagination bar down — see `members-panel` and `attendance-grid`.
+pagination bar down — see `members-panel`.
 
 ### Entrance and data reveal
 
@@ -777,10 +780,11 @@ Data arrives, it does not snap in. Four pieces, all CSS, in `app/globals.css` an
 - `columns` must equal the header's `<th>` count. A table whose column count follows the data must
   pin that count in **one** variable shared by header and body — see `attendance-grid`.
 - A column only some viewers get (an action column behind a role) disappears from the **header, the
-  row and `columns` together**, on one flag passed to both — `attendance-grid` drops its "Điểm danh"
-  column for a member through `AttendanceRow`'s `canEdit`. Rendering a disabled or empty cell instead
-  keeps a column that says nothing; leaving `columns` behind breaks every `colSpan` in
-  `table-body-state`.
+  row and `columns` together**, on one flag passed to both. Rendering a disabled or empty cell
+  instead keeps a column that says nothing; leaving `columns` behind breaks every `colSpan` in
+  `table-body-state`. (The attendance grid no longer has one: an admin presses the cells.)
+- A row that summarises the columns (the attendance grid's "Cả bang" totals) is a second header row
+  of `td` cells: it stays in view above the rows, and it adds no `th` to the column count.
 - Paging → `use-table-pagination` (client-side, resets to page 1 when the filter changes) rendered
   with `table-pagination-bar` / `page-size-select`. The pagination bar **always** renders, even at one
   page, so filtering does not move the layout.

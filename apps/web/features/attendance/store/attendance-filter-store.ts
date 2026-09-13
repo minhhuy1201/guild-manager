@@ -10,6 +10,12 @@ interface AttendanceFilterState {
   /** Per-screen filters, keyed by scope */
   filters: Record<AttendanceFilterScope, RosterFilter>;
   setFilter: (scope: AttendanceFilterScope, value: RosterFilter) => void;
+  /**
+   * The Attendance grid's quick filter only: keep the members who still have an open battle
+   * unanswered. The History screen filters on answers through `presence` instead.
+   */
+  unansweredOnly: boolean;
+  setUnansweredOnly: (value: boolean) => void;
   /** Presence filter of the History screen only — the Attendance grid shows both answers at once. */
   presence: AttendancePresenceFilter;
   setPresence: (value: AttendancePresenceFilter) => void;
@@ -46,6 +52,8 @@ export const useAttendanceFilterStore = create<AttendanceFilterState>((set) => (
   },
   setFilter: (scope, value) =>
     set((state) => ({ filters: { ...state.filters, [scope]: value } })),
+  unansweredOnly: false,
+  setUnansweredOnly: (value) => set({ unansweredOnly: value }),
   presence: "all",
   setPresence: (value) => set({ presence: value }),
   sessionId: null,
