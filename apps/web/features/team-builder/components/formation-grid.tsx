@@ -56,10 +56,10 @@ interface FormationGridProps {
  *
  * A banner spanning all five columns sits on top, naming the battle and the match.
  *
- * `layout` gathers everything the Discord image does differently from the screen, all for one
- * reason - the image is read on its own, without the tabs and the controls around it: five
- * columns whatever the window, the tall banner as its only headline, and a note column beside
- * every slot. The screen folds its notes away and keeps the banner to one line.
+ * `layout` gathers what the Discord image does differently from the screen, both for one reason -
+ * the image is read on its own, without the tabs and the controls around it: five columns whatever
+ * the window, and the tall banner as its only headline. The screen keeps the banner to one line,
+ * since the day tab right above it already names the battle.
  *
  * Takes the assignment as a prop rather than reading the store: what shows is
  * the draft when one exists and the saved copy otherwise, and that merge
@@ -154,7 +154,6 @@ export function FormationGrid({
             absentIds={absentIds}
             notes={notes}
             onNoteChange={onNoteChange}
-            layout={layout}
           />
         ))}
       </div>

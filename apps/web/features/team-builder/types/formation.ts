@@ -46,7 +46,7 @@ export interface MatchDraft {
 
 /**
  * Where a formation grid is drawn. `screen` is the admin's working view; `capture` is the image
- * posted to Discord, which is read on its own and so keeps every note and the tall headline.
+ * posted to Discord, which is read on its own and so keeps five columns and the tall headline.
  */
 export type FormationLayout = "screen" | "capture";
 

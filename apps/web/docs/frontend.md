@@ -658,10 +658,10 @@ The actions that are not about saving (copy a line-up, announce on Discord) stay
 toolbar at the top. An action that must not run on unsaved work is disabled while the draft is
 dirty and says why in a tooltip, rather than opening a dialog only to refuse.
 
-On the team builder the formation grid comes in two layouts (`FormationLayout`): `screen` folds
-each slot's note behind a small button and keeps the formation banner to one line, `capture` - the
-image posted to Discord, read without the tabs around it - keeps a note column beside every slot and
-the tall banner as its only headline.
+On the team builder the formation grid comes in two layouts (`FormationLayout`): `screen` keeps the
+formation banner to one line, since the day tab right above it already names the battle; `capture` -
+the image posted to Discord, read without the tabs around it - keeps five columns whatever the window
+and the tall banner as its only headline.
 
 ### Feedback after a write → a toast
 

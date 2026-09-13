@@ -378,7 +378,8 @@ tiếng Việt, nút về trang Điểm danh). `error.tsx` là client component,
 
 - `member-pool.tsx`: dãy chip đếm theo lưu phái ("Tố Vấn 4 · …"), bấm chip thì bật lọc lưu phái
   tương ứng trong `pool-filter-store`.
-- `team-column.tsx`: header mỗi đội hiện số người "4/6".
+- ~~`team-column.tsx`: header mỗi đội hiện số người "4/6".~~ **Bỏ (2026-09-13, theo quyết định của
+  chủ bang sau khi xem bản dựng).**
 
 ---
 
@@ -387,9 +388,12 @@ tiếng Việt, nút về trang Điểm danh). `error.tsx` là client component,
 **Tác động: trung bình. Rủi ro: thấp.**
 
 `slot-cell.tsx:79`: mỗi ô dành `w-2/5` cho `SlotNoteInput`, nên 60 textarea luôn hiện và tên nhân
-vật bị cắt. Đề xuất: ô chưa có ghi chú chỉ hiện một nút icon nhỏ, bấm vào mới mở ô nhập; ô đã có
-ghi chú thì hiện chữ (bấm vào để sửa). Chế độ chỉ đọc chỉ hiện ghi chú khi có. Không đổi
-`FormationCaptureSheet`: ảnh gửi Discord vẫn hiện ghi chú như hiện tại.
+vật bị cắt. ~~Đề xuất: ô chưa có ghi chú chỉ hiện một nút icon nhỏ, bấm vào mới mở ô nhập; ô đã có
+ghi chú thì hiện chữ (bấm vào để sửa). Chế độ chỉ đọc chỉ hiện ghi chú khi có.~~
+
+**Bỏ (2026-09-13, theo quyết định của chủ bang sau khi xem bản dựng):** ghi chú phải đứng bên phải
+thành viên tương ứng, không xuống hàng. Cột ghi chú `w-2/5` giữ nguyên như cũ, cả trên màn hình lẫn
+trong ảnh gửi Discord.
 
 ---
 

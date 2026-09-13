@@ -64,7 +64,7 @@ export function TeamNameField({
 
   if (readOnly) {
     return (
-      <span className="block truncate px-1 text-left text-lg font-semibold">
+      <span className="block truncate text-center text-lg font-semibold">
         {label}
       </span>
     );
@@ -84,7 +84,7 @@ export function TeamNameField({
           title="Nhấn đúp để đổi tên đội"
           aria-label={`Đội ${label}. Nhấn đúp hoặc Enter để đổi tên.`}
           className={cn(
-            "w-full truncate rounded-md px-1 text-left text-lg font-semibold",
+            "w-full truncate rounded-md px-1 text-center text-lg font-semibold",
             "cursor-text outline-none transition-colors duration-[var(--duration-fast)]",
             "hover:bg-primary-foreground/15 focus-visible:ring-3 focus-visible:ring-primary-foreground/40"
           )}
@@ -95,8 +95,8 @@ export function TeamNameField({
             focus so ten pencils do not crowd the headers, and always on a touch screen, which
             has no hover to reveal it. Laid over the end of the name rather than beside it: a
             column is narrow from `lg`, and a pencil holding its own width - visible or not -
-            would cut every name down to its first letters. The name reads from the left so a
-            short one never reaches it. Centred by a flex wrapper, not a translate
+            would cut every name down to its first letters. The name is centred, so it has to
+            be long before it reaches the pencil. Centred by a flex wrapper, not a translate
             (frontend.md §5). */}
         <div className="absolute inset-y-0 right-0 flex items-center">
           <Button

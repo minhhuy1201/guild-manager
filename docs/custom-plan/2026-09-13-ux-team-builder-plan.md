@@ -8,14 +8,15 @@ phái, ghi chú, đổi tên đội, Gửi Discord, người đã báo nghỉ, b
 
 **Đổi so với spec ban đầu:** bố cục hai cột của TB1 (kho sticky bên phải) đã dựng, xem ở 1440px rồi
 **bỏ** theo quyết định của chủ bang: cột kho làm lưới đội hình hẹp, tên nhân vật co lại khó đọc. Kho
-giữ chỗ cũ dưới lưới; spec đã cập nhật theo.
+giữ chỗ cũ dưới lưới. Cũng theo chủ bang, sau khi xem bản dựng: bỏ số "n/6" ở header đội (TB2), bỏ
+ghi chú thu gọn (TB3, ghi chú giữ cột bên phải thành viên như cũ), tên đội căn giữa như cũ. Spec đã
+cập nhật theo.
 
 **Architecture:** Chỉ đổi `apps/web`. Không đổi API, schema, store shape hay quy tắc hạn chót.
 
 - `FormationGrid` bỏ prop `fixedColumns`, thay bằng `layout: "screen" | "capture"`. Ảnh gửi Discord
-  (`capture`) giữ nguyên như hôm nay: 5 cột cố định, banner cao, cột ghi chú `w-2/5`. Màn hình
-  (`screen`) dùng banner gọn (TB7) và ghi chú thu gọn (TB3). Một prop gom ba khác biệt vốn cùng
-  một lý do - "đây là ảnh chụp".
+  (`capture`) giữ nguyên như hôm nay: 5 cột cố định, banner cao. Màn hình (`screen`) dùng banner
+  gọn (TB7). Một prop gom hai khác biệt vốn cùng một lý do - "đây là ảnh chụp".
 - Thanh Lưu dính đáy là `components/shared/unsaved-changes-bar.tsx`, vì AT4 sẽ dùng lại. Nó là
   `sticky bottom-*` ở cuối cột nội dung, không phải `fixed`: không che nội dung cuối trang, và
   `sticky` không tạo containing block cho `DragOverlay` hay `FormationCaptureSheet` (cả hai
@@ -29,8 +30,7 @@ giữ chỗ cũ dưới lưới; spec đã cập nhật theo.
 - **Đếm theo lưu phái (TB2)** tính trên kho của trận (người đi, chưa xếp), **bỏ qua** cả hai bộ lọc:
   chip là để chọn lọc, nên nó phải cho biết mỗi lưu phái còn bao nhiêu người trước khi lọc. Chip là
   icon lưu phái kèm số, tên lưu phái ở tooltip, đúng §6 "Guild class → an icon with a tooltip".
-- **"4/6" ở header đội (TB2)** hiện cả trong ảnh Discord: số người mỗi đội cũng là thông tin cho
-  người xem ảnh.
+- ~~**"4/6" ở header đội (TB2)**~~: đã dựng rồi bỏ theo quyết định của chủ bang.
 - **Gỡ người đã báo nghỉ (TB6)** chỉ gỡ khỏi trận đang mở, vì dấu đỏ và banner đều tính trên trận
   đang mở. Người bị gỡ về kho (họ không đi nên không hiện trong kho, đúng như hiện tại).
 - **Toolbar trên cùng** giữ Copy và Gửi Discord; "Đặt lại", "Lưu", chữ "Chưa lưu" và lỗi lưu chuyển
@@ -79,18 +79,15 @@ giữ chỗ cũ dưới lưới; spec đã cập nhật theo.
 
 - [x] Test đỏ `countByGuildClass`: theo thứ tự `GUILD_CLASS_OPTIONS`, bỏ lưu phái 0 người.
 - [x] Test đỏ `toggleGuildClass`: bật thêm, tắt bớt, không đổi mảng gốc.
-- [x] Chip bấm được, đang lọc thì tô `primary`. Header đội hiện "n/6".
+- [x] Chip bấm được, đang lọc thì tô `primary`. ~~Header đội hiện "n/6".~~ Đã dựng rồi bỏ.
 
-### Task 5: Ghi chú thu gọn, banner gọn (TB3, TB7)
+### Task 5: Banner gọn (TB7); ghi chú thu gọn (TB3) đã bỏ
 
-**Files:** `formation-grid.tsx`, `team-column.tsx`, `slot-cell.tsx`, `slot-note-input.tsx`,
-`formation-banner.tsx`, `formation-capture-sheet.tsx` + test
+**Files:** `formation-grid.tsx`, `formation-banner.tsx`, `formation-capture-sheet.tsx` + test
 
-Trạng thái "đang sửa ghi chú" nằm trong `SlotCell` chứ không tách component riêng: nút thêm ghi
-chú đứng cạnh ô, còn chữ ghi chú nằm dưới ô, nên chỉ `SlotCell` đặt được cả hai.
-
-- [x] Test đỏ `SlotCell` (layout `screen`): ô trống chỉ có nút "Thêm ghi chú"; bấm thì mở ô nhập;
-      blur hoặc Esc thì đóng; ô có ghi chú hiện chữ, bấm để sửa; chỉ đọc và trống thì không render gì.
+- [x] ~~Ghi chú thu gọn trong `SlotCell`.~~ Đã dựng rồi bỏ (xem đầu plan); `slot-cell.tsx`,
+      `slot-note-input.tsx`, `team-column.tsx` trở về như trên `main`.
+- [x] Test đỏ `FormationBanner`: cỡ `compact` không giữ `min-h-24`, cỡ `tall` thì giữ.
 - [x] Test capture sheet: vẫn có cột ghi chú (textarea chỉ đọc) và banner cao như cũ.
 
 ### Task 6: Đổi tên đội dễ thấy (TB4)
