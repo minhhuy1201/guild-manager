@@ -20,7 +20,7 @@ import { AttendanceSummaryCard } from "./attendance-summary-card";
 /** The scope whose filters this dashboard follows — the History screen's. */
 const SCOPE = "history";
 
-/** Grid of the week's days, the same one the week timeline and the member card use. */
+/** Grid of the week's days, the same one the member card uses. */
 const GRID = "grid gap-4 sm:grid-cols-2 lg:grid-cols-3";
 
 /** Placeholder cards while loading — as many as a week usually has sessions. */

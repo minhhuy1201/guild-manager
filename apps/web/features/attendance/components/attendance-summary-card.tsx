@@ -130,8 +130,8 @@ interface AttendanceSummaryCardProps {
 
 /**
  * One battle session's attendance, as seven horizontal stacked bars — one per guild class.
- * The frame repeats the week timeline's tile (`SessionLabel`, the subtitle, `sessionTintClass`), so
- * a day is recognised the same way here as everywhere else.
+ * The frame repeats the member card's read-only tile (`SessionLabel`, the subtitle,
+ * `sessionTintClass`), so a day is recognised the same way here as everywhere else.
  * @param session - Session this card tallies
  * @param rows - Per-class counts for that session
  * @param domainMax - Shared X axis maximum

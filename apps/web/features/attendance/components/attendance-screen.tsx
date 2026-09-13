@@ -4,7 +4,6 @@ import type { GuildRole } from "@guild/shared/enums";
 import { canManageGuild } from "@guild/shared/lib";
 
 import { PageHeader } from "@/components/shared/page-header";
-import { WeekTimeline } from "./week-timeline";
 import { AttendanceFilters } from "./attendance-filters";
 import { AttendanceGrid } from "./attendance-grid";
 import { MemberAttendanceCard } from "./member-attendance-card";
@@ -17,7 +16,8 @@ interface AttendanceScreenProps {
 /**
  * The attendance screen. Everyone reads the whole guild's grid, filters included, and answers for
  * their own character in the card above it — an admin fights the battles too. The role only decides
- * whether the grid gets its edit column.
+ * whether the grid gets its edit column. The card carries the week's schedule as well, so the page
+ * shows one grid of day tiles, with the one thing a member came to do right under the banner.
  * @param props.role - Role of the viewer
  * @returns The attendance page content
  */
@@ -31,7 +31,6 @@ export function AttendanceScreen({ role }: AttendanceScreenProps) {
         title="Điểm danh"
         description="Chọn Có hoặc Không cho từng trận trong tuần, trước hạn chót của trận đó."
       />
-      <WeekTimeline />
       <MemberAttendanceCard />
       <AttendanceFilters scope="attendance" />
       <AttendanceGrid isAdmin={isAdmin} />

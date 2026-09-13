@@ -3,9 +3,6 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { GuildRole } from "@guild/shared/enums";
 
-vi.mock("../components/week-timeline", () => ({
-  WeekTimeline: () => <div data-testid="week-timeline" />,
-}));
 vi.mock("../components/attendance-filters", () => ({
   AttendanceFilters: () => <div data-testid="filters" />,
 }));
@@ -31,13 +28,14 @@ describe("AttendanceScreen", () => {
     expect(screen.getByTestId("grid").dataset.admin).toBe("false");
   });
 
-  it("thẻ cá nhân nằm trên bộ lọc và lưới", () => {
+  // Lịch tuần đã gộp vào thẻ cá nhân: trang chỉ còn một lưới ô ngày, và việc chính đứng đầu trang.
+  it("thẻ tuần của bạn đứng đầu, rồi tới bộ lọc và lưới", () => {
     const { container } = render(<AttendanceScreen role={GuildRole.MEMBER} />);
     const order = [...container.querySelectorAll("[data-testid]")].map(
       (node) => node.getAttribute("data-testid")
     );
 
-    expect(order).toEqual(["week-timeline", "member-card", "filters", "grid"]);
+    expect(order).toEqual(["member-card", "filters", "grid"]);
   });
 
   it("admin cũng thấy thẻ cá nhân, và lưới cho sửa được", () => {

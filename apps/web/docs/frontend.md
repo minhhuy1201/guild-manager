@@ -434,19 +434,25 @@ because "still waiting for you" is neither a success nor a failure. The border t
 strength, the background at `/5`: a week of tiles is a lot of surface, and a fill as strong as the
 border would drown the text and the buttons on it.
 
-The answer owns the whole tile, which is why the member card is the one place that does **not** call
-`sessionTintClass` — a Guild War is still named there by `SessionLabel`'s swords, and by the tinted
-tile in the week timeline directly above.
+The answer owns the whole tile, which is why an answering tile does **not** call `sessionTintClass` —
+a Guild War is still named there by `SessionLabel`'s swords. An account with no character linked has
+no answer to show, so its tiles are read-only and take the tint instead.
 
-That card repeats the **week timeline's grid** (`grid gap-2 sm:grid-cols-2 lg:grid-cols-3`, the same
-tile frame and `sessionTintClass`), so a day keeps its column in both cards and the eye drops
-straight from the day to its two buttons. The answers close the tile, "Có" above "Không", each the
-full width of the tile — the widest possible target on a phone, and two equal buttons whose words are
-not. `mt-auto` on their column pins them to the bottom, so a longer subtitle cannot leave one tile's
-answers higher than its neighbour's.
+The member card is also **the week's schedule** ("Tuần này của bạn"): there is no separate timeline.
+Its header names the character and the week (`DateRange`), then says what is left to do - "Bạn còn
+**N trận** chưa điểm danh" (`countUnanswered`: open battles without an answer) or "Bạn đã điểm danh đủ
+tuần này". Each tile (`grid gap-2 sm:grid-cols-2 lg:grid-cols-3`) carries the battle, its subtitle,
+`SessionDeadline` and a "Còn hạn / Đã khoá" badge, then the answers. The answers close the tile,
+"Có" above "Không", each the full width of the tile — the widest possible target on a phone, and two
+equal buttons whose words are not. `mt-auto` on their column pins them to the bottom, so a longer
+subtitle cannot leave one tile's answers higher than its neighbour's.
+
+The absence reason under a "Không" (`absence-reason-input`) is saved by Enter or by its own small
+"Lưu", never by blur. While its text differs from the stored reason it shows that "Lưu" and a
+"chưa lưu" note, so clicking away never reads as saved.
 
 > Not to be confused with `status-badge.tsx`: a badge **has words** and is for descriptive labels
-> ("Đã khóa" / "Đang mở" on the week timeline), not for binary state.
+> ("Đã khoá" / "Còn hạn" on a member card tile), not for binary state.
 
 ### Guild class → an icon with a tooltip
 
@@ -488,11 +494,11 @@ Four screens show a battle by name, and all four recognise the Guild War the sam
 
 - `SessionLabel` is **one inline row** — the `Swords` icon when `isGuildWar`, `text-primary`, the
   backend-built `label`, in that order. `size` is `"sm"` (`size-3.5`, a narrow cell: the attendance
-  column head, a team builder tab) or `"md"` (`size-4`, a list row: the week timeline, the settings
+  column head, a team builder tab) or `"md"` (`size-4`, a list row: the member card, the settings
   schedule). Two named values, not a free `className` — a third size means adding a value here, not
   a class at the call site.
-- `SessionDeadline` is the whole `Hạn chót: …` line, wrapper class included. Only the week timeline
-  and the settings row show it.
+- `SessionDeadline` is the whole `Hạn chót: …` line, wrapper class included. Only the member card's
+  tiles and the settings row show it.
 - `sessionTintClass(isGuildWar)` returns `border-primary/40 bg-primary/5` for the Guild War, to be
   merged into whatever frame the screen already draws.
 
@@ -755,7 +761,7 @@ Data arrives, it does not snap in. Four pieces, all CSS, in `app/globals.css` an
 - **The formation grid never reveals.** It is screenshotted for the Discord announcement and dragged
   over; a column caught mid-fade would be sent half transparent. The team builder gets the page
   entrance and nothing else.
-- Used today by `week-timeline`, `member-attendance-card`, `attendance-summary-dashboard` and
+- Used today by `member-attendance-card`, `attendance-summary-dashboard` and
   `session-list`. A new list of loaded data takes the same helper, never a delay of its own. A
   component without a `className` prop is wrapped (the dashboard wraps each card in a one-cell
   `grid`, so it still stretches to the row).
