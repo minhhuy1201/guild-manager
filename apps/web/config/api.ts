@@ -28,9 +28,10 @@ if (process.env.NODE_ENV === "production" && !configuredApiUrl) {
 export const PUBLIC_API_URL = configuredApiUrl ?? FALLBACK_API_URL;
 
 /**
- * Base URL for the requests this app makes itself (`apiFetch`). On the server it takes
- * `API_INTERNAL_URL` when set; in the browser that lookup is undefined, so it is `PUBLIC_API_URL`.
+ * Base URL of the requests this app makes itself, i.e. `apiFetch`'s prefix; the counterpart of
+ * `PUBLIC_API_URL`. On the server it takes `API_INTERNAL_URL` when set; in the browser that lookup
+ * is undefined, so it is `PUBLIC_API_URL` - which is why it is named for the fetch, not the server.
  * Never render it into markup: a Server Component would hand the browser a host only the containers
  * can resolve.
  */
-export const API_BASE_URL = internalApiUrl ?? PUBLIC_API_URL;
+export const FETCH_API_URL = internalApiUrl ?? PUBLIC_API_URL;

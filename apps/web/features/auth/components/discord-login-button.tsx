@@ -17,7 +17,7 @@ interface DiscordLoginButtonProps {
 export function DiscordLoginButton({
   redirect = "/",
 }: DiscordLoginButtonProps) {
-  // The public URL, not `API_BASE_URL`: this renders on the server, but the browser follows the
+  // The public URL, not `FETCH_API_URL`: this renders on the server, but the browser follows the
   // link, and under the Docker dev profile the server's own URL points at a host only the
   // containers can resolve.
   const href = `${PUBLIC_API_URL}/auth/discord?redirect=${encodeURIComponent(redirect)}`;
