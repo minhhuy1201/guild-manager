@@ -4,7 +4,6 @@ import { Hourglass } from "lucide-react";
 
 import { RosterFilterBar } from "@/components/shared/roster-filter-bar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import {
   useAttendanceFilterStore,
@@ -22,8 +21,11 @@ interface AttendanceFiltersProps {
  *
  * The Attendance screen adds one quick filter beside them, "Chưa điểm danh": the question an admin
  * asks the grid most, a day or two before a battle, is who has not answered yet.
+ *
+ * Bare, without a card of its own: it sits in the header of the card of the table it filters, so
+ * the page has one block fewer and nobody wonders what the filters act on.
  * @param scope - The screen using the filters
- * @returns The filter card
+ * @returns The filter row
  */
 export function AttendanceFilters({ scope }: AttendanceFiltersProps) {
   const filter = useAttendanceFilterStore((s) => s.filters[scope]);
@@ -34,9 +36,8 @@ export function AttendanceFilters({ scope }: AttendanceFiltersProps) {
   );
 
   return (
-    <Card>
-      <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-end">
-        <RosterFilterBar
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+      <RosterFilterBar
           idPrefix={scope}
           value={filter}
           onChange={(next) => setFilter(scope, next)}
@@ -59,7 +60,6 @@ export function AttendanceFilters({ scope }: AttendanceFiltersProps) {
             Chưa điểm danh
           </Button>
         ) : null}
-      </CardContent>
-    </Card>
+    </div>
   );
 }

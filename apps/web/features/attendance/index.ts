@@ -1,5 +1,4 @@
 export { AttendanceScreen } from "./components/attendance-screen";
-export { AttendanceFilters } from "./components/attendance-filters";
 export { AttendanceHistoryScope } from "./components/attendance-history-scope";
 export { AttendanceLogTable } from "./components/attendance-log-table";
 export { AttendanceSummaryDashboard } from "./components/attendance-summary-dashboard";

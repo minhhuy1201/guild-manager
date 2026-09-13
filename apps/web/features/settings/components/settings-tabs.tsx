@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Swords, Users } from "lucide-react";
 
 import { PageHeader } from "@/components/shared/page-header";
@@ -19,21 +20,57 @@ const TAB = {
   members: "members",
 } as const;
 
+/** One of the two tabs. */
+type SettingsTab = (typeof TAB)[keyof typeof TAB];
+
+/** Query parameter the open tab is kept in: `?tab=members`. */
+const TAB_PARAM = "tab";
+
+/**
+ * Read the tab out of the address. Anything but "members" - no parameter, an old or mistyped
+ * value - opens the schedule, the default.
+ * @param value - The `tab` query parameter, null when absent
+ * @returns The tab to open
+ */
+function tabFrom(value: string | null): SettingsTab {
+  return value === TAB.members ? TAB.members : TAB.battles;
+}
+
 /**
  * The settings screen with its two tabs: schedule and member management.
- * The active tab is local state only — not in the URL, since nobody needs to link straight to a tab.
+ *
+ * The open tab lives in the address (`?tab=members`) rather than in local state, so a reload, or
+ * a link an admin sends another, opens the tab they were on instead of falling back to the
+ * schedule. A tab switch replaces the history entry rather than pushing one: Back should leave the
+ * settings page, not step through every tab pressed on it. The default tab keeps a bare address.
  * @returns The page header over the tabbed settings screen
  */
 export function SettingsTabs() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const tab = tabFrom(searchParams.get(TAB_PARAM));
+
+  /**
+   * Open another tab by rewriting the address.
+   * @param next - The tab to open
+   */
+  function selectTab(next: SettingsTab) {
+    const href =
+      next === TAB.battles ? pathname : `${pathname}?${TAB_PARAM}=${next}`;
+    router.replace(href, { scroll: false });
+  }
+
   return (
     <>
       <PageHeader
         banner="settings"
+        size="compact"
         title="Thiết lập"
         description="Lịch đánh trong tuần và danh sách thành viên của bang."
       />
 
-      <Tabs defaultValue={TAB.battles}>
+      <Tabs value={tab} onValueChange={(next) => selectTab(tabFrom(String(next)))}>
         <TabsList>
           <TabsTrigger value={TAB.battles}>
             <Swords />
@@ -52,12 +89,10 @@ export function SettingsTabs() {
         <TabsContent value={TAB.members}>
           <Card>
             <CardContent className="flex flex-col gap-4">
-              <div>
-                <h2 className="text-lg font-semibold">Quản lý thành viên</h2>
-                <p className="text-sm text-muted-foreground">
-                  Thêm thành viên, sửa lưu phái, gán Discord ID và phân quyền.
-                </p>
-              </div>
+              {/* No heading: the tab right above already names the panel. */}
+              <p className="text-sm text-muted-foreground">
+                Thêm thành viên, sửa lưu phái, gán Discord ID và phân quyền.
+              </p>
               <MembersPanel />
             </CardContent>
           </Card>
