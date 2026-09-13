@@ -67,6 +67,20 @@ describe("FormationCaptureSheet", () => {
     expect(grid.className).not.toContain("lg:grid-cols-5");
   });
 
+  // Màn hình thu gọn ghi chú và banner, còn ảnh gửi Discord giữ nguyên như trước.
+  it("mỗi ô trong ảnh vẫn có cột ghi chú", () => {
+    const { container } = renderSheet([EMPTY_MATCH]);
+
+    expect(container.querySelectorAll("textarea").length).toBe(60);
+  });
+
+  it("banner trong ảnh vẫn là tiêu đề cao, vì ảnh không có tab ngày", () => {
+    const { container } = renderSheet([EMPTY_MATCH]);
+    const banner = container.querySelector("h2") as HTMLElement;
+
+    expect(banner.className).toContain("min-h-24");
+  });
+
   it("banner của mỗi trận nói đúng số thứ tự trận", () => {
     const { container } = renderSheet([EMPTY_MATCH, EMPTY_MATCH]);
     const nodes = container.querySelectorAll(`[${CAPTURE_NODE_ATTRIBUTE}]`);

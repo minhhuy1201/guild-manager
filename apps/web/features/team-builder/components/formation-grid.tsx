@@ -7,7 +7,12 @@ import type { Character, TeamNames } from "@guild/shared/schemas";
 import { Spinner } from "@/components/shared/spinner";
 import { cn } from "@/lib/utils";
 import { createMockFormation } from "../lib/mock-formation";
-import type { Assignment, Notes, Slot } from "../types/formation";
+import type {
+  Assignment,
+  FormationLayout,
+  Notes,
+  Slot,
+} from "../types/formation";
 import { FormationBanner } from "./formation-banner";
 import { TeamColumn } from "./team-column";
 
@@ -39,8 +44,8 @@ interface FormationGridProps {
   onNameChange: (team: number, name: string) => void;
   /** True while a save is in flight — the grid is covered and frozen */
   saving?: boolean;
-  /** Lay the columns out as a fixed five-wide grid, whatever the viewport is */
-  fixedColumns?: boolean;
+  /** Where the grid is drawn: the admin's screen, or the Discord image */
+  layout?: FormationLayout;
 }
 
 /**
@@ -50,6 +55,11 @@ interface FormationGridProps {
  * count only means changing the layout builder.
  *
  * A banner spanning all five columns sits on top, naming the battle and the match.
+ *
+ * `layout` gathers everything the Discord image does differently from the screen, all for one
+ * reason - the image is read on its own, without the tabs and the controls around it: five
+ * columns whatever the window, the tall banner as its only headline, and a note column beside
+ * every slot. The screen folds its notes away and keeps the banner to one line.
  *
  * Takes the assignment as a prop rather than reading the store: what shows is
  * the draft when one exists and the saved copy otherwise, and that merge
@@ -66,7 +76,7 @@ interface FormationGridProps {
  * @param names - Team names, keyed by team number
  * @param onNameChange - Called with the committed name of a team
  * @param saving - True while a save is in flight
- * @param fixedColumns - Lay the columns out five-wide whatever the viewport is
+ * @param layout - Where the grid is drawn, the screen by default
  * @returns Grid of team columns
  */
 export function FormationGrid({
@@ -82,8 +92,10 @@ export function FormationGrid({
   names,
   onNameChange,
   saving = false,
-  fixedColumns = false,
+  layout = "screen",
 }: FormationGridProps) {
+  const isCapture = layout === "capture";
+
   const teams = useMemo(() => {
     const grouped = new Map<number, Slot[]>();
 
@@ -118,7 +130,7 @@ export function FormationGrid({
       <div
         className={cn(
           "grid gap-3",
-          fixedColumns
+          isCapture
             ? "grid-cols-5"
             : "grid-cols-1 md:grid-cols-2 lg:grid-cols-5"
         )}
@@ -127,6 +139,7 @@ export function FormationGrid({
           title={bannerTitle}
           isGuildWar={isGuildWar}
           locked={locked}
+          size={isCapture ? "tall" : "compact"}
         />
 
         {teams.map(({ team, slots }) => (
@@ -141,6 +154,7 @@ export function FormationGrid({
             absentIds={absentIds}
             notes={notes}
             onNoteChange={onNoteChange}
+            layout={layout}
           />
         ))}
       </div>

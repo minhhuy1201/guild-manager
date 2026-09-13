@@ -231,7 +231,7 @@ Current shared building blocks: `action-buttons`, `confirm-delete-dialog`, `date
 `error-state`, `guild-class-filter-select`, `guild-class-icon`, `main-nav`, `mutation-dialog`,
 `mutation-form`, `mutation-pending`, `page-size-select`, `password-input`, `query-boundary`,
 `roster-filter-bar`, `session-label`, `site-header`, `status-badge`, `status-icon`, `toast`,
-`table-pagination`, `table-pagination-bar`, `table-skeleton`.
+`table-pagination`, `table-pagination-bar`, `table-skeleton`, `unsaved-changes-bar`.
 
 ### The query group of a screen
 
@@ -282,8 +282,8 @@ outside the component — the create button is members' own JSX, not a prop.
 A screen that stacks several filters ends its bar with **one "Xoá bộ lọc" button that clears all of
 them in a single store write** — `attendance-history-filters` is the worked example, resetting the
 roster filter, the presence and the session at once. The button is always rendered and `disabled`
-while nothing is set, the way `formation-toolbar` holds its "Đặt lại": one that appears and
-disappears makes the card change height as soon as the first filter is typed. Whether the roster
+while nothing is set: one that appears and disappears makes the card change height as soon as the
+first filter is typed. Whether the roster
 half counts as set is `isRosterFilterActive` (`lib/roster-filter.ts`), which trims the keyword for
 the same reason `matchesRosterFilter` does — a box holding only spaces filters nothing. A filter
 whose value no longer resolves (a session since deleted) is **not** counted: it already reads as
@@ -643,6 +643,25 @@ outside one, call it directly.
 
 The `border-dashed` left in the app is the drag-and-drop drop-zone border (`member-pool`, `slot-cell`,
 `prefill-banner`), not an empty state.
+
+### Unsaved work → a save bar pinned to the bottom
+
+A screen that builds a draft before writing it (the team builder) keeps its Save and its discard
+button in **`components/shared/unsaved-changes-bar.tsx`**, rendered only while there is something to
+save: "N thay đổi chưa lưu · Đặt lại · Lưu", the save's error in place of the count. It is
+`sticky bottom-*` at the end of the screen's column, so the button stays in reach wherever the
+page is scrolled, and **never `fixed`**: sticky leaves the last row of content uncovered, and it
+creates no containing block for the `position: fixed` elements of the screen (see *Entrance and
+data reveal*). The team builder also binds Ctrl+S / Cmd+S to the same save (`useSaveShortcut`).
+
+The actions that are not about saving (copy a line-up, announce on Discord) stay in the screen's
+toolbar at the top. An action that must not run on unsaved work is disabled while the draft is
+dirty and says why in a tooltip, rather than opening a dialog only to refuse.
+
+On the team builder the formation grid comes in two layouts (`FormationLayout`): `screen` folds
+each slot's note behind a small button and keeps the formation banner to one line, `capture` - the
+image posted to Discord, read without the tabs around it - keeps a note column beside every slot and
+the tall banner as its only headline.
 
 ### Feedback after a write → a toast
 

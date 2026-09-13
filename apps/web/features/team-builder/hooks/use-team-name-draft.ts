@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import type { TeamNames } from "@guild/shared/schemas";
 
 import { ApiError } from "@/lib/api-client";
+import { countNameChanges } from "../lib/team-name-diff";
 import { useTeamNameStore } from "../store/team-name-store";
 import { useSaveTeamNames } from "./use-save-team-names";
 
@@ -13,6 +14,8 @@ export interface TeamNameDraftState {
   names: TeamNames;
   /** Whether the names differ from the saved copy */
   dirty: boolean;
+  /** How many teams carry a name different from the saved copy */
+  changeCount: number;
   /** True while the save request is in flight */
   saving: boolean;
   /** Message of the last failed save, undefined when the last save was fine */
@@ -48,7 +51,11 @@ export function useTeamNameDraft(saved: TeamNames): TeamNameDraftState {
   // Compared by value, not by reference: retyping the name a team already had
   // leaves a draft in place that is equal to the saved copy, and that is not an
   // unsaved change.
-  const dirty = useMemo(() => !isSameNames(names, saved), [names, saved]);
+  const changeCount = useMemo(
+    () => countNameChanges(names, saved),
+    [names, saved]
+  );
+  const dirty = changeCount > 0;
 
   /**
    * Persist the whole map, then drop the draft so the query's copy shows through.
@@ -70,6 +77,7 @@ export function useTeamNameDraft(saved: TeamNames): TeamNameDraftState {
   return {
     names,
     dirty,
+    changeCount,
     saving: saveMutation.isPending,
     saveErrorMessage:
       saveMutation.error instanceof ApiError
@@ -79,17 +87,4 @@ export function useTeamNameDraft(saved: TeamNames): TeamNameDraftState {
     reset: clearDraft,
     save,
   };
-}
-
-/**
- * Whether two name maps hold the same names for the same teams.
- * @param a - One map
- * @param b - The other map
- * @returns true when both carry the same keys with the same values
- */
-function isSameNames(a: TeamNames, b: TeamNames): boolean {
-  const keys = Object.keys(a);
-  if (keys.length !== Object.keys(b).length) return false;
-
-  return keys.every((key) => a[key] === b[key]);
 }

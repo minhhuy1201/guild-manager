@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { Assignment } from "../../types/formation";
-import { applyDrop } from "../assignment";
+import { applyDrop, removeCharacters } from "../assignment";
 
 const SLOT_A = "team-1-pos-1";
 const SLOT_B = "team-1-pos-2";
@@ -11,6 +11,28 @@ const SLOT_C = "team-2-pos-1";
 function emptyThreeSlots(): Assignment {
   return { [SLOT_A]: null, [SLOT_B]: null, [SLOT_C]: null };
 }
+
+describe("removeCharacters", () => {
+  it("gỡ đúng những người được chỉ định, giữ nguyên các ô khác", () => {
+    const assignment: Assignment = {
+      [SLOT_A]: "char-1",
+      [SLOT_B]: "char-2",
+      [SLOT_C]: "char-3",
+    };
+
+    const result = removeCharacters(assignment, new Set(["char-1", "char-3"]));
+
+    expect(result).toEqual({ [SLOT_A]: null, [SLOT_B]: "char-2", [SLOT_C]: null });
+    expect(assignment[SLOT_A]).toBe("char-1");
+  });
+
+  // Tham chiếu cũ cho biết không có gì đổi, như applyDrop khi thả ra ngoài.
+  it("không ai để gỡ thì trả lại đúng tham chiếu cũ", () => {
+    const assignment: Assignment = { [SLOT_A]: "char-1", [SLOT_B]: null };
+
+    expect(removeCharacters(assignment, new Set(["char-9"]))).toBe(assignment);
+  });
+});
 
 describe("applyDrop", () => {
   it("case 1 — pool → ô trống: đặt nhân vật vào ô", () => {

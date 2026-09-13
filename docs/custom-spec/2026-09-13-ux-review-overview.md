@@ -101,9 +101,10 @@ phía trên, không dính khi cuộn xuống kho.
 
 ### Đề xuất
 
-- Từ `lg` trở lên: bố cục hai cột. Trái là `FormationGrid`, phải là `MemberPool` sticky
-  (`sticky top-<chiều cao header>`, cao theo viewport, danh sách tự cuộn bên trong). Dưới `lg` giữ
-  thứ tự hiện tại.
+- ~~Từ `lg` trở lên: bố cục hai cột, `MemberPool` sticky bên phải.~~ **Bỏ (2026-09-13, theo quyết
+  định của chủ bang sau khi xem bản dựng):** cột kho bên phải làm lưới đội hình hẹp lại, tên nhân
+  vật bị co và khó đọc. `MemberPool` giữ nguyên chỗ cũ, dưới `FormationGrid`. Quãng kéo ngắn đi nhờ
+  lưới thấp hơn (TB3 thu gọn ghi chú, TB7 thu gọn banner).
 - Thanh hành động dính đáy màn hình, chỉ hiện khi `dirty`: "N thay đổi chưa lưu · Đặt lại · Lưu".
   Toolbar trên cùng giữ Copy và Gửi Discord.
 - Phím tắt Ctrl+S (Cmd+S trên macOS) gọi cùng hàm `handleSave`, chặn hộp thoại lưu trang của trình
@@ -111,7 +112,8 @@ phía trên, không dính khi cuộn xuống kho.
 
 ### Tiêu chí chấp nhận
 
-- Ở 1440px, kéo một người từ kho vào bất kỳ ô nào của 10 đội mà không cần cuộn trang.
+- ~~Ở 1440px, kéo một người từ kho vào bất kỳ ô nào của 10 đội mà không cần cuộn trang.~~ Bỏ cùng
+  bố cục hai cột.
 - Khi có thay đổi chưa lưu, nút Lưu luôn nhìn thấy dù đang cuộn ở đâu.
 - `DragOverlay` vẫn bám con trỏ đúng: thanh sticky và cột sticky không được tạo containing block cho
   phần tử `position: fixed` (xem ghi chú `backwards` trong `globals.css`).

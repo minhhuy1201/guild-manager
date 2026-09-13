@@ -3,7 +3,7 @@ import type { Character } from "@guild/shared/schemas";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { getTeamColors } from "../lib/team-colors";
-import type { Notes, Slot } from "../types/formation";
+import type { FormationLayout, Notes, Slot } from "../types/formation";
 import { SlotCell } from "./slot-cell";
 import { TeamNameField } from "./team-name-field";
 
@@ -26,6 +26,8 @@ interface TeamColumnProps {
   notes: Notes;
   /** Called with the raw text when a slot's note changes */
   onNoteChange: (slotId: string, text: string) => void;
+  /** Where the grid is drawn — decides how the notes show */
+  layout?: FormationLayout;
 }
 
 /**
@@ -41,6 +43,7 @@ interface TeamColumnProps {
  * @param absentIds - Ids of placed members who dropped out
  * @param notes - Notes currently shown, keyed by slot id
  * @param onNoteChange - Called with the raw text when a slot's note changes
+ * @param layout - Where the grid is drawn, the screen by default
  * @returns Card holding the team's slots
  */
 export function TeamColumn({
@@ -53,8 +56,10 @@ export function TeamColumn({
   absentIds,
   notes,
   onNoteChange,
+  layout = "screen",
 }: TeamColumnProps) {
   const colors = getTeamColors(team);
+  const filled = slots.filter((slot) => occupants.has(slot.id)).length;
 
   return (
     <Card
@@ -64,13 +69,20 @@ export function TeamColumn({
         colors.background
       )}
     >
-      <CardHeader className={cn("px-3 py-2", colors.header)}>
-        <TeamNameField
-          team={team}
-          value={name}
-          readOnly={readOnly}
-          onCommit={onNameChange}
-        />
+      <CardHeader
+        className={cn("flex-row items-center gap-2 px-3 py-2", colors.header)}
+      >
+        <div className="min-w-0 flex-1">
+          <TeamNameField
+            team={team}
+            value={name}
+            readOnly={readOnly}
+            onCommit={onNameChange}
+          />
+        </div>
+        <span className="shrink-0 text-sm font-medium tabular-nums text-muted-foreground">
+          {filled}/{slots.length}
+        </span>
       </CardHeader>
       <CardContent className="flex flex-col gap-2 px-3">
         {slots.map((slot) => {
@@ -84,6 +96,7 @@ export function TeamColumn({
               readOnly={readOnly}
               note={notes[slot.id] ?? ""}
               onNoteChange={onNoteChange}
+              layout={layout}
               absentReason={
                 character && absentIds.has(character.id)
                   ? "Đã báo nghỉ trận này"

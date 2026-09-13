@@ -31,22 +31,30 @@ function input(): HTMLInputElement {
   return screen.getByRole("textbox") as HTMLInputElement;
 }
 
+/**
+ * The header label itself, as opposed to the pencil button beside it.
+ * @returns The label button
+ */
+function labelButton(): HTMLElement {
+  return screen.getByRole("button", { name: /^Đội / });
+}
+
 /** Open the input the way a user does. */
 function startEditing() {
-  fireEvent.doubleClick(screen.getByRole("button"));
+  fireEvent.doubleClick(labelButton());
 }
 
 describe("TeamNameField — chế độ đọc", () => {
   it("đội chưa đặt tên thì hiện số đội", () => {
     renderField();
 
-    expect(screen.getByRole("button").textContent).toBe("3");
+    expect(labelButton().textContent).toBe("3");
   });
 
   it("đội đã đặt tên thì hiện tên", () => {
     renderField({ value: "Thủ nhà" });
 
-    expect(screen.getByRole("button").textContent).toBe("Thủ nhà");
+    expect(labelButton().textContent).toBe("Thủ nhà");
   });
 
   it("read-only thì không phải nút, không mở được ô nhập", () => {
@@ -67,21 +75,36 @@ describe("TeamNameField — mở ô nhập", () => {
 
   it("Enter trên header cũng mở ô nhập, cho người dùng bàn phím", () => {
     renderField({ value: "Thủ nhà" });
-    fireEvent.keyDown(screen.getByRole("button"), { key: "Enter" });
+    fireEvent.keyDown(labelButton(), { key: "Enter" });
 
     expect(input()).toBeTruthy();
   });
 
   it("Space cũng mở ô nhập", () => {
     renderField();
-    fireEvent.keyDown(screen.getByRole("button"), { key: " " });
+    fireEvent.keyDown(labelButton(), { key: " " });
 
     expect(input()).toBeTruthy();
   });
 
+  // Nhấn đúp là thao tác không ai tự đoán ra; nút bút chì là lối vào nhìn thấy được.
+  it("bấm một lần vào nút bút chì thì mở ô nhập", () => {
+    renderField({ value: "Thủ nhà" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Đổi tên đội 3" }));
+
+    expect(input().value).toBe("Thủ nhà");
+  });
+
+  it("read-only thì không có nút bút chì", () => {
+    renderField({ readOnly: true });
+
+    expect(screen.queryByRole("button", { name: "Đổi tên đội 3" })).toBeNull();
+  });
+
   it("phím thường không mở ô nhập", () => {
     renderField();
-    fireEvent.keyDown(screen.getByRole("button"), { key: "a" });
+    fireEvent.keyDown(labelButton(), { key: "a" });
 
     expect(screen.queryByRole("textbox")).toBeNull();
   });
@@ -124,7 +147,7 @@ describe("TeamNameField — chốt và huỷ", () => {
     fireEvent.keyDown(input(), { key: "Escape" });
 
     expect(onCommit).not.toHaveBeenCalled();
-    expect(screen.getByRole("button").textContent).toBe("Thủ nhà");
+    expect(labelButton().textContent).toBe("Thủ nhà");
   });
 
   it("mở lại sau khi Escape thì ô nhập về tên đã lưu, không giữ chữ đã huỷ", () => {

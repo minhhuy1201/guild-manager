@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { Assignment, MatchDraft } from "../../types/formation";
-import { isDayDirty } from "../formation-diff";
+import { countDayChanges, isDayDirty } from "../formation-diff";
 
 const SAVED: Assignment = {
   "team-1-pos-1": "char-1",
@@ -138,5 +138,65 @@ describe("isDayDirty", () => {
     draft[0].notes["team-1-pos-2"] = "";
 
     expect(isDayDirty(draft, saved)).toBe(false);
+  });
+});
+
+describe("countDayChanges", () => {
+  const saved: MatchDraft[] = [
+    {
+      assignment: { "team-1-pos-1": "char-1", "team-1-pos-2": null },
+      notes: { "team-1-pos-1": "giữ buồng" },
+    },
+  ];
+
+  /**
+   * Deep-copy a saved day so a test can edit it without touching the original.
+   * @param matches - Day to copy
+   * @returns An independent copy
+   */
+  function copy(matches: MatchDraft[]): MatchDraft[] {
+    return matches.map((match) => ({
+      assignment: { ...match.assignment },
+      notes: { ...match.notes },
+    }));
+  }
+
+  it("chưa có nháp thì là 0", () => {
+    expect(countDayChanges(undefined, saved)).toBe(0);
+  });
+
+  it("nháp giống bản lưu thì là 0", () => {
+    expect(countDayChanges(copy(saved), saved)).toBe(0);
+  });
+
+  it("đổi người ở một ô là 1", () => {
+    const draft = copy(saved);
+    draft[0].assignment["team-1-pos-2"] = "char-9";
+
+    expect(countDayChanges(draft, saved)).toBe(1);
+  });
+
+  it("đổi người và sửa ghi chú là 2", () => {
+    const draft = copy(saved);
+    draft[0].assignment["team-1-pos-1"] = null;
+    draft[0].notes["team-1-pos-1"] = "vào sau";
+
+    expect(countDayChanges(draft, saved)).toBe(2);
+  });
+
+  it("ghi chú xoá trắng coi như không có ghi chú", () => {
+    const draft = copy(saved);
+    draft[0].notes["team-1-pos-2"] = "  ";
+
+    expect(countDayChanges(draft, saved)).toBe(0);
+  });
+
+  // Trận 2 chép nguyên trận 1, nên đếm từng ô của nó sẽ ra một con số không ai hiểu.
+  it("thêm trận 2 tính là một thay đổi", () => {
+    expect(countDayChanges([...copy(saved), ...copy(saved)], saved)).toBe(1);
+  });
+
+  it("bỏ trận 2 tính là một thay đổi", () => {
+    expect(countDayChanges(copy(saved), [...saved, ...saved])).toBe(1);
   });
 });

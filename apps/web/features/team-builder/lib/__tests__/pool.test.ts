@@ -1,8 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { GuildClass } from "@guild/shared/enums";
+import { GUILD_CLASS_OPTIONS, GuildClass } from "@guild/shared/enums";
 
 import type { Assignment } from "../../types/formation";
-import { selectPoolCharacters, type PoolCandidate } from "../pool";
+import {
+  countByGuildClass,
+  selectPoolCharacters,
+  toggleGuildClass,
+  type PoolCandidate,
+} from "../pool";
 
 const CHARACTERS: PoolCandidate[] = [
   { id: "MeoMap01", name: "Mèo Mập", guildClass: GuildClass.THIET_Y },
@@ -48,5 +53,58 @@ describe("selectPoolCharacters", () => {
     });
 
     expect(pool).toHaveLength(0);
+  });
+});
+
+describe("countByGuildClass", () => {
+  it("đếm theo lưu phái, theo thứ tự GUILD_CLASS_OPTIONS", () => {
+    const counts = countByGuildClass([
+      ...CHARACTERS,
+      { id: "ToVan04", name: "Tố Vân 2", guildClass: GuildClass.TO_VAN },
+    ]);
+
+    const expectedOrder = GUILD_CLASS_OPTIONS.filter((guildClass) =>
+      [GuildClass.THIET_Y, GuildClass.LONG_NGAM, GuildClass.TO_VAN].includes(
+        guildClass
+      )
+    );
+    expect(counts.map((entry) => entry.guildClass)).toEqual(expectedOrder);
+    expect(
+      counts.find((entry) => entry.guildClass === GuildClass.TO_VAN)?.count
+    ).toBe(2);
+  });
+
+  // Chip của lưu phái không còn ai chỉ chiếm chỗ mà không lọc được gì.
+  it("bỏ lưu phái không còn ai", () => {
+    const counts = countByGuildClass(CHARACTERS);
+
+    expect(counts).toHaveLength(3);
+  });
+
+  it("kho rỗng thì không có chip nào", () => {
+    expect(countByGuildClass([])).toEqual([]);
+  });
+});
+
+describe("toggleGuildClass", () => {
+  it("lưu phái chưa chọn thì thêm vào", () => {
+    expect(toggleGuildClass([GuildClass.TO_VAN], GuildClass.THIET_Y)).toEqual([
+      GuildClass.TO_VAN,
+      GuildClass.THIET_Y,
+    ]);
+  });
+
+  it("lưu phái đang chọn thì bỏ ra", () => {
+    expect(
+      toggleGuildClass([GuildClass.TO_VAN, GuildClass.THIET_Y], GuildClass.TO_VAN)
+    ).toEqual([GuildClass.THIET_Y]);
+  });
+
+  it("không sửa mảng gốc", () => {
+    const selected = [GuildClass.TO_VAN];
+
+    toggleGuildClass(selected, GuildClass.THIET_Y);
+
+    expect(selected).toEqual([GuildClass.TO_VAN]);
   });
 });

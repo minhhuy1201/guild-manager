@@ -22,8 +22,6 @@ function renderToolbar(
       copySourceLabel="Thứ 7 · Bang Chiến"
       canCopy
       onCopy={vi.fn()}
-      onSave={vi.fn()}
-      onReset={vi.fn()}
       announcing={false}
       onAnnounce={vi.fn()}
       {...props}
@@ -100,5 +98,26 @@ describe("FormationToolbar — nút gửi Discord", () => {
     renderToolbar({ editable: false });
 
     expect(screen.queryByRole("button", { name: /Gửi Discord/ })).toBeNull();
+  });
+
+  // Ảnh gửi đi phải là đội hình đã lưu, nên chặn ngay ở nút thay vì đợi mở dialog mới báo.
+  it("còn thay đổi chưa lưu thì khoá nút gửi", () => {
+    renderToolbar({ dirty: true });
+
+    const button = screen.getByRole("button", {
+      name: /Gửi Discord/,
+    }) as HTMLButtonElement;
+
+    expect(button.disabled).toBe(true);
+  });
+});
+
+describe("FormationToolbar — lưu và đặt lại", () => {
+  // Hai nút này nằm ở thanh dính đáy, để luôn thấy dù đang cuộn ở đâu.
+  it("không còn nút Lưu và Đặt lại ở toolbar", () => {
+    renderToolbar({ dirty: true });
+
+    expect(screen.queryByRole("button", { name: /^Lưu$/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Đặt lại/ })).toBeNull();
   });
 });

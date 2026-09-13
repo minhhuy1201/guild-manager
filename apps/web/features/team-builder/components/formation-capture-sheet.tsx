@@ -101,7 +101,7 @@ export function FormationCaptureSheet({
             onNoteChange={() => {}}
             names={names}
             onNameChange={() => {}}
-            fixedColumns
+            layout="capture"
           />
         </div>
       ))}

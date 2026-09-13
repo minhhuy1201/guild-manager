@@ -161,6 +161,22 @@ describe("useFormationDraft — cờ dirty", () => {
     expect(result.current.notes[SLOT]).toBeUndefined();
   });
 
+  it("changeCount đếm số thay đổi của ngày đang mở", () => {
+    const { result } = renderDraft();
+    expect(result.current.changeCount).toBe(0);
+
+    act(() => result.current.setNote(SLOT, "vào sau"));
+    act(() =>
+      result.current.applyDrop({ kind: "slot", slotId: SLOT }, "char-1", {
+        kind: "slot",
+        slotId: "team-1-pos-2",
+      })
+    );
+
+    // The note on the first slot, the slot emptied, the slot filled.
+    expect(result.current.changeCount).toBe(3);
+  });
+
   it("clearActiveDraft dọn sạch ô nhưng giữ nguyên số trận", () => {
     const { result } = renderDraft();
 
@@ -422,5 +438,47 @@ describe("useFormationDraft — nhận một trận được copy", () => {
     );
 
     expect(result.current.dirty).toBe(false);
+  });
+});
+
+describe("useFormationDraft — gỡ người đã báo nghỉ", () => {
+  it("gỡ họ khỏi trận đang mở, ngày thành chưa lưu", () => {
+    const { result } = renderDraft();
+
+    act(() => result.current.removeFromActiveMatch(new Set(["char-1"])));
+
+    expect(result.current.assignment[SLOT]).toBeNull();
+    expect(result.current.dirty).toBe(true);
+  });
+
+  it("không đụng tới trận còn lại của ngày", () => {
+    const { result } = renderFormationHook(
+      () => useFormationDraft([SAVED_SESSION], SESSION_ID, true, vi.fn()),
+      {
+        formation: {
+          activeMatchIndex: 1,
+          drafts: {
+            [SESSION_ID]: [
+              { assignment: { [SLOT]: "char-1" }, notes: {} },
+              { assignment: { [SLOT]: "char-1" }, notes: {} },
+            ],
+          },
+        },
+      }
+    );
+
+    act(() => result.current.removeFromActiveMatch(new Set(["char-1"])));
+
+    expect(result.current.matches[0].assignment[SLOT]).toBe("char-1");
+    expect(result.current.matches[1].assignment[SLOT]).toBeNull();
+  });
+
+  it("không ai để gỡ thì không để lại nháp nào", () => {
+    const { result } = renderDraft();
+
+    act(() => result.current.removeFromActiveMatch(new Set(["char-9"])));
+
+    expect(result.current.dirty).toBe(false);
+    expect(useFormationStore.getState().drafts[SESSION_ID]).toBeUndefined();
   });
 });

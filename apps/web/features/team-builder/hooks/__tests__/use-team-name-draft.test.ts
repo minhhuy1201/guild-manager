@@ -71,6 +71,16 @@ describe("useTeamNameDraft — đọc", () => {
     expect(result.current.dirty).toBe(true);
   });
 
+  it("changeCount đếm số đội đổi tên", () => {
+    const { result } = renderNames();
+    expect(result.current.changeCount).toBe(0);
+
+    act(() => result.current.setName(2, "Hậu cần"));
+    act(() => result.current.setName(3, "Du kích"));
+
+    expect(result.current.changeCount).toBe(2);
+  });
+
   it("reset bỏ nháp, trả về bản đã lưu", () => {
     const { result } = renderNames(SAVED, { "1": "Xung kích" });
 
