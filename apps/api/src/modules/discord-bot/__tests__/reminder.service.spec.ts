@@ -95,7 +95,7 @@ describe('ReminderService.run', () => {
   it('gửi khi có ngày tới hạn và còn người thiếu', async () => {
     const { service, postMessage } = makeService();
 
-    await expect(service.run()).resolves.toEqual({
+    await expect(service.run('today')).resolves.toEqual({
       status: 'sent',
       sessionCount: 1,
       missingCount: 1,
@@ -107,7 +107,9 @@ describe('ReminderService.run', () => {
   it('không gửi gì khi chưa cấu hình channel', async () => {
     const { service, postMessage } = makeService({ channelId: null });
 
-    await expect(service.run()).resolves.toEqual({ status: 'no-channel' });
+    await expect(service.run('today')).resolves.toEqual({
+      status: 'no-channel',
+    });
     expect(postMessage).not.toHaveBeenCalled();
   });
 
@@ -117,7 +119,9 @@ describe('ReminderService.run', () => {
       sessions: [session({ deadline: '2026-09-10T10:00:00.000Z' })],
     });
 
-    await expect(service.run()).resolves.toEqual({ status: 'nothing-due' });
+    await expect(service.run('today')).resolves.toEqual({
+      status: 'nothing-due',
+    });
     expect(postMessage).not.toHaveBeenCalled();
   });
 
@@ -137,7 +141,7 @@ describe('ReminderService.run', () => {
       ],
     });
 
-    await expect(service.run()).resolves.toEqual({
+    await expect(service.run('today')).resolves.toEqual({
       status: 'sent',
       sessionCount: 1,
       missingCount: 1,
@@ -149,7 +153,9 @@ describe('ReminderService.run', () => {
   it('chỉ còn trận đã quá hạn thì không gửi gì', async () => {
     const { service, postMessage } = makeService({ now: AFTERNOON });
 
-    await expect(service.run()).resolves.toEqual({ status: 'nothing-due' });
+    await expect(service.run('today')).resolves.toEqual({
+      status: 'nothing-due',
+    });
     expect(postMessage).not.toHaveBeenCalled();
   });
 
@@ -158,7 +164,9 @@ describe('ReminderService.run', () => {
       records: [{ characterId: 'meo-beo', sessionId: 'gw-2026-09-05' }],
     });
 
-    await expect(service.run()).resolves.toEqual({ status: 'nothing-due' });
+    await expect(service.run('today')).resolves.toEqual({
+      status: 'nothing-due',
+    });
     expect(postMessage).not.toHaveBeenCalled();
   });
 
@@ -174,7 +182,9 @@ describe('ReminderService.run', () => {
       ],
     });
 
-    await expect(service.run()).resolves.toEqual({ status: 'nothing-due' });
+    await expect(service.run('today')).resolves.toEqual({
+      status: 'nothing-due',
+    });
     expect(postMessage).not.toHaveBeenCalled();
   });
 
@@ -187,7 +197,7 @@ describe('ReminderService.run', () => {
       records: [{ characterId: 'meo-beo', sessionId: 's1' }],
     });
 
-    await expect(service.run()).resolves.toMatchObject({
+    await expect(service.run('today')).resolves.toMatchObject({
       status: 'sent',
       sessionCount: 1,
     });
@@ -210,7 +220,7 @@ describe('ReminderService.run', () => {
       records: [{ characterId: 'meo-beo', sessionId: 'gw-2026-09-05' }],
     });
 
-    await expect(service.run()).resolves.toMatchObject({
+    await expect(service.run('today')).resolves.toMatchObject({
       status: 'sent',
       missingCount: 1,
     });
@@ -231,7 +241,7 @@ describe('ReminderService.run', () => {
         ],
       });
 
-    await service.run();
+    await service.run('today');
 
     expect(listByWeek).toHaveBeenCalledTimes(1);
     expect(getRecords).not.toHaveBeenCalled();
@@ -247,9 +257,60 @@ describe('ReminderService.run', () => {
       ],
     });
 
-    await expect(service.run()).resolves.toMatchObject({
+    await expect(service.run('today')).resolves.toMatchObject({
       sessionCount: 2,
       missingCount: 1,
     });
+  });
+});
+
+describe('ReminderService.run - phạm vi cả tuần', () => {
+  const sessions = [
+    session(),
+    // 13:00 giờ VN Thứ 7 05/09 - từ 12:00 trở đi nên ngày nhắc là sáng Thứ 7, chưa phải hôm nay.
+    session({
+      id: 's1',
+      label: 'Thứ 7 · 16:00',
+      isGuildWar: false,
+      deadline: '2026-09-05T06:00:00.000Z',
+    }),
+    // 12:00 giờ VN Thứ 4 02/09 - đã quá hạn.
+    session({
+      id: 's2',
+      label: 'Thứ 4 · 20:30',
+      isGuildWar: false,
+      deadline: '2026-09-02T05:00:00.000Z',
+    }),
+  ];
+
+  it('nhắc cả trận chưa tới ngày nhắc, nhưng vẫn bỏ trận đã quá hạn', async () => {
+    const { service, postMessage } = makeService({ sessions });
+
+    await expect(service.run('week')).resolves.toEqual({
+      status: 'sent',
+      sessionCount: 2,
+      missingCount: 1,
+    });
+    const [, payload] = postMessage.mock.calls[0] as [string, MessagePayload];
+    expect(payload.embeds?.[0].description).toContain('Thứ 7 · 16:00');
+    expect(payload.embeds?.[0].description).not.toContain('Thứ 4 · 20:30');
+  });
+
+  it('cùng dữ liệu đó, phạm vi hôm nay chỉ nhắc trận tới ngày nhắc', async () => {
+    const { service } = makeService({ sessions });
+
+    await expect(service.run('today')).resolves.toMatchObject({
+      status: 'sent',
+      sessionCount: 1,
+    });
+  });
+
+  it('mọi trận trong tuần đã quá hạn thì không gửi gì', async () => {
+    const { service, postMessage } = makeService({ sessions: [sessions[2]] });
+
+    await expect(service.run('week')).resolves.toEqual({
+      status: 'nothing-due',
+    });
+    expect(postMessage).not.toHaveBeenCalled();
   });
 });

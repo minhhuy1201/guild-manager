@@ -62,6 +62,66 @@ describe('/nhac-diem-danh', () => {
     expect(reply.data.flags).toBe(MESSAGE_FLAG.ephemeral);
   });
 
+  it('không chọn phạm vi thì chạy đúng luật của cron', async () => {
+    const { deps, run } = makeDeps(actor(GuildRole.ADMIN), {
+      status: 'nothing-due',
+    });
+
+    await nhacDiemDanhCommand.execute(INTERACTION, deps);
+
+    expect(run).toHaveBeenCalledWith('today');
+  });
+
+  it('chọn cả tuần thì chạy phạm vi cả tuần', async () => {
+    const { deps, run } = makeDeps(actor(GuildRole.ADMIN), {
+      status: 'nothing-due',
+    });
+
+    await nhacDiemDanhCommand.execute(
+      {
+        ...INTERACTION,
+        data: {
+          name: 'nhac-diem-danh',
+          options: [{ name: 'pham-vi', value: 'week' }],
+        },
+      },
+      deps,
+    );
+
+    expect(run).toHaveBeenCalledWith('week');
+  });
+
+  // Discord chỉ gửi giá trị trong choices, nên giá trị lạ là định nghĩa đã đăng ký lệch với bản build.
+  it('giá trị phạm vi lạ thì báo lỗi và không nhắc ai', async () => {
+    const { deps, run } = makeDeps(actor(GuildRole.ADMIN), {
+      status: 'nothing-due',
+    });
+
+    await expect(
+      nhacDiemDanhCommand.execute(
+        {
+          ...INTERACTION,
+          data: {
+            name: 'nhac-diem-danh',
+            options: [{ name: 'pham-vi', value: 'month' }],
+          },
+        },
+        deps,
+      ),
+    ).rejects.toThrow('pham-vi');
+    expect(run).not.toHaveBeenCalled();
+  });
+
+  it('hôm nay không có gì để nhắc thì gợi ý phạm vi cả tuần', async () => {
+    const { deps } = makeDeps(actor(GuildRole.ADMIN), {
+      status: 'nothing-due',
+    });
+
+    const reply = await nhacDiemDanhCommand.execute(INTERACTION, deps);
+
+    expect(reply.data.content).toContain('Cả tuần');
+  });
+
   it('nói rõ khi không còn ai thiếu', async () => {
     const { deps } = makeDeps(actor(GuildRole.ADMIN), {
       status: 'nothing-due',

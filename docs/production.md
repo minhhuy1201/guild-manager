@@ -625,6 +625,9 @@ fires against an unguarded endpoint.
 - After the first deploy, type `/cau-hinh-kenh` in the channel that should receive announcements.
   With none configured the job still runs, writes one `warn` line and stops — that is not a failure.
 - No need to wait for the next morning to check: `/nhac-diem-danh` calls exactly the same function.
+  Its `pham-vi` option defaults to `today`, the cron's own rule; `week` reaches every open deadline
+  of the week instead. After changing a command's options, run `pnpm --filter api discord:register`
+  by hand so Discord shows them.
 - The job **deliberately has no duplicate protection**. If Vercel fires twice the guild gets the same
   message twice; one extra ping is cheaper than maintaining a "sent today" state table.
 

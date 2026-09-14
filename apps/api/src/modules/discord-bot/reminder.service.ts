@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-import { Clock } from '../../common';
+import { assertNever, Clock } from '../../common';
 import type { Env } from '../../config';
 import { AttendanceService } from '../attendance/attendance.public';
 import {
@@ -33,8 +33,43 @@ export type ReminderOutcome =
     }
   /** No channel configured yet — an admin has not run `/cau-hinh-kenh`. */
   | { status: 'no-channel' }
-  /** Nothing is due for a reminder today, or everyone has already answered for what is. */
+  /** Nothing in the scope is due, or everyone has already answered for what is. */
   | { status: 'nothing-due' };
+
+/**
+ * Which deadlines one run looks at.
+ *
+ * `today` is the daily rule the cron follows (`isReminderDay`). `week` is every deadline of the open
+ * week still ahead: an admin who wants to nudge on Monday for a Wednesday match would otherwise have
+ * to wait until the morning `today` reaches it.
+ */
+export type ReminderScope = 'today' | 'week';
+
+/**
+ * Whether a deadline belongs in a run of the given scope.
+ *
+ * A passed deadline is out in every scope: a reminder day can be the deadline's own day, so a
+ * hand-run `/nhac-diem-danh` in the afternoon would otherwise ping people who can no longer answer.
+ *
+ * @param deadline - The session's attendance deadline
+ * @param now - The current instant
+ * @param scope - Which deadlines the run looks at
+ * @returns true when the session should be reminded about in this run
+ */
+function isDue(deadline: Date, now: Date, scope: ReminderScope): boolean {
+  if (isDeadlinePassed(deadline, now)) return false;
+
+  switch (scope) {
+    case 'today':
+      return isReminderDay(deadline, now);
+
+    case 'week':
+      return true;
+
+    default:
+      return assertNever(scope, 'Phạm vi nhắc điểm danh ngoài dự kiến');
+  }
+}
 
 /**
  * Key identifying one person's answer for one battle day.
@@ -51,10 +86,11 @@ function answerKey(sessionId: string, characterId: string): string {
 }
 
 /**
- * Finds who still has not answered for a deadline due for a reminder today, and says so in Discord.
+ * Finds who still has not answered for a deadline due for a reminder, and says so in Discord.
  *
  * Both the cron endpoint and `/nhac-diem-danh` call `run`: a scheduled reminder and a hand-run one
- * must not be able to disagree about who is missing.
+ * must not be able to disagree about who is missing. They may differ only in which deadlines they
+ * look at, and that is the explicit `scope` argument.
  */
 @Injectable()
 export class ReminderService {
@@ -73,14 +109,15 @@ export class ReminderService {
   /**
    * Post the reminder, if there is anything to remind about.
    *
-   * Silence is a normal outcome, not a failure: no deadline is due for a reminder today, or everyone
-   * has already answered for the ones that are. A daily "nothing today" is the fastest way to get a
+   * Silence is a normal outcome, not a failure: no deadline in the scope is due, or everyone has
+   * already answered for the ones that are. A daily "nothing today" is the fastest way to get a
    * channel muted.
    *
+   * @param scope - Which deadlines to look at: `today` for the daily rule, `week` for every open one
    * @returns What the run did, tagged so the caller can tell the two silences apart
    * @throws Error when Discord rejects the message — the caller decides how loud that is
    */
-  async run(): Promise<ReminderOutcome> {
+  async run(scope: ReminderScope): Promise<ReminderOutcome> {
     const channelId = await this.channels.get();
 
     if (!channelId) {
@@ -93,13 +130,9 @@ export class ReminderService {
 
     const now = this.clock.now();
     const sessions = await this.battleSessions.listByWeek();
-    // A reminder day can be the deadline's own day, so a hand-run `/nhac-diem-danh` in the afternoon
-    // would otherwise ping people who can no longer answer.
-    const dueSessions = sessions.filter((session) => {
-      const deadline = new Date(session.deadline);
-
-      return isReminderDay(deadline, now) && !isDeadlinePassed(deadline, now);
-    });
+    const dueSessions = sessions.filter((session) =>
+      isDue(new Date(session.deadline), now, scope),
+    );
 
     if (dueSessions.length === 0) return { status: 'nothing-due' };
 
