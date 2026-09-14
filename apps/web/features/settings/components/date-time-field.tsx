@@ -120,7 +120,7 @@ export function DateTimeField({
             render={
               <Button type="button" variant="outline" size="lg" id={id} />
             }
-            className="flex-1 justify-between font-normal"
+            className="justify-between font-normal sm:flex-1"
           >
             <span className="flex items-center gap-2">
               <CalendarDays className="size-4" />
