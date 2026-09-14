@@ -85,7 +85,8 @@ export function TeamNameField({
           title="Nhấn đúp để đổi tên đội"
           aria-label={`Đội ${label}. Nhấn đúp hoặc Enter để đổi tên.`}
           className={cn(
-            "w-full truncate rounded-md px-1 text-center text-lg font-semibold",
+            // 44px tall on a phone, where it measured 32px; its pencil is the touch way in.
+            "w-full truncate rounded-md px-1 text-center text-lg font-semibold max-sm:min-h-11",
             "cursor-text outline-none transition-colors duration-[var(--duration-fast)]",
             "hover:bg-primary-foreground/15 focus-visible:ring-3 focus-visible:ring-primary-foreground/40"
           )}
@@ -132,7 +133,7 @@ export function TeamNameField({
       maxLength={TEAM_NAME_MAX_LENGTH}
       placeholder={String(team)}
       aria-label={`Tên đội ${team}`}
-      className="h-8 bg-card px-2 text-center text-base font-semibold text-foreground"
+      className="h-8 bg-card px-2 text-center text-base font-semibold text-foreground max-sm:h-11"
     />
   );
 }
