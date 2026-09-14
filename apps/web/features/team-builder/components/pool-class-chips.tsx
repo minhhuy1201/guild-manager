@@ -47,7 +47,8 @@ export function PoolClassChips({
             aria-label={`${GUILD_CLASS_LABEL[guildClass]}: ${count} người`}
             onClick={() => onToggle(guildClass)}
             className={cn(
-              "inline-flex h-9 items-center gap-1.5 rounded-full border py-1 pr-3 pl-1 text-sm font-medium tabular-nums outline-none",
+              // `max-sm:h-10` like the button scale: 44px on a phone, where it measured 40px.
+              "inline-flex h-9 items-center gap-1.5 rounded-full border py-1 pr-3 pl-1 text-sm font-medium tabular-nums outline-none max-sm:h-10",
               "transition-colors duration-[var(--duration-fast)] focus-visible:ring-3 focus-visible:ring-ring/50",
               isSelected
                 ? "border-primary bg-primary text-primary-foreground"
