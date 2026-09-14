@@ -23,8 +23,11 @@ const ELLIPSIS = "ellipsis" as const;
 /** Sentinel marking a blank filler cell, so the strip keeps a constant width. */
 const BLANK = "blank" as const;
 
-/** Hides a cell of the page-number strip on a phone, where only the arrows fit. */
-const PHONE_HIDDEN = "max-sm:hidden";
+/**
+ * Hides a cell of the page-number strip below `lg`, where only the arrows fit: on a phone, and on a
+ * phone turned sideways (640-1000px), where the numbers came back and overflowed the page.
+ */
+const NARROW_HIDDEN = "max-lg:hidden";
 
 /** One cell of the page strip: a page number, an ellipsis, or a blank filler. */
 export type PageSlot = number | typeof ELLIPSIS | typeof BLANK;
@@ -161,14 +164,14 @@ export function TablePagination({
           </PaginationLink>
         </PaginationItem>
 
-        {/* Below `sm` the numbers hide and the four arrows stay: eleven `size-10` cells are wider
+        {/* Below `lg` the numbers hide and the four arrows stay: eleven `size-10` cells are wider
             than a phone, and a strip that overflows widens the whole page, which the phone then
             zooms out to fit. The bar's "trang x/y" count still says where you are. */}
         {getPageSlots(page, pageCount, siblings).map((slot, index) => {
           switch (slot) {
             case ELLIPSIS:
               return (
-                <PaginationItem key={`ellipsis-${index}`} className={PHONE_HIDDEN}>
+                <PaginationItem key={`ellipsis-${index}`} className={NARROW_HIDDEN}>
                   <PaginationEllipsis />
                 </PaginationItem>
               );
@@ -176,13 +179,13 @@ export function TablePagination({
               // Same footprint as a page cell, no content and no tab stop:
               // this is what keeps the strip's width constant.
               return (
-                <PaginationItem key={`blank-${index}`} className={PHONE_HIDDEN}>
+                <PaginationItem key={`blank-${index}`} className={NARROW_HIDDEN}>
                   <span className="block size-10" aria-hidden />
                 </PaginationItem>
               );
             default:
               return (
-                <PaginationItem key={slot} className={PHONE_HIDDEN}>
+                <PaginationItem key={slot} className={NARROW_HIDDEN}>
                   <PaginationLink
                     href="#"
                     isActive={slot === page}
