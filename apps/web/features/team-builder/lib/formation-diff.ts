@@ -81,3 +81,38 @@ export function isDayDirty(
 ): boolean {
   return countDayChanges(draft, saved) > 0;
 }
+
+/**
+ * Whether two versions of a day hold exactly the same thing. Unlike
+ * `isDayDirty`, note text is compared untrimmed: this tells an edit from a
+ * no-op, and a space the user just typed at the end of a note is an edit even
+ * though it leaves nothing new to save.
+ * @param a - One version of the day
+ * @param b - The other version
+ * @returns true when both have the same matches, people and note text
+ */
+export function isSameDay(a: MatchDraft[], b: MatchDraft[]): boolean {
+  return (
+    a.length === b.length &&
+    a.every(
+      (match, index) =>
+        haveSameEntries(match.assignment, b[index].assignment) &&
+        haveSameEntries(match.notes, b[index].notes)
+    )
+  );
+}
+
+/**
+ * Whether two slot maps agree on every slot, a missing key reading as empty.
+ * @param a - One slot map
+ * @param b - The other slot map
+ * @returns true when every slot holds the same value in both
+ */
+function haveSameEntries(
+  a: Record<string, string | null>,
+  b: Record<string, string | null>
+): boolean {
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+
+  return [...keys].every((key) => (a[key] ?? null) === (b[key] ?? null));
+}

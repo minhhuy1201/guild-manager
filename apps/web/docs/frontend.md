@@ -691,7 +691,12 @@ save: "N thay đổi chưa lưu · Đặt lại · Lưu", the save's error in pl
 (so it clears the phone's tab bar), so the button stays in reach wherever the page is scrolled,
 and **never `fixed`**: sticky leaves the last row of content uncovered, and it
 creates no containing block for the `position: fixed` elements of the screen (see *Entrance and
-data reveal*). The team builder also binds Ctrl+S / Cmd+S to the same save (`useSaveShortcut`).
+data reveal*). The team builder also binds Ctrl+S / Cmd+S to the same save (`useSaveShortcut`),
+and Ctrl+Z / Cmd+Z to an undo of the open day's latest edit (`useUndoShortcut`). The undo steps live
+in `formation-store` per day and are taken in one place, `editActiveDraft`, so a new kind of edit is
+undoable by going through it; a note typed in one go is one step. Inside a text field Ctrl+Z stays
+the browser's own text undo. Inside a dialog neither shortcut touches the formation behind it
+(Ctrl+S still blocks the browser's "save page").
 
 The actions that are not about saving (copy a line-up, announce on Discord) stay in the screen's
 toolbar at the top. An action that must not run on unsaved work is disabled while the draft is

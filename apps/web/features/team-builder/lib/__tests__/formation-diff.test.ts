@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { Assignment, MatchDraft } from "../../types/formation";
-import { countDayChanges, isDayDirty } from "../formation-diff";
+import { countDayChanges, isDayDirty, isSameDay } from "../formation-diff";
 
 const SAVED: Assignment = {
   "team-1-pos-1": "char-1",
@@ -198,5 +198,56 @@ describe("countDayChanges", () => {
 
   it("bỏ trận 2 tính là một thay đổi", () => {
     expect(countDayChanges(copy(saved), [...saved, ...saved])).toBe(1);
+  });
+});
+
+describe("isSameDay", () => {
+  const saved: MatchDraft[] = [
+    {
+      assignment: { "team-1-pos-1": "char-1", "team-1-pos-2": null },
+      notes: { "team-1-pos-1": "giữ buồng" },
+    },
+  ];
+
+  /**
+   * Deep-copy a day so a test can edit it without touching the original.
+   * @param matches - Day to copy
+   * @returns An independent copy
+   */
+  function copy(matches: MatchDraft[]): MatchDraft[] {
+    return matches.map((match) => ({
+      assignment: { ...match.assignment },
+      notes: { ...match.notes },
+    }));
+  }
+
+  it("bản chép y hệt thì giống", () => {
+    expect(isSameDay(copy(saved), saved)).toBe(true);
+  });
+
+  it("ô thiếu khoá và ô null đều là ô trống, nên vẫn giống", () => {
+    const draft = copy(saved);
+    delete draft[0].assignment["team-1-pos-2"];
+
+    expect(isSameDay(draft, saved)).toBe(true);
+  });
+
+  // Khác isDayDirty: dấu cách người dùng vừa gõ là một thao tác thật, dù chưa làm ngày thành "chưa lưu".
+  it("thêm dấu cách cuối ghi chú là khác", () => {
+    const draft = copy(saved);
+    draft[0].notes["team-1-pos-1"] = "giữ buồng ";
+
+    expect(isSameDay(draft, saved)).toBe(false);
+  });
+
+  it("đổi người là khác", () => {
+    const draft = copy(saved);
+    draft[0].assignment["team-1-pos-2"] = "char-9";
+
+    expect(isSameDay(draft, saved)).toBe(false);
+  });
+
+  it("khác số trận là khác", () => {
+    expect(isSameDay([...copy(saved), ...copy(saved)], saved)).toBe(false);
   });
 });

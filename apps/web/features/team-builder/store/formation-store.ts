@@ -3,9 +3,21 @@ import { create } from "zustand";
 import { applyDrop } from "../lib/assignment";
 import type { DragSource, DropTarget, MatchDraft } from "../types/formation";
 
+/** One step Ctrl+Z can take back: a day's draft as it stood before one edit. */
+export interface UndoStep {
+  /** The draft before the edit; undefined when the day had none and showed its saved copy */
+  draft: MatchDraft[] | undefined;
+  /** Match that was open during the edit, reopened by the undo so the change is in sight */
+  matchIndex: number;
+  /** Edits in a row sharing a non-null key fold into one step - the keystrokes of one note */
+  mergeKey: string | null;
+}
+
 interface FormationState {
   /** Unsaved edits per battle day, keyed by session id. Missing key = untouched. */
   drafts: Record<string, MatchDraft[]>;
+  /** Undo steps per battle day, oldest first. Dropped with the day's draft. */
+  history: Record<string, UndoStep[]>;
   /** Battle day whose tab is open */
   activeSessionId: string | null;
   /** Sub-tab open inside the day: 0 = match 1, 1 = match 2 */
@@ -31,8 +43,15 @@ interface FormationState {
    * day contains.
    */
   setDraft: (sessionId: string, matches: MatchDraft[]) => void;
-  /** Discard a day's draft, falling back to the saved copy */
+  /** Discard a day's draft and its undo steps, falling back to the saved copy */
   clearDraft: (sessionId: string) => void;
+  /**
+   * Record the state a day's draft had before an edit. Like `setDraft`, only
+   * `useFormationDraft` calls it, once per edit that changed something.
+   */
+  pushUndo: (sessionId: string, step: UndoStep) => void;
+  /** Take back the day's latest undo step, if it has one */
+  undo: (sessionId: string) => void;
   /** Resolve one drag gesture into one match of the day's draft */
   drop: (
     sessionId: string,
@@ -58,6 +77,7 @@ interface FormationState {
  */
 export const useFormationStore = create<FormationState>((set) => ({
   drafts: {},
+  history: {},
   activeSessionId: null,
   activeMatchIndex: 0,
   selectedWeekStart: null,
@@ -68,6 +88,7 @@ export const useFormationStore = create<FormationState>((set) => ({
     set({
       selectedWeekStart: weekStart,
       drafts: {},
+      history: {},
       activeSessionId: null,
       activeMatchIndex: 0,
     }),
@@ -81,9 +102,40 @@ export const useFormationStore = create<FormationState>((set) => ({
     set((state) => ({ drafts: { ...state.drafts, [sessionId]: matches } })),
   clearDraft: (sessionId) =>
     set((state) => {
-      const next = { ...state.drafts };
-      delete next[sessionId];
-      return { drafts: next };
+      const drafts = { ...state.drafts };
+      delete drafts[sessionId];
+      // The steps lead back from a draft that no longer exists; replaying them
+      // over the saved copy would resurrect edits the user threw away.
+      const history = { ...state.history };
+      delete history[sessionId];
+      return { drafts, history };
+    }),
+  pushUndo: (sessionId, step) =>
+    set((state) => {
+      const past = state.history[sessionId] ?? [];
+      // Same key as the latest step: the edit continues it, and that step
+      // already holds the state from before the run began.
+      if (step.mergeKey !== null && past.at(-1)?.mergeKey === step.mergeKey) {
+        return state;
+      }
+
+      return { history: { ...state.history, [sessionId]: [...past, step] } };
+    }),
+  undo: (sessionId) =>
+    set((state) => {
+      const past = state.history[sessionId] ?? [];
+      const step = past.at(-1);
+      if (!step) return state;
+
+      const drafts = { ...state.drafts };
+      if (step.draft) drafts[sessionId] = step.draft;
+      else delete drafts[sessionId];
+
+      return {
+        drafts,
+        history: { ...state.history, [sessionId]: past.slice(0, -1) },
+        activeMatchIndex: step.matchIndex,
+      };
     }),
   drop: (sessionId, matchIndex, source, characterId, target) =>
     set((state) => {

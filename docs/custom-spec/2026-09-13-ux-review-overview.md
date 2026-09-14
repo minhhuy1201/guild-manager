@@ -108,13 +108,22 @@ phía trên, không dính khi cuộn xuống kho.
 - Thanh hành động dính đáy màn hình, chỉ hiện khi `dirty`: "N thay đổi chưa lưu · Đặt lại · Lưu".
   Toolbar trên cùng giữ Copy và Gửi Discord.
 - Phím tắt Ctrl+S (Cmd+S trên macOS) gọi cùng hàm `handleSave`, chặn hộp thoại lưu trang của trình
-  duyệt.
+  duyệt. Đang mở dialog thì vẫn chặn nhưng không lưu (bổ sung 2026-09-14): đội hình nằm khuất sau
+  dialog.
+- **Bổ sung (2026-09-14, theo yêu cầu của chủ bang):** Ctrl+Z (Cmd+Z) hoàn tác thao tác gần nhất trên
+  đội hình của ngày đang mở: kéo thả, ghi chú, thêm/xoá trận 2, copy, dọn sạch, gỡ người báo nghỉ.
+  Gõ liền một ghi chú là một bước. Mỗi ngày một lịch sử riêng, mất khi Lưu, Đặt lại hoặc đổi tuần.
+  Tên đội không nằm trong lịch sử. Đang gõ trong ô nhập thì Ctrl+Z là hoàn tác chữ của trình duyệt;
+  đang mở dialog thì Ctrl+Z không đụng đội hình phía sau; Ctrl+Shift+Z không phải hoàn tác. Thao tác
+  không đổi gì (dọn sạch ngày đã trống, copy đúng đội hình đang có) không thành một bước.
 
 ### Tiêu chí chấp nhận
 
 - ~~Ở 1440px, kéo một người từ kho vào bất kỳ ô nào của 10 đội mà không cần cuộn trang.~~ Bỏ cùng
   bố cục hai cột.
 - Khi có thay đổi chưa lưu, nút Lưu luôn nhìn thấy dù đang cuộn ở đâu.
+- Ctrl+Z trả ngày đang mở về đúng trạng thái trước thao tác gần nhất và mở lại trận vừa sửa; hoàn
+  tác hết thì ngày không còn "chưa lưu".
 - `DragOverlay` vẫn bám con trỏ đúng: thanh sticky và cột sticky không được tạo containing block cho
   phần tử `position: fixed` (xem ghi chú `backwards` trong `globals.css`).
 - `FormationCaptureSheet` vẫn chụp ra đúng layout 5 cột cố định (`fixedColumns`), không bị ảnh

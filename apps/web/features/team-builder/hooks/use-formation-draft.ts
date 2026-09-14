@@ -6,7 +6,7 @@ import type { SessionFormation } from "@guild/shared/schemas";
 import { ApiError } from "@/lib/api-client";
 import { resolveActiveMatchIndex } from "../lib/active-match";
 import { removeCharacters } from "../lib/assignment";
-import { countDayChanges, isDayDirty } from "../lib/formation-diff";
+import { countDayChanges, isDayDirty, isSameDay } from "../lib/formation-diff";
 import { FORMATION } from "../lib/mock-formation";
 import { fromWire, fromWireMatches, toWireMatches } from "../lib/wire";
 import { useFormationStore } from "../store/formation-store";
@@ -65,6 +65,10 @@ export interface FormationDraftState {
   removeFromActiveMatch: (characterIds: Set<string>) => void;
   /** Discard the open day's draft, falling back to the saved copy */
   resetActive: () => void;
+  /** Whether the open day has an edit Ctrl+Z can take back */
+  canUndo: boolean;
+  /** Take back the open day's latest edit */
+  undo: () => void;
   /** Fill a day that has no draft yet with a proposed line-up */
   seedFrom: (proposal: MatchDraft[]) => void;
   /** Resolve one finished drag gesture into the open match */
@@ -107,6 +111,9 @@ export function useFormationDraft(
   const setNoteInStore = useFormationStore((s) => s.setNote);
   const setActiveMatch = useFormationStore((s) => s.setActiveMatch);
   const storedMatchIndex = useFormationStore((s) => s.activeMatchIndex);
+  const history = useFormationStore((s) => s.history);
+  const pushUndo = useFormationStore((s) => s.pushUndo);
+  const undoInStore = useFormationStore((s) => s.undo);
 
   const saveMutation = useSaveFormation();
 
@@ -179,30 +186,46 @@ export function useFormationDraft(
 
   /**
    * Run one edit against the open day, making sure the day has a draft to edit
-   * first. This is the single place the saved copy turns into a draft: every
-   * writer below goes through here, so no caller has to hold the saved copy or
-   * know which day it belongs to.
+   * first, and record the undo step for it. This is the single place the saved
+   * copy turns into a draft and the single place undo steps are taken: every
+   * writer below goes through here, so no caller has to hold the saved copy,
+   * know which day it belongs to, or remember to make the edit undoable.
    * @param write - The store call to run, given the open day's id
+   * @param mergeKey - Folds this edit into the previous step when that one has
+   *   the same key; null makes it a step of its own
    */
-  function editActiveDraft(write: (sessionId: string) => void) {
+  function editActiveDraft(
+    write: (sessionId: string) => void,
+    mergeKey: string | null = null
+  ) {
     if (!activeSessionId) return;
 
     const sessionId = activeSessionId;
     const readDraft = () => useFormationStore.getState().drafts[sessionId];
-    const hadDraft = Boolean(readDraft());
+    const before = readDraft();
 
     // Zustand's `set` is synchronous, so the write below already sees the draft
     // this line put in place.
     ensureDraft(sessionId, matches);
     write(sessionId);
+    const after = readDraft();
 
-    // The write changed nothing — a drag released outside every droppable, say.
-    // Put the day back the way it was found: a draft equal to the saved copy
-    // would shadow the next refetch, could not be discarded (Đặt lại is
-    // disabled while the day is clean), and would block a prefill that only
-    // becomes eligible later. Reference equality is the test because every
-    // write that does change something builds a new array.
-    if (!hadDraft && readDraft() === matches) clearDraft(sessionId);
+    // The write changed nothing — a drag released outside every droppable, or
+    // "clear" pressed on a day already empty. Compared by content, since writers
+    // that replace the day build a new array even when it holds the same line-up;
+    // and exactly, not the way `isDayDirty` trims notes, or a trailing space typed
+    // into a saved note would count as nothing and be thrown away.
+    if (isSameDay(after, before ?? matches)) {
+      // Put a day that had no draft back the way it was found: a draft equal to
+      // the saved copy would shadow the next refetch, could not be discarded
+      // (Đặt lại is disabled while the day is clean), and would block a prefill
+      // that only becomes eligible later. A day that had one keeps it, with no
+      // step to take back.
+      if (!before) clearDraft(sessionId);
+      return;
+    }
+
+    pushUndo(sessionId, { draft: before, matchIndex: activeMatchIndex, mergeKey });
   }
 
   /**
@@ -227,8 +250,10 @@ export function useFormationDraft(
    * @param text - New text, raw as typed
    */
   function setNote(slotId: string, text: string) {
-    editActiveDraft((sessionId) =>
-      setNoteInStore(sessionId, activeMatchIndex, slotId, text)
+    // Every keystroke lands here, so one note typed in one go is one undo step.
+    editActiveDraft(
+      (sessionId) => setNoteInStore(sessionId, activeMatchIndex, slotId, text),
+      `note:${activeMatchIndex}:${slotId}`
     );
   }
 
@@ -255,13 +280,15 @@ export function useFormationDraft(
 
     // Copy match 1 as it stands, absentees in their slots included — never pull anyone out behind the
     // user's back. Notes travel along untouched.
-    setDraft(activeSessionId, [
-      ...matches,
-      {
-        assignment: { ...matches[0].assignment },
-        notes: { ...matches[0].notes },
-      },
-    ]);
+    editActiveDraft((sessionId) =>
+      setDraft(sessionId, [
+        ...matches,
+        {
+          assignment: { ...matches[0].assignment },
+          notes: { ...matches[0].notes },
+        },
+      ])
+    );
     setActiveMatch(matches.length);
   }
 
@@ -269,19 +296,17 @@ export function useFormationDraft(
   function removeMatch() {
     if (!activeSessionId || matches.length < 2) return;
 
-    setDraft(activeSessionId, [matches[0]]);
+    editActiveDraft((sessionId) => setDraft(sessionId, [matches[0]]));
     setActiveMatch(0);
   }
 
   /** Empty every slot of every match of the open day, keeping the match count. */
   function clearActiveDraft() {
-    if (!activeSessionId) return;
-
     const cleared = matches.map(() => ({
       assignment: fromWire({}, FORMATION.slots),
       notes: {} as Notes,
     }));
-    setDraft(activeSessionId, cleared);
+    editActiveDraft((sessionId) => setDraft(sessionId, cleared));
   }
 
   /**
@@ -292,12 +317,10 @@ export function useFormationDraft(
    * @param match - The line-up to write, already stripped of absentees
    */
   function copyIntoActiveMatch(match: MatchDraft) {
-    if (!activeSessionId) return;
-
     const next = matches.map((current, index) =>
       index === activeMatchIndex ? match : current
     );
-    setDraft(activeSessionId, next);
+    editActiveDraft((sessionId) => setDraft(sessionId, next));
   }
 
   /**
@@ -308,15 +331,15 @@ export function useFormationDraft(
    * @param characterIds - Characters to send back to the pool
    */
   function removeFromActiveMatch(characterIds: Set<string>) {
-    if (!activeSessionId) return;
-
     const next = removeCharacters(activeMatch.assignment, characterIds);
     if (next === activeMatch.assignment) return;
 
-    setDraft(
-      activeSessionId,
-      matches.map((match, index) =>
-        index === activeMatchIndex ? { ...match, assignment: next } : match
+    editActiveDraft((sessionId) =>
+      setDraft(
+        sessionId,
+        matches.map((match, index) =>
+          index === activeMatchIndex ? { ...match, assignment: next } : match
+        )
       )
     );
   }
@@ -326,6 +349,13 @@ export function useFormationDraft(
     if (!activeSessionId) return;
 
     clearDraft(activeSessionId);
+  }
+
+  /** Take back the open day's latest edit, reopening the match it was made in. */
+  function undo() {
+    if (!activeSessionId) return;
+
+    undoInStore(activeSessionId);
   }
 
   /**
@@ -370,6 +400,9 @@ export function useFormationDraft(
     copyIntoActiveMatch,
     removeFromActiveMatch,
     resetActive,
+    canUndo:
+      editable && Boolean(activeSessionId && history[activeSessionId]?.length),
+    undo,
     seedFrom,
     applyDrop,
     handleSave,
