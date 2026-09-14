@@ -583,10 +583,50 @@ One scale for every control, written in `components/ui/` and nowhere else:
 - **Input, Textarea, SelectTrigger** — `h-11` (`SelectTrigger size="sm"` is `h-9`), `text-base`.
 - **Label, `Select` and `DropdownMenu` items, `TabsTrigger`** — `text-base`; `TabsList` is `h-11`.
 - An icon inside a control is `size-4.5`; only the `xs`/`sm` sizes drop to `size-3.5 / 4`.
+- **Below `sm` nothing is under 44px:** `sm` and `xs` take `max-sm:h-10`, `icon-sm` and `icon-xs`
+  take `max-sm:size-10`, `TabsList` takes `h-12` (its tabs sit inside a 3px padding). A small size
+  is for a dense row on a desk screen; on a phone it would be a target a thumb misses.
 
 A screen that needs something smaller takes the existing `sm`/`xs` variant — never a hand-written
 `h-*`. Changing the scale means editing `components/ui/`: it is a design token, not a variant to be
 wrapped in `components/shared/`.
+
+### Phone layout
+
+The app is used on phones first - members open it from a Discord link. What it must hold:
+
+| Group | Width x height (CSS px) | Bar |
+|---|---|---|
+| Phone, portrait | 360-430 wide; 420x930 is the reference, 360 the floor | Every page works well |
+| Phone, landscape | 640-932 wide, 360-430 tall | Nothing overflows or hides content |
+| Tablet, portrait | 768 | Nothing overflows |
+| Below 360 | 320 | The layout does not break |
+
+- **The root font is 115% below `sm`, 120% from `sm`** (`globals.css`). At 120% a 420px phone laid
+  out like a 350px one. 115% is the lowest step that keeps `h-10` at 44px (`--spacing` is 0.24rem in
+  this app, not Tailwind's 0.25) and a `text-sm` field at 16px, below which iOS zooms in on focus.
+  Media queries read rem at the browser's default size, so the scale moves no breakpoint.
+- **44px is the touch target floor below `sm`.** The control scale carries it: below `sm` the `sm`
+  and `xs` buttons grow to `h-10`, `icon-sm` and `icon-xs` to `size-10`, and `TabsList` to `h-12`
+  (see *Control sizes*). A hand-made control (the attendance grid's cells) takes `size-10` itself.
+- **The page never scrolls sideways.** A wide table scrolls inside its own container; a row of
+  controls stacks or shortens its labels below `sm` (the settings tabs keep their full names as
+  `aria-label` and show short ones).
+- **A short screen** (`max-height: 500px`, a phone turned sideways) **does not pin the header**:
+  pinned, it and a save bar took 40% of the height. The save bars stay pinned.
+- **A dialog scrolls inside itself** (`max-h-[calc(100dvh-2rem)]` in `components/ui/dialog.tsx`), so
+  its footer stays reachable on a landscape phone. `dvh`, because the browser's address bar changes
+  the height.
+
+### Touch has no hover
+
+What a user needs in order to understand a screen or to act on it must be visible without hover:
+
+- A warning, the reason a button is disabled, the state of an unsaved field: in words, next to what
+  it is about.
+- Text cut short (an absence reason): a tap opens a `Popover` with all of it.
+- A tooltip only repeats what can already be found another way (the guild class icon, see below).
+- `title=""` never carries information: a touch screen has no way to show it.
 
 ### The surface behind a hovered or selected control
 
@@ -608,6 +648,10 @@ a selected state. The convention:
 - **Current page in the header nav** - *not* a primary surface: navigation is not an in-page
   selection. The item keeps its ghost button, takes `text-foreground`, a `jade` icon and a 2px
   `jade` bar under it (`main-nav.tsx`). Only colour and opacity change, so the row never shifts.
+  Each entry is a plain `Link` styled with `buttonVariants`, never a `Button` rendering a link: Base
+  UI gives that anchor `role="button"`, and navigation must read as links. From `sm` to `lg` the
+  entries show their short names (the full name stays their `aria-label`) and the guild's name
+  drops to screen readers, so the header holds one line on a phone turned sideways or a tablet.
   Below `sm` the header keeps only the seal and the avatar, and the same entries (`nav-items.ts`)
   move to `mobile-tab-bar.tsx`, fixed to the bottom of the screen with a short name under each icon;
   the jade bar sits on its top edge. Its height is reserved through `--app-bottom-inset`
@@ -821,10 +865,11 @@ Data arrives, it does not snap in. Four pieces, all CSS, in `app/globals.css` an
   of `td` cells: it stays in view above the rows, and it adds no `th` to the column count.
 - Paging → `use-table-pagination` (client-side, resets to page 1 when the filter changes) rendered
   with `table-pagination-bar` / `page-size-select`. The pagination bar **always** renders, even at one
-  page, so filtering does not move the layout. Below `sm` the page numbers hide and only the four
+  page, so filtering does not move the layout. Below `lg` the page numbers hide and only the four
   arrows stay: eleven cells of `size-10` are wider than a phone, and a strip that overflows the page
   widens the whole layout viewport - the phone then zooms out, and the fixed tab bar lands below the
-  fold. The "trang x/y" count beside it still says where you are.
+  fold. `lg` and not `sm`, because a phone turned sideways is 640-1000px wide and the numbers
+  overflowed it too. The "trang x/y" count beside it still says where you are.
 
 ---
 
