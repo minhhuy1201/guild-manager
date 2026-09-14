@@ -9,9 +9,13 @@ import { ROUTES } from "@/config/routes";
 import { UserMenu } from "@/features/auth";
 import { fetchMe, getSession } from "@/features/auth/server";
 
-/** Layout of the brand block, shared by its link and its plain-text form. */
+/**
+ * Layout of the brand block, shared by its link and its plain-text form. The padding, cancelled by
+ * an equal negative margin, grows the touch target past the seal without moving anything: below
+ * `lg` the seal alone is the home link, and it is smaller than a finger.
+ */
 const BRAND =
-  "flex min-w-0 items-center gap-3 rounded-lg outline-none focus-visible:ring-3 focus-visible:ring-ring/50";
+  "-m-1 flex min-w-0 items-center gap-3 rounded-lg p-1 outline-none focus-visible:ring-3 focus-visible:ring-ring/50";
 
 /**
  * The guild's seal and name, with the game's name as a small caption once there is room for it.
