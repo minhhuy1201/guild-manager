@@ -131,8 +131,8 @@ mặc định `1`.
       khoá"`, `"không truyền undo thì không có nút"`.
 - [x] `team-name-field.tsx`: nút tên team thêm `max-sm:min-h-11` (đo ở PR 1: 32px).
 - [x] Xác nhận đỏ. Nút `variant="outline" size="sm"` icon `Undo2` giữa "Đặt lại" và "Lưu", khoá cả khi
-      `saving`. Screen truyền `undo={{ onUndo: screen.draft.undo, canUndo: screen.draft.canUndo &&
-      !saving }}`.
+      `saving`. Screen truyền `undo={{ onUndo: screen.draft.undo, canUndo: screen.draft.canUndo }}`;
+      khoá khi đang lưu nằm một chỗ, trong thanh Lưu (`disabled={saving || !undo.canUndo}`).
 - [x] Xanh. Commit `feat(web): add an undo button to the team builder's save bar`.
 
 ### Task 9: Tài liệu, nghiệm thu, PR
