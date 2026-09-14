@@ -736,7 +736,9 @@ save: "N thay đổi chưa lưu · Đặt lại · Lưu", the save's error in pl
 and **never `fixed`**: sticky leaves the last row of content uncovered, and it
 creates no containing block for the `position: fixed` elements of the screen (see *Entrance and
 data reveal*). The team builder also binds Ctrl+S / Cmd+S to the same save (`useSaveShortcut`),
-and Ctrl+Z / Cmd+Z to an undo of the open day's latest edit (`useUndoShortcut`). The undo steps live
+and Ctrl+Z / Cmd+Z to an undo of the open day's latest edit (`useUndoShortcut`). A phone has no
+keyboard, so the bar also takes an optional `undo` (`{ onUndo, canUndo }`) and then shows "Hoàn tác"
+between the reset and the save, running the very same undo; the attendance grid passes none. The undo steps live
 in `formation-store` per day and are taken in one place, `editActiveDraft`, so a new kind of edit is
 undoable by going through it; a note typed in one go is one step. Inside a text field Ctrl+Z stays
 the browser's own text undo. Inside a dialog neither shortcut touches the formation behind it
@@ -746,10 +748,19 @@ The actions that are not about saving (copy a line-up, announce on Discord) stay
 toolbar at the top. An action that must not run on unsaved work is disabled while the draft is
 dirty and says why in a tooltip, rather than opening a dialog only to refuse.
 
+**The team builder on a phone** (below `md`) shows one team at a time. `TeamSwitcher` - ten chips,
+five by two, each with the team's name and how many of its six slots are filled - picks which; the
+team shown lives in `team-view-store`, apart from `formation-store`, because looking at a team is not
+an edit and must never become an undo step. The other teams are hidden with CSS (`max-md:hidden`),
+not left out of the tree: no screen size is read in JS, so nothing mismatches at hydration, and every
+slot stays registered with dnd-kit. Cards drag on a mouse after 8px (`MouseSensor`) and on a finger
+after a 250ms press (`TouchSensor`), so a swipe scrolls; a card is never `touch-none`. Below `sm` a
+slot's note folds behind a button (a jade dot when there is one) and opens on its own row.
+
 On the team builder the formation grid comes in two layouts (`FormationLayout`): `screen` keeps the
 formation banner to one line, since the day tab right above it already names the battle; `capture` -
-the image posted to Discord, read without the tabs around it - keeps five columns whatever the window
-and the tall banner as its only headline.
+the image posted to Discord, read without the tabs around it - keeps five columns and all ten teams
+whatever the window, no chips, and the tall banner as its only headline.
 
 ### Feedback after a write → a toast
 
