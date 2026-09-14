@@ -200,4 +200,14 @@ describe("AttendanceLogTable", () => {
     // Ba lượt còn lại không có lý do.
     expect(screen.getAllByText("—").length).toBe(3);
   });
+
+  // Cột lý do có giới hạn bề ngang; trên điện thoại `title` không hiện được, nên lý do bị cắt phải
+  // mở ra được bằng một lần chạm.
+  it("lý do vắng bấm vào được để đọc đủ, không nằm trong title", async () => {
+    await renderTable();
+
+    const reason = screen.getByRole("button", { name: "Bận đi công tác" });
+
+    expect(reason.getAttribute("title")).toBeNull();
+  });
 });
