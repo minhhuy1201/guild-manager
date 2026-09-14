@@ -21,17 +21,19 @@ function GuildName() {
   return (
     <>
       <GuildSeal />
-      {/* Below `sm` the header is the seal and the avatar only (the nav moves to the tab bar at the
-          bottom), and "Mèo ..." cut short reads worse than the seal alone - so the name drops to
-          screen readers only, which keeps the home link named. */}
-      <span className="sr-only min-w-0 flex-col leading-tight sm:not-sr-only sm:flex">
+      {/* Below `lg` the header has no room for it: under `sm` it is the seal and the avatar only
+          (the nav moves to the tab bar at the bottom), and from `sm` to `lg` the nav takes the row,
+          which squeezed the name to nothing and broke 逆水寒 into one glyph per line. "Mèo ..."
+          cut short reads worse than the seal alone - so the name drops to screen readers only,
+          which keeps the home link named. */}
+      <span className="sr-only min-w-0 flex-col leading-tight lg:not-sr-only lg:flex">
         <span className="truncate font-heading text-lg font-semibold tracking-tight sm:text-xl">
           Mèo Mập Giang Hồ
         </span>
         {/* `lang` so the browser picks a Chinese face for the glyphs rather than a Vietnamese one. */}
         <span
           lang="zh"
-          className="hidden text-xs tracking-[0.3em] text-muted-foreground sm:block"
+          className="hidden text-xs tracking-[0.3em] text-muted-foreground lg:block"
         >
           逆水寒
         </span>
@@ -55,7 +57,9 @@ export async function SiteHeader() {
 
   return (
     <>
-      <header className="sticky top-0 z-10 border-b bg-card/90 backdrop-blur">
+      {/* Not sticky on a short screen (a phone turned sideways): pinned there, it and the save
+          bar took about 40% of the height. */}
+      <header className="sticky top-0 z-10 border-b bg-card/90 backdrop-blur [@media(max-height:500px)]:static">
         <div className="mx-auto flex h-14 max-w-[1600px] items-center gap-3 px-4 sm:px-6">
           {/* Signed out the name is plain text: it would otherwise link to a route the proxy
               bounces straight back to the login page. */}
