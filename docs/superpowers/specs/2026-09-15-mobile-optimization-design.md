@@ -1,6 +1,7 @@
 # Tối ưu web app cho điện thoại
 
-Ngày: 2026-09-15 · Nhánh: `feat/web-mobile-optimization`
+Ngày: 2026-09-15 · Nhánh: `feat/web-mobile-foundation`, `feat/web-mobile-pages`,
+`feat/web-mobile-team-builder` (ba PR, xem §8)
 
 ## 1. Vấn đề
 
@@ -142,8 +143,9 @@ cần hover:
     được hơn một cột ngày.
   - Lý do nghỉ bị cắt thành một nút mở `Popover` ghi đủ lý do. Component dùng chung với bảng log:
     `features/attendance/components/absence-reason-text.tsx`.
-- **Bộ lọc** (`attendance-filters.tsx`): dưới `sm`, ô tìm kiếm chiếm một dòng, còn chọn phái và nút
-  "Chưa điểm danh" chung một dòng.
+- **Bộ lọc** (`attendance-filters.tsx`) giữ nguyên ba dòng dưới `sm`. Đã cân nhắc gộp chọn phái và nút
+  "Chưa điểm danh" chung một dòng, nhưng ở 360px nút rộng khoảng 190px, ép ô chọn phái còn khoảng
+  70px, tệ hơn hiện tại.
 - **Banner cao** giữ nguyên theo design brief. Với chữ 110% nó tự thấp đi khoảng 20px.
 
 **Lịch sử `/lich-su-diem-danh`**
@@ -167,14 +169,18 @@ cần hover:
 
 Từ `md` trở lên giữ nguyên bố cục (2 cột ở `md`, 5 cột từ `lg`). Layout `capture` không đổi.
 
-**Mỗi lúc một team.**
+**Mỗi lúc một team.** Đội hình có 10 team, mỗi team 6 ô (`TEAM_COUNT`, `SLOTS_PER_TEAM` trong
+`lib/mock-formation.ts`).
 
-- Component mới `features/team-builder/components/team-switcher.tsx`: một hàng chip, chỉ hiện dưới
-  `md`, nằm giữa banner đội hình và team.
-  - Mỗi chip: số team, tên team, số ô đã có người trên 12 (ví dụ `1 · MID 8/12`).
-  - Chip đang chọn dùng nền `primary` với chữ `primary-foreground`, đúng quy ước "Selected" của §6.
-  - Hàng chip `sticky`, ngay dưới header, và thôi dính khi header thôi dính (§4.1, màn thấp).
-  - Hàng chip cuộn ngang được nếu tên team dài, không bao giờ làm trang tràn.
+- Component mới `features/team-builder/components/team-switcher.tsx`: 10 chip xếp lưới 5 cột × 2
+  hàng, chỉ hiện dưới `md`, nằm giữa banner đội hình và team.
+  - Mỗi chip hai dòng: tên team (hoặc số team khi chưa đặt tên, cắt bớt nếu dài) và số ô đã có người
+    trên 6 (ví dụ `4/6`).
+  - Chip là nút bật/tắt (`aria-pressed`). Chip đang chọn dùng nền `primary` với chữ
+    `primary-foreground`, đúng quy ước "Selected" của §6.
+  - Lưới chip **không dính**: một team chỉ 6 ô, nên team và đầu pool đã nằm gần nhau, còn hai hàng
+    chip dính sẽ chiếm thêm khoảng 110px của màn hình.
+  - Lưới cột cố định nên không bao giờ làm trang tràn ngang.
 - Team đang chọn là UI state, nên đặt trong một store Zustand nhỏ mới:
   `features/team-builder/store/team-view-store.ts` (`selectedTeam`, mặc định `1`). Tách khỏi
   `formation-store` vì store đó giữ bản nháp và các bước hoàn tác, còn team đang xem không phải một
@@ -183,7 +189,10 @@ Từ `md` trở lên giữ nguyên bố cục (2 cột ở `md`, 5 cột từ `l
   render:
   - Không cần đọc kích thước màn hình bằng JS, nên không lệch hydration giữa server và client.
   - dnd-kit vẫn đăng ký đủ các ô, nên từ `md` trở lên không có gì khác.
-- Pool nằm ngay dưới team, giữ vùng cuộn riêng `h-64`. Trang cao khoảng 1.500px thay vì 5.900px.
+  - Chỉ áp cho layout `screen`. Layout `capture` (ảnh gửi Discord) luôn hiện đủ 10 team và không có
+    lưới chip.
+- Pool nằm ngay dưới team, giữ vùng cuộn riêng `h-64`. Trang không còn 10 team xếp chồng (khoảng
+  5.900px ở 420px), chỉ còn một team 6 ô.
 
 **Kéo thả trên cảm ứng.**
 
@@ -223,9 +232,13 @@ nguồn copy đầy đủ vẫn hiện trong dialog xác nhận.
 - Xếp team truyền vào đúng thao tác mà Ctrl+Z gọi, nên hai đường cho cùng một kết quả.
 - Nút hiện ở mọi kích thước màn. Bảng điểm danh không truyền prop này nên không đổi.
 
-**Sửa tên team.** Bút sửa tên (`team-name-field.tsx`) từ `size="icon-xs"` lên `size="icon"` dưới
-`sm`. Bút đã luôn hiện khi dùng cảm ứng (`[@media(hover:none)]:opacity-100`), nên bút là đường sửa tên
-bằng tay; nhấn đúp vẫn dùng được trên máy tính.
+**Sửa tên team.** Bút sửa tên (`team-name-field.tsx`) giữ `size="icon-xs"` cho chuột, và lên
+`size-10` (44px) khi màn hình không có hover: `[@media(hover:none)]:size-10`, cùng kiểu với
+`[@media(hover:none)]:opacity-100` đã có trên chính nút đó. Biến thể `size` của `Button` không đổi
+theo loại thiết bị được, nên đây là ngoại lệ có ghi lý do cho quy ước "Control sizes" (không viết kích
+thước tay), và §6 ghi lại ngoại lệ này: một control chỉ phóng to cho cảm ứng thì viết dưới
+`[@media(hover:none)]`. Bút đã luôn hiện khi dùng cảm ứng, nên bút là đường sửa tên bằng tay; nhấn đúp
+vẫn dùng được trên máy tính.
 
 ## 5. File thay đổi
 
@@ -243,7 +256,6 @@ bằng tay; nhấn đúp vẫn dùng được trên máy tính.
 | `apps/web/features/attendance/components/absence-reason-text.tsx` (mới) | Lý do nghỉ: `line-clamp`, bấm mở `Popover` |
 | `apps/web/features/attendance/components/attendance-row.tsx`, `attendance-log-table.tsx` | Dùng `absence-reason-text`; ô lưới `size-10` |
 | `apps/web/features/attendance/components/absence-reason-input.tsx` | Ô nhập và nút 44px, gợi ý lưu thành chữ |
-| `apps/web/features/attendance/components/attendance-filters.tsx` | Bộ lọc gọn hai dòng dưới `sm` |
 | `apps/web/features/attendance/components/character-name.tsx` | `max-w-28` dưới `sm` |
 | `apps/web/features/team-builder/components/team-switcher.tsx` (mới) | Hàng chip chọn team dưới `md` |
 | `apps/web/features/team-builder/store/team-view-store.ts` (mới) | `selectedTeam` |
@@ -252,7 +264,7 @@ bằng tay; nhấn đúp vẫn dùng được trên máy tính.
 | `apps/web/features/team-builder/components/draggable-member.tsx`, `member-card.tsx` | Bỏ `touch-none`, chặn menu nhấn giữ, tên 2 dòng, cảnh báo thành chữ |
 | `apps/web/features/team-builder/components/slot-cell.tsx`, `slot-note-input.tsx` | Nút ghi chú và ô nhập mở dưới hàng, dưới `sm` |
 | `apps/web/features/team-builder/components/formation-toolbar.tsx` | Nhãn ngắn, chia đôi dòng, lý do khóa thành chữ |
-| `apps/web/features/team-builder/components/team-name-field.tsx` | Bút sửa tên 44px dưới `sm` |
+| `apps/web/features/team-builder/components/team-name-field.tsx` | Bút sửa tên 44px khi dùng cảm ứng |
 | `apps/web/docs/frontend.md` | §6 (xem §6 dưới đây) |
 
 ## 6. Tài liệu
@@ -275,8 +287,10 @@ bằng tay; nhấn đúp vẫn dùng được trên máy tính.
 
 **Test tự động** (Vitest + Testing Library, test mô tả hành vi, tên test tiếng Việt):
 
-- `team-switcher`: hiện đủ 5 chip với số ô đã xếp; bấm chip thì đổi `selectedTeam`; chip là nút bật/tắt,
-  chip đang chọn mang `aria-pressed="true"`.
+- `team-switcher`: hiện đủ 10 chip với số ô đã xếp trên 6; bấm chip thì đổi `selectedTeam`; chip đang
+  chọn mang `aria-pressed="true"`.
+- `formation-grid`: layout `screen` ẩn dưới `md` mọi team trừ team đang chọn; layout `capture` không ẩn
+  team nào và không có chip.
 - `team-view-store`: mặc định team 1; đổi team không đụng tới bản nháp và lịch sử hoàn tác.
 - `unsaved-changes-bar`: có `onUndo` thì có nút "Hoàn tác", bấm thì gọi đúng một lần, bị khóa khi không
   còn bước; không có `onUndo` thì không có nút.
@@ -304,3 +318,18 @@ và cuộn pool; nhấn giữ thẻ trong pool rồi kéo vào một ô trống 
 trình duyệt.
 
 **Lệnh kiểm:** `pnpm --filter web test`, `pnpm --filter web lint`, `pnpm --filter web typecheck`.
+
+## 8. Chia PR
+
+Ba PR, mỗi PR một nhánh:
+
+| PR | Nhánh | Nội dung | Tách từ |
+|---|---|---|---|
+| 1. Nền tảng | `feat/web-mobile-foundation` | Spec và plan này; §4.1; tab Thiết lập (§4.2, lỗi tràn nặng nhất); §6 phần nền tảng | `main` |
+| 2. Các trang | `feat/web-mobile-pages` | Phần còn lại của §4.2 | PR 1 |
+| 3. Xếp team | `feat/web-mobile-team-builder` | §4.3, gồm nút Hoàn tác của `UnsavedChangesBar`; §6 phần Xếp team và thanh Lưu | PR 1 |
+
+- PR 1 đi trước vì cỡ chữ gốc đổi mọi kích thước, và mức 44px của PR 2 và PR 3 tính theo 110%.
+- PR 2 và PR 3 không phụ thuộc nhau. Cả hai lấy PR 1 làm base; khi PR 1 merge, GitHub tự chuyển base
+  của chúng về `main`.
+- Mỗi PR tự xanh `test`, `lint`, `typecheck`, và tự qua nghiệm thu render cho phần của nó.
