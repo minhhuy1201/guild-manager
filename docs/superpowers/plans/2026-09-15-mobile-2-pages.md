@@ -7,7 +7,7 @@
 hover, vùng chạm từ 44px.
 
 **Architecture:** Chỉ đổi `apps/web`. Một component mới trong feature attendance cho lý do nghỉ bị cắt;
-còn lại là sửa class và bỏ tooltip. Tách từ nhánh của PR 1 (cần cỡ chữ 110%).
+còn lại là sửa class và bỏ tooltip. Tách từ nhánh của PR 1 (cần cỡ chữ và thang kích thước của nó).
 
 **Tech Stack:** Next.js 16, Tailwind 4, Base UI Popover, Vitest + Testing Library.
 

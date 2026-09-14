@@ -85,13 +85,17 @@ Ngoài phạm vi, cố ý không làm:
 
 ### 4.1 Nền tảng toàn app
 
-**Cỡ chữ gốc: 110% dưới `sm`, 120% từ `sm`.** Toàn bộ kích thước của app tính bằng `rem`, nên cỡ chữ
-gốc vẫn là điểm điều khiển duy nhất, giữ trong `globals.css`. Chọn 110% vì:
+**Cỡ chữ gốc: 115% dưới `sm`, 120% từ `sm`.** Toàn bộ kích thước của app tính bằng `rem`, nên cỡ chữ
+gốc vẫn là điểm điều khiển duy nhất, giữ trong `globals.css`. App đặt `--spacing: 0.24rem` (không phải
+0,25rem của Tailwind), nên:
 
-- Nút `h-10` bằng đúng 44px (17,6px × 2,5), là mức tối thiểu để chạm của Apple. Với 106%, nút rơi
-  xuống 42px.
-- Input vẫn khoảng 19px, nên iOS không zoom khi focus.
-- Màn 420px bố cục như 382px thay vì 350px. Màn 360px như 327px thay vì 300px.
+- 115% là mức thấp nhất giữ nút `h-10` từ 44px (18,4px × 0,24 × 10 = 44,2px), mức tối thiểu để chạm
+  của Apple.
+- Ô nhập `text-sm` vẫn 16,1px, nên iOS không zoom khi focus. Ở 110% nó còn 15,4px, và `h-10` chỉ 42px.
+- Màn 420px bố cục như 365px thay vì 350px.
+
+Quyết định ban đầu là 110%, đổi thành 115% sau lần đo render đầu tiên của PR 1 (60 ô ghi chú của Xếp
+team còn 15,4px, nút `h-10` còn 42px).
 
 Breakpoint của Tailwind tính bằng `rem` nhưng media query luôn đọc `rem` theo cỡ chữ mặc định của
 trình duyệt, nên đổi cỡ chữ gốc không làm dịch breakpoint. `sm` vẫn là 640px.
@@ -114,10 +118,16 @@ app đều bị), không phải một variant, nên sửa ở `components/ui/` g
 design token, sửa trong `components/ui/`" của `frontend.md` §6. Dùng `dvh` để tính đúng khi thanh địa
 chỉ của trình duyệt co giãn.
 
-**Vùng chạm tối thiểu 44px.** Mọi control tương tác dưới `sm` phải từ 44px trở lên. Khi cần to hơn, dùng
-biến thể có sẵn (`size="icon"`, `size="default"`), không viết `h-*` tay, đúng quy ước "Control sizes"
-của §6. Riêng ô lịch (`calendar.tsx`, `--cell-size`) là token của component nền: nâng lên
-`--spacing(10)` dưới `sm` (7 cột × 44px = 308px, vừa màn 360px).
+**Vùng chạm tối thiểu 44px.** Mọi control tương tác dưới `sm` phải từ 44px trở lên. Thang kích thước
+trong `components/ui/` gánh việc này, vì theo quy ước "Control sizes" của §6 thang là design token:
+
+- `button.tsx`: dưới `sm`, `sm` và `xs` thêm `max-sm:h-10`; `icon-sm` và `icon-xs` thêm
+  `max-sm:size-10`. Ở 115%, `h-9` chỉ 39,7px.
+- `tabs.tsx`: `TabsList` dưới `sm` cao `h-12`, để tab bên trong (trừ padding 3px) đạt 44px.
+- `calendar.tsx`: ô lịch `--cell-size` nâng lên `--spacing(10)` dưới `sm` (7 cột × 44px = 308px, vừa
+  màn 360px).
+- Link con dấu trên header: `-m-1 p-1`, vùng chạm khoảng 48px mà không xê dịch hình.
+- Control tự làm (không qua `Button`), như ô bấm của lưới điểm danh, tự lấy `size-10`.
 
 **Quy ước mới "Chạm không có hover".** Thông tin cần để hiểu hoặc để làm tiếp phải thấy được mà không
 cần hover:
@@ -146,7 +156,7 @@ cần hover:
 - **Bộ lọc** (`attendance-filters.tsx`) giữ nguyên ba dòng dưới `sm`. Đã cân nhắc gộp chọn phái và nút
   "Chưa điểm danh" chung một dòng, nhưng ở 360px nút rộng khoảng 190px, ép ô chọn phái còn khoảng
   70px, tệ hơn hiện tại.
-- **Banner cao** giữ nguyên theo design brief. Với chữ 110% nó tự thấp đi khoảng 20px.
+- **Banner cao** giữ nguyên theo design brief. Với chữ 115% nó tự thấp đi khoảng 10px.
 
 **Lịch sử `/lich-su-diem-danh`**
 
@@ -232,20 +242,18 @@ nguồn copy đầy đủ vẫn hiện trong dialog xác nhận.
 - Xếp team truyền vào đúng thao tác mà Ctrl+Z gọi, nên hai đường cho cùng một kết quả.
 - Nút hiện ở mọi kích thước màn. Bảng điểm danh không truyền prop này nên không đổi.
 
-**Sửa tên team.** Bút sửa tên (`team-name-field.tsx`) giữ `size="icon-xs"` cho chuột, và lên
-`size-10` (44px) khi màn hình không có hover: `[@media(hover:none)]:size-10`, cùng kiểu với
-`[@media(hover:none)]:opacity-100` đã có trên chính nút đó. Biến thể `size` của `Button` không đổi
-theo loại thiết bị được, nên đây là ngoại lệ có ghi lý do cho quy ước "Control sizes" (không viết kích
-thước tay), và §6 ghi lại ngoại lệ này: một control chỉ phóng to cho cảm ứng thì viết dưới
-`[@media(hover:none)]`. Bút đã luôn hiện khi dùng cảm ứng, nên bút là đường sửa tên bằng tay; nhấn đúp
-vẫn dùng được trên máy tính.
+**Sửa tên team.** Bút sửa tên (`team-name-field.tsx`, `size="icon-xs"`) tự đạt 44px dưới `sm` nhờ
+thang kích thước (§4.1), không cần sửa gì riêng. Nút tên team (nhấn đúp để sửa) đo được cao 32px ở
+PR 1, nên dưới `sm` thêm `max-sm:min-h-11`. Bút đã luôn hiện khi dùng cảm ứng, nên bút là đường sửa
+tên bằng tay; nhấn đúp vẫn dùng được trên máy tính.
 
 ## 5. File thay đổi
 
 | File | Thay đổi |
 |---|---|
-| `apps/web/app/globals.css` | Cỡ chữ gốc 110% dưới `sm` |
-| `apps/web/components/shared/site-header.tsx`, `main-nav.tsx` | Tên bang từ `lg`, nav nhãn ngắn ở `sm`-`lg`, header thôi dính ở màn thấp |
+| `apps/web/app/globals.css` | Cỡ chữ gốc 115% dưới `sm` |
+| `apps/web/components/ui/button.tsx`, `tabs.tsx` | Thang kích thước dưới `sm`: không control nào dưới 44px |
+| `apps/web/components/shared/site-header.tsx`, `main-nav.tsx` | Tên bang từ `lg`, nav nhãn ngắn ở `sm`-`lg` và là link thật (không `role="button"`), header thôi dính ở màn thấp, vùng chạm của con dấu |
 | `apps/web/components/shared/table-pagination.tsx` | Ẩn số trang dưới `lg` |
 | `apps/web/components/ui/dialog.tsx` | `max-h` theo `dvh`, cuộn bên trong |
 | `apps/web/components/ui/calendar.tsx` | Ô lịch 44px dưới `sm` |
@@ -263,8 +271,8 @@ vẫn dùng được trên máy tính.
 | `apps/web/features/team-builder/components/team-builder-screen.tsx` | `MouseSensor` + `TouchSensor`, thanh công cụ, `onUndo` |
 | `apps/web/features/team-builder/components/draggable-member.tsx`, `member-card.tsx` | Bỏ `touch-none`, chặn menu nhấn giữ, tên 2 dòng, cảnh báo thành chữ |
 | `apps/web/features/team-builder/components/slot-cell.tsx`, `slot-note-input.tsx` | Nút ghi chú và ô nhập mở dưới hàng, dưới `sm` |
+| `apps/web/features/team-builder/components/team-name-field.tsx` | Nút tên team cao 44px dưới `sm` |
 | `apps/web/features/team-builder/components/formation-toolbar.tsx` | Nhãn ngắn, chia đôi dòng, lý do khóa thành chữ |
-| `apps/web/features/team-builder/components/team-name-field.tsx` | Bút sửa tên 44px khi dùng cảm ứng |
 | `apps/web/docs/frontend.md` | §6 (xem §6 dưới đây) |
 
 ## 6. Tài liệu
@@ -274,8 +282,8 @@ vẫn dùng được trên máy tính.
 - Mục mới **"Touch has no hover"**: quy ước ở §4.1.
 - Mục mới **"Phone layout"**:
   - Bảng thiết bị mục tiêu (§2).
-  - Cỡ chữ gốc 110%/120% và lý do chọn 110%.
-  - Vùng chạm 44px.
+  - Cỡ chữ gốc 115%/120% và lý do chọn 115%.
+  - Vùng chạm 44px, và thang kích thước dưới `sm` trong "Control sizes".
   - Header ở `sm`-`lg` và ở màn thấp.
   - Dialog cuộn bên trong.
 - **"Tables"**: số trang ẩn dưới `lg`, không còn dưới `sm`, kèm lý do (máy xoay ngang).
@@ -329,7 +337,8 @@ Ba PR, mỗi PR một nhánh:
 | 2. Các trang | `feat/web-mobile-pages` | Phần còn lại của §4.2 | PR 1 |
 | 3. Xếp team | `feat/web-mobile-team-builder` | §4.3, gồm nút Hoàn tác của `UnsavedChangesBar`; §6 phần Xếp team và thanh Lưu | PR 1 |
 
-- PR 1 đi trước vì cỡ chữ gốc đổi mọi kích thước, và mức 44px của PR 2 và PR 3 tính theo 110%.
+- PR 1 đi trước vì cỡ chữ gốc và thang kích thước đổi mọi control, và mức 44px của PR 2 và PR 3 tính
+  theo đó.
 - PR 2 và PR 3 không phụ thuộc nhau. Cả hai lấy PR 1 làm base; khi PR 1 merge, GitHub tự chuyển base
   của chúng về `main`.
 - Mỗi PR tự xanh `test`, `lint`, `typecheck`, và tự qua nghiệm thu render cho phần của nó.

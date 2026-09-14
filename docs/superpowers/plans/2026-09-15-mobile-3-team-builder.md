@@ -118,7 +118,7 @@ mặc định `1`.
       gửi</p>` khi `dirty`. Screen: bỏ wrapper `mt-4` thừa quanh toolbar.
 - [ ] Xanh. Commit `feat(web): fit the team builder toolbar on a phone`.
 
-### Task 8: Nút Hoàn tác, bút sửa tên
+### Task 8: Nút Hoàn tác, nút tên team
 
 **Files:** `apps/web/components/shared/unsaved-changes-bar.tsx`, test
 `components/shared/__tests__/unsaved-changes-bar.test.tsx`, `team-builder-screen.tsx`,
@@ -128,10 +128,10 @@ mặc định `1`.
 
 - [ ] Test đỏ: `"có undo thì có nút Hoàn tác, bấm gọi onUndo một lần"`, `"canUndo=false thì nút bị
       khoá"`, `"không truyền undo thì không có nút"`.
+- [ ] `team-name-field.tsx`: nút tên team thêm `max-sm:min-h-11` (đo ở PR 1: 32px).
 - [ ] Xác nhận đỏ. Nút `variant="outline" size="sm"` icon `Undo2` giữa "Đặt lại" và "Lưu", khoá cả khi
       `saving`. Screen truyền `undo={{ onUndo: screen.draft.undo, canUndo: screen.draft.canUndo &&
       !saving }}`.
-- [ ] `team-name-field.tsx`: bút thêm `[@media(hover:none)]:size-10`, comment ghi ngoại lệ.
 - [ ] Xanh. Commit `feat(web): add an undo button to the team builder's save bar`.
 
 ### Task 9: Tài liệu, nghiệm thu, PR
