@@ -75,7 +75,7 @@ Chỉ bố cục; nghiệm thu ở Task 4.
 
 ### Task 4: Nghiệm thu, PR
 
-- [ ] Render ở 360/390/420/915x412: `scrollWidth === innerWidth` trên `/`, `/lich-su-diem-danh`,
+- [x] Render ở 360/390/420/915x412: `scrollWidth === innerWidth` trên `/`, `/lich-su-diem-danh`,
       `/thiet-lap` (cả `?tab=members`); mở dialog tạo trận ở 360, ô ngày không bị cắt; với tài khoản
       đã gán nhân vật, trả lời Có/Không và lưu lý do ở 360 và 420.
 - [ ] Push, mở PR 2 (base `feat/web-mobile-foundation`), có `/pr-review`.
