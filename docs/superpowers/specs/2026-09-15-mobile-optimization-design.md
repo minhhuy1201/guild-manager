@@ -219,7 +219,8 @@ Từ `md` trở lên giữ nguyên bố cục (2 cột ở `md`, 5 cột từ `l
 - Hiện ô ghi chú chiếm `w-2/5`, làm tên chỉ còn khoảng 7-8 ký tự ở 360px. Dưới `sm`, ô ghi chú thu
   thành một nút `size="icon"` (44px):
   - Có chấm `jade` khi ô đã có ghi chú.
-  - Bấm vào thì ô nhập mở ra ngay dưới hàng đó, full width. Bấm lần nữa hoặc bấm ra ngoài thì đóng.
+  - Bấm vào thì ô nhập mở ra ngay dưới hàng đó, full width. Bấm nút lần nữa thì đóng. Không đóng khi bấm
+    ra ngoài: việc đó cần nghe blur hoặc click toàn trang, và chính cú bấm vào nút sẽ vừa đóng vừa mở lại.
 - Ghi chú đã có hiện thành một dòng chữ `text-muted-foreground` dưới tên.
 - Tên nhân vật (`member-card.tsx`) xuống tối đa 2 dòng (`line-clamp-2`) thay vì `truncate`.
 - Từ `sm` trở lên, ô ghi chú giữ như hiện nay.

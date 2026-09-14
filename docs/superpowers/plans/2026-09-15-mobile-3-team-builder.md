@@ -102,7 +102,8 @@ mặc định `1`.
       khi có ghi chú, `aria-expanded`, `aria-label="Ghi chú cho ô này"`), ẩn khi `readOnly`; wrapper ô
       nhập `col-span-2 sm:col-span-1 sm:col-start-2 sm:row-start-1`, thêm `max-sm:hidden` khi đang đóng;
       dòng xem trước `col-span-2 sm:hidden text-xs text-muted-foreground` khi đóng mà có ghi chú.
-      Trạng thái mở là state cục bộ (`useState`), không vào store.
+      Trạng thái mở là state cục bộ (`useState`), không vào store. Bấm nút lần nữa thì đóng (không
+      đóng khi bấm ra ngoài, spec §4.3). Ô thả `h-11` thành `min-h-11` để chứa tên hai dòng và cảnh báo.
 - [ ] Xanh. Commit `feat(web): fold the slot note behind a button on a phone`.
 
 ### Task 7: Thanh công cụ
