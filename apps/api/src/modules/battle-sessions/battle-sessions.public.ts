@@ -13,12 +13,11 @@ export type { ScheduledSession } from './battle-sessions.service';
 export {
   formatDeadlineLabel,
   formatSessionLabel,
-  isDeadlinePassed,
-  isReminderDay,
+  isDueForReminder,
   isSameWeek,
   isSessionLocked,
   parseWeekStart,
   weekEndOf,
   weekStartOf,
 } from './session-schedule';
-export type { WeekAnchor } from './session-schedule';
+export type { ReminderScope, WeekAnchor } from './session-schedule';

@@ -34,10 +34,13 @@ export class ReminderController {
    * was — `no-channel` needs an admin, `nothing-due` is an ordinary morning. Reading the Vercel log
    * to tell those apart was the alternative.
    *
+   * Always the `today` scope: the schedule is the daily rule, and only an admin asking by hand may
+   * reach further ahead.
+   *
    * @returns What the run did, wrapped as `{ data }` by the transform interceptor
    */
   @Get('attendance-reminder')
   run(): Promise<ReminderOutcome> {
-    return this.reminders.run();
+    return this.reminders.run('today');
   }
 }

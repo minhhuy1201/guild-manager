@@ -541,6 +541,9 @@ frontend only mirrors `isDeadlinePassed` to grey out a column.
   same morning, an earlier one the morning before (`isReminderDay`, compared by Vietnam calendar
   day). A deadline already passed is left out, so a hand-run `/nhac-diem-danh` in the afternoon pings
   nobody who can no longer answer.
+- `/nhac-diem-danh` takes an optional `pham-vi`: `today` (the default, and the only scope the cron
+  uses) applies the rule above; `week` reminds about every deadline of the open week not yet passed,
+  so an admin can nudge on Monday for a Wednesday match instead of waiting for Tuesday morning.
 
 Until 2026-08 the deadlines were fixed in code (10:00 on the match day, everything closing at 17:00
 Thursday). They are now entered by an admin at `/thiet-lap`. The cap is enforced by **rejecting the

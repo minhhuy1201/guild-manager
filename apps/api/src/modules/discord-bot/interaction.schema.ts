@@ -21,8 +21,8 @@ const invokerFields = {
 };
 
 /**
- * One filled-in option of a slash command. `value` is typed as a string because the only option the
- * bot declares is a USER, whose value is a Discord ID.
+ * One filled-in option of a slash command. `value` is typed as a string because every option the bot
+ * declares is a USER, a CHANNEL or a STRING, and Discord sends all three values as strings.
  */
 const commandOptionSchema = z.object({
   name: z.string().min(1),

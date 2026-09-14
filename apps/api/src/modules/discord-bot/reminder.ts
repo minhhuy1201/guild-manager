@@ -68,7 +68,7 @@ export interface MissingMember {
   discordId: string | null;
 }
 
-/** One battle day due for a reminder today, with everyone still missing from it. */
+/** One battle day due in this reminder run, with everyone still missing from it. */
 export interface DueSession {
   session: BattleSession;
   missing: MissingMember[];
@@ -149,7 +149,7 @@ function mentionedIds(due: readonly DueSession[]): string[] {
  * The mentions live in `content` rather than inside the embed, because Discord only notifies people
  * for mentions in the message text.
  *
- * @param due - Battle days due for a reminder today, each with everyone still missing. Never
+ * @param due - Battle days due in this run, each with everyone still missing. Never
  *   empty, and never carrying an empty `missing`: `ReminderService` drops those first, so a message
  *   that says nothing is never built
  * @param webOrigin - Origin of the web app, for the link button

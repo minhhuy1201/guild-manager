@@ -29,6 +29,14 @@ export interface SlashCommandOption {
   /** A value from `COMMAND_OPTION_TYPE` */
   type: number;
   required: boolean;
+  /** The fixed values a STRING option offers. Omitted when the option takes any value. */
+  choices?: SlashCommandOptionChoice[];
+}
+
+/** One fixed value of a STRING option: `name` is what the user picks, `value` what the bot reads. */
+export interface SlashCommandOptionChoice {
+  name: string;
+  value: string;
 }
 
 /**

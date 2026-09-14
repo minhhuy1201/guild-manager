@@ -14,6 +14,8 @@ import {
   vnWeekday,
 } from '@guild/shared/lib';
 
+import { assertNever } from '../../common';
+
 /** ISO weekday as `vnWeekday()` reports it: 1=Mon, ..., 7=Sun. */
 const MONDAY = 1;
 const SATURDAY = 6;
@@ -303,6 +305,45 @@ export function formatDeadlineLabel(deadline: Date): string {
  */
 export function isDeadlinePassed(deadline: Date, now: Date): boolean {
   return now.getTime() > deadline.getTime();
+}
+
+/**
+ * Which deadlines one reminder run looks at.
+ *
+ * `today` is the daily rule the cron follows (`isReminderDay`). `week` is every deadline of the open
+ * week still ahead: an admin who wants to nudge on Monday for a Wednesday match would otherwise have
+ * to wait until the morning `today` reaches it.
+ */
+export type ReminderScope = 'today' | 'week';
+
+/**
+ * Whether a deadline belongs in a reminder run of the given scope.
+ *
+ * A passed deadline is out in every scope: a reminder day can be the deadline's own day, so a
+ * hand-run `/nhac-diem-danh` in the afternoon would otherwise ping people who can no longer answer.
+ *
+ * @param deadline - The session's attendance deadline
+ * @param now - Current moment
+ * @param scope - Which deadlines the run looks at
+ * @returns true when the session should be reminded about in this run
+ */
+export function isDueForReminder(
+  deadline: Date,
+  now: Date,
+  scope: ReminderScope,
+): boolean {
+  if (isDeadlinePassed(deadline, now)) return false;
+
+  switch (scope) {
+    case 'today':
+      return isReminderDay(deadline, now);
+
+    case 'week':
+      return true;
+
+    default:
+      return assertNever(scope, 'Phạm vi nhắc điểm danh ngoài dự kiến');
+  }
 }
 
 /**
