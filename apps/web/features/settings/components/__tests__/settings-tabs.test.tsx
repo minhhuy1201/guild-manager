@@ -1,5 +1,11 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ROUTES } from "@/config/routes";
@@ -81,6 +87,29 @@ describe("SettingsTabs - tab nằm trên URL", () => {
 
     expect(replace).toHaveBeenCalledWith(ROUTES.settings, { scroll: false });
   });
+});
+
+// Hai nhãn đầy đủ rộng hơn màn điện thoại: dải tab tràn làm cả trang rộng ra và thanh tab đáy lọt
+// khỏi màn hình. Dưới sm chữ ngắn lại, còn screen reader vẫn đọc tên đầy đủ.
+describe("SettingsTabs - vừa màn điện thoại", () => {
+  it.each([
+    ["Thiết lập lịch đánh", "Lịch đánh"],
+    ["Quản lý thành viên", "Thành viên"],
+  ])(
+    "tab %s: tên truy cập là nhãn đầy đủ, dưới sm hiện chữ ngắn %s",
+    (fullLabel, shortLabel) => {
+      render(<SettingsTabs />);
+
+      const trigger = screen.getByRole("tab", { name: fullLabel });
+
+      expect(within(trigger).getByText(shortLabel).className).toContain(
+        "sm:hidden"
+      );
+      expect(within(trigger).getByText(fullLabel).className).toContain(
+        "max-sm:hidden"
+      );
+    }
+  );
 });
 
 describe("SettingsTabs - không lặp tên tab", () => {

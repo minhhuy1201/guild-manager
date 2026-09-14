@@ -90,14 +90,19 @@ function SettingsTabPanels() {
 
   return (
     <Tabs value={tab} onValueChange={(next) => selectTab(tabFrom(String(next)))}>
-      <TabsList>
-        <TabsTrigger value={TAB.battles}>
+      {/* Both full names side by side are wider than a phone: the strip overflowed and widened the
+          whole page. Below `sm` the list spans the row, each tab takes half of it with a short name,
+          and the accessible name stays the full one. */}
+      <TabsList className="max-sm:w-full">
+        <TabsTrigger value={TAB.battles} aria-label="Thiết lập lịch đánh">
           <Swords />
-          Thiết lập lịch đánh
+          <span className="sm:hidden">Lịch đánh</span>
+          <span className="max-sm:hidden">Thiết lập lịch đánh</span>
         </TabsTrigger>
-        <TabsTrigger value={TAB.members}>
+        <TabsTrigger value={TAB.members} aria-label="Quản lý thành viên">
           <Users />
-          Quản lý thành viên
+          <span className="sm:hidden">Thành viên</span>
+          <span className="max-sm:hidden">Quản lý thành viên</span>
         </TabsTrigger>
       </TabsList>
 
