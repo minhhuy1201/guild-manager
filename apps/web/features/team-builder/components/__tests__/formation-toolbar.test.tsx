@@ -1,5 +1,11 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { FormationToolbar } from "../formation-toolbar";
@@ -109,6 +115,36 @@ describe("FormationToolbar — nút gửi Discord", () => {
     }) as HTMLButtonElement;
 
     expect(button.disabled).toBe(true);
+  });
+});
+
+// Trên điện thoại không có hover để mở tooltip, và nhãn copy đầy đủ rộng gần hết màn hình.
+describe("FormationToolbar - dùng được bằng tay trên điện thoại", () => {
+  it("còn thay đổi chưa lưu thì dòng 'Lưu trước khi gửi' hiện bằng chữ", () => {
+    renderToolbar({ dirty: true });
+
+    expect(screen.getByText("Lưu trước khi gửi")).toBeTruthy();
+  });
+
+  it("đã lưu hết thì không có dòng nhắc lưu", () => {
+    renderToolbar();
+
+    expect(screen.queryByText("Lưu trước khi gửi")).toBeNull();
+  });
+
+  it("nút copy có tên truy cập đầy đủ, dưới sm hiện chữ ngắn", () => {
+    renderToolbar();
+
+    const button = screen.getByRole("button", {
+      name: "Copy từ Thứ 7 · Bang Chiến",
+    });
+
+    expect(within(button).getByText("Copy đội hình").className).toContain(
+      "sm:hidden"
+    );
+    expect(
+      within(button).getByText("Copy từ Thứ 7 · Bang Chiến").className
+    ).toContain("max-sm:hidden");
   });
 });
 
