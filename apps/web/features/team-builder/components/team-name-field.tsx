@@ -7,6 +7,7 @@ import { Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { teamLabel } from "../lib/team-label";
 
 interface TeamNameFieldProps {
   /** Team number, shown when the team has no name of its own */
@@ -42,7 +43,7 @@ export function TeamNameField({
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(value);
 
-  const label = value || String(team);
+  const label = teamLabel(team, value);
 
   /** Write the text into the draft and leave edit mode. */
   function commit() {
