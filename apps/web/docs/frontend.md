@@ -695,7 +695,8 @@ data reveal*). The team builder also binds Ctrl+S / Cmd+S to the same save (`use
 and Ctrl+Z / Cmd+Z to an undo of the open day's latest edit (`useUndoShortcut`). The undo steps live
 in `formation-store` per day and are taken in one place, `editActiveDraft`, so a new kind of edit is
 undoable by going through it; a note typed in one go is one step. Inside a text field Ctrl+Z stays
-the browser's own text undo.
+the browser's own text undo. Inside a dialog neither shortcut touches the formation behind it
+(Ctrl+S still blocks the browser's "save page").
 
 The actions that are not about saving (copy a line-up, announce on Discord) stay in the screen's
 toolbar at the top. An action that must not run on unsaved work is disabled while the draft is

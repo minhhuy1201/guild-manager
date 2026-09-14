@@ -6,7 +6,7 @@ import type { SessionFormation } from "@guild/shared/schemas";
 import { ApiError } from "@/lib/api-client";
 import { resolveActiveMatchIndex } from "../lib/active-match";
 import { removeCharacters } from "../lib/assignment";
-import { countDayChanges, isDayDirty } from "../lib/formation-diff";
+import { countDayChanges, isDayDirty, isSameDay } from "../lib/formation-diff";
 import { FORMATION } from "../lib/mock-formation";
 import { fromWire, fromWireMatches, toWireMatches } from "../lib/wire";
 import { useFormationStore } from "../store/formation-store";
@@ -212,8 +212,10 @@ export function useFormationDraft(
 
     // The write changed nothing — a drag released outside every droppable, or
     // "clear" pressed on a day already empty. Compared by content, since writers
-    // that replace the day build a new array even when it holds the same line-up.
-    if (!isDayDirty(after, before ?? matches)) {
+    // that replace the day build a new array even when it holds the same line-up;
+    // and exactly, not the way `isDayDirty` trims notes, or a trailing space typed
+    // into a saved note would count as nothing and be thrown away.
+    if (isSameDay(after, before ?? matches)) {
       // Put a day that had no draft back the way it was found: a draft equal to
       // the saved copy would shadow the next refetch, could not be discarded
       // (Đặt lại is disabled while the day is clean), and would block a prefill

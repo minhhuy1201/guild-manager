@@ -2,6 +2,8 @@
 
 import { useEffect, useEffectEvent } from "react";
 
+import { isInsideDialog } from "../lib/keyboard-target";
+
 /**
  * Bind Ctrl+Z (Cmd+Z on macOS) to the screen's undo while it is mounted.
  *
@@ -44,6 +46,6 @@ function belongsElsewhere(target: EventTarget | null): boolean {
   return (
     target.isContentEditable ||
     target.matches("input, textarea") ||
-    target.closest('[role="dialog"], [role="alertdialog"]') !== null
+    isInsideDialog(target)
   );
 }

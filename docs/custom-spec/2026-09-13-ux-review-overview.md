@@ -108,7 +108,8 @@ phía trên, không dính khi cuộn xuống kho.
 - Thanh hành động dính đáy màn hình, chỉ hiện khi `dirty`: "N thay đổi chưa lưu · Đặt lại · Lưu".
   Toolbar trên cùng giữ Copy và Gửi Discord.
 - Phím tắt Ctrl+S (Cmd+S trên macOS) gọi cùng hàm `handleSave`, chặn hộp thoại lưu trang của trình
-  duyệt.
+  duyệt. Đang mở dialog thì vẫn chặn nhưng không lưu (bổ sung 2026-09-14): đội hình nằm khuất sau
+  dialog.
 - **Bổ sung (2026-09-14, theo yêu cầu của chủ bang):** Ctrl+Z (Cmd+Z) hoàn tác thao tác gần nhất trên
   đội hình của ngày đang mở: kéo thả, ghi chú, thêm/xoá trận 2, copy, dọn sạch, gỡ người báo nghỉ.
   Gõ liền một ghi chú là một bước. Mỗi ngày một lịch sử riêng, mất khi Lưu, Đặt lại hoặc đổi tuần.

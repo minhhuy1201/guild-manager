@@ -55,6 +55,23 @@ describe("useSaveShortcut", () => {
     expect(notPrevented).toBe(false);
   });
 
+  // Đội hình nằm sau dialog: lưu lúc đó là ghi thứ người dùng không nhìn thấy.
+  it("phím bấm trong dialog thì không lưu nhưng vẫn chặn hộp thoại", () => {
+    const onSave = vi.fn();
+    const dialog = document.createElement("div");
+    dialog.setAttribute("role", "dialog");
+    const button = document.createElement("button");
+    dialog.append(button);
+    document.body.append(dialog);
+    renderHook(() => useSaveShortcut(onSave, true));
+
+    const notPrevented = fireEvent.keyDown(button, { key: "s", ctrlKey: true });
+
+    expect(onSave).not.toHaveBeenCalled();
+    expect(notPrevented).toBe(false);
+    dialog.remove();
+  });
+
   it("phím S trơn không làm gì", () => {
     const onSave = vi.fn();
     renderHook(() => useSaveShortcut(onSave, true));

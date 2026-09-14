@@ -442,7 +442,15 @@ describe("useFormationDraft — nhận một trận được copy", () => {
 });
 
 describe("useFormationDraft - hoàn tác (Ctrl+Z)", () => {
-  /** Move the saved character from its slot to the next one. */
+  /** A day whose saved formation places one character and notes their slot. */
+  const NOTED_SESSION = makeSession(SESSION_ID, {
+    matches: [{ slots: { [SLOT]: "char-1" }, notes: { [SLOT]: "giữ buồng" } }],
+  });
+
+  /**
+   * Move the saved character from its slot to the next one.
+   * @param result - The rendered hook's result
+   */
   function moveToSecondSlot(result: ReturnType<typeof renderDraft>["result"]) {
     act(() =>
       result.current.applyDrop({ kind: "slot", slotId: SLOT }, "char-1", {
@@ -492,6 +500,30 @@ describe("useFormationDraft - hoàn tác (Ctrl+Z)", () => {
 
     expect(result.current.notes[SLOT]).toBeUndefined();
     expect(result.current.dirty).toBe(false);
+  });
+
+  // Ghi chú "giữ buồng" đã lưu, chưa có nháp: dấu cách vừa gõ phải còn, không thì gõ tiếp ra "giữ buồngx".
+  it("gõ dấu cách cuối một ghi chú đã lưu thì dấu cách vẫn còn", () => {
+    const { result } = renderFormationHook(() =>
+      useFormationDraft([NOTED_SESSION], SESSION_ID, true, vi.fn())
+    );
+
+    act(() => result.current.setNote(SLOT, "giữ buồng "));
+
+    expect(result.current.notes[SLOT]).toBe("giữ buồng ");
+  });
+
+  it("dấu cách gõ sau một lần kéo thả là một bước riêng", () => {
+    const { result } = renderFormationHook(() =>
+      useFormationDraft([NOTED_SESSION], SESSION_ID, true, vi.fn())
+    );
+    moveToSecondSlot(result);
+    act(() => result.current.setNote(SLOT, "giữ buồng "));
+
+    act(() => result.current.undo());
+
+    expect(result.current.notes[SLOT]).toBe("giữ buồng");
+    expect(result.current.assignment["team-1-pos-2"]).toBe("char-1");
   });
 
   it("ghi chú của hai ô khác nhau là hai bước", () => {

@@ -131,10 +131,13 @@ cache là hết; `docs/development.md` §9 thêm dòng xử lý sự cố.
 - Store giữ `history` theo ngày: mỗi bước là nháp trước thao tác (`undefined` = chưa có nháp), trận
   đang mở, và `mergeKey`. `clearDraft` (Lưu, Đặt lại) và `setWeek` bỏ lịch sử.
 - `editActiveDraft` là chỗ duy nhất ghi bước: mọi thao tác sửa nháp đi qua nó, thao tác không đổi gì
-  thì không có bước. "Không đổi gì" so theo nội dung (`isDayDirty`), vì dọn sạch và copy luôn dựng
-  mảng mới. Ghi chú dùng `mergeKey` theo trận + ô để gộp các phím gõ liền nhau.
+  thì không có bước. "Không đổi gì" so theo nội dung, vì dọn sạch và copy luôn dựng mảng mới, và so
+  **chính xác** (`isSameDay`, không trim ghi chú như `isDayDirty`): so kiểu `isDayDirty` từng nuốt
+  dấu cách gõ vào cuối một ghi chú đã lưu khi ngày chưa có nháp. Ghi chú dùng `mergeKey` theo trận +
+  ô để gộp các phím gõ liền nhau.
 - Phím tắt bỏ qua phím trong ô nhập (hoàn tác chữ của trình duyệt) và trong dialog (đội hình nằm khuất
-  phía sau).
+  phía sau). Ctrl+S trong dialog cũng không lưu (vẫn chặn hộp thoại lưu trang); hai hook dùng chung
+  `lib/keyboard-target.ts`.
 - [x] Test đỏ store: undo về bước trước; bước đầu bỏ nháp; mở lại trận vừa sửa; gộp theo `mergeKey`;
       lịch sử tách theo ngày; `clearDraft` và đổi tuần bỏ lịch sử.
 - [x] Test đỏ hook: kéo thả rồi undo hết dirty; undo ngược thứ tự; gõ liền một ghi chú là một bước;
