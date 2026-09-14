@@ -1,13 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-import { assertNever, Clock } from '../../common';
+import { Clock } from '../../common';
 import type { Env } from '../../config';
 import { AttendanceService } from '../attendance/attendance.public';
 import {
   BattleSessionsService,
-  isDeadlinePassed,
-  isReminderDay,
+  isDueForReminder,
+  type ReminderScope,
 } from '../battle-sessions/battle-sessions.public';
 import { CharactersService } from '../characters/characters.public';
 import { BotChannelService } from './bot-channel.service';
@@ -35,41 +35,6 @@ export type ReminderOutcome =
   | { status: 'no-channel' }
   /** Nothing in the scope is due, or everyone has already answered for what is. */
   | { status: 'nothing-due' };
-
-/**
- * Which deadlines one run looks at.
- *
- * `today` is the daily rule the cron follows (`isReminderDay`). `week` is every deadline of the open
- * week still ahead: an admin who wants to nudge on Monday for a Wednesday match would otherwise have
- * to wait until the morning `today` reaches it.
- */
-export type ReminderScope = 'today' | 'week';
-
-/**
- * Whether a deadline belongs in a run of the given scope.
- *
- * A passed deadline is out in every scope: a reminder day can be the deadline's own day, so a
- * hand-run `/nhac-diem-danh` in the afternoon would otherwise ping people who can no longer answer.
- *
- * @param deadline - The session's attendance deadline
- * @param now - The current instant
- * @param scope - Which deadlines the run looks at
- * @returns true when the session should be reminded about in this run
- */
-function isDue(deadline: Date, now: Date, scope: ReminderScope): boolean {
-  if (isDeadlinePassed(deadline, now)) return false;
-
-  switch (scope) {
-    case 'today':
-      return isReminderDay(deadline, now);
-
-    case 'week':
-      return true;
-
-    default:
-      return assertNever(scope, 'Phạm vi nhắc điểm danh ngoài dự kiến');
-  }
-}
 
 /**
  * Key identifying one person's answer for one battle day.
@@ -131,7 +96,7 @@ export class ReminderService {
     const now = this.clock.now();
     const sessions = await this.battleSessions.listByWeek();
     const dueSessions = sessions.filter((session) =>
-      isDue(new Date(session.deadline), now, scope),
+      isDueForReminder(new Date(session.deadline), now, scope),
     );
 
     if (dueSessions.length === 0) return { status: 'nothing-due' };

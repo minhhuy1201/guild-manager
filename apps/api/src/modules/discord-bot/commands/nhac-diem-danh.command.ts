@@ -1,6 +1,7 @@
 import { canManageGuild } from '@guild/shared/lib';
 
 import { assertNever } from '../../../common';
+import type { ReminderScope } from '../../battle-sessions/battle-sessions.public';
 import { NOT_LINKED } from '../attendance-board';
 import { COMMAND_OPTION_TYPE } from '../discord.constants';
 import { isDiscordForbidden } from '../discord-rest';
@@ -10,7 +11,7 @@ import {
   commandOptionValue,
 } from '../interaction.schema';
 import { ephemeralText } from '../reply';
-import type { ReminderOutcome, ReminderScope } from '../reminder.service';
+import type { ReminderOutcome } from '../reminder.service';
 import type { CommandReply, SlashCommand } from './command.types';
 
 /** Name of the option, used both when registering and when reading the invocation. */

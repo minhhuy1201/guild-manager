@@ -19,7 +19,7 @@ Trong phạm vi:
 - Chọn ngày đánh theo luật "hạn chót rơi vào ngày mai", tìm người chưa có câu trả lời.
 - Một message công khai mention đích danh, kèm nút **Điểm danh ngay** sẵn có.
 - Bảng `BotChannel` + lệnh `/cau-hinh-kenh` để chọn channel nhận thông báo.
-- Lệnh `/nhac-diem-danh` chạy tay đúng luồng đó.
+- Lệnh `/nhac-diem-danh` chạy tay đúng luồng đó (từ 2026-09-14 có thêm option `pham-vi`, xem §6).
 - Rút hàng nút chung của `/thong-bao` và tin nhắc ra một chỗ (§3.7).
 
 Ngoài phạm vi — cố ý không làm:
@@ -331,6 +331,14 @@ thêm. Thêm một nhánh outcome sau này là lỗi biên dịch tại chỗ c�
 `ReminderService.run()` → `switch` trên `outcome.status`, ba nhánh ra ba câu trả lời riêng tư, đóng
 bằng `assertNever`. Lệnh **không tự đọc gì từ database**: cùng một hàm với cron, và mọi câu chữ đều
 suy ra từ kết quả hàm đó trả về.
+
+> **Cập nhật 2026-09-14:** lệnh có thêm option `pham-vi` không bắt buộc. `Hôm nay` (mặc định) chạy
+> đúng luật của cron như trên; `Cả tuần` nhắc mọi trận của tuần đang mở chưa quá hạn, để admin nhắc
+> sớm, ví dụ sáng thứ 2 cho trận thứ 4 thay vì chờ tới sáng thứ 3. `ReminderService.run(scope)` nhận
+> phạm vi tường minh và cron luôn truyền `'today'`. Luật chọn trận theo phạm vi là
+> `isDueForReminder(deadline, now, scope)` trong `session-schedule.ts`, cạnh `isReminderDay`; trận
+> đã quá hạn bị loại ở cả hai phạm vi. Câu trả lời "không có ai cần nhắc" tách theo phạm vi, và câu
+> của `Hôm nay` gợi ý chọn `Cả tuần`.
 
 **`/cau-hinh-kenh`:** resolve actor → không admin thì từ chối → `rest.postMessage` một tin
 xác nhận vào `interaction.channel_id` → Discord từ chối thì trả lỗi và không lưu → thành

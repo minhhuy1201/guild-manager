@@ -7,6 +7,7 @@ import {
   guildWarMatchCount,
   guildWarSessionId,
   isDeadlinePassed,
+  isDueForReminder,
   isReminderDay,
   isSameWeek,
   isSessionLocked,
@@ -311,6 +312,37 @@ describe('session-schedule', () => {
       expect(
         isReminderDay(vn('2026-09-04T09:00'), vn('2026-09-02T23:30')),
       ).toBe(false);
+    });
+  });
+
+  describe('trận thuộc lượt nhắc theo phạm vi', () => {
+    // Bang Chiến Thứ 7 05/09 có hạn 12:00 Thứ 6 04/09 → ngày nhắc là sáng Thứ 6.
+    const guildWarDeadline = vn('2026-09-04T12:00');
+    const mondayMorning = vn('2026-08-31T09:00');
+
+    it('phạm vi hôm nay theo đúng ngày nhắc', () => {
+      expect(
+        isDueForReminder(guildWarDeadline, vn('2026-09-04T09:00'), 'today'),
+      ).toBe(true);
+      expect(isDueForReminder(guildWarDeadline, mondayMorning, 'today')).toBe(
+        false,
+      );
+    });
+
+    it('phạm vi cả tuần nhắc được cả hạn còn chưa tới ngày nhắc', () => {
+      expect(isDueForReminder(guildWarDeadline, mondayMorning, 'week')).toBe(
+        true,
+      );
+    });
+
+    it('hạn đã qua thì không phạm vi nào nhắc', () => {
+      // 14:00 Thứ 6 04/09 - vẫn là ngày nhắc của hạn 12:00, nhưng hạn đã khoá.
+      const afternoon = vn('2026-09-04T14:00');
+
+      expect(isDueForReminder(guildWarDeadline, afternoon, 'today')).toBe(
+        false,
+      );
+      expect(isDueForReminder(guildWarDeadline, afternoon, 'week')).toBe(false);
     });
   });
 
