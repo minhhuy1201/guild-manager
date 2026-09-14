@@ -139,7 +139,7 @@ mặc định `1`.
 
 - [x] `frontend.md` §6: "Unsaved work" (nút Hoàn tác), mục Xếp team trên điện thoại (một team, store
       riêng, ẩn bằng CSS, capture không đổi, cảm biến).
-- [ ] Render 420x930 và 360x800: ô đầu tiên của team hiện trong màn đầu; chọn team 3 bằng chip;
+- [x] Render 420x930 và 360x800: ô đầu tiên của team hiện trong màn đầu; chọn team 3 bằng chip;
       `scrollWidth === innerWidth`. Mở dialog Gửi Discord ở 1440: ảnh 10 team như cũ.
 - [ ] Push, mở PR 3 (base `feat/web-mobile-foundation`), có `/pr-review`. Ghi trong PR: kéo thả trên
       Android Chrome thật chưa kiểm được ở đây, cần người dùng thử.
