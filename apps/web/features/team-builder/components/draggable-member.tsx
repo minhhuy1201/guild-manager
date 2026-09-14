@@ -49,8 +49,11 @@ export function DraggableMember({
       ref={setNodeRef}
       {...listeners}
       {...attributes}
+      // No `touch-none`: a finger on a card must still scroll the page, and the touch sensor waits
+      // for a long press before it drags. That press must not select the name or open the browser's
+      // own long-press menu either.
       className={cn(
-        "w-full min-w-0 cursor-grab touch-none",
+        "w-full min-w-0 cursor-grab select-none [-webkit-touch-callout:none]",
         isDragging && "opacity-40"
       )}
     >
