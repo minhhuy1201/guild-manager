@@ -17,6 +17,9 @@ const CHARACTER: Character = {
   guildClass: GuildClass.CUU_LINH,
 };
 
+/** The line under a reason that differs from the stored one: it says the text is not kept, and how to keep it. */
+const UNSAVED_HINT = "Chưa lưu. Bấm Enter hoặc Lưu để lưu, Esc để huỷ.";
+
 const boardState = {
   isPending: false,
   isError: false,
@@ -400,16 +403,15 @@ describe("MemberAttendanceCard", () => {
     expect(input.maxLength).toBe(255);
   });
 
-  it("ô lý do nói rõ bấm Enter để lưu, ở cả placeholder lẫn tooltip", () => {
+  // Trên điện thoại không có hover, nên cách lưu phải nằm ở chữ thấy được, không ở tooltip hay title.
+  it("ô lý do nói rõ bấm Enter để lưu ở placeholder, không dựa vào tooltip hay title", () => {
     records = makeRecords("sess-1", false);
 
     render(<MemberAttendanceCard />);
 
     const input = screen.getByLabelText("Lý do vắng") as HTMLInputElement;
     expect(input.placeholder).toBe("Lý do vắng - Enter để lưu");
-    expect(input.title).toBe(
-      "Nhập lý do rồi bấm Enter hoặc nút Lưu để lưu. Bỏ trống cũng được, Esc để huỷ thay đổi."
-    );
+    expect(input.getAttribute("title")).toBeNull();
   });
 
   it('không hiện ô lý do khi câu trả lời là "Có"', () => {
@@ -487,7 +489,8 @@ describe("MemberAttendanceCard", () => {
   });
 
   // Click ra ngoài là chuyện vô tình: không lưu, nhưng cũng không được để người dùng tưởng đã lưu.
-  it("gõ lý do rồi click ra ngoài thì chữ vẫn còn, kèm nút Lưu và chữ chưa lưu", () => {
+  // Dòng chưa lưu nói luôn cách lưu, vì gợi ý trong tooltip không tới được ngón tay.
+  it("gõ lý do rồi click ra ngoài thì chữ vẫn còn, kèm nút Lưu và dòng chưa lưu nói cách lưu", () => {
     records = makeRecords("sess-1", false);
 
     render(<MemberAttendanceCard />);
@@ -497,7 +500,7 @@ describe("MemberAttendanceCard", () => {
     fireEvent.blur(input);
 
     expect(input.value).toBe("Ốm");
-    expect(screen.getByText("chưa lưu")).toBeTruthy();
+    expect(screen.getByText(UNSAVED_HINT)).toBeTruthy();
     expect(screen.getByRole("button", { name: "Lưu lý do" })).toBeTruthy();
     expect(markState.mutateAsync).not.toHaveBeenCalled();
   });
@@ -532,7 +535,7 @@ describe("MemberAttendanceCard", () => {
     records = makeRecords("sess-1", false, "Ốm");
     rerender(<MemberAttendanceCard />);
 
-    expect(screen.queryByText("chưa lưu")).toBeNull();
+    expect(screen.queryByText(UNSAVED_HINT)).toBeNull();
     expect(screen.queryByRole("button", { name: "Lưu lý do" })).toBeNull();
   });
 

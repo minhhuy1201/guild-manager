@@ -87,8 +87,10 @@ describe("TablePagination", () => {
   });
 
   // Mười một ô size-10 rộng hơn màn điện thoại: dải số tràn ra làm cả trang bị thu nhỏ, và thanh
-  // tab cố định ở đáy rơi xuống dưới màn hình. Vị trí trang đã có dòng "trang x/y" bên cạnh nói.
-  it("dưới sm chỉ còn bốn nút mũi tên, các ô số trang đều ẩn", () => {
+  // tab cố định ở đáy rơi xuống dưới màn hình. Ẩn tới lg chứ không chỉ tới sm: điện thoại xoay
+  // ngang rộng 640-1000px, và ở đó dải số hiện lại cũng làm trang tràn (945px ở 915px). Vị trí
+  // trang đã có dòng "trang x/y" bên cạnh nói.
+  it("dưới lg chỉ còn bốn nút mũi tên, các ô số trang đều ẩn", () => {
     const { container } = render(
       <TablePagination page={4} pageCount={8} onPageChange={() => {}} />
     );
@@ -97,11 +99,11 @@ describe("TablePagination", () => {
     const slots = items.filter((item) => !item.querySelector("[aria-label]"));
 
     expect(arrows).toHaveLength(4);
-    expect(arrows.some((item) => item.className.includes("max-sm:hidden"))).toBe(
+    expect(arrows.some((item) => item.className.includes("max-lg:hidden"))).toBe(
       false
     );
     expect(slots).toHaveLength(TOTAL_SLOTS);
-    expect(slots.every((item) => item.className.includes("max-sm:hidden"))).toBe(
+    expect(slots.every((item) => item.className.includes("max-lg:hidden"))).toBe(
       true
     );
   });

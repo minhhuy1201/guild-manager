@@ -6,7 +6,9 @@ import type { Character, TeamNames } from "@guild/shared/schemas";
 
 import { Spinner } from "@/components/shared/spinner";
 import { cn } from "@/lib/utils";
-import { createMockFormation } from "../lib/mock-formation";
+import { createMockFormation, SLOTS_PER_TEAM } from "../lib/mock-formation";
+import { teamLabel } from "../lib/team-label";
+import { useTeamViewStore } from "../store/team-view-store";
 import type {
   Assignment,
   FormationLayout,
@@ -15,6 +17,7 @@ import type {
 } from "../types/formation";
 import { FormationBanner } from "./formation-banner";
 import { TeamColumn } from "./team-column";
+import { TeamSwitcher, type TeamChip } from "./team-switcher";
 
 /** Layout is static data, built once at module load. */
 const FORMATION = createMockFormation();
@@ -125,6 +128,14 @@ export function FormationGrid({
     return map;
   }, [assignment, charactersById]);
 
+  const selectedTeam = useTeamViewStore((s) => s.selectedTeam);
+  const selectTeam = useTeamViewStore((s) => s.selectTeam);
+  const chips: TeamChip[] = teams.map(({ team, slots }) => ({
+    team,
+    label: teamLabel(team, names[String(team)] ?? ""),
+    filled: slots.filter((slot) => occupants.has(slot.id)).length,
+  }));
+
   return (
     <div className="relative">
       <div
@@ -142,6 +153,17 @@ export function FormationGrid({
           size={isCapture ? "tall" : "compact"}
         />
 
+        {/* Below `md` the screen shows one team at a time: ten teams stacked made the page almost
+            6,000px tall on a phone. The capture always holds all ten, whatever the window. */}
+        {isCapture ? null : (
+          <TeamSwitcher
+            teams={chips}
+            slotsPerTeam={SLOTS_PER_TEAM}
+            selectedTeam={selectedTeam}
+            onSelect={selectTeam}
+          />
+        )}
+
         {teams.map(({ team, slots }) => (
           <TeamColumn
             key={team}
@@ -154,6 +176,11 @@ export function FormationGrid({
             absentIds={absentIds}
             notes={notes}
             onNoteChange={onNoteChange}
+            // Hidden with CSS, not left out of the tree: no screen size to read in JS (so no
+            // hydration mismatch), and every slot stays registered with dnd-kit from `md` up.
+            className={
+              !isCapture && team !== selectedTeam ? "max-md:hidden" : undefined
+            }
           />
         ))}
       </div>

@@ -104,6 +104,15 @@ describe("AttendanceRow - chỉ đọc", () => {
     expect(screen.getByText("Bận đi công tác")).toBeTruthy();
   });
 
+  // Ô hẹp nên lý do dài bị cắt; trên điện thoại chạm vào là cách duy nhất để đọc đủ.
+  it("lý do vắng bấm vào được để đọc đủ, không nằm trong title", () => {
+    renderRow({ recordMap: makeRecordMap("Bận đi công tác"), canEdit: false });
+
+    const reason = screen.getByRole("button", { name: "Bận đi công tác" });
+
+    expect(reason.getAttribute("title")).toBeNull();
+  });
+
   it("member không bấm được ô nào", () => {
     renderRow({ canEdit: false });
 

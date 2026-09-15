@@ -4,11 +4,9 @@ import { ClipboardCopy, Send } from "lucide-react";
 
 import { Spinner } from "@/components/shared/spinner";
 import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+
+/** The copy button's name with no source day, and its short name on a phone. */
+const SHORT_COPY_LABEL = "Copy đội hình";
 
 interface FormationToolbarProps {
   /** Whether the battle or the team names hold unsaved changes */
@@ -35,8 +33,12 @@ interface FormationToolbarProps {
  * scrolled down to the member pool.
  *
  * The announcement is locked while anything is unsaved - the image sent is the saved formation -
- * and says why on hover, rather than letting the dialog open only to refuse. The dialog keeps its
- * own refusal as a second guard.
+ * and a line under the buttons says why, rather than letting the dialog open only to refuse. A line
+ * and not a tooltip: a phone has no hover, and a disabled button fires no events to open one. The
+ * dialog keeps its own refusal as a second guard.
+ *
+ * Below `sm` the two buttons share the row, and the copy button shows a short name: its full name
+ * ("Copy từ <day>") nearly filled a phone's width. The full name stays its accessible name.
  * @param dirty - Whether the battle or the team names hold unsaved changes
  * @param saving - Whether either save is in flight
  * @param editable - Whether this battle still accepts edits
@@ -65,21 +67,11 @@ export function FormationToolbar({
     );
   }
 
-  const announceButton = (
-    <Button
-      type="button"
-      variant="outline"
-      size="sm"
-      onClick={onAnnounce}
-      disabled={dirty || saving || announcing}
-    >
-      {announcing ? <Spinner /> : <Send />}
-      {announcing ? "Đang gửi..." : "Gửi Discord"}
-    </Button>
-  );
+  const copyLabel = copySourceLabel
+    ? `Copy từ ${copySourceLabel}`
+    : SHORT_COPY_LABEL;
 
   return (
-    // Wraps on a phone: the copy button names its source day and is wider than the screen there.
     <div className="flex flex-wrap items-center justify-end gap-2">
       <Button
         type="button"
@@ -87,21 +79,36 @@ export function FormationToolbar({
         size="sm"
         onClick={onCopy}
         disabled={!canCopy || saving}
+        // Only when the visible name can be the short one, so it never repeats the text.
+        aria-label={copySourceLabel ? copyLabel : undefined}
+        className="max-sm:flex-1"
       >
         <ClipboardCopy />
-        {copySourceLabel ? `Copy từ ${copySourceLabel}` : "Copy đội hình"}
+        {copySourceLabel ? (
+          <>
+            <span className="sm:hidden">{SHORT_COPY_LABEL}</span>
+            <span className="max-sm:hidden">{copyLabel}</span>
+          </>
+        ) : (
+          copyLabel
+        )}
+      </Button>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={onAnnounce}
+        disabled={dirty || saving || announcing}
+        className="max-sm:flex-1"
+      >
+        {announcing ? <Spinner /> : <Send />}
+        {announcing ? "Đang gửi..." : "Gửi Discord"}
       </Button>
       {dirty ? (
-        <Tooltip>
-          {/* A disabled button fires no pointer events, so the span carries the hover. */}
-          <TooltipTrigger render={<span className="inline-flex" tabIndex={0} />}>
-            {announceButton}
-          </TooltipTrigger>
-          <TooltipContent>Lưu trước khi gửi</TooltipContent>
-        </Tooltip>
-      ) : (
-        announceButton
-      )}
+        <p className="w-full text-right text-xs text-muted-foreground">
+          Lưu trước khi gửi
+        </p>
+      ) : null}
     </div>
   );
 }

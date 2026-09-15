@@ -25,8 +25,8 @@ import {
 /** Shown on the trigger while no day has been picked. */
 const DATE_PLACEHOLDER = "Chọn ngày";
 
-/** Room for the icon in front plus "20:30", with air to spare. */
-const TIME_INPUT_CLASS = "w-32 pl-9";
+/** Room for the icon in front plus "20:30", with air to spare; below `sm` the field takes its own row. */
+const TIME_INPUT_CLASS = "w-full pl-9 sm:w-32";
 
 interface DateTimeFieldProps {
   /** Id of the date trigger, for its label */
@@ -111,14 +111,16 @@ export function DateTimeField({
       <FieldLabel htmlFor={id} icon={icon}>
         {label}
       </FieldLabel>
-      <div className="flex gap-2">
+      {/* Stacked on a phone: side by side, the time field left the date button about 100px in a
+          360px dialog, too little for the date and its two icons. */}
+      <div className="flex flex-col gap-2 sm:flex-row">
         <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
           {/* `lg` is the button size matching the input's height and text size, beside which it sits. */}
           <PopoverTrigger
             render={
               <Button type="button" variant="outline" size="lg" id={id} />
             }
-            className="flex-1 justify-between font-normal"
+            className="justify-between font-normal sm:flex-1"
           >
             <span className="flex items-center gap-2">
               <CalendarDays className="size-4" />

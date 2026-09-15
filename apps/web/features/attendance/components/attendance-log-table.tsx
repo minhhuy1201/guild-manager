@@ -23,6 +23,7 @@ import {
 } from "../hooks/use-attendance";
 import { matchesPresenceFilter } from "../lib/presence-filter";
 import { useAttendanceFilterStore } from "../store/attendance-filter-store";
+import { AbsenceReasonText } from "./absence-reason-text";
 import { AttendanceHistoryFilters } from "./attendance-history-filters";
 import { AttendanceStatusIcon } from "./attendance-status-icon";
 import { CharacterName } from "./character-name";
@@ -143,15 +144,14 @@ export function AttendanceLogTable() {
                 <TableCell className="text-center">
                   <AttendanceStatusIcon isPresent={record.isPresent} />
                 </TableCell>
-                {/* A 255-character sentence would stretch the table, so the cell is capped and
-                    the full text lives in the tooltip. */}
+                {/* A 255-character sentence would stretch the table, so the cell is capped at two
+                    lines and a tap opens the whole reason. */}
                 <TableCell className="max-w-56 text-muted-foreground">
-                  <span
-                    className="block truncate"
-                    title={record.reason ?? undefined}
-                  >
-                    {record.reason ?? "—"}
-                  </span>
+                  {record.reason ? (
+                    <AbsenceReasonText reason={record.reason} />
+                  ) : (
+                    "—"
+                  )}
                 </TableCell>
                 <TableCell
                   className={cn("text-muted-foreground", MARKED_AT_COLUMN)}

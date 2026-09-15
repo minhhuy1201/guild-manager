@@ -1,5 +1,6 @@
 import { GUILD_CLASS_LABEL } from "@guild/shared/enums";
 import type { Character } from "@guild/shared/schemas";
+import { TriangleAlert } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -24,14 +25,15 @@ interface MemberCardProps {
 /**
  * A guild member shown as a compact card: class avatar plus character name, on that class's colour.
  * Purely presentational — no drag behaviour, so it can also render inside DragOverlay.
- * Always carries a tooltip: the full name, since a slot is too narrow for the
- * longer ones and truncation gives no way to read them back, or the warning
- * when there is one.
+ * A warning (the member dropped out of this battle) is a line of text on the card itself, under the
+ * name, in place of the note: a phone has no hover to open a tooltip, so a red border alone told a
+ * thumb nothing. The name wraps to two lines rather than being cut to one, and the tooltip still
+ * carries it whole for a mouse.
  * @param character - Character to display
  * @param warning - Why this placement needs attention, if any
  * @param note - Short note shown under the name, if any
  * @param className - Extra classes for the outer element
- * @returns The member card wrapped in its tooltip
+ * @returns The member card wrapped in its name tooltip
  */
 export function MemberCard({
   character,
@@ -68,10 +70,15 @@ export function MemberCard({
               <AvatarFallback>{classLabel[0]}</AvatarFallback>
             </Avatar>
             <span className="flex min-w-0 flex-1 flex-col">
-              <span className="truncate text-sm font-medium">
+              <span className="line-clamp-2 text-sm font-medium break-words">
                 {character.name}
               </span>
-              {note ? (
+              {warning ? (
+                <span className="flex items-center gap-1 text-xs text-destructive">
+                  <TriangleAlert className="size-3.5 shrink-0" aria-hidden />
+                  {warning}
+                </span>
+              ) : note ? (
                 <span className="truncate text-xs text-muted-foreground">
                   {note}
                 </span>
@@ -80,7 +87,7 @@ export function MemberCard({
           </div>
         }
       />
-      <TooltipContent>{warning ?? character.name}</TooltipContent>
+      <TooltipContent>{character.name}</TooltipContent>
     </Tooltip>
   );
 }

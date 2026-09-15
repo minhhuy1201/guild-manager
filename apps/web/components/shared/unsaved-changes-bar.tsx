@@ -1,9 +1,17 @@
 "use client";
 
-import { RotateCcw, Save } from "lucide-react";
+import { RotateCcw, Save, Undo2 } from "lucide-react";
 
 import { Spinner } from "@/components/shared/spinner";
 import { Button } from "@/components/ui/button";
+
+/** An undo the bar offers beside its reset, for a screen that keeps undo steps. */
+export interface UndoAction {
+  /** Take back the latest edit */
+  onUndo: () => void;
+  /** Whether there is an edit to take back */
+  canUndo: boolean;
+}
 
 interface UnsavedChangesBarProps {
   /** What is waiting to be saved, e.g. "3 thay đổi chưa lưu" */
@@ -18,6 +26,8 @@ interface UnsavedChangesBarProps {
   onSave: () => void;
   /** Throw the draft away */
   onReset: () => void;
+  /** The screen's undo, when it keeps undo steps - Ctrl+Z's twin for a phone, which has no keyboard */
+  undo?: UndoAction;
 }
 
 /**
@@ -34,6 +44,7 @@ interface UnsavedChangesBarProps {
  * @param errorMessages - Messages from the failed saves
  * @param onSave - Persist the draft
  * @param onReset - Throw the draft away
+ * @param undo - The screen's undo, if it has one
  * @returns The bar
  */
 export function UnsavedChangesBar({
@@ -43,6 +54,7 @@ export function UnsavedChangesBar({
   errorMessages = [],
   onSave,
   onReset,
+  undo,
 }: UnsavedChangesBarProps) {
   return (
     // `--app-bottom-inset` lifts it above the phone's tab bar; it is 0 wherever that bar is absent.
@@ -69,6 +81,18 @@ export function UnsavedChangesBar({
           <RotateCcw />
           {resetLabel}
         </Button>
+        {undo ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={undo.onUndo}
+            disabled={saving || !undo.canUndo}
+          >
+            <Undo2 />
+            Hoàn tác
+          </Button>
+        ) : null}
         <Button type="button" size="sm" onClick={onSave} disabled={saving}>
           {saving ? <Spinner /> : <Save />}
           {saving ? "Đang lưu..." : "Lưu"}

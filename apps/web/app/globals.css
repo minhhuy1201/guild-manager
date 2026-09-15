@@ -238,6 +238,15 @@
        preference intact, unlike a hard px value. */
     font-size: 120%;
     }
+  /* 115% on a phone: at 120% a 420px screen laid out like a 350px one. 115% is the lowest step
+     that keeps `h-10` at 44px (the touch target floor; `--spacing` is 0.24rem here, not 0.25) and a
+     `text-sm` field at 16px (iOS zooms in on a field below that when it takes focus). Media
+     queries read rem at the browser's default size, so this moves no breakpoint. */
+  @media (width < 40rem) {
+    html {
+      font-size: 115%;
+    }
+  }
 }
 
 /* Room at the bottom of the page taken by the phone's fixed tab bar (`mobile-tab-bar.tsx`): its

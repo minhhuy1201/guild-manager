@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import type { GridDraft } from "../lib/grid-draft";
 import { recordKey } from "../lib/record-key";
 import { STICKY_NAME_COLUMN } from "../lib/sticky-columns";
+import { AbsenceReasonText } from "./absence-reason-text";
 import { AttendanceStatusIcon } from "./attendance-status-icon";
 import { CharacterName } from "./character-name";
 
@@ -86,7 +87,7 @@ export function AttendanceRow({
                   disabled={disabled}
                   onClick={() => onCellClick(character, session)}
                   className={cn(
-                    "flex size-9 cursor-pointer items-center justify-center rounded-full outline-none",
+                    "flex size-10 cursor-pointer items-center justify-center rounded-full outline-none",
                     "transition-colors duration-[var(--duration-fast)] hover:bg-foreground/5",
                     "focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-default disabled:opacity-60",
                     isChanged && "ring-2 ring-primary"
@@ -100,12 +101,7 @@ export function AttendanceRow({
               {/* Read-only on purpose: the reason is the absent member's own words. It belongs to the
                   stored answer, so it steps aside while the cell holds a different one. */}
               {!isChanged && record?.reason && (
-                <span
-                  className="block max-w-32 truncate text-xs text-muted-foreground"
-                  title={record.reason}
-                >
-                  {record.reason}
-                </span>
+                <AbsenceReasonText reason={record.reason} className="max-w-32" />
               )}
             </div>
           </TableCell>

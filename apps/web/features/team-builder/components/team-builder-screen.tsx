@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import {
   DndContext,
   DragOverlay,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
@@ -43,9 +44,12 @@ export function TeamBuilderScreen() {
   const screen = useFormationScreen();
   const [confirmingCopy, setConfirmingCopy] = useState(false);
 
-  // A short distance threshold keeps a plain click on a card from starting a drag.
+  // A mouse drags after 8px, so a plain click on a card never starts one. A finger drags after a
+  // 250ms press held within 5px: a swipe then scrolls the page and the pool, which on a phone - where
+  // the cards cover most of the screen - it could not do while any touch on a card was a drag.
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+    useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } })
   );
 
   // The team names are global, so an unsaved name is unsaved work on every day
@@ -196,18 +200,16 @@ export function TeamBuilderScreen() {
           onRemove={screen.draft.removeMatch}
         />
 
-        <div className="flex flex-wrap items-center justify-end gap-2 mt-4">
-          <FormationToolbar
-            dirty={dirty}
-            saving={saving}
-            editable={editable}
-            copySourceLabel={screen.copy.sourceLabel}
-            canCopy={screen.copy.canCopy}
-            onCopy={handleCopy}
-            announcing={announce.sending}
-            onAnnounce={() => announce.setOpen(true)}
-          />
-        </div>
+        <FormationToolbar
+          dirty={dirty}
+          saving={saving}
+          editable={editable}
+          copySourceLabel={screen.copy.sourceLabel}
+          canCopy={screen.copy.canCopy}
+          onCopy={handleCopy}
+          announcing={announce.sending}
+          onAnnounce={() => announce.setOpen(true)}
+        />
 
         <CopyFormationDialog
           open={confirmingCopy}
@@ -289,6 +291,8 @@ export function TeamBuilderScreen() {
             errorMessages={errorMessages}
             onSave={handleSave}
             onReset={handleReset}
+            // Ctrl+Z's twin for a phone. The bar itself locks it while saving, as the shortcut does.
+            undo={{ onUndo: screen.draft.undo, canUndo: screen.draft.canUndo }}
           />
         ) : null}
       </div>

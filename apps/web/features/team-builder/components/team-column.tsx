@@ -26,6 +26,8 @@ interface TeamColumnProps {
   notes: Notes;
   /** Called with the raw text when a slot's note changes */
   onNoteChange: (slotId: string, text: string) => void;
+  /** Extra classes for the card, e.g. hiding it on a phone while another team is shown */
+  className?: string;
 }
 
 /**
@@ -41,6 +43,7 @@ interface TeamColumnProps {
  * @param absentIds - Ids of placed members who dropped out
  * @param notes - Notes currently shown, keyed by slot id
  * @param onNoteChange - Called with the raw text when a slot's note changes
+ * @param className - Extra classes for the card
  * @returns Card holding the team's slots
  */
 export function TeamColumn({
@@ -53,6 +56,7 @@ export function TeamColumn({
   absentIds,
   notes,
   onNoteChange,
+  className,
 }: TeamColumnProps) {
   const colors = getTeamColors(team);
 
@@ -61,7 +65,8 @@ export function TeamColumn({
       className={cn(
         "gap-2 overflow-hidden pt-0 pb-3",
         colors.border,
-        colors.background
+        colors.background,
+        className
       )}
     >
       <CardHeader className={cn("px-3 py-2", colors.header)}>
