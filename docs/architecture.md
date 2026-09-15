@@ -392,7 +392,7 @@ apps/web/
 └── lib/              # api-client.ts (apiFetch + ApiError), format.ts, guild-class.ts, utils.ts
 ```
 
-Features: `attendance`, `auth`, `members`, `settings`, `team-builder`.
+Features: `attendance`, `auth`, `landing`, `members`, `settings`, `team-builder`.
 
 `auth` is the one feature with **three** entry points instead of one, split by runtime rather than by
 public/private, because the split is what the runtimes force:
@@ -435,7 +435,8 @@ this layout.
 
 ### 4.3 The session
 
-Signing in starts at `/dang-nhap`, the only page a visitor without a session can reach. The button
+A visitor without a session reaches two pages: `/trang-chu`, the guild's public page, and
+`/dang-nhap`. Signing in starts at the latter. The button
 there navigates to the API, which drives the Discord OAuth2 flow and finally redirects back to
 `/dang-nhap/discord` with a single-use code. That route is a **Route Handler**, not a page, because a
 Server Component cannot write cookies: it trades the code for the token pair and stores it.
@@ -558,7 +559,7 @@ one exception is `prisma/fix-deadlines.ts`, a one-off migration of rows written 
 | **A new backend domain** | `src/modules/<domain>/` with `<domain>.module.ts`, `.controller.ts`, `.service.ts`, plus `dto/`. Register it in `app.module.ts`. Its request **and** response shapes go in `packages/shared/schemas/`. Add a `<domain>.repository.ts` only once the queries are complex or repeated; simple CRUD calls `PrismaService` from the service. |
 | **A database column or table** | `prisma/schema.prisma` → `pnpm --filter api prisma:migrate` → commit the migration folder. Enums must stay in step with `packages/shared/enums`. Then check the Data API grants ([`production.md`](production.md) §5). |
 | **A request/response shape, an enum, a validation rule** | `packages/shared` — never re-declared per app. |
-| **A new page** | A thin `app/<route>/page.tsx` that renders one feature component, the path added to `config/routes.ts`. Admin-only? Add the prefix to `ADMIN_PATH_PREFIXES` in `proxy.ts` **and** re-check `getSession()` in the page. |
+| **A new page** | A thin `app/<route>/page.tsx` that renders one feature component, the path added to `config/routes.ts`. Admin-only? Add the prefix to `ADMIN_PATH_PREFIXES` in `proxy.ts` **and** re-check `getSession()` in the page. Readable without signing in? Add it to `PUBLIC_PATH_PREFIXES` in `features/auth/core/access.ts`, and remember every visitor on the internet can then read it. |
 | **Frontend behavior for an existing feature** | Inside that `features/<feature>/`: request function in `api/`, hook in `hooks/`, UI state in `store/`, pure logic in `lib/`. Export it from `index.ts` only if another feature needs it. |
 | **A new frontend feature** | A new `features/<feature>/` with the same folders and an `index.ts`. Do not reach into another feature's files. |
 | **A component used by two or more features** | `components/shared/`. If it is a stock shadcn component, generate it into `components/ui/` with the CLI and wrap it. |
