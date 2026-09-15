@@ -5,11 +5,6 @@ import { ATTENDANCE_REASON_MAX_LENGTH } from "@guild/shared/schemas";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 /**
  * Placeholder of the reason field. It names the key rather than describing the field, because the
@@ -17,9 +12,11 @@ import {
  */
 const REASON_PLACEHOLDER = "Lý do vắng - Enter để lưu";
 
-/** The whole contract of the reason field, shown as a tooltip and as the native `title`. */
-const REASON_HINT =
-  "Nhập lý do rồi bấm Enter hoặc nút Lưu để lưu. Bỏ trống cũng được, Esc để huỷ thay đổi.";
+/**
+ * The line under a field that differs from what is stored: it says the text is not kept yet, and how
+ * to keep it. Visible text, not a tooltip or a `title`: members answer on a phone, which has neither.
+ */
+const UNSAVED_HINT = "Chưa lưu. Bấm Enter hoặc Lưu để lưu, Esc để huỷ.";
 
 interface AbsenceReasonInputProps {
   /** Reason already stored for this session - "" when none was given */
@@ -37,8 +34,8 @@ interface AbsenceReasonInputProps {
  * on an untouched field is no request and no toast. Escape restores what is stored - blur does
  * neither: leaving the field is something that happens by accident, and here it would fire a
  * request rather than touch a local draft. What blur must not do either is leave the member
- * believing the text was kept, so while the field differs from what is stored it carries a small
- * Save button and a "chưa lưu" note.
+ * believing the text was kept, so while the field differs from what is stored it carries a Save
+ * button and a line saying it is not saved and how to save it.
  *
  * The caller remounts this component on the stored value (`key`), so a save that lands resets it
  * and hides both marks, while a failed save keeps the typed text.
@@ -59,38 +56,29 @@ export function AbsenceReasonInput({
   return (
     <div className="flex flex-col gap-1">
       <div className="flex items-center gap-2">
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <Input
-                value={value}
-                disabled={disabled}
-                aria-label="Lý do vắng"
-                placeholder={REASON_PLACEHOLDER}
-                title={REASON_HINT}
-                maxLength={ATTENDANCE_REASON_MAX_LENGTH}
-                className="h-8 min-w-0 flex-1 text-sm"
-                onChange={(event) => setValue(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    if (isUnsaved) onSubmit(value);
-                    return;
-                  }
-                  if (event.key === "Escape") {
-                    setValue(savedReason);
-                    event.currentTarget.blur();
-                  }
-                }}
-              />
+        <Input
+          value={value}
+          disabled={disabled}
+          aria-label="Lý do vắng"
+          placeholder={REASON_PLACEHOLDER}
+          maxLength={ATTENDANCE_REASON_MAX_LENGTH}
+          className="min-w-0 flex-1"
+          onChange={(event) => setValue(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              if (isUnsaved) onSubmit(value);
+              return;
             }
-          />
-          <TooltipContent>{REASON_HINT}</TooltipContent>
-        </Tooltip>
+            if (event.key === "Escape") {
+              setValue(savedReason);
+              event.currentTarget.blur();
+            }
+          }}
+        />
         {isUnsaved ? (
           <Button
             type="button"
-            size="xs"
             aria-label="Lưu lý do"
             disabled={disabled}
             onClick={() => onSubmit(value)}
@@ -100,7 +88,7 @@ export function AbsenceReasonInput({
         ) : null}
       </div>
       {isUnsaved ? (
-        <span className="text-xs text-muted-foreground">chưa lưu</span>
+        <span className="text-xs text-muted-foreground">{UNSAVED_HINT}</span>
       ) : null}
     </div>
   );

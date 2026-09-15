@@ -75,7 +75,7 @@ export function RosterFilterBar({
         className
       )}
     >
-      <div className={isInline ? "w-64" : "flex flex-col gap-1.5"}>
+      <div className={isInline ? "w-full sm:w-64" : "flex flex-col gap-1.5"}>
         <Label htmlFor={`${idPrefix}-search`} className={labelClassName}>
           Tìm kiếm
         </Label>
@@ -104,7 +104,7 @@ export function RosterFilterBar({
       </div>
 
       {/* Wide enough for "Tất cả lưu phái" beside its icon, the chevron and the clear X. */}
-      <div className={isInline ? "w-60" : "flex flex-col gap-1.5"}>
+      <div className={isInline ? "w-full sm:w-60" : "flex flex-col gap-1.5"}>
         <Label htmlFor={`${idPrefix}-guild-class`} className={labelClassName}>
           Lưu phái
         </Label>

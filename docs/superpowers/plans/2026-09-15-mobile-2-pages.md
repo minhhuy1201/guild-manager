@@ -1,7 +1,7 @@
 # Mobile 2/3 - Các trang: Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan
-> task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Điểm danh, Lịch sử, Thiết lập dùng tốt bằng tay ở 360-430px: không thông tin nào chỉ nằm sau
 hover, vùng chạm từ 44px.
@@ -32,31 +32,31 @@ còn lại là sửa class và bỏ tooltip. Tách từ nhánh của PR 1 (cần
 
 **Interfaces:** `AbsenceReasonText({ reason }: { reason: string; className?: string })`.
 
-- [ ] Test đỏ: `"bấm vào lý do thì thấy lý do đầy đủ"` (bấm nút mang tên lý do, `Popover` mở, có đoạn
+- [x] Test đỏ: `"bấm vào lý do thì thấy lý do đầy đủ"` (bấm nút mang tên lý do, `Popover` mở, có đoạn
       chữ đầy đủ); `"không dùng title làm chỗ chứa lý do"`.
-- [ ] Xác nhận đỏ (module chưa có).
-- [ ] Component: `PopoverTrigger` render một `<button type="button">` chữ `text-xs text-left
+- [x] Xác nhận đỏ (module chưa có).
+- [x] Component: `PopoverTrigger` render một `<button type="button">` chữ `text-xs text-left
       text-muted-foreground line-clamp-2`, `PopoverContent` chứa lý do đầy đủ (`max-w-72 text-sm
       break-words`).
-- [ ] `attendance-row.tsx`: thay `<span className="block max-w-32 truncate" title>` bằng
+- [x] `attendance-row.tsx`: thay `<span className="block max-w-32 truncate" title>` bằng
       `<AbsenceReasonText reason={record.reason} className="max-w-32" />`. Ô bấm `size-9` thành
       `size-10`.
-- [ ] `attendance-log-table.tsx`: thay `span.block.truncate[title]` bằng `AbsenceReasonText`, giữ
-      `max-w-56`; khi không có lý do vẫn là "—". Sửa comment về tooltip.
-- [ ] Xanh. Commit `feat(web): open a cut-off absence reason on tap`.
+- [x] `attendance-log-table.tsx`: thay `span.block.truncate[title]` bằng `AbsenceReasonText`, giữ
+      `max-w-56`; khi không có lý do vẫn là dấu gạch như cũ. Sửa comment về tooltip.
+- [x] Xanh. Commit `feat(web): open a cut-off absence reason on tap`.
 
 ### Task 2: Ô lý do nghỉ của thành viên
 
 **Files:** `apps/web/features/attendance/components/absence-reason-input.tsx`, test trong
 `member-attendance-card.test.tsx` (hoặc test mới `absence-reason-input.test.tsx`)
 
-- [ ] Test đỏ: `"đang có chữ chưa lưu thì dòng dưới ô nói cách lưu"`: gõ vào ô, thấy chữ
+- [x] Test đỏ: `"đang có chữ chưa lưu thì dòng dưới ô nói cách lưu"`: gõ vào ô, thấy chữ
       "Chưa lưu. Bấm Enter hoặc Lưu để lưu, Esc để huỷ."; `"không có tooltip hay title"`: ô không có
       thuộc tính `title`.
-- [ ] Xác nhận đỏ.
-- [ ] Bỏ `Tooltip` và `title`; `Input` bỏ `h-8 text-sm` (dùng `h-11` mặc định); nút "Lưu" bỏ
+- [x] Xác nhận đỏ.
+- [x] Bỏ `Tooltip` và `title`; `Input` bỏ `h-8 text-sm` (dùng `h-11` mặc định); nút "Lưu" bỏ
       `size="xs"`; dòng "chưa lưu" thành câu trên. JSDoc cập nhật.
-- [ ] Xanh. Commit `feat(web): make the absence reason field touch sized and say how to save`.
+- [x] Xanh. Commit `feat(web): make the absence reason field touch sized and say how to save`.
 
 ### Task 3: Cột tên và Thiết lập
 
@@ -66,16 +66,16 @@ còn lại là sửa class và bỏ tooltip. Tách từ nhánh của PR 1 (cần
 
 Chỉ bố cục; nghiệm thu ở Task 4.
 
-- [ ] `CharacterName`: `max-w-36` thành `max-w-28`, giữ `sm:max-w-none`.
-- [ ] `RosterFilterBar` inline: `w-64` thành `w-full sm:w-64`, `w-60` thành `w-full sm:w-60`.
-- [ ] `DateTimeField`: hàng `flex gap-2` thành `flex flex-col gap-2 sm:flex-row`; ô giờ full width dưới
+- [x] `CharacterName`: `max-w-36` thành `max-w-28`, giữ `sm:max-w-none`.
+- [x] `RosterFilterBar` inline: `w-64` thành `w-full sm:w-64`, `w-60` thành `w-full sm:w-60`.
+- [x] `DateTimeField`: hàng `flex gap-2` thành `flex flex-col gap-2 sm:flex-row`; ô giờ full width dưới
       `sm` (wrapper `relative sm:w-auto`, input giữ `TIME_INPUT_CLASS` từ `sm`).
-- [ ] Test, lint, typecheck xanh. Commit `fix(web): stop the members filters and the date field
+- [x] Test, lint, typecheck xanh. Commit `fix(web): stop the members filters and the date field
       overflowing a phone`.
 
 ### Task 4: Nghiệm thu, PR
 
-- [ ] Render ở 360/390/420/915x412: `scrollWidth === innerWidth` trên `/`, `/lich-su-diem-danh`,
+- [x] Render ở 360/390/420/915x412: `scrollWidth === innerWidth` trên `/`, `/lich-su-diem-danh`,
       `/thiet-lap` (cả `?tab=members`); mở dialog tạo trận ở 360, ô ngày không bị cắt; với tài khoản
       đã gán nhân vật, trả lời Có/Không và lưu lý do ở 360 và 420.
 - [ ] Push, mở PR 2 (base `feat/web-mobile-foundation`), có `/pr-review`.
