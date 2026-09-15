@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { AlarmClock, CalendarClock, Save, Swords } from "lucide-react";
 
-import { defaultDeadlineFor, isWithinDeadlineCap } from "@guild/shared/lib";
+import { deadlineCapFor, isWithinDeadlineCap } from "@guild/shared/lib";
 import {
   DEADLINE_CAP_MESSAGE,
   GUILD_WAR_DEADLINE_LABEL,
@@ -32,7 +32,7 @@ import { ReduceMatchCountDialog } from "./reduce-match-count-dialog";
 const DEFAULT_BATTLE_TIME = "20:30";
 // A day is played over two matches unless an admin says otherwise.
 const DEFAULT_MATCH_COUNT = 2;
-const DEFAULT_DEADLINE_TIME = "12:00";
+const DEFAULT_DEADLINE_TIME = "11:00";
 
 interface SessionFormDialogProps {
   /** Whether the dialog is open */
@@ -101,7 +101,8 @@ function SessionForm({ session, onDone }: SessionFormProps) {
 
   /**
    * Change the battle time, also prefilling the deadline while the user has not edited it.
-   * The prefilled value is noon the day before (`defaultDeadlineFor`), which is always within the cap.
+   * The prefilled value is the cap itself (`deadlineCapFor`): 11:00 on the battle day, or the battle
+   * time when the battle is earlier than that.
    * @param value - New value of the battle time field
    */
   function handleDateTimeChange(value: string) {
@@ -109,7 +110,7 @@ function SessionForm({ session, onDone }: SessionFormProps) {
 
     if (deadlineTouched || value === "") return;
 
-    const suggested = defaultDeadlineFor(toInstant(value));
+    const suggested = deadlineCapFor(toInstant(value));
     setDeadline(toInputValue(suggested.toISOString()));
   }
 
@@ -245,7 +246,7 @@ function SessionForm({ session, onDone }: SessionFormProps) {
             setDeadline(value);
           }}
           defaultTime={DEFAULT_DEADLINE_TIME}
-          description="Muộn nhất 10:00 sáng ngày đánh."
+          description="Muộn nhất 11:00 sáng ngày đánh."
         />
       )}
       </MutationForm>

@@ -85,15 +85,15 @@ describe("SessionFormDialog", () => {
     ).toBeTruthy();
   });
 
-  it("Bang Chiến ghi hạn chót 12:00 Thứ 6", () => {
+  it("Bang Chiến ghi hạn chót 11:00 Thứ 7", () => {
     renderDialog(GUILD_WAR);
 
     expect(
-      screen.getByText("12:00 Thứ 6 - cố định, không sửa được.")
+      screen.getByText("11:00 Thứ 7 - cố định, không sửa được.")
     ).toBeTruthy();
   });
 
-  it("chọn ngày đánh thì hạn chót tự điền 12:00 hôm trước", () => {
+  it("chọn ngày đánh thì hạn chót tự điền 11:00 sáng cùng ngày", () => {
     // Only Date is faked: the calendar opens on the current month, and the popover still needs real
     // timers to settle.
     vi.useFakeTimers({ toFake: ["Date"] });
@@ -108,10 +108,10 @@ describe("SessionFormDialog", () => {
 
     expect(
       document.querySelector("#session-deadline")?.textContent
-    ).toContain("09/09/2026");
+    ).toContain("10/09/2026");
     expect(
       (screen.getByLabelText("Hạn chót điểm danh — giờ") as HTMLInputElement)
         .value
-    ).toBe("12:00");
+    ).toBe("11:00");
   });
 });

@@ -32,8 +32,8 @@ const GUILD_WAR_MINUTE = 0;
 
 /**
  * Deadlines at or after this hour are reminded about the same morning; earlier ones the morning
- * before. Noon rather than 10:00: Vercel Hobby fires the 09:00 cron anywhere up to 09:59, so a
- * same-day reminder for a 10:00 deadline could land a minute before it closes.
+ * before. Noon rather than the 11:00 deadline hour: Vercel Hobby fires the 09:00 cron anywhere up
+ * to 09:59, so a same-day reminder for an 11:00 deadline could land barely an hour before it closes.
  */
 const REMINDER_CUTOFF_HOUR = 12;
 

@@ -205,8 +205,8 @@ one the user sees would be the wrong one.
 
 The one rule the settings form does evaluate locally - the deadline cap in `session-form-dialog` -
 is not a second implementation: it calls `isWithinDeadlineCap` from `@guild/shared/lib`, the same
-function the API validates with, and prefills the field with `defaultDeadlineFor` (12:00 the day
-before) from the same file. The server still decides; the local calls only prefill the field and show
+function the API validates with, and prefills the field with `deadlineCapFor` (11:00 on the match
+day) from the same file. The server still decides; the local calls only prefill the field and show
 the error before a round-trip.
 
 ---
