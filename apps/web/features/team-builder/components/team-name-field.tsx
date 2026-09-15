@@ -7,6 +7,7 @@ import { Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { teamLabel } from "../lib/team-label";
 
 interface TeamNameFieldProps {
   /** Team number, shown when the team has no name of its own */
@@ -42,7 +43,7 @@ export function TeamNameField({
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(value);
 
-  const label = value || String(team);
+  const label = teamLabel(team, value);
 
   /** Write the text into the draft and leave edit mode. */
   function commit() {
@@ -84,7 +85,8 @@ export function TeamNameField({
           title="Nhấn đúp để đổi tên đội"
           aria-label={`Đội ${label}. Nhấn đúp hoặc Enter để đổi tên.`}
           className={cn(
-            "w-full truncate rounded-md px-1 text-center text-lg font-semibold",
+            // 44px tall on a phone, where it measured 32px; its pencil is the touch way in.
+            "w-full truncate rounded-md px-1 text-center text-lg font-semibold max-sm:min-h-11",
             "cursor-text outline-none transition-colors duration-[var(--duration-fast)]",
             "hover:bg-primary-foreground/15 focus-visible:ring-3 focus-visible:ring-primary-foreground/40"
           )}
@@ -131,7 +133,7 @@ export function TeamNameField({
       maxLength={TEAM_NAME_MAX_LENGTH}
       placeholder={String(team)}
       aria-label={`Tên đội ${team}`}
-      className="h-8 bg-card px-2 text-center text-base font-semibold text-foreground"
+      className="h-8 bg-card px-2 text-center text-base font-semibold text-foreground max-sm:h-11"
     />
   );
 }

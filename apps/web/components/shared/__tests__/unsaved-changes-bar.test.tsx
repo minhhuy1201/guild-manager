@@ -76,3 +76,34 @@ describe("UnsavedChangesBar", () => {
     expect(screen.queryByText("3 thay đổi chưa lưu")).toBeNull();
   });
 });
+
+// Ctrl+Z không có trên điện thoại: thanh Lưu mang thêm nút Hoàn tác cho màn nào có bước để hoàn tác.
+describe("UnsavedChangesBar - nút Hoàn tác", () => {
+  it("có undo thì có nút Hoàn tác, bấm gọi onUndo một lần", () => {
+    const onUndo = vi.fn();
+    renderBar({ undo: { onUndo, canUndo: true } });
+
+    fireEvent.click(button(/Hoàn tác/));
+
+    expect(onUndo).toHaveBeenCalledOnce();
+  });
+
+  it("canUndo=false thì nút Hoàn tác bị khoá", () => {
+    renderBar({ undo: { onUndo: vi.fn(), canUndo: false } });
+
+    expect(button(/Hoàn tác/).disabled).toBe(true);
+  });
+
+  it("đang lưu thì nút Hoàn tác cũng bị khoá", () => {
+    renderBar({ saving: true, undo: { onUndo: vi.fn(), canUndo: true } });
+
+    expect(button(/Hoàn tác/).disabled).toBe(true);
+  });
+
+  // Bảng điểm danh dùng chung thanh này nhưng không có lịch sử hoàn tác.
+  it("không truyền undo thì không có nút Hoàn tác", () => {
+    renderBar();
+
+    expect(screen.queryByRole("button", { name: /Hoàn tác/ })).toBeNull();
+  });
+});
