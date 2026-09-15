@@ -38,6 +38,27 @@ export const PAGE_BANNERS: Record<PageBannerKey, PageImage> = {
   },
 };
 
+/**
+ * Scene behind the landing page's hero. It sits beside `LOGIN_BACKDROP` rather than inside
+ * `PAGE_BANNERS`, which holds the scenes `PageHeader` draws - the landing page builds its own hero.
+ *
+ * `landing.jpg` starts life as a copy of `login.jpg`. Pointing at `login.jpg` would save a file and
+ * cost the guild a surprise: changing the landing scene would silently change the login page's
+ * backdrop too. One key, one file, one thing to swap.
+ */
+export const LANDING_HERO: PageImage = {
+  src: "/img/bg/landing.jpg",
+  objectPosition: "center 35%",
+  tint: "#cfd6d2",
+};
+
+/** Scene inside the landing page's first pillar - a picture in a block, not the page's own scene. */
+export const LANDING_PILLAR: PageImage = {
+  src: "/img/bg/team-builder.jpg",
+  objectPosition: "center 40%",
+  tint: "#6b4a2c",
+};
+
 /** Backdrop of the login page, the one screen a signed-out visitor sees. */
 export const LOGIN_BACKDROP: PageImage = {
   src: "/img/bg/login.jpg",

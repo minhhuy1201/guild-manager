@@ -13,6 +13,16 @@ describe("decideAccess", () => {
     expect(decideAccess({ pathname: "/xep-team", role: null })).toBe("login");
   });
 
+  it("khách xem được trang giới thiệu", () => {
+    expect(decideAccess({ pathname: "/trang-chu", role: null })).toBe("allow");
+    expect(
+      decideAccess({ pathname: "/trang-chu", role: GuildRole.MEMBER })
+    ).toBe("allow");
+    expect(
+      decideAccess({ pathname: "/trang-chu", role: GuildRole.ADMIN })
+    ).toBe("allow");
+  });
+
   it("bang chúng không vào được route quản trị", () => {
     const role = GuildRole.MEMBER;
 

@@ -3,8 +3,11 @@ import { canManageGuild } from "@guild/shared/lib";
 
 import { ROUTES } from "@/config/routes";
 
-/** The only public routes — every other page needs a session. */
-const PUBLIC_PATH_PREFIXES = [ROUTES.login];
+/**
+ * The public routes - every other page needs a session. The landing page is one of them on purpose:
+ * it is the guild's shopfront, so a visitor who has never signed in has to be able to read it.
+ */
+const PUBLIC_PATH_PREFIXES = [ROUTES.login, ROUTES.landing];
 
 /** Admin-only routes. */
 const ADMIN_PATH_PREFIXES = [ROUTES.teamBuilder, ROUTES.settings];
