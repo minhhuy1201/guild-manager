@@ -37,7 +37,9 @@ export function GuildPillars() {
           className="absolute inset-0 bg-linear-to-t from-black/80 via-black/45 to-black/10"
         />
         <div className="relative flex flex-col gap-3 p-6 sm:p-8">
-          <LeadIcon aria-hidden className="size-6 text-jade" />
+          {/* White, not `text-jade`: jade is a page-surface accent and at either theme's lightness
+              it goes dim against the scrim, where every other mark on this picture is white. */}
+          <LeadIcon aria-hidden className="size-6 text-white/85" />
           <h2 className="font-heading text-2xl font-semibold tracking-tight text-white">
             {lead.title}
           </h2>
