@@ -258,7 +258,7 @@ export class BattleSessionsService {
    * Create a scrim. Guild Wars cannot be created — the system generates those.
    * @param input - Battle time, deadline and opponent guild name
    * @returns The created session
-   * @throws BadRequestException when the session falls outside the schedulable weeks or the deadline exceeds the 10:00 cap on the battle day
+   * @throws BadRequestException when the session falls outside the schedulable weeks or the deadline exceeds the 11:00 cap on the battle day
    */
   async create(input: CreateBattleSessionInput): Promise<BattleSession> {
     const now = this.clock.now();
@@ -446,7 +446,7 @@ export class BattleSessionsService {
   }
 
   /**
-   * Reject a deadline beyond the cap: 10:00 on the battle day, and never later than the battle.
+   * Reject a deadline beyond the cap: 11:00 on the battle day, and never later than the battle.
    * @param deadline - Attendance deadline
    * @param dateTime - Battle time
    * @returns Nothing when valid

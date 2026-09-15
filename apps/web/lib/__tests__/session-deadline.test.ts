@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import {
   atVnTime,
   deadlineCapFor,
-  defaultDeadlineFor,
   guildWarDeadline,
   isSameVnDay,
   isWithinDeadlineCap,
@@ -21,33 +20,33 @@ function vn(iso: string): Date {
 }
 
 describe("deadlineCapFor", () => {
-  it("trận sau 10:00 có trần 10:00 sáng chính ngày đánh", () => {
+  it("trận sau 11:00 có trần 11:00 sáng chính ngày đánh", () => {
     expect(deadlineCapFor(vn("2026-07-21T20:30")).toISOString()).toBe(
-      vn("2026-07-21T10:00").toISOString()
+      vn("2026-07-21T11:00").toISOString()
     );
     // Thursday now follows the battle-day rule too, no longer 17:00 Thursday.
     expect(deadlineCapFor(vn("2026-07-23T20:30")).toISOString()).toBe(
-      vn("2026-07-23T10:00").toISOString()
+      vn("2026-07-23T11:00").toISOString()
     );
   });
 
-  it("trận trước 10:00 có trần là chính giờ đánh", () => {
+  it("trận trước 11:00 có trần là chính giờ đánh", () => {
     expect(deadlineCapFor(vn("2026-07-21T08:00")).toISOString()).toBe(
       vn("2026-07-21T08:00").toISOString()
     );
   });
 
-  it("trận đúng 10:00 có trần đúng 10:00", () => {
-    expect(deadlineCapFor(vn("2026-07-21T10:00")).toISOString()).toBe(
-      vn("2026-07-21T10:00").toISOString()
+  it("trận đúng 11:00 có trần đúng 11:00", () => {
+    expect(deadlineCapFor(vn("2026-07-21T11:00")).toISOString()).toBe(
+      vn("2026-07-21T11:00").toISOString()
     );
   });
 
-  it("trận sát nửa đêm giờ VN vẫn lấy 10:00 của chính ngày đó", () => {
+  it("trận sát nửa đêm giờ VN vẫn lấy 11:00 của chính ngày đó", () => {
     expect(deadlineCapFor(vn("2026-07-21T23:59")).toISOString()).toBe(
-      vn("2026-07-21T10:00").toISOString()
+      vn("2026-07-21T11:00").toISOString()
     );
-    // 00:30 Vietnam time is before 10:00, so the cap falls back to the battle time itself.
+    // 00:30 Vietnam time is before 11:00, so the cap falls back to the battle time itself.
     expect(deadlineCapFor(vn("2026-07-22T00:30")).toISOString()).toBe(
       vn("2026-07-22T00:30").toISOString()
     );
@@ -58,7 +57,7 @@ describe("isWithinDeadlineCap", () => {
   const battle = vn("2026-07-21T20:30");
 
   it("hạn chót đúng bằng trần vẫn hợp lệ", () => {
-    expect(isWithinDeadlineCap(vn("2026-07-21T10:00"), battle)).toBe(true);
+    expect(isWithinDeadlineCap(vn("2026-07-21T11:00"), battle)).toBe(true);
   });
 
   it("hạn chót sớm hơn trần thì hợp lệ", () => {
@@ -66,58 +65,24 @@ describe("isWithinDeadlineCap", () => {
   });
 
   it("hạn chót muộn hơn trần thì không hợp lệ", () => {
-    expect(isWithinDeadlineCap(vn("2026-07-21T10:01"), battle)).toBe(false);
+    expect(isWithinDeadlineCap(vn("2026-07-21T11:01"), battle)).toBe(false);
     expect(isWithinDeadlineCap(vn("2026-07-21T17:00"), battle)).toBe(false);
   });
 });
 
-describe("defaultDeadlineFor", () => {
-  it("trận tối Thứ 5 có hạn mặc định 12:00 Thứ 4", () => {
-    expect(defaultDeadlineFor(vn("2026-09-10T20:30")).toISOString()).toBe(
-      vn("2026-09-09T12:00").toISOString()
-    );
-  });
-
-  it("trận sáng sớm vẫn lấy 12:00 hôm trước", () => {
-    expect(defaultDeadlineFor(vn("2026-09-10T08:00")).toISOString()).toBe(
-      vn("2026-09-09T12:00").toISOString()
-    );
-  });
-
-  it("qua ranh giới tháng vẫn ra đúng ngày", () => {
-    expect(defaultDeadlineFor(vn("2026-10-01T20:30")).toISOString()).toBe(
-      vn("2026-09-30T12:00").toISOString()
-    );
-  });
-
-  it("luôn nằm trong trần, kể cả trận sát nửa đêm", () => {
-    for (const battle of [
-      "2026-09-10T00:30",
-      "2026-09-10T08:00",
-      "2026-09-10T20:30",
-    ]) {
-      const dateTime = vn(battle);
-
-      expect(isWithinDeadlineCap(defaultDeadlineFor(dateTime), dateTime)).toBe(
-        true
-      );
-    }
-  });
-});
-
 describe("guildWarDeadline", () => {
-  it("luôn là 12:00 Thứ 6 của tuần", () => {
+  it("luôn là 11:00 Thứ 7 của tuần, sáng chính ngày đánh", () => {
     expect(guildWarDeadline(vn("2026-07-20T00:00")).toISOString()).toBe(
-      vn("2026-07-24T12:00").toISOString()
+      vn("2026-07-25T11:00").toISOString()
     );
     expect(guildWarDeadline(vn("2026-07-27T00:00")).toISOString()).toBe(
-      vn("2026-07-31T12:00").toISOString()
+      vn("2026-08-01T11:00").toISOString()
     );
   });
 
   it("tuần vắt qua mốc đổi tháng vẫn ra đúng ngày", () => {
     expect(guildWarDeadline(vn("2026-06-29T00:00")).toISOString()).toBe(
-      vn("2026-07-03T12:00").toISOString()
+      vn("2026-07-04T11:00").toISOString()
     );
   });
 });
@@ -136,8 +101,8 @@ describe("vnWeekday", () => {
 
 describe("atVnTime", () => {
   it("đặt giờ/phút trong chính ngày VN của mốc gốc", () => {
-    expect(atVnTime(vn("2026-07-21T20:30"), 10, 0).toISOString()).toBe(
-      vn("2026-07-21T10:00").toISOString()
+    expect(atVnTime(vn("2026-07-21T20:30"), 11, 0).toISOString()).toBe(
+      vn("2026-07-21T11:00").toISOString()
     );
   });
 

@@ -70,18 +70,18 @@ describe("datetime-input", () => {
   });
 
   it.each(ZONES)("luật hạn chót chấm trên giá trị đúng, ở %s", (tz) => {
-    // Đây là hậu quả thật của lỗi: `deadlineCapFor` chốt 10:00 giờ Việt Nam. Đọc ô nhập theo đồng hồ
+    // Đây là hậu quả thật của lỗi: `deadlineCapFor` chốt 11:00 giờ Việt Nam. Đọc ô nhập theo đồng hồ
     // máy thì phép so vẫn "nhất quán" với chính nó nhưng chấm sai mốc, và không ai thấy gì.
     inZone(tz, () => {
       const battle = toInstant("2026-07-21T20:30");
 
       expect(deadlineCapFor(battle).toISOString()).toBe(
-        "2026-07-21T03:00:00.000Z"
+        "2026-07-21T04:00:00.000Z"
       );
-      expect(isWithinDeadlineCap(toInstant("2026-07-21T10:00"), battle)).toBe(
+      expect(isWithinDeadlineCap(toInstant("2026-07-21T11:00"), battle)).toBe(
         true
       );
-      expect(isWithinDeadlineCap(toInstant("2026-07-21T10:01"), battle)).toBe(
+      expect(isWithinDeadlineCap(toInstant("2026-07-21T11:01"), battle)).toBe(
         false
       );
     });

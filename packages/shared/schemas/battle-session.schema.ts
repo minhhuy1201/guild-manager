@@ -22,10 +22,10 @@ const opponent = z
 
 /** Message shown when a deadline exceeds the cap — shared by the API and the form. */
 export const DEADLINE_CAP_MESSAGE =
-  "Hạn chót điểm danh không được muộn hơn 10:00 sáng ngày đánh.";
+  "Hạn chót điểm danh không được muộn hơn 11:00 sáng ngày đánh.";
 
 /** When a Guild War's system-owned deadline falls - shared by the API's 400 and the form's hint. */
-export const GUILD_WAR_DEADLINE_LABEL = "12:00 Thứ 6";
+export const GUILD_WAR_DEADLINE_LABEL = "11:00 Thứ 7";
 
 /**
  * Message shown when the week marker on the query string cannot be parsed.
@@ -69,7 +69,7 @@ export type WeekStartQuery = z.infer<typeof weekStartQuerySchema>;
 const battleSessionFields = z.object({
   /** When the battle takes place (ISO string) */
   dateTime: isoDateTime,
-  /** Admin-set attendance deadline, at most 10:00 on the battle day (ISO string) */
+  /** Admin-set attendance deadline, at most 11:00 on the battle day (ISO string) */
   deadline: isoDateTime,
   /** How many matches are played on this day, 1 or 2 */
   matchCount: z

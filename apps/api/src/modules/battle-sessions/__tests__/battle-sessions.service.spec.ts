@@ -128,12 +128,12 @@ describe('BattleSessionsService', () => {
       });
     });
 
-    it('ghi đè hạn chót 12:00 Thứ 6 cả khi tạo lẫn khi hàng đã tồn tại', async () => {
+    it('ghi đè hạn chót 11:00 Thứ 7 cả khi tạo lẫn khi hàng đã tồn tại', async () => {
       await service.listByWeek();
 
       expect(firstArg(prisma.battleSession.upsert, 0)).toMatchObject({
-        create: { deadline: vn('2026-07-24T12:00') },
-        update: { deadline: vn('2026-07-24T12:00') },
+        create: { deadline: vn('2026-07-25T11:00') },
+        update: { deadline: vn('2026-07-25T11:00') },
       });
     });
 
@@ -416,7 +416,7 @@ describe('BattleSessionsService', () => {
           deadline: vn('2026-07-23T10:00').toISOString(),
         }),
       ).rejects.toThrow(
-        'Hạn chót của trận Bang Chiến cố định 12:00 Thứ 6, không sửa được.',
+        'Hạn chót của trận Bang Chiến cố định 11:00 Thứ 7, không sửa được.',
       );
     });
 
@@ -427,7 +427,7 @@ describe('BattleSessionsService', () => {
           isGuildWar: true,
           opponent: null,
           dateTime: vn('2026-07-25T20:00'),
-          deadline: vn('2026-07-24T12:00'),
+          deadline: vn('2026-07-25T11:00'),
         }),
       );
 
@@ -438,7 +438,7 @@ describe('BattleSessionsService', () => {
       expect(firstArg(prisma.battleSession.update, 0)).toMatchObject({
         data: {
           weekStart: NEXT_WEEK_START,
-          deadline: vn('2026-07-31T12:00'),
+          deadline: vn('2026-08-01T11:00'),
         },
       });
     });
