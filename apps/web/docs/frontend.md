@@ -19,8 +19,9 @@ in `features/<feature>/`, one folder per domain, each with the same internal sha
 public entry point. Same principle as the backend: **things that change together stay together**,
 and a folder listing should tell you what the app does.
 
-There are five features — `attendance`, `auth`, `members`, `settings`, `team-builder` — and they map
-one-to-one onto what a user can do.
+There are six features — `attendance`, `auth`, `landing`, `members`, `settings`, `team-builder` — and
+they map one-to-one onto what a user can do, plus the public page that explains the guild to someone
+who cannot do anything yet.
 
 ---
 
@@ -31,6 +32,7 @@ apps/web/
 ├── app/                            # routing and layout ONLY — one thin page per route
 │   ├── layout.tsx                  # <Providers> + app shell
 │   ├── page.tsx                    # / — attendance
+│   ├── trang-chu/page.tsx          # public landing page
 │   ├── lich-su-diem-danh/page.tsx  # attendance history
 │   ├── xep-team/page.tsx           # team builder (admin)
 │   ├── thiet-lap/page.tsx          # settings (admin)

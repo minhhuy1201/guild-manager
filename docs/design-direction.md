@@ -53,6 +53,9 @@ saturation.
   on the tools used every day (history, team builder, settings), so their data starts higher. Still
   one scene per page.
 - **The login page** is the one full-screen scene, behind a translucent card.
+- **The landing page** (`/trang-chu`) opens on its own scene, `landing.jpg`, in a tall hero rather
+  than a banner strip. It starts as a copy of `login.jpg` so the guild can swap one without
+  touching the other.
 - Pictures fade in over their dominant colour; they never pop in on a white box.
 - The site is public, so the artwork is credited to NetEase in the footer of every page, with a line
   saying the site is a non-commercial guild page not affiliated with NetEase. A credit is not a

@@ -132,7 +132,9 @@ describe('buildReminder', () => {
     const row = buildReminder([GUILD_WAR], WEB_ORIGIN).components?.[0];
 
     expect(row?.components).toHaveLength(2);
-    expect(row?.components[1]).toMatchObject({ url: WEB_ORIGIN });
+    expect(row?.components[1]).toMatchObject({
+      url: `${WEB_ORIGIN}/dang-nhap?redirect=%2F`,
+    });
   });
 
   describe('giới hạn ký tự của Discord', () => {

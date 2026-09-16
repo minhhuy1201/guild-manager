@@ -149,11 +149,14 @@ describe('buildAnnouncement', () => {
       label: '✅ Điểm danh ngay',
       custom_id: ANNOUNCEMENT_ATTENDANCE_ID,
     });
+    // Không phải trần origin: trần origin lúc chưa đăng nhập là trang giới thiệu bang, đúng cho
+    // người lạ gõ tên miền và sai cho cái nút này - ai đọc nó cũng đang ở Discord của bang và định
+    // đi điểm danh. Qua trang đăng nhập với redirect về "/" thì cả hai phía đều tới đúng chỗ.
     expect(website).toEqual({
       type: 2,
       style: BUTTON_STYLE.link,
       label: '🌐 Mở website',
-      url: 'https://mmgh-nth.vercel.app',
+      url: 'https://mmgh-nth.vercel.app/dang-nhap?redirect=%2F',
     });
   });
 

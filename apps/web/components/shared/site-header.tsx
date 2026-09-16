@@ -5,6 +5,7 @@ import { canManageGuild } from "@guild/shared/lib";
 import { GuildSeal } from "@/components/shared/guild-seal";
 import { MainNav } from "@/components/shared/main-nav";
 import { MobileTabBar } from "@/components/shared/mobile-tab-bar";
+import { Button } from "@/components/ui/button";
 import { ROUTES } from "@/config/routes";
 import { UserMenu } from "@/features/auth";
 import { fetchMe, getSession } from "@/features/auth/server";
@@ -48,7 +49,8 @@ function GuildName() {
 
 /**
  * The app's top header: the guild name "Mèo Mập Giang Hồ" and, once signed in, the main nav - in
- * the header from `sm` up, in the tab bar at the bottom of a phone's screen below it.
+ * the header from `sm` up, in the tab bar at the bottom of a phone's screen below it. A visitor gets
+ * the guild's public page behind the mark and a way to sign in.
  * Reads the session on the server to decide whether to show the nav at all, and whether it carries
  * the admin items.
  * @returns The styled header, followed by the phone's tab bar when signed in
@@ -65,19 +67,27 @@ export async function SiteHeader() {
           bar took about 40% of the height. */}
       <header className="sticky top-0 z-10 border-b bg-card/90 backdrop-blur [@media(max-height:500px)]:static">
         <div className="mx-auto flex h-14 max-w-[1600px] items-center gap-3 px-4 sm:px-6">
-          {/* Signed out the name is plain text: it would otherwise link to a route the proxy
-              bounces straight back to the login page. */}
-          {session ? (
-            <Link href={ROUTES.attendance} className={BRAND}>
-              <GuildName />
-            </Link>
-          ) : (
-            <div className={BRAND}>
-              <GuildName />
+          {/* Signed in the mark leads to the week's attendance, signed out to the guild's public
+              page - the one route besides the login screen a visitor can actually reach. */}
+          <Link
+            href={session ? ROUTES.attendance : ROUTES.landing}
+            className={BRAND}
+          >
+            <GuildName />
+          </Link>
+          {/* Signed out there is nothing to navigate between, only a way in. */}
+          {!session && (
+            <div className="ml-auto shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                nativeButton={false}
+                render={<Link href={ROUTES.login} />}
+              >
+                Đăng nhập
+              </Button>
             </div>
           )}
-          {/* Signed out there is nowhere to navigate to - every route needs a session - so the
-              header is just the guild name. */}
           {session && (
             <div className="ml-auto flex shrink-0 items-center gap-2.5">
               <MainNav isAdmin={isAdmin} />

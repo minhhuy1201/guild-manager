@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import type { GuildRole } from "@guild/shared/enums";
+import { assertNever } from "@guild/shared/lib";
 import type { AuthTokens } from "@guild/shared/schemas";
 
 import {
@@ -47,7 +48,8 @@ function readAuthSecret(): string | undefined {
  *    for a new pair. The proxy is the only place in Next that can write cookies for every request, so
  *    refreshing belongs here rather than in a Server Component.
  * 2. Deciding whether the request goes through and where it is sent otherwise — the default is
- *    **sign-in required**: apart from `/dang-nhap` there is no public page left.
+ *    **sign-in required**; `/dang-nhap` and `/trang-chu` are the exceptions, and a signed-out
+ *    request for `/` goes to the latter rather than to a login form.
  * @param request - The request being handled
  * @returns The response continuing the request (with new cookies after a refresh), or a redirect
  */
@@ -92,14 +94,12 @@ export async function proxy(request: NextRequest) {
     // any token at all is what makes this a mismatch rather than a first visit. Truthiness, not
     // `!== undefined`: an empty cookie is a cookie the browser holds but no token anyone signed, and
     // it is already what `refresh` above treats as nothing.
-    isMisconfigured = !signatureVerified && Boolean(accessToken || refreshToken);
+    isMisconfigured =
+      !signatureVerified && Boolean(accessToken || refreshToken);
   }
 
   // Reaching here means there is no usable access token and no way to refresh.
-  const response =
-    decideAccess({ pathname: request.nextUrl.pathname, role: null }) === "allow"
-      ? NextResponse.next()
-      : NextResponse.redirect(loginUrl(request, isMisconfigured));
+  const response = signedOutResponse(request, isMisconfigured);
 
   // Clear the broken/expired cookies so they are not sent again on later requests.
   if (accessToken) response.cookies.delete(ACCESS_TOKEN_COOKIE);
@@ -109,11 +109,54 @@ export async function proxy(request: NextRequest) {
 }
 
 /**
+ * Apply `decideAccess`'s verdict for a request carrying no usable session.
+ *
+ * A misconfigured secret overrides the verdict and always goes to the login page: that is the only
+ * screen that renders `WEB_AUTH_ERROR.sessionInvalid`, and sending the visitor to the landing page
+ * instead would hide the one sentence explaining why signing in again cannot help.
+ * @param request - The request being handled
+ * @param isMisconfigured - Whether the session failed for a reason signing in again cannot fix
+ * @returns The continuing response, or the redirect the verdict calls for
+ */
+function signedOutResponse(
+  request: NextRequest,
+  isMisconfigured: boolean
+): NextResponse {
+  const decision = decideAccess({
+    pathname: request.nextUrl.pathname,
+    role: null,
+  });
+
+  switch (decision) {
+    case "allow":
+      return NextResponse.next();
+    case "landing":
+      return isMisconfigured
+        ? NextResponse.redirect(loginUrl(request, true))
+        : NextResponse.redirect(new URL(ROUTES.landing, request.url));
+    case "login":
+      return NextResponse.redirect(loginUrl(request, isMisconfigured));
+    // "home" means signed in but not allowed, which cannot come back for `role: null`. It still gets
+    // a branch so that a verdict added to `decideAccess` later is a compile error here rather than a
+    // silent fall-through.
+    case "home":
+      return NextResponse.redirect(new URL(ROUTES.attendance, request.url));
+    default:
+      return assertNever(decision);
+  }
+}
+
+/**
  * Apply `decideAccess`'s verdict for a still-usable session.
+ *
+ * `login` and `landing` are the signed-out verdicts and cannot come back with a role in hand. They
+ * are handled rather than assumed away: the switch is exhaustive, so a verdict added to
+ * `decideAccess` later becomes a compile error here instead of quietly taking the `allow` path and
+ * letting a request through that was meant to be turned away.
  * @param request - The request being handled
  * @param role - Role read from the access token
  * @param allowed - Response used when the request goes through (may carry refreshed cookies)
- * @returns The continuing response, or a redirect to the attendance page when unauthorised
+ * @returns The continuing response, or the redirect the verdict calls for
  */
 function decide(
   request: NextRequest,
@@ -125,9 +168,18 @@ function decide(
     role,
   });
 
-  return decision === "home"
-    ? NextResponse.redirect(new URL(ROUTES.attendance, request.url))
-    : allowed;
+  switch (decision) {
+    case "allow":
+      return allowed;
+    case "home":
+      return NextResponse.redirect(new URL(ROUTES.attendance, request.url));
+    case "landing":
+      return NextResponse.redirect(new URL(ROUTES.landing, request.url));
+    case "login":
+      return NextResponse.redirect(loginUrl(request, false));
+    default:
+      return assertNever(decision);
+  }
 }
 
 /**
