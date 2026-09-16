@@ -3,9 +3,9 @@ import Link from "next/link";
 import { canManageGuild } from "@guild/shared/lib";
 
 import { GuildSeal } from "@/components/shared/guild-seal";
+import { HeaderLoginButton } from "@/components/shared/header-login-button";
 import { MainNav } from "@/components/shared/main-nav";
 import { MobileTabBar } from "@/components/shared/mobile-tab-bar";
-import { Button } from "@/components/ui/button";
 import { ROUTES } from "@/config/routes";
 import { UserMenu } from "@/features/auth";
 import { fetchMe, getSession } from "@/features/auth/server";
@@ -78,14 +78,7 @@ export async function SiteHeader() {
           {/* Signed out there is nothing to navigate between, only a way in. */}
           {!session && (
             <div className="ml-auto shrink-0">
-              <Button
-                variant="outline"
-                size="sm"
-                nativeButton={false}
-                render={<Link href={ROUTES.login} />}
-              >
-                Đăng nhập
-              </Button>
+              <HeaderLoginButton />
             </div>
           )}
           {session && (

@@ -366,8 +366,8 @@ System-wide, so screens look like one app. **Extend this section when you add a 
 |---|---|
 | Warm neutrals (`--background`, `--card`, `--border`, `--muted-foreground` …) | Surfaces and text. One hue (85) for every grey - never mix in a cool one. |
 | `primary` (navy) | Primary actions, selected tabs, a battle's name (`SessionLabel`). |
-| `jade` | The accent: current page in the nav, focus ring (`--ring`), the guild seal, the page divider's diamond, hover edge of the session cards. |
-| `gold` | Important highlights only: the formation banner's frame, the login ornament. Never a state. |
+| `jade` | The accent: current page in the nav, focus ring (`--ring`), the guild seal, the page divider's diamond, hover edge of the session cards, and the fill of the header's login button - a visitor's one action. |
+| `gold` | Important highlights only: the formation banner's frame, the login ornament, the sheen crossing the header's login button on hover. Never a state. |
 | emerald / `destructive` / amber | Attendance state only: "Có" / "Không" / not answered yet. Never decoration. |
 
 Gold and amber stay apart by saturation: amber is a vivid state colour, gold a muted accent.
@@ -816,6 +816,11 @@ outside the layout flow, so it may slide in. `SelectContent` rises from below
 animation is switched off. Animating geometry inside a table would need a fixed-width slot around
 it - otherwise the table jumps.
 
+One easing exception, and it needs this good a reason: the gold sheen crossing the header's login
+button (`components/shared/header-login-button.tsx`) is `ease-linear`. A shine reads as a light
+source moving over a surface at a steady speed, and `ease-out-soft` spends three quarters of the
+travel in its first 40ms - the band is off the far edge before the eye finds it.
+
 `prefers-reduced-motion: reduce` is answered **once**, at the end of `globals.css`, for the whole app —
 never repeated at a call site.
 
@@ -846,12 +851,20 @@ Data arrives, it does not snap in. Four pieces, all CSS, in `app/globals.css` an
 | A new page | every direct child of `<main>` runs `page-enter`, staggered 60ms by `nth-child` | fade + 6px rise |
 | Rows of any table | `[data-slot="table-body"] > tr` runs `fade-in-soft`, staggered 25ms up to the tenth row | opacity only (see *Tables*) |
 | Tiles and cards of loaded data | `REVEAL_CLASS` + `revealStyle(index)` from `lib/motion.ts`, 40ms steps, capped at the ninth item | fade + 4px rise |
+| A block far below the fold | `ScrollReveal` (`components/shared/scroll-reveal.tsx`) wraps it and flips `data-revealed` when it is scrolled to, which plays `page-enter` | fade + 6px rise |
 | Waiting | `Skeleton` sweeps a highlight across (`animate-shimmer`) instead of pulsing | background only |
 
 - **Every entrance fills `backwards`, never `both`, and every keyframe ends on `transform: none`.**
   A transform left on an element after it lands makes it the containing block of each
   `position: fixed` descendant: the team builder's `DragOverlay` and the Discord capture sheet would
   then be placed against the page block instead of the viewport.
+- **A page taller than a couple of screens reveals as it is scrolled, the rest arrives with the
+  page.** The landing page is the worked example: the hero keeps the staggered `page-enter` of
+  `<main>`, and each block under it waits for the fold inside a `ScrollReveal`, which replaces that
+  stagger rather than adding to it. Blocks that all arrive at load are blocks nobody below the fold
+  ever sees arrive. Only the wrapper is a Client Component - the blocks themselves stay on the
+  server - and its observer window is open far above the screen, so a block a wheel flick carries
+  past in one frame is still revealed (the observer reports a change of state, not a position).
 - **The formation grid never reveals.** It is screenshotted for the Discord announcement and dragged
   over; a column caught mid-fade would be sent half transparent. The team builder gets the page
   entrance and nothing else.
