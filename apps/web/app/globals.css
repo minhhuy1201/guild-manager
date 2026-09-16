@@ -297,8 +297,10 @@
     animation: page-enter var(--duration-slow) var(--ease-out-soft) backwards;
     opacity: 1;
   }
-  /* Nothing sets `data-revealed` without scripting, and a hidden block would stay hidden. */
-  @media (scripting: none) {
+  /* Two cases where the reveal never comes and the block would stay hidden for good: no scripting
+     to set `data-revealed`, and print, which takes the page as it stands - a block nobody had
+     scrolled to would come out of the printer blank. */
+  @media (scripting: none), print {
     [data-slot="scroll-reveal"] {
       opacity: 1;
     }
