@@ -77,5 +77,9 @@ describe("Trang đăng nhập", () => {
     expect(await targetOf({ redirect: "https://evil.example" })).toBe(
       ROUTES.attendance
     );
+    // Trình duyệt đọc gạch ngược y như hai gạch, nên đây cũng là ra khỏi tên miền.
+    expect(await targetOf({ redirect: "/\\evil.example" })).toBe(
+      ROUTES.attendance
+    );
   });
 });

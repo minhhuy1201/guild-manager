@@ -234,6 +234,12 @@ Hai thay đổi, và chỉ hai:
 `apps/api/src/modules/auth/oauth-redirect.ts` sang `@guild/shared/lib`: hai đầu của luồng đăng nhập
 cùng lọc một giá trị, và hai bản sao thì bản nào lệch sẽ là bản có lỗ open redirect.
 
+Lúc chuyển thì lòi ra một lỗ có sẵn trong chính luật đó: nó chỉ soi `//`, trong khi trình duyệt đổi
+`\` thành `/` trước khi resolve, nên `/\evil.example` ra thẳng `https://evil.example/` mà vẫn qua
+được. Tab, xuống dòng và khoảng trắng cũng bị nuốt lúc resolve nên lận được authority y hệt. Luật giờ
+từ chối cả ba. Lỗ này có từ trước, nhưng cái nút trong Discord làm nó dễ khai thác hẳn lên - dán một
+link `/dang-nhap?redirect=/\...` vào kênh chat là đủ - nên sửa ngay tại đây thay vì để lại.
+
 ## Rủi ro
 
 - **Trang công khai đầu tiên có nội dung thật.** Trước đây người ngoài chỉ thấy một thẻ đăng nhập;
