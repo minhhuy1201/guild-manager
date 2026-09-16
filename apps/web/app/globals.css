@@ -284,6 +284,26 @@
   main > :nth-child(4) { animation-delay: 180ms; }
   main > :nth-child(n + 5) { animation-delay: 240ms; }
 
+  /* A block that waits for the fold (`components/shared/scroll-reveal.tsx`). The page entrance
+     above would spend every block at once, while the ones below the fold are never seen arriving;
+     these opt out of it and play the same 320ms rise when they are scrolled to. An animation and
+     not a transition, for the same reason as every other entrance: it ends on `transform: none`.
+     Reduced motion is answered once at the end of this file - the block then simply appears. */
+  [data-slot="scroll-reveal"] {
+    animation: none;
+    opacity: 0;
+  }
+  [data-slot="scroll-reveal"][data-revealed] {
+    animation: page-enter var(--duration-slow) var(--ease-out-soft) backwards;
+    opacity: 1;
+  }
+  /* Nothing sets `data-revealed` without scripting, and a hidden block would stay hidden. */
+  @media (scripting: none) {
+    [data-slot="scroll-reveal"] {
+      opacity: 1;
+    }
+  }
+
   /* Rows arriving in any table - first load, a new page, a new filter result. Opacity only: a row
      that moved would make the table jump (frontend.md §6, Tables). */
   [data-slot="table-body"] > tr {
