@@ -3,7 +3,8 @@
 Ngày: 2026-09-15 · Phạm vi: `apps/web` (feature `landing` mới, `features/auth/core/access.ts`,
 `features/auth/components/discord-login-button.tsx`, `components/shared/site-header.tsx`,
 `config/routes.ts`, `lib/page-banners.ts`, `public/img/`), tài liệu.
-Không đụng `apps/api`, `packages/shared`, database, biến môi trường.
+Không đụng database, biến môi trường. Phần bổ sung 2026-09-16 ở cuối file kéo thêm `apps/api`
+(`discord-bot/entry-buttons.ts`, `auth/oauth-redirect.ts`) và `packages/shared/lib`.
 
 ## Bối cảnh
 
@@ -210,6 +211,28 @@ Không có, và vì sao:
 - **Không quản trị nội dung landing.** Xem quyết định 2.
 - **Không `sitemap.xml` / `robots.txt`.** Chưa thuộc bài toán này.
 - **Không đổi `/`, luồng OAuth, hay bất cứ gì phía API.**
+
+## Bổ sung sau khi triển khai (2026-09-16)
+
+Quyết định 1 nói `/trang-chu` là một đường riêng và `/` không đổi. Sau khi nhìn lại thực tế deploy
+thì vế sau tự bắn vào chân mục tiêu của chính spec này: địa chỉ người ta đưa nhau là trần tên miền,
+nên người lạ gõ vào vẫn chỉ thấy thẻ đăng nhập, còn trang giới thiệu thì không ai gõ tới.
+
+Hai thay đổi, và chỉ hai:
+
+1. **`/` lúc chưa đăng nhập đi tới `/trang-chu`** thay vì `/dang-nhap` (`decideAccess` có thêm phán
+   quyết `landing`). Chỉ đúng `/`: mọi đường khác là do người ta chủ động gõ, đá họ sang trang giới
+   thiệu là làm mất chỗ họ đang muốn tới. Thành viên có phiên nên không bao giờ chạm vào nhánh này,
+   màn điểm danh vẫn cách trần tên miền đúng không cú nào. Thiếu `AUTH_SECRET` thì vẫn về trang đăng
+   nhập, vì đó là màn duy nhất in ra `WEB_AUTH_ERROR.sessionInvalid`.
+2. **Nút "🌐 Mở website" của bot trỏ vào `/dang-nhap?redirect=%2F`** thay vì trần origin. Ai đọc cái
+   nút đó cũng đang ở Discord của bang và định đi điểm danh, không phải đi đọc giới thiệu. Kèm theo,
+   `/dang-nhap` giờ đẩy người đã đăng nhập đi tiếp thay vì hiện form cho người đang đăng nhập, nên
+   thành viên bấm nút vẫn tới thẳng màn điểm danh.
+
+`redirect` là tham số trên URL nên nó đi qua `safeRedirect`. Luật đó chuyển từ
+`apps/api/src/modules/auth/oauth-redirect.ts` sang `@guild/shared/lib`: hai đầu của luồng đăng nhập
+cùng lọc một giá trị, và hai bản sao thì bản nào lệch sẽ là bản có lỗ open redirect.
 
 ## Rủi ro
 

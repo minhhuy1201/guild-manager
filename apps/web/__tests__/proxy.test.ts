@@ -166,14 +166,16 @@ describe("proxy", () => {
     expect(refreshRequest).not.toHaveBeenCalled();
   });
 
-  it("đá cả trang điểm danh về đăng nhập khi phiên đã chết", async () => {
+  // Trang điểm danh nằm ở trần tên miền, nên phiên chết ở đó là người ta quay lại trang giới thiệu
+  // chứ không phải một form đăng nhập trống - trang giới thiệu có sẵn nút đăng nhập để đi tiếp.
+  it("đưa trang điểm danh về trang giới thiệu khi phiên đã chết", async () => {
     const response = await proxy(
       request(ROUTES.attendance, { access: await token(-10) })
     );
 
     expect(response.status).toBe(307);
     expect(new URL(response.headers.get("location") ?? "").pathname).toBe(
-      ROUTES.login
+      ROUTES.landing
     );
   });
 
@@ -196,8 +198,10 @@ describe("proxy", () => {
     });
 
     it("phiên hết hạn bình thường thì không mang mã lỗi nào", async () => {
+      // Không phải trần tên miền: ở đó một phiên chết đi về trang giới thiệu, và câu hỏi "có mã lỗi
+      // trên URL đăng nhập không" sẽ không còn chỗ để hỏi.
       const response = await proxy(
-        request(ROUTES.attendance, {
+        request(ROUTES.teamBuilder, {
           access: await token(-10),
           refresh: await token(-10),
         })

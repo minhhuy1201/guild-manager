@@ -441,6 +441,14 @@ there navigates to the API, which drives the Discord OAuth2 flow and finally red
 `/dang-nhap/discord` with a single-use code. That route is a **Route Handler**, not a page, because a
 Server Component cannot write cookies: it trades the code for the token pair and stores it.
 
+`/dang-nhap` sends a visitor who **already** has a session straight on to `?redirect=`, or to the
+attendance page when that is absent, rather than showing a login form to somebody who is logged in.
+The value goes through `safeRedirect` from `@guild/shared/lib` first, the same rule the API applies
+to the redirect it packs into the OAuth state: it is a query parameter, and an unchecked one makes
+the login page an open redirect. That bounce is what lets the Discord bot's "Mở website" button
+point at `/dang-nhap?redirect=%2F` and land both a signed-in member and a signed-out one on
+attendance (`discord-bot/entry-buttons.ts`).
+
 The API signs an access token (1 day) and a refresh token (1 week). The web app keeps both in
 **httpOnly cookies**; nothing about the session is readable by client JavaScript. The access token
 carries the Discord ID (`sub`) and the guild role.
@@ -448,7 +456,16 @@ carries the Discord ID (`sub`) and the guild role.
 `proxy.ts` runs before every page request and does two things: it renews the pair when the access
 token has expired but the refresh token has not (the proxy is the only place in Next.js that can
 write cookies for any request), and it applies `decideAccess` — **every page needs a session** except
-`/dang-nhap`, and admin routes (`/xep-team`, `/thiet-lap`) additionally need the `ADMIN` role.
+`/dang-nhap` and `/trang-chu`, and admin routes (`/xep-team`, `/thiet-lap`) additionally need the
+`ADMIN` role.
+
+One path is answered specially. A signed-out request for **`/`** is sent to `/trang-chu`, not to the
+login page: the bare domain is the address people are given, so somebody who has never signed in
+meets the guild's public page rather than a form for an app they know nothing about. Only `/` —
+every other path was typed deliberately, and sending someone who asked for `/xep-team` to a page
+about the guild loses where they were going. A misconfigured `AUTH_SECRET` overrides it and still
+goes to the login page, because that is the only screen rendering
+`WEB_AUTH_ERROR.sessionInvalid`.
 
 ```mermaid
 sequenceDiagram

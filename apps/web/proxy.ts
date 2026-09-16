@@ -47,7 +47,8 @@ function readAuthSecret(): string | undefined {
  *    for a new pair. The proxy is the only place in Next that can write cookies for every request, so
  *    refreshing belongs here rather than in a Server Component.
  * 2. Deciding whether the request goes through and where it is sent otherwise — the default is
- *    **sign-in required**: apart from `/dang-nhap` there is no public page left.
+ *    **sign-in required**; `/dang-nhap` and `/trang-chu` are the exceptions, and a signed-out
+ *    request for `/` goes to the latter rather than to a login form.
  * @param request - The request being handled
  * @returns The response continuing the request (with new cookies after a refresh), or a redirect
  */
@@ -96,16 +97,41 @@ export async function proxy(request: NextRequest) {
   }
 
   // Reaching here means there is no usable access token and no way to refresh.
-  const response =
-    decideAccess({ pathname: request.nextUrl.pathname, role: null }) === "allow"
-      ? NextResponse.next()
-      : NextResponse.redirect(loginUrl(request, isMisconfigured));
+  const response = signedOutResponse(request, isMisconfigured);
 
   // Clear the broken/expired cookies so they are not sent again on later requests.
   if (accessToken) response.cookies.delete(ACCESS_TOKEN_COOKIE);
   if (refreshToken) response.cookies.delete(REFRESH_TOKEN_COOKIE);
 
   return response;
+}
+
+/**
+ * Apply `decideAccess`'s verdict for a request carrying no usable session.
+ *
+ * A misconfigured secret overrides the verdict and always goes to the login page: that is the only
+ * screen that renders `WEB_AUTH_ERROR.sessionInvalid`, and sending the visitor to the landing page
+ * instead would hide the one sentence explaining why signing in again cannot help.
+ * @param request - The request being handled
+ * @param isMisconfigured - Whether the session failed for a reason signing in again cannot fix
+ * @returns The continuing response, or the redirect the verdict calls for
+ */
+function signedOutResponse(
+  request: NextRequest,
+  isMisconfigured: boolean
+): NextResponse {
+  const decision = decideAccess({
+    pathname: request.nextUrl.pathname,
+    role: null,
+  });
+
+  if (decision === "allow") return NextResponse.next();
+
+  if (decision === "landing" && !isMisconfigured) {
+    return NextResponse.redirect(new URL(ROUTES.landing, request.url));
+  }
+
+  return NextResponse.redirect(loginUrl(request, isMisconfigured));
 }
 
 /**

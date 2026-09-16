@@ -18,6 +18,8 @@ export type AccessDecision =
   | "allow"
   /** Send to the login page (carrying a return redirect) */
   | "login"
+  /** Signed out at the site's root - send to the guild's public page */
+  | "landing"
   /** Signed in but not allowed — send to the attendance page */
   | "home";
 
@@ -41,7 +43,15 @@ export function decideAccess({
     pathname.startsWith(prefix)
   );
   if (isPublic) return "allow";
-  if (!role) return "login";
+
+  if (!role) {
+    // The root is the address people are given, so a visitor who has never signed in lands on the
+    // guild's public page rather than on a login form for an app they know nothing about. Only the
+    // root: every other path was asked for deliberately, and sending someone who typed /xep-team to
+    // a page about the guild loses where they were going. A member has a session and never gets
+    // here, so the week's attendance is still one hop from the bare domain.
+    return pathname === ROUTES.attendance ? "landing" : "login";
+  }
 
   const isAdminPath = ADMIN_PATH_PREFIXES.some((prefix) =>
     pathname.startsWith(prefix)

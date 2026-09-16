@@ -1,20 +1,9 @@
-/** Default page after login, and the safe fallback when a redirect is invalid. */
-const DEFAULT_REDIRECT = '/';
-
 /**
- * Sanitise the client-supplied `redirect` parameter.
- *
- * Only single-slash relative paths are accepted. `//host` is rejected because browsers read it as a
- * protocol-relative URL — accepting it opens an open redirect in the middle of the login flow.
- * @param value - Raw `redirect` value, undefined when absent
- * @returns A safe path to redirect to after login
+ * The rule itself lives in `@guild/shared/lib`: the web app applies it to the same `redirect` value
+ * when it sends a signed-in visitor on from the login page, and a second copy here would be the one
+ * that drifts. Re-exported so this module stays the auth module's one door onto redirect handling.
  */
-export function safeRedirect(value: string | undefined): string {
-  if (!value?.startsWith('/') || value.startsWith('//'))
-    return DEFAULT_REDIRECT;
-
-  return value;
-}
+export { safeRedirect } from '@guild/shared/lib';
 
 /**
  * Build an absolute URL pointing back at the frontend.
