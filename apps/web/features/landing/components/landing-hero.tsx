@@ -4,6 +4,9 @@ import { LANDING_HERO } from "@/lib/page-banners";
 
 import { AttendanceCta } from "./attendance-cta";
 
+/** Ties the section to its heading, so the region carries a name. */
+const HERO_HEADING_ID = "gioi-thieu-tieu-de";
+
 /** Width hint for the hero image: the page shell never grows past 1600px. */
 const HERO_SIZES = "(min-width: 1600px) 1600px, 100vw";
 
@@ -27,6 +30,7 @@ interface LandingHeroProps {
 export function LandingHero({ isSignedIn }: LandingHeroProps) {
   return (
     <section
+      aria-labelledby={HERO_HEADING_ID}
       className="relative flex min-h-[72svh] flex-col justify-end overflow-hidden rounded-2xl"
       style={{ backgroundColor: LANDING_HERO.tint }}
     >
@@ -54,7 +58,10 @@ export function LandingHero({ isSignedIn }: LandingHeroProps) {
             逆水寒
           </span>
         </div>
-        <h1 className="font-heading text-4xl leading-tight font-semibold tracking-tight text-balance text-white [text-shadow:0_2px_16px_rgb(0_0_0/0.45)] sm:text-5xl">
+        <h1
+          id={HERO_HEADING_ID}
+          className="font-heading text-4xl leading-tight font-semibold tracking-tight text-balance text-white [text-shadow:0_2px_16px_rgb(0_0_0/0.45)] sm:text-5xl"
+        >
           Mèo Mập Giang Hồ
         </h1>
         <p className="max-w-lg text-base text-pretty text-white/85 sm:text-lg">

@@ -7,6 +7,9 @@ import { GUILD_LEADERS, type GuildLeader } from "../lib/guild-info";
 /** Anchor the hero and the nav can point at. */
 export const LEADERSHIP_SECTION_ID = "ban-chi-huy";
 
+/** Ties the section to its heading, so the region carries a name. */
+const LEADERSHIP_HEADING_ID = "ban-chi-huy-tieu-de";
+
 /**
  * A leader's picture, falling back to their initials.
  *
@@ -48,10 +51,14 @@ export function LeadershipSection() {
   return (
     <section
       id={LEADERSHIP_SECTION_ID}
+      aria-labelledby={LEADERSHIP_HEADING_ID}
       className="flex flex-col gap-6 scroll-mt-20"
     >
       <div className="flex flex-col gap-3">
-        <h2 className="font-heading text-2xl font-semibold tracking-tight">
+        <h2
+          id={LEADERSHIP_HEADING_ID}
+          className="font-heading text-2xl font-semibold tracking-tight"
+        >
           Ban chỉ huy
         </h2>
         <OrnamentDivider />

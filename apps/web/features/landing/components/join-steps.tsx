@@ -2,6 +2,9 @@ import { OrnamentDivider } from "@/components/shared/ornament-divider";
 
 import { JOIN_STEPS } from "../lib/guild-info";
 
+/** Ties the section to its heading, so the region carries a name. */
+const JOIN_HEADING_ID = "vao-bang-tieu-de";
+
 /**
  * What joining looks like from the outside, in three moves.
  *
@@ -12,9 +15,12 @@ import { JOIN_STEPS } from "../lib/guild-info";
  */
 export function JoinSteps() {
   return (
-    <section className="flex flex-col gap-6">
+    <section aria-labelledby={JOIN_HEADING_ID} className="flex flex-col gap-6">
       <div className="flex flex-col gap-3">
-        <h2 className="font-heading text-2xl font-semibold tracking-tight">
+        <h2
+          id={JOIN_HEADING_ID}
+          className="font-heading text-2xl font-semibold tracking-tight"
+        >
           Vào bang thế nào
         </h2>
         <OrnamentDivider />

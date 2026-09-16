@@ -9,8 +9,28 @@ import { ROUTES } from "@/config/routes";
  */
 const PUBLIC_PATH_PREFIXES = [ROUTES.login, ROUTES.landing];
 
-/** Admin-only routes. */
+/** Admin-only routes. Matched loosely on purpose - see `isUnder`. */
 const ADMIN_PATH_PREFIXES = [ROUTES.teamBuilder, ROUTES.settings];
+
+/**
+ * Whether a path is the given route or sits under it, matching whole segments only.
+ *
+ * Used for the public list and **not** for the admin one, and the asymmetry is the point: the two
+ * lists fail in opposite directions when a match is too loose. A loose public match makes
+ * `/trang-chu-cu` readable without a session - a page opened up by accident. A loose admin match
+ * makes `/xep-team-v2` admin-only by accident, which is a door held shut rather than left open.
+ * Tightening both would turn the second accident into a route that guards nobody, so only the list
+ * that fails open gets tightened.
+ *
+ * Whole segments still cover the one nested route that needs it: `/dang-nhap/discord` under
+ * `/dang-nhap`.
+ * @param pathname - Path being requested
+ * @param prefix - Route to test it against
+ * @returns Whether the path is that route or lives under it
+ */
+function isUnder(pathname: string, prefix: string): boolean {
+  return pathname === prefix || pathname.startsWith(`${prefix}/`);
+}
 
 /** The verdict for a page request. */
 export type AccessDecision =
@@ -40,7 +60,7 @@ export function decideAccess({
   role: GuildRole | null;
 }): AccessDecision {
   const isPublic = PUBLIC_PATH_PREFIXES.some((prefix) =>
-    pathname.startsWith(prefix)
+    isUnder(pathname, prefix)
   );
   if (isPublic) return "allow";
 

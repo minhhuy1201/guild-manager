@@ -31,6 +31,27 @@ describe("decideAccess", () => {
     ).toBe("allow");
   });
 
+  // Danh sách công khai khớp trọn segment: `startsWith` trần sẽ coi `/trang-chu-cu` là một phần của
+  // `/trang-chu` và vô tình mở công khai một trang.
+  it("danh sách công khai chỉ khớp trọn segment", () => {
+    expect(decideAccess({ pathname: "/trang-chu-cu", role: null })).toBe(
+      "login"
+    );
+    expect(decideAccess({ pathname: "/dang-nhapx", role: null })).toBe("login");
+    // Route lồng thật thì vẫn khớp.
+    expect(decideAccess({ pathname: "/dang-nhap/discord", role: null })).toBe(
+      "allow"
+    );
+  });
+
+  // Danh sách quản trị thì ngược lại, và cố ý giữ `startsWith`: khớp rộng ở đây là khoá nhầm một
+  // cửa, còn khớp hẹp là để hở một route quản trị không ai canh.
+  it("danh sách quản trị khớp rộng, vì hỏng theo hướng an toàn", () => {
+    expect(
+      decideAccess({ pathname: "/xep-team-v2", role: GuildRole.MEMBER })
+    ).toBe("home");
+  });
+
   it("bang chúng không vào được route quản trị", () => {
     const role = GuildRole.MEMBER;
 

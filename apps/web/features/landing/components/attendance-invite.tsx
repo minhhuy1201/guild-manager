@@ -2,6 +2,9 @@ import { OrnamentDivider } from "@/components/shared/ornament-divider";
 
 import { AttendanceCta } from "./attendance-cta";
 
+/** Ties the section to its heading, so the region carries a name. */
+const INVITE_HEADING_ID = "moi-diem-danh-tieu-de";
+
 interface AttendanceInviteProps {
   /** Whether the visitor already has a session */
   isSignedIn: boolean;
@@ -16,8 +19,14 @@ interface AttendanceInviteProps {
  */
 export function AttendanceInvite({ isSignedIn }: AttendanceInviteProps) {
   return (
-    <section className="flex flex-col items-center gap-5 rounded-2xl border bg-card px-6 py-12 text-center sm:px-10">
-      <h2 className="font-heading text-2xl font-semibold tracking-tight text-balance">
+    <section
+      aria-labelledby={INVITE_HEADING_ID}
+      className="flex flex-col items-center gap-5 rounded-2xl border bg-card px-6 py-12 text-center sm:px-10"
+    >
+      <h2
+        id={INVITE_HEADING_ID}
+        className="font-heading text-2xl font-semibold tracking-tight text-balance"
+      >
         Tuần này bang đánh, bạn có đi không
       </h2>
       <OrnamentDivider tone="gold" align="center" className="w-40" />

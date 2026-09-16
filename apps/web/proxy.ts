@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import type { GuildRole } from "@guild/shared/enums";
+import { assertNever } from "@guild/shared/lib";
 import type { AuthTokens } from "@guild/shared/schemas";
 
 import {
@@ -93,7 +94,8 @@ export async function proxy(request: NextRequest) {
     // any token at all is what makes this a mismatch rather than a first visit. Truthiness, not
     // `!== undefined`: an empty cookie is a cookie the browser holds but no token anyone signed, and
     // it is already what `refresh` above treats as nothing.
-    isMisconfigured = !signatureVerified && Boolean(accessToken || refreshToken);
+    isMisconfigured =
+      !signatureVerified && Boolean(accessToken || refreshToken);
   }
 
   // Reaching here means there is no usable access token and no way to refresh.
@@ -125,21 +127,36 @@ function signedOutResponse(
     role: null,
   });
 
-  if (decision === "allow") return NextResponse.next();
-
-  if (decision === "landing" && !isMisconfigured) {
-    return NextResponse.redirect(new URL(ROUTES.landing, request.url));
+  switch (decision) {
+    case "allow":
+      return NextResponse.next();
+    case "landing":
+      return isMisconfigured
+        ? NextResponse.redirect(loginUrl(request, true))
+        : NextResponse.redirect(new URL(ROUTES.landing, request.url));
+    case "login":
+      return NextResponse.redirect(loginUrl(request, isMisconfigured));
+    // "home" means signed in but not allowed, which cannot come back for `role: null`. It still gets
+    // a branch so that a verdict added to `decideAccess` later is a compile error here rather than a
+    // silent fall-through.
+    case "home":
+      return NextResponse.redirect(new URL(ROUTES.attendance, request.url));
+    default:
+      return assertNever(decision);
   }
-
-  return NextResponse.redirect(loginUrl(request, isMisconfigured));
 }
 
 /**
  * Apply `decideAccess`'s verdict for a still-usable session.
+ *
+ * `login` and `landing` are the signed-out verdicts and cannot come back with a role in hand. They
+ * are handled rather than assumed away: the switch is exhaustive, so a verdict added to
+ * `decideAccess` later becomes a compile error here instead of quietly taking the `allow` path and
+ * letting a request through that was meant to be turned away.
  * @param request - The request being handled
  * @param role - Role read from the access token
  * @param allowed - Response used when the request goes through (may carry refreshed cookies)
- * @returns The continuing response, or a redirect to the attendance page when unauthorised
+ * @returns The continuing response, or the redirect the verdict calls for
  */
 function decide(
   request: NextRequest,
@@ -151,9 +168,18 @@ function decide(
     role,
   });
 
-  return decision === "home"
-    ? NextResponse.redirect(new URL(ROUTES.attendance, request.url))
-    : allowed;
+  switch (decision) {
+    case "allow":
+      return allowed;
+    case "home":
+      return NextResponse.redirect(new URL(ROUTES.attendance, request.url));
+    case "landing":
+      return NextResponse.redirect(new URL(ROUTES.landing, request.url));
+    case "login":
+      return NextResponse.redirect(loginUrl(request, false));
+    default:
+      return assertNever(decision);
+  }
 }
 
 /**

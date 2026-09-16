@@ -22,7 +22,14 @@ export function GuildPillars() {
 
   return (
     // One column on a phone; from `md` the wide cell takes two thirds and both rows.
-    <section className="grid gap-4 md:grid-cols-3 md:grid-rows-2">
+    //
+    // `aria-label` because this is the one block with no heading of its own: its three claims are
+    // three `<h2>`, none of which names the set. A `<section>` is only a landmark once it has an
+    // accessible name, and every other block on the page gets one from its own heading.
+    <section
+      aria-label="Định hướng của bang"
+      className="grid gap-4 md:grid-cols-3 md:grid-rows-2"
+    >
       <article
         className="relative flex min-h-64 flex-col justify-end overflow-hidden rounded-2xl md:col-span-2 md:row-span-2"
         style={{ backgroundColor: LANDING_PILLAR.tint }}
