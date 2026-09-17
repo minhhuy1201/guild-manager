@@ -45,6 +45,10 @@ test), cấu hình phân tích trong `sonar-project.properties` ở root, covera
       có `lcov`, nên `test:cov` hiện tại không sinh ra thứ Sonar đọc được.
 - [x] Thêm `"**/*.spec.ts"` và `"main.ts"` vào `coveragePathIgnorePatterns`: file test tự tính vào
       coverage của chính nó làm số liệu vô nghĩa, còn `main.ts` chỉ là bootstrap.
+- [x] `"/node_modules/"` phải nằm lại trong `coveragePathIgnorePatterns`: khai báo khoá này ghi đè
+      mặc định của Jest chứ không cộng thêm.
+- [x] `pretest:cov` build `@guild/shared`. `pretest` chỉ chạy trước `test`, không chạy trước
+      `test:cov` — thiếu nó thì coverage đo trên một bản `dist` cũ.
 - [x] Chạy `pnpm --filter api test:cov`, xác nhận `apps/api/coverage/lcov.info` tồn tại và khác rỗng.
 
 ### Task 2: Coverage cho `apps/web`
@@ -52,8 +56,7 @@ test), cấu hình phân tích trong `sonar-project.properties` ở root, covera
 **Files:** `apps/web/package.json`, `apps/web/vitest.config.ts`
 
 - [x] devDependency `@vitest/coverage-v8` (provider của Vitest tách rời, không có sẵn).
-- [x] Script `"test:cov": "vitest run --coverage"`, đặt cạnh `test` — `pretest` đã build
-      `@guild/shared` nên không cần lặp lại.
+- [x] Script `"test:cov": "vitest run --coverage"` cùng `pretest:cov` build `@guild/shared`, như bên api.
 - [x] Block `coverage` trong `vitest.config.ts`: `provider: "v8"`, `reporter: ["lcov",
       "text-summary"]`, `include` liệt kê đúng các thư mục nguồn (`app`, `components`, `config`,
       `features`, `hooks`, `lib`, `proxy.ts`), `exclude` bỏ `__tests__` và các file khai báo kiểu.
