@@ -125,7 +125,7 @@ Adding a command is one file in `apps/api/src/modules/discord-bot/commands/` plu
 ## Contributing
 
 `main` is protected: no direct pushes, no force-pushes. Every change goes through a pull request that
-the eight CI checks must pass, and the branch is deleted on merge.
+the nine CI checks must pass, and the branch is deleted on merge.
 
 ```bash
 git checkout -b <type>/<kebab-case-description>   # feat, fix, refactor, chore, docs, test, ci…

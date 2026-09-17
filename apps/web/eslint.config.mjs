@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Written by `test:cov`. The lcov reporter also emits an HTML report whose bundled scripts
+    // carry their own eslint-disable directives, which lint then reports as unused.
+    "coverage/**",
   ]),
 ]);
 
