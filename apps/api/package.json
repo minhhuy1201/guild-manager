@@ -97,6 +97,14 @@
       "**/*.(t|j)s"
     ],
     "coverageDirectory": "../coverage",
+    "coverageReporters": [
+      "lcov",
+      "text-summary"
+    ],
+    "coveragePathIgnorePatterns": [
+      "\\.spec\\.ts$",
+      "main\\.ts$"
+    ],
     "testEnvironment": "node"
   }
 }
