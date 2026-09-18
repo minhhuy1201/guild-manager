@@ -22,7 +22,8 @@ const SESSION = {
   id: 'session-1',
   label: 'Thứ 5 · 20:30',
   dateTime: '2026-09-03T13:30:00.000Z',
-  isDeadlinePassed: false,
+  isAttendanceClosed: false,
+  canReopenAttendance: false,
   isGuildWar: false,
   opponent: null,
 };

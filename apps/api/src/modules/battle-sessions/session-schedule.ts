@@ -301,10 +301,51 @@ export function formatDeadlineLabel(deadline: Date): string {
  * Whether the attendance deadline has passed.
  * @param deadline - The session's deadline
  * @param now - Current moment
- * @returns true when it has passed and attendance can no longer be recorded
+ * @returns true when it has passed
  */
-export function isDeadlinePassed(deadline: Date, now: Date): boolean {
+function isDeadlinePassed(deadline: Date, now: Date): boolean {
   return now.getTime() > deadline.getTime();
+}
+
+/**
+ * Whether attendance for a day is closed — the one rule every reader of "can this still be
+ * answered?" goes through.
+ *
+ * Two ways in, and the manual one wins whatever the clock says: announcing the line-up in Discord
+ * fixes the roster the guild is looking at, so the day closes there and then. Leaving it open would
+ * let a member flip their answer afterwards and quietly contradict the message everyone just read.
+ *
+ * @param deadline - The session's attendance deadline
+ * @param closedAt - When an admin announced the line-up, null when they have not
+ * @param now - Current moment
+ * @returns true when attendance can no longer be recorded (an admin still bypasses it)
+ */
+export function isAttendanceClosed(
+  deadline: Date,
+  closedAt: Date | null,
+  now: Date,
+): boolean {
+  return closedAt !== null || isDeadlinePassed(deadline, now);
+}
+
+/**
+ * Whether reopening a day's attendance would actually put it back in members' hands.
+ *
+ * Only a day closed by hand can be reopened, and only while its deadline is still ahead: clearing
+ * `attendanceClosedAt` on a day whose deadline has passed leaves it just as closed, so offering the
+ * action there would be a button that does nothing.
+ *
+ * @param deadline - The session's attendance deadline
+ * @param closedAt - When an admin announced the line-up, null when they have not
+ * @param now - Current moment
+ * @returns true when reopening would make the day answerable again
+ */
+export function canReopenAttendance(
+  deadline: Date,
+  closedAt: Date | null,
+  now: Date,
+): boolean {
+  return closedAt !== null && !isDeadlinePassed(deadline, now);
 }
 
 /**
@@ -319,20 +360,27 @@ export type ReminderScope = 'today' | 'week';
 /**
  * Whether a deadline belongs in a reminder run of the given scope.
  *
- * A passed deadline is out in every scope: a reminder day can be the deadline's own day, so a
- * hand-run `/nhac-diem-danh` in the afternoon would otherwise ping people who can no longer answer.
+ * A closed day is out in every scope: a reminder day can be the deadline's own day, so a hand-run
+ * `/nhac-diem-danh` in the afternoon would otherwise ping people who can no longer answer — and a
+ * day whose line-up is already in Discord is closed however far off its deadline still is.
+ *
+ * Both halves of the closing rule are spelled out rather than only the flag: the caller hands over a
+ * raw deadline, and a function given a deadline judging everything about it but that deadline would
+ * be a trap for the next caller.
  *
  * @param deadline - The session's attendance deadline
+ * @param isClosed - Whether attendance was already closed by hand (`isAttendanceClosed`)
  * @param now - Current moment
  * @param scope - Which deadlines the run looks at
  * @returns true when the session should be reminded about in this run
  */
 export function isDueForReminder(
   deadline: Date,
+  isClosed: boolean,
   now: Date,
   scope: ReminderScope,
 ): boolean {
-  if (isDeadlinePassed(deadline, now)) return false;
+  if (isClosed || isDeadlinePassed(deadline, now)) return false;
 
   switch (scope) {
     case 'today':

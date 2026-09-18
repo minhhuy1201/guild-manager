@@ -12,7 +12,7 @@ export interface TimeLeft {
 
 /**
  * Say how long is left before a battle's deadline, in the largest whole unit. Display only: whether
- * the battle is locked is the API's `isDeadlinePassed`, never this. A client clock already past the
+ * the battle is locked is the API's `isAttendanceClosed`, never this. A client clock already past the
  * deadline, while the API has not locked the battle yet, reads "sắp khoá" rather than "đã khoá" -
  * the two clocks disagree for a moment, and the server's is the one that counts.
  * @param deadline - The deadline as the API sends it (ISO)

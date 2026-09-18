@@ -22,7 +22,8 @@ function session(overrides: Partial<BattleSession> = {}): BattleSession {
     dateTime: '2026-09-05T13:00:00.000Z',
     // 12:00 giờ VN Thứ 6 04/09 - từ 12:00 trở đi nên được nhắc sáng cùng ngày.
     deadline: '2026-09-04T05:00:00.000Z',
-    isDeadlinePassed: false,
+    isAttendanceClosed: false,
+    canReopenAttendance: false,
     isGuildWar: true,
     opponent: null,
     weekStart: '2026-08-30T17:00:00.000Z',

@@ -6,7 +6,8 @@ import {
   guildWarDateTime,
   guildWarMatchCount,
   guildWarSessionId,
-  isDeadlinePassed,
+  canReopenAttendance,
+  isAttendanceClosed,
   isDueForReminder,
   isReminderDay,
   isSameWeek,
@@ -187,12 +188,45 @@ describe('session-schedule', () => {
     });
   });
 
-  describe('isDeadlinePassed', () => {
-    it('đúng mốc deadline thì vẫn còn hạn, sau đó thì khóa', () => {
-      const deadline = vn('2026-07-23T17:00');
+  describe('isAttendanceClosed', () => {
+    const deadline = vn('2026-07-23T17:00');
 
-      expect(isDeadlinePassed(deadline, deadline)).toBe(false);
-      expect(isDeadlinePassed(deadline, vn('2026-07-23T17:01'))).toBe(true);
+    it('đúng mốc deadline thì vẫn còn hạn, sau đó thì khoá', () => {
+      expect(isAttendanceClosed(deadline, null, deadline)).toBe(false);
+      expect(isAttendanceClosed(deadline, null, vn('2026-07-23T17:01'))).toBe(
+        true,
+      );
+    });
+
+    it('đã gửi đội hình thì khoá dù hạn còn xa', () => {
+      const announcedAt = vn('2026-07-23T09:00');
+
+      expect(
+        isAttendanceClosed(deadline, announcedAt, vn('2026-07-23T09:01')),
+      ).toBe(true);
+    });
+  });
+
+  describe('canReopenAttendance', () => {
+    const deadline = vn('2026-07-23T17:00');
+    const announcedAt = vn('2026-07-23T09:00');
+
+    it('đã gửi đội hình và hạn còn thì mở lại được', () => {
+      expect(
+        canReopenAttendance(deadline, announcedAt, vn('2026-07-23T10:00')),
+      ).toBe(true);
+    });
+
+    it('chưa gửi đội hình thì không có gì để mở', () => {
+      expect(canReopenAttendance(deadline, null, vn('2026-07-23T10:00'))).toBe(
+        false,
+      );
+    });
+
+    it('hạn đã qua thì mở lại cũng vẫn khoá', () => {
+      expect(
+        canReopenAttendance(deadline, announcedAt, vn('2026-07-23T17:01')),
+      ).toBe(false);
     });
   });
 
@@ -217,7 +251,7 @@ describe('session-schedule', () => {
       const deadline = vn('2026-07-23T17:00');
       const afterDeadline = vn('2026-07-23T18:00');
 
-      expect(isDeadlinePassed(deadline, afterDeadline)).toBe(true);
+      expect(isAttendanceClosed(deadline, null, afterDeadline)).toBe(true);
       expect(isSessionLocked(dateTime, afterDeadline)).toBe(false);
     });
   });
@@ -322,27 +356,46 @@ describe('session-schedule', () => {
 
     it('phạm vi hôm nay theo đúng ngày nhắc', () => {
       expect(
-        isDueForReminder(guildWarDeadline, vn('2026-09-04T09:00'), 'today'),
+        isDueForReminder(
+          guildWarDeadline,
+          false,
+          vn('2026-09-04T09:00'),
+          'today',
+        ),
       ).toBe(true);
-      expect(isDueForReminder(guildWarDeadline, mondayMorning, 'today')).toBe(
-        false,
-      );
+      expect(
+        isDueForReminder(guildWarDeadline, false, mondayMorning, 'today'),
+      ).toBe(false);
     });
 
     it('phạm vi cả tuần nhắc được cả hạn còn chưa tới ngày nhắc', () => {
-      expect(isDueForReminder(guildWarDeadline, mondayMorning, 'week')).toBe(
-        true,
-      );
+      expect(
+        isDueForReminder(guildWarDeadline, false, mondayMorning, 'week'),
+      ).toBe(true);
     });
 
     it('hạn đã qua thì không phạm vi nào nhắc', () => {
       // 14:00 Thứ 6 04/09 - vẫn là ngày nhắc của hạn 12:00, nhưng hạn đã khoá.
       const afternoon = vn('2026-09-04T14:00');
 
-      expect(isDueForReminder(guildWarDeadline, afternoon, 'today')).toBe(
+      expect(
+        isDueForReminder(guildWarDeadline, false, afternoon, 'today'),
+      ).toBe(false);
+      expect(isDueForReminder(guildWarDeadline, false, afternoon, 'week')).toBe(
         false,
       );
-      expect(isDueForReminder(guildWarDeadline, afternoon, 'week')).toBe(false);
+    });
+
+    it('ngày đã khoá điểm danh thì không phạm vi nào nhắc', () => {
+      // Đúng ngày nhắc và hạn vẫn còn, nhưng đội hình đã gửi lên Discord.
+      const reminderMorning = vn('2026-09-04T09:00');
+
+      expect(
+        isDueForReminder(guildWarDeadline, true, reminderMorning, 'today'),
+      ).toBe(false);
+      expect(
+        isDueForReminder(guildWarDeadline, true, mondayMorning, 'week'),
+      ).toBe(false);
     });
   });
 

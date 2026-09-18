@@ -18,7 +18,7 @@ interface DeadlineCountdownProps {
  * this phrase re-renders - never the tile, the row or the table around it. Less than a day left
  * takes the working colour, navy (amber already means "not answered", red means "Không").
  *
- * Display only: the lock itself is the API's `isDeadlinePassed`, and `useDeadlineRefresh` is still
+ * Display only: the lock itself is the API's `isAttendanceClosed`, and `useDeadlineRefresh` is still
  * what refetches when a deadline passes.
  * @param deadline - The deadline as the API sends it
  * @returns The countdown phrase

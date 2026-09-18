@@ -8,6 +8,7 @@ const ROW: SessionRow = {
   isGuildWar: true,
   matchCount: 2,
   weekStart: new Date('2026-07-19T17:00:00.000Z'),
+  attendanceClosedAt: null,
   _count: { attendanceRecords: 3, formationMatches: 0 },
 };
 
@@ -20,14 +21,26 @@ describe('toBattleSession', () => {
     expect(entity.weekStart).toBe('2026-07-19T17:00:00.000Z');
   });
 
-  it('chốt cờ quá hạn theo mốc `now` được truyền vào', () => {
+  it('chốt cờ khoá điểm danh theo mốc `now` được truyền vào', () => {
     expect(
       toBattleSession(ROW, new Date('2026-07-22T05:00:00.000Z'))
-        .isDeadlinePassed,
+        .isAttendanceClosed,
     ).toBe(false);
     expect(
       toBattleSession(ROW, new Date('2026-07-24T05:00:00.000Z'))
-        .isDeadlinePassed,
+        .isAttendanceClosed,
+    ).toBe(true);
+  });
+
+  it('đã gửi đội hình thì khoá dù hạn còn xa', () => {
+    const announced: SessionRow = {
+      ...ROW,
+      attendanceClosedAt: new Date('2026-07-22T04:00:00.000Z'),
+    };
+
+    expect(
+      toBattleSession(announced, new Date('2026-07-22T05:00:00.000Z'))
+        .isAttendanceClosed,
     ).toBe(true);
   });
 

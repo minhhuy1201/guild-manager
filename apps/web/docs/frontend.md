@@ -199,7 +199,7 @@ admin page's server component, plus the guards on the API. A new admin route nee
 The week boundaries, the Saturday 22:00 rollover and every deadline rule are **the backend's
 business** (`apps/api/src/modules/battle-sessions/session-schedule.ts`, summarised in
 [`architecture.md`](../../../docs/architecture.md) §6). The frontend only mirrors the
-`isDeadlinePassed` flag the API sends, to grey out a locked column, and re-checks it on a timer
+`isAttendanceClosed` flag the API sends, to grey out a locked column, and re-checks it on a timer
 (`use-deadline-refresh`) so a column locks without a reload.
 
 **Never re-derive a schedule rule on the client.** Two implementations of one rule drift, and the
@@ -518,7 +518,7 @@ Four screens show a battle by name, and all four recognise the Guild War the sam
   (`DeadlineCountdown`, from `timeLeft` in `lib/time-left.ts`): the phrase keeps its own clock and
   ticks once a minute, so nothing around it re-renders, and under a day left it turns semibold
   `primary` (amber is "not answered", red is "Không"). The lock is still the API's
-  `isDeadlinePassed`; a client clock already past the deadline reads "sắp khoá", never "đã khoá".
+  `isAttendanceClosed`; a client clock already past the deadline reads "sắp khoá", never "đã khoá".
 - `sessionTintClass(isGuildWar)` returns `border-primary/40 bg-primary/5` for the Guild War, to be
   merged into whatever frame the screen already draws.
 
@@ -909,7 +909,7 @@ Data arrives, it does not snap in. Four pieces, all CSS, in `app/globals.css` an
 | Hook | `camelCase` with a `use` prefix | `useAttendanceBoard` |
 | Type / interface | `PascalCase`, **no** `I` prefix | `SessionUser`, `StatusIconProps` |
 | Constant | `SCREAMING_SNAKE_CASE` | `ROUTES`, `FETCH_API_URL`, `ACCESS_TOKEN_COOKIE` |
-| Boolean | `is` / `has` / `should` / `can` prefix | `isDeadlinePassed` |
+| Boolean | `is` / `has` / `should` / `can` prefix | `isAttendanceClosed` |
 | Query key factory | `<feature>Keys` in `<feature>-keys.ts` | `memberKeys`, `attendanceKeys` |
 | Barrel `index.ts` | one per feature, nothing else | |
 
@@ -969,7 +969,7 @@ Zustand stores reset).
 | `import { X } from "@/features/other/lib/x"` | Import from the feature's `index.ts` |
 | Editing `components/ui/button.tsx` | Wrap it in `components/shared/` |
 | Re-writing the backend's error message | Render `ApiError.message` verbatim |
-| Recomputing a deadline on the client | Use the `isDeadlinePassed` the API sent |
+| Recomputing a deadline on the client | Use the `isAttendanceClosed` the API sent |
 | Hardcoding `"/thiet-lap"` | `ROUTES.settings` |
 | `"use client"` at the top of every file | Server Component by default; opt in where needed |
 | An admin route guarded only by hiding its nav link | `ADMIN_PATH_PREFIXES` + `getSession()` in the page + the API guard |

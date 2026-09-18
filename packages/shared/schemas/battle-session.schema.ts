@@ -106,8 +106,17 @@ export const battleSessionSchema = z.object({
   dateTime: isoDateTime,
   /** Admin-set attendance deadline. */
   deadline: isoDateTime,
-  /** Whether the deadline had passed when the server built the response. */
-  isDeadlinePassed: z.boolean(),
+  /**
+   * Whether attendance for this day was closed when the server built the response — either the
+   * deadline had passed, or an admin had announced the day's line-up in Discord. One flag rather
+   * than two because every reader asks the same question: may this still be answered?
+   */
+  isAttendanceClosed: z.boolean(),
+  /**
+   * Whether an admin may reopen this day — it was closed by an announcement and its deadline is
+   * still ahead. False once the deadline passes, because reopening would leave it closed anyway.
+   */
+  canReopenAttendance: z.boolean(),
   isGuildWar: z.boolean(),
   /** Opponent guild name, null for a Guild War or an unscheduled scrim. */
   opponent: z.string().nullable(),

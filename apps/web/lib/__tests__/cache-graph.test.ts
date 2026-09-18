@@ -35,10 +35,13 @@ describe("CACHE_DEPENDENTS", () => {
     expect(CACHE_DEPENDENTS.attendance()).toEqual([attendanceKeys.records()]);
   });
 
-  it("deadline trôi qua làm cũ trận và record, không đụng lịch", () => {
+  it("cửa sổ điểm danh đóng/mở làm cũ trận, record và danh sách lịch", () => {
+    // Màn Thiết lập vẽ cùng bộ cờ đó trên từng dòng — nút "Mở lại điểm danh" chỉ hiện khi ngày
+    // đang khoá, nên danh sách cũ sẽ mời admin bấm một nút mà backend đã từ chối.
     expect(CACHE_DEPENDENTS["attendance-window"]()).toEqual([
       attendanceKeys.sessions(),
       attendanceKeys.records(),
+      settingsKeys.all,
     ]);
   });
 

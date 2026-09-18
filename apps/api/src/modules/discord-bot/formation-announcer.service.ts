@@ -77,6 +77,10 @@ export class FormationAnnouncerService {
    * One message carrying every image, never one per match: a half-sent announcement would leave the
    * channel with a line-up nobody can act on and nothing to clean it up with.
    *
+   * Announcing also closes the day's attendance: the roster in the message is the one the guild
+   * plays with, and a member still free to flip their answer afterwards would silently contradict
+   * it. An admin can still record an answer, which is what a genuine last-minute change goes through.
+   *
    * @param sessionId - Battle day being announced
    * @param images - Line-up images as `data:image/webp;base64,…`, in match order
    * @returns How many images were sent
@@ -135,6 +139,10 @@ export class FormationAnnouncerService {
 
       throw error;
     }
+
+    // Only once the message is actually in the channel: closing a day whose announcement failed
+    // would lock the guild out of a roster nobody has seen.
+    await this.battleSessions.closeAttendance(sessionId);
 
     return verifyResponse(announcementResultSchema, {
       imageCount: images.length,

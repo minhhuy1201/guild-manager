@@ -88,6 +88,19 @@ export async function updateBattleSession(
 }
 
 /**
+ * Reopen a day whose attendance an announcement closed.
+ * @param id - Id of the session to reopen
+ * @returns The session, attendance open again
+ * @throws ApiError when the session is gone (404) or its deadline has already passed (400)
+ */
+export async function reopenAttendance(id: string): Promise<BattleSession> {
+  return apiFetch<BattleSession>(
+    `/battle-sessions/${encodeURIComponent(id)}/reopen-attendance`,
+    { method: "POST", headers: await authHeader() }
+  );
+}
+
+/**
  * Delete a scrim along with its attendance and formations.
  * @param id - Id of the session to delete
  * @returns A promise resolving once deleted

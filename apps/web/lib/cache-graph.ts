@@ -55,13 +55,17 @@ export const CACHE_DEPENDENTS: Record<CacheTopic, () => QueryKey[]> = {
   /** Marking one cell only changes records; the columns and the character list are untouched. */
   attendance: () => [attendanceKeys.records()],
   /**
-   * A deadline passing must lock the column: `isDeadlinePassed` is computed by the server and travels
-   * with the session, so both the sessions and the records must be refetched. The schedule itself is
-   * unchanged, which is why this is not `schedule`.
+   * A day closing must lock the column — its deadline passing, or an admin announcing its line-up in
+   * Discord. `isAttendanceClosed` is computed by the server and travels with the session, so both the
+   * sessions and the records must be refetched. The schedule itself is unchanged, which is why this
+   * is not `schedule`.
    */
   "attendance-window": () => [
     attendanceKeys.sessions(),
     attendanceKeys.records(),
+    // The schedule screen draws the same flags on its rows — its "Mở lại điểm danh" action is only
+    // there while the day is closed, so a stale session list keeps offering an action that 400s.
+    settingsKeys.all,
   ],
   /** Saving a formation only touches the team builder's own data. */
   formation: () => [teamBuilderKeys.all],

@@ -40,7 +40,8 @@ function session(overrides: Record<string, unknown>): unknown {
     id: 'session-1',
     label: 'Thứ 5 · 20:30',
     dateTime: '2026-09-03T13:30:00.000Z',
-    isDeadlinePassed: false,
+    isAttendanceClosed: false,
+    canReopenAttendance: false,
     isGuildWar: false,
     opponent: null,
     ...overrides,
@@ -136,9 +137,9 @@ describe('buildAttendanceBoard', () => {
     expect(board.content).toContain('chưa trả lời');
   });
 
-  it('member không có nút ở ngày đã quá hạn', async () => {
+  it('member không có nút ở ngày đã khoá', async () => {
     const deps = makeDeps({
-      sessions: [session({ id: 'a', isDeadlinePassed: true })],
+      sessions: [session({ id: 'a', isAttendanceClosed: true })],
       records: [],
     });
 
@@ -149,13 +150,13 @@ describe('buildAttendanceBoard', () => {
     );
 
     expect(board.components ?? []).toHaveLength(0);
-    expect(board.content).toContain('đã quá hạn');
+    expect(board.content).toContain('đã khoá');
   });
 
-  it('admin vẫn có nút ở ngày đã quá hạn', async () => {
-    // Admin bypass deadline — luật của AttendanceService, bảng phải phản ánh đúng.
+  it('admin vẫn có nút ở ngày đã khoá', async () => {
+    // Admin bypass được ngày đã khoá — luật của AttendanceService, bảng phải phản ánh đúng.
     const deps = makeDeps({
-      sessions: [session({ id: 'a', isDeadlinePassed: true })],
+      sessions: [session({ id: 'a', isAttendanceClosed: true })],
       records: [],
     });
 

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 
 import { toastError, toastSuccess } from "@/components/shared/toast";
+import { useInvalidate } from "@/hooks/use-invalidate";
 import { announceFormation } from "../api/team-builder-api";
 import {
   CaptureCountError,
@@ -40,7 +41,7 @@ export interface FormationAnnounceState {
 }
 
 /**
- * Screenshot the day's line-ups and post them to Discord.
+ * Screenshot the day's line-ups and post them to Discord, which also closes that day's attendance.
  *
  * The capture and the request are caught separately: they fail for unrelated reasons, and one
  * message covering both would tell the admin nothing about which half to retry.
@@ -57,7 +58,14 @@ export function useFormationAnnounce(
 ): FormationAnnounceState {
   const [open, setOpen] = useState(false);
   const [capturing, setCapturing] = useState(false);
-  const mutation = useMutation({ mutationFn: announceFormation });
+  // The send closes the day's attendance on the server, so the cached sessions and records go stale
+  // the moment it answers — without this the attendance screen keeps offering its answer buttons for
+  // a day the server has just closed, until something else happens to refetch.
+  const invalidate = useInvalidate("attendance-window");
+  const mutation = useMutation({
+    mutationFn: announceFormation,
+    onSuccess: invalidate,
+  });
 
   /**
    * Capture the off-screen sheet, then send it.

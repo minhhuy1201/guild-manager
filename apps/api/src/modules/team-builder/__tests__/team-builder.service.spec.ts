@@ -640,7 +640,8 @@ describe('TeamBuilderService.releaseCharacterFromSession', () => {
   const THURSDAY_SESSION: BattleSession = {
     ...SAVED_DAY,
     deadline: vn('2026-07-23T10:00').toISOString(),
-    isDeadlinePassed: false,
+    isAttendanceClosed: false,
+    canReopenAttendance: false,
     attendanceCount: 0,
     formationMatchCount: 0,
   };

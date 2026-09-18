@@ -305,7 +305,7 @@ function DayTile({
 }: DayTileProps) {
   const current = record?.isPresent ?? null;
   const savedReason = record?.reason ?? "";
-  const isLocked = battleSession.isDeadlinePassed;
+  const isLocked = battleSession.isAttendanceClosed;
   const subtitle = getSessionSubtitle(battleSession);
   // `null` is "not answered yet", and `false` is a real answer - so the branch on null has to come
   // first.
