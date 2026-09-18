@@ -39,7 +39,7 @@ Loạt spec cũ đã dùng `A1-A6` cho việc khác (`2026-08-21-a1-schedule-rea
 | **PF1** | `ReactQueryDevtools` đi thẳng vào bundle production | Trung bình | Đã xác minh |
 | **MB4** | Member vào route admin bị đá về `/` không một lời | Thấp | Đã xác minh |
 | **MB5** | Callback OAuth báo sai "Bạn đã huỷ đăng nhập" | Thấp | Đã xác minh |
-| **AD6** | Endpoint thông báo đội hình không kiểm số ảnh so với `matchCount` | Thấp | Nghi ngờ |
+| **AD6** | Endpoint thông báo đội hình không kiểm số ảnh so với `matchCount` | Thấp | **Chốt sai — xem bên dưới** |
 | **DC3** | Cron thiếu hàng `BotChannel` chỉ log warn | Thấp | Đã ghi nhận sẵn |
 | **DC4** | `/thong-bao` và `/cau-hinh-kenh` không idempotent nếu Discord retry | Thấp | Nghi ngờ |
 | **DC5** | Hạn 3 giây của Discord chưa từng được đo trên cold start | Cần đo | Đã xác minh |
@@ -412,10 +412,31 @@ mạng. Người bị gỡ khỏi bang bị đá về đăng nhập không lý d
 `khong-thuoc-bang`. Không phải ngõ cụt, nhưng thừa một vòng bối rối. Đánh dấu nghi ngờ vì chưa dựng
 lại được đúng đường đi.
 
-**AD6 (Thấp, nghi ngờ)** - `formation-announcer.service.ts:82-121` nhận `images: string[]` và đăng
-tất cả lên Discord, không kiểm `images.length` so với `session.matchCount`. Client có
-`CaptureCountError` canh, nhưng server thì không - đúng chỗ mà luật "validate ở biên" của dự án nói
-phải canh. Một dòng so là đủ.
+**AD6 (Thấp, ~~nghi ngờ~~ → chốt sai, đã sửa lại)** - `formation-announcer.service.ts:82-121` nhận
+`images: string[]` và đăng tất cả lên Discord, không kiểm `images.length` so với
+`session.matchCount`. Client có `CaptureCountError` canh, nhưng server thì không - đúng chỗ mà luật
+"validate ở biên" của dự án nói phải canh. Một dòng so là đủ.
+
+> **Sửa lại (2026-09-18).** Phần "phải canh ở server" đúng, nhưng bất biến thì chọn nhầm. Bản audit
+> giả định `images.length` phải **bằng** `session.matchCount`; `0f8f3a4` viết đúng như thế và chặn
+> mất một ca hợp lệ đang dùng thật: ngày hai trận đánh bằng **một** đội hình dùng chung.
+>
+> `docs/architecture.md` §5 đã nói thẳng, và nó là tài liệu binding: `matchCount` là "**an upper
+> bound** on the number of `FormationMatch` rows, not an instruction — a two-match day may perfectly
+> well be rostered with one formation shared by both". Bản audit không đối chiếu dòng đó.
+>
+> Phần còn lại của hồ sơ cũng nói vậy — xem
+> `docs/superpowers/plans/2026-08-07-two-matches-per-day.md:85` ("hàng này tồn tại kể cả khi chưa xếp
+> ai: đó là cách phân biệt *ngày này có 2 trận* với *trận 2 đang để trống*") và dòng 424 ("bỏ trận 2
+> chỉ là gửi mảng một phần tử"). Bản plan thông báo Discord tách bạch hai con số này tường minh, bằng
+> hẳn một test: *"số trận đọc từ lịch đánh, không phải số ảnh"*
+> (`docs/superpowers/plans/2026-09-05-discord-formation-announcement.md:274`). Và
+> `apps/web/features/team-builder/lib/banner-title.ts` đã render đúng ca đó từ đầu — một đội hình cho
+> ngày hai trận in banner "2 trận", không phải "trận 1/1".
+>
+> Nên rủi ro bản audit muốn chặn - "bang hội thấy đội hình thiếu trận" - không có thật ở nửa
+> `<`: ảnh tự nói nó phủ cả hai trận. Nửa `>` thì có thật (ảnh của hai ngày khác nhau lọt vào một
+> thông báo), và đó là nửa được giữ lại: phép so giờ là `images.length > session.matchCount`.
 
 ---
 
