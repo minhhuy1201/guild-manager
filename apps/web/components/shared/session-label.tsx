@@ -81,7 +81,7 @@ export function SessionLabel({
 
 export interface SessionDeadlineProps {
   /** Battle whose deadline is shown; its deadline and the API's lock are read */
-  session: Pick<BattleSession, "deadline" | "isDeadlinePassed">;
+  session: Pick<BattleSession, "deadline" | "isAttendanceClosed">;
 }
 
 /**
@@ -98,7 +98,7 @@ export function SessionDeadline({ session }: SessionDeadlineProps) {
   return (
     <div className="text-xs text-muted-foreground">
       Hạn chót: {formatDateTime(session.deadline)}
-      {!session.isDeadlinePassed && (
+      {!session.isAttendanceClosed && (
         <>
           {" · "}
           <DeadlineCountdown deadline={session.deadline} />

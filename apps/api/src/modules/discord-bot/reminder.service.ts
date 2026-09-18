@@ -96,7 +96,12 @@ export class ReminderService {
     const now = this.clock.now();
     const sessions = await this.battleSessions.listByWeek();
     const dueSessions = sessions.filter((session) =>
-      isDueForReminder(new Date(session.deadline), now, scope),
+      isDueForReminder(
+        new Date(session.deadline),
+        session.isAttendanceClosed,
+        now,
+        scope,
+      ),
     );
 
     if (dueSessions.length === 0) return { status: 'nothing-due' };

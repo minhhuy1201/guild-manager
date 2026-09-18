@@ -20,7 +20,7 @@ function session(overrides: Partial<BattleSession> = {}): BattleSession {
     dateTime: '2026-09-05T13:00:00.000Z',
     // 17:00 giờ VN Thứ 5 03/09.
     deadline: '2026-09-03T10:00:00.000Z',
-    isDeadlinePassed: false,
+    isAttendanceClosed: false,
     isGuildWar: true,
     opponent: null,
     weekStart: '2026-08-30T17:00:00.000Z',

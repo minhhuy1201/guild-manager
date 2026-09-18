@@ -30,7 +30,7 @@ function session(overrides: Partial<BattleSession> = {}): BattleSession {
     label: 'Thứ 4 · 20:30',
     dateTime: '2026-08-19T13:30:00.000Z',
     deadline: '2026-08-19T03:00:00.000Z',
-    isDeadlinePassed: false,
+    isAttendanceClosed: false,
     isGuildWar: false,
     opponent: 'Moonlight',
     weekStart: '2026-08-16T17:00:00.000Z',
@@ -47,7 +47,10 @@ function session(overrides: Partial<BattleSession> = {}): BattleSession {
  * @returns Service cùng các mock để assert
  */
 function build(found: BattleSession | null = session()) {
-  const battleSessions = { findById: jest.fn().mockResolvedValue(found) };
+  const battleSessions = {
+    findById: jest.fn().mockResolvedValue(found),
+    closeAttendance: jest.fn().mockResolvedValue(undefined),
+  };
   const rest = { postMessageWithFiles: jest.fn().mockResolvedValue(undefined) };
   const config = { get: (key: string) => ENV[key] };
   const clock = new FixedClock(new Date('2026-08-19T02:00:00.000Z'));
@@ -112,6 +115,25 @@ describe('FormationAnnouncerService', () => {
     ]);
   });
 
+  it('gửi xong thì khoá điểm danh của ngày đó', async () => {
+    // Đội hình đã lên Discord thì danh sách coi như chốt: để form mở, một member đổi câu trả lời
+    // sau đó là mâu thuẫn ngay với tin nhắn cả bang vừa đọc.
+    const { service, battleSessions } = build();
+
+    await service.announce('session-1', [IMAGE, IMAGE]);
+
+    expect(battleSessions.closeAttendance).toHaveBeenCalledWith('session-1');
+  });
+
+  it('không gửi được thì không khoá điểm danh', async () => {
+    const { service, battleSessions } = build(session({ matchCount: 1 }));
+
+    await expect(service.announce('session-1', [IMAGE, IMAGE])).rejects.toThrow(
+      BadRequestException,
+    );
+    expect(battleSessions.closeAttendance).not.toHaveBeenCalled();
+  });
+
   it('giải mã base64 thành bytes thật, bỏ tiền tố data URL', async () => {
     // Một trận, một ảnh — ca đơn giản nhất, không dính tới trần `matchCount`.
     const { service, rest } = build(session({ matchCount: 1 }));
@@ -139,16 +161,16 @@ describe('FormationAnnouncerService — Discord từ chối', () => {
    * @returns Service đã sẵn sàng gọi
    */
   function buildRefusing(status: number) {
-    const { service, rest } = build(session({ matchCount: 1 }));
+    const { service, rest, battleSessions } = build(session({ matchCount: 1 }));
     rest.postMessageWithFiles.mockRejectedValue(
       new DiscordApiError(status, 'channel-bang-chien', '{"code":50013}'),
     );
 
-    return service;
+    return { service, battleSessions };
   }
 
   it('403 thành câu tiếng Việt nói admin phải cấp quyền gì', async () => {
-    const service = buildRefusing(403);
+    const { service } = buildRefusing(403);
 
     await expect(service.announce('session-1', [IMAGE])).rejects.toThrow(
       ForbiddenException,
@@ -160,10 +182,21 @@ describe('FormationAnnouncerService — Discord từ chối', () => {
 
   // Mọi mã khác là chuyện của hệ thống, không phải của admin: để nguyên cho filter log kèm stack.
   it('mã lỗi khác vẫn nổi lên nguyên trạng', async () => {
-    const service = buildRefusing(500);
+    const { service } = buildRefusing(500);
 
     await expect(service.announce('session-1', [IMAGE])).rejects.toThrow(
       DiscordApiError,
     );
+  });
+
+  // Discord từ chối nghĩa là cả bang chưa thấy đội hình nào — khoá điểm danh lúc đó chỉ tạo ra một
+  // ngày không ai trả lời được mà cũng chẳng biết đội hình là gì.
+  it('Discord từ chối thì không khoá điểm danh', async () => {
+    const { service, battleSessions } = buildRefusing(403);
+
+    await expect(service.announce('session-1', [IMAGE])).rejects.toThrow(
+      ForbiddenException,
+    );
+    expect(battleSessions.closeAttendance).not.toHaveBeenCalled();
   });
 });

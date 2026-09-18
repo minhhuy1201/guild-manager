@@ -90,7 +90,7 @@ function makeSession(
     label: `Trận ${id}`,
     dateTime: "2026-08-24T20:00:00.000Z",
     deadline: "2026-08-24T03:00:00.000Z",
-    isDeadlinePassed: false,
+    isAttendanceClosed: false,
     isGuildWar: false,
     opponent: null,
     weekStart: "2026-08-24T00:00:00.000Z",
@@ -190,7 +190,7 @@ describe("MemberAttendanceCard", () => {
     sessions = [
       makeSession("sess-1"),
       makeSession("sess-2"),
-      makeSession("sess-3", { isDeadlinePassed: true }),
+      makeSession("sess-3", { isAttendanceClosed: true }),
     ];
 
     render(<MemberAttendanceCard />);
@@ -261,7 +261,7 @@ describe("MemberAttendanceCard", () => {
   });
 
   it("quá hạn thì ô ngày chỉ còn chữ Đã khoá, không còn nút nào", () => {
-    sessions = [makeSession("sess-1", { isDeadlinePassed: true })];
+    sessions = [makeSession("sess-1", { isAttendanceClosed: true })];
 
     render(<MemberAttendanceCard />);
 
@@ -548,7 +548,7 @@ describe("MemberAttendanceCard", () => {
   });
 
   it("ngày đã khoá thì chỉ hiện lý do dạng chữ, không có ô nhập", () => {
-    sessions = [makeSession("sess-1", { isDeadlinePassed: true })];
+    sessions = [makeSession("sess-1", { isAttendanceClosed: true })];
     records = makeRecords("sess-1", false, "Bận đi công tác");
 
     render(<MemberAttendanceCard />);

@@ -120,7 +120,7 @@ describe("SessionDeadline", () => {
   it("trận đã khoá chỉ hiện hạn chót đã định dạng", () => {
     const deadline = "2026-08-22T12:00:00.000Z";
     const { container } = render(
-      <SessionDeadline session={{ deadline, isDeadlinePassed: true }} />
+      <SessionDeadline session={{ deadline, isAttendanceClosed: true }} />
     );
 
     expect(container.textContent).toBe(`Hạn chót: ${formatDateTime(deadline)}`);
@@ -132,7 +132,7 @@ describe("SessionDeadline", () => {
       Date.now() + (3 * 24 + 1) * 60 * 60 * 1000
     ).toISOString();
     const { container } = render(
-      <SessionDeadline session={{ deadline, isDeadlinePassed: false }} />
+      <SessionDeadline session={{ deadline, isAttendanceClosed: false }} />
     );
 
     expect(container.textContent).toContain(`Hạn chót: ${formatDateTime(deadline)}`);

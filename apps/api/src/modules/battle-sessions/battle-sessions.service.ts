@@ -255,6 +255,24 @@ export class BattleSessionsService {
   }
 
   /**
+   * Close attendance for a day, because its line-up has just been announced in Discord.
+   *
+   * Written only when the day is still open: re-announcing keeps the first moment, which is the one
+   * that matches the roster the guild was first shown. `updateMany` rather than `update` for the
+   * same reason — the `attendanceClosedAt: null` filter makes "only if still open" the database's
+   * decision, not a read the caller races against.
+   *
+   * @param id - Id of the session to close
+   * @returns A promise resolving once attendance is closed
+   */
+  async closeAttendance(id: string): Promise<void> {
+    await this.prisma.battleSession.updateMany({
+      where: { id, attendanceClosedAt: null },
+      data: { attendanceClosedAt: this.clock.now() },
+    });
+  }
+
+  /**
    * Create a scrim. Guild Wars cannot be created — the system generates those.
    * @param input - Battle time, deadline and opponent guild name
    * @returns The created session

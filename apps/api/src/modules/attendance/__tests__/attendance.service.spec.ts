@@ -111,7 +111,7 @@ describe('AttendanceService', () => {
   /**
    * Make `findById` return the fake schedule with the past-deadline flags computed at `now`,
    * exactly as the real BattleSessionsService does.
-   * @param now - Moment used to compute `isDeadlinePassed`
+   * @param now - Moment used to compute `isAttendanceClosed`
    */
   const stubSchedule = (now: Date): void => {
     battleSessions.findById.mockImplementation((id: string) => {
@@ -121,7 +121,7 @@ describe('AttendanceService', () => {
         found
           ? {
               ...found,
-              isDeadlinePassed:
+              isAttendanceClosed:
                 now.getTime() > new Date(found.deadline).getTime(),
             }
           : null,
@@ -327,6 +327,40 @@ describe('AttendanceService', () => {
       ).rejects.toThrow(ConflictException);
     });
 
+    it('đã gửi đội hình thì member không điểm danh lại được, dù hạn chưa tới', async () => {
+      // Ca chính của việc khoá form sau khi gửi Discord: Thứ 7 hạn 12:00 Thứ 6 nên vẫn còn hạn,
+      // nhưng đội hình đã lên channel — đổi câu trả lời lúc này là phá đúng cái danh sách vừa gửi.
+      const sessionId = SESSION_IDS['Thứ 7 · Bang Chiến'];
+      battleSessions.findById.mockResolvedValue({
+        ...SESSIONS.find((item) => item.id === sessionId),
+        isAttendanceClosed: true,
+      });
+
+      await expect(
+        service.mark(
+          { characterId: CHARACTER_ID, sessionId, isPresent: true },
+          MEMBER,
+        ),
+      ).rejects.toThrow(ConflictException);
+      expect(prisma.attendanceRecord.upsert).not.toHaveBeenCalled();
+    });
+
+    it('đã gửi đội hình thì quản trị viên vẫn sửa được', async () => {
+      // Đổi phút chót vẫn phải làm được — nhưng đi qua tay admin, không phải ai cũng tự sửa.
+      const sessionId = SESSION_IDS['Thứ 7 · Bang Chiến'];
+      battleSessions.findById.mockResolvedValue({
+        ...SESSIONS.find((item) => item.id === sessionId),
+        isAttendanceClosed: true,
+      });
+
+      const record = await service.mark(
+        { characterId: CHARACTER_ID, sessionId, isPresent: true },
+        ADMIN,
+      );
+
+      expect(record.isPresent).toBe(true);
+    });
+
     it('quản trị viên điểm danh hộ được', async () => {
       const record = await service.mark(
         {
@@ -377,7 +411,7 @@ describe('AttendanceService', () => {
       // evaluating the rule the flag wins, so the entry must go through.
       battleSessions.findById.mockResolvedValue({
         ...SESSIONS[0],
-        isDeadlinePassed: false,
+        isAttendanceClosed: false,
       });
 
       const record = await service.mark(

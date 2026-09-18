@@ -295,7 +295,7 @@ Endpoints, all behind the `/api` prefix:
 | `GET` | `/team-builder/weeks` | Weeks that still have roster data | Bearer |
 | `GET` | `/team-builder/formations?weekStart=` | Match rosters of a week | Bearer |
 | `PUT` | `/team-builder/formations/:sessionId` | Overwrite one match's roster | Admin |
-| `POST` | `/team-builder/formations/:sessionId/announce` | Post the day's roster images to Discord with the gathering announcement | Admin |
+| `POST` | `/team-builder/formations/:sessionId/announce` | Post the day's roster images to Discord with the gathering announcement, then close that day's attendance | Admin |
 | `GET` | `/team-builder/team-names` | Names of the grid's team columns | Admin |
 | `PUT` | `/team-builder/team-names` | Overwrite the whole team name map | Admin |
 | `POST` | `/discord/interactions` | Receive an interaction from Discord — slash command or button press — and answer it | Discord's Ed25519 signature |
@@ -520,7 +520,7 @@ a rescue admin may match no `Character` at all.
 | Model | Notes |
 |---|---|
 | `Character` | Member. Id is a slug of the name plus a random suffix (`meo-beo-k7ma3x`), not a game id. `discordId` is nullable and unique — an admin types it in, and it is what a login resolves against; `role` is `GuildRole` — `ADMIN` or `MEMBER`, the only two roles, defaulting to `MEMBER`; `discordUsername`, `discordAvatar` and `lastLoginAt` are written on each sign-in so an admin can confirm the right person was linked. `discordAvatar` holds Discord's avatar **hash**, not a URL — the CDN URL format belongs to Discord and the web app builds it; it reaches the browser through `/auth/me` only, never through the members list. |
-| `BattleSession` | One match in a week. `weekStart` (Monday 00:00 VN) groups matches into weeks. Guild War uses the deterministic id `gw-<YYYY-MM-DD>` so it can be upserted idempotently; scrims get a `cuid()`. `deadline` is the admin's value for a scrim, capped at 11:00 on the match day and prefilled by the form with that cap; for Guild War it is system-owned (11:00 Saturday). `matchCount` is how many matches the day holds (1 or 2): an admin picks it for a scrim, defaulting to 2, while the system derives it for Guild War from the week's alternating rule. It is an **upper bound** on the number of `FormationMatch` rows, not an instruction — a two-match day may perfectly well be rostered with one formation shared by both. |
+| `BattleSession` | One match in a week. `weekStart` (Monday 00:00 VN) groups matches into weeks. Guild War uses the deterministic id `gw-<YYYY-MM-DD>` so it can be upserted idempotently; scrims get a `cuid()`. `deadline` is the admin's value for a scrim, capped at 11:00 on the match day and prefilled by the form with that cap; for Guild War it is system-owned (11:00 Saturday). `matchCount` is how many matches the day holds (1 or 2): an admin picks it for a scrim, defaulting to 2, while the system derives it for Guild War from the week's alternating rule. It is an **upper bound** on the number of `FormationMatch` rows, not an instruction — a two-match day may perfectly well be rostered with one formation shared by both. `attendanceClosedAt` is when an admin announced the line-up in Discord, which closes attendance regardless of `deadline`; null means the deadline alone still governs. |
 | `AttendanceRecord` | One `(character, session)` pair, unique. The answer is `isPresent Boolean` — `true` = "Có", `false` = "Không"; not answered at all is the absence of a row. `markedAt` updates whenever the answer flips. `markedByCharacterId` records who pressed the button — no relation on purpose, so deleting that person cannot take someone else's entry with them. `reason` is the explanation (≤255 characters) attached to a "Không" answer; it is always `null` when `isPresent = true`, and the server decides that value itself rather than trusting the body. |
 | `AuthExchange` | A single-use code the web app trades for a JWT pair after the API finishes the OAuth callback. Lives 60 seconds; expired rows are swept during the next exchange. Holds `discordId`, not a foreign key, because a rescue admin may match no `Character`. |
 | `FormationSlot` | One cell of the roster grid: a person, a note, or both. A cell that is empty *and* unannotated has no row — that is how "slot 2 is empty" differs from "there is no slot 2". An answer of "Không" takes that member out of every cell of the day (`TeamBuilderService.releaseCharacterFromSession`): an annotated cell keeps its note and only loses its occupant, and a day already played is left untouched. **Deleting the member does the same thing**, guild-wide: the foreign key is `SetNull`, and `CharactersService.remove` deletes the cells that carried no note in the same transaction. |
@@ -537,7 +537,7 @@ a weekday or calendar parts in Vietnam time — live in `packages/shared/lib/vn-
 weekdays **ISO-style (1 = Monday … 7 = Sunday)**; the offset itself is not exported, because anyone who
 needs it really needs one of those four functions. The week and deadline rules sit on top of them in
 `apps/api/src/modules/battle-sessions/session-schedule.ts` and are the backend's business — the
-frontend only mirrors `isDeadlinePassed` to grey out a column.
+frontend only mirrors `isAttendanceClosed` to grey out a column.
 
 - An attendance week runs **Monday 00:00 → Saturday 23:59**.
 - The next week opens at **22:00 Saturday** (`getActiveWeek`). Between the close of one week and that
@@ -555,6 +555,12 @@ frontend only mirrors `isDeadlinePassed` to grey out a column.
   Guild War match is a 400, and `ensureGuildWar` rewrites it on every read, exactly like `deadline`.
 - Past a match's deadline the column locks. Until then answers may flip freely. A request with a
   valid admin token bypasses the deadline.
+- **Announcing a day's line-up in Discord closes that day too**, whatever its deadline says: the
+  roster the guild has just been shown is the one it plays with, so `attendanceClosedAt` is stamped
+  on the session and `isAttendanceClosed` — the one flag every reader asks — turns true. It is
+  written once (re-announcing keeps the first moment) and only after Discord accepted the message. An
+  admin still marks through it, which is where a genuine last-minute change goes; nothing reopens a
+  closed day, and the reminder skips it.
 - The attendance reminder goes out at 09:00 VN. A deadline from **12:00** on is reminded about that
   same morning, an earlier one the morning before (`isReminderDay`, compared by Vietnam calendar
   day). A deadline already passed is left out, so a hand-run `/nhac-diem-danh` in the afternoon pings

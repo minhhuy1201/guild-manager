@@ -85,7 +85,7 @@ const STATUS_ICON = {
  * @returns true when a button should be offered
  */
 function canAct(session: BattleSession, isAdmin: boolean): boolean {
-  return isAdmin || !session.isDeadlinePassed;
+  return isAdmin || !session.isAttendanceClosed;
 }
 
 /**
@@ -99,16 +99,16 @@ function describeSession(
   record: AttendanceRecord | undefined,
 ): string {
   const opponent = session.opponent ? ` · gặp ${session.opponent}` : '';
-  const overdue = session.isDeadlinePassed ? ' · đã quá hạn' : '';
+  const closed = session.isAttendanceClosed ? ' · đã khoá' : '';
 
   if (!record) {
-    return `${STATUS_ICON.unanswered} **${session.label}**${opponent} — chưa trả lời${overdue}`;
+    return `${STATUS_ICON.unanswered} **${session.label}**${opponent} — chưa trả lời${closed}`;
   }
 
   const icon = record.isPresent ? STATUS_ICON.present : STATUS_ICON.absent;
   const answer = record.isPresent ? 'CÓ' : 'KHÔNG';
 
-  return `${icon} **${session.label}**${opponent} — **${answer}**${overdue}`;
+  return `${icon} **${session.label}**${opponent} — **${answer}**${closed}`;
 }
 
 /**

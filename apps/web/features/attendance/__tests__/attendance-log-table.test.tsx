@@ -27,7 +27,7 @@ function makeSession(id: string): BattleSession {
     label: `Trận ${id}`,
     dateTime: "2026-08-24T20:00:00.000Z",
     deadline: "2026-08-24T03:00:00.000Z",
-    isDeadlinePassed: false,
+    isAttendanceClosed: false,
     isGuildWar: false,
     opponent: null,
     weekStart: "2026-08-24T00:00:00.000Z",

@@ -28,7 +28,7 @@ The rules that get broken first, in the order they get broken:
 - **`components/ui/` is shadcn CLI output.** Need a variant? Wrap it in `components/shared/`.
 - **Render `ApiError.message` verbatim** — the backend already writes the Vietnamese text meant for
   the user.
-- **Week and deadline rules belong to the backend.** Mirror the `isDeadlinePassed` the API sends;
+- **Week and deadline rules belong to the backend.** Mirror the `isAttendanceClosed` the API sends;
   never recompute one on the client.
 - **Server Component by default**; `"use client"` only where interactivity requires it. Route paths
   come from `ROUTES` in `config/routes.ts`, never string literals.

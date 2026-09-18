@@ -248,7 +248,7 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
                               {subtitle}
                             </span>
                           )}
-                          {session.isDeadlinePassed && (
+                          {session.isAttendanceClosed && (
                             <span className="block text-xs font-normal text-muted-foreground">
                               Đã khoá
                             </span>

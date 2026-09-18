@@ -12,12 +12,12 @@ import { recordKey } from "./record-key";
  * @returns Number of open battles without an answer
  */
 export function countUnanswered(
-  sessions: Pick<BattleSession, "id" | "isDeadlinePassed">[],
+  sessions: Pick<BattleSession, "id" | "isAttendanceClosed">[],
   records: Record<string, Pick<AttendanceRecord, "isPresent">>,
   characterId: string
 ): number {
   return sessions.filter(
     (session) =>
-      !session.isDeadlinePassed && !records[recordKey(characterId, session.id)]
+      !session.isAttendanceClosed && !records[recordKey(characterId, session.id)]
   ).length;
 }

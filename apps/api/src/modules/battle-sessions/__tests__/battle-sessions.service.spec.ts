@@ -50,6 +50,7 @@ function row(overrides: Record<string, unknown> = {}) {
     isGuildWar: false,
     matchCount: 2,
     weekStart: WEEK_START,
+    attendanceClosedAt: null,
     _count: { attendanceRecords: 0, formationMatches: 0 },
     ...overrides,
   };
@@ -85,6 +86,7 @@ describe('BattleSessionsService', () => {
       findUnique: jest.Mock;
       create: jest.Mock;
       update: jest.Mock;
+      updateMany: jest.Mock;
       delete: jest.Mock;
     };
     formationMatch: { deleteMany: jest.Mock };
@@ -100,6 +102,7 @@ describe('BattleSessionsService', () => {
         create: jest.fn().mockImplementation(() => Promise.resolve(row())),
         update: jest.fn().mockImplementation(() => Promise.resolve(row())),
         delete: jest.fn().mockResolvedValue(row()),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
       formationMatch: {
         deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
@@ -480,7 +483,19 @@ describe('BattleSessionsService', () => {
       expect(session.formationMatchCount).toBe(2);
     });
 
-    it('isDeadlinePassed theo thời điểm dựng response', async () => {
+    it('ngày đã gửi đội hình thì khoá dù hạn còn xa', async () => {
+      prisma.battleSession.findMany.mockResolvedValue([
+        row({ attendanceClosedAt: vn('2026-07-21T08:00') }),
+      ]);
+
+      const [session] = await makeService(vn('2026-07-21T09:00')).listByWeek(
+        WEEK_START.toISOString(),
+      );
+
+      expect(session.isAttendanceClosed).toBe(true);
+    });
+
+    it('isAttendanceClosed theo thời điểm dựng response', async () => {
       prisma.battleSession.findMany.mockResolvedValue([
         row({ deadline: vn('2026-07-21T10:00') }),
       ]);
@@ -492,8 +507,8 @@ describe('BattleSessionsService', () => {
         WEEK_START.toISOString(),
       );
 
-      expect(before.isDeadlinePassed).toBe(false);
-      expect(after.isDeadlinePassed).toBe(true);
+      expect(before.isAttendanceClosed).toBe(false);
+      expect(after.isAttendanceClosed).toBe(true);
     });
 
     it('từ chối sửa trận thuộc tuần đã qua', async () => {
@@ -504,6 +519,25 @@ describe('BattleSessionsService', () => {
       await expect(
         service.update('session-tue', { opponent: 'Ai đó' }),
       ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('closeAttendance', () => {
+    it('ghi mốc khoá bằng giờ hiện tại', async () => {
+      await makeService(vn('2026-07-21T09:00')).closeAttendance('session-tue');
+
+      expect(firstArg(prisma.battleSession.updateMany, 0)).toMatchObject({
+        where: { id: 'session-tue' },
+        data: { attendanceClosedAt: vn('2026-07-21T09:00') },
+      });
+    });
+
+    it('chỉ ghi khi ngày còn mở, nên gửi lại giữ nguyên mốc đầu tiên', async () => {
+      await service.closeAttendance('session-tue');
+
+      expect(firstArg(prisma.battleSession.updateMany, 0)).toMatchObject({
+        where: { attendanceClosedAt: null },
+      });
     });
   });
 

@@ -66,25 +66,29 @@ model Character {
 model BattleSession {
   /// Guild War uses the deterministic id `gw-<weekStart YYYY-MM-DD>` for an idempotent upsert;
   /// admin-created scrims use the default cuid().
-  id         String   @id @default(cuid())
+  id                 String    @id @default(cuid())
   /// When the battle takes place.
-  dateTime   DateTime
+  dateTime           DateTime
   /// Attendance deadline. Scrim: set by an admin, at most 10:00 on the battle day
   /// (the backend rejects rather than clamps); the form prefills 12:00 the day before.
   /// Guild War: system-set to 12:00 Friday of the same week, not editable.
-  deadline   DateTime
+  deadline           DateTime
   /// Opponent guild name. Null for a Guild War and for a scrim with no opponent yet.
-  opponent   String?
+  opponent           String?
   /// A Guild War session — system-generated, cannot be deleted.
-  isGuildWar Boolean  @default(false)
+  isGuildWar         Boolean   @default(false)
   /// How many matches are played on this day, 1 or 2. The cap lives in Zod, not here — the same
   /// rule FormationMatch.matchIndex follows. Scrim: an admin's value, defaulting to 2.
   /// Guild War: system-owned, alternating 2/1 per week (see session-schedule.ts).
-  matchCount Int      @default(2)
+  matchCount         Int       @default(2)
   /// Monday 00:00 of the week containing this session — used to group sessions by week.
-  weekStart  DateTime
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  weekStart          DateTime
+  /// When an admin announced this day's line-up in Discord, which closes attendance for good.
+  /// Null = attendance is still governed by `deadline` alone. Set once: re-announcing a day keeps
+  /// the first moment, because that is when the roster people are looking at was decided.
+  attendanceClosedAt DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   attendanceRecords AttendanceRecord[]
   /// The matches of this day (1 or 2), one formation each.

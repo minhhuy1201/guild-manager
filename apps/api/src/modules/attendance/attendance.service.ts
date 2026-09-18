@@ -32,6 +32,15 @@ import { toAttendanceRecord } from './attendance.codec';
 const NOT_YOUR_CHARACTER = 'Bạn chỉ điểm danh được cho nhân vật của mình.';
 
 /**
+ * Message shown when a non-admin answers a day that is no longer open.
+ *
+ * Says "đã khoá" rather than "quá hạn": the day may have been closed by an admin announcing its
+ * line-up well before the deadline, and a member told they are late would go looking for a deadline
+ * that has not passed yet.
+ */
+const ATTENDANCE_CLOSED = 'Ngày đánh này đã khoá điểm danh.';
+
+/**
  * The reason to persist alongside an answer.
  * A "Có" answer carries no reason, and an empty string is the same state as never having given one,
  * so both collapse to null — decided here rather than trusted from the request body, which keeps one
@@ -147,15 +156,15 @@ export class AttendanceService {
 
   /**
    * Record attendance for a character in a session.
-   * Members may only mark their own character, and only before the deadline. Admins may
-   * mark on behalf of others and are not blocked by the deadline (used to fix mistakes after a battle).
+   * Members may only mark their own character, and only while the day is open. Admins may
+   * mark on behalf of others and are not blocked by that (used to fix mistakes after a battle).
    * @param input - characterId, sessionId, isPresent and the optional absence reason, which is
    * stored only for a "Không" answer — a "Có" answer clears it
    * @param actor - JWT payload of the caller
    * @returns The written record
    * @throws NotFoundException when the character or session is not in the open week
    * @throws ForbiddenException when a non-admin marks someone else's character
-   * @throws ConflictException when a non-admin marks a session past its deadline
+   * @throws ConflictException when a non-admin marks a session whose attendance is closed
    */
   async mark(
     input: MarkAttendanceInput,
@@ -197,10 +206,10 @@ export class AttendanceService {
       throw new NotFoundException('Không tìm thấy ngày đánh.');
     }
 
-    // Reuse the flag `findById` just built instead of recomputing it: the deadline rule is
+    // Reuse the flag `findById` just built instead of recomputing it: the closing rule is
     // evaluated in exactly one place, so the client's flag and the write guard cannot diverge.
-    if (!isAdmin && session.isDeadlinePassed) {
-      throw new ConflictException('Đã quá hạn điểm danh ngày này.');
+    if (!isAdmin && session.isAttendanceClosed) {
+      throw new ConflictException(ATTENDANCE_CLOSED);
     }
 
     const absenceReason = resolveReason(isPresent, reason);

@@ -75,7 +75,9 @@ export function AnnounceFormationDialog({
           </ul>
           <p className="text-sm text-muted-foreground">
             Ảnh đội hình của {filledCounts.length === 1 ? "trận" : "cả hai trận"}{" "}
-            sẽ được đăng vào channel bang chiến kèm thông báo tập hợp.
+            sẽ được đăng vào channel bang chiến kèm thông báo tập hợp. Gửi xong,
+            ngày này khoá điểm danh: thành viên không tự đổi câu trả lời được
+            nữa, chỉ quản trị viên sửa hộ.
           </p>
           {blocked ? (
             <p className="text-sm text-destructive">

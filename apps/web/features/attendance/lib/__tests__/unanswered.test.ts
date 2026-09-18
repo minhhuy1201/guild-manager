@@ -8,11 +8,11 @@ const CHARACTER_ID = "char-1";
 /**
  * Build a session with only the two fields the count reads.
  * @param id - Session id
- * @param isDeadlinePassed - Whether the API already locked it
+ * @param isAttendanceClosed - Whether the API already locked it
  * @returns The session
  */
-function session(id: string, isDeadlinePassed = false) {
-  return { id, isDeadlinePassed };
+function session(id: string, isAttendanceClosed = false) {
+  return { id, isAttendanceClosed };
 }
 
 /**
