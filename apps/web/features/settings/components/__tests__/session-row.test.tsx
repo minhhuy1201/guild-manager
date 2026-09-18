@@ -21,6 +21,10 @@ const { reopenAttendance, toastSuccess, toastError } = vi.hoisted(() => ({
   toastError: vi.fn(),
 }));
 
+// The write protocol recovers an expired session by navigating, which needs a router; this suite
+// renders outside one.
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+
 // The request module is a "use server" file reaching into httpOnly cookies; jsdom cannot load it.
 vi.mock("../../api/battle-sessions-api", () => ({
   createBattleSession: vi.fn(),
@@ -120,13 +124,28 @@ describe("SessionRow", () => {
     expect(screen.getAllByText("Mở lại điểm danh").length).toBeGreaterThan(0);
   });
 
-  it("bấm mở lại thì gọi API và báo thành công", async () => {
-    reopenAttendance.mockResolvedValue(session());
+  // Cả bang vừa đọc đội hình; mở lại là cho phép câu trả lời đằng sau nó đổi, nên phải hỏi lại.
+  it("bấm nút thì hỏi lại chứ chưa gọi API", async () => {
     renderRow(session({ isAttendanceClosed: true, canReopenAttendance: true }));
 
     fireEvent.click(screen.getAllByText("Mở lại điểm danh")[0]);
 
-    await waitFor(() => expect(reopenAttendance).toHaveBeenCalledWith("session-tue"));
+    await waitFor(() =>
+      expect(screen.getByText(/đã gửi lên Discord/)).toBeTruthy()
+    );
+    expect(reopenAttendance).not.toHaveBeenCalled();
+  });
+
+  it("xác nhận thì gọi API và báo thành công", async () => {
+    reopenAttendance.mockResolvedValue(session());
+    renderRow(session({ isAttendanceClosed: true, canReopenAttendance: true }));
+
+    fireEvent.click(screen.getAllByText("Mở lại điểm danh")[0]);
+    fireEvent.click(await screen.findByText("Mở lại"));
+
+    await waitFor(() =>
+      expect(reopenAttendance).toHaveBeenCalledWith("session-tue")
+    );
     await waitFor(() => expect(toastSuccess).toHaveBeenCalled());
   });
 
@@ -135,9 +154,11 @@ describe("SessionRow", () => {
     renderRow(session({ isAttendanceClosed: true, canReopenAttendance: true }));
 
     fireEvent.click(screen.getAllByText("Mở lại điểm danh")[0]);
+    fireEvent.click(await screen.findByText("Mở lại"));
 
     await waitFor(() =>
-      expect(toastError).toHaveBeenCalledWith("Hạn điểm danh đã qua.")
+      expect(screen.getByText("Hạn điểm danh đã qua.")).toBeTruthy()
     );
+    expect(toastSuccess).not.toHaveBeenCalled();
   });
 });
