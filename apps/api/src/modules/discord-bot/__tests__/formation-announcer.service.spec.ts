@@ -72,17 +72,19 @@ describe('FormationAnnouncerService', () => {
     expect(rest.postMessageWithFiles).not.toHaveBeenCalled();
   });
 
-  it('số ảnh không khớp số trận thì từ chối, không gửi gì', async () => {
-    // Client có CaptureCountError canh chỗ này, server thì không — và đây là biên tin cậy thật.
+  it('một đội hình dùng chung cho ngày hai trận thì vẫn gửi', async () => {
+    // Ngày đánh hai trận bằng cùng một đội hình là ca hợp lệ, không phải ảnh bị thiếu:
+    // `matchCount` là số trận ĐÁNH, còn số đội hình là 1 hay 2 do admin chọn. Banner trên ảnh
+    // ghi "2 trận" đúng theo `matchPart` bên web, nên bang hội không đọc nhầm thành thiếu trận.
     const { service, rest } = build(session({ matchCount: 2 }));
 
-    await expect(service.announce('session-1', [IMAGE])).rejects.toThrow(
-      BadRequestException,
-    );
-    expect(rest.postMessageWithFiles).not.toHaveBeenCalled();
+    await expect(service.announce('session-1', [IMAGE])).resolves.toEqual({
+      imageCount: 1,
+    });
+    expect(rest.postMessageWithFiles).toHaveBeenCalledTimes(1);
   });
 
-  it('thừa ảnh cũng bị từ chối', async () => {
+  it('thừa ảnh thì từ chối, không gửi gì', async () => {
     const { service, rest } = build(session({ matchCount: 1 }));
 
     await expect(service.announce('session-1', [IMAGE, IMAGE])).rejects.toThrow(
@@ -111,7 +113,7 @@ describe('FormationAnnouncerService', () => {
   });
 
   it('giải mã base64 thành bytes thật, bỏ tiền tố data URL', async () => {
-    // Một trận, một ảnh: số ảnh phải khớp `matchCount`, nên ca này khai một ngày một trận.
+    // Một trận, một ảnh — ca đơn giản nhất, không dính tới trần `matchCount`.
     const { service, rest } = build(session({ matchCount: 1 }));
 
     await service.announce('session-1', [IMAGE]);

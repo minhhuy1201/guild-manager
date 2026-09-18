@@ -25,9 +25,9 @@ const DATA_URL_PREFIX = `data:${IMAGE_CONTENT_TYPE};base64,`;
 /** Shown when the battle the announcement points at no longer exists. */
 const SESSION_NOT_FOUND = 'Không tìm thấy trận đánh này.';
 
-/** Shown when the caller sent a different number of images than the day has matches. */
-const IMAGE_COUNT_MISMATCH =
-  'Số ảnh đội hình không khớp số trận của ngày đánh này. Hãy tải lại trang xếp team rồi thử lại.';
+/** Shown when the caller sent more line-ups than the day is played over. */
+const TOO_MANY_IMAGES =
+  'Số ảnh đội hình nhiều hơn số trận của ngày đánh này. Hãy tải lại trang xếp team rồi thử lại.';
 
 /**
  * Shown when Discord refuses the post for lack of permission.
@@ -81,7 +81,7 @@ export class FormationAnnouncerService {
    * @param images - Line-up images as `data:image/webp;base64,…`, in match order
    * @returns How many images were sent
    * @throws NotFoundException when the battle day does not exist
-   * @throws BadRequestException when the image count does not match the day's match count
+   * @throws BadRequestException when there are more images than the day has matches
    * @throws ForbiddenException when the bot lacks permission to post in the channel
    * @throws DiscordApiError when Discord rejects the message for any other reason
    */
@@ -93,11 +93,16 @@ export class FormationAnnouncerService {
 
     if (!session) throw new NotFoundException(SESSION_NOT_FOUND);
 
-    // The browser checks this too (`CaptureCountError`), but the browser is not a trust boundary:
-    // a mismatch here means the guild would be shown a line-up with a match missing, or images from
-    // two different days, with nothing downstream to catch it.
-    if (images.length !== session.matchCount) {
-      throw new BadRequestException(IMAGE_COUNT_MISMATCH);
+    // A ceiling, not an equality — `docs/architecture.md` §5 on `matchCount`: "an upper bound on
+    // the number of `FormationMatch` rows, not an instruction — a two-match day may perfectly well
+    // be rostered with one formation shared by both". The web app renders exactly that case as
+    // "2 trận" rather than "trận 1/1" (`matchPart` in `banner-title.ts`), so an image covering both
+    // matches says so on its face.
+    //
+    // More images than matches is still refused, and that is the half the browser cannot be trusted
+    // on: it would put line-ups from two different days in front of the whole guild.
+    if (images.length > session.matchCount) {
+      throw new BadRequestException(TOO_MANY_IMAGES);
     }
 
     const payload = buildFormationAnnouncement(
