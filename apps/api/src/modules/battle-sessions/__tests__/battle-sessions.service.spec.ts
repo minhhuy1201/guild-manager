@@ -495,6 +495,30 @@ describe('BattleSessionsService', () => {
       expect(session.isAttendanceClosed).toBe(true);
     });
 
+    it('canReopenAttendance chỉ bật khi đã gửi đội hình và hạn còn', async () => {
+      prisma.battleSession.findMany.mockResolvedValue([
+        row({ attendanceClosedAt: vn('2026-07-21T08:00') }),
+      ]);
+
+      const [stillOpen] = await makeService(vn('2026-07-21T09:00')).listByWeek(
+        WEEK_START.toISOString(),
+      );
+      const [pastDeadline] = await makeService(
+        vn('2026-07-21T11:00'),
+      ).listByWeek(WEEK_START.toISOString());
+
+      expect(stillOpen.canReopenAttendance).toBe(true);
+      expect(pastDeadline.canReopenAttendance).toBe(false);
+    });
+
+    it('ngày chưa gửi đội hình thì không có gì để mở lại', async () => {
+      const [session] = await makeService(vn('2026-07-21T09:00')).listByWeek(
+        WEEK_START.toISOString(),
+      );
+
+      expect(session.canReopenAttendance).toBe(false);
+    });
+
     it('isAttendanceClosed theo thời điểm dựng response', async () => {
       prisma.battleSession.findMany.mockResolvedValue([
         row({ deadline: vn('2026-07-21T10:00') }),
@@ -538,6 +562,49 @@ describe('BattleSessionsService', () => {
       expect(firstArg(prisma.battleSession.updateMany, 0)).toMatchObject({
         where: { attendanceClosedAt: null },
       });
+    });
+  });
+
+  describe('reopenAttendance', () => {
+    it('xoá mốc khoá để thành viên điểm danh lại được', async () => {
+      prisma.battleSession.findUnique.mockResolvedValue(
+        row({ attendanceClosedAt: vn('2026-07-21T08:00') }),
+      );
+
+      await makeService(vn('2026-07-21T09:00')).reopenAttendance('session-tue');
+
+      expect(firstArg(prisma.battleSession.update, 0)).toMatchObject({
+        where: { id: 'session-tue' },
+        data: { attendanceClosedAt: null },
+      });
+    });
+
+    it('ngày chưa khoá thì trả về nguyên trạng, không ghi gì', async () => {
+      const session = await makeService(
+        vn('2026-07-21T09:00'),
+      ).reopenAttendance('session-tue');
+
+      expect(session.isAttendanceClosed).toBe(false);
+      expect(prisma.battleSession.update).not.toHaveBeenCalled();
+    });
+
+    it('hạn đã qua thì từ chối, vì mở lại cũng vẫn khoá', async () => {
+      prisma.battleSession.findUnique.mockResolvedValue(
+        row({ attendanceClosedAt: vn('2026-07-21T08:00') }),
+      );
+
+      await expect(
+        makeService(vn('2026-07-21T11:00')).reopenAttendance('session-tue'),
+      ).rejects.toThrow(BadRequestException);
+      expect(prisma.battleSession.update).not.toHaveBeenCalled();
+    });
+
+    it('không tìm thấy ngày đánh thì 404', async () => {
+      prisma.battleSession.findUnique.mockResolvedValue(null);
+
+      await expect(service.reopenAttendance('không-có')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 

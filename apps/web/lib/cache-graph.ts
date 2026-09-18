@@ -63,6 +63,9 @@ export const CACHE_DEPENDENTS: Record<CacheTopic, () => QueryKey[]> = {
   "attendance-window": () => [
     attendanceKeys.sessions(),
     attendanceKeys.records(),
+    // The schedule screen draws the same flags on its rows — its "Mở lại điểm danh" action is only
+    // there while the day is closed, so a stale session list keeps offering an action that 400s.
+    settingsKeys.all,
   ],
   /** Saving a formation only touches the team builder's own data. */
   formation: () => [teamBuilderKeys.all],

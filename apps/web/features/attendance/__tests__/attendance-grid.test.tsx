@@ -58,6 +58,7 @@ function makeSession(id: string): BattleSession {
     dateTime: "2026-08-24T20:00:00.000Z",
     deadline: "2026-08-24T03:00:00.000Z",
     isAttendanceClosed: false,
+    canReopenAttendance: false,
     isGuildWar: false,
     opponent: null,
     weekStart: "2026-08-24T00:00:00.000Z",

@@ -412,6 +412,7 @@ describe('AttendanceService', () => {
       battleSessions.findById.mockResolvedValue({
         ...SESSIONS[0],
         isAttendanceClosed: false,
+        canReopenAttendance: false,
       });
 
       const record = await service.mark(

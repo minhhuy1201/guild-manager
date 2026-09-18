@@ -6,6 +6,7 @@ import {
   guildWarDateTime,
   guildWarMatchCount,
   guildWarSessionId,
+  canReopenAttendance,
   isAttendanceClosed,
   isDueForReminder,
   isReminderDay,
@@ -203,6 +204,29 @@ describe('session-schedule', () => {
       expect(
         isAttendanceClosed(deadline, announcedAt, vn('2026-07-23T09:01')),
       ).toBe(true);
+    });
+  });
+
+  describe('canReopenAttendance', () => {
+    const deadline = vn('2026-07-23T17:00');
+    const announcedAt = vn('2026-07-23T09:00');
+
+    it('đã gửi đội hình và hạn còn thì mở lại được', () => {
+      expect(
+        canReopenAttendance(deadline, announcedAt, vn('2026-07-23T10:00')),
+      ).toBe(true);
+    });
+
+    it('chưa gửi đội hình thì không có gì để mở', () => {
+      expect(canReopenAttendance(deadline, null, vn('2026-07-23T10:00'))).toBe(
+        false,
+      );
+    });
+
+    it('hạn đã qua thì mở lại cũng vẫn khoá', () => {
+      expect(
+        canReopenAttendance(deadline, announcedAt, vn('2026-07-23T17:01')),
+      ).toBe(false);
     });
   });
 

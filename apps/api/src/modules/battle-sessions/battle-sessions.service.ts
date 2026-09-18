@@ -21,6 +21,7 @@ import { verifyResponse } from '../../config';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { toBattleSession, type SessionRow } from './battle-sessions.codec';
 import {
+  canReopenAttendance,
   formatSessionLabel,
   getActiveWeek,
   getEditableWeeks,
@@ -33,6 +34,16 @@ import {
   type ScheduledWeek,
   type WeekAnchor,
 } from './session-schedule';
+
+/**
+ * Shown when reopening a day whose deadline has already passed.
+ *
+ * Names the admin's own way through, because it is the one that still works: the deadline is the
+ * rule, and an admin marking on someone's behalf has never been bound by it.
+ */
+const DEADLINE_ALREADY_PASSED =
+  'Hạn điểm danh của ngày này đã qua nên mở lại cũng không nhận thêm câu trả lời. ' +
+  'Sửa hộ thành viên trong bảng điểm danh.';
 
 /** What must be read alongside each session to build the entity. */
 const SESSION_INCLUDE = {
@@ -270,6 +281,48 @@ export class BattleSessionsService {
       where: { id, attendanceClosedAt: null },
       data: { attendanceClosedAt: this.clock.now() },
     });
+  }
+
+  /**
+   * Reopen a day an announcement closed, so members can answer again.
+   *
+   * The way back from an announcement sent too early. A day that is already open is returned
+   * untouched rather than refused: the caller asked for it to be open, and it is.
+   *
+   * No editable-week check, unlike `update` and `remove`: a deadline is never later than 11:00 on
+   * the battle day, so every session of a past week fails the rule below already, and a second
+   * guard saying the same thing in other words could only ever drift from it.
+   *
+   * @param id - Id of the session to reopen
+   * @returns The session, attendance open again
+   * @throws NotFoundException when the session no longer exists
+   * @throws BadRequestException when its deadline has passed, which reopening cannot undo
+   */
+  async reopenAttendance(id: string): Promise<BattleSession> {
+    const now = this.clock.now();
+    const current = await this.prisma.battleSession.findUnique({
+      where: { id },
+      include: SESSION_INCLUDE,
+    });
+    if (!current) {
+      throw new NotFoundException('Không tìm thấy ngày đánh.');
+    }
+    if (current.attendanceClosedAt === null) {
+      return toBattleSession(current, now);
+    }
+    if (
+      !canReopenAttendance(current.deadline, current.attendanceClosedAt, now)
+    ) {
+      throw new BadRequestException(DEADLINE_ALREADY_PASSED);
+    }
+
+    const updated = await this.prisma.battleSession.update({
+      where: { id },
+      data: { attendanceClosedAt: null },
+      include: SESSION_INCLUDE,
+    });
+
+    return toBattleSession(updated, now);
   }
 
   /**

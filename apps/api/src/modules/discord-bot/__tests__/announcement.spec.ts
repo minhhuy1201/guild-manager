@@ -27,6 +27,7 @@ function session(overrides: Partial<BattleSession> = {}): BattleSession {
     dateTime: '2026-09-03T13:30:00.000Z',
     deadline: '2026-09-03T03:00:00.000Z',
     isAttendanceClosed: false,
+    canReopenAttendance: false,
     isGuildWar: false,
     opponent: 'Moonlight',
     weekStart: WEEK_START,

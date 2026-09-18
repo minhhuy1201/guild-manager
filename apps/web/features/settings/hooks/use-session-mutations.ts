@@ -10,6 +10,7 @@ import { useInvalidate } from "@/hooks/use-invalidate";
 import {
   createBattleSession,
   deleteBattleSession,
+  reopenAttendance,
   updateBattleSession,
 } from "../api/battle-sessions-api";
 
@@ -57,6 +58,22 @@ export function useDeleteSession() {
 
   return useMutation({
     mutationFn: (id: string) => deleteBattleSession(id),
+    onSuccess: invalidate,
+  });
+}
+
+/**
+ * The reopen-attendance mutation, for a day closed by an announcement sent too early.
+ *
+ * `attendance-window` rather than `schedule`: the day's time, opponent and match count are all
+ * untouched — only the window in which members may answer moves.
+ * @returns The TanStack mutation (use mutateAsync to catch backend errors)
+ */
+export function useReopenAttendance() {
+  const invalidate = useInvalidate("attendance-window");
+
+  return useMutation({
+    mutationFn: (id: string) => reopenAttendance(id),
     onSuccess: invalidate,
   });
 }

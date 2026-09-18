@@ -36,6 +36,7 @@ const GUILD_WAR: BattleSession = {
   dateTime: "2026-09-05T13:00:00.000Z",
   deadline: "2026-09-03T10:00:00.000Z",
   isAttendanceClosed: false,
+  canReopenAttendance: false,
   isGuildWar: true,
   opponent: null,
   weekStart: "2026-08-30T17:00:00.000Z",

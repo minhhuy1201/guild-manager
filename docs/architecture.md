@@ -287,6 +287,7 @@ Endpoints, all behind the `/api` prefix:
 | `GET` | `/battle-sessions` | Matches of a week with their deadlines | Bearer |
 | `POST` | `/battle-sessions` | Add a scrim | Admin |
 | `PATCH` | `/battle-sessions/:id` | Edit a match | Admin |
+| `POST` | `/battle-sessions/:id/reopen-attendance` | Reopen a day an announcement closed, while its deadline is still ahead | Admin |
 | `DELETE` | `/battle-sessions/:id` | Delete a scrim (Guild War cannot be deleted) | Admin |
 | `GET` | `/attendance/characters` | Characters for the attendance board (the whole guild, any role) | Bearer |
 | `GET` | `/attendance/records?weekStart=` | Attendance entries of a week, the open one by default (the whole guild, any role) | Bearer |
@@ -559,8 +560,13 @@ frontend only mirrors `isAttendanceClosed` to grey out a column.
   roster the guild has just been shown is the one it plays with, so `attendanceClosedAt` is stamped
   on the session and `isAttendanceClosed` — the one flag every reader asks — turns true. It is
   written once (re-announcing keeps the first moment) and only after Discord accepted the message. An
-  admin still marks through it, which is where a genuine last-minute change goes; nothing reopens a
-  closed day, and the reminder skips it.
+  admin still marks through it, which is where a genuine last-minute change goes, and the reminder
+  skips it.
+- **An admin reopens a day closed that way** (`POST /battle-sessions/:id/reopen-attendance`), which
+  clears `attendanceClosedAt` — the way back from an announcement sent too early. Only while the
+  deadline is still ahead: past it the day is closed regardless, so the endpoint refuses and
+  `canReopenAttendance` — the flag the schedule screen draws its button from — is false. A day that
+  is already open is returned untouched.
 - The attendance reminder goes out at 09:00 VN. A deadline from **12:00** on is reminded about that
   same morning, an earlier one the morning before (`isReminderDay`, compared by Vietnam calendar
   day). A deadline already passed is left out, so a hand-run `/nhac-diem-danh` in the afternoon pings

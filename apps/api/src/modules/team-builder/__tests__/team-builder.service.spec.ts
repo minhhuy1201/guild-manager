@@ -641,6 +641,7 @@ describe('TeamBuilderService.releaseCharacterFromSession', () => {
     ...SAVED_DAY,
     deadline: vn('2026-07-23T10:00').toISOString(),
     isAttendanceClosed: false,
+    canReopenAttendance: false,
     attendanceCount: 0,
     formationMatchCount: 0,
   };

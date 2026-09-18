@@ -92,6 +92,18 @@ export class BattleSessionsController {
   }
 
   /**
+   * Reopen a day whose attendance an announcement closed.
+   * @param id - Id of the session to reopen
+   * @returns The session, attendance open again
+   */
+  @Post(':id/reopen-attendance')
+  @UseGuards(AdminGuard)
+  @ApiOperation({ summary: 'Mở lại điểm danh của một ngày đã gửi đội hình' })
+  reopenAttendance(@Param('id') id: string): Promise<BattleSession> {
+    return this.battleSessions.reopenAttendance(id);
+  }
+
+  /**
    * Delete a scrim along with all its attendance and formations.
    * @param id - Id of the session to delete
    * @returns A promise resolving once it is deleted

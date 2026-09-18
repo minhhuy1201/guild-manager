@@ -1,7 +1,11 @@
 import { battleSessionSchema, type BattleSession } from '@guild/shared/schemas';
 
 import { verifyResponse } from '../../config';
-import { formatSessionLabel, isAttendanceClosed } from './session-schedule';
+import {
+  canReopenAttendance,
+  formatSessionLabel,
+  isAttendanceClosed,
+} from './session-schedule';
 
 /** A BattleSession row read with the extra counts the entity needs. */
 export type SessionRow = {
@@ -29,6 +33,11 @@ export function toBattleSession(row: SessionRow, now: Date): BattleSession {
     dateTime: row.dateTime.toISOString(),
     deadline: row.deadline.toISOString(),
     isAttendanceClosed: isAttendanceClosed(
+      row.deadline,
+      row.attendanceClosedAt,
+      now,
+    ),
+    canReopenAttendance: canReopenAttendance(
       row.deadline,
       row.attendanceClosedAt,
       now,

@@ -329,6 +329,26 @@ export function isAttendanceClosed(
 }
 
 /**
+ * Whether reopening a day's attendance would actually put it back in members' hands.
+ *
+ * Only a day closed by hand can be reopened, and only while its deadline is still ahead: clearing
+ * `attendanceClosedAt` on a day whose deadline has passed leaves it just as closed, so offering the
+ * action there would be a button that does nothing.
+ *
+ * @param deadline - The session's attendance deadline
+ * @param closedAt - When an admin announced the line-up, null when they have not
+ * @param now - Current moment
+ * @returns true when reopening would make the day answerable again
+ */
+export function canReopenAttendance(
+  deadline: Date,
+  closedAt: Date | null,
+  now: Date,
+): boolean {
+  return closedAt !== null && !isDeadlinePassed(deadline, now);
+}
+
+/**
  * Which deadlines one reminder run looks at.
  *
  * `today` is the daily rule the cron follows (`isReminderDay`). `week` is every deadline of the open
