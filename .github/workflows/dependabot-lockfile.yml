@@ -73,11 +73,16 @@ jobs:
             exit 1
           fi
 
+          # base64 của lockfile dài ~640 KB, vượt MAX_ARG_STRLEN (128 KiB) của Linux nên
+          # `--arg contents "$(...)"` chết với "Argument list too long". `--rawfile` đọc thẳng
+          # từ file, không đi qua argv, nên không có trần độ dài.
+          base64 -w0 pnpm-lock.yaml > "$RUNNER_TEMP/lockfile.b64"
+
           jq -n \
             --arg repo "$GITHUB_REPOSITORY" \
             --arg branch "$BRANCH" \
             --arg oid "$EXPECTED_HEAD" \
-            --arg contents "$(base64 -w0 pnpm-lock.yaml)" \
+            --rawfile contents "$RUNNER_TEMP/lockfile.b64" \
             '{
               query: "mutation($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { oid } } }",
               variables: {
@@ -85,7 +90,7 @@ jobs:
                   branch: { repositoryNameWithOwner: $repo, branchName: $branch },
                   expectedHeadOid: $oid,
                   message: { headline: "chore(deps): sync pnpm-lock.yaml with the bumped manifests" },
-                  fileChanges: { additions: [{ path: "pnpm-lock.yaml", contents: $contents }] }
+                  fileChanges: { additions: [{ path: "pnpm-lock.yaml", contents: ($contents | rtrimstr("\n")) }] }
                 }
               }
             }' > "$RUNNER_TEMP/payload.json"
