@@ -166,8 +166,9 @@ describe("proxy", () => {
     expect(refreshRequest).not.toHaveBeenCalled();
   });
 
-  // Trang điểm danh nằm ở trần tên miền, nên phiên chết ở đó là người ta quay lại trang giới thiệu
-  // chứ không phải một form đăng nhập trống - trang giới thiệu có sẵn nút đăng nhập để đi tiếp.
+  // The attendance page sits at the bare domain, so a session dying there sends people back to the
+  // landing page rather than to an empty login form - the landing page already carries a login
+  // button to move on with.
   it("đưa trang điểm danh về trang giới thiệu khi phiên đã chết", async () => {
     const response = await proxy(
       request(ROUTES.attendance, { access: await token(-10) })
@@ -181,8 +182,9 @@ describe("proxy", () => {
 
   describe("khi chữ ký không phải của mình", () => {
     it("nói ra thay vì im lặng như một phiên hết hạn", async () => {
-      // AUTH_SECRET lệch giữa hai app: cả access lẫn refresh đều verify bằng secret của web, nên cả
-      // hai hỏng cùng lúc và người dùng bị đá về đăng nhập ngay sau khi vừa đăng nhập xong.
+      // AUTH_SECRET differs between the two apps: both access and refresh are verified with the web
+      // app's secret, so both fail at once and the user is thrown back to login right after logging
+      // in.
       const foreign = await signToken({ secret: "secret-cua-app-khac" });
 
       const response = await proxy(
@@ -198,8 +200,8 @@ describe("proxy", () => {
     });
 
     it("phiên hết hạn bình thường thì không mang mã lỗi nào", async () => {
-      // Không phải trần tên miền: ở đó một phiên chết đi về trang giới thiệu, và câu hỏi "có mã lỗi
-      // trên URL đăng nhập không" sẽ không còn chỗ để hỏi.
+      // Not the bare domain: there a dead session goes to the landing page, and the question "is
+      // there an error code on the login URL" would have nowhere left to be asked.
       const response = await proxy(
         request(ROUTES.teamBuilder, {
           access: await token(-10),
@@ -212,8 +214,9 @@ describe("proxy", () => {
     });
 
     it("một chữ ký hợp lệ là đủ để không đổ cho cấu hình", async () => {
-      // Access cookie hỏng nhưng refresh vẫn ký đúng secret của mình, và API từ chối refresh (sập,
-      // hoặc chủ thẻ vừa bị gỡ khỏi bang). Secret rõ ràng không sai - đừng bảo người ta đi báo admin.
+      // The access cookie is broken while the refresh one is signed with the right secret, and the
+      // API refuses the refresh (it is down, or the holder was just removed from the guild). The
+      // secret is plainly not the problem - do not send the user off to tell an admin.
       refreshRequest.mockRejectedValue(new Error("API sập"));
 
       const response = await proxy(
@@ -228,7 +231,8 @@ describe("proxy", () => {
     });
 
     it("cookie rỗng không phải là token ai đó đã ký", async () => {
-      // Ô cookie có mặt nhưng trống rỗng: không có chữ ký nào sai cả, nên đừng đổ cho cấu hình.
+      // The cookie slot is present but empty: no signature is wrong here, so do not blame the
+      // configuration.
       const req = request(ROUTES.attendance);
       req.cookies.set(ACCESS_TOKEN_COOKIE, "");
       req.cookies.set(REFRESH_TOKEN_COOKIE, "");

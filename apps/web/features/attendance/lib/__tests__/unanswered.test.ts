@@ -31,7 +31,7 @@ describe("countUnanswered", () => {
     expect(countUnanswered(sessions, answered("b"), CHARACTER_ID)).toBe(2);
   });
 
-  // Trận đã khoá thì không còn điểm danh được nữa, nhắc là vô ích.
+  // Once a match is locked there is no answering it, so a nudge is pointless.
   it("không tính trận đã khoá", () => {
     const sessions = [session("a", true), session("b")];
 

@@ -44,8 +44,8 @@ describe("readCaptureNodes", () => {
     ]);
   });
 
-  // Ảnh đi thẳng tới cả bang và không có bước nào duyệt lại, nên gửi thiếu một trận trong im lặng
-  // là hỏng tệ hơn hẳn so với báo lỗi rồi bắt bấm lại.
+  // The images go straight to the whole guild with no review step, so silently sending one match
+  // short is a far worse failure than raising an error and making someone press again.
   it("thiếu node so với số trận thì ném, không gửi thiếu", () => {
     renderCaptureNodes(1);
 
@@ -56,7 +56,8 @@ describe("readCaptureNodes", () => {
     expect(() => readCaptureNodes(1)).toThrow(CaptureCountError);
   });
 
-  // Hai sheet cùng mount cho chỉ số trùng nhau, nên không cách nào ghép ảnh với trận cho đúng.
+  // Two sheets mounted at once produce colliding indexes, so there is no way to match an image to
+  // its match correctly.
   it("thừa node — hai sheet cùng mount — thì ném", () => {
     renderCaptureNodes(4);
 

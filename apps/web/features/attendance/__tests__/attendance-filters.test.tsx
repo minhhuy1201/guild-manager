@@ -32,7 +32,7 @@ describe("AttendanceFilters - chip Chưa điểm danh", () => {
     expect(chip().getAttribute("aria-pressed")).toBe("false");
   });
 
-  // Lọc này thuộc bảng điểm danh; màn Lịch sử có bộ lọc trạng thái riêng.
+  // This filter belongs to the attendance table; the history screen has its own status filter.
   it("màn Lịch sử không có chip", () => {
     render(<AttendanceFilters scope="history" />);
 

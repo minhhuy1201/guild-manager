@@ -181,7 +181,7 @@ describe("AttendanceLogTable", () => {
     expect(rowCount()).toBe(4);
   });
 
-  // Tìm kiếm, lưu phái và trạng thái chỉ lọc bảng này, nên nằm ngay trong header của nó.
+  // Search, class and status filter this table alone, so they sit in its own header.
   it("thanh lọc của bảng nằm trong chính thẻ bảng", async () => {
     await renderTable();
 
@@ -198,12 +198,12 @@ describe("AttendanceLogTable", () => {
 
     expect(screen.getByRole("columnheader", { name: "Lý do" })).toBeTruthy();
     expect(screen.getByText("Bận đi công tác")).toBeTruthy();
-    // Ba lượt còn lại không có lý do.
+    // The other three entries carry no reason.
     expect(screen.getAllByText("—").length).toBe(3);
   });
 
-  // Cột lý do có giới hạn bề ngang; trên điện thoại `title` không hiện được, nên lý do bị cắt phải
-  // mở ra được bằng một lần chạm.
+  // The reason column has a width limit and `title` never shows on a phone, so a truncated reason
+  // has to open with one tap.
   it("lý do vắng bấm vào được để đọc đủ, không nằm trong title", async () => {
     await renderTable();
 

@@ -17,8 +17,9 @@ afterEach(() => {
 
 describe("useSessionRecovery", () => {
   it("gặp 401 thì làm mới trang và nói phiên vừa được khôi phục", () => {
-    // Server Action đọc cookie rồi gọi API thẳng; chỉ có proxy mới đổi được cặp token, mà proxy chỉ
-    // chạy khi điều hướng. Bấm lại mà không điều hướng thì lỗi y hệt.
+    // A Server Action reads the cookies and calls the API directly; only the proxy can swap the
+    // token pair, and the proxy runs on navigation alone. Pressing again without navigating fails
+    // exactly the same way.
     const { result } = renderHook(() => useSessionRecovery());
 
     const handled = result.current(new ApiError("Bạn cần đăng nhập.", 401));

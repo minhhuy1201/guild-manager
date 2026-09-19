@@ -87,7 +87,7 @@ describe("TeamNameField — mở ô nhập", () => {
     expect(input()).toBeTruthy();
   });
 
-  // Nhấn đúp là thao tác không ai tự đoán ra; nút bút chì là lối vào nhìn thấy được.
+  // Nobody guesses at a double-click; the pencil button is the visible way in.
   it("bấm một lần vào nút bút chì thì mở ô nhập", () => {
     renderField({ value: "Thủ nhà" });
 

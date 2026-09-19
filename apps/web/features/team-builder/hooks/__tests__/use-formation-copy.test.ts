@@ -37,7 +37,7 @@ const SESSIONS = [
   makeSession("thu-5", { label: "Thứ 5 · 20:30" }),
 ];
 
-/** Matches shown for the week: Thứ 3 holds a line-up, Thứ 5 is empty. */
+/** Matches shown for the week: "Thứ 3" holds a line-up, "Thứ 5" is empty. */
 const MATCHES: Record<string, MatchDraft[]> = {
   "thu-3": [{ assignment: { [SLOT]: "char-1" }, notes: { [SLOT]: "giữ cửa" } }],
   "thu-5": [{ assignment: { [SLOT]: null }, notes: {} }],

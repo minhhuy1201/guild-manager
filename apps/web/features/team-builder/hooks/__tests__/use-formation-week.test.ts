@@ -83,8 +83,8 @@ describe("useFormationWeek", () => {
 
     await waitFor(() => expect(result.current.isPending).toBe(false));
 
-    // Hôm nay là hai lượt: một lượt với `undefined` khi chưa biết tuần nào, rồi
-    // một lượt nữa với chính tuần đó ngay khi danh sách tuần về.
+    // Today is two passes: one with `undefined` while no week is known, then another with that very
+    // week as soon as the week list arrives.
     expect(fetchFormationsMock).toHaveBeenCalledTimes(1);
     expect(fetchFormationsMock).toHaveBeenCalledWith(OPEN_WEEK);
   });
@@ -165,8 +165,8 @@ describe("useFormationWeek", () => {
   });
 
   it("không tuần nào có dữ liệu thì màn hình trống, không kẹt loading", async () => {
-    // Nhánh mà điều kiện "weekStart khác undefined" sẽ treo vĩnh viễn:
-    // findActiveWeekStart([]) trả null, nên tuần không bao giờ được chốt.
+    // The branch where a "weekStart is not undefined" condition would hang forever:
+    // findActiveWeekStart([]) returns null, so the week is never settled.
     fetchWeeksMock.mockResolvedValue([]);
     fetchFormationsMock.mockResolvedValue([]);
 
@@ -190,9 +190,9 @@ describe("useFormationWeek", () => {
   });
 
   it("thử lại khi query tuần đang lỗi vẫn chỉ tải đội hình một lần", async () => {
-    // refetch() của TanStack bỏ qua `enabled`, nên nút "Thử lại" bấm lúc query
-    // tuần đang lỗi có thể chui qua chỗ park và tải lại đúng cái bug này sinh ra
-    // để chặn: một lượt với "current", rồi một lượt nữa với tuần thật.
+    // TanStack's refetch() ignores `enabled`, so pressing "Thử lại" while the week query is failing
+    // can slip past the park and reload exactly what this guard exists to prevent: one pass with
+    // "current", then another with the real week.
     fetchWeeksMock.mockRejectedValueOnce(new ApiError("Hỏng rồi.", 500));
 
     const { result } = renderFormationHook(() => useFormationWeek());

@@ -61,7 +61,8 @@ describe("AnnounceFormationDialog", () => {
     expect(onConfirm).toHaveBeenCalledOnce();
   });
 
-  // Ảnh gửi cho cả bang mà khác dữ liệu đã lưu là mâu thuẫn không ai gỡ được về sau.
+  // An image sent to the whole guild that differs from the saved data is a contradiction nobody can
+  // untangle later.
   it("còn thay đổi chưa lưu thì chặn gửi và nói phải lưu trước", () => {
     renderDialog({ blocked: true });
 

@@ -45,7 +45,8 @@ describe("timeLeft", () => {
     );
   });
 
-  // Đồng hồ máy người dùng có thể nhanh hơn server: API chưa khoá thì chưa được nói là đã khoá.
+  // A user's clock can run ahead of the server's: while the API has not closed it, we must not say
+  // it is closed.
   it("đồng hồ máy đã qua hạn mà API chưa khoá thì vẫn chỉ nói sắp khoá", () => {
     expect(timeLeft(inMinutes(-3), NOW)).toEqual({
       label: "sắp khoá",

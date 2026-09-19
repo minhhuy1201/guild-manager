@@ -25,7 +25,7 @@ describe("Trang lỗi", () => {
     ).toBe(ROUTES.attendance);
   });
 
-  // Câu lỗi kỹ thuật không có nghĩa gì với thành viên bang.
+  // A technical error sentence means nothing to a guild member.
   it("không in câu lỗi kỹ thuật ra màn hình", () => {
     const { container } = render(
       <ErrorPage error={new Error("TypeError: x is undefined")} reset={vi.fn()} />

@@ -64,7 +64,8 @@ describe("GuildClassFilterSelect - nút xoá", () => {
   });
 
   it("nút xoá là phần tử anh em, không nằm trong trigger", () => {
-    // Trigger tự nó là một <button>; lồng button trong button là markup trình duyệt sẽ xé ra.
+    // The trigger is itself a <button>; nesting a button inside one is markup the browser tears
+    // apart.
     render(
       <GuildClassFilterSelect
         id="test"
@@ -79,8 +80,8 @@ describe("GuildClassFilterSelect - nút xoá", () => {
   });
 
   it("có nút xoá thì trigger vẫn giữ nguyên lề phải của chính nó", () => {
-    // Lề phải của trigger là chỗ đứng của mũi tên chevron, không phải chỗ đứng của chữ: nới nó ra
-    // thì chevron bị đẩy vào trong và để lại một khoảng trắng ở mép phải.
+    // The trigger's right padding is where the chevron stands, not where the text does: widening it
+    // pushes the chevron inwards and leaves a gap at the right edge.
     render(
       <GuildClassFilterSelect
         id="test"

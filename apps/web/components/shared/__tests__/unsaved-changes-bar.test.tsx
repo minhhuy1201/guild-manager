@@ -77,7 +77,8 @@ describe("UnsavedChangesBar", () => {
   });
 });
 
-// Ctrl+Z không có trên điện thoại: thanh Lưu mang thêm nút Hoàn tác cho màn nào có bước để hoàn tác.
+// There is no Ctrl+Z on a phone: the save bar carries an undo button on any screen that has a step
+// to undo.
 describe("UnsavedChangesBar - nút Hoàn tác", () => {
   it("có undo thì có nút Hoàn tác, bấm gọi onUndo một lần", () => {
     const onUndo = vi.fn();
@@ -100,7 +101,7 @@ describe("UnsavedChangesBar - nút Hoàn tác", () => {
     expect(button(/Hoàn tác/).disabled).toBe(true);
   });
 
-  // Bảng điểm danh dùng chung thanh này nhưng không có lịch sử hoàn tác.
+  // The attendance board shares this bar but keeps no undo history.
   it("không truyền undo thì không có nút Hoàn tác", () => {
     renderBar();
 

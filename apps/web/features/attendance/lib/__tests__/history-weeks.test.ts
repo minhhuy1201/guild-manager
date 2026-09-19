@@ -23,7 +23,8 @@ describe("historyWeekOptions", () => {
   });
 
   it("nhãn là khoảng thứ Hai đến thứ Bảy, đọc theo giờ Việt Nam", () => {
-    // Thứ Hai 07/09 đến thứ Bảy 12/09. Đọc theo đồng hồ máy thì máy ở phía tây sẽ ra 06/09.
+    // Monday 07/09 through Saturday 12/09. Read off the local clock, a machine further west would
+    // give 06/09.
     const [first] = historyWeekOptions(CURRENT_WEEK);
 
     expect(first.label).toBe("07/09 - 12/09");

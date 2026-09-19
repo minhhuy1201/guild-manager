@@ -25,10 +25,11 @@ describe("FilterClearButton", () => {
   });
 
   it("không tự căn giữa bằng transform", () => {
-    // `Button` đã dùng `--tw-translate-y` cho hiệu ứng nhấn
-    // (`active:not-aria-[haspopup]:translate-y-px`). Một `-translate-y-1/2` để căn giữa sẽ bị đè
-    // ngay khi con trỏ nhấn xuống: nút tụt xuống gần nửa chiều cao của nó, con trỏ rơi ra ngoài
-    // nút, và trình duyệt không phát `click` — người dùng phải bấm lần thứ hai.
+    // `Button` already uses `--tw-translate-y` for its press effect
+    // (`active:not-aria-[haspopup]:translate-y-px`). A `-translate-y-1/2` used for centring is
+    // overridden the moment the pointer goes down: the button drops by nearly half its own height,
+    // the pointer ends up outside it, and the browser never fires `click` - so the user has to
+    // press a second time.
     render(<FilterClearButton label="Xoá từ khoá" onClear={vi.fn()} />);
 
     expect(clearButton().className).not.toContain("translate-y-1/2");

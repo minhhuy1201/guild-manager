@@ -64,7 +64,8 @@ beforeEach(() => {
 });
 
 describe("AttendanceSummaryDashboard", () => {
-  // Biểu đồ trả lời "cả bang đi bao nhiêu, chia theo lưu phái"; bộ lọc người nằm ở bảng bên dưới.
+  // The chart answers "how much of the guild turned up, split by class"; the per-person filters
+  // live in the table below.
   it("đang tìm một cái tên hay lọc một lưu phái thì biểu đồ vẫn tính cả bang", () => {
     useAttendanceFilterStore.setState({
       filters: {

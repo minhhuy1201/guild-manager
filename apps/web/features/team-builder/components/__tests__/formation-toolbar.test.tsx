@@ -99,14 +99,15 @@ describe("FormationToolbar — nút gửi Discord", () => {
     expect(button.disabled).toBe(true);
   });
 
-  // Trận đã đá xong thì không còn gì để thông báo.
+  // Once a match has been played there is nothing left to announce.
   it("ngày đã đánh xong thì không có nút gửi", () => {
     renderToolbar({ editable: false });
 
     expect(screen.queryByRole("button", { name: /Gửi Discord/ })).toBeNull();
   });
 
-  // Ảnh gửi đi phải là đội hình đã lưu, nên chặn ngay ở nút thay vì đợi mở dialog mới báo.
+  // The image that goes out has to be the saved line-up, so block at the button rather than waiting
+  // for the dialog to say so.
   it("còn thay đổi chưa lưu thì khoá nút gửi", () => {
     renderToolbar({ dirty: true });
 
@@ -118,7 +119,8 @@ describe("FormationToolbar — nút gửi Discord", () => {
   });
 });
 
-// Trên điện thoại không có hover để mở tooltip, và nhãn copy đầy đủ rộng gần hết màn hình.
+// A phone has no hover to open a tooltip, and the full copy label takes up nearly the whole
+// screen.
 describe("FormationToolbar - dùng được bằng tay trên điện thoại", () => {
   it("còn thay đổi chưa lưu thì dòng 'Lưu trước khi gửi' hiện bằng chữ", () => {
     renderToolbar({ dirty: true });
@@ -149,7 +151,8 @@ describe("FormationToolbar - dùng được bằng tay trên điện thoại", (
 });
 
 describe("FormationToolbar - lưu và đặt lại", () => {
-  // Hai nút này nằm ở thanh dính đáy, để luôn thấy dù đang cuộn ở đâu.
+  // These two buttons live in the bar stuck to the bottom, so they stay visible wherever the page
+  // is scrolled.
   it("không còn nút Lưu và Đặt lại ở toolbar", () => {
     renderToolbar({ dirty: true });
 

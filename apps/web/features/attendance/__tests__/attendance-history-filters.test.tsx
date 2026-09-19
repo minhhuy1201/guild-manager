@@ -118,7 +118,8 @@ beforeEach(() => {
 });
 
 describe("AttendanceHistoryScope - bộ lọc của cả trang", () => {
-  // Tuần và ngày đánh chọn dữ liệu cho cả biểu đồ lẫn bảng, nên đứng trên cùng.
+  // The week and match day pick the data for both the chart and the table, so they sit at the
+  // top.
   it("chỉ có Tuần và Ngày đánh", () => {
     render(<AttendanceHistoryScope />);
 
@@ -165,7 +166,8 @@ describe("AttendanceHistoryScope - bộ lọc của cả trang", () => {
 });
 
 describe("AttendanceHistoryFilters - bộ lọc của bảng", () => {
-  // Biểu đồ không theo ba bộ lọc này, nên chúng nằm với bảng chứ không đứng trên biểu đồ.
+  // The chart does not follow these three filters, so they belong with the table rather than above
+  // the chart.
   it("có tìm kiếm, lưu phái và trạng thái, không có Tuần và Ngày đánh", () => {
     render(<AttendanceHistoryFilters />);
 

@@ -68,8 +68,9 @@ describe("useInvalidate", () => {
   });
 
   it("chỉ resolve sau khi mọi invalidation xong", async () => {
-    // Đây là hợp đồng khiến mutation giữ trạng thái pending tới lúc dữ liệu mới về: onSuccess trả
-    // promise này, nên spinner còn quay thay vì tắt sớm rồi để màn hình đứng im với dữ liệu cũ.
+    // This is the contract that keeps a mutation pending until the new data arrives: onSuccess
+    // returns this promise, so the spinner keeps turning instead of stopping early and leaving the
+    // screen sitting on stale data.
     const { result, invalidateSpy } = renderInvalidate("attendance");
     let finishInvalidation = () => {};
     invalidateSpy.mockReturnValue(

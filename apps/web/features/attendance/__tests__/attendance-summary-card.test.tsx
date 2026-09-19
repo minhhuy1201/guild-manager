@@ -37,7 +37,8 @@ const ROWS: ClassAttendanceSummary[] = [
 ];
 
 describe("AttendanceSummaryCard", () => {
-  // Biểu đồ phải hover mới đọc được số; header nói thẳng ba con số của trận.
+  // The chart only gives its numbers on hover; the header states the match's three numbers
+  // outright.
   it("header ghi rõ số Có, Không và Chưa của cả trận", () => {
     render(<AttendanceSummaryCard session={SESSION} rows={ROWS} domainMax={3} />);
 

@@ -105,7 +105,8 @@ describe("AttendanceRow - chỉ đọc", () => {
     expect(screen.getByText("Bận đi công tác")).toBeTruthy();
   });
 
-  // Ô hẹp nên lý do dài bị cắt; trên điện thoại chạm vào là cách duy nhất để đọc đủ.
+  // The cell is narrow so a long reason is truncated; on a phone a tap is the only way to read it
+  // in full.
   it("lý do vắng bấm vào được để đọc đủ, không nằm trong title", () => {
     renderRow({ recordMap: makeRecordMap("Bận đi công tác"), canEdit: false });
 
@@ -120,7 +121,7 @@ describe("AttendanceRow - chỉ đọc", () => {
     expect(screen.queryByRole("button")).toBeNull();
   });
 
-  // Cột thao tác bên phải đã bỏ: hàng chỉ còn cột tên và các cột ngày.
+  // The actions column on the right is gone: the row is the name column and the day columns.
   it("hàng chỉ có cột tên và các cột ngày", () => {
     renderRow();
 
@@ -153,7 +154,7 @@ describe("AttendanceRow - admin bấm thẳng vào ô", () => {
 
     expect(cellButton().getAttribute("aria-label")).toContain("Có");
     expect(cellButton().dataset.changed).toBe("true");
-    // Lý do cũ đi với câu trả lời cũ, nên không hiện dưới câu trả lời mới.
+    // The old reason belongs to the old answer, so it is not shown under the new one.
     expect(screen.queryByText("Bận")).toBeNull();
   });
 

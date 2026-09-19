@@ -8,8 +8,8 @@ const REASON = "Bận đi công tác ở Đà Nẵng cả tuần, về muộn n�
 
 afterEach(cleanup);
 
-// Ô chỉ đủ chỗ cho hai dòng, và trên điện thoại không có hover để mở tooltip hay `title`, nên lý do
-// bị cắt phải đọc đủ được bằng một lần chạm.
+// The cell only fits two lines, and a phone has no hover to open a tooltip or `title`, so a
+// truncated reason has to be readable in full with one tap.
 describe("AbsenceReasonText", () => {
   it("bấm vào lý do thì thấy lý do đầy đủ", async () => {
     render(<AbsenceReasonText reason={REASON} />);

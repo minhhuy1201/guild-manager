@@ -16,7 +16,7 @@ const CHARACTER: Character = {
 
 const WARNING = "Đã báo nghỉ trận này";
 
-// Trên điện thoại không có hover để mở tooltip, nên điều cần biết phải nằm ngay trên thẻ.
+// A phone has no hover to open a tooltip, so what needs knowing has to be on the card itself.
 describe("MemberCard - không phụ thuộc hover", () => {
   it("có cảnh báo thì cảnh báo hiện bằng chữ trên thẻ", () => {
     render(<MemberCard character={CHARACTER} warning={WARNING} />);
@@ -30,7 +30,8 @@ describe("MemberCard - không phụ thuộc hover", () => {
     expect(screen.queryByText(WARNING)).toBeNull();
   });
 
-  // Một dòng cắt tên dài chỉ còn vài chữ, và tooltip giữ tên đầy đủ thì ngón tay không mở được.
+  // A single line cuts a long name down to a few characters, and a finger cannot open the tooltip
+  // holding the full one.
   it("tên xuống tối đa hai dòng thay vì bị cắt một dòng", () => {
     render(<MemberCard character={CHARACTER} />);
 

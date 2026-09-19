@@ -10,8 +10,8 @@ import { MainNav } from "../main-nav";
 
 afterEach(cleanup);
 
-// Từ sm tới lg (điện thoại xoay ngang, tablet) bốn nhãn đầy đủ ép mất tên bang trên header, nên ở
-// đó nav dùng nhãn ngắn. Screen reader vẫn đọc tên đầy đủ.
+// From sm to lg (landscape phones, tablets) four full labels squeeze the guild name out of the
+// header, so the nav uses short labels there. A screen reader still reads the full name.
 describe("MainNav - nhãn ngắn dưới lg", () => {
   it("mục có nhãn ngắn: tên truy cập là nhãn đầy đủ, dưới lg hiện chữ ngắn", () => {
     render(<MainNav isAdmin={false} />);

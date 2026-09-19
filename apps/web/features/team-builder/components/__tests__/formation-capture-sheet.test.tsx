@@ -58,7 +58,7 @@ describe("FormationCaptureSheet", () => {
     ).toBe(2);
   });
 
-  // Ảnh không được đổi theo bề rộng cửa sổ của người bấm nút.
+  // The image must not change with the window width of whoever pressed the button.
   it("ép lưới 5 cột thay vì bộ class responsive", () => {
     const { container } = renderSheet([EMPTY_MATCH]);
     const grid = container.querySelector(".grid") as HTMLElement;
@@ -67,7 +67,8 @@ describe("FormationCaptureSheet", () => {
     expect(grid.className).not.toContain("lg:grid-cols-5");
   });
 
-  // Màn hình thu gọn ghi chú và banner, còn ảnh gửi Discord giữ nguyên như trước.
+  // The screen collapses the notes and the banner, while the image sent to Discord stays as it
+  // was.
   it("mỗi ô trong ảnh vẫn có cột ghi chú", () => {
     const { container } = renderSheet([EMPTY_MATCH]);
 

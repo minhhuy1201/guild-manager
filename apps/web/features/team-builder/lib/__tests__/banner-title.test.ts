@@ -6,7 +6,7 @@ vi.mock("server-only", () => ({}));
 
 import { buildBannerTitle } from "../banner-title";
 
-/** 20:30 giờ Việt Nam, thứ Tư 03/09/2025. */
+/** 20:30 Vietnam time, Wednesday 03/09/2025. */
 const DATE_TIME = "2025-09-03T13:30:00.000Z";
 
 const BASE = {

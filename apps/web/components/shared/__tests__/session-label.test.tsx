@@ -126,7 +126,8 @@ describe("SessionDeadline", () => {
     expect(container.textContent).toBe(`Hạn chót: ${formatDateTime(deadline)}`);
   });
 
-  // Giờ tuyệt đối bắt người đọc tự trừ; trận còn mở thì nói luôn còn bao lâu.
+  // An absolute time makes the reader do the subtraction; while a match is still open, say how long
+  // is left.
   it("trận còn mở thì thêm còn bao lâu", () => {
     const deadline = new Date(
       Date.now() + (3 * 24 + 1) * 60 * 60 * 1000

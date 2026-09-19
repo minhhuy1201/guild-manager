@@ -7,7 +7,7 @@ export const ATTENDANCE_REASON_MAX_LENGTH = 255;
 export const markAttendanceSchema = z.object({
   characterId: z.string().min(1, "Thiếu thành viên."),
   sessionId: z.string().min(1, "Thiếu ngày đánh."),
-  /** True = "Có" (đi đánh), false = "Không". */
+  /** True = "Có" (attending), false = "Không". */
   isPresent: z.boolean(),
   /**
    * Why the member answered "Không". Nullish rather than optional: sending `null` is how a stored
@@ -26,7 +26,7 @@ export type MarkAttendanceInput = z.infer<typeof markAttendanceSchema>;
 export const attendanceRecordSchema = z.object({
   characterId: z.string(),
   sessionId: z.string(),
-  /** True = "Có" (đi đánh), false = "Không". */
+  /** True = "Có" (attending), false = "Không". */
   isPresent: z.boolean(),
   /** When attendance was recorded (ISO string) */
   markedAt: z.string(),

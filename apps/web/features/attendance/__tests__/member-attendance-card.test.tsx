@@ -163,7 +163,8 @@ describe("MemberAttendanceCard", () => {
     toastError.mockClear();
   });
 
-  // Thẻ này đã gánh luôn lịch tuần, nên tài khoản chưa có nhân vật vẫn phải thấy lịch.
+  // This card now carries the week schedule too, so an account with no character must still see
+  // the schedule.
   it("tài khoản chưa gắn nhân vật vẫn thấy lịch tuần, chỉ đọc, kèm lời nhắn", () => {
     character = null;
 
@@ -285,8 +286,9 @@ describe("MemberAttendanceCard", () => {
   });
 
   it("access token hết hạn qua đêm thì làm mới phiên, không chỉ báo lỗi", async () => {
-    // Tab mở từ tối hôm trước: access sống 1 ngày, refresh sống 7. Server Action đọc cookie rồi gọi
-    // API thẳng, không có bước làm mới nào, nên bấm lại vẫn 401 y hệt — đọc như "app hỏng".
+    // A tab left open since the previous evening: access lives a day, refresh lives seven. A Server
+    // Action reads the cookies and calls the API directly with no refresh step, so pressing again
+    // gives the same 401 - which reads as "the app is broken".
     markState.mutateAsync.mockRejectedValueOnce(
       new ApiError("Bạn cần đăng nhập.", 401)
     );
@@ -404,7 +406,7 @@ describe("MemberAttendanceCard", () => {
     expect(input.maxLength).toBe(255);
   });
 
-  // Trên điện thoại không có hover, nên cách lưu phải nằm ở chữ thấy được, không ở tooltip hay title.
+  // A phone has no hover, so how to save has to be in visible text, not in a tooltip or a title.
   it("ô lý do nói rõ bấm Enter để lưu ở placeholder, không dựa vào tooltip hay title", () => {
     records = makeRecords("sess-1", false);
 
@@ -489,8 +491,8 @@ describe("MemberAttendanceCard", () => {
     expect(input.value).toBe("Ốm");
   });
 
-  // Click ra ngoài là chuyện vô tình: không lưu, nhưng cũng không được để người dùng tưởng đã lưu.
-  // Dòng chưa lưu nói luôn cách lưu, vì gợi ý trong tooltip không tới được ngón tay.
+  // Clicking outside is accidental: do not save, but do not let the user believe it saved either.
+  // The unsaved line says how to save, because a hint inside a tooltip never reaches a finger.
   it("gõ lý do rồi click ra ngoài thì chữ vẫn còn, kèm nút Lưu và dòng chưa lưu nói cách lưu", () => {
     records = makeRecords("sess-1", false);
 

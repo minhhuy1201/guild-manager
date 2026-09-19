@@ -51,7 +51,7 @@ describe("SettingsTabs - tab nằm trên URL", () => {
     expect(tab(/Thiết lập lịch đánh/).getAttribute("aria-selected")).toBe("true");
   });
 
-  // Tải lại trang hay mở lại link phải về đúng tab đang làm.
+  // A page reload or a reopened link has to land back on the tab being worked on.
   it("?tab=members mở tab thành viên", () => {
     params = new URLSearchParams("tab=members");
 
@@ -89,8 +89,9 @@ describe("SettingsTabs - tab nằm trên URL", () => {
   });
 });
 
-// Hai nhãn đầy đủ rộng hơn màn điện thoại: dải tab tràn làm cả trang rộng ra và thanh tab đáy lọt
-// khỏi màn hình. Dưới sm chữ ngắn lại, còn screen reader vẫn đọc tên đầy đủ.
+// Two full labels are wider than a phone screen: the tab strip overflows, the whole page widens
+// and the bottom tab bar slips off screen. Below sm the text shortens, while a screen reader still
+// reads the full name.
 describe("SettingsTabs - vừa màn điện thoại", () => {
   it.each([
     ["Thiết lập lịch đánh", "Lịch đánh"],

@@ -154,8 +154,9 @@ describe("MutationDialog", () => {
   });
 
   it("401 thì làm mới phiên thay vì báo lỗi trong dialog", async () => {
-    // Mở dialog rồi để đó qua đêm: access token hết hạn, refresh vẫn còn. Chỉ điều hướng mới đổi
-    // được cặp token, nên báo "Bạn cần đăng nhập." rồi dừng là mời người ta bấm lại vào chỗ hỏng.
+    // Open the dialog and leave it overnight: the access token expires while the refresh one lives
+    // on. Only a navigation can swap the token pair, so saying "Bạn cần đăng nhập." and stopping
+    // invites the user to press again on the thing that is broken.
     renderDialog({
       run: async () => {
         throw new ApiError("Bạn cần đăng nhập.", 401);

@@ -86,10 +86,11 @@ describe("TablePagination", () => {
     expect(atPageOne).toBeGreaterThan(-1);
   });
 
-  // Mười một ô size-10 rộng hơn màn điện thoại: dải số tràn ra làm cả trang bị thu nhỏ, và thanh
-  // tab cố định ở đáy rơi xuống dưới màn hình. Ẩn tới lg chứ không chỉ tới sm: điện thoại xoay
-  // ngang rộng 640-1000px, và ở đó dải số hiện lại cũng làm trang tràn (945px ở 915px). Vị trí
-  // trang đã có dòng "trang x/y" bên cạnh nói.
+  // Eleven size-10 cells are wider than a phone screen: the number strip overflows, the whole page
+  // scales down, and the tab bar pinned to the bottom falls below the viewport. Hidden up to lg
+  // rather than only up to sm: a landscape phone is 640-1000px wide, and the strip reappearing
+  // there overflows the page too (945px inside 915px). The "trang x/y" line beside it already gives
+  // the position.
   it("dưới lg chỉ còn bốn nút mũi tên, các ô số trang đều ẩn", () => {
     const { container } = render(
       <TablePagination page={4} pageCount={8} onPageChange={() => {}} />

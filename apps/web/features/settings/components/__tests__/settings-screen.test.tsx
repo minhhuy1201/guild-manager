@@ -19,7 +19,7 @@ import { SettingsScreen } from "../settings-screen";
 afterEach(cleanup);
 
 describe("SettingsScreen", () => {
-  // Tên tab đứng ngay phía trên; lặp nó thành tiêu đề trong card chỉ tốn một dòng.
+  // The tab name is right above; repeating it as a heading inside the card only costs a line.
   it("không lặp tên tab thành tiêu đề, vẫn giữ dòng mô tả", () => {
     render(<SettingsScreen />);
 

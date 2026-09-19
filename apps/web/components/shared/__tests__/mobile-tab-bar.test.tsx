@@ -25,7 +25,8 @@ function tabLabels(): string[] {
 }
 
 describe("MobileTabBar", () => {
-  // Trên điện thoại hai icon Điểm danh và Lịch sử khó phân biệt, nên mục nào cũng phải có chữ.
+  // On a phone the "Điểm danh" and "Lịch sử" icons are hard to tell apart, so every item needs its
+  // text.
   it("member thấy hai mục, mục nào cũng có chữ", () => {
     render(<MobileTabBar isAdmin={false} />);
 
@@ -51,7 +52,8 @@ describe("MobileTabBar", () => {
     ).toBeNull();
   });
 
-  // globals.css chỉ chừa khoảng đáy cho trang khi thanh này có mặt, và tìm nó qua thuộc tính này.
+  // globals.css only reserves bottom room for the page when this bar is present, and it finds the
+  // bar through this attribute.
   it("mang data-slot mà globals.css dựa vào để chừa khoảng đáy", () => {
     const { container } = render(<MobileTabBar isAdmin={false} />);
 
