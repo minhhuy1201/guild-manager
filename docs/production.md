@@ -623,10 +623,14 @@ shape it, and each one is a wrong turn already taken by someone:
 2. **The credential must be a *Dependabot* secret, not an Actions secret.** Runs triggered by
    Dependabot read `secrets.*` from the Dependabot store; an Actions secret of the same name is
    invisible there and the step fails with an empty token.
-3. **The commit must be created through the GraphQL API**, not `git push`. The ruleset requires
-   signed commits and a runner has no signing key, whereas a commit created through
-   `createCommitOnBranch` is signed by GitHub. The mutation's `expectedHeadOid` is what keeps a
-   Dependabot force-push mid-run from landing a lockfile on top of a different manifest.
+3. **The commit goes through the GraphQL API rather than `git push` — but not for the reason it
+   looks like.** `main protection` is scoped to `~DEFAULT_BRANCH`, so *none* of its rules, signed
+   commits included, reach a `dependabot/*` branch; that is also why Dependabot can push there
+   without a PR of its own. A `git push` would be accepted. `createCommitOnBranch` is preferred
+   because it needs no git identity or credential helper on the runner for a single file, and
+   because GitHub signs what it creates, so the branch does not carry one unsigned commit among
+   signed ones. Its `expectedHeadOid` is a compare-and-set that keeps a Dependabot force-push
+   mid-run from landing a lockfile on top of a different manifest.
 
 **Setup, once.** Create a fine-grained PAT scoped to this repository with `Contents: read and write`,
 then store it under *Settings → Secrets and variables → **Dependabot*** as

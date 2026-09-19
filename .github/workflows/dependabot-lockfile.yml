@@ -8,14 +8,13 @@ concurrency:
   group: dependabot-lockfile-${{ github.ref }}
   cancel-in-progress: true
 
-# GITHUB_TOKEN của một run do Dependabot kích hoạt luôn là read-only, kể cả khi khai báo rộng
-# hơn. Commit ở bước cuối vì thế đi bằng PAT riêng, không bằng token mặc định.
-permissions:
-  contents: read
-
 jobs:
   sync-lockfile:
     name: Sync pnpm lockfile
+    # GITHUB_TOKEN của một run do Dependabot kích hoạt luôn là read-only, kể cả khi khai báo rộng
+    # hơn. Commit ở bước cuối vì thế đi bằng PAT riêng, không bằng token mặc định.
+    permissions:
+      contents: read
     # `directories:` trong dependabot.yml trỏ vào apps/* và packages/*, còn pnpm-lock.yaml nằm ở
     # root. Dependabot tìm lockfile trong đúng thư mục nó được cấu hình, không thấy, nên PR của
     # nó chỉ đổi package.json — và mọi job CI chết ngay ở `pnpm install --frozen-lockfile`.
@@ -55,10 +54,13 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      # createCommitOnBranch thay cho `git push` vì ruleset bắt commit phải được ký: commit tạo
-      # qua API được GitHub ký sẵn, còn commit từ runner thì không có khoá nào để ký.
-      # expectedHeadOid làm hàng rào chống race — nếu Dependabot force-push lại nhánh trong lúc
-      # job đang resolve, mutation bị từ chối thay vì ghi đè lockfile lên một manifest khác.
+      # createCommitOnBranch thay cho `git push`, và KHÔNG phải vì chữ ký: ruleset `main
+      # protection` chỉ nhắm `~DEFAULT_BRANCH`, nên nhánh dependabot/* không bị đòi commit ký —
+      # `git push` cũng sẽ qua. Lý do là nó tránh phải dựng git identity và credential helper
+      # trên runner cho đúng một file, và commit tạo qua API được GitHub ký sẵn nên nhánh không
+      # lẫn một commit không chữ ký giữa những commit có.
+      # expectedHeadOid là compare-and-set: nếu Dependabot force-push lại nhánh trong lúc job
+      # đang resolve, mutation bị từ chối thay vì ghi lockfile lên một manifest khác.
       - name: Commit the lockfile
         if: steps.diff.outputs.changed == 'true'
         env:
