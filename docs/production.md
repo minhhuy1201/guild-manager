@@ -636,6 +636,13 @@ configured with `projectRoot: "../.."` — Jest in `apps/api/package.json`, Vite
 `apps/web/vitest.config.ts`. An entry in the report reads `apps/web/app/page.tsx`, and checking that
 is the fastest way to tell a real 0% from a broken one.
 
+**`Could not resolve N file paths` is the line to read after every change to these patterns.** It
+is a `WARN`, the analysis stays green, and each unresolved path is a file whose coverage was thrown
+away. It is how `apps/api/src/config/app.config.ts` was caught being excluded by a `**/*.config.*`
+pattern meant for tooling, and how the generated Prisma client was caught sitting in the Jest report
+while being git-ignored — the report should not describe it either, so
+`coveragePathIgnorePatterns` drops it. The expected value of N is 0.
+
 **Keep the scan action current, and let Dependabot do it.** `SonarSource/sonarqube-scan-action`
 pinned at `v4.1.0` fails this repository twice over: two `high` advisories on the action itself
 (`GHSA-f79p-9c5r-xg88`, `GHSA-5xq9-5g24-4g6f`, patched in `5.3.1` and `6.0.0`) make `Dependency
