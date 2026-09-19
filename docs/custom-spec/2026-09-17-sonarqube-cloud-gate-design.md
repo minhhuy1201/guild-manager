@@ -85,10 +85,14 @@ riêng CI.
 
 ### 5. Coverage: lcov từ cả hai app
 
-- `apps/api` — Jest đã có `test:cov`; chỉ thêm `coverageReporters: ["lcov", "text-summary"]` vì mặc
-  định của Jest không sinh lcov.
+- `apps/api` — Jest đã có `test:cov`; chỉ thêm reporter `lcov` vì mặc định của Jest không sinh lcov.
 - `apps/web` — Vitest cần provider tách rời: thêm devDependency `@vitest/coverage-v8`, block
   `coverage` trong `vitest.config.ts`, và script `test:cov`.
+- **Cả hai reporter đều đặt `projectRoot` trỏ về root của repo.** Mặc định, mỗi runner ghi đường dẫn
+  trong lcov tương đối với thư mục app của nó (`src/app.module.ts`, `app/page.tsx`), còn scanner chạy
+  ở root và phân giải mọi đường dẫn đó theo base dir của chính nó — không khớp file nào. Sonar không
+  fail vì chuyện này, nó chỉ log một dòng "Could not resolve N file paths" rồi báo 0% coverage. Cùng
+  một kiểu hỏng im lặng như đường dẫn lcov sai.
 
 Không đẩy coverage thì điều kiện coverage trong quality gate bị **bỏ qua im lặng** (Sonar không áp
 điều kiện cho metric không có dữ liệu) — gate vẫn xanh và người đọc tưởng đã được bảo vệ. Một gate

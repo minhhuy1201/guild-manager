@@ -629,6 +629,13 @@ a threshold is done in the Sonar UI, and the reason belongs in this section when
 moves. Jest's `coverageDirectory` in `apps/api` is relative to its `rootDir` (`src`), which is why
 the path is `apps/api/coverage/lcov.info` and not `coverage/lcov.info`.
 
+**Neither is a path *inside* the report that does not resolve** — the same silent 0%, one log line
+deeper: `Could not resolve N file paths`. Each runner writes lcov entries relative to its own app
+directory while the scanner resolves them against the repository root, so both reporters are
+configured with `projectRoot: "../.."` — Jest in `apps/api/package.json`, Vitest in
+`apps/web/vitest.config.ts`. An entry in the report reads `apps/web/app/page.tsx`, and checking that
+is the fastest way to tell a real 0% from a broken one.
+
 **The `SonarQube` job does not gate deploys.** It is not in `needs` for `migrate`, `deploy-api` or
 `deploy-web` — the same shape as Trivy and CodeQL, which gate the merge into `main` from another
 workflow and leave the deployment chain alone. A commit that is already on `main` has passed the

@@ -99,13 +99,18 @@
     ],
     "coverageDirectory": "../coverage",
     "coverageReporters": [
-      "lcov",
+      [
+        "lcov",
+        {
+          "projectRoot": "../.."
+        }
+      ],
       "text-summary"
     ],
     "coveragePathIgnorePatterns": [
       "/node_modules/",
       "\\.spec\\.ts$",
-      "main\\.ts$"
+      "/src/main\\.ts$"
     ],
     "testEnvironment": "node"
   }

@@ -18,8 +18,10 @@ test), cấu hình phân tích trong `sonar-project.properties` ở root, covera
    `rootDir: "src"` và `coverageDirectory: "../coverage"` → file nằm ở `apps/api/coverage/lcov.info`,
    **không** phải `coverage/lcov.info`. Sai đường dẫn không làm scanner đỏ, nó chỉ âm thầm báo 0%
    coverage — đúng cái kiểu hỏng khó phát hiện nhất.
-3. **`sonar.tests` và `sonar.sources` phải tách nhau bằng `sonar.test.inclusions`,** nếu không
-   scanner từ chối chạy vì một file vừa là source vừa là test.
+3. **`sonar.tests` và `sonar.sources` phải tách nhau bằng `sonar.test.inclusions` *và*
+   `sonar.exclusions`,** nếu không scanner từ chối chạy vì một file vừa là source vừa là test.
+   `sonar.exclusions` chỉ lọc tập file main, nó không đụng tập test, nên hai pattern
+   `**/*.spec.ts` và `**/__tests__/**` phải xuất hiện ở cả hai key.
 4. **Automatic Analysis phải tắt trong Sonar UI trước khi job chạy lần đầu**, nếu không scanner fail
    với thông báo không nói ra nguyên nhân thật.
 
@@ -73,7 +75,8 @@ test), cấu hình phân tích trong `sonar-project.properties` ở root, covera
 - [x] `sonar.organization` + `sonar.projectKey` theo giá trị Sonar cấp khi import repo.
 - [x] `sonar.sources` = `apps/api/src,apps/web,packages/shared`; `sonar.tests` cùng danh sách, cộng
       `sonar.test.inclusions` cho `**/*.spec.ts`, `**/__tests__/**` (điểm 3).
-- [x] `sonar.exclusions`: `**/node_modules/**`, `**/dist/**`, `**/.next/**`, `**/coverage/**`,
+- [x] `sonar.exclusions` (gồm cả hai pattern test của điểm 3): `**/node_modules/**`, `**/dist/**`,
+      `**/.next/**`, `**/coverage/**`,
       `apps/api/prisma/migrations/**`, `apps/web/public/**`, `**/*.config.*`.
 - [x] `sonar.javascript.lcov.reportPaths` = `apps/api/coverage/lcov.info,apps/web/coverage/lcov.info`
       (điểm 2).
