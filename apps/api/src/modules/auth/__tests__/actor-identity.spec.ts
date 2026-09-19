@@ -12,7 +12,7 @@ describe('isRescueAdmin', () => {
   });
 
   it('danh sách rỗng thì không ai là admin cứu hộ', () => {
-    // Chuỗi rỗng tách ra thành [''] — nếu không lọc, một discordId rỗng sẽ khớp.
+    // An empty string splits into [''] - unfiltered, an empty discordId would match.
     expect(isRescueAdmin('', '')).toBe(false);
     expect(isRescueAdmin('123', '')).toBe(false);
   });
@@ -24,7 +24,7 @@ describe('isRescueAdmin', () => {
 
 describe('resolveGuildRole', () => {
   it('danh sách cứu hộ thắng giá trị trong database', () => {
-    // Một admin không được tự khoá mình ra ngoài vì role trong DB bị sửa nhầm.
+    // An admin must not lock themselves out because a role in the database was edited by mistake.
     expect(
       resolveGuildRole({ isRescue: true, memberRole: GuildRole.MEMBER }),
     ).toBe(GuildRole.ADMIN);

@@ -181,7 +181,7 @@ describe('BattleSessionsService', () => {
     });
 
     it('mọi thứ đã đúng thì không ghi gì cả', async () => {
-      // Đây là điều thay đổi này hứa: một lượt đọc lịch bình thường không phát lệnh ghi nào.
+      // This is what the change promised: an ordinary schedule read issues no write at all.
       prisma.battleSession.findMany.mockResolvedValue([guildWarRow()]);
 
       await service.listByWeek();
@@ -652,7 +652,7 @@ describe('BattleSessionsService', () => {
     });
 
     it('ghi đè số trận của Bang Chiến theo luật xen kẽ, cả khi tạo lẫn khi đã tồn tại', async () => {
-      // Tuần 2026-08-31 là mốc → 2 trận; tuần 2026-09-07 → 1 trận.
+      // The week of 2026-08-31 is the anchor -> 2 matches; the week of 2026-09-07 -> 1 match.
       await makeService(vn('2026-09-02T12:00')).listByWeek();
 
       expect(firstArg(prisma.battleSession.upsert, 0)).toMatchObject({

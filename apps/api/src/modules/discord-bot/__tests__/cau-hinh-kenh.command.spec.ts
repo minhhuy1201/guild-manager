@@ -56,7 +56,8 @@ describe('/cau-hinh-kenh', () => {
     expect(reply.data.flags).toBe(MESSAGE_FLAG.ephemeral);
   });
 
-  // Sai quyền phải lộ ra ngay lúc cấu hình, không phải 9h sáng hôm sau trong log không ai đọc.
+  // A permission mistake has to surface while configuring, not at 09:00 the next morning in a log
+  // nobody reads.
   it('không lưu gì khi Discord từ chối vì thiếu quyền, và nói rõ phải sửa gì', async () => {
     const postMessage = jest
       .fn()
@@ -70,7 +71,8 @@ describe('/cau-hinh-kenh', () => {
     expect(reply.data.content).toContain('quyền');
   });
 
-  // Lỗi hệ thống từng đội lốt lỗi phân quyền, đẩy admin đi sửa một cái không hỏng.
+  // A system error used to masquerade as a permission error, sending the admin off to fix something
+  // that was not broken.
   it('lỗi khác của Discord cũng không lưu, nhưng không đổ cho phân quyền', async () => {
     const postMessage = jest
       .fn()

@@ -64,7 +64,7 @@ describe('TransformInterceptor', () => {
     function discordRoute(): void {}
     Reflect.defineMetadata(RAW_RESPONSE_METADATA, true, discordRoute);
 
-    // Discord đọc `type` ở top level; `{ data: { type: 1 } }` nó bỏ qua không một tiếng động.
+    // Discord reads `type` at the top level; `{ data: { type: 1 } }` it ignores without a sound.
     await expect(intercept(discordRoute, { type: 1 })).resolves.toEqual({
       type: 1,
     });

@@ -23,7 +23,7 @@ describe('announceFormationSchema', () => {
     );
   });
 
-  // Trần 2 khớp với matchCount tối đa của một ngày.
+  // The ceiling of 2 matches the highest matchCount a single day can have.
   it('từ chối quá hai ảnh', () => {
     expect(
       announceFormationSchema.safeParse({ images: [IMAGE, IMAGE, IMAGE] })

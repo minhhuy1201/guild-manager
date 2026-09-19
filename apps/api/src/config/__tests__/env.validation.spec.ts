@@ -84,7 +84,8 @@ describe('validateEnv', () => {
     );
   });
 
-  // Câu thông báo đội hình render <#id> cho #🤒│báo-bận — thiếu id thì cả bang đọc được một link chết.
+  // The formation announcement renders <#id> for #🤒│báo-bận - without the id the whole guild reads
+  // a dead link.
   it('chết khi thiếu DISCORD_BAO_BAN_CHANNEL_ID', () => {
     const withoutChannel: Partial<typeof base> = { ...base };
     delete withoutChannel.DISCORD_BAO_BAN_CHANNEL_ID;
@@ -95,7 +96,8 @@ describe('validateEnv', () => {
   });
 
   it('chết khi thiếu một trong ba channel id của /chao-mung', () => {
-    // Thiếu biến thì lời chào sẽ trỏ vào <#undefined>. Chết lúc boot rẻ hơn nhiều.
+    // Without the variable the welcome message points at <#undefined>. Dying at boot is far
+    // cheaper.
     for (const key of [
       'DISCORD_BANG_CHIEN_CHANNEL_ID',
       'DISCORD_NGHICH_THUY_HAN_CHANNEL_ID',

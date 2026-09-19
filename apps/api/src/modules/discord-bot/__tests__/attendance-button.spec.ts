@@ -123,7 +123,7 @@ describe('bấm nút điểm danh', () => {
   });
 
   it('bảng riêng vẽ lại thì không kèm dòng đó', async () => {
-    // Bảng ephemeral chỉ một người thấy, và người đó đương nhiên được bấm.
+    // An ephemeral board is visible to one person, and that person is obviously allowed to press.
     const press = { ...PRESS, message: { flags: MESSAGE_FLAG.ephemeral } };
 
     const outcome = await handleAttendanceButton(
@@ -135,7 +135,8 @@ describe('bấm nút điểm danh', () => {
   });
 
   it('tuần chưa có ngày đánh thì không nói về nút nào cả', async () => {
-    // Bảng lúc này không mang một cái nút nào, nên câu "chỉ ... bấm được các nút này" là vô nghĩa.
+    // The board carries no button at this point, so "only ... can press these buttons" means
+    // nothing.
     const outcome = await handleAttendanceButton(
       PRESS,
       makeDeps({ mark: jest.fn().mockResolvedValue(undefined), sessions: [] }),
@@ -180,7 +181,7 @@ describe('người ngoài bấm nút trên bảng công khai', () => {
   }
 
   it('chưa gán nhân vật thì nhận tin riêng, không ghi đè bảng', async () => {
-    // Cập nhật tin nhắn ở đây sẽ xoá bảng công khai của cả kênh.
+    // Updating the message here would wipe the channel's public board.
     const deps = makeDeps({
       mark: jest.fn(),
       resolve: jest.fn().mockResolvedValue(null),
@@ -219,7 +220,7 @@ describe('người ngoài bấm nút trên bảng công khai', () => {
 
 describe('lỗi từ AttendanceService', () => {
   it('thành một câu tiếng Việt trong Discord, không phải mã lỗi', async () => {
-    // Mọi mã khác 200 đều làm Discord hiện "ứng dụng không phản hồi".
+    // Any status other than 200 makes Discord show "the application did not respond".
     const deps = makeDeps({
       mark: jest
         .fn()

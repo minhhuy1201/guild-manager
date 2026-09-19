@@ -40,16 +40,18 @@ class ProbeController {
 @Module({ controllers: [ProbeController] })
 class ProbeModule {}
 
-// Hai dòng trong main.ts phụ thuộc lẫn nhau theo kiểu không lộ ra khi hỏng: `rawBody: true` là thứ
-// duy nhất cho guard Discord thấy đúng bytes Discord đã ký, mà guard đó trả 401 cho cả "chữ ký sai"
-// lẫn "mất rawBody" — nên nếu `useBodyParser` nuốt mất rawBody, triệu chứng ngoài đời chỉ là Discord
-// "tự nhiên" từ chối mọi interaction.
+// Two lines in main.ts depend on each other in a way that stays hidden when it breaks:
+// `rawBody: true` is the only thing that lets the Discord guard see the exact bytes Discord signed,
+// and that guard answers 401 for both "bad signature" and "no rawBody" - so if `useBodyParser`
+// swallows rawBody, the real-world symptom is just Discord "suddenly" rejecting every
+// interaction.
 describe('Bootstrap body parser', () => {
   let app: NestExpressApplication;
   let origin: string;
 
   beforeAll(async () => {
-    // Dựng đúng như main.ts, chỉ thay AppModule bằng một module rỗng để test không cần biến môi trường.
+    // Built exactly as main.ts does, with AppModule swapped for an empty module so the test needs
+    // no environment variables.
     app = await NestFactory.create<NestExpressApplication>(ProbeModule, {
       rawBody: true,
       logger: false,

@@ -27,14 +27,15 @@ describe('custom_id của nút điểm danh', () => {
   });
 
   it('giải mã ra null khi custom_id không phải của nút điểm danh', () => {
-    // Tin nhắn khác của bot sau này cũng gửi custom_id qua cùng một endpoint.
+    // Other bot messages will send their custom_id through this same endpoint later on.
     expect(decodeAttendanceButtonId('something-else')).toBeNull();
     expect(decodeAttendanceButtonId('dd:chi-co-hai-manh')).toBeNull();
     expect(decodeAttendanceButtonId('dd:a:b:9')).toBeNull();
   });
 
   it('ném lỗi thay vì dựng một custom_id quá dài', () => {
-    // Discord từ chối cả tin nhắn chứ không riêng cái nút, nên phải nổ ngay lúc dựng.
+    // Discord rejects the whole message rather than just the button, so this has to blow up at
+    // build time.
     expect(() =>
       encodeAttendanceButtonId({
         sessionId: 'x'.repeat(60),

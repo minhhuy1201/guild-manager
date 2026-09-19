@@ -26,8 +26,9 @@ describe('resolveDiscordEnvFile', () => {
   });
 
   it('ném lỗi nêu tên file khi file được chỉ định không tồn tại', () => {
-    // Im lặng rơi về .env là cách đăng ký lệnh của production lên nhầm application dev mà không ai
-    // nhận ra — đúng thứ PRISMA_ENV_FILE đã chặn cho các lệnh database.
+    // Falling back to .env in silence is how a production command registration lands on the dev
+    // application with nobody noticing - the very thing PRISMA_ENV_FILE already prevents for the
+    // database commands.
     expect(() =>
       resolveDiscordEnvFile('.env.production', existsAmong('.env')),
     ).toThrow('.env.production');

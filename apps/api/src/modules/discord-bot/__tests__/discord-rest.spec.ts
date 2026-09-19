@@ -48,7 +48,7 @@ describe('DiscordRestClient', () => {
     ).rejects.toThrow('403');
   });
 
-  // "Tin nhắc không tới" là câu hỏi không trả lời được nếu log chỉ có mã lỗi.
+  // "The nudge never arrived" is unanswerable if the log holds nothing but a status code.
   it('mang theo thân lỗi để log đọc được nguyên nhân', async () => {
     stubFetch({ ok: false, status: 403, text: '{"message":"Missing Access"}' });
     const client = new DiscordRestClient(CONFIG);
@@ -86,7 +86,8 @@ describe('DiscordRestClient.postMessageWithFiles', () => {
     expect(init.body.get('files[0]')).toBeInstanceOf(Blob);
   });
 
-  // Tự đặt Content-Type là mất chuỗi boundary fetch sinh ra, và Discord từ chối cả message.
+  // Setting Content-Type by hand loses the boundary string fetch generates, and Discord rejects the
+  // whole message.
   it('không tự đặt Content-Type cho multipart', async () => {
     const fetchMock = stubFetch({ ok: true });
     const client = new DiscordRestClient(CONFIG);

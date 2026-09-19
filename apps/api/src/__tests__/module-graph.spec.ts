@@ -85,8 +85,9 @@ function findCycle(start: ModuleClass): string | null {
   return walk(start, []);
 }
 
-// Một vòng lặp module làm Nest chết ngay lúc boot, mà cả jest lẫn `nest build` đều không thấy: test
-// không dựng DI container, còn build chỉ biên dịch. Đây là lưới duy nhất bắt được nó trước khi deploy.
+// A module cycle kills Nest at boot, and neither jest nor `nest build` sees it coming: the tests
+// never build the DI container, and the build only compiles. This is the only net that catches it
+// before a deploy.
 describe('Đồ thị module', () => {
   it.each(MODULES.map((moduleClass) => [moduleClass.name, moduleClass]))(
     '%s không nằm trong vòng lặp import nào',

@@ -47,8 +47,8 @@ describe('buildAnnouncement', () => {
   });
 
   it('mỗi ngày đánh là một khối riêng, xếp dọc chứ không xếp cột', () => {
-    // Embed field là thứ Discord xếp thành cột. Cả lịch nằm trong `description`, mỗi ngày mở đầu
-    // bằng một heading, nên chúng luôn nối tiếp nhau theo chiều dọc.
+    // Embed fields are what Discord lays out in columns. The whole schedule lives in `description`
+    // with a heading opening each day, so the days always follow one another vertically.
     const payload = buildAnnouncement(
       [
         session(),
@@ -150,9 +150,10 @@ describe('buildAnnouncement', () => {
       label: '✅ Điểm danh ngay',
       custom_id: ANNOUNCEMENT_ATTENDANCE_ID,
     });
-    // Không phải trần origin: trần origin lúc chưa đăng nhập là trang giới thiệu bang, đúng cho
-    // người lạ gõ tên miền và sai cho cái nút này - ai đọc nó cũng đang ở Discord của bang và định
-    // đi điểm danh. Qua trang đăng nhập với redirect về "/" thì cả hai phía đều tới đúng chỗ.
+    // Not the bare origin: signed out, the bare origin is the guild's landing page, which is right
+    // for a stranger typing the domain and wrong for this button - everyone reading it is already
+    // in the guild's Discord and on their way to mark attendance. Going through the login page with
+    // a redirect back to "/" sends both audiences where they belong.
     expect(website).toEqual({
       type: 2,
       style: BUTTON_STYLE.link,
@@ -181,7 +182,8 @@ describe('buildAnnouncement', () => {
       expect(description.length).toBeLessThanOrEqual(
         MAX_EMBED_DESCRIPTION_LENGTH,
       );
-      // Phần hướng dẫn là lý do tin nhắn này tồn tại — cắt nó đi thì còn lại một danh sách câm.
+      // The instructions are why this message exists - cut them and a mute list is all that is
+      // left.
       expect(description).toContain('Điểm danh ngay');
       expect(description).toContain('ngày đánh nữa');
     });

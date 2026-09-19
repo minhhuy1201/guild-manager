@@ -91,7 +91,8 @@ describe('/nhac-diem-danh', () => {
     expect(run).toHaveBeenCalledWith('week');
   });
 
-  // Discord chỉ gửi giá trị trong choices, nên giá trị lạ là định nghĩa đã đăng ký lệch với bản build.
+  // Discord only sends values from choices, so an unknown value means the registered definition has
+  // drifted from this build.
   it('giá trị phạm vi lạ thì báo lỗi và không nhắc ai', async () => {
     const { deps, run } = makeDeps(actor(GuildRole.ADMIN), {
       status: 'nothing-due',
@@ -162,8 +163,8 @@ describe('/nhac-diem-danh', () => {
   });
 
   it('Discord từ chối vì thiếu quyền thì nói phải làm gì', async () => {
-    // Cùng tình huống 403 mà /cau-hinh-kenh và formation-announcer đã dịch. Ở đây nó từng thoát ra
-    // thành câu "Có lỗi xảy ra..." chung chung, và admin không có cách nào biết vì sao.
+    // The same 403 that /cau-hinh-kenh and formation-announcer already translate. Here it used to
+    // escape as a generic "Có lỗi xảy ra..." with no way for an admin to learn why.
     const { deps, run } = makeDeps(actor(GuildRole.ADMIN), {
       status: 'nothing-due',
     });

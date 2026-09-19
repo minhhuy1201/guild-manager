@@ -139,7 +139,8 @@ describe('AuthService.handleCallback', () => {
   });
 
   it('callback thiếu code hoặc state là phiên hết hạn, không phải huỷ', async () => {
-    // Một dòng gộp ba tình huống từng nói với người theo link authorize cũ rằng họ đã bấm Huỷ.
+    // One line covering the three cases that used to tell anyone following a stale authorize link
+    // that they had pressed Cancel.
     const { service } = makeService({});
 
     await expect(service.handleCallback({ state: 's' })).resolves.toContain(
@@ -239,7 +240,7 @@ describe('AuthService.exchange', () => {
   });
 
   it('chỉ đọc bảng Character đúng một lần cho mỗi phiên', async () => {
-    // Phiên đăng nhập trước đây đọc cùng một hàng hai lần: một lần theo discordId, một lần theo id.
+    // A login used to read the same row twice: once by discordId, once by id.
     const { service, characters } = makeService({
       characters: { findByDiscordId: jest.fn().mockResolvedValue(ROW) },
       authExchange: {

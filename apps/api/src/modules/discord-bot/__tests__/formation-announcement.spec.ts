@@ -5,16 +5,16 @@ import {
 
 const LINKS = { guildRoleId: '999888777', baoBanChannelId: '111222333' };
 
-/** 19/08/2026 20:30 giờ VN. */
+/** 19/08/2026 20:30 Vietnam time. */
 const SCRIM_AT_2030 = new Date('2026-08-19T13:30:00.000Z');
 
-/** 19/08/2026 09:00 giờ VN — cùng ngày với trận trên. */
+/** 19/08/2026 09:00 Vietnam time - the same day as the match above. */
 const MORNING_OF_BATTLE = new Date('2026-08-19T02:00:00.000Z');
 
 /**
- * Input của một trận scrim 20:30, bấm nút ngay sáng ngày đánh.
- * @param overrides - Trường cần đổi so với mặc định
- * @returns Input đầy đủ cho `buildFormationAnnouncement`
+ * The input for a 20:30 scrim, with the button pressed on the morning of the match.
+ * @param overrides - The fields to change from the defaults
+ * @returns A complete input for `buildFormationAnnouncement`
  */
 function input(
   overrides: Partial<FormationAnnouncementInput> = {},
@@ -45,8 +45,9 @@ describe('buildFormationAnnouncement — scrim', () => {
 });
 
 describe('buildFormationAnnouncement — bang chiến', () => {
-  // Bang chiến ghim 20:00 thứ 7 (architecture.md §6), nên ba mốc là chữ cố định chứ không phải
-  // một bộ offset — 19:30 là −30 phút, không khớp offset −45 của scrim.
+  // Bang chiến is pinned to 20:00 on Saturday (architecture.md §6), so its three checkpoints are
+  // fixed text rather than a set of offsets - 19:30 is -30 minutes, which does not match a scrim's
+  // -45.
   it('in cứng 19:30 / 19:45 / 19:45', () => {
     const { content } = buildFormationAnnouncement(
       input({
@@ -85,7 +86,8 @@ describe('buildFormationAnnouncement — cụm ngày', () => {
     expect(content.split('\n')[0]).toBe('# SCRIM 20:30 19/08 - 2 TRẬN');
   });
 
-  // Nửa đêm giờ VN là 17:00 UTC hôm trước: so ngày theo giờ máy chủ sẽ lệch đúng một ngày.
+  // Midnight Vietnam time is 17:00 UTC the previous day: comparing dates in server time is off by
+  // exactly one day.
   it('so ngày theo giờ Việt Nam, không theo UTC', () => {
     const { content } = buildFormationAnnouncement(
       input({ now: new Date('2026-08-18T17:30:00.000Z') }),

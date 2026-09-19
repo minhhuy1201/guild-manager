@@ -101,8 +101,9 @@ describe('DiscordSignatureGuard', () => {
   });
 
   it('chặn khi header chữ ký bị gửi hai lần — Express gộp thành string[]', () => {
-    // Gửi trùng tên header là cách rẻ nhất để đổi kiểu của nó. Guard loại được nhờ
-    // `typeof === 'string'`, nhưng đây là biên tin cậy duy nhất của bot nên phải có test giữ lại.
+    // Sending a header twice is the cheapest way to change its type. The guard rules it out through
+    // `typeof === 'string'`, but this is the bot's only trust boundary, so a test holds it in
+    // place.
     const context = contextFor(
       {
         'x-signature-ed25519': [signature, signature],

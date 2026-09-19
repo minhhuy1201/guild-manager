@@ -207,10 +207,11 @@ describe('CharactersService', () => {
     });
 
     it('vẫn báo 409 khi Prisma đổi hình dạng lỗi và ta không nhận ra', async () => {
-      // Phòng thủ cho đúng cái đã xảy ra: `meta` đổi hình dạng, isDiscordIdViolation trả false,
-      // create tưởng đụng khoá chính rồi thử lại — lần hai vỡ y hệt và thoát ra thành 500.
-      // insert() sinh id mới mỗi lần, mà Character chỉ có hai unique constraint, nên P2002 lần thứ
-      // hai chắc chắn là discordId dù đọc được `meta` hay không.
+      // Guards against what actually happened: `meta` changed shape, isDiscordIdViolation returned
+      // false, create assumed a primary key collision and retried - the second attempt broke the
+      // same way and escaped as a 500. insert() generates a new id every time and Character has
+      // only two unique constraints, so a second P2002 is certainly discordId whether `meta` can be
+      // read or not.
       const UNRECOGNISED = Object.assign(
         new Error('Unique constraint failed'),
         {
@@ -389,8 +390,8 @@ describe('CharactersService', () => {
         BadRequestException,
       );
       expect(prisma.character.delete).not.toHaveBeenCalled();
-      // Transaction có rollback thật, nhưng lời từ chối thì không nên chạm vào bảng của module
-      // khác ngay từ đầu - đây là thứ giữ đúng thứ tự guard-trước-ghi trong `remove`.
+      // The transaction does roll back, but a refusal should never touch another module's table in
+      // the first place - this is what keeps the guard-before-write order in `remove`.
       expect(prisma.formationSlot.deleteMany).not.toHaveBeenCalled();
     });
 

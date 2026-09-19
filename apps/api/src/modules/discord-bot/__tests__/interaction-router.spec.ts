@@ -45,8 +45,8 @@ describe('InteractionRouter', () => {
   });
 
   it('lệnh chưa có trong registry thì báo lỗi chung và ghi log', async () => {
-    // Trước đây lỗi thoát ra thành 500. Giờ Discord phải nhận 200 kèm một câu, nếu không nó chỉ
-    // hiện "ứng dụng không phản hồi" — chi tiết vẫn nằm nguyên trong log của router.
+    // Errors used to escape as a 500. Discord now has to receive a 200 with a sentence, or all it
+    // shows is "the application did not respond" - the detail still sits in the router's log.
     const reply = await makeRouter().route({
       type: 2,
       channel_id: '424242',
@@ -62,8 +62,9 @@ describe('InteractionRouter', () => {
     });
   });
 
-  // Nút này nằm trên cả /thong-bao lẫn tin nhắc điểm danh — cả hai đều là tin của cả bang, nên
-  // updateMessage sẽ khiến người bấm đầu tiên xoá tin đó của mọi người.
+  // This button appears on both /thong-bao and the attendance nudge - each one a message for the
+  // whole guild, so updateMessage would let the first person to press it erase that message for
+  // everyone.
   it('nút trên tin gửi cả bang mở một message riêng, không ghi đè tin đó', async () => {
     const reply = await makeRouter().route({
       type: 3,
@@ -77,8 +78,9 @@ describe('InteractionRouter', () => {
     });
   });
 
-  // Bảng của /diem-danh-ho là tin công khai: từ chối bằng updateMessage sẽ để một người ngoài xoá
-  // bảng của cả kênh, nên lời từ chối luôn là tin riêng. Chỉ khi ghi được mới vẽ lại bảng.
+  // The /diem-danh-ho board is a public message: refusing through updateMessage would let an
+  // outsider wipe the channel's board, so a refusal is always private. The board is only redrawn
+  // once the write succeeds.
   it('bấm nút mà bị từ chối thì nhận tin riêng, không ghi đè bảng', async () => {
     const reply = await makeRouter().route({
       type: 3,
@@ -93,8 +95,8 @@ describe('InteractionRouter', () => {
   });
 
   it('đọc ba channel id của /chao-mung từ env đúng tên biến', async () => {
-    // Sai tên biến ở đây không làm gãy build; nó chỉ hiện ra thành <#undefined> trong lời chào
-    // đã đăng công khai — nên tên biến được ghim bằng test.
+    // A misspelled variable name here breaks no build; it only shows up as <#undefined> in a
+    // welcome already posted in public - so the name is pinned by a test.
     const get = jest.fn().mockImplementation((key: string) => `giá-trị:${key}`);
     const router = new InteractionRouter(
       {} as never,

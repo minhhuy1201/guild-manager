@@ -64,7 +64,8 @@ describe('ActorResolver', () => {
   });
 
   it('trả null khi không có nhân vật và cũng không cứu hộ', async () => {
-    // Người này chưa được admin gán discordId — bot phải nói đúng câu đó, không phải im lặng.
+    // Nobody has assigned this person a discordId yet - the bot has to say exactly that, not go
+    // quiet.
     const resolver = makeResolver({ member: null, adminIds: '999' });
 
     await expect(resolver.resolve('111')).resolves.toBeNull();

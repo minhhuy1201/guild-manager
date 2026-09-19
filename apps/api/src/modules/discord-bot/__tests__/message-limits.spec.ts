@@ -1,6 +1,6 @@
 import { takeWithinLimit } from '../message-limits';
 
-/** Đuôi dùng chung cho các ca dưới đây. */
+/** The shared suffix for the cases below. */
 const more = (count: number) => `+${count} nữa`;
 
 describe('takeWithinLimit', () => {
@@ -27,7 +27,8 @@ describe('takeWithinLimit', () => {
     expect(text.length).toBeLessThanOrEqual(40);
     expect(kept.length).toBeLessThan(items.length);
     expect(text).toContain(`+${items.length - kept.length} nữa`);
-    // Phần giữ lại luôn là khúc đầu, nên caller map ngược về dữ liệu gốc được bằng độ dài.
+    // What survives is always the leading part, so a caller can map back to the original data by
+    // length.
     expect(text.startsWith(kept.join(' '))).toBe(true);
   });
 

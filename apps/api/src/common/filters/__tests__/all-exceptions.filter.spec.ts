@@ -129,7 +129,8 @@ describe('AllExceptionsFilter.catch', () => {
   });
 
   it('request bị guard chặn vẫn có requestId để tra log', () => {
-    // Đây chính là lỗ hổng plan này vá: trước khi có requestIdMiddleware, giá trị này là chuỗi rỗng.
+    // This is the hole the plan closed: before requestIdMiddleware existed, this value was an empty
+    // string.
     const { body } = runFilter(new UnauthorizedException('Không có quyền.'));
 
     expect(body.requestId).toBe('id-tu-middleware');
@@ -146,12 +147,13 @@ describe('AllExceptionsFilter.catch', () => {
   });
 });
 
-// body-parser ném một Error trần khi body vượt trần, nên trước đây nó rơi vào nhánh "exception lạ"
-// và ra 500 "Lỗi hệ thống" — sai loại lỗi, và không nói được người dùng phải làm gì.
+// body-parser throws a bare Error when the body is over the limit, so it used to land in the
+// "unknown exception" branch and come back as a 500 "Lỗi hệ thống" - the wrong class of error, and
+// no help at all on what to do about it.
 describe('body vượt trần', () => {
   /**
-   * Lỗi body-parser ném ra khi request lớn hơn `limit`.
-   * @returns Error mang đúng các trường body-parser gắn vào
+   * The error body-parser throws when a request is larger than `limit`.
+   * @returns An Error carrying the exact fields body-parser attaches
    */
   function payloadTooLarge(): Error {
     return Object.assign(new Error('request entity too large'), {

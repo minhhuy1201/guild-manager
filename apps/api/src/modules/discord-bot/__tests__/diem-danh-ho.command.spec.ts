@@ -69,7 +69,8 @@ function makeDeps(options: { callerRole: GuildRole; target: unknown }): {
 
 describe('/diem-danh-ho', () => {
   it('khai báo một option USER bắt buộc tên nguoi', () => {
-    // Sai tên option thì Discord gửi lên một mảng bot không đọc được, và lệnh im lặng hỏng.
+    // With the option misnamed, Discord sends an array the bot cannot read and the command fails
+    // silently.
     expect(diemDanhHoCommand.definition.options).toEqual([
       expect.objectContaining({ name: 'nguoi', type: 6, required: true }),
     ]);
@@ -90,8 +91,9 @@ describe('/diem-danh-ho', () => {
   });
 
   it('bảng hiện công khai cho cả kênh, không phải riêng người gõ lệnh', async () => {
-    // Tin ephemeral chỉ ĐÚNG MỘT người xem được, nên để người được điểm danh hộ thấy thì bắt buộc
-    // phải công khai. Cờ ephemeral quay lại đây là hỏng đúng cái yêu cầu của tính năng.
+    // An ephemeral message is visible to EXACTLY ONE person, so for the person being marked to see
+    // it the reply has to be public. The ephemeral flag coming back here breaks the feature's whole
+    // requirement.
     const { deps } = makeDeps({
       callerRole: GuildRole.ADMIN,
       target: TARGET_ROW,
@@ -114,8 +116,8 @@ describe('/diem-danh-ho', () => {
   });
 
   it('nói rõ ai được bấm, vì Discord không tắt nút riêng cho từng người', async () => {
-    // Message mang đúng một bộ component cho mọi người xem, nên cả kênh bấm được. Dòng này là thứ
-    // duy nhất ngăn người ngoài bấm trước khi bị từ chối.
+    // The message carries one set of components for everyone who sees it, so the whole channel can
+    // press. This line is the only thing that stops an outsider pressing before being refused.
     const { deps } = makeDeps({
       callerRole: GuildRole.ADMIN,
       target: TARGET_ROW,
@@ -138,7 +140,8 @@ describe('/diem-danh-ho', () => {
   });
 
   it('member bị từ chối trước khi thấy bảng', async () => {
-    // AttendanceService chỉ từ chối lúc GHI. Bảng thì hiện ra trước đó, nên chỗ này phải chặn sớm.
+    // AttendanceService only refuses on the WRITE. The board appears before that, so this is where
+    // it has to be stopped early.
     const { deps } = makeDeps({
       callerRole: GuildRole.MEMBER,
       target: TARGET_ROW,

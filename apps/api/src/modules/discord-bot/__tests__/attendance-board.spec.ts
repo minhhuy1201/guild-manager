@@ -154,7 +154,8 @@ describe('buildAttendanceBoard', () => {
   });
 
   it('admin vẫn có nút ở ngày đã khoá', async () => {
-    // Admin bypass được ngày đã khoá — luật của AttendanceService, bảng phải phản ánh đúng.
+    // An admin can bypass a closed day - that is AttendanceService's rule, and the board has to
+    // reflect it.
     const deps = makeDeps({
       sessions: [session({ id: 'a', isAttendanceClosed: true })],
       records: [],
@@ -170,8 +171,9 @@ describe('buildAttendanceBoard', () => {
   });
 
   it('mỗi ngày một hàng, hai nút mang tên ngày', async () => {
-    // Discord dồn mọi action row xuống dưới khối chữ chứ không xen kẽ theo từng ngày, nên tên ngày
-    // phải nằm trong nhãn nút — không thì 5 hàng nút không phân biệt được với nhau.
+    // Discord stacks every action row below the text block rather than interleaving them per day,
+    // so the day has to be in the button label - otherwise the five rows of buttons are
+    // indistinguishable.
     const deps = makeDeps({ sessions: [session({ id: 'a' })], records: [] });
 
     const board = await buildAttendanceBoard(
@@ -189,8 +191,8 @@ describe('buildAttendanceBoard', () => {
   });
 
   it('chưa trả lời thì cả hai nút đều xám', async () => {
-    // Màu mã hoá TRẠNG THÁI, không mã hoá ý nghĩa: hai nút cùng sáng thì không còn gì nói cho người
-    // dùng biết họ đã chọn cái nào.
+    // Colour encodes STATE, not meaning: with both buttons lit there is nothing left to tell the
+    // user which one they picked.
     const deps = makeDeps({ sessions: [session({ id: 'a' })], records: [] });
 
     const board = await buildAttendanceBoard(
@@ -283,7 +285,7 @@ describe('buildAttendanceBoard', () => {
   });
 
   it('quá 5 ngày thì cắt còn 5 và nói ra', async () => {
-    // Discord chỉ cho 5 action row. Im lặng cắt mất một ngày thì không chấp nhận được.
+    // Discord allows only 5 action rows. Silently dropping a day is not acceptable.
     const deps = makeDeps({
       sessions: Array.from({ length: 6 }, (_, index) =>
         session({ id: `s${index}`, label: `Ngày ${index}` }),
@@ -303,8 +305,9 @@ describe('buildAttendanceBoard', () => {
   });
 
   it('cảnh báo rằng bấm Không sẽ xoá lý do đã ghi trên web', async () => {
-    // Bot không gửi reason, mà AttendanceService quyết reason từ request — nên lượt ghi này ghi đè
-    // null lên câu lý do cũ. Người dùng phải biết trước khi bấm.
+    // The bot sends no reason and AttendanceService takes the reason from the request - so this
+    // write overwrites the previous explanation with null. The user has to know that before
+    // pressing.
     const deps = makeDeps({ sessions: [session({ id: 'a' })], records: [] });
 
     const board = await buildAttendanceBoard(
