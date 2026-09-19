@@ -5,6 +5,12 @@
 # still listed by directory. The lockfile at the repo root is shared, so an update to one package
 # resolves against the whole workspace — and Dependabot reads a package's *current* version from
 # that shared lockfile, not from the package's own range. See the apps/web block below.
+#
+# Cái marker đó không kéo theo việc Dependabot cập nhật pnpm-lock.yaml: nó tìm lockfile trong đúng
+# thư mục được cấu hình ở `directories:` bên dưới, không thấy, nên PR của nó chỉ đổi package.json.
+# .github/workflows/dependabot-lockfile.yml commit lockfile bù vào. Đổi `directories:` thành `/` sẽ
+# bỏ được workflow đó, nhưng cũng bỏ luôn khả năng tách `ignore` của apps/web — xem
+# docs/production.md §6.
 version: 2
 
 updates:

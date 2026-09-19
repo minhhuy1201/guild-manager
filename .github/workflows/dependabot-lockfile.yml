@@ -1,0 +1,91 @@
+name: Dependabot lockfile
+
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: dependabot-lockfile-${{ github.ref }}
+  cancel-in-progress: true
+
+# GITHUB_TOKEN của một run do Dependabot kích hoạt luôn là read-only, kể cả khi khai báo rộng
+# hơn. Commit ở bước cuối vì thế đi bằng PAT riêng, không bằng token mặc định.
+permissions:
+  contents: read
+
+jobs:
+  sync-lockfile:
+    name: Sync pnpm lockfile
+    # `directories:` trong dependabot.yml trỏ vào apps/* và packages/*, còn pnpm-lock.yaml nằm ở
+    # root. Dependabot tìm lockfile trong đúng thư mục nó được cấu hình, không thấy, nên PR của
+    # nó chỉ đổi package.json — và mọi job CI chết ngay ở `pnpm install --frozen-lockfile`.
+    # Job này vá lại chỗ đó: resolve lockfile theo manifest mới rồi commit ngược lên nhánh PR.
+    #
+    # Head của PR Dependabot luôn là nhánh trong chính repo này; điều kiện thứ hai chặn trường
+    # hợp một fork mạo danh actor để job đi commit nội dung nó kiểm soát.
+    if: github.actor == 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Mặc định của pull_request là merge ref (detached). Cần đúng head của nhánh thì
+          # `git diff` mới so với thứ Dependabot vừa commit.
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      # Không dùng ./.github/actions/setup-workspace: action đó cài bằng --frozen-lockfile, tức
+      # là nó sẽ chết đúng vào lỗi mà job này sinh ra để sửa.
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      # --lockfile-only chỉ resolve và ghi pnpm-lock.yaml: không link node_modules, không chạy
+      # lifecycle script. Nhờ vậy không cần dựng apps/api/.env cho postinstall, và mã của
+      # dependency vừa bump không được thực thi trong job đang cầm quyền ghi.
+      - name: Resolve the lockfile against the bumped manifests
+        run: pnpm install --lockfile-only
+
+      - name: Detect a lockfile change
+        id: diff
+        run: |
+          if git diff --quiet -- pnpm-lock.yaml; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # createCommitOnBranch thay cho `git push` vì ruleset bắt commit phải được ký: commit tạo
+      # qua API được GitHub ký sẵn, còn commit từ runner thì không có khoá nào để ký.
+      # expectedHeadOid làm hàng rào chống race — nếu Dependabot force-push lại nhánh trong lúc
+      # job đang resolve, mutation bị từ chối thay vì ghi đè lockfile lên một manifest khác.
+      - name: Commit the lockfile
+        if: steps.diff.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.DEPENDABOT_LOCKFILE_TOKEN }}
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::secrets.DEPENDABOT_LOCKFILE_TOKEN rỗng hoặc chưa được đặt. Đây là một Dependabot secret, không phải Actions secret — xem docs/production.md §6." >&2
+            exit 1
+          fi
+
+          jq -n \
+            --arg repo "$GITHUB_REPOSITORY" \
+            --arg branch "$BRANCH" \
+            --arg oid "$EXPECTED_HEAD" \
+            --arg contents "$(base64 -w0 pnpm-lock.yaml)" \
+            '{
+              query: "mutation($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { oid } } }",
+              variables: {
+                input: {
+                  branch: { repositoryNameWithOwner: $repo, branchName: $branch },
+                  expectedHeadOid: $oid,
+                  message: { headline: "chore(deps): sync pnpm-lock.yaml with the bumped manifests" },
+                  fileChanges: { additions: [{ path: "pnpm-lock.yaml", contents: $contents }] }
+                }
+              }
+            }' > "$RUNNER_TEMP/payload.json"
+
+          gh api graphql --input "$RUNNER_TEMP/payload.json"

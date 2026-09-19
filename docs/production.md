@@ -561,20 +561,21 @@ reversible; a file nobody re-reads is neither.
 
 ### Automated dependency and security checks
 
-Seven things run on their own; none of them can deploy, so the worst any of them does is open a PR,
-raise an alert or fail a pull request.
+Eight things run on their own. None of them can deploy or touch `main`, so the worst any of them
+does is open a PR, write to a Dependabot branch, raise an alert or fail a pull request.
 
 | What | Where it lives | What it does |
 |---|---|---|
 | Dependabot version updates | [`.github/dependabot.yml`](../.github/dependabot.yml) | Weekly PRs for `apps/api`, `apps/web`, `packages/shared` and the GitHub Actions the workflows use. Minor and patch bumps are grouped into one PR per package; majors come one at a time, because those are the ones worth reading. |
 | Dependabot security updates | Repository setting | Out-of-band PRs for advisories, ignoring the weekly schedule. Enabled together with vulnerability alerts. |
+| Dependabot lockfile sync | [`.github/workflows/dependabot-lockfile.yml`](../.github/workflows/dependabot-lockfile.yml) | Resolves `pnpm-lock.yaml` against the manifests Dependabot just bumped and commits it back onto the PR branch. Dependabot cannot do this itself here, and without it every Dependabot PR fails CI at `pnpm install --frozen-lockfile`. Details below. |
 | CodeQL | [`.github/workflows/codeql.yml`](../.github/workflows/codeql.yml) | Static analysis on every PR and push to `main`, plus weekly. Follows data across the repo, which is a different question from `pnpm lint` — ESLint reads one file at a time. Findings land in the Security tab. |
 | Dependency review | [`.github/workflows/security.yml`](../.github/workflows/security.yml) | Reads the lockfile diff of a pull request and fails it when a dependency arrives carrying a `high` or worse advisory. Dependabot covers the same advisories, but only once the dependency is already on `main` — this is the gate in front of it. |
 | Trivy | [`.github/workflows/security.yml`](../.github/workflows/security.yml) | One filesystem scan on every PR and push to `main`, plus weekly, running three scanners: `vuln` over `pnpm-lock.yaml`, `secret` over the whole tree, and `misconfig` over `docker/Dockerfile.dev` — the last is the one nothing else here reads. **Every** severity lands in the Security tab; only `CRITICAL` fails the job, and a vulnerability with no released fix is skipped because a PR cannot act on it. Two traps below. |
 | SonarQube Cloud | [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) | The `SonarQube` job on every PR and push to `main`. Asks what nothing else here asks: how much of the **new** code is covered by tests, what is duplicated, what smells are accumulating. ESLint reads one file at a time and only knows the rules that are switched on; CodeQL only cares about security. Coverage comes from `test:cov` in both apps as lcov. The job waits for the quality gate and goes red when it fails, which is what makes it a gate rather than a dashboard. Its own trap is below. |
 | Secret scanning + push protection | Repository setting | Blocks a push that carries a recognised credential, instead of reporting it after the fact. This is the automated half of the rule in the root `CLAUDE.md`: never commit credentials. |
 
-All seven are free because the repository is **public** — SonarQube Cloud's free plan scans public projects with no line limit. Making it private would take CodeQL, secret
+All of those services are free because the repository is **public** — SonarQube Cloud's free plan scans public projects with no line limit. Making it private would take CodeQL, secret
 scanning and dependency review with it unless GitHub Advanced Security is bought; Trivy is open
 source and would keep running.
 
@@ -592,6 +593,50 @@ source and would keep running.
    ruleset's code scanning threshold decide what blocks a merge — that decision can then change
    without re-scanning. The second pass (`format: table`) does honour `severity`, and is the only
    place the input does anything.
+
+### Why Dependabot cannot update the lockfile, and what commits it instead
+
+`pnpm-lock.yaml` is a single file at the repository root, shared by all four workspace projects, but
+the npm updater in [`dependabot.yml`](../.github/dependabot.yml) is pointed at `/apps/api`,
+`/apps/web` and `/packages/shared`. Dependabot looks for a lockfile **in the directory it was
+configured with**, finds none there, and opens a PR that changes `package.json` alone. Every CI job
+then dies in the first ten seconds:
+
+```
+Error: ERR_PNPM_OUTDATED_LOCKFILE
+  specifiers in the lockfile don't match specifiers in package.json
+```
+
+Every Dependabot PR merged before this workflow existed (#8, #12, #33, #84, #131) carries a hand-written
+follow-up commit regenerating the lockfile. This is structural, not a flake.
+
+Pointing the updater at `directory: /` would let Dependabot resolve the lockfile itself, and was
+rejected: a single block cannot carry the `eslint` ignore that must apply to `apps/web` and must not
+reach `apps/api` — the reasoning is in `dependabot.yml` and is worth more than the automation.
+
+So [`dependabot-lockfile.yml`](../.github/workflows/dependabot-lockfile.yml) runs
+`pnpm install --lockfile-only` on Dependabot PRs and commits the result back. Three constraints
+shape it, and each one is a wrong turn already taken by someone:
+
+1. **The commit cannot go out over `GITHUB_TOKEN`.** A workflow run triggered by Dependabot always
+   gets a read-only token, whatever `permissions:` claims. It needs its own credential.
+2. **The credential must be a *Dependabot* secret, not an Actions secret.** Runs triggered by
+   Dependabot read `secrets.*` from the Dependabot store; an Actions secret of the same name is
+   invisible there and the step fails with an empty token.
+3. **The commit must be created through the GraphQL API**, not `git push`. The ruleset requires
+   signed commits and a runner has no signing key, whereas a commit created through
+   `createCommitOnBranch` is signed by GitHub. The mutation's `expectedHeadOid` is what keeps a
+   Dependabot force-push mid-run from landing a lockfile on top of a different manifest.
+
+**Setup, once.** Create a fine-grained PAT scoped to this repository with `Contents: read and write`,
+then store it under *Settings → Secrets and variables → **Dependabot*** as
+`DEPENDABOT_LOCKFILE_TOKEN`. A PAT rather than `GITHUB_TOKEN` also has a second, necessary effect:
+a commit authored by `GITHUB_TOKEN` does not start a new workflow run, so the PR's required checks
+would sit unreported on the new head SHA and the PR would stay blocked. A PAT commit re-runs CI.
+
+**This job is deliberately not a required status check.** It is skipped on every human PR, and a
+required check that never reports blocks the merge instead of guarding it. It also stays off
+`setup-workspace`, whose install step is `--frozen-lockfile` — the very failure it exists to repair.
 
 ### Setting up SonarQube Cloud, and the toggle that breaks it
 
