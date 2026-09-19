@@ -636,6 +636,13 @@ configured with `projectRoot: "../.."` — Jest in `apps/api/package.json`, Vite
 `apps/web/vitest.config.ts`. An entry in the report reads `apps/web/app/page.tsx`, and checking that
 is the fastest way to tell a real 0% from a broken one.
 
+**Keep the scan action current, and let Dependabot do it.** `SonarSource/sonarqube-scan-action`
+pinned at `v4.1.0` fails this repository twice over: two `high` advisories on the action itself
+(`GHSA-f79p-9c5r-xg88`, `GHSA-5xq9-5g24-4g6f`, patched in `5.3.1` and `6.0.0`) make `Dependency
+review` red, and it calls `actions/cache@v4.0.2`, a version GitHub no longer serves — which kills the
+job in "Set up job", before a single step of ours runs. The pin is `v8.2.2`; the `github-actions`
+ecosystem in `.github/dependabot.yml` is what keeps it from ageing back into the same hole.
+
 **The `SonarQube` job does not gate deploys.** It is not in `needs` for `migrate`, `deploy-api` or
 `deploy-web` — the same shape as Trivy and CodeQL, which gate the merge into `main` from another
 workflow and leave the deployment chain alone. A commit that is already on `main` has passed the

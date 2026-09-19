@@ -91,7 +91,7 @@ test), cấu hình phân tích trong `sonar-project.properties` ở root, covera
 - [x] Bước kiểm `secrets.SONAR_TOKEN` rỗng → `::error::` chỉ rõ phải thêm secret ở đâu, `exit 1`.
       Cùng khuôn với bước kiểm `DIRECT_DATABASE_URL` của job `migrate`.
 - [x] Hai bước chạy `test:cov` cho api và web.
-- [x] `SonarSource/sonarqube-scan-action@v4.1.0` với `args: -Dsonar.qualitygate.wait=true`, env
+- [x] `SonarSource/sonarqube-scan-action@v8.2.2` với `args: -Dsonar.qualitygate.wait=true`, env
       `SONAR_TOKEN`. Không đặt `SONAR_HOST_URL` — biến đó chỉ dành cho SonarQube Server tự host.
 - [x] **Không** thêm `sonarqube` vào `needs` của `migrate`, `deploy-api`, `deploy-web` (spec §3).
 - [x] Comment giải thích: vì sao chạy lại test thay vì dùng artifact, vì sao `fetch-depth: 0`, vì sao

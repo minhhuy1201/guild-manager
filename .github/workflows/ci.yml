@@ -149,8 +149,12 @@ jobs:
 
       # Không đặt SONAR_HOST_URL: biến đó chỉ dành cho SonarQube Server tự host. Với Cloud, token
       # đã xác định org và scanner tự biết đi đâu.
+      # Phiên bản không phải chuyện thẩm mỹ ở action này: v4.1.0 dính hai advisory high (command
+      # injection GHSA-f79p-9c5r-xg88, argument injection GHSA-5xq9-5g24-4g6f) nên `Dependency
+      # review` chặn PR, và nó còn gọi `actions/cache@v4.0.2` — bản GitHub đã ngừng phục vụ, job
+      # chết ngay ở bước "Set up job" trước khi chạy dòng nào.
       - name: Scan and wait for the quality gate
-        uses: SonarSource/sonarqube-scan-action@v4.1.0
+        uses: SonarSource/sonarqube-scan-action@v8.2.2
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
