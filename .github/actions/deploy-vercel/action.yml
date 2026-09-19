@@ -1,37 +1,37 @@
 name: Deploy to Vercel
-description: Đẩy source ở repo root lên một project Vercel và chờ build xong.
+description: Upload the repo-root source to a Vercel project and wait for the build to finish.
 
 inputs:
   project-id:
-    description: ID của project Vercel nhận bản deploy này.
+    description: ID of the Vercel project this deploy goes to.
     required: true
   token:
-    description: Vercel token có quyền deploy (secrets.VERCEL_TOKEN).
+    description: A Vercel token allowed to deploy (secrets.VERCEL_TOKEN).
     required: true
 
 runs:
   using: composite
   steps:
-    # `vercel` coi token rỗng là "thiếu giá trị cho --token" — thông báo không hề gợi ý rằng
-    # secret chưa được nạp. Chặn sớm để lỗi chỉ đúng chỗ cần sửa.
+    # `vercel` reads an empty token as "missing value for --token" - a message that never hints
+    # the secret was not loaded. Fail early so the error points at the thing to fix.
     - name: Check the Vercel token is present
       shell: bash
       env:
         VERCEL_TOKEN: ${{ inputs.token }}
       run: |
         if [ -z "$VERCEL_TOKEN" ]; then
-          echo "::error::secrets.VERCEL_TOKEN rỗng hoặc chưa được đặt." >&2
-          echo "Tạo token tại https://vercel.com/account/settings/tokens rồi thêm vào" >&2
-          echo "Settings → Secrets and variables → Actions của repo." >&2
+          echo "::error::secrets.VERCEL_TOKEN is empty or unset." >&2
+          echo "Create a token at https://vercel.com/account/settings/tokens, then add it under" >&2
+          echo "Settings -> Secrets and variables -> Actions in this repository." >&2
           exit 1
         fi
 
-    # Không dùng `vercel build --prebuilt`: biến môi trường đánh dấu Sensitive không tải về được
-    # qua `vercel pull`, build tại đây sẽ nhúng giá trị rỗng. Đẩy source lên để Vercel tự build
-    # với biến thật, giống hệt cách git integration vẫn làm.
+    # Not `vercel build --prebuilt`: environment variables marked Sensitive cannot be fetched by
+    # `vercel pull`, so building here would bake in empty values. Uploading the source lets Vercel
+    # build with the real variables, exactly as the git integration used to.
     #
-    # Chạy từ repo root: Root Directory của project (apps/api, apps/web) do Vercel áp dụng lên
-    # phần source đã upload, đúng như khi deploy từ git.
+    # Run from the repo root: the project's Root Directory (apps/api, apps/web) is applied by
+    # Vercel to the uploaded source, just as it is on a git deploy.
     - name: Deploy
       shell: bash
       env:
