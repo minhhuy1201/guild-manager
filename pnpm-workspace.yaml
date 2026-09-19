@@ -2,10 +2,11 @@ packages:
   - "apps/*"
   - "packages/*"
 
-# Node 24 chỉ là gợi ý nếu không ai ép: `engines.node` của mỗi package thành lỗi cài đặt thật.
+# Node 24 is only a suggestion unless something enforces it: this turns each package's
+# `engines.node` into a real install error.
 allowBuilds:
-  # jest-haste-map kéo @parcel/watcher vào từ jest 30.5; nó đã có sẵn binary prebuilt theo
-  # nền tảng (@parcel/watcher-linux-x64-glibc, …) nên bước node-gyp là thừa.
+  # jest-haste-map pulls @parcel/watcher in through jest 30.5; it already ships per-platform
+  # prebuilt binaries (@parcel/watcher-linux-x64-glibc, …), so the node-gyp step is redundant.
   '@parcel/watcher': false
   '@prisma/engines': true
   '@scarf/scarf': false
@@ -14,9 +15,9 @@ allowBuilds:
 
 engineStrict: true
 
-# Nâng sàn phiên bản cho các dependency gián tiếp có advisory đang mở trên Dependabot.
-# Không package nào trong workspace khai báo chúng trực tiếp, nên override là chỗ duy nhất
-# ép được bản vá. Gỡ một dòng khi dependency cha đã tự nâng qua mốc tương ứng.
+# Raises the version floor for transitive dependencies with an advisory open on Dependabot.
+# No package in the workspace declares them directly, so an override is the only place the patched
+# version can be forced. Drop a line once the parent dependency has moved past that mark itself.
 overrides:
   "brace-expansion@1": "^1.1.18"
   "brace-expansion@2": "^2.1.4"
