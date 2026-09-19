@@ -110,7 +110,8 @@
     "coveragePathIgnorePatterns": [
       "/node_modules/",
       "\\.spec\\.ts$",
-      "/src/main\\.ts$"
+      "/src/main\\.ts$",
+      "/src/generated/"
     ],
     "testEnvironment": "node"
   }

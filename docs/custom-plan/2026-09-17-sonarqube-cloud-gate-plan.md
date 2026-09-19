@@ -77,7 +77,9 @@ test), cấu hình phân tích trong `sonar-project.properties` ở root, covera
       `sonar.test.inclusions` cho `**/*.spec.ts`, `**/__tests__/**` (điểm 3).
 - [x] `sonar.exclusions` (gồm cả hai pattern test của điểm 3): `**/node_modules/**`, `**/dist/**`,
       `**/.next/**`, `**/coverage/**`,
-      `apps/api/prisma/migrations/**`, `apps/web/public/**`, `**/*.config.*`.
+      `apps/api/prisma/migrations/**`, `apps/web/public/**`, `apps/web/*.config.*` — có phạm vi
+      thư mục chứ không phải `**/*.config.*`, vì dạng rộng nuốt luôn `apps/api/src/config/app.config.ts`,
+      là code sản phẩm.
 - [x] `sonar.javascript.lcov.reportPaths` = `apps/api/coverage/lcov.info,apps/web/coverage/lcov.info`
       (điểm 2).
 - [x] Comment ở đầu file nói vì sao cấu hình ở đây chứ không ở `args:` trong workflow.
