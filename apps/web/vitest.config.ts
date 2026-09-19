@@ -17,6 +17,27 @@ export default defineConfig({
     env: { TZ: "Asia/Ho_Chi_Minh" },
     include: ["**/__tests__/**/*.test.ts?(x)"],
     exclude: ["node_modules/**", ".next/**"],
+    // Only `test:cov` turns this on; it feeds apps/web/coverage/lcov.info to SonarQube Cloud, whose
+    // quality gate measures coverage on new code. `include` is listed rather than left to the
+    // default `**`, so config files and generated output never dilute the ratio.
+    coverage: {
+      provider: "v8",
+      // `projectRoot` is the repository root, not this app: the scanner runs from there, and it
+      // resolves every path inside lcov.info against its own base directory. Left at the default
+      // the report would say `app/page.tsx`, which does not exist one level up, and Sonar would
+      // report 0% coverage with only a warning in the log.
+      reporter: [["lcov", { projectRoot: "../.." }], "text-summary"],
+      include: [
+        "app/**",
+        "components/**",
+        "config/**",
+        "features/**",
+        "hooks/**",
+        "lib/**",
+        "proxy.ts",
+      ],
+      exclude: ["**/__tests__/**", "**/*.d.ts", "**/*.css"],
+    },
   },
   resolve: {
     alias: {

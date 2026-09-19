@@ -537,7 +537,7 @@ rule does not appear there, so during any migration between the two, both endpoi
 | Restrict deletions, block force pushes | `main` cannot be deleted or rewritten |
 | Require a pull request | No direct push. 0 approvals required — a solo repository cannot self-approve, and a rule that always needs a bypass teaches the habit of bypassing |
 | Require conversation resolution | Every review thread answered before merge |
-| Require status checks (8) | The six from CI, plus `Dependency review` and `Trivy scan`. Branches must be up to date with `main` first |
+| Require status checks (9) | The seven from CI, plus `Dependency review` and `Trivy scan`. Branches must be up to date with `main` first |
 | **Require code scanning results** | `CodeQL` and `Trivy`, security alerts at `all`, other alerts at `errors`. This is the rule branch protection had no equivalent for |
 | Require signed commits | SSH signing; GitHub signs its own squash/rebase commits |
 | Require linear history | Merge commits are refused, so `squash` and `rebase` are the only methods offered |
@@ -561,7 +561,7 @@ reversible; a file nobody re-reads is neither.
 
 ### Automated dependency and security checks
 
-Six things run on their own; none of them can deploy, so the worst any of them does is open a PR,
+Seven things run on their own; none of them can deploy, so the worst any of them does is open a PR,
 raise an alert or fail a pull request.
 
 | What | Where it lives | What it does |
@@ -571,9 +571,10 @@ raise an alert or fail a pull request.
 | CodeQL | [`.github/workflows/codeql.yml`](../.github/workflows/codeql.yml) | Static analysis on every PR and push to `main`, plus weekly. Follows data across the repo, which is a different question from `pnpm lint` — ESLint reads one file at a time. Findings land in the Security tab. |
 | Dependency review | [`.github/workflows/security.yml`](../.github/workflows/security.yml) | Reads the lockfile diff of a pull request and fails it when a dependency arrives carrying a `high` or worse advisory. Dependabot covers the same advisories, but only once the dependency is already on `main` — this is the gate in front of it. |
 | Trivy | [`.github/workflows/security.yml`](../.github/workflows/security.yml) | One filesystem scan on every PR and push to `main`, plus weekly, running three scanners: `vuln` over `pnpm-lock.yaml`, `secret` over the whole tree, and `misconfig` over `docker/Dockerfile.dev` — the last is the one nothing else here reads. **Every** severity lands in the Security tab; only `CRITICAL` fails the job, and a vulnerability with no released fix is skipped because a PR cannot act on it. Two traps below. |
+| SonarQube Cloud | [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) | The `SonarQube` job on every PR and push to `main`. Asks what nothing else here asks: how much of the **new** code is covered by tests, what is duplicated, what smells are accumulating. ESLint reads one file at a time and only knows the rules that are switched on; CodeQL only cares about security. Coverage comes from `test:cov` in both apps as lcov. The job waits for the quality gate and goes red when it fails, which is what makes it a gate rather than a dashboard. Its own trap is below. |
 | Secret scanning + push protection | Repository setting | Blocks a push that carries a recognised credential, instead of reporting it after the fact. This is the automated half of the rule in the root `CLAUDE.md`: never commit credentials. |
 
-All six are free because the repository is **public**. Making it private would take CodeQL, secret
+All seven are free because the repository is **public** — SonarQube Cloud's free plan scans public projects with no line limit. Making it private would take CodeQL, secret
 scanning and dependency review with it unless GitHub Advanced Security is bought; Trivy is open
 source and would keep running.
 
@@ -592,11 +593,66 @@ source and would keep running.
    without re-scanning. The second pass (`format: table`) does honour `severity`, and is the only
    place the input does anything.
 
+### Setting up SonarQube Cloud, and the toggle that breaks it
+
+The repository side is committed: [`sonar-project.properties`](../sonar-project.properties) holds
+the source, test and coverage paths, and the `SonarQube` job in
+[`ci.yml`](../.github/workflows/ci.yml) runs the scan with `-Dsonar.qualitygate.wait=true`. The
+other half lives in Sonar's web UI and in repository settings, and has to be done in this order:
+
+1. Sign in to sonarcloud.io with GitHub, create the organization from the `minhhuy1201` account, on
+   the **Free** plan.
+2. Import `minhhuy1201/guild-manager` as a single project — one Sonar project covers the monorepo,
+   because binding several projects to one repository is a paid feature and two dashboards buy
+   nothing here. Check the `sonar.organization` and `sonar.projectKey` Sonar assigns against
+   `sonar-project.properties`.
+3. **Administration → Analysis Method → switch Automatic Analysis OFF.**
+4. Create a token (My Account → Security) and add it as the `SONAR_TOKEN` repository secret.
+5. Set the New Code definition. Every "on New Code" condition in the quality gate is measured
+   against it, so the gate means whatever this setting says it means.
+6. Only once the job has gone green once, add `SonarQube` to the required status checks in the
+   `main protection` ruleset. Requiring a check that has never passed locks every pull request.
+
+**Step 3 is the one that costs an afternoon.** SonarQube Cloud enables *Automatic Analysis* by
+default for GitHub repositories: it clones and scans on its own, without CI. It cannot read coverage
+reports, and while it is on, **every** SonarScanner run from CI fails — with a message that does not
+point at a toggle in a web UI. Automatic analysis and CI-based analysis are mutually exclusive, and
+this repository needs the CI one, because coverage is the whole point.
+
+**The quality gate is the default *Sonar way*, unchanged.** It requires 80% coverage on new code,
+so a pull request that adds untested code goes red. That is the intended behaviour, not an accident
+of the defaults: a gate that only counted issues would pass silently on code nothing tests. Changing
+a threshold is done in the Sonar UI, and the reason belongs in this section when it happens.
+
+**A coverage path that does not exist is not an error.** The scanner reports 0% and carries on, so
+`sonar.javascript.lcov.reportPaths` is worth re-reading whenever a test runner's output directory
+moves. Jest's `coverageDirectory` in `apps/api` is relative to its `rootDir` (`src`), which is why
+the path is `apps/api/coverage/lcov.info` and not `coverage/lcov.info`.
+
+**Neither is a path *inside* the report that does not resolve** — the same silent 0%, one log line
+deeper: `Could not resolve N file paths`. Each runner writes lcov entries relative to its own app
+directory while the scanner resolves them against the repository root, so both reporters are
+configured with `projectRoot: "../.."` — Jest in `apps/api/package.json`, Vitest in
+`apps/web/vitest.config.ts`. An entry in the report reads `apps/web/app/page.tsx`, and checking that
+is the fastest way to tell a real 0% from a broken one.
+
+**Keep the scan action current, and let Dependabot do it.** `SonarSource/sonarqube-scan-action`
+pinned at `v4.1.0` fails this repository twice over: two `high` advisories on the action itself
+(`GHSA-f79p-9c5r-xg88`, `GHSA-5xq9-5g24-4g6f`, patched in `5.3.1` and `6.0.0`) make `Dependency
+review` red, and it calls `actions/cache@v4.0.2`, a version GitHub no longer serves — which kills the
+job in "Set up job", before a single step of ours runs. The pin is `v8.2.2`; the `github-actions`
+ecosystem in `.github/dependabot.yml` is what keeps it from ageing back into the same hole.
+
+**The `SonarQube` job does not gate deploys.** It is not in `needs` for `migrate`, `deploy-api` or
+`deploy-web` — the same shape as Trivy and CodeQL, which gate the merge into `main` from another
+workflow and leave the deployment chain alone. A commit that is already on `main` has passed the
+gate.
+
 **Why Trivy on top of Dependabot.** Its `vuln` scanner genuinely overlaps — that is deliberate, so
 one Security tab holds everything rather than dependency findings living somewhere else. The part
 that does not overlap is `misconfig` and `secret` over files no other tool here opens.
 
-A Dependabot PR is an ordinary PR: `main` is protected, so the same eight required checks must pass
+A Dependabot PR is an ordinary PR: `main` is protected, so the same nine required checks must pass
 before it can be merged. Nothing reaches production without going through the pipeline in section 4.
 
 **Why there is a root `package.json`.** Security updates do not read the `directories` list in

@@ -13,6 +13,8 @@
     "typecheck": "tsc --noEmit",
     "pretest": "pnpm --filter @guild/shared build",
     "test": "vitest run",
+    "pretest:cov": "pnpm --filter @guild/shared build",
+    "test:cov": "vitest run --coverage",
     "test:watch": "vitest"
   },
   "dependencies": {
@@ -45,6 +47,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/semver": "^7.8.0",
+    "@vitest/coverage-v8": "^5.0.1",
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
     "jsdom": "^30.0.1",

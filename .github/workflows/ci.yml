@@ -100,6 +100,69 @@ jobs:
       - name: Typecheck web
         run: pnpm --filter web typecheck
 
+  # Câu hỏi không job nào ở trên hỏi: code MỚI của PR này được test bao nhiêu phần trăm, có trùng
+  # lặp không, có smell nào đang tích tụ không. ESLint đọc từng file một, CodeQL chỉ quan tâm bảo
+  # mật. Quality gate của Sonar đo trên *code mới*, nên nó siết dần mà không bắt phải đi sửa cả kho.
+  #
+  # Job này KHÔNG nằm trong `needs` của migrate/deploy — cùng lý do Trivy và CodeQL không nằm ở đó:
+  # nó chặn ở cửa merge vào main (required status check), còn một commit đã qua cửa đó thì không có
+  # gì để chặn nữa.
+  sonarqube:
+    name: SonarQube
+    needs: [changes]
+    if: needs.changes.outputs.api == 'true' || needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Sonar đọc lịch sử git để biết dòng nào là "mới". Shallow clone (mặc định depth 1) không
+          # có lịch sử, nên mọi điều kiện "on New Code" của quality gate tính sai — im lặng, không
+          # báo lỗi. Chỉ job này cần; các job khác không đụng tới git blame.
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-workspace
+
+      # Fail ngay ở đây thay vì để scanner chết bằng một lỗi xác thực của Sonar, không nói được
+      # thiếu cái gì. Cùng khuôn với bước kiểm DIRECT_DATABASE_URL của job migrate bên dưới.
+      - name: Check the Sonar token is present
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          if [ -z "$SONAR_TOKEN" ]; then
+            echo "::error::secrets.SONAR_TOKEN rỗng hoặc chưa được đặt." >&2
+            echo "Tạo token trong SonarQube Cloud (My Account → Security) rồi thêm vào" >&2
+            echo "Settings → Secrets and variables → Actions của repo." >&2
+            exit 1
+          fi
+
+      # Test chạy lại ở đây, chồng lên backend-test/frontend-test, và đó là lựa chọn có chủ đích:
+      # cách kia là upload lcov thành artifact rồi download, thêm bốn bước YAML và hỏng ngay ở
+      # trường hợp thường gặp nhất — PR chỉ chạm apps/web làm backend-test bị skip, không còn
+      # artifact nào để tải. Runner của repo public không giới hạn phút, nên thứ đáng tiết kiệm là
+      # số chỗ có thể hỏng.
+      #
+      # Cả hai chạy kể cả khi chỉ một phần đổi: Sonar phân tích toàn bộ project, và nộp nửa báo cáo
+      # coverage nghĩa là nửa còn lại tụt về 0% trên dashboard.
+      - name: Coverage api
+        run: pnpm --filter api test:cov
+      - name: Coverage web
+        run: pnpm --filter web test:cov
+
+      # Không đặt SONAR_HOST_URL: biến đó chỉ dành cho SonarQube Server tự host. Với Cloud, token
+      # đã xác định org và scanner tự biết đi đâu.
+      # Phiên bản không phải chuyện thẩm mỹ ở action này: v4.1.0 dính hai advisory high (command
+      # injection GHSA-f79p-9c5r-xg88, argument injection GHSA-5xq9-5g24-4g6f) nên `Dependency
+      # review` chặn PR, và nó còn gọi `actions/cache@v4.0.2` — bản GitHub đã ngừng phục vụ, job
+      # chết ngay ở bước "Set up job" trước khi chạy dòng nào.
+      - name: Scan and wait for the quality gate
+        uses: SonarSource/sonarqube-scan-action@v8.2.2
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          # `wait` là thứ biến job này thành một cái cổng: không có nó, scanner nộp báo cáo rồi
+          # thoát 0, và một quality gate đỏ không làm ai dừng lại. Mọi cấu hình còn lại nằm trong
+          # sonar-project.properties.
+          args: -Dsonar.qualitygate.wait=true
+
   build-api:
     name: Build API
     needs: [changes]
