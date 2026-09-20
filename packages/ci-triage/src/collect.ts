@@ -69,18 +69,25 @@ export function buildState(
   jobs: FailedJob[],
   changedFiles: string[],
 ): TriageState {
-  const perJobChars = Math.max(
-    MIN_CHARS_PER_JOB,
-    Math.floor(MAX_STATE_CHARS / Math.max(1, jobs.length)) -
-      SECTION_OVERHEAD_CHARS,
+  // Every character that is not log text has to come out of the budget first: the section
+  // separators, then each job's own header, whose length depends on the job name. A flat estimate
+  // holds only for the job names that happen to exist today.
+  const separators = Math.max(0, jobs.length - 1) * SECTION_SEPARATOR.length;
+  const share = Math.floor(
+    (MAX_STATE_CHARS - separators) / Math.max(1, jobs.length),
   );
 
   const logTail = jobs
     .map((job) => {
+      const header = `### ${job.name}\n`;
+      const perJobChars = Math.max(
+        MIN_CHARS_PER_JOB,
+        share - header.length - MARKER_ALLOWANCE_CHARS,
+      );
       const safe = redact(job.log);
-      return `### ${job.name}\n${truncateTail(safe, MAX_LINES_PER_JOB, perJobChars)}`;
+      return `${header}${truncateTail(safe, MAX_LINES_PER_JOB, perJobChars)}`;
     })
-    .join('\n\n');
+    .join(SECTION_SEPARATOR);
 
   return {
     failedJobs: jobs.map(({ name, conclusion }) => ({ name, conclusion })),
@@ -92,8 +99,11 @@ export function buildState(
   };
 }
 
-/** Room left per job for its `### <name>` header and the truncation marker line. */
-const SECTION_OVERHEAD_CHARS = 160;
+/** What separates two job sections in the log tail. */
+const SECTION_SEPARATOR = '\n\n';
+
+/** Room left per job for the `… earlier output omitted (N lines, M characters) …` marker. */
+const MARKER_ALLOWANCE_CHARS = 80;
 
 /** Floor on a job's excerpt, so many failed jobs at once still leave each one readable. */
 const MIN_CHARS_PER_JOB = 500;

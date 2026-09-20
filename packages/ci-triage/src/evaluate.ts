@@ -87,20 +87,38 @@ export function assertAnswerShape(answers: unknown): void {
     throw new MalformedAnswerError('answers không phải một object');
   }
 
-  const record = answers as Record<string, { type?: unknown } | undefined>;
-  const expected = {
-    category: 'choice',
-    ownerApp: 'choice',
-    rerunLikelyGreen: 'boolean',
-    blastRadius: 'score',
-  } as const;
+  const record = answers as Record<string, Record<string, unknown> | undefined>;
 
-  for (const [key, type] of Object.entries(expected)) {
-    if (record[key]?.type !== type) {
+  for (const [key, type] of Object.entries(EXPECTED_ANSWERS)) {
+    const answer = record[key];
+    if (answer?.['type'] !== type) {
       throw new MalformedAnswerError(`thiếu ${key} kiểu ${type}`);
+    }
+
+    // The discriminant alone is not enough: `render.ts` dereferences the payload field without
+    // checking it, so an answer tagged correctly but missing its value would crash there - past
+    // the last try/catch - instead of here.
+    const [field, kind] = PAYLOAD_OF[type];
+    if (typeof answer[field] !== kind) {
+      throw new MalformedAnswerError(`${key} thiếu ${field} kiểu ${kind}`);
     }
   }
 }
+
+/** The four questions, and the discriminant each answer must carry. */
+const EXPECTED_ANSWERS = {
+  category: 'choice',
+  ownerApp: 'choice',
+  rerunLikelyGreen: 'boolean',
+  blastRadius: 'score',
+} as const;
+
+/** The value field `render.ts` reads for each answer type, and the typeof it must have. */
+const PAYLOAD_OF = {
+  choice: ['choice', 'string'],
+  boolean: ['probability', 'number'],
+  score: ['score', 'number'],
+} as const;
 
 /** Thrown when the gateway credential is absent. The CLI turns this into one line and exits 0. */
 export class MissingApiKeyError extends Error {

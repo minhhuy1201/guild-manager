@@ -97,6 +97,24 @@ describe('buildState', () => {
     assert.ok(buildState(jobs, []).logTail.length <= MAX_STATE_CHARS);
   });
 
+  it('keeps the headers intact even when job names are long', () => {
+    // The overhead is derived from each header, not a flat constant, so a long job name cannot
+    // push the join past the budget and let the backstop slice shear the first section.
+    const jobs = Array.from({ length: 7 }, (_, i) =>
+      job(`${String(i)}-${'n'.repeat(140)}`, 'y'.repeat(200_000)),
+    );
+
+    const { logTail } = buildState(jobs, []);
+
+    assert.ok(logTail.length <= MAX_STATE_CHARS);
+    for (let i = 0; i < 7; i += 1) {
+      assert.ok(
+        logTail.includes(`### ${String(i)}-${'n'.repeat(140)}`),
+        `header ${i} was sheared off`,
+      );
+    }
+  });
+
   it('keeps every job header intact when all seven CI jobs fail at once', () => {
     // The final slice trims from the front, so a budget that ignored the `### <name>` headers
     // would shear the first one and hand Jev a fragment instead of a section.

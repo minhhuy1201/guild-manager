@@ -176,17 +176,24 @@ async function main(): Promise<void> {
     failedJobs: jobs.map((job) => job.name),
     result,
   };
-  const human = renderHuman(report);
 
-  console.log(options.asJson ? renderJson(report) : human);
+  // Rendering is the last thing that runs, so it is also the last place an escaping throw would
+  // still break the exit-0 promise - a malformed answer that slipped the shape check, or a bug in
+  // the formatting itself. Nothing is left outside a guard.
+  try {
+    const human = renderHuman(report);
+    console.log(options.asJson ? renderJson(report) : human);
 
-  const summary = process.env.GITHUB_STEP_SUMMARY;
-  if (summary) {
-    appendFileSync(
-      summary,
-      `## CI triage (Jev)\n\n\`\`\`\n${human}\n\`\`\`\n`,
-      'utf8',
-    );
+    const summary = process.env.GITHUB_STEP_SUMMARY;
+    if (summary) {
+      appendFileSync(
+        summary,
+        `## CI triage (Jev)\n\n\`\`\`\n${human}\n\`\`\`\n`,
+        'utf8',
+      );
+    }
+  } catch (error) {
+    bail(`Không in được kết quả triage: ${describeError(error)}`);
   }
 }
 

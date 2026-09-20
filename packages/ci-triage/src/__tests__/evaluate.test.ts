@@ -61,6 +61,31 @@ describe('assertAnswerShape', () => {
     assert.throws(() => assertAnswerShape(wrong), /category/);
   });
 
+  it('rejects an answer tagged correctly but missing its value', () => {
+    // The shape that would otherwise crash render.ts, past the last try/catch:
+    // `answers.rerunLikelyGreen.probability.toFixed(2)` on an undefined probability.
+    const cases = {
+      category: { type: 'choice' },
+      ownerApp: { type: 'choice' },
+      rerunLikelyGreen: { type: 'boolean' },
+      blastRadius: { type: 'score' },
+    };
+
+    for (const [key, hollow] of Object.entries(cases)) {
+      assert.throws(
+        () => assertAnswerShape({ ...valid, [key]: hollow }),
+        new RegExp(key),
+        `${key} passed with no payload field`,
+      );
+    }
+  });
+
+  it('rejects a payload field of the wrong primitive type', () => {
+    const wrong = { ...valid, blastRadius: { type: 'score', score: '1' } };
+
+    assert.throws(() => assertAnswerShape(wrong), /blastRadius/);
+  });
+
   it('rejects a response that is not an object at all', () => {
     for (const value of [null, undefined, 'answers', 42]) {
       assert.throws(() => assertAnswerShape(value), MalformedAnswerError);
