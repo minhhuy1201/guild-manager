@@ -6,15 +6,7 @@ import { BattleSessionsService } from '../../battle-sessions/battle-sessions.pub
 import { CharactersService } from '../../characters/characters.public';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { TeamBuilderService } from '../team-builder.service';
-
-/**
- * Build a Date from Vietnam time (UTC+7) for readability in tests.
- * @param iso - A string like '2026-07-22T12:00', read as Vietnam time
- * @returns The matching UTC Date
- */
-function vn(iso: string): Date {
-  return new Date(`${iso}:00+07:00`);
-}
+import { vn } from '../../../__tests__/vn-date';
 
 // Wednesday — the Tuesday session is over, Thursday and Saturday are still ahead.
 const WEDNESDAY = vn('2026-07-22T12:00');
