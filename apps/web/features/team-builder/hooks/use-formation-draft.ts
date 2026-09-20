@@ -218,7 +218,7 @@ export function useFormationDraft(
     if (isSameDay(after, before ?? matches)) {
       // Put a day that had no draft back the way it was found: a draft equal to
       // the saved copy would shadow the next refetch, could not be discarded
-      // (Đặt lại is disabled while the day is clean), and would block a prefill
+      // ("Đặt lại" is disabled while the day is clean), and would block a prefill
       // that only becomes eligible later. A day that had one keeps it, with no
       // step to take back.
       if (!before) clearDraft(sessionId);

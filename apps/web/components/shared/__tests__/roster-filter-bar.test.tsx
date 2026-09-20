@@ -98,7 +98,8 @@ describe("RosterFilterBar - xoá từ khoá", () => {
   it("ô tìm kiếm chừa sẵn chỗ bên phải, kể cả khi chưa có nút xoá", () => {
     render(<Harness />);
 
-    // Padding cố định: nếu chỉ chừa chỗ lúc nút hiện ra thì chữ trong ô nhảy ngay khi gõ chữ đầu.
+    // Fixed padding: reserving the room only once the button appears makes the text in the field
+    // jump on the first keystroke.
     expect(searchBox().className).toContain("pr-10");
   });
 });

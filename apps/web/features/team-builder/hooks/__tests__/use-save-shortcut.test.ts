@@ -44,7 +44,7 @@ describe("useSaveShortcut", () => {
     expect(onSave).toHaveBeenCalledOnce();
   });
 
-  // Không có gì để lưu thì phím tắt vẫn không được mở hộp thoại lưu trang của trình duyệt.
+  // With nothing to save, the shortcut still must not open the browser's save-page dialog.
   it("không có gì để lưu thì không gọi onSave nhưng vẫn chặn hộp thoại", () => {
     const onSave = vi.fn();
     renderHook(() => useSaveShortcut(onSave, false));
@@ -55,7 +55,7 @@ describe("useSaveShortcut", () => {
     expect(notPrevented).toBe(false);
   });
 
-  // Đội hình nằm sau dialog: lưu lúc đó là ghi thứ người dùng không nhìn thấy.
+  // The line-up sits behind the dialog: saving then writes something the user cannot see.
   it("phím bấm trong dialog thì không lưu nhưng vẫn chặn hộp thoại", () => {
     const onSave = vi.fn();
     const dialog = document.createElement("div");

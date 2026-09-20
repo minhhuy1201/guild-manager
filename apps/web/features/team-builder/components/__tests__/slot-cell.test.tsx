@@ -38,7 +38,8 @@ function noteButton(): HTMLElement {
   return screen.getByRole("button", { name: "Ghi chú" });
 }
 
-// Ô ghi chú chiếm 2/5 hàng làm tên chỉ còn vài chữ trên điện thoại; dưới sm nó thu vào một nút.
+// The note field takes two fifths of the row, leaving a few characters of the name on a phone;
+// below sm it collapses into a button.
 describe("SlotCell - ghi chú gọn dưới sm", () => {
   it("có nút ghi chú, bấm thì mở ô nhập và aria-expanded=true", () => {
     renderSlot();
@@ -67,7 +68,7 @@ describe("SlotCell - ghi chú gọn dưới sm", () => {
     expect(noteButton().dataset.hasNote).toBe("false");
   });
 
-  // Hai ô nhập cho cùng một ghi chú thì hai bên có thể lệch nhau, và screen reader đọc hai lần.
+  // Two inputs for the same note can drift apart, and a screen reader reads it twice.
   it("chỉ có một ô nhập ghi chú trong DOM", () => {
     renderSlot({ note: NOTE });
 

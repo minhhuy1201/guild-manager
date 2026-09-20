@@ -6,12 +6,13 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 const MODULE_BOUNDARY_MESSAGE =
-  'Import qua public API của module: file *.public (code) hoặc *.module (đăng ký DI). Không đụng file nội bộ của module khác.';
+  "Import through a module's public API: a *.public file (code) or a *.module file (DI registration). Do not reach into another module's internal files.";
 
 /**
- * Hai file vi phạm ranh giới module một cách cố ý, để `src/__tests__/module-boundary.spec.ts` khẳng
- * định luật dưới đây vẫn báo lỗi. Liệt kê từng file chứ không dùng glob `__tests__/fixtures/**`:
- * một fixture tương lai không nên tự động thoát khỏi lint chỉ vì nằm đúng thư mục.
+ * Files that break the module boundary on purpose, so `src/__tests__/module-boundary.spec.ts` can
+ * assert the rule below still reports them. Listed one by one rather than through a
+ * `__tests__/fixtures/**` glob: a future fixture should not escape linting automatically just by
+ * landing in the right directory.
  */
 const BOUNDARY_FIXTURES = [
   'src/__tests__/fixtures/outside-module-violation.ts',
@@ -20,30 +21,32 @@ const BOUNDARY_FIXTURES = [
 ];
 
 const LOWER_LAYER_MESSAGE =
-  'common/ và config/ không được import từ modules/, shared/ hay infrastructure/.';
+  'common/ and config/ must not import from modules/, shared/ or infrastructure/.';
 
 /**
- * Ranh giới module, kiểm trên **đường dẫn đã resolve** chứ không phải chuỗi import.
+ * The module boundary, checked against the **resolved path** rather than the import string.
  *
- * `no-restricted-imports` so khớp chuỗi, mà một chuỗi tương đối chỉ có nghĩa khi biết file đang
- * đứng sâu bao nhiêu — nên bản cũ phải khai một block cho mỗi độ sâu, và thêm một cấp thư mục là
- * luật im lặng ngừng kiểm tra ở cấp đó. `boundaries` biết khái niệm "cùng phần tử hay khác phần
- * tử", nên một luật là đủ cho mọi độ sâu.
+ * `no-restricted-imports` matches strings, and a relative string only means something once you
+ * know how deep the importing file sits - so the old version needed one block per depth, and
+ * adding a directory level silently stopped the rule checking at that level. `boundaries` knows
+ * whether two files are in the same element or not, so one rule covers every depth.
  *
- * Mỗi thư mục trong `src/modules/` là một phần tử; cửa vào của nó là `*.public.ts` (code) và
- * `*.module.ts` (class module cho `app.module.ts` và các `imports: [...]`). Mọi file khác là nội bộ.
+ * Each directory under `src/modules/` is an element; its entrances are `*.public.ts` (code) and
+ * `*.module.ts` (the module class for `app.module.ts` and every `imports: [...]`). Every other
+ * file is internal.
  *
- * `fileInternalPath` cần **hai** pattern. `!(*.public.ts|*.module.ts)` là extglob một tầng: nó
- * không khớp chuỗi có dấu gạch chéo, nên một file nằm sâu hơn gốc module (`dto/character.dto.ts`)
- * không khớp pattern nào, `disallow` không áp, và luật im lặng cho qua. Pattern thứ hai bắt đúng
- * phần đó — mọi đường dẫn có ít nhất một cấp thư mục, mà file lồng thì luôn là nội bộ, vì cả hai
- * cửa vào của module đều nằm ngay ở gốc.
+ * `fileInternalPath` needs **two** patterns. `!(*.public.ts|*.module.ts)` is a single-level
+ * extglob: it never matches a string containing a slash, so a file below the module root
+ * (`dto/character.dto.ts`) matches no pattern, `disallow` does not apply, and the rule passes it
+ * in silence. The second pattern covers exactly that - any path with at least one directory
+ * level, and a nested file is always internal, because both of a module's entrances sit at its
+ * root.
  *
- * Phần tử `app` bắt phần `src/` còn lại. Nó không thừa: `boundaries` bỏ qua mọi phụ thuộc mà nó
- * không phân loại được **cả hai đầu**, nên thiếu nó thì `app.module.ts`, `infrastructure/` và
- * `common/` được import thẳng vào ruột module mà không ai kêu.
+ * The `app` element captures the rest of `src/`. It is not redundant: `boundaries` ignores any
+ * dependency whose **two ends** it cannot both classify, so without it `app.module.ts`,
+ * `infrastructure/` and `common/` could be imported straight into a module's guts uncontested.
  *
- * @returns Các block cấu hình ESLint áp luật ranh giới module cho toàn bộ `src/`
+ * @returns The ESLint config blocks that apply the module boundary rule across all of `src/`
  */
 function moduleBoundaryRules() {
   return [
@@ -51,9 +54,10 @@ function moduleBoundaryRules() {
       files: ['src/**/*.ts'],
       plugins: { boundaries },
       settings: {
-        // Resolver mặc định của plugin chỉ biết `.js`; không khai `.ts` thì mọi import nội bộ
-        // resolve hụt và luật im lặng bỏ qua — đúng kiểu hỏng mà spec này muốn chấm dứt, nên
-        // `module-boundary.spec.ts` khoá lại bằng một fixture vi phạm.
+        // The plugin's default resolver only knows `.js`; without `.ts` declared here every
+        // internal import fails to resolve and the rule skips it in silence - exactly the failure
+        // this setup exists to end, which is why `module-boundary.spec.ts` pins it down with a
+        // violating fixture.
         'import/resolver': { node: { extensions: ['.ts', '.js', '.json'] } },
         'boundaries/elements': [
           { type: 'module', pattern: 'src/modules/*' },
@@ -89,9 +93,10 @@ function moduleBoundaryRules() {
 }
 
 /**
- * `common/` và `config/` là tầng dưới cùng: không được phụ thuộc ngược vào business.
+ * `common/` and `config/` are the bottom layer: they must not depend back on business code.
  *
- * Cấm hẳn cả thư mục, mạnh hơn luật ranh giới module ở trên, nên không cần khai thêm luật đó.
+ * This bans those directories outright, which is stricter than the module boundary rule above, so
+ * that rule does not need restating here.
  */
 function restrictUpwardImports(files, prefix) {
   return {
@@ -116,7 +121,7 @@ function lowerLayerRules() {
   return [
     // src/common/*.ts, src/config/*.ts
     restrictUpwardImports(['src/common/*.ts', 'src/config/*.ts'], '\\.\\./'),
-    // src/common/<nhóm>/*.ts — config/ hiện không có thư mục con, để sẵn cho khi có
+    // src/common/<group>/*.ts - config/ has no subdirectory today, this is ready for when it does
     restrictUpwardImports(
       ['src/common/*/*.ts', 'src/config/*/*.ts'],
       '\\.\\./\\.\\./',
@@ -126,8 +131,8 @@ function lowerLayerRules() {
 
 export default tseslint.config(
   {
-    // Code do Prisma sinh ra — không lint. Fixture ranh giới module bỏ khỏi lượt lint thường; bài
-    // test lint chúng riêng với `--no-ignore`.
+    // Prisma-generated code is not linted. The module boundary fixtures are left out of the
+    // normal lint pass; the test lints them on its own with `--no-ignore`.
     ignores: [
       'eslint.config.mjs',
       'src/generated/**',
@@ -160,14 +165,14 @@ export default tseslint.config(
     },
   },
 
-  // Dependency rules — xem docs/backend.md mục 4.
+  // Dependency rules - see docs/backend.md section 4.
   //
-  // Flat config **thay thế** chứ không gộp rule cùng tên, nên mỗi block `no-restricted-imports`
-  // dưới đây phải khai đủ mọi pattern áp cho nhóm file của nó.
+  // Flat config **replaces** a rule of the same name rather than merging it, so each
+  // `no-restricted-imports` block below has to declare every pattern that applies to its files.
   ...moduleBoundaryRules(),
   ...lowerLayerRules(),
   {
-    // Script chạy ngoài app (Prisma CLI) — không áp luật import theo tầng.
+    // Scripts that run outside the app (the Prisma CLI) - the layering rules do not apply.
     files: ['prisma/**/*.ts', 'prisma.config.ts'],
     rules: {
       'no-restricted-imports': 'off',
@@ -175,7 +180,8 @@ export default tseslint.config(
     },
   },
   {
-    // Script chạy tay ngoài app — nó nói chuyện với người qua stdout, không qua logger của Nest.
+    // Scripts run by hand outside the app - they talk to a person on stdout, not through Nest's
+    // logger.
     files: ['src/scripts/**/*.ts'],
     rules: { 'no-console': 'off' },
   },

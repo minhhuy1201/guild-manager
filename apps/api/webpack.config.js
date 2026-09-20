@@ -1,20 +1,20 @@
 /**
- * Mở rộng webpack config mặc định của Nest CLI.
+ * Extends the default webpack config the Nest CLI builds.
  *
- * Mặc định Nest để mọi thứ trong node_modules ra ngoài bundle (external). Nhưng
- * `@guild/shared` là source TypeScript của workspace, không có bản build JS — để external
- * thì lúc chạy `dist/main.js` Node sẽ đòi require file `.ts` và crash. Vì vậy chỉ riêng
- * `@guild/*` được bundle vào, phần còn lại giữ nguyên như cũ.
+ * By default Nest keeps everything in node_modules out of the bundle (external). But
+ * `@guild/shared` is TypeScript source from the workspace with no JS build - left external, a
+ * running `dist/main.js` would try to require a `.ts` file and crash. So `@guild/*` alone is
+ * bundled in and everything else stays as it was.
  *
- * @param {import('webpack').Configuration} options - Config mặc định do Nest CLI dựng sẵn
- * @returns {import('webpack').Configuration} Config với luật externals đã chỉnh
+ * @param {import('webpack').Configuration} options - The default config prepared by the Nest CLI
+ * @returns {import('webpack').Configuration} The config with the adjusted externals rule
  */
 module.exports = (options) => ({
   ...options,
   externals: [
     ({ request }, callback) => {
       const isRelative = request.startsWith('.') || request.startsWith('/');
-      // `@guild/...` là source dùng chung của workspace.
+      // `@guild/...` is shared source from the workspace.
       const isInternalSource = request.startsWith('@guild/');
 
       if (isRelative || isInternalSource) {

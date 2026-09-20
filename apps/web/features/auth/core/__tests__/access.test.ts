@@ -12,8 +12,9 @@ describe("decideAccess", () => {
     expect(decideAccess({ pathname: "/xep-team", role: null })).toBe("login");
   });
 
-  // Gõ trần tên miền là cách người lạ tới đây, nên chỗ đó cho họ trang giới thiệu chứ không phải
-  // một form đăng nhập của ứng dụng họ chưa biết là gì. Mọi đường khác đều do người ta chủ động gõ.
+  // Typing the bare domain is how a stranger arrives, so that address gives them the landing page
+  // rather than a login form for an app they know nothing about yet. Every other path is one
+  // somebody typed deliberately.
   it("khách gõ trần tên miền thì được đưa sang trang giới thiệu", () => {
     expect(decideAccess({ pathname: "/", role: null })).toBe("landing");
     expect(decideAccess({ pathname: "/lich-su-diem-danh", role: null })).toBe(
@@ -31,21 +32,21 @@ describe("decideAccess", () => {
     ).toBe("allow");
   });
 
-  // Danh sách công khai khớp trọn segment: `startsWith` trần sẽ coi `/trang-chu-cu` là một phần của
-  // `/trang-chu` và vô tình mở công khai một trang.
+  // The public list matches whole segments: a bare `startsWith` would read `/trang-chu-cu` as part
+  // of `/trang-chu` and make a page public by accident.
   it("danh sách công khai chỉ khớp trọn segment", () => {
     expect(decideAccess({ pathname: "/trang-chu-cu", role: null })).toBe(
       "login"
     );
     expect(decideAccess({ pathname: "/dang-nhapx", role: null })).toBe("login");
-    // Route lồng thật thì vẫn khớp.
+    // A genuinely nested route still matches.
     expect(decideAccess({ pathname: "/dang-nhap/discord", role: null })).toBe(
       "allow"
     );
   });
 
-  // Danh sách quản trị thì ngược lại, và cố ý giữ `startsWith`: khớp rộng ở đây là khoá nhầm một
-  // cửa, còn khớp hẹp là để hở một route quản trị không ai canh.
+  // The admin list is the opposite, and keeps `startsWith` on purpose: matching too widely here
+  // locks one door by mistake, while matching too narrowly leaves an admin route unguarded.
   it("danh sách quản trị khớp rộng, vì hỏng theo hướng an toàn", () => {
     expect(
       decideAccess({ pathname: "/xep-team-v2", role: GuildRole.MEMBER })

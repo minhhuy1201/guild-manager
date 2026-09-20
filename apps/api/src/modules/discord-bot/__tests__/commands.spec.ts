@@ -25,8 +25,8 @@ describe('registry lệnh', () => {
   });
 
   it('không có hai lệnh trùng tên', () => {
-    // Discord nhận cả hai và chỉ giữ lại một; router thì tra Map nên giữ lại cái kia. Trùng tên là
-    // một lệnh biến mất mà không ai báo.
+    // Discord accepts both and keeps one; the router looks up a Map and keeps the other. A
+    // duplicate name is a command disappearing with nobody reporting it.
     const names = commandDefinitions.map((definition) => definition.name);
 
     expect(new Set(names).size).toBe(names.length);

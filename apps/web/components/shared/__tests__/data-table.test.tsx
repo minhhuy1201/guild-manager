@@ -127,7 +127,7 @@ describe("DataTable", () => {
   it("thanh phân trang đếm đúng tổng số mục và số trang", () => {
     const { container } = render(<Harness />);
 
-    // 23 mục, 10 mục mỗi trang → 3 trang.
+    // 23 items, 10 per page -> 3 pages.
     const summary = container.querySelector("p[aria-live='polite']");
     expect(summary?.textContent).toBe("23 thành viên · trang 1/3");
 

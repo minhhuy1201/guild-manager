@@ -191,7 +191,8 @@ describe("countDayChanges", () => {
     expect(countDayChanges(draft, saved)).toBe(0);
   });
 
-  // Trận 2 chép nguyên trận 1, nên đếm từng ô của nó sẽ ra một con số không ai hiểu.
+  // Match 2 is a straight copy of match 1, so counting its slots individually gives a number nobody
+  // can make sense of.
   it("thêm trận 2 tính là một thay đổi", () => {
     expect(countDayChanges([...copy(saved), ...copy(saved)], saved)).toBe(1);
   });
@@ -232,7 +233,8 @@ describe("isSameDay", () => {
     expect(isSameDay(draft, saved)).toBe(true);
   });
 
-  // Khác isDayDirty: dấu cách người dùng vừa gõ là một thao tác thật, dù chưa làm ngày thành "chưa lưu".
+  // Unlike isDayDirty: the space the user just typed is a real action, even though it does not yet
+  // make the day unsaved.
   it("thêm dấu cách cuối ghi chú là khác", () => {
     const draft = copy(saved);
     draft[0].notes["team-1-pos-1"] = "giữ buồng ";

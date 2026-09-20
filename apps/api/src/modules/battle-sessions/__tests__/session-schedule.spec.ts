@@ -257,7 +257,8 @@ describe('session-schedule', () => {
   });
 
   describe('số trận của Bang Chiến xen kẽ theo tuần', () => {
-    // Mốc là Thứ 2 2026-08-31 — tuần đó đánh 2 trận, rồi cứ một tuần 1 trận, một tuần 2 trận.
+    // The anchor is Monday 2026-08-31 - that week has 2 matches, then it alternates: one week with
+    // 1 match, the next with 2.
     it('tuần mốc đánh 2 trận', () => {
       expect(guildWarMatchCount(vn('2026-08-31T00:00'))).toBe(2);
     });
@@ -278,8 +279,8 @@ describe('session-schedule', () => {
       expect(guildWarMatchCount(vn('2026-08-17T00:00'))).toBe(2);
     });
 
-    // 2026-01-05 cách mốc đúng 34 tuần về trước — số chẵn, và là số ÂM. Đây là ca dễ viết sai:
-    // `%` trong JavaScript giữ dấu của số bị chia.
+    // 2026-01-05 sits exactly 34 weeks before the anchor - an even number, and a NEGATIVE one. This
+    // is the case that is easy to get wrong: `%` in JavaScript keeps the sign of the dividend.
     it('tuần quá khứ xa vẫn tính chẵn/lẻ đúng dù số tuần lệch là số âm', () => {
       expect(guildWarMatchCount(vn('2026-01-05T00:00'))).toBe(2);
       expect(guildWarMatchCount(vn('2026-01-12T00:00'))).toBe(1);
@@ -287,7 +288,8 @@ describe('session-schedule', () => {
   });
 
   describe('ngày nhắc điểm danh', () => {
-    // Bang Chiến Thứ 7 05/09 có hạn 12:00 Thứ 6 04/09 → nhắc 9h sáng Thứ 6 04/09.
+    // The Bang Chiến on Saturday 05/09 closes at 12:00 on Friday 04/09 -> the nudge goes out at
+    // 09:00 that Friday.
     const guildWarDeadline = vn('2026-09-04T12:00');
 
     it('hạn từ 12:00 trở đi được nhắc sáng cùng ngày', () => {
@@ -334,15 +336,15 @@ describe('session-schedule', () => {
     });
 
     it('so theo ngày dương lịch VN, không theo khoảng 24 giờ', () => {
-      // Cách nhau chưa tới 24 giờ nhưng vẫn là "ngày mai" theo lịch VN.
+      // Less than 24 hours apart, yet still "tomorrow" on the Vietnamese calendar.
       expect(
         isReminderDay(vn('2026-09-03T01:00'), vn('2026-09-02T23:30')),
       ).toBe(true);
     });
 
     it('nửa đêm giờ VN cắt sang ngày mới, không phải nửa đêm UTC', () => {
-      // 2026-09-02T23:30+07:00 là 16:30 UTC cùng ngày. So bằng giờ UTC thì "ngày mai" sẽ
-      // ra 03/09 và ca này lọt lưới.
+      // 2026-09-02T23:30+07:00 is 16:30 UTC the same day. Compared in UTC, "tomorrow" would come
+      // out as 03/09 and this case would slip through.
       expect(
         isReminderDay(vn('2026-09-04T09:00'), vn('2026-09-02T23:30')),
       ).toBe(false);
@@ -350,7 +352,8 @@ describe('session-schedule', () => {
   });
 
   describe('trận thuộc lượt nhắc theo phạm vi', () => {
-    // Bang Chiến Thứ 7 05/09 có hạn 12:00 Thứ 6 04/09 → ngày nhắc là sáng Thứ 6.
+    // The Bang Chiến on Saturday 05/09 closes at 12:00 on Friday 04/09 -> the nudge day is that
+    // Friday morning.
     const guildWarDeadline = vn('2026-09-04T12:00');
     const mondayMorning = vn('2026-08-31T09:00');
 
@@ -375,7 +378,8 @@ describe('session-schedule', () => {
     });
 
     it('hạn đã qua thì không phạm vi nào nhắc', () => {
-      // 14:00 Thứ 6 04/09 - vẫn là ngày nhắc của hạn 12:00, nhưng hạn đã khoá.
+      // 14:00 on Friday 04/09 - still the nudge day for the 12:00 deadline, but the deadline has
+      // closed.
       const afternoon = vn('2026-09-04T14:00');
 
       expect(
@@ -387,7 +391,7 @@ describe('session-schedule', () => {
     });
 
     it('ngày đã khoá điểm danh thì không phạm vi nào nhắc', () => {
-      // Đúng ngày nhắc và hạn vẫn còn, nhưng đội hình đã gửi lên Discord.
+      // The right nudge day with the deadline still open, but the line-up has gone to Discord.
       const reminderMorning = vn('2026-09-04T09:00');
 
       expect(

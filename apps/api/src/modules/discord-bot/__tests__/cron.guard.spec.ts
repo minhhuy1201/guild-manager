@@ -50,7 +50,7 @@ describe('CronSecretGuard', () => {
     ).toThrow(UnauthorizedException);
   });
 
-  // Độ dài lệch phải ra "sai", không được ném từ timingSafeEqual.
+  // A length mismatch has to come out as "wrong", never as a throw from timingSafeEqual.
   it('từ chối khi secret chỉ đúng phần đầu', () => {
     const guard = new CronSecretGuard(CONFIG);
 

@@ -11,37 +11,40 @@ concurrency:
 jobs:
   sync-lockfile:
     name: Sync pnpm lockfile
-    # GITHUB_TOKEN của một run do Dependabot kích hoạt luôn là read-only, kể cả khi khai báo rộng
-    # hơn. Commit ở bước cuối vì thế đi bằng PAT riêng, không bằng token mặc định.
+    # The GITHUB_TOKEN of a run triggered by Dependabot is always read-only, however widely this
+    # block declares it. The commit in the last step therefore goes through a separate PAT, not
+    # through the default token.
     permissions:
       contents: read
-    # `directories:` trong dependabot.yml trỏ vào apps/* và packages/*, còn pnpm-lock.yaml nằm ở
-    # root. Dependabot tìm lockfile trong đúng thư mục nó được cấu hình, không thấy, nên PR của
-    # nó chỉ đổi package.json — và mọi job CI chết ngay ở `pnpm install --frozen-lockfile`.
-    # Job này vá lại chỗ đó: resolve lockfile theo manifest mới rồi commit ngược lên nhánh PR.
+    # `directories:` in dependabot.yml points at apps/* and packages/*, while pnpm-lock.yaml sits
+    # at the root. Dependabot looks for a lockfile in exactly the directories it is configured
+    # with, finds none, so its PRs only change package.json - and every CI job then dies at
+    # `pnpm install --frozen-lockfile`. This job patches that hole: resolve the lockfile against
+    # the new manifests, then commit it back onto the PR branch.
     #
-    # Head của PR Dependabot luôn là nhánh trong chính repo này; điều kiện thứ hai chặn trường
-    # hợp một fork mạo danh actor để job đi commit nội dung nó kiểm soát.
+    # The head of a Dependabot PR is always a branch in this repository; the second condition
+    # blocks a fork from impersonating the actor to make this job commit content it controls.
     if: github.actor == 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
         with:
-          # Mặc định của pull_request là merge ref (detached). Cần đúng head của nhánh thì
-          # `git diff` mới so với thứ Dependabot vừa commit.
+          # A pull_request run defaults to the merge ref (detached). Checking out the branch head
+          # is what makes `git diff` compare against what Dependabot just committed.
           ref: ${{ github.event.pull_request.head.ref }}
 
-      # Không dùng ./.github/actions/setup-workspace: action đó cài bằng --frozen-lockfile, tức
-      # là nó sẽ chết đúng vào lỗi mà job này sinh ra để sửa.
+      # Not ./.github/actions/setup-workspace: that action installs with --frozen-lockfile, so it
+      # would die on the very failure this job exists to fix.
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: pnpm
 
-      # --lockfile-only chỉ resolve và ghi pnpm-lock.yaml: không link node_modules, không chạy
-      # lifecycle script. Nhờ vậy không cần dựng apps/api/.env cho postinstall, và mã của
-      # dependency vừa bump không được thực thi trong job đang cầm quyền ghi.
+      # --lockfile-only resolves and writes pnpm-lock.yaml and nothing else: no node_modules
+      # linking, no lifecycle scripts. That removes the need to build apps/api/.env for
+      # postinstall, and keeps the freshly bumped dependency's code from running inside the one
+      # job that holds write access.
       - name: Resolve the lockfile against the bumped manifests
         run: pnpm install --lockfile-only
 
@@ -54,13 +57,15 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      # createCommitOnBranch thay cho `git push`, và KHÔNG phải vì chữ ký: ruleset `main
-      # protection` chỉ nhắm `~DEFAULT_BRANCH`, nên nhánh dependabot/* không bị đòi commit ký —
-      # `git push` cũng sẽ qua. Lý do là nó tránh phải dựng git identity và credential helper
-      # trên runner cho đúng một file, và commit tạo qua API được GitHub ký sẵn nên nhánh không
-      # lẫn một commit không chữ ký giữa những commit có.
-      # expectedHeadOid là compare-and-set: nếu Dependabot force-push lại nhánh trong lúc job
-      # đang resolve, mutation bị từ chối thay vì ghi lockfile lên một manifest khác.
+      # createCommitOnBranch instead of `git push`, and NOT because of signing: the `main
+      # protection` ruleset only targets `~DEFAULT_BRANCH`, so a dependabot/* branch is never
+      # asked for signed commits - `git push` would pass too. The reason is that it avoids
+      # setting up a git identity and a credential helper on the runner for exactly one file, and
+      # a commit created through the API comes signed by GitHub, so the branch never mixes one
+      # unsigned commit in among signed ones.
+      # expectedHeadOid is a compare-and-set: if Dependabot force-pushes the branch while this job
+      # is still resolving, the mutation is rejected instead of writing the lockfile over a
+      # different set of manifests.
       - name: Commit the lockfile
         if: steps.diff.outputs.changed == 'true'
         env:
@@ -69,13 +74,13 @@ jobs:
           EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
         run: |
           if [ -z "$GH_TOKEN" ]; then
-            echo "::error::secrets.DEPENDABOT_LOCKFILE_TOKEN rỗng hoặc chưa được đặt. Đây là một Dependabot secret, không phải Actions secret — xem docs/production.md §6." >&2
+            echo "::error::secrets.DEPENDABOT_LOCKFILE_TOKEN is empty or unset. It is a Dependabot secret, not an Actions secret - see docs/production.md §6." >&2
             exit 1
           fi
 
-          # base64 của lockfile dài ~640 KB, vượt MAX_ARG_STRLEN (128 KiB) của Linux nên
-          # `--arg contents "$(...)"` chết với "Argument list too long". `--rawfile` đọc thẳng
-          # từ file, không đi qua argv, nên không có trần độ dài.
+          # The lockfile's base64 runs to ~640 KB, past Linux's 128 KiB MAX_ARG_STRLEN for a
+          # single argument, so `--arg contents "$(...)"` dies with "Argument list too long".
+          # `--rawfile` reads straight from the file, never through argv, so it has no ceiling.
           base64 -w0 pnpm-lock.yaml > "$RUNNER_TEMP/lockfile.b64"
 
           jq -n \

@@ -328,8 +328,9 @@ describe('AttendanceService', () => {
     });
 
     it('đã gửi đội hình thì member không điểm danh lại được, dù hạn chưa tới', async () => {
-      // Ca chính của việc khoá form sau khi gửi Discord: Thứ 7 hạn 12:00 Thứ 6 nên vẫn còn hạn,
-      // nhưng đội hình đã lên channel — đổi câu trả lời lúc này là phá đúng cái danh sách vừa gửi.
+      // The main case for locking the form once Discord has it: a Saturday match closes at 12:00 on
+      // Friday, so the deadline has not passed, but the line-up is already in the channel -
+      // changing an answer now breaks the very list that was just posted.
       const sessionId = SESSION_IDS['Thứ 7 · Bang Chiến'];
       battleSessions.findById.mockResolvedValue({
         ...SESSIONS.find((item) => item.id === sessionId),
@@ -346,7 +347,8 @@ describe('AttendanceService', () => {
     });
 
     it('đã gửi đội hình thì quản trị viên vẫn sửa được', async () => {
-      // Đổi phút chót vẫn phải làm được — nhưng đi qua tay admin, không phải ai cũng tự sửa.
+      // A last-minute change still has to be possible - but through an admin, not by everyone
+      // editing their own answer.
       const sessionId = SESSION_IDS['Thứ 7 · Bang Chiến'];
       battleSessions.findById.mockResolvedValue({
         ...SESSIONS.find((item) => item.id === sessionId),
@@ -448,9 +450,9 @@ describe('AttendanceService', () => {
     });
 
     it('bước gỡ đội hình hỏng thì câu trả lời "Không" không được commit', async () => {
-      // Trước đây là hai round trip rời nhau: câu thứ hai hỏng thì request trả 500 nhưng bản ghi đã
-      // commit, còn người đó vẫn nằm trong đội hình — đúng trạng thái mà comment ngay phía trên nói
-      // là không được phép tồn tại.
+      // This used to be two separate round trips: when the second statement failed the request
+      // answered 500 with the record already committed, and that person was still in the line-up -
+      // exactly the state the comment just above says must never exist.
       teamBuilder.releaseCharacterFromSession.mockRejectedValue(
         new Error('mất kết nối'),
       );

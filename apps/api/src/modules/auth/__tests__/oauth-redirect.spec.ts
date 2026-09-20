@@ -11,8 +11,8 @@ describe('safeRedirect', () => {
     expect(safeRedirect(undefined)).toBe('/');
   });
 
-  // Trình duyệt đổi `\` thành `/` trước khi resolve, nên `/\evil.example` ra đúng
-  // `https://evil.example/`. Luật chỉ soi `//` cho nó đi lọt.
+  // A browser turns `\` into `/` before resolving, so `/\evil.example` lands on
+  // `https://evil.example/`. A rule that only looks for `//` lets it through.
   it('từ chối gạch ngược, thứ trình duyệt đọc y như hai gạch', () => {
     expect(new URL('/\\evil.example', 'https://mmgh.example').href).toBe(
       'https://evil.example/',
@@ -21,8 +21,8 @@ describe('safeRedirect', () => {
     expect(safeRedirect('/\\\\evil.example')).toBe('/');
   });
 
-  // Tab, xuống dòng và khoảng trắng bị trình duyệt xoá lúc resolve, nên chúng lận được một
-  // authority qua một phép kiểm đọc chuỗi theo đúng mặt chữ.
+  // Tabs, newlines and spaces are stripped by the browser while resolving, so they can smuggle an
+  // authority past a check that reads the string literally.
   it('từ chối ký tự bị trình duyệt nuốt lúc resolve', () => {
     expect(safeRedirect('/\t/evil.example')).toBe('/');
     expect(safeRedirect('/\n/evil.example')).toBe('/');

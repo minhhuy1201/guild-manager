@@ -32,7 +32,7 @@ describe("PageHeader", () => {
     expect(renderStrip("tall").className).toContain("min-h-44");
   });
 
-  // Trang dùng hằng ngày không nên để gần 1/3 màn điện thoại là trang trí.
+  // A page used every day should not spend nearly a third of a phone screen on decoration.
   it("cỡ compact thấp hơn tall", () => {
     const strip = renderStrip("compact");
 

@@ -36,8 +36,9 @@ describe("CACHE_DEPENDENTS", () => {
   });
 
   it("cửa sổ điểm danh đóng/mở làm cũ trận, record và danh sách lịch", () => {
-    // Màn Thiết lập vẽ cùng bộ cờ đó trên từng dòng — nút "Mở lại điểm danh" chỉ hiện khi ngày
-    // đang khoá, nên danh sách cũ sẽ mời admin bấm một nút mà backend đã từ chối.
+    // The settings screen draws the same set of flags on every row - the "Mở lại điểm danh" button
+    // only appears while a day is locked, so a stale list invites an admin to press a button the
+    // backend already refuses.
     expect(CACHE_DEPENDENTS["attendance-window"]()).toEqual([
       attendanceKeys.sessions(),
       attendanceKeys.records(),

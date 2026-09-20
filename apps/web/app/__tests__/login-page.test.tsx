@@ -51,8 +51,8 @@ describe("Trang đăng nhập", () => {
     expect(await targetOf({})).toBeNull();
   });
 
-  // Nút "Mở website" của bot đưa mọi thành viên qua trang này trên đường tới điểm danh, nên người
-  // đã đăng nhập phải được đi tiếp chứ không phải nhìn một form đăng nhập.
+  // The bot's "Mở website" button sends every member through this page on their way to attendance,
+  // so someone already logged in has to be let through rather than shown a login form.
   it("đã đăng nhập thì đi tiếp tới nơi người ta định tới", async () => {
     getSession.mockResolvedValue({ discordId: "1", role: "MEMBER" });
 
@@ -67,7 +67,7 @@ describe("Trang đăng nhập", () => {
     expect(await targetOf({})).toBe(ROUTES.attendance);
   });
 
-  // `redirect` là tham số trên URL, và cái nút kia thì ai trong Discord cũng dán lại được.
+  // `redirect` is a URL parameter, and anyone in Discord can repost that button.
   it("không đá người ta ra khỏi tên miền của mình", async () => {
     getSession.mockResolvedValue({ discordId: "1", role: "MEMBER" });
 
@@ -77,7 +77,7 @@ describe("Trang đăng nhập", () => {
     expect(await targetOf({ redirect: "https://evil.example" })).toBe(
       ROUTES.attendance
     );
-    // Trình duyệt đọc gạch ngược y như hai gạch, nên đây cũng là ra khỏi tên miền.
+    // A browser reads a backslash exactly as two slashes, so this leaves the domain too.
     expect(await targetOf({ redirect: "/\\evil.example" })).toBe(
       ROUTES.attendance
     );

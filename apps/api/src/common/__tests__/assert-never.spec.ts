@@ -2,8 +2,9 @@ import { assertNever } from '../assert-never';
 
 describe('assertNever', () => {
   it('ném lỗi kèm chính giá trị không xử lý được', () => {
-    // Cast qua unknown: đây đúng là tình huống dữ liệu ngoài process mang tag mà kiểu hứa là không
-    // thể có — thứ duy nhất assertNever còn tác dụng lúc chạy.
+    // Cast through unknown: this is exactly the case of data from outside the process carrying a
+    // tag the type swears cannot exist - the one situation where assertNever still does anything at
+    // runtime.
     const unhandled = { type: 99 } as unknown as never;
 
     expect(() =>

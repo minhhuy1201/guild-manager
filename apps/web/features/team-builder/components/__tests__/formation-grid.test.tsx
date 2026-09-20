@@ -53,7 +53,8 @@ function teamCard(team: number): HTMLElement {
     .closest("[data-slot=card]") as HTMLElement;
 }
 
-// Dưới md mười team xếp một cột làm trang dài gần 6.000px: trên điện thoại chỉ hiện team đang chọn.
+// Below md, ten teams in one column make the page nearly 6,000px long: on a phone only the
+// selected team is shown.
 describe("FormationGrid - mỗi lúc một team dưới md", () => {
   it("layout screen ẩn dưới md mọi team trừ team đang chọn, và có 10 chip", () => {
     const { container } = renderGrid("screen");
@@ -66,7 +67,7 @@ describe("FormationGrid - mỗi lúc một team dưới md", () => {
     );
   });
 
-  // Ảnh gửi Discord luôn đủ mười team, trên mọi màn hình.
+  // The image sent to Discord always carries all ten teams, on every screen size.
   it("layout capture không ẩn team nào và không có chip", () => {
     const { container } = renderGrid("capture");
 

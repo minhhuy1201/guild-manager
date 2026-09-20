@@ -8,21 +8,22 @@ on:
 
 concurrency:
   group: ci-${{ github.ref }}
-  # Push liên tiếp lên cùng một nhánh: hủy run cũ, chỉ giữ run mới nhất. Trừ main — ở đó run
-  # nào cũng deploy, hủy giữa chừng sẽ bỏ lại một deploy dở dang không ai theo dõi. Cùng
-  # group nhưng không hủy nghĩa là các run trên main xếp hàng, deploy chạy đúng thứ tự commit.
+  # Back-to-back pushes to one branch: cancel the older run, keep only the newest. Except on
+  # main - every run there deploys, and cancelling midway leaves a half-finished deploy nobody is
+  # watching. Same group without cancelling means runs on main queue up and deploy in commit order.
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
-# Định danh project trên Vercel — không phải secret, tự chúng không cho quyền gì. Quyền deploy
-# nằm ở secrets.VERCEL_TOKEN. Để ở đây thay vì trong secrets để config đi cùng lịch sử git.
+# Vercel project identifiers - not secrets, they grant nothing on their own. The right to deploy
+# lives in secrets.VERCEL_TOKEN. Kept here rather than in secrets so the config travels with git
+# history.
 env:
   VERCEL_ORG_ID: team_dq9qUn1nvLYKPFaEhd3kmpcx
   VERCEL_API_PROJECT_ID: prj_c8MfMh6UjalladBwl4seKidsFfLs
   VERCEL_WEB_PROJECT_ID: prj_NQb6Wdj6quicozmVNVFk0Kd8Za1T
 
 jobs:
-  # Cửa vào của mọi job khác: commit này chạm phần nào của monorepo. Một commit chỉ sửa docs
-  # không khớp filter nào, nên toàn bộ job phía sau bị skip và không có gì deploy lại.
+  # The gate every other job passes through: which part of the monorepo this commit touched. A
+  # docs-only commit matches no filter, so every job below is skipped and nothing redeploys.
   changes:
     name: Detect changes
     runs-on: ubuntu-latest
@@ -30,9 +31,9 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
-      # `global` gộp vào cả hai: packages/shared là contract chung của web và API, còn
-      # lockfile, workspace, .nvmrc và chính CI đổi thì không app nào còn được coi là chưa
-      # đụng tới.
+      # `global` folds into both: packages/shared is the contract web and API share, and once the
+      # lockfile, the workspace, .nvmrc or CI itself changes, neither app can still count as
+      # untouched.
       api: ${{ steps.filter.outputs.api == 'true' || steps.filter.outputs.global == 'true' }}
       web: ${{ steps.filter.outputs.web == 'true' || steps.filter.outputs.global == 'true' }}
     steps:
@@ -100,13 +101,14 @@ jobs:
       - name: Typecheck web
         run: pnpm --filter web typecheck
 
-  # Câu hỏi không job nào ở trên hỏi: code MỚI của PR này được test bao nhiêu phần trăm, có trùng
-  # lặp không, có smell nào đang tích tụ không. ESLint đọc từng file một, CodeQL chỉ quan tâm bảo
-  # mật. Quality gate của Sonar đo trên *code mới*, nên nó siết dần mà không bắt phải đi sửa cả kho.
+  # The question no job above asks: how much of the NEW code in this PR is tested, how much of it
+  # is duplicated, which smells are piling up. ESLint reads one file at a time and CodeQL only
+  # cares about security. Sonar's quality gate measures *new code*, so it tightens gradually
+  # instead of demanding a repo-wide cleanup.
   #
-  # Job này KHÔNG nằm trong `needs` của migrate/deploy — cùng lý do Trivy và CodeQL không nằm ở đó:
-  # nó chặn ở cửa merge vào main (required status check), còn một commit đã qua cửa đó thì không có
-  # gì để chặn nữa.
+  # This job is NOT in the `needs` of migrate/deploy - the same reason Trivy and CodeQL are not:
+  # it gates the merge into main as a required status check, and a commit that already cleared
+  # that gate has nothing left to stop.
   sonarqube:
     name: SonarQube
     needs: [changes]
@@ -115,51 +117,52 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          # Sonar đọc lịch sử git để biết dòng nào là "mới". Shallow clone (mặc định depth 1) không
-          # có lịch sử, nên mọi điều kiện "on New Code" của quality gate tính sai — im lặng, không
-          # báo lỗi. Chỉ job này cần; các job khác không đụng tới git blame.
+          # Sonar reads git history to tell which lines are "new". A shallow clone (depth 1 by
+          # default) has no history, so every "on New Code" condition in the quality gate is
+          # computed wrong - silently, with no error. Only this job needs it; nothing else
+          # touches git blame.
           fetch-depth: 0
       - uses: ./.github/actions/setup-workspace
 
-      # Fail ngay ở đây thay vì để scanner chết bằng một lỗi xác thực của Sonar, không nói được
-      # thiếu cái gì. Cùng khuôn với bước kiểm DIRECT_DATABASE_URL của job migrate bên dưới.
+      # Fail here rather than let the scanner die on a Sonar authentication error that never says
+      # what is missing. Same shape as the DIRECT_DATABASE_URL check in the migrate job below.
       - name: Check the Sonar token is present
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           if [ -z "$SONAR_TOKEN" ]; then
-            echo "::error::secrets.SONAR_TOKEN rỗng hoặc chưa được đặt." >&2
-            echo "Tạo token trong SonarQube Cloud (My Account → Security) rồi thêm vào" >&2
-            echo "Settings → Secrets and variables → Actions của repo." >&2
+            echo "::error::secrets.SONAR_TOKEN is empty or unset." >&2
+            echo "Create a token in SonarQube Cloud (My Account -> Security), then add it under" >&2
+            echo "Settings -> Secrets and variables -> Actions in this repository." >&2
             exit 1
           fi
 
-      # Test chạy lại ở đây, chồng lên backend-test/frontend-test, và đó là lựa chọn có chủ đích:
-      # cách kia là upload lcov thành artifact rồi download, thêm bốn bước YAML và hỏng ngay ở
-      # trường hợp thường gặp nhất — PR chỉ chạm apps/web làm backend-test bị skip, không còn
-      # artifact nào để tải. Runner của repo public không giới hạn phút, nên thứ đáng tiết kiệm là
-      # số chỗ có thể hỏng.
+      # The tests run again here, on top of backend-test/frontend-test, and that is deliberate:
+      # the alternative is uploading lcov as an artifact and downloading it back, four more YAML
+      # steps that break in the most common case - a PR touching only apps/web skips backend-test,
+      # so there is no artifact to download. Runners on a public repo have no minute limit, so what
+      # is worth saving is the number of places that can break.
       #
-      # Cả hai chạy kể cả khi chỉ một phần đổi: Sonar phân tích toàn bộ project, và nộp nửa báo cáo
-      # coverage nghĩa là nửa còn lại tụt về 0% trên dashboard.
+      # Both run even when only one side changed: Sonar analyses the whole project, and submitting
+      # half the coverage report drops the other half to 0% on the dashboard.
       - name: Coverage api
         run: pnpm --filter api test:cov
       - name: Coverage web
         run: pnpm --filter web test:cov
 
-      # Không đặt SONAR_HOST_URL: biến đó chỉ dành cho SonarQube Server tự host. Với Cloud, token
-      # đã xác định org và scanner tự biết đi đâu.
-      # Phiên bản không phải chuyện thẩm mỹ ở action này: v4.1.0 dính hai advisory high (command
-      # injection GHSA-f79p-9c5r-xg88, argument injection GHSA-5xq9-5g24-4g6f) nên `Dependency
-      # review` chặn PR, và nó còn gọi `actions/cache@v4.0.2` — bản GitHub đã ngừng phục vụ, job
-      # chết ngay ở bước "Set up job" trước khi chạy dòng nào.
+      # SONAR_HOST_URL is left unset on purpose: that variable is only for a self-hosted SonarQube
+      # Server. On Cloud the token already identifies the org and the scanner knows where to go.
+      # The version is not cosmetic for this action: v4.1.0 carries two high advisories (command
+      # injection GHSA-f79p-9c5r-xg88, argument injection GHSA-5xq9-5g24-4g6f) so `Dependency
+      # review` blocks the PR, and it also calls `actions/cache@v4.0.2` - a version GitHub stopped
+      # serving, which kills the job at "Set up job" before a single line runs.
       - name: Scan and wait for the quality gate
         uses: SonarSource/sonarqube-scan-action@v8.2.2
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
-          # `wait` là thứ biến job này thành một cái cổng: không có nó, scanner nộp báo cáo rồi
-          # thoát 0, và một quality gate đỏ không làm ai dừng lại. Mọi cấu hình còn lại nằm trong
+          # `wait` is what turns this job into a gate: without it the scanner submits its report
+          # and exits 0, and a red quality gate stops nobody. Every other setting lives in
           # sonar-project.properties.
           args: -Dsonar.qualitygate.wait=true
 
@@ -182,19 +185,22 @@ jobs:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-workspace
       - name: Build web
-        # Giá trị giả cho khâu build: `next build` ném lỗi nếu thiếu NEXT_PUBLIC_API_URL ở
-        # production, còn AUTH_SECRET phải đủ 32 ký tự. Không cái nào chạm hạ tầng thật.
+        # Placeholder values for the build alone: `next build` throws when NEXT_PUBLIC_API_URL is
+        # missing in production, and AUTH_SECRET must be at least 32 characters. Neither one
+        # touches real infrastructure.
         env:
           NEXT_PUBLIC_API_URL: http://localhost:3001/api
           AUTH_SECRET: ci-placeholder-secret-0123456789abcdef
         run: pnpm --filter web build
 
-  # Migration chạy sau khi test xanh và TRƯỚC deploy-api: code mới luôn gặp schema mới, không
-  # bao giờ ngược lại. Trước đây bước này làm tay từ máy local, nằm ngoài lưới an toàn của CI —
-  # một deploy hỏng sau khi migrate đã chạy sẽ để production ở trạng thái schema mới + code cũ.
+  # Migrations run once the tests are green and BEFORE deploy-api: new code always meets the new
+  # schema, never the other way round. This step used to be run by hand from a local machine,
+  # outside CI's safety net - a deploy that failed after the migration had run left production on
+  # the new schema with the old code.
   #
-  # `migrate deploy` chỉ áp dụng migration đã commit, không bao giờ tự sinh và không hỏi gì; khi
-  # không có migration nào pending nó là no-op, nên chạy ở mọi commit chạm apps/api là an toàn.
+  # `migrate deploy` only applies committed migrations, never generates one and never prompts;
+  # with nothing pending it is a no-op, so running it on every commit that touches apps/api is
+  # safe.
   migrate:
     name: Migrate production database
     needs: [changes, backend-test, frontend-test, quality-api, quality-web, build-api, build-web]
@@ -210,53 +216,55 @@ jobs:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-workspace
 
-      # `migrate:prod` đặt PRISMA_ENV_FILE=.env.production, và loadPrismaEnv() ném lỗi khi file
-      # đó không tồn tại — cố tình như vậy, để một lệnh nhắm production không âm thầm rơi về
-      # database khác. Trên runner không có file nào nên phải dựng từ secret.
+      # `migrate:prod` sets PRISMA_ENV_FILE=.env.production, and loadPrismaEnv() throws when that
+      # file is missing - deliberately, so a command aimed at production never quietly falls back
+      # to another database. The runner has no such file, so it is built from the secret.
       #
-      # Không đặt biến ở cấp job được: setup-workspace copy .env.example thành .env và
-      # loadPrismaEnv() nạp file với override: true, nên file luôn thắng biến môi trường.
+      # Setting the variables at job level does not work: setup-workspace copies .env.example to
+      # .env and loadPrismaEnv() loads that file with override: true, so the file always beats the
+      # environment.
       - name: Write the production env file
         env:
           DIRECT_DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL }}
         run: |
           if [ -z "$DIRECT_DATABASE_URL" ]; then
-            echo "::error::secrets.DIRECT_DATABASE_URL rỗng hoặc chưa được đặt." >&2
-            echo "Lấy giá trị trong apps/api/.env.production rồi thêm vào" >&2
-            echo "Settings → Secrets and variables → Actions của repo." >&2
+            echo "::error::secrets.DIRECT_DATABASE_URL is empty or unset." >&2
+            echo "Take the value from apps/api/.env.production, then add it under" >&2
+            echo "Settings -> Secrets and variables -> Actions in this repository." >&2
             exit 1
           fi
-          # DATABASE_URL cũng được ghi: prisma.config.ts đọc DIRECT_DATABASE_URL trước, nhưng
-          # loadPrismaEnv() vẫn cần một nguồn biến hợp lệ nếu file rỗng.
+          # DATABASE_URL is written too: prisma.config.ts reads DIRECT_DATABASE_URL first, but
+          # loadPrismaEnv() still needs a valid variable source if the file is otherwise empty.
           {
             printf 'DATABASE_URL=%s\n' "$DIRECT_DATABASE_URL"
             printf 'DIRECT_DATABASE_URL=%s\n' "$DIRECT_DATABASE_URL"
           } > apps/api/.env.production
 
-      # Bước này chỉ để in ra production đang thiếu migration nào, phục vụ đọc log. Nhưng
-      # `prisma migrate status` thoát với mã 1 khi CÓ migration chưa apply — đúng cái tình
-      # huống nó sinh ra để báo cáo — nên dưới `bash -e` nó giết job trước khi tới bước apply,
-      # kéo theo deploy-api và deploy-web bị skip. Nuốt mã lỗi: quyền quyết định thành/bại
-      # thuộc về `migrate deploy` ở bước dưới.
+      # This step only prints which migrations production is behind on, for the log. But
+      # `prisma migrate status` exits 1 when there ARE unapplied migrations - exactly the
+      # situation it exists to report - so under `bash -e` it kills the job before the apply
+      # step, taking deploy-api and deploy-web down with it. The exit code is swallowed:
+      # `migrate deploy` below owns the pass/fail decision.
       - name: Show what production is behind
         run: pnpm --filter api migrate:prod:status || true
 
       - name: Apply migrations
         run: pnpm --filter api migrate:prod
 
-  # Deploy chạy sau khi TOÀN BỘ job kiểm thử xanh, và chỉ khi commit đã nằm trên main.
+  # Deploys run once EVERY test job is green, and only for a commit already on main.
   #
-  # Từ khi các job kiểm thử bị lọc theo phần, `needs` một mình không còn đủ để chặn: một
-  # dependency bị skip hợp lệ (phần đó không đổi) cũng làm job needs bị skip theo. Nên điều
-  # kiện phải là always() cộng với việc tự kiểm tra không dependency nào fail hoặc bị hủy.
+  # Since the test jobs became path-filtered, `needs` alone no longer gates anything: a dependency
+  # that is legitimately skipped (its area did not change) skips the dependent job along with it.
+  # So the condition has to be always() plus an explicit check that no dependency failed or was
+  # cancelled.
   #
-  # Vercel không tự deploy nữa (git.deploymentEnabled = false trong apps/*/vercel.json), nên
-  # đây là đường duy nhất đưa code lên production.
+  # Vercel no longer deploys on its own (git.deploymentEnabled = false in apps/*/vercel.json), so
+  # this is the only route code takes to production.
   deploy-api:
     name: Deploy API
-    # Ghi lại bản deploy vào tab Deployments của GitHub. `vercel deploy` chạy bằng token nên
-    # không tạo record nào; từ khi git integration bị tắt (2026-08-16), tab đó không còn ghi
-    # bản deploy thật nữa dù production vẫn lên đều.
+    # Records the deploy in GitHub's Deployments tab. `vercel deploy` runs on a token and creates
+    # no record of its own; since the git integration was turned off (2026-08-16) that tab stopped
+    # showing real deploys even though production kept shipping.
     environment:
       name: production-api
       url: https://guild-manager-api.vercel.app
@@ -276,8 +284,9 @@ jobs:
           project-id: ${{ env.VERCEL_API_PROJECT_ID }}
           token: ${{ secrets.VERCEL_TOKEN }}
 
-  # Frontend deploy sau backend: web gọi API, nên API phải sẵn sàng trước. Khi commit chỉ chạm
-  # web, deploy-api bị skip và job này vẫn chạy — thứ tự chỉ ràng buộc khi cả hai cùng deploy.
+  # The frontend deploys after the backend: web calls the API, so the API has to be up first. When
+  # a commit touches only web, deploy-api is skipped and this job still runs - the ordering only
+  # binds when both of them deploy.
   deploy-web:
     name: Deploy web
     environment:

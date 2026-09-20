@@ -11,9 +11,9 @@ const VERCEL_BODY_LIMIT = 4.5 * 1000 * 1000;
 /** The announcement carries at most one image per match, and a day is played over at most 2. */
 const MAX_IMAGES = 2;
 
-// Express mặc định chỉ nhận 100kb, nên thông báo đội hình — mang 1-2 ảnh base64 — chết ngay ở tầng
-// parser, trước cả guard, và trả về 500 "Lỗi hệ thống" không nói được gì. Ba bất biến dưới đây giữ
-// cho ba con số không lệch khỏi nhau lần nữa.
+// Express accepts only 100kb by default, so a formation announcement - carrying one or two base64
+// images - died in the parser, before any guard, and came back as a 500 "Lỗi hệ thống" that said
+// nothing. The three invariants below keep the three numbers from drifting apart again.
 describe('Giới hạn body JSON', () => {
   it('đủ chỗ cho hai ảnh đúng cỡ tối đa', () => {
     expect(ANNOUNCEMENT_IMAGE_MAX_CHARS * MAX_IMAGES).toBeLessThan(
@@ -21,8 +21,8 @@ describe('Giới hạn body JSON', () => {
     );
   });
 
-  // Trần của parser phải nằm trên cỡ hợp lệ lớn nhất: khi ảnh quá to, người dùng cần câu tiếng Việt
-  // của schema chứ không phải một cái 500 trần trụi.
+  // The parser's ceiling has to sit above the largest valid payload: when an image is too big, the
+  // user needs the schema's Vietnamese sentence, not a bare 500.
   it('nằm trên cỡ hợp lệ lớn nhất, không phải dưới', () => {
     expect(JSON_BODY_LIMIT).toBeGreaterThan(
       ANNOUNCEMENT_IMAGE_MAX_CHARS * MAX_IMAGES,

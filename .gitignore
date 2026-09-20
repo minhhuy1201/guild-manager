@@ -23,7 +23,7 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# generated code (Prisma Client — sinh lại bằng `pnpm prisma:generate`)
+# generated code (Prisma Client - regenerate with `pnpm prisma:generate`)
 apps/api/src/generated/
 
 # testing
@@ -37,11 +37,11 @@ coverage/
 *.swp
 Thumbs.db
 
-# danh sách thành viên thật cho `pnpm db:seed` (local only)
-# seed-data-example.json vẫn commit — đó là file mẫu để người khác biết định dạng.
+# the real member list for `pnpm db:seed` (local only)
+# seed-data-example.json stays committed - it is the sample that documents the format.
 seed-data.json
 
-# Vercel: liên kết project và token do `vercel link` sinh ra (mỗi máy một giá trị)
+# Vercel: the project link and token `vercel link` generates (a different value per machine)
 .vercel/
 
 # misc

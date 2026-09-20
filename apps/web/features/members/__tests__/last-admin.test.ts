@@ -36,12 +36,13 @@ describe("isLastAdmin", () => {
   });
 
   it("sai với người không phải quản trị viên", () => {
-    // Kể cả trong bang không có quản trị viên nào - xoá một bang chúng không bao giờ bị chặn.
+    // Even in a guild with no administrator at all - deleting a character of theirs is never
+    // blocked.
     expect(isLastAdmin([MEMBER], MEMBER)).toBe(false);
   });
 
   it("sai khi danh sách chưa tải xong", () => {
-    // Chưa có dữ liệu thì không được đoán là bị khoá: chốt chặn thật nằm ở API.
+    // With no data yet, do not guess that it is blocked: the real gate is in the API.
     expect(isLastAdmin([], ADMIN)).toBe(false);
   });
 });

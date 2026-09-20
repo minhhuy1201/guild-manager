@@ -7,7 +7,8 @@ import { FormationBanner } from "../formation-banner";
 afterEach(cleanup);
 
 describe("FormationBanner", () => {
-  // Trên màn hình, tab ngày ngay phía trên đã nói trận nào, nên banner chỉ cần một dòng gọn.
+  // On screen the day tab right above already says which match it is, so the banner only needs one
+  // tight line.
   it("cỡ compact không giữ chiều cao tối thiểu của tiêu đề ảnh", () => {
     render(
       <FormationBanner

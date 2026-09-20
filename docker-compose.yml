@@ -40,14 +40,14 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-guild_manager}
-      # Cần thiết để tên nhân vật tiếng Việt sort/so sánh đúng.
+      # Required for Vietnamese character names to sort and compare correctly.
       LANG: C.UTF-8
     ports:
       - '${POSTGRES_PORT:-5432}:5432'
     volumes:
       - guild-manager-db-data:/var/lib/postgresql/data
-      # Chạy một lần lúc initdb (database trống): tạo role `anon` / `authenticated` của Supabase
-      # để migration chặn Data API replay được ở local.
+      # Runs once at initdb, on an empty database: it creates Supabase's `anon` /
+      # `authenticated` roles so the migration that locks the Data API out can replay locally.
       - ./docker/initdb:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test:

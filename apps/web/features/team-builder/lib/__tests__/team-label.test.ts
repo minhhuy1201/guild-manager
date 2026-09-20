@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { teamLabel } from "../team-label";
 
-// Tên đội hiện ở hai nơi (đầu cột và chip chọn đội trên điện thoại), nên cả hai đọc cùng một quy tắc.
+// The team name appears in two places (the column head and the team chip on a phone), so both read
+// the same rule.
 describe("teamLabel", () => {
   it("đội có tên thì hiện tên", () => {
     expect(teamLabel(3, "TOP")).toBe("TOP");

@@ -139,14 +139,14 @@ describe("AttendanceGrid - bố cục", () => {
     expect(whilePending).toBe(5);
   });
 
-  // Cột thao tác bên phải đã bỏ, trả chỗ cho các cột ngày.
+  // The actions column on the right is gone, giving the room back to the day columns.
   it("không còn cột Điểm danh, kể cả với admin", () => {
     render(<AttendanceGrid isAdmin />);
 
     expect(screen.queryByRole("columnheader", { name: "Điểm danh" })).toBeNull();
   });
 
-  // Bộ lọc nằm trong card nó lọc, không đứng thành một khối riêng phía trên.
+  // The filters live inside the card they filter rather than standing as a separate block above.
   it("thanh lọc nằm trong card của bảng", () => {
     render(<AttendanceGrid isAdmin={false} />);
 
@@ -160,7 +160,7 @@ describe("AttendanceGrid - bố cục", () => {
     );
   });
 
-  // Bang có vài chục người: 10 dòng một trang bắt admin lật trang liên tục.
+  // The guild has a few dozen people: 10 rows per page makes an admin page through constantly.
   it("mở ra 50 dòng mỗi trang", () => {
     filtered = Array.from({ length: 60 }, (_, index) =>
       makeCharacter(String(index + 1))
@@ -199,7 +199,8 @@ describe("AttendanceGrid - lọc Chưa điểm danh", () => {
 });
 
 describe("AttendanceGrid - phân trang khi đang lọc", () => {
-  // Lưu xong thì bản ghi được tải lại thành object mới, dù những người trong danh sách lọc không đổi.
+  // After a save the records reload as new objects, even when the people in the filtered list are
+  // unchanged.
   it("tải lại bản ghi mà danh sách lọc vẫn là những người cũ thì không nhảy về trang 1", () => {
     filtered = Array.from({ length: 60 }, (_, index) =>
       makeCharacter(String(index + 1))

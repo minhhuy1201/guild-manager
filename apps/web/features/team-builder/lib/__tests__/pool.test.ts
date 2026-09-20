@@ -74,7 +74,7 @@ describe("countByGuildClass", () => {
     ).toBe(2);
   });
 
-  // Chip của lưu phái không còn ai chỉ chiếm chỗ mà không lọc được gì.
+  // A chip for a class with nobody left only takes up room and filters nothing.
   it("bỏ lưu phái không còn ai", () => {
     const counts = countByGuildClass(CHARACTERS);
 

@@ -26,7 +26,7 @@ describe("removeCharacters", () => {
     expect(assignment[SLOT_A]).toBe("char-1");
   });
 
-  // Tham chiếu cũ cho biết không có gì đổi, như applyDrop khi thả ra ngoài.
+  // The old reference is how "nothing changed" is reported, as applyDrop does on a drop outside.
   it("không ai để gỡ thì trả lại đúng tham chiếu cũ", () => {
     const assignment: Assignment = { [SLOT_A]: "char-1", [SLOT_B]: null };
 

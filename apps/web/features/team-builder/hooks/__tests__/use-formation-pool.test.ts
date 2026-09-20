@@ -160,7 +160,8 @@ describe("useFormationPool — pool", () => {
     expect(result.current.pool).toEqual([]);
   });
 
-  // Chip lưu phái là để chọn lọc, nên phải cho biết mỗi lưu phái còn bao nhiêu người trước khi lọc.
+  // The class chips exist to narrow a choice, so they have to say how many people each class still
+  // has before filtering.
   it("classCounts đếm người còn lại theo lưu phái, bỏ qua bộ lọc", () => {
     const { result } = renderPool(
       {

@@ -109,7 +109,8 @@ describe("SessionRow", () => {
     expect(screen.getAllByText("Mở lại điểm danh").length).toBeGreaterThan(0);
   });
 
-  // Bang Chiến không sửa cũng không xoá được, nhưng nó lại chính là ngày hay được gửi đội hình nhất.
+  // Bang Chiến can be neither edited nor deleted, yet it is the day whose line-up is announced most
+  // often.
   it("Bang Chiến vẫn mở lại điểm danh được dù không sửa/xoá được", () => {
     renderRow(
       session({
@@ -124,7 +125,8 @@ describe("SessionRow", () => {
     expect(screen.getAllByText("Mở lại điểm danh").length).toBeGreaterThan(0);
   });
 
-  // Cả bang vừa đọc đội hình; mở lại là cho phép câu trả lời đằng sau nó đổi, nên phải hỏi lại.
+  // The guild has just read the line-up; reopening lets the answers behind it change, so ask
+  // again.
   it("bấm nút thì hỏi lại chứ chưa gọi API", async () => {
     renderRow(session({ isAttendanceClosed: true, canReopenAttendance: true }));
 

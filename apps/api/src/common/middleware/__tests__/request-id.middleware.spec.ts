@@ -55,8 +55,9 @@ describe('requestIdMiddleware', () => {
   });
 
   it('thay id quá dài bằng id tự sinh', () => {
-    // Id được ghi vào log của mọi request, kể cả request chưa xác thực bị guard chặn — nhận nguyên
-    // si chuỗi tuỳ ý của người gọi là biến log thành chỗ đổ rác miễn phí.
+    // The id is written into the log line of every request, including unauthenticated ones a guard
+    // rejects - taking the caller's arbitrary string as-is turns the log into a free dumping
+    // ground.
     const { request } = callMiddleware({ [REQUEST_ID_HEADER]: 'a'.repeat(65) });
 
     expect(String(request.headers[REQUEST_ID_HEADER])).toMatch(UUID_PATTERN);

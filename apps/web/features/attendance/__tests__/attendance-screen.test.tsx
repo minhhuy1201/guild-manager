@@ -29,7 +29,8 @@ describe("AttendanceScreen", () => {
     expect(screen.getByTestId("grid").dataset.admin).toBe("false");
   });
 
-  // Lịch tuần đã gộp vào thẻ cá nhân, và bộ lọc đã vào card của bảng: trang chỉ còn hai khối.
+  // The week schedule folded into the personal card and the filters into the table's card: the page
+  // is down to two blocks.
   it("thẻ tuần của bạn đứng đầu, rồi tới card bảng, không còn thẻ lọc riêng", () => {
     const { container } = render(<AttendanceScreen role={GuildRole.MEMBER} />);
     const order = [...container.querySelectorAll("[data-testid]")].map(

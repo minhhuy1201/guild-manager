@@ -48,7 +48,8 @@ describe("useUndoShortcut", () => {
     expect(onUndo).toHaveBeenCalledOnce();
   });
 
-  // Ctrl+Shift+Z là "làm lại" ở mọi ứng dụng; coi nó là hoàn tác thì bấm để làm lại lại lùi thêm một bước.
+  // Ctrl+Shift+Z is redo in every application; treating it as undo means pressing redo steps
+  // backwards instead.
   it("Ctrl+Shift+Z không phải hoàn tác", () => {
     const onUndo = vi.fn();
     renderHook(() => useUndoShortcut(onUndo, true));
@@ -74,7 +75,7 @@ describe("useUndoShortcut", () => {
     }
   );
 
-  // Đội hình nằm sau dialog; hoàn tác lúc đó là đổi thứ người dùng không nhìn thấy.
+  // The line-up sits behind the dialog; undoing then changes something the user cannot see.
   it.each(["dialog", "alertdialog"])(
     "phím bấm trong %s thì không hoàn tác đội hình",
     (role) => {

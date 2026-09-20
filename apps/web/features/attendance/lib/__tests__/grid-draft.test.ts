@@ -29,7 +29,8 @@ describe("clickCell", () => {
     expect(clickTimes(undefined, 2)[KEY]?.isPresent).toBe(false);
   });
 
-  // Chủ bang đã chốt: API không có endpoint xoá, nên vòng xoay không quay về "chưa điểm danh".
+  // The guild leader has settled it: the API has no delete endpoint, so the cycle never returns to
+  // "not answered".
   it("bấm lần ba quay lại Có, không về chưa điểm danh", () => {
     expect(clickTimes(undefined, 3)[KEY]?.isPresent).toBe(true);
   });

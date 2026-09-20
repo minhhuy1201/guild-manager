@@ -44,7 +44,8 @@ describe('interactionSchema', () => {
   });
 
   it('từ chối type không nằm trong hai loại đang xử lý', () => {
-    // 3 = MESSAGE_COMPONENT (bấm nút). Chưa hỗ trợ, và im lặng nhận vào là tệ hơn từ chối.
+    // 3 = MESSAGE_COMPONENT (a button press). Not supported yet, and accepting it in silence is
+    // worse than refusing.
     expect(() => interactionSchema.parse({ type: 3 })).toThrow();
   });
 
@@ -71,7 +72,7 @@ describe('isEphemeralPress', () => {
   });
 
   it('đọc theo bit, không so bằng — Discord còn bật cờ khác cùng lúc', () => {
-    // 4096 = SUPPRESS_NOTIFICATIONS; so bằng sẽ đọc nhầm tin ephemeral thành tin công khai.
+    // 4096 = SUPPRESS_NOTIFICATIONS; an equality check would read an ephemeral message as public.
     expect(
       isEphemeralPress(pressWithFlags(MESSAGE_FLAG.ephemeral | 4096)),
     ).toBe(true);
@@ -110,7 +111,8 @@ describe('callerDiscordId', () => {
   });
 
   it('ném lỗi khi interaction không mang người gọi nào', () => {
-    // Discord luôn gửi một trong hai. Không có nghĩa là ta hiểu sai payload, không phải lỗi người dùng.
+    // Discord always sends one of the two. Neither one present means we misread the payload, not
+    // that the user did anything wrong.
     const parsed = interactionSchema.parse({
       type: 2,
       channel_id: '424242',
@@ -165,8 +167,9 @@ describe('commandOptionValue', () => {
       expect(parsed).toMatchObject({ channel_id: '424242' });
     });
 
-    // /cau-hinh-kenh không có nó thì không biết lưu channel nào; Discord luôn gửi kèm cho lệnh
-    // chạy trong server, nên thiếu là payload đọc sai chứ không phải người dùng làm được.
+    // Without it /cau-hinh-kenh does not know which channel to store; Discord always includes it
+    // for a command run inside a server, so a missing one means the payload was misread, not
+    // something a user can cause.
     it('từ chối một lệnh không mang channel_id', () => {
       expect(() =>
         interactionSchema.parse({

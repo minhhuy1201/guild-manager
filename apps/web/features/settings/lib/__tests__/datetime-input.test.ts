@@ -51,8 +51,9 @@ describe("datetime-input", () => {
   });
 
   it.each(ZONES)("qua nửa đêm giờ Việt Nam vẫn đúng ngày, ở %s", (tz) => {
-    // 17:30 UTC là 00:30 hôm sau ở Việt Nam. Lệch múi giờ ở đây đổi cả ngày, không chỉ giờ, nên đây
-    // là ca duy nhất phân biệt được "cộng 7 tiếng" với "đọc đồng hồ máy".
+    // 17:30 UTC is 00:30 the next day in Vietnam. The offset here changes the date, not just the
+    // time, which makes this the only case that tells "add 7 hours" apart from "read the local
+    // clock".
     inZone(tz, () => {
       expect(toInputValue("2026-07-25T17:30:00.000Z")).toBe("2026-07-26T00:30");
       expect(fromInputValue("2026-07-26T00:30")).toBe(
@@ -70,8 +71,9 @@ describe("datetime-input", () => {
   });
 
   it.each(ZONES)("luật hạn chót chấm trên giá trị đúng, ở %s", (tz) => {
-    // Đây là hậu quả thật của lỗi: `deadlineCapFor` chốt 11:00 giờ Việt Nam. Đọc ô nhập theo đồng hồ
-    // máy thì phép so vẫn "nhất quán" với chính nó nhưng chấm sai mốc, và không ai thấy gì.
+    // This is the bug's real consequence: `deadlineCapFor` caps at 11:00 Vietnam time. Reading the
+    // input off the local clock keeps the comparison "consistent" with itself while measuring
+    // against the wrong mark, and nobody sees a thing.
     inZone(tz, () => {
       const battle = toInstant("2026-07-21T20:30");
 

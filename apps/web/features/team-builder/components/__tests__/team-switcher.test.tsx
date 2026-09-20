@@ -31,8 +31,8 @@ function renderSwitcher() {
   return onSelect;
 }
 
-// Trên điện thoại chỉ hiện một team mỗi lúc, nên lưới chip là cách đổi team và cũng cho thấy team nào
-// đã đủ người mà không phải mở từng team.
+// A phone shows one team at a time, so the chip grid is both how you switch teams and how you see
+// which teams are full without opening each one.
 describe("TeamSwitcher", () => {
   it("hiện đủ 10 chip, mỗi chip có tên và số ô đã xếp trên 6", () => {
     renderSwitcher();

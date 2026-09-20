@@ -50,9 +50,9 @@ describe("QueryBoundary", () => {
   });
 
   it("vừa lỗi vừa đang tải thì hiện lỗi, không hiện skeleton", () => {
-    // Đây chính là hình dạng của /xep-team khi query tuần lỗi: query đội hình bị
-    // park nên isPending không bao giờ tắt. Đảo thứ tự hai nhánh trong component
-    // là kẹt skeleton vĩnh viễn, và không màn hình nào tự bắt được điều đó.
+    // This is exactly the shape of /xep-team when the week query fails: the formation query is
+    // parked, so isPending never turns off. Swapping the order of the two branches in the component
+    // means a skeleton stuck forever, and no screen catches that on its own.
     renderBoundary(
       makeState({ isPending: true, isError: true, errorMessage: "Hỏng rồi." })
     );

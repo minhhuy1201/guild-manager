@@ -79,7 +79,8 @@ describe('/chao-mung', () => {
   });
 
   it('chỉ cho phép ping đúng người mới', async () => {
-    // Lời chào là tin công khai; khai báo trắng danh sách khiến một @everyone lọt vào là bất khả.
+    // The welcome is a public message; declaring an empty allow list makes an @everyone slipping
+    // through impossible.
     const reply = await chaoMungCommand.execute(
       INTERACTION,
       makeDeps(actor(GuildRole.ADMIN)),
@@ -106,8 +107,9 @@ describe('/chao-mung', () => {
   });
 
   it('thiếu option thì báo lỗi nêu đúng tên option', async () => {
-    // Discord ép required:true, nên giá trị rỗng nghĩa là definition đã đăng ký và bản build này
-    // lệch nhau — thông điệp phải chỉ ra option nào để biết chạy lại discord:register.
+    // Discord enforces required:true, so an empty value means the registered definition and this
+    // build have drifted apart - the message has to name the option so someone knows to run
+    // discord:register again.
     for (const missing of ['nguoi', 'luu-phai']) {
       const interaction = {
         ...INTERACTION,

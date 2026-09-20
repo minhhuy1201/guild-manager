@@ -138,8 +138,9 @@ describe("verifyJwt - cache khoá HMAC", () => {
 
 describe("readJwt", () => {
   it("phân biệt được token hết hạn với token sai chữ ký", async () => {
-    // Đây là cả điểm của hàm: `verifyJwt` trả null cho cả hai, nên proxy không thể nói khác nhau,
-    // và AUTH_SECRET lệch đọc y hệt một phiên hết hạn bình thường.
+    // This is the whole point of the function: `verifyJwt` returns null for both, so the proxy
+    // cannot tell them apart, and a mismatched AUTH_SECRET reads exactly like an ordinary expired
+    // session.
     const expired = await signToken({
       payload: { ...DEFAULT_PAYLOAD, exp: expiresIn(-10) },
       secret: SECRET,

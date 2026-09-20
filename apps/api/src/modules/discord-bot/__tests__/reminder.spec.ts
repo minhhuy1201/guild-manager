@@ -18,7 +18,7 @@ function session(overrides: Partial<BattleSession> = {}): BattleSession {
     id: 'gw-2026-09-05',
     label: 'Thứ 7 · 20:00 · Bang Chiến',
     dateTime: '2026-09-05T13:00:00.000Z',
-    // 17:00 giờ VN Thứ 5 03/09.
+    // 17:00 Vietnam time on Thursday 03/09.
     deadline: '2026-09-03T10:00:00.000Z',
     isAttendanceClosed: false,
     canReopenAttendance: false,
@@ -48,14 +48,15 @@ const SCRIM: DueSession = {
 };
 
 describe('buildReminder', () => {
-  // Một tin có thể gồm cả trận hết hạn hôm nay lẫn trận hết hạn sáng mai, nên câu mở đầu không nói ngày.
+  // One message can cover a match closing today and one closing tomorrow morning, so the opening
+  // line never names a day.
   it('câu mở đầu không nói hôm nay hay ngày mai', () => {
     expect(buildReminder([GUILD_WAR], WEB_ORIGIN).content).toMatch(
       /^⏰ \*\*Nhắc điểm danh\*\* - mấy ngày dưới đây sắp hết hạn điểm danh\.\n/,
     );
   });
 
-  // Discord chỉ báo cho mention nằm trong văn bản message; mention trong embed không đánh thức ai.
+  // Discord only notifies on mentions in the message text; a mention inside an embed wakes nobody.
   it('đặt mention trong content, không phải trong embed', () => {
     const payload = buildReminder([GUILD_WAR], WEB_ORIGIN);
 
@@ -108,7 +109,7 @@ describe('buildReminder', () => {
     expect(description).toContain('Mèo Béo');
   });
 
-  // Con số là tiến độ điểm danh, không phải số người ping được.
+  // The number is attendance progress, not how many people could be pinged.
   it('số đếm tính cả người chưa liên kết Discord', () => {
     const due: DueSession = {
       session: session(),
@@ -140,26 +141,26 @@ describe('buildReminder', () => {
 
   describe('giới hạn ký tự của Discord', () => {
     /**
-     * Một ngày đánh thiếu rất nhiều người, đủ để tràn cả hai giới hạn.
-     * @param count - Số người còn thiếu
-     * @returns Ngày đánh kèm danh sách thiếu
+     * A match day missing a great many people, enough to overflow both limits.
+     * @param count - How many people are still missing
+     * @returns The match day together with its missing list
      */
     function crowded(count: number): DueSession {
       return {
         session: session(),
         missing: Array.from({ length: count }, (_, index) => ({
-          // Tên dài như tên thật của bang, không phải 'a'.
+          // Names as long as the guild's real ones, not 'a'.
           name: `Thành Viên Số ${index} Tên Hơi Dài`,
-          // Xâu chuỗi chứ không cộng số: 1e17 vượt Number.MAX_SAFE_INTEGER, cộng vào thì nhiều
-          // index cho ra cùng một id và tập người bị thiếu teo lại.
+          // String concatenation rather than addition: 1e17 is past Number.MAX_SAFE_INTEGER, so
+          // adding to it gives several indexes the same id and shrinks the set of missing people.
           discordId: `10000000000${String(index).padStart(7, '0')}`,
         })),
       };
     }
 
     it('content không vượt 2000 ký tự dù bang đông đến đâu', () => {
-      // Comment ở reminder.ts đã gọi tên đúng rủi ro này nhưng không có dòng nào xử lý: Discord trả
-      // 400, DiscordApiError nổi lên thô, và sáng hôm đó không có tin nhắn nhắc nào.
+      // A comment in reminder.ts named this exact risk while no line handled it: Discord answers
+      // 400, DiscordApiError surfaces raw, and no nudge goes out that morning.
       const payload = buildReminder([crowded(300)], WEB_ORIGIN);
 
       expect(payload.content.length).toBeLessThanOrEqual(MAX_CONTENT_LENGTH);

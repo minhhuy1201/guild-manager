@@ -7,8 +7,8 @@ beforeEach(() => {
   useTeamViewStore.setState(useTeamViewStore.getInitialState());
 });
 
-// Trên điện thoại chỉ hiện một team mỗi lúc; team đang xem là trạng thái giao diện, không phải một thay
-// đổi của đội hình.
+// A phone shows one team at a time; which team is on screen is interface state, not a change to
+// the line-up.
 describe("useTeamViewStore", () => {
   it("mặc định xem team 1", () => {
     expect(useTeamViewStore.getInitialState().selectedTeam).toBe(1);
@@ -20,7 +20,8 @@ describe("useTeamViewStore", () => {
     expect(useTeamViewStore.getState().selectedTeam).toBe(3);
   });
 
-  // Đổi team đang xem mà lọt vào lịch sử thì Ctrl+Z / nút Hoàn tác sẽ "hoàn tác" một lần bấm chip.
+  // If switching the visible team entered the history, Ctrl+Z and the undo button would "undo" a
+  // chip press.
   it("đổi team không đụng tới bản nháp và lịch sử hoàn tác", () => {
     const { drafts, history } = useFormationStore.getState();
 

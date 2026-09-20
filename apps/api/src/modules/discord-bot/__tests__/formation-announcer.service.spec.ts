@@ -10,7 +10,7 @@ import { FixedClock } from '../../../common';
 import { DiscordApiError } from '../discord-rest';
 import { FormationAnnouncerService } from '../formation-announcer.service';
 
-/** Một ảnh webp tí hon, đúng dạng data URL frontend gửi lên. */
+/** A tiny webp image, in the exact data URL shape the frontend sends. */
 const IMAGE = 'data:image/webp;base64,AQID';
 
 const ENV: Record<string, string> = {
@@ -20,9 +20,9 @@ const ENV: Record<string, string> = {
 };
 
 /**
- * Một trận scrim 20:30 ngày 19/08, đúng các trường announcer đọc.
- * @param overrides - Trường cần đổi
- * @returns Session như API trả về
+ * A 20:30 scrim on 19/08, carrying exactly the fields the announcer reads.
+ * @param overrides - The fields to change
+ * @returns A session in the shape the API returns
  */
 function session(overrides: Partial<BattleSession> = {}): BattleSession {
   return {
@@ -43,9 +43,9 @@ function session(overrides: Partial<BattleSession> = {}): BattleSession {
 }
 
 /**
- * Dựng service với các phụ thuộc đã bị thay bằng mock.
- * @param found - Session `findById` trả về, null nghĩa là không tìm thấy
- * @returns Service cùng các mock để assert
+ * Builds the service with every dependency replaced by a mock.
+ * @param found - The session `findById` returns; null means not found
+ * @returns The service together with the mocks to assert on
  */
 function build(found: BattleSession | null = session()) {
   const battleSessions = {
@@ -77,9 +77,10 @@ describe('FormationAnnouncerService', () => {
   });
 
   it('một đội hình dùng chung cho ngày hai trận thì vẫn gửi', async () => {
-    // Ngày đánh hai trận bằng cùng một đội hình là ca hợp lệ, không phải ảnh bị thiếu:
-    // `matchCount` là số trận ĐÁNH, còn số đội hình là 1 hay 2 do admin chọn. Banner trên ảnh
-    // ghi "2 trận" đúng theo `matchPart` bên web, nên bang hội không đọc nhầm thành thiếu trận.
+    // A day that plays two matches with the same line-up is a valid case, not a missing image:
+    // `matchCount` counts the matches PLAYED, while whether there are one or two line-ups is the
+    // admin's choice. The banner on the image says "2 trận" in line with `matchPart` on the web, so
+    // the guild does not read it as a missing match.
     const { service, rest } = build(session({ matchCount: 2 }));
 
     await expect(service.announce('session-1', [IMAGE])).resolves.toEqual({
@@ -117,8 +118,8 @@ describe('FormationAnnouncerService', () => {
   });
 
   it('gửi xong thì khoá điểm danh của ngày đó', async () => {
-    // Đội hình đã lên Discord thì danh sách coi như chốt: để form mở, một member đổi câu trả lời
-    // sau đó là mâu thuẫn ngay với tin nhắn cả bang vừa đọc.
+    // Once the line-up is on Discord the list counts as final: leaving the form open lets a member
+    // change their answer afterwards and contradict the message the whole guild just read.
     const { service, battleSessions } = build();
 
     await service.announce('session-1', [IMAGE, IMAGE]);
@@ -136,7 +137,7 @@ describe('FormationAnnouncerService', () => {
   });
 
   it('giải mã base64 thành bytes thật, bỏ tiền tố data URL', async () => {
-    // Một trận, một ảnh — ca đơn giản nhất, không dính tới trần `matchCount`.
+    // One match, one image - the simplest case, nowhere near the `matchCount` ceiling.
     const { service, rest } = build(session({ matchCount: 1 }));
 
     await service.announce('session-1', [IMAGE]);
@@ -152,14 +153,15 @@ describe('FormationAnnouncerService', () => {
   });
 });
 
-// Người bấm nút là admin, và "bot chưa được cấp quyền trong channel" là thứ chính họ sửa được trong
-// Discord — nhưng chỉ khi có ai đó nói ra. Trước đây lỗi này về tới trình duyệt dưới dạng 500
-// "Lỗi hệ thống, vui lòng thử lại sau.", còn nguyên nhân nằm trong log server.
+// The person pressing the button is an admin, and "the bot has no permission in this channel" is
+// something they can fix in Discord themselves - but only if someone says so. This used to reach
+// the browser as a 500 "Lỗi hệ thống, vui lòng thử lại sau." with the cause left in the server
+// log.
 describe('FormationAnnouncerService — Discord từ chối', () => {
   /**
-   * Dựng service với một REST client luôn ném lỗi Discord.
-   * @param status - Mã lỗi Discord trả về
-   * @returns Service đã sẵn sàng gọi
+   * Builds the service with a REST client that always throws a Discord error.
+   * @param status - The status code Discord returns
+   * @returns The service, ready to call
    */
   function buildRefusing(status: number) {
     const { service, rest, battleSessions } = build(session({ matchCount: 1 }));
@@ -181,7 +183,8 @@ describe('FormationAnnouncerService — Discord từ chối', () => {
     );
   });
 
-  // Mọi mã khác là chuyện của hệ thống, không phải của admin: để nguyên cho filter log kèm stack.
+  // Every other code is the system's problem, not the admin's: leave it for the filter to log with
+  // its stack.
   it('mã lỗi khác vẫn nổi lên nguyên trạng', async () => {
     const { service } = buildRefusing(500);
 
@@ -190,8 +193,8 @@ describe('FormationAnnouncerService — Discord từ chối', () => {
     );
   });
 
-  // Discord từ chối nghĩa là cả bang chưa thấy đội hình nào — khoá điểm danh lúc đó chỉ tạo ra một
-  // ngày không ai trả lời được mà cũng chẳng biết đội hình là gì.
+  // A refusal from Discord means the guild has seen no line-up at all - closing attendance then
+  // only creates a day nobody can answer for and nobody knows the line-up of.
   it('Discord từ chối thì không khoá điểm danh', async () => {
     const { service, battleSessions } = buildRefusing(403);
 

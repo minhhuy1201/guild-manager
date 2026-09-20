@@ -4,10 +4,10 @@ import { FixedClock } from '../../../common';
 import type { MessagePayload } from '../commands/command.types';
 import { ReminderService } from '../reminder.service';
 
-/** 09:00 giờ VN Thứ 6 04/09/2026 - sáng cùng ngày với hạn 12:00 của Bang Chiến. */
+/** 09:00 Vietnam time on Friday 04/09/2026 - the morning of the Bang Chiến's 12:00 deadline. */
 const NOW = new Date('2026-09-04T02:00:00.000Z');
 
-/** 14:00 giờ VN Thứ 6 04/09 - vẫn là ngày nhắc của hạn 12:00, nhưng hạn đó đã khoá. */
+/** 14:00 Vietnam time on Friday 04/09 - still the nudge day for the 12:00 deadline, now closed. */
 const AFTERNOON = new Date('2026-09-04T07:00:00.000Z');
 
 /**
@@ -20,7 +20,7 @@ function session(overrides: Partial<BattleSession> = {}): BattleSession {
     id: 'gw-2026-09-05',
     label: 'Thứ 7 · 20:00 · Bang Chiến',
     dateTime: '2026-09-05T13:00:00.000Z',
-    // 12:00 giờ VN Thứ 6 04/09 - từ 12:00 trở đi nên được nhắc sáng cùng ngày.
+    // 12:00 Vietnam time on Friday 04/09 - from 12:00 onwards the nudge belongs to that morning.
     deadline: '2026-09-04T05:00:00.000Z',
     isAttendanceClosed: false,
     canReopenAttendance: false,
@@ -116,7 +116,7 @@ describe('ReminderService.run', () => {
 
   it('không gửi gì khi không ngày nào tới lượt nhắc hôm nay', async () => {
     const { service, postMessage } = makeService({
-      // Hạn 17:00 Thứ 5 10/09 — còn hơn một ngày nữa.
+      // A 17:00 deadline on Thursday 10/09 - more than a day away.
       sessions: [session({ deadline: '2026-09-10T10:00:00.000Z' })],
     });
 
@@ -126,13 +126,14 @@ describe('ReminderService.run', () => {
     expect(postMessage).not.toHaveBeenCalled();
   });
 
-  // Luật mới nhắc cả trong ngày hết hạn, nên /nhac-diem-danh chạy tay buổi chiều sẽ gặp hạn đã qua.
+  // The new rule nudges on the deadline day too, so running /nhac-diem-danh by hand in the
+  // afternoon meets a deadline that has already passed.
   it('bỏ trận đã quá hạn dù hôm nay là ngày nhắc của nó', async () => {
     const { service, postMessage } = makeService({
       now: AFTERNOON,
       sessions: [
         session(),
-        // 18:00 giờ VN Thứ 6 04/09 - còn mở.
+        // 18:00 Vietnam time on Friday 04/09 - still open.
         session({
           id: 's1',
           label: 'Thứ 6 · 20:30',
@@ -171,7 +172,7 @@ describe('ReminderService.run', () => {
     expect(postMessage).not.toHaveBeenCalled();
   });
 
-  // Có record là đã trả lời; isPresent chỉ là nội dung câu trả lời.
+  // A record means they answered; isPresent is only what the answer said.
   it('người trả lời "Không" cũng tính là đã điểm danh', async () => {
     const { service, postMessage } = makeService({
       records: [
@@ -232,7 +233,7 @@ describe('ReminderService.run', () => {
       makeService({
         sessions: [
           session(),
-          // Hạn 17:00 Thứ 3 08/09 — chưa tới hạn, nhưng vẫn thuộc tuần đang đọc.
+          // A 17:00 deadline on Tuesday 08/09 - not yet due, but still inside the week being read.
           session({
             id: 's1',
             label: 'Thứ 5 · 20:30',
@@ -268,14 +269,15 @@ describe('ReminderService.run', () => {
 describe('ReminderService.run - phạm vi cả tuần', () => {
   const sessions = [
     session(),
-    // 13:00 giờ VN Thứ 7 05/09 - từ 12:00 trở đi nên ngày nhắc là sáng Thứ 7, chưa phải hôm nay.
+    // 13:00 Vietnam time on Saturday 05/09 - from 12:00 onwards the nudge day is that Saturday
+    // morning, which is not today.
     session({
       id: 's1',
       label: 'Thứ 7 · 16:00',
       isGuildWar: false,
       deadline: '2026-09-05T06:00:00.000Z',
     }),
-    // 12:00 giờ VN Thứ 4 02/09 - đã quá hạn.
+    // 12:00 Vietnam time on Wednesday 02/09 - past the deadline.
     session({
       id: 's2',
       label: 'Thứ 4 · 20:30',

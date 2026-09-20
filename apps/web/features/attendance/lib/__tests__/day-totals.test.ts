@@ -19,7 +19,8 @@ describe("countDayTotals", () => {
     expect(totals.b).toEqual({ co: 1, khong: 0, chuaTraLoi: 2 });
   });
 
-  // Bản ghi của người đã rời bang không được tính vào số của bang hiện tại.
+  // Records from people who have left the guild must not count towards the current guild's
+  // numbers.
   it("chỉ đếm những người được đưa vào", () => {
     const records = { [recordKey("ghost", "a")]: { isPresent: true } };
 

@@ -214,8 +214,8 @@ describe("useFormationDraft — lưu", () => {
     saveFormationMock.mockResolvedValue(SAVED_SESSION);
     const { result } = renderDraft();
 
-    // "Tạo trận 2" clone nguyên trận 1, nên phải dọn sạch trận 2 mới ra được
-    // trạng thái "ngày hai trận, trận 2 không có ai".
+    // "Tạo trận 2" clones match 1 wholesale, so match 2 has to be cleared to reach the state "a
+    // two-match day whose second match has nobody in it".
     act(() => result.current.addMatch());
     act(() => result.current.clearActiveDraft());
     act(() => result.current.setActiveMatch(0));
@@ -489,7 +489,8 @@ describe("useFormationDraft - hoàn tác (Ctrl+Z)", () => {
     expect(result.current.assignment["team-1-pos-2"]).toBe("char-1");
   });
 
-  // Mỗi phím gõ là một lần setNote; hoàn tác từng chữ một thì phải bấm Ctrl+Z cả chục lần.
+  // Every keystroke is one setNote; undoing character by character would mean pressing Ctrl+Z a
+  // dozen times.
   it("gõ liền một ghi chú thì một lần hoàn tác xoá cả ghi chú", () => {
     const { result } = renderDraft();
     act(() => result.current.setNote(SLOT, "v"));
@@ -502,7 +503,8 @@ describe("useFormationDraft - hoàn tác (Ctrl+Z)", () => {
     expect(result.current.dirty).toBe(false);
   });
 
-  // Ghi chú "giữ buồng" đã lưu, chưa có nháp: dấu cách vừa gõ phải còn, không thì gõ tiếp ra "giữ buồngx".
+  // The note "giữ buồng" is saved with no draft yet: the space just typed has to survive, or typing
+  // on gives "giữ buồngx".
   it("gõ dấu cách cuối một ghi chú đã lưu thì dấu cách vẫn còn", () => {
     const { result } = renderFormationHook(() =>
       useFormationDraft([NOTED_SESSION], SESSION_ID, true, vi.fn())
@@ -556,7 +558,8 @@ describe("useFormationDraft - hoàn tác (Ctrl+Z)", () => {
     expect(result.current.assignment[SLOT]).toBe("char-1");
   });
 
-  // Bấm "dọn sạch" lần hai không đổi gì trên màn; nếu nó thành một bước thì Ctrl+Z đầu tiên như bị liệt.
+  // Pressing clear a second time changes nothing on screen; if it became a step, the first Ctrl+Z
+  // would look dead.
   it("dọn sạch hai lần thì một lần hoàn tác đã trả lại đội hình", () => {
     const { result } = renderDraft();
     act(() => result.current.clearActiveDraft());
