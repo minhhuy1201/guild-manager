@@ -15,7 +15,7 @@ vi.mock("../../api/team-builder-api", () => ({ saveFormation: vi.fn() }));
  * mount. Spying on it here is what the save path's contract actually is: hand a 401 over, keep
  * everything else.
  */
-const recoverSessionMock = vi.fn(() => false);
+const recoverSessionMock = vi.fn<(error: unknown) => boolean>(() => false);
 
 vi.mock("@/hooks/use-session-recovery", () => ({
   useSessionRecovery: () => recoverSessionMock,
