@@ -1,0 +1,224 @@
+"use client";
+
+import { useState } from "react";
+
+import { PageHeader } from "@/components/shared/page-header";
+import { QueryBoundary } from "@/components/shared/query-boundary";
+import { UnsavedChangesBar } from "@/components/shared/unsaved-changes-bar";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useEditorShortcuts } from "../hooks/use-editor-shortcuts";
+import { useStageSize } from "../hooks/use-stage-size";
+import { useTacticEditor } from "../hooks/use-tactic-editor";
+import { useTacticExport } from "../hooks/use-tactic-export";
+import { useUnsavedGuard } from "../hooks/use-unsaved-guard";
+import { useTacticEditorStore } from "../store/editor-store";
+import { ExportDialog } from "./export-dialog";
+import { MobileEditorNotice } from "./mobile-editor-notice";
+import { EditorToolbar } from "./editor-toolbar";
+import { StageBar } from "./stage-bar";
+import { TacticCanvas } from "./tactic-canvas";
+import { TextNoteDialog } from "./text-note-dialog";
+import { TokenPalette } from "./token-palette";
+import { TokenPresetDialog } from "./token-preset-dialog";
+
+interface TacticEditorScreenProps {
+  /** Id of the tactic being opened */
+  tacticId: string;
+  /** Whether the viewer may write — the API is what actually enforces it */
+  isAdmin: boolean;
+}
+
+/**
+ * One tactic's page: the drawing tools from `lg` up, the read-only canvas and a notice below it.
+ *
+ * The whole coordination lives in `useTacticEditor`, so this component only builds the tree and
+ * decides which half of it a screen this wide should see.
+ * @param tacticId - Id of the tactic being opened
+ * @param isAdmin - Whether the viewer may write
+ * @returns The editor screen
+ */
+export function TacticEditorScreen({
+  tacticId,
+  isAdmin,
+}: TacticEditorScreenProps) {
+  const editor = useTacticEditor(tacticId, isAdmin);
+  const { ref, width } = useStageSize();
+  const [presetsOpen, setPresetsOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+
+  const scene = useTacticEditorStore((store) => store.scene);
+  const activeStageId = useTacticEditorStore((store) => store.activeStageId);
+  const dirty = useTacticEditorStore((store) => store.dirty);
+  const tool = useTacticEditorStore((store) => store.tool);
+  const color = useTacticEditorStore((store) => store.color);
+  const strokeWidth = useTacticEditorStore((store) => store.strokeWidth);
+  const paletteCollapsed = useTacticEditorStore(
+    (store) => store.paletteCollapsed
+  );
+  const selectedElementId = useTacticEditorStore(
+    (store) => store.selectedElementId
+  );
+  const setTool = useTacticEditorStore((store) => store.setTool);
+  const setColor = useTacticEditorStore((store) => store.setColor);
+  const setStrokeWidth = useTacticEditorStore((store) => store.setStrokeWidth);
+  const setActiveStage = useTacticEditorStore((store) => store.setActiveStage);
+  const togglePalette = useTacticEditorStore((store) => store.togglePalette);
+  const addStage = useTacticEditorStore((store) => store.addStage);
+  const duplicateStage = useTacticEditorStore((store) => store.duplicateStage);
+  const renameStage = useTacticEditorStore((store) => store.renameStage);
+  const removeStage = useTacticEditorStore((store) => store.removeStage);
+  const undo = useTacticEditorStore((store) => store.undo);
+  const redo = useTacticEditorStore((store) => store.redo);
+  const loadedScene = useTacticEditorStore((store) => store.scene);
+
+  const stages = scene?.stages ?? [];
+  const exporter = useTacticExport(editor.name, stages, editor.stageRef);
+
+  useEditorShortcuts(isAdmin && loadedScene !== null, editor.onSave, editor.onDeleteSelected);
+  useUnsavedGuard(dirty);
+
+  return (
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        banner="tactics"
+        size="compact"
+        title={editor.name || "Chiến thuật"}
+        description="Kéo quân cờ lên map, vẽ hướng đánh theo từng giai đoạn."
+      />
+
+      <QueryBoundary
+        state={editor.state}
+        skeleton={<Skeleton className="h-96 w-full" />}
+      >
+        <div className="flex flex-col gap-3">
+          {isAdmin ? (
+            <div className="hidden flex-col gap-3 lg:flex">
+              <EditorToolbar
+                tool={tool}
+                color={color}
+                strokeWidth={strokeWidth}
+                selectedTokenSize={editor.selectedTokenSize}
+                canUndo={editor.canUndo}
+                canRedo={editor.canRedo}
+                saving={editor.saving}
+                dirty={dirty}
+                isAdmin={isAdmin}
+                onToolChange={setTool}
+                onColorChange={setColor}
+                onStrokeWidthChange={setStrokeWidth}
+                onTokenSizeChange={editor.onTokenSizeChange}
+                onUndo={undo}
+                onRedo={redo}
+                onSave={editor.onSave}
+                onExport={() => setExportOpen(true)}
+              />
+
+              <StageBar
+                stages={stages}
+                activeStageId={activeStageId}
+                isAdmin={isAdmin}
+                onSelect={setActiveStage}
+                onAdd={addStage}
+                onDuplicate={duplicateStage}
+                onRename={renameStage}
+                onRemove={removeStage}
+              />
+            </div>
+          ) : null}
+
+          <div className="lg:hidden">
+            <MobileEditorNotice />
+          </div>
+
+          <div className="flex rounded-xl border bg-card">
+            {isAdmin ? (
+              <div className="hidden lg:flex">
+                <TokenPalette
+                  collapsed={paletteCollapsed}
+                  isAdmin={isAdmin}
+                  selected={editor.paletteToken}
+                  onToggle={togglePalette}
+                  onSelect={(token) => {
+                    editor.selectPaletteToken(token);
+                    setTool("token");
+                  }}
+                  onManagePresets={() => setPresetsOpen(true)}
+                />
+              </div>
+            ) : null}
+
+            <div ref={ref} className="min-w-0 flex-1 overflow-x-auto">
+              {editor.activeStage ? (
+                <TacticCanvas
+                  stage={editor.activeStage}
+                  width={width}
+                  readOnly={!isAdmin}
+                  selectedElementId={selectedElementId}
+                  onPointerDown={editor.onPointerDown}
+                  onPointerMove={editor.onPointerMove}
+                  onPointerUp={editor.onPointerUp}
+                  onTokenMoved={editor.onTokenMoved}
+                  onElementClick={editor.onElementClick}
+                  onStageReady={editor.onStageReady}
+                />
+              ) : null}
+            </div>
+          </div>
+
+          {!isAdmin && stages.length > 1 ? (
+            <div
+              role="tablist"
+              aria-label="Giai đoạn"
+              className="flex flex-wrap gap-2"
+            >
+              {stages.map((stage) => (
+                <button
+                  key={stage.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={stage.id === activeStageId}
+                  className="rounded-md border px-3 py-1 text-sm aria-selected:bg-primary aria-selected:text-primary-foreground"
+                  onClick={() => setActiveStage(stage.id)}
+                >
+                  {stage.name}
+                </button>
+              ))}
+            </div>
+          ) : null}
+
+          {isAdmin && dirty ? (
+            <UnsavedChangesBar
+              message="Bản vẽ có thay đổi chưa lưu"
+              resetLabel="Tải lại bản đã lưu"
+              saving={editor.saving}
+              errorMessages={editor.saveError ? [editor.saveError] : []}
+              onSave={editor.onSave}
+              onReset={() => editor.state.refetch()}
+              undo={{ onUndo: undo, canUndo: editor.canUndo }}
+            />
+          ) : null}
+        </div>
+      </QueryBoundary>
+
+      <TextNoteDialog
+        open={editor.pendingTextPoint !== null}
+        onConfirm={editor.confirmText}
+        onCancel={editor.cancelText}
+      />
+
+      <TokenPresetDialog open={presetsOpen} onOpenChange={setPresetsOpen} />
+
+      <ExportDialog
+        open={exportOpen}
+        exporting={exporter.exporting}
+        stageCount={stages.length}
+        onOpenChange={setExportOpen}
+        onExportActive={() => {
+          exporter.exportActiveStage();
+          setExportOpen(false);
+        }}
+        onExportAll={() => void exporter.exportAllStages()}
+      />
+    </div>
+  );
+}
