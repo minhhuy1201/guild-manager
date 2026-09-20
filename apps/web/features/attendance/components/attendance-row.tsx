@@ -87,9 +87,9 @@ export function AttendanceRow({
                   disabled={disabled}
                   onClick={() => onCellClick(character, session)}
                   className={cn(
-                    "flex size-10 cursor-pointer items-center justify-center rounded-full outline-none",
+                    "flex size-10 items-center justify-center rounded-full outline-none",
                     "transition-colors duration-[var(--duration-fast)] hover:bg-foreground/5",
-                    "focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-default disabled:opacity-60",
+                    "focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-60",
                     isChanged && "ring-2 ring-primary"
                   )}
                 >

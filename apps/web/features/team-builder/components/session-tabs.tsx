@@ -75,7 +75,7 @@ export function SessionTabs({
             <TabsTrigger
               key={session.sessionId}
               value={session.sessionId}
-              className="h-auto cursor-pointer flex-col items-center justify-center gap-0.5 rounded-lg border border-border bg-card px-3 py-3 text-sm font-medium not-data-active:hover:border-jade/60 not-data-active:hover:bg-foreground/5 data-active:border-primary data-active:bg-primary data-active:text-primary-foreground data-active:*:text-primary-foreground dark:data-active:border-primary dark:data-active:bg-primary dark:data-active:text-primary-foreground"
+              className="h-auto flex-col items-center justify-center gap-0.5 rounded-lg border border-border bg-card px-3 py-3 text-sm font-medium not-data-active:hover:border-jade/60 not-data-active:hover:bg-foreground/5 data-active:border-primary data-active:bg-primary data-active:text-primary-foreground data-active:*:text-primary-foreground dark:data-active:border-primary dark:data-active:bg-primary dark:data-active:text-primary-foreground"
             >
               <SessionLabel session={session} size="sm">
                 {session.locked ? <Lock className="size-3 opacity-70" /> : null}

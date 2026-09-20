@@ -247,6 +247,22 @@
       font-size: 115%;
     }
   }
+
+  /* Tailwind's preflight leaves every control on the default arrow, so each clickable surface used
+     to repeat `cursor-pointer` at its call site and a new one was forgotten as often as not.
+     Answered once here, for the elements a click actually does something on. Disabled is excluded
+     rather than given `not-allowed`: a control that cannot act reads as plain text, the same as any
+     other inert part of the page. */
+  button:not(:disabled),
+  summary,
+  select:not(:disabled),
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [role="tab"]:not([aria-disabled="true"]),
+  [role="option"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
 }
 
 /* Room at the bottom of the page taken by the phone's fixed tab bar (`mobile-tab-bar.tsx`): its
