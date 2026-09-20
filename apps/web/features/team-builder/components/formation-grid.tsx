@@ -184,8 +184,16 @@ export function FormationGrid({
         )}
 
         {rows.map((row) => {
+          const first = row[0].team;
+          const last = row[row.length - 1].team;
+          const filled = row.reduce(
+            (count, { slots }) => count + countFilled(slots),
+            0
+          );
+
           const grid = (
             <div
+              key={first}
               className={cn(
                 "grid gap-3",
                 isCapture
@@ -217,16 +225,10 @@ export function FormationGrid({
             </div>
           );
 
-          const first = row[0].team;
-          const last = row[row.length - 1].team;
-          const filled = row.reduce(
-            (count, { slots }) => count + countFilled(slots),
-            0
-          );
-
-          // The image sent to Discord is read on its own, so it never folds: all ten teams, no headers.
+          // The image sent to Discord is read on its own, so it never folds: all ten teams, no
+          // headers, and nothing wrapping the row that the screen does not have either.
           return isCapture ? (
-            <div key={first}>{grid}</div>
+            grid
           ) : (
             <TeamRowGroup
               key={first}
