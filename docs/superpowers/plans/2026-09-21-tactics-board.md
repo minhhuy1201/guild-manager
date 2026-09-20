@@ -2990,3 +2990,25 @@ xuất ảnh → thu nhỏ cửa sổ dưới `lg` thấy `mobile-editor-notice`
 git add docs
 git commit -m "docs(tactics): document the tactics module and its endpoints"
 ```
+
+---
+
+## Khác với kế hoạch ban đầu
+
+Ghi lại để plan, spec và mã nguồn nói cùng một chuyện:
+
+- **Phím tắt công cụ** (`1`…`5`, `[`/`]`, `Delete`) thêm theo yêu cầu giữa chừng — `lib/shortcuts.ts`
+  và `hooks/use-editor-shortcuts.ts`, mỗi nút mang phím tắt trong `title`.
+- **Icon trên canvas** không dùng component `lucide-react` được: Konva vẽ `Path`. Bộ 20 icon làm phẳng
+  thành `lib/icon-paths.ts`, sinh từ `lucide-static` bằng `lib/icon-paths.build.cjs`, và
+  `__tests__/icon-paths.test.ts` so lại lúc chạy test để bắt drift.
+- **Công cụ chữ** dùng `text-note-dialog` thay vì gõ trên canvas.
+- **Viewer dùng chung**: `MEMBER` ở mọi khổ màn hình và admin dưới `lg` đều đi qua `tactic-viewer`.
+  Chọn editor hay viewer là nhánh thật (`use-is-desktop.ts`), không phải `lg:hidden` — nếu không sẽ có
+  hai Konva `Stage` cùng sống.
+- **Xuất nhiều giai đoạn** chụp lần lượt trên canvas đang mở, không dựng `Stage` ẩn.
+- **Thông báo lỗi Zod**: `describeException` lấy message của issue thay cho `"Validation failed"` —
+  không có bước này thì câu tiếng Việt của giới hạn không bao giờ tới người dùng.
+- **Trôi migration local**: checksum của `20260907172634` trong `_prisma_migrations` lệch với file đã
+  commit (chỉ khác phần comment). Đã cập nhật checksum thay vì `migrate reset`, nên dữ liệu local còn
+  nguyên.
