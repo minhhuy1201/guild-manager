@@ -185,10 +185,15 @@ and `features/auth/api/__tests__/auth-header.test.ts` pins that wording and the 
 **Every write path hands a failure to `recoverSession` before showing it.** `useSessionRecovery`
 (`hooks/use-session-recovery.ts`) turns a 401 into `router.refresh()`, which is the only way the
 cookies get renewed - a Server Action cannot write them, so a press that failed on an expired token
-fails forever otherwise. It returns `true` when it took charge, so the call site reads
-`if (recoverSession(error)) return;` before its own message. `attendance-grid`,
-`member-attendance-card`, `mutation-form` and `use-formation-draft` all go through it; a status that
-would fail again anyway (403, 409) is the call site's own business.
+fails forever otherwise. A status that would fail again anyway (403, 409) is the call site's own
+business.
+
+It returns `true` when it took charge, and the call site must not show its own message on top -
+"phiên đã hết hạn" beside "phiên vừa được làm mới" contradicts itself. A site holding the message in
+local state gates it on that return value (`if (recoverSession(error)) return;` in
+`attendance-grid`, `member-attendance-card`, `mutation-form`). `use-formation-draft` derives its
+message from `saveMutation.error` instead of storing it, so it cannot early-return: it filters the
+401 out of `saveErrorMessage` with `isSessionExpired` and calls `recoverSession` unconditionally.
 
 ### The session
 

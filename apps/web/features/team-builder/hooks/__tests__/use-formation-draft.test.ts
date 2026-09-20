@@ -299,6 +299,12 @@ describe("useFormationDraft — lưu", () => {
     expect(refetchFormations).not.toHaveBeenCalled();
     expect(result.current.notes[SLOT]).toBe("vào sau");
     expect(result.current.dirty).toBe(true);
+    // The recovery toast says the session was renewed; the toolbar saying it expired at the same
+    // time would contradict it. Waiting for the mutation to settle first, so this asserts the
+    // filtered state rather than the moment before the error lands.
+    await waitFor(() => expect(saveFormationMock).toHaveBeenCalledOnce());
+    await waitFor(() => expect(result.current.saving).toBe(false));
+    expect(result.current.saveErrorMessage).toBeUndefined();
   });
 
   it("409 không đi đường recover — tải lại là đúng việc cần làm", async () => {
