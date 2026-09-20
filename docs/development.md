@@ -95,6 +95,14 @@ file. Copy it from `.env.example` when the defaults do not suit you.
 | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | postgres/postgres/guild_manager | Credentials of the dev database container — **must match `DATABASE_URL`** in `apps/api/.env` |
 | `POSTGRES_PORT` | `5432` | Host port the container publishes. Change it when 5432 is taken, and change the port in `DATABASE_URL` to match |
 
+### `.env.local` at the repo root
+
+Developer tooling only, and entirely optional — no app reads it.
+
+| Variable | Purpose |
+|---|---|
+| `AI_GATEWAY_API_KEY` | Vercel AI Gateway key used by `packages/ci-triage` to classify why a CI run went red. Without it the tool prints one line and exits 0 — see [`ci-triage.md`](ci-triage.md) |
+
 ### `apps/web/.env.local`
 
 | Variable | Purpose |
@@ -266,6 +274,15 @@ reach the same database through the published port.
 | `typecheck` | `tsc --noEmit` |
 | `test` / `test:watch` | Vitest |
 
+### Tooling (`pnpm --filter @guild/ci-triage …`)
+
+| Command | Purpose |
+|---|---|
+| `triage` | Classify why the newest failed CI run on this branch went red. `--run <id>`, `--json`, `--no-cache` |
+| `lint` / `format:check` / `typecheck` / `test` | The same four checks the `Lint & typecheck tooling` job runs |
+
+See [`ci-triage.md`](ci-triage.md).
+
 Add a shadcn component (run inside `apps/web`):
 
 ```bash
@@ -301,7 +318,7 @@ pnpm --filter api lint && pnpm --filter api typecheck && pnpm --filter api test
 pnpm --filter web lint && pnpm --filter web typecheck && pnpm --filter web test
 ```
 
-That is the whole of what the six *code* checks run, minus the two builds. Two more run on a pull request without a local equivalent — dependency review and Trivy — for eight required checks in total; see [`production.md`](production.md) §6.
+That is the whole of what the six *code* checks run, minus the two builds. Two more run on a pull request without a local equivalent — dependency review and Trivy — for nine required checks in total; see [`production.md`](production.md) §6.
 
 Never commit: `.env*` (except `.env.example`), `apps/api/src/generated/`, `dist/`, `.next/`.
 
@@ -326,6 +343,7 @@ Never commit: `.env*` (except `.env.example`), `apps/api/src/generated/`, `dist/
 
 - [`architecture.md`](architecture.md) — system architecture, layer boundaries, where new code goes
 - [`production.md`](production.md) — build, deploy, the real database
+- [`ci-triage.md`](ci-triage.md) — what to do when CI goes red
 - [`apps/api/README.md`](../apps/api/README.md) — backend details
 - [`apps/web/README.md`](../apps/web/README.md) — frontend details
 - `docs/superpowers/specs/` — design specs per feature
