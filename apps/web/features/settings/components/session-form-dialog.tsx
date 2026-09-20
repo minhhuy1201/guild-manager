@@ -10,7 +10,7 @@ import {
   type BattleSession,
 } from "@guild/shared/schemas";
 
-import { FieldLabel } from "@/components/shared/field-label";
+import { FieldCaption, FieldLabel } from "@/components/shared/field-label";
 import { MutationDialogShell } from "@/components/shared/mutation-dialog";
 import { MutationForm } from "@/components/shared/mutation-form";
 import { Input } from "@/components/ui/input";
@@ -230,7 +230,7 @@ function SessionForm({ session, onDone }: SessionFormProps) {
 
       {isGuildWar ? (
         <div className="flex flex-col gap-1.5">
-          <FieldLabel icon={<AlarmClock />}>Hạn chót điểm danh</FieldLabel>
+          <FieldCaption icon={<AlarmClock />}>Hạn chót điểm danh</FieldCaption>
           <p className="text-sm text-muted-foreground">
             {GUILD_WAR_DEADLINE_LABEL} - cố định, không sửa được.
           </p>

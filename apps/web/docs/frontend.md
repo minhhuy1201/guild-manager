@@ -377,6 +377,19 @@ bringing hues of their own: teams 1-5 jade, 6-7 the warm neutral, 8 navy, 9-10 g
 sits at `/15` to `/30`, the border a step stronger, the surface at `/5` to `/10`, and the text is
 always `foreground`.
 
+### A field's heading → `FieldLabel` when editable, `FieldCaption` when not
+
+Both live in `components/shared/field-label.tsx` and render the same typography and icon size, so a
+form reads the same whether or not a field can be edited.
+
+- **`FieldLabel`** is a real `<label htmlFor>`. `htmlFor` is required by the type, and the id it
+  names must exist on the control; for a `Select`, that is the trigger's `id`.
+- **`FieldCaption`** is a `<span>`. Use it for a value the user cannot change (the fixed guild-war
+  deadline, the computed match count).
+
+Never give a `<label>` to a field with no control: it announces a control that is not there, and
+`getByLabelText` then finds a heading no one can operate.
+
 ### Page header → `PageHeader` on its banner
 
 Every page opens with `components/shared/page-header.tsx` (`<PageHeader banner title description?

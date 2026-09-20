@@ -38,7 +38,9 @@ export function slugifyName(name: string): string {
     // NFD does not decompose đ/Đ, so it needs its own rule.
     .replace(/đ/g, 'd')
     .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+    // The previous rule already collapsed every run, so at most one hyphen can sit at each end.
+    // Matching a single one keeps the pattern linear; `/^-+|-+$/` backtracks on a long hyphen run.
+    .replace(/^-|-$/g, '');
 
   return slug === '' ? FALLBACK_PREFIX : slug;
 }
