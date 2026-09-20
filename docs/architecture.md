@@ -266,6 +266,7 @@ no-op in it. `attendance`, `battle-sessions` and `characters` keep that mapping 
 | `battle-sessions` | The week's schedule, deadlines, the Guild War session, time rules | Reads signed-in, writes admin |
 | `attendance` | Marking attendance and reading records; a "Không" answer also releases that member from the day's formation, through `team-builder` | Bearer required; reads are guild-wide for everyone, admin bypasses the deadline and marks for others |
 | `team-builder` | Per-match formations, and the team names shown on the grid | Admin |
+| `tactics` | Guild war tactic drawings and the shared token palette. The scene is one JSON document per tactic, parsed with Zod on every read (`tactics.codec.ts`) | Reads signed-in, writes admin (`AdminGuard` per handler) |
 | `discord-bot` | The Discord interactions endpoint, the slash command registry, attendance recorded from Discord — by command (`/diem-danh`, `/diem-danh-ho`) **and by button**: the private attendance board answers with a Có/Không button per match, and the two guild-wide messages carry one "Điểm danh ngay" button that opens that board, both reaching the router as message-component interactions — the weekly schedule announcement (`/thong-bao`), the announcement channel (`/cau-hinh-kenh`), the daily attendance reminder — run by Vercel Cron, or by hand with `/nhac-diem-danh` — and the welcome for a new member (`/chao-mung`), which links three channels configured in the environment plus the sect channel picked when the command is typed. The last four are admin only | Discord's Ed25519 signature for interactions; `CRON_SECRET` in a bearer header for the scheduled reminder — no JWT, no session; the identity comes from the signed payload and the write rules stay `AttendanceService`'s |
 
 Endpoints, all behind the `/api` prefix:
@@ -300,6 +301,15 @@ Endpoints, all behind the `/api` prefix:
 | `POST` | `/team-builder/formations/:sessionId/announce` | Post the day's roster images to Discord with the gathering announcement, then close that day's attendance | Admin |
 | `GET` | `/team-builder/team-names` | Names of the grid's team columns | Admin |
 | `PUT` | `/team-builder/team-names` | Overwrite the whole team name map | Admin |
+| `GET` | `/tactics` | Tactics, newest edit first, without their scenes | Bearer |
+| `GET` | `/tactics/token-presets` | The palette's saved tokens, in display order | Bearer |
+| `POST` | `/tactics/token-presets` | Add a palette token | Admin |
+| `DELETE` | `/tactics/token-presets/:id` | Delete a palette token (tactics already drawn keep theirs) | Admin |
+| `GET` | `/tactics/:id` | One tactic with its whole scene | Bearer |
+| `POST` | `/tactics` | Create a tactic holding one empty stage | Admin |
+| `PATCH` | `/tactics/:id` | Rename a tactic or rewrite its description | Admin |
+| `PUT` | `/tactics/:id/stages` | Overwrite the whole scene | Admin |
+| `DELETE` | `/tactics/:id` | Delete a tactic | Admin |
 | `POST` | `/discord/interactions` | Receive an interaction from Discord — slash command or button press — and answer it | Discord's Ed25519 signature |
 | `GET` | `/cron/attendance-reminder` | Post the reminder for every deadline due for a reminder today (§6). `GET` because Vercel Cron only issues GET | `CRON_SECRET` in `Authorization: Bearer` |
 
@@ -394,7 +404,7 @@ apps/web/
 └── lib/              # api-client.ts (apiFetch + ApiError), format.ts, guild-class.ts, utils.ts
 ```
 
-Features: `attendance`, `auth`, `landing`, `members`, `settings`, `team-builder`.
+Features: `attendance`, `auth`, `landing`, `members`, `settings`, `tactics`, `team-builder`.
 
 `auth` is the one feature with **three** entry points instead of one, split by runtime rather than by
 public/private, because the split is what the runtimes force:
@@ -513,11 +523,14 @@ erDiagram
     AuthExchange { }
     TeamName { }
     BotChannel { }
+    Tactic { }
+    TacticTokenPreset { }
 ```
 
-The last three hang off nothing on purpose. `TeamName` and `BotChannel` are global configuration, not
-per week and not per battle day; `AuthExchange` holds a `discordId` rather than a foreign key, because
-a rescue admin may match no `Character` at all.
+The last five hang off nothing on purpose. `TeamName`, `BotChannel` and `TacticTokenPreset` are global
+configuration, not per week and not per battle day; `Tactic` is deliberately independent of the
+schedule (a tactic is not tied to a week or a battle day); `AuthExchange` holds a `discordId` rather
+than a foreign key, because a rescue admin may match no `Character` at all.
 
 | Model | Notes |
 |---|---|
@@ -528,6 +541,9 @@ a rescue admin may match no `Character` at all.
 | `FormationSlot` | One cell of the roster grid: a person, a note, or both. A cell that is empty *and* unannotated has no row — that is how "slot 2 is empty" differs from "there is no slot 2". An answer of "Không" takes that member out of every cell of the day (`TeamBuilderService.releaseCharacterFromSession`): an annotated cell keeps its note and only loses its occupant, and a day already played is left untouched. **Deleting the member does the same thing**, guild-wide: the foreign key is `SetNull`, and `CharactersService.remove` deletes the cells that carried no note in the same transaction. |
 | `TeamName` | Display name of one team column, keyed by team number. Global configuration, not per battle day: the same names apply to every week and every match, which is why it hangs off nothing in the diagram above. A team still showing its plain number has no row. |
 | `BotChannel` | Which Discord channel the bot posts a given kind of message to, keyed by `purpose`. Global configuration like `TeamName`, which is why it hangs off nothing in the diagram above. Today it holds one row, `ATTENDANCE_REMINDER`, written by `/cau-hinh-kenh`. `purpose` is a `String` and not an enum on purpose: the value never crosses the network to the web app, so it need not stay in step with `packages/shared/enums`. |
+
+| `Tactic` | One guild war tactic drawing. `stages` is a `Json` column holding the whole scene document — `{ schemaVersion, stages }` per `tacticSceneSchema` in `@guild/shared` — rather than normalised stage and element tables: a new kind of drawn element is then a branch in the shared union and a branch in the renderer, with no migration, and the editor only ever saves the whole document anyway. The column is **untrusted on read** (an older app or a hand edit may have written it), so `tactics.codec.ts` parses it with Zod and fails loudly, naming the tactic, rather than returning an empty scene. `schemaVersion` is what makes a future format change an upgrade step instead of guessed SQL over JSON. |
+| `TacticTokenPreset` | A named token in the tactics palette, shared by every tactic. Global configuration like `TeamName`, which is why it hangs off nothing above. A token placed on a map does **not** point here: it captured the label and icon when it was dropped, so renaming or deleting a preset never rewrites a tactic drawn last week. |
 
 The label of a match ("Thứ 3 · 20:30") is **derived from `dateTime`**, never stored, so changing the
 time changes the label everywhere.
@@ -615,7 +631,8 @@ no staging environment, no verified backups, no monitoring or alerting, no appli
 limiting, and no automatic rollback. Details and consequences are in
 [`production.md`](production.md) §6.
 
-**No optimistic locking on the roster.** `PUT /team-builder/formations/:sessionId` and
+**No optimistic locking on the roster or on a tactic.** `PUT /tactics/:id/stages`,
+`PUT /team-builder/formations/:sessionId` and
 `PUT /team-builder/team-names` both clear by key and rebuild from the payload; neither compares
 against what the client read when it opened the page. Two admins editing the same battle day means
 the later save wins and the earlier one's work disappears with no conflict, no warning and no merge.

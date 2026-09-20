@@ -32,7 +32,7 @@ Yêu cầu gốc (`ba.md`, không commit) cộng với các câu đã chốt qua
 | Cơ chế lưu | Thủ công (`Ctrl+S` / nút Lưu) + thanh chưa lưu + chặn rời trang |
 | Xuất nhiều giai đoạn | Một file ZIP |
 | Quân cờ tự đặt tên | Preset dùng chung, lưu DB |
-| Công cụ chữ | Có |
+| Công cụ chữ | Có — nội dung nhập trong một dialog nhỏ (`text-note-dialog`), không gõ thẳng trên canvas |
 | Undo | Theo từng giai đoạn, có redo |
 | Quân cờ trên map | Kéo thả + đổi cỡ (ba cỡ), không xoay |
 | Quyền `MEMBER` | Chỉ xem, **không** xuất ảnh |
@@ -209,7 +209,10 @@ Giới hạn cứng, kiểm ở Zod nên cả hai phía cùng một luật:
 | `Tactic.name` | ≤ 80 ký tự | |
 | `Tactic.description` | ≤ 500 ký tự | Khớp đúng `@db.VarChar(500)`, nếu không thì giới hạn database trả `500` thay vì `400` |
 
-Vượt bất kỳ giới hạn nào = `400` kèm thông báo tiếng Việt, hiển thị nguyên văn cho người dùng. Ở mức
+Vượt bất kỳ giới hạn nào = `400` kèm thông báo tiếng Việt, hiển thị nguyên văn cho người dùng. Để câu
+đó tới được người dùng, `describeException` (`common/filters/all-exceptions.filter.ts`) lấy message
+của các issue Zod thay cho câu `"Validation failed"` mặc định của `nestjs-zod` — sửa ở đó vì nơi quyết
+định chữ người dùng đọc là backend, và mọi màn hình khác cũng được hưởng. Ở mức
 trần (20 × 400 phần tử) tài liệu vào khoảng vài trăm KB — dưới giới hạn body mặc định của Express.
 Đó là mốc để xem lại phương án lưu nếu giới hạn phải nới.
 
@@ -291,6 +294,10 @@ Undo/redo:
   của giai đoạn kia.
 - `Ctrl+Z` hoàn tác, `Ctrl+Shift+Z` làm lại, `Ctrl+S` lưu. Phím tắt chỉ gắn khi editor mở và tiêu
   điểm không nằm trong ô nhập liệu.
+- Phím tắt công cụ: `1` đội hình, `2` mũi tên, `3` vẽ tự do, `4` chữ, `5` tẩy; `[` và `]` đổi cỡ nét;
+  `Delete`/`Backspace` xoá phần tử đang chọn. Dùng số chứ không dùng chữ cái đầu vì tên tiếng Việt
+  trùng chữ đầu ("Chữ" và "Cơ động"), và hàng số khớp đúng thứ tự nút trên thanh công cụ. Mỗi nút mang
+  phím tắt của nó trong `title`, nên không cần bảng chú giải riêng.
 - Thêm/xoá/đổi tên/nhân bản giai đoạn **không** vào ngăn undo — chúng là thao tác trên tài liệu, và
   một `Ctrl+Z` làm sống lại cả một giai đoạn đã xoá thì khó đoán hơn là một hộp thoại xác nhận.
 
@@ -303,16 +310,22 @@ Lưu và rời trang:
 Xuất ảnh (admin):
 
 - `stage.toDataURL({ pixelRatio: 2 })` cho giai đoạn đang mở.
-- Nhiều giai đoạn: render từng giai đoạn vào một `Stage` ẩn rồi gói bằng `jszip`, tên file
-  `<tên chiến thuật>-<số>-<tên giai đoạn>.png`.
+- Nhiều giai đoạn: lần lượt mở từng giai đoạn trên chính canvas đang hiển thị, chụp sau hai khung
+  hình, rồi gói bằng `jszip`, tên file `<tên chiến thuật>-<số>-<tên giai đoạn>.png`. Không dựng
+  `Stage` ẩn: hai mươi canvas 1920×1071 cùng lúc là hàng trăm MB, còn canvas đang mở đã nạp sẵn ảnh
+  map.
 - `MEMBER` không thấy nút xuất ảnh.
 
 Mobile:
 
 - `/chien-thuat` hoạt động đầy đủ: danh sách, mở xem.
-- Trang xem dùng `tactic-viewer` — canvas chỉ đọc, pinch zoom và pan, chuyển giai đoạn bằng tab.
+- Trang xem dùng `tactic-viewer` — canvas chỉ đọc, chuyển giai đoạn bằng tab. `MEMBER` ở mọi khổ màn
+  hình và admin dưới `lg` đều nhìn qua chính component này.
 - Dưới `lg`, editor hiện `mobile-editor-notice`: "Mở trên máy tính để vẽ chiến thuật." Không dựng
   công cụ vẽ cảm ứng.
+- Chọn editor hay viewer là **một nhánh thật** (`use-is-desktop.ts`, `useSyncExternalStore` trên
+  `matchMedia`), không phải `lg:hidden`: mỗi bên dựng một Konva `Stage` riêng, giấu bằng CSS thì hai
+  canvas và hai bản map cùng sống.
 
 ## Bố cục editor
 
@@ -330,7 +343,13 @@ Mobile:
 └──────────────┴───────────────────────────────────────────────────────────────────────────────┘
 ```
 
-Quân cờ trên map là vòng tròn, icon `lucide-react` ở giữa, viền theo màu đang chọn trên thanh công
+Icon trên canvas **không** dùng component `lucide-react`: Konva vẽ `Path`, nên bộ 20 icon được làm
+phẳng thành path data trong `features/tactics/lib/icon-paths.ts`, sinh từ `lucide-static` (devDependency)
+bằng `icon-paths.build.cjs`. `__tests__/icon-paths.test.ts` sinh lại lúc chạy test và so sánh, nên icon
+đổi ở thượng nguồn là test đỏ chứ không phải lệch âm thầm. Bảng chọn bên trái vẫn dùng component
+`lucide-react` bình thường.
+
+Quân cờ trên map là vòng tròn, icon ở giữa, viền theo màu đang chọn trên thanh công
 cụ. Bảng quân cờ bên trái collapse được, trạng thái collapse nằm trong Zustand và reset khi tải lại
 trang — app chưa dùng `localStorage` ở đâu cả, và một tuỳ chọn hiển thị chưa đáng để mở đường đó. Màu sắc lấy nguyên token của `globals.css`, không đẻ màu mới ngoài bốn màu vẽ.
 
