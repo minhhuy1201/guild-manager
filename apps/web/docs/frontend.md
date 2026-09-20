@@ -383,7 +383,7 @@ Both live in `components/shared/field-label.tsx` and render the same typography 
 form reads the same whether or not a field can be edited.
 
 - **`FieldLabel`** is a real `<label htmlFor>`. `htmlFor` is required by the type, and the id it
-  names must exist on the control - for a `Select`, that is the trigger's `id`.
+  names must exist on the control; for a `Select`, that is the trigger's `id`.
 - **`FieldCaption`** is a `<span>`. Use it for a value the user cannot change (the fixed guild-war
   deadline, the computed match count).
 
