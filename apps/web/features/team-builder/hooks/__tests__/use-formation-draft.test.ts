@@ -10,6 +10,17 @@ import { makeSession, renderFormationHook } from "./render-formation-hook";
 
 vi.mock("../../api/team-builder-api", () => ({ saveFormation: vi.fn() }));
 
+/**
+ * `useSessionRecovery` navigates and toasts, which needs a router this hook test has no reason to
+ * mount. Spying on it here is what the save path's contract actually is: hand a 401 over, keep
+ * everything else.
+ */
+const recoverSessionMock = vi.fn(() => false);
+
+vi.mock("@/hooks/use-session-recovery", () => ({
+  useSessionRecovery: () => recoverSessionMock,
+}));
+
 const saveFormationMock = vi.mocked(saveFormation);
 
 const SLOT = "team-1-pos-1";
@@ -33,6 +44,7 @@ function renderDraft(refetchFormations = vi.fn()) {
 
 beforeEach(() => {
   saveFormationMock.mockReset();
+  recoverSessionMock.mockClear();
 });
 
 afterEach(() => {
@@ -268,6 +280,37 @@ describe("useFormationDraft — lưu", () => {
 
     expect(refetchFormations).toHaveBeenCalledOnce();
     expect(result.current.dirty).toBe(true);
+  });
+
+  it("401 — phiên hết hạn giữa lúc xếp: giao cho recoverSession và giữ nháp", async () => {
+    // Only a navigation renews the cookies, so without this the press fails forever and the toolbar
+    // shows a plain error - the attendance screens have handed 401s over since they were written.
+    saveFormationMock.mockRejectedValue(new ApiError("Hết phiên.", 401));
+    const refetchFormations = vi.fn();
+    const { result } = renderDraft(refetchFormations);
+
+    act(() => result.current.setNote(SLOT, "vào sau"));
+    await act(async () => {
+      await result.current.handleSave();
+    });
+
+    expect(recoverSessionMock).toHaveBeenCalledOnce();
+    expect(recoverSessionMock.mock.calls[0][0]).toBeInstanceOf(ApiError);
+    expect(refetchFormations).not.toHaveBeenCalled();
+    expect(result.current.notes[SLOT]).toBe("vào sau");
+    expect(result.current.dirty).toBe(true);
+  });
+
+  it("409 không đi đường recover — tải lại là đúng việc cần làm", async () => {
+    saveFormationMock.mockRejectedValue(new ApiError("Trận đã khoá.", 409));
+    const { result } = renderDraft();
+
+    act(() => result.current.setNote(SLOT, "vào sau"));
+    await act(async () => {
+      await result.current.handleSave();
+    });
+
+    expect(recoverSessionMock).not.toHaveBeenCalled();
   });
 
   it("chưa chọn ngày nào thì không gọi API", async () => {

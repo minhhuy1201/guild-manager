@@ -182,6 +182,14 @@ not on what it may import: `session.ts` carries `import "server-only"` and no `"
 is how `getAccessToken` always travelled. The 401 it throws is the sentence the UI shows verbatim,
 and `features/auth/api/__tests__/auth-header.test.ts` pins that wording and the status.
 
+**Every write path hands a failure to `recoverSession` before showing it.** `useSessionRecovery`
+(`hooks/use-session-recovery.ts`) turns a 401 into `router.refresh()`, which is the only way the
+cookies get renewed - a Server Action cannot write them, so a press that failed on an expired token
+fails forever otherwise. It returns `true` when it took charge, so the call site reads
+`if (recoverSession(error)) return;` before its own message. `attendance-grid`,
+`member-attendance-card`, `mutation-form` and `use-formation-draft` all go through it; a status that
+would fail again anyway (403, 409) is the call site's own business.
+
 ### The session
 
 The API signs an access token (1 day) and a refresh token (1 week); both are stored in httpOnly
