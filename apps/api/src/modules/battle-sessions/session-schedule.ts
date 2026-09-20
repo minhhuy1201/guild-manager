@@ -8,6 +8,7 @@
  * markers, the fixed Guild War session and the display label format.
  */
 import {
+  SATURDAY_OFFSET_FROM_MONDAY,
   isSameVnDay,
   shiftVnDate,
   vnParts,
@@ -22,9 +23,6 @@ const SATURDAY = 6;
 
 /** Hour the new attendance week opens (22:00 Saturday). */
 const WEEK_OPEN_HOUR = 22;
-
-/** Day offset of Saturday from the Monday starting the week. */
-const SATURDAY_OFFSET_FROM_MONDAY = 5;
 
 /** Fixed battle time of the Guild War. */
 const GUILD_WAR_HOUR = 20;

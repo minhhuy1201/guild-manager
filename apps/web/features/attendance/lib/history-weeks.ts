@@ -1,4 +1,8 @@
-import { shiftVnDate, vnParts } from "@guild/shared/lib";
+import {
+  SATURDAY_OFFSET_FROM_MONDAY,
+  shiftVnDate,
+  vnParts,
+} from "@guild/shared/lib";
 
 /**
  * How many weeks back the History screen offers, the open one included.
@@ -8,9 +12,6 @@ import { shiftVnDate, vnParts } from "@guild/shared/lib";
  * turning into a long list of weeks nobody reopens.
  */
 export const HISTORY_WEEK_COUNT = 3;
-
-/** Days from Monday to the Saturday that closes the attendance week. */
-const MONDAY_TO_SATURDAY = 5;
 
 /** One selectable week on the History screen. */
 export interface HistoryWeekOption {
@@ -62,7 +63,7 @@ export function historyWeekOptions(
 
   return Array.from({ length: count }, (_, index) => {
     const monday = shiftVnDate(current, -7 * index, 0, 0);
-    const saturday = shiftVnDate(monday, MONDAY_TO_SATURDAY, 0, 0);
+    const saturday = shiftVnDate(monday, SATURDAY_OFFSET_FROM_MONDAY, 0, 0);
 
     return {
       weekStart: monday.toISOString(),

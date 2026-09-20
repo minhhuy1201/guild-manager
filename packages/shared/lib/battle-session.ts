@@ -10,11 +10,19 @@
  */
 import { atVnTime, shiftVnDate } from './vn-time';
 
-/** Hour the attendance form closes, on the battle day itself. */
-const DEADLINE_HOUR = 11;
+/**
+ * Hour the attendance form closes, on the battle day itself.
+ * Exported so the settings form prefills the same hour the backend enforces, instead of repeating
+ * the literal "11:00".
+ */
+export const DEADLINE_HOUR = 11;
 
-/** Day offset of Saturday from the Monday starting the week. */
-const SATURDAY_OFFSET_FROM_MONDAY = 5;
+/**
+ * Day offset of Saturday from the Monday starting the week.
+ * Exported because both the backend's week rules and the History week picker measure the same
+ * Monday-to-Saturday span, and a second copy of the number is how the two drift apart.
+ */
+export const SATURDAY_OFFSET_FROM_MONDAY = 5;
 
 /**
  * Latest allowed deadline for a scrim: 11:00 Vietnam time on the battle day, and
