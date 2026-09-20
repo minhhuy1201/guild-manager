@@ -128,7 +128,7 @@ export class FormationAnnouncerService {
       await this.rest.postMessageWithFiles(
         this.config.get('DISCORD_BANG_CHIEN_CHANNEL_ID', { infer: true }),
         payload,
-        images.map(toFile),
+        images.map((image, index) => toFile(image, index)),
       );
     } catch (error) {
       // Only the permission refusal is translated. Every other status is the system's problem, and

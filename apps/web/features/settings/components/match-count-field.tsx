@@ -4,7 +4,7 @@ import { Swords } from "lucide-react";
 
 import { MATCH_COUNT_MAX, MATCH_COUNT_MIN } from "@guild/shared/schemas";
 
-import { FieldLabel } from "@/components/shared/field-label";
+import { FieldCaption, FieldLabel } from "@/components/shared/field-label";
 import {
   Select,
   SelectContent,
@@ -44,7 +44,7 @@ export function MatchCountField({
   if (isGuildWar) {
     return (
       <div className="flex flex-col gap-1.5">
-        <FieldLabel icon={<Swords />}>Số trận</FieldLabel>
+        <FieldCaption icon={<Swords />}>Số trận</FieldCaption>
         <p className="text-sm text-muted-foreground">
           {value} trận — hệ thống tự tính theo tuần, không sửa được.
         </p>
