@@ -43,7 +43,7 @@ export function TeamSwitcher({
     <div
       role="group"
       aria-label="Chọn đội để xem"
-      className="col-span-full grid grid-cols-5 gap-1.5 md:hidden"
+      className="grid grid-cols-5 gap-1.5 md:hidden"
     >
       {teams.map(({ team, label, filled }) => {
         const isSelected = team === selectedTeam;

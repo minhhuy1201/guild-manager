@@ -659,6 +659,16 @@ What a user needs in order to understand a screen or to act on it must be visibl
 - A tooltip only repeats what can already be found another way (the guild class icon, see below).
 - `title=""` never carries information: a touch screen has no way to show it.
 
+### A clickable element → the pointer cursor, from `globals.css`
+
+Tailwind's preflight leaves `button`, `summary`, `select` and the ARIA roles that act like buttons
+(`button`, `tab`, `option`) on the default arrow, so a clickable surface reads as text until someone
+remembers `cursor-pointer`. One base rule in `globals.css` gives them all the pointer instead —
+**never repeat `cursor-pointer` at a call site.** A disabled control is excluded from the rule and
+keeps the arrow: it cannot act, so it reads as the inert text it behaves like, and no
+`disabled:cursor-*` is needed either. A `div` given a click handler is not covered, which is the
+point: make it a `button`.
+
 ### The surface behind a hovered or selected control
 
 **A bordered control carries `bg-card`, never a transparent fill.** `--border` and `--background`

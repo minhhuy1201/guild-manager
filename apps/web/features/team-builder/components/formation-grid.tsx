@@ -17,10 +17,14 @@ import type {
 } from "../types/formation";
 import { FormationBanner } from "./formation-banner";
 import { TeamColumn } from "./team-column";
+import { TeamRowGroup } from "./team-row-group";
 import { TeamSwitcher, type TeamChip } from "./team-switcher";
 
 /** Layout is static data, built once at module load. */
 const FORMATION = createMockFormation();
+
+/** Teams in one row of the grid, and so in one foldable group. */
+const TEAMS_PER_ROW = 5;
 
 interface FormationGridProps {
   /** Banner headline shown above the columns */
@@ -57,7 +61,10 @@ interface FormationGridProps {
  * by side. Slots are stored flat and grouped by team here, so changing the team
  * count only means changing the layout builder.
  *
- * A banner spanning all five columns sits on top, naming the battle and the match.
+ * Each row is its own grid inside a `TeamRowGroup`, which folds it away on the admin's screen;
+ * rows carry the same gap as the columns, so two grids read as the one grid they replace.
+ *
+ * A banner as wide as the rows sits on top, naming the battle and the match.
  *
  * `layout` gathers what the Discord image does differently from the screen, both for one reason -
  * the image is read on its own, without the tabs and the controls around it: five columns whatever
@@ -116,6 +123,17 @@ export function FormationGrid({
       }));
   }, []);
 
+  /** The teams cut into the rows the grid draws them in, five per row. */
+  const rows = useMemo(() => {
+    const chunks: (typeof teams)[] = [];
+
+    for (let i = 0; i < teams.length; i += TEAMS_PER_ROW) {
+      chunks.push(teams.slice(i, i + TEAMS_PER_ROW));
+    }
+
+    return chunks;
+  }, [teams]);
+
   const occupants = useMemo(() => {
     const map = new Map<string, Character>();
 
@@ -128,24 +146,25 @@ export function FormationGrid({
     return map;
   }, [assignment, charactersById]);
 
+  /**
+   * Count the slots of a team that hold someone.
+   * @param slots - Slots to count
+   * @returns How many of them are taken
+   */
+  const countFilled = (slots: Slot[]) =>
+    slots.filter((slot) => occupants.has(slot.id)).length;
+
   const selectedTeam = useTeamViewStore((s) => s.selectedTeam);
   const selectTeam = useTeamViewStore((s) => s.selectTeam);
   const chips: TeamChip[] = teams.map(({ team, slots }) => ({
     team,
     label: teamLabel(team, names[String(team)] ?? ""),
-    filled: slots.filter((slot) => occupants.has(slot.id)).length,
+    filled: countFilled(slots),
   }));
 
   return (
     <div className="relative">
-      <div
-        className={cn(
-          "grid gap-3",
-          isCapture
-            ? "grid-cols-5"
-            : "grid-cols-1 md:grid-cols-2 lg:grid-cols-5"
-        )}
-      >
+      <div className="flex flex-col gap-3">
         <FormationBanner
           title={bannerTitle}
           isGuildWar={isGuildWar}
@@ -164,25 +183,63 @@ export function FormationGrid({
           />
         )}
 
-        {teams.map(({ team, slots }) => (
-          <TeamColumn
-            key={team}
-            team={team}
-            name={names[String(team)] ?? ""}
-            onNameChange={onNameChange}
-            slots={slots}
-            occupants={occupants}
-            readOnly={readOnly}
-            absentIds={absentIds}
-            notes={notes}
-            onNoteChange={onNoteChange}
-            // Hidden with CSS, not left out of the tree: no screen size to read in JS (so no
-            // hydration mismatch), and every slot stays registered with dnd-kit from `md` up.
-            className={
-              !isCapture && team !== selectedTeam ? "max-md:hidden" : undefined
-            }
-          />
-        ))}
+        {rows.map((row) => {
+          const first = row[0].team;
+          const last = row[row.length - 1].team;
+          const filled = row.reduce(
+            (count, { slots }) => count + countFilled(slots),
+            0
+          );
+
+          const grid = (
+            <div
+              key={first}
+              className={cn(
+                "grid gap-3",
+                isCapture
+                  ? "grid-cols-5"
+                  : "grid-cols-1 md:grid-cols-2 lg:grid-cols-5"
+              )}
+            >
+              {row.map(({ team, slots }) => (
+                <TeamColumn
+                  key={team}
+                  team={team}
+                  name={names[String(team)] ?? ""}
+                  onNameChange={onNameChange}
+                  slots={slots}
+                  occupants={occupants}
+                  readOnly={readOnly}
+                  absentIds={absentIds}
+                  notes={notes}
+                  onNoteChange={onNoteChange}
+                  // Hidden with CSS, not left out of the tree: no screen size to read in JS (so no
+                  // hydration mismatch), and every slot stays registered with dnd-kit from `md` up.
+                  className={
+                    !isCapture && team !== selectedTeam
+                      ? "max-md:hidden"
+                      : undefined
+                  }
+                />
+              ))}
+            </div>
+          );
+
+          // The image sent to Discord is read on its own, so it never folds: all ten teams, no
+          // headers, and nothing wrapping the row that the screen does not have either.
+          return isCapture ? (
+            grid
+          ) : (
+            <TeamRowGroup
+              key={first}
+              label={`Đội ${first}-${last}`}
+              filled={filled}
+              total={row.length * SLOTS_PER_TEAM}
+            >
+              {grid}
+            </TeamRowGroup>
+          );
+        })}
       </div>
 
       {/* Covers the grid rather than only spinning inside the toolbar button:

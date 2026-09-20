@@ -29,7 +29,7 @@ export function AbsenceReasonText({ reason, className }: AbsenceReasonTextProps)
       <PopoverTrigger
         className={cn(
           // A 44px tall target on a phone, where it is tapped; the two lines of text sit centred in it.
-          "flex cursor-pointer items-center rounded-sm text-left text-xs text-muted-foreground outline-none max-sm:min-h-11",
+          "flex items-center rounded-sm text-left text-xs text-muted-foreground outline-none max-sm:min-h-11",
           "transition-colors duration-[var(--duration-fast)] hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50",
           className
         )}
