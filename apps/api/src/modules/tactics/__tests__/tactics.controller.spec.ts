@@ -60,3 +60,49 @@ describe('TacticsController', () => {
     expect(service.saveStages).toHaveBeenCalledWith('t1', emptyScene());
   });
 });
+
+describe('TacticsController — every handler reaches its service method', () => {
+  const service = {
+    list: jest.fn(),
+    get: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    saveStages: jest.fn(),
+    remove: jest.fn(),
+    listPresets: jest.fn(),
+    createPreset: jest.fn(),
+    removePreset: jest.fn(),
+  };
+  const controller = new TacticsController(service as never);
+
+  it('reads the list, one tactic and the presets', async () => {
+    await controller.list();
+    await controller.get('t1');
+    await controller.listPresets();
+
+    expect(service.list).toHaveBeenCalled();
+    expect(service.get).toHaveBeenCalledWith('t1');
+    expect(service.listPresets).toHaveBeenCalled();
+  });
+
+  it('creates, renames and deletes a tactic', async () => {
+    await controller.create({ name: 'Thủ cổng tây' });
+    await controller.update('t1', { name: 'Mở màn' });
+    await controller.remove('t1');
+
+    expect(service.create).toHaveBeenCalledWith({ name: 'Thủ cổng tây' });
+    expect(service.update).toHaveBeenCalledWith('t1', { name: 'Mở màn' });
+    expect(service.remove).toHaveBeenCalledWith('t1');
+  });
+
+  it('adds and deletes a preset', async () => {
+    await controller.createPreset({ label: 'Đội thủ', icon: 'shield' });
+    await controller.removePreset('p1');
+
+    expect(service.createPreset).toHaveBeenCalledWith({
+      label: 'Đội thủ',
+      icon: 'shield',
+    });
+    expect(service.removePreset).toHaveBeenCalledWith('p1');
+  });
+});

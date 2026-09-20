@@ -90,6 +90,54 @@ describe("StageBar", () => {
     ).toBe(true);
   });
 
+  it("duplicates and deletes the stage that is open", () => {
+    renderBar();
+
+    fireEvent.click(screen.getByRole("button", { name: /Nhân bản/ }));
+    expect(handlers.onDuplicate).toHaveBeenCalledWith("s1");
+
+    fireEvent.click(screen.getByRole("button", { name: /Xoá giai đoạn/ }));
+    expect(handlers.onRemove).toHaveBeenCalledWith("s1");
+
+    fireEvent.click(screen.getByRole("button", { name: /Thêm giai đoạn/ }));
+    expect(handlers.onAdd).toHaveBeenCalled();
+  });
+
+  it("commits a rename on Enter and abandons it on Escape", () => {
+    renderBar();
+
+    fireEvent.doubleClick(screen.getByRole("tab", { name: "Giai đoạn 1" }));
+    const field = screen.getByLabelText("Tên giai đoạn");
+    fireEvent.change(field, { target: { value: "Mở màn" } });
+    fireEvent.keyDown(field, { key: "Enter" });
+    expect(handlers.onRename).toHaveBeenCalledWith("s1", "Mở màn");
+
+    fireEvent.doubleClick(screen.getByRole("tab", { name: "Giai đoạn 1" }));
+    fireEvent.keyDown(screen.getByLabelText("Tên giai đoạn"), {
+      key: "Escape",
+    });
+    expect(screen.getByRole("tab", { name: "Giai đoạn 1" })).toBeTruthy();
+  });
+
+  it("keeps a blank rename from wiping the stage's name", () => {
+    renderBar();
+
+    fireEvent.doubleClick(screen.getByRole("tab", { name: "Giai đoạn 1" }));
+    const field = screen.getByLabelText("Tên giai đoạn");
+    fireEvent.change(field, { target: { value: "   " } });
+    fireEvent.blur(field);
+
+    expect(handlers.onRename).not.toHaveBeenCalled();
+  });
+
+  it("does not let a member rename a stage by double-clicking it", () => {
+    renderBar({ isAdmin: false });
+
+    fireEvent.doubleClick(screen.getByRole("tab", { name: "Giai đoạn 1" }));
+
+    expect(screen.queryByLabelText("Tên giai đoạn")).toBeNull();
+  });
+
   it("hides every write action from a member", () => {
     renderBar({ isAdmin: false });
 

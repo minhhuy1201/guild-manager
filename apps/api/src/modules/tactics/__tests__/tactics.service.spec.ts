@@ -129,3 +129,136 @@ describe('TacticsService', () => {
     expect(created.sortOrder).toBe(4);
   });
 });
+
+describe('TacticsService — the rest of the surface', () => {
+  const row = {
+    id: 't1',
+    name: 'Thủ cổng tây',
+    description: null,
+    stages: emptyScene() as unknown,
+    updatedAt: new Date('2026-09-20T10:00:00.000Z'),
+  };
+
+  it('returns one tactic with its whole scene', async () => {
+    const prisma = createPrisma();
+    prisma.tactic.findUnique.mockResolvedValue(row);
+    const service = new TacticsService(prisma as never);
+
+    await expect(service.get('t1')).resolves.toMatchObject({
+      id: 't1',
+      scene: emptyScene(),
+    });
+  });
+
+  it('renames a tactic and answers with the updated summary', async () => {
+    const prisma = createPrisma();
+    prisma.tactic.update.mockResolvedValue({ ...row, name: 'Mở màn' });
+    const service = new TacticsService(prisma as never);
+
+    await expect(
+      service.update('t1', { name: 'Mở màn' }),
+    ).resolves.toMatchObject({ name: 'Mở màn' });
+    expect(prisma.tactic.update).toHaveBeenCalledWith({
+      where: { id: 't1' },
+      data: { name: 'Mở màn', description: undefined },
+    });
+  });
+
+  it('reports a missing tactic when renaming one that is gone', async () => {
+    const prisma = createPrisma();
+    prisma.tactic.update.mockRejectedValue({ code: 'P2025' });
+    const service = new TacticsService(prisma as never);
+
+    await expect(service.update('nope', { name: 'x' })).rejects.toThrow(
+      'Không tìm thấy chiến thuật.',
+    );
+  });
+
+  it('reports a missing tactic when saving a scene into one that is gone', async () => {
+    const prisma = createPrisma();
+    prisma.tactic.update.mockRejectedValue({ code: 'P2025' });
+    const service = new TacticsService(prisma as never);
+
+    await expect(service.saveStages('nope', emptyScene())).rejects.toThrow(
+      'Không tìm thấy chiến thuật.',
+    );
+  });
+
+  it('lets an unrelated database failure through instead of calling it a 404', async () => {
+    const prisma = createPrisma();
+    const outage = Object.assign(new Error('connection lost'), {
+      code: 'P1001',
+    });
+    prisma.tactic.update.mockRejectedValue(outage);
+    prisma.tactic.delete.mockRejectedValue(outage);
+    prisma.tacticTokenPreset.delete.mockRejectedValue(outage);
+    prisma.tacticTokenPreset.findMany.mockResolvedValue([]);
+    prisma.tacticTokenPreset.create.mockRejectedValue(outage);
+    const service = new TacticsService(prisma as never);
+
+    await expect(service.update('t1', { name: 'x' })).rejects.toThrow(outage);
+    await expect(service.saveStages('t1', emptyScene())).rejects.toThrow(
+      outage,
+    );
+    await expect(service.remove('t1')).rejects.toThrow(outage);
+    await expect(service.removePreset('p1')).rejects.toThrow(outage);
+    await expect(
+      service.createPreset({ label: 'Đội thủ', icon: 'shield' }),
+    ).rejects.toThrow(outage);
+  });
+
+  it('deletes a tactic that exists', async () => {
+    const prisma = createPrisma();
+    prisma.tactic.delete.mockResolvedValue(row);
+    const service = new TacticsService(prisma as never);
+
+    await expect(service.remove('t1')).resolves.toBeUndefined();
+    expect(prisma.tactic.delete).toHaveBeenCalledWith({ where: { id: 't1' } });
+  });
+
+  it('lists the presets in display order', async () => {
+    const prisma = createPrisma();
+    prisma.tacticTokenPreset.findMany.mockResolvedValue([
+      { id: 'p1', label: 'Đội công', icon: 'swords', sortOrder: 1 },
+    ]);
+    const service = new TacticsService(prisma as never);
+
+    await expect(service.listPresets()).resolves.toEqual([
+      { id: 'p1', label: 'Đội công', icon: 'swords', sortOrder: 1 },
+    ]);
+    expect(prisma.tacticTokenPreset.findMany).toHaveBeenCalledWith({
+      orderBy: { sortOrder: 'asc' },
+    });
+  });
+
+  it('starts the sort order at 1 for the first preset', async () => {
+    const prisma = createPrisma();
+    prisma.tacticTokenPreset.findMany.mockResolvedValue([]);
+    prisma.tacticTokenPreset.create.mockResolvedValue({
+      id: 'p1',
+      label: 'Đội công',
+      icon: 'swords',
+      sortOrder: 1,
+    });
+    const service = new TacticsService(prisma as never);
+
+    await service.createPreset({ label: 'Đội công', icon: 'swords' });
+
+    expect(prisma.tacticTokenPreset.create).toHaveBeenCalledWith({
+      data: { label: 'Đội công', icon: 'swords', sortOrder: 1 },
+    });
+  });
+
+  it('deletes a preset, and reports a missing one in Vietnamese', async () => {
+    const prisma = createPrisma();
+    prisma.tacticTokenPreset.delete.mockResolvedValue({ id: 'p1' });
+    const service = new TacticsService(prisma as never);
+
+    await expect(service.removePreset('p1')).resolves.toBeUndefined();
+
+    prisma.tacticTokenPreset.delete.mockRejectedValue({ code: 'P2025' });
+    await expect(service.removePreset('p1')).rejects.toThrow(
+      'Không tìm thấy quân cờ.',
+    );
+  });
+});
