@@ -5,7 +5,9 @@ import type { TacticStage } from "@guild/shared/schemas";
 
 import { Button } from "@/components/ui/button";
 import { useStageSize } from "../hooks/use-stage-size";
+import { useStageZoom } from "../hooks/use-stage-zoom";
 import { TacticCanvas } from "./tactic-canvas";
+import { ZoomReadout } from "./zoom-readout";
 
 interface TacticViewerProps {
   /** Every stage of the tactic, in order */
@@ -21,6 +23,7 @@ interface TacticViewerProps {
 export function TacticViewer({ stages }: TacticViewerProps) {
   const [activeStageId, setActiveStageId] = useState<string | null>(null);
   const { ref, width } = useStageSize();
+  const stageZoom = useStageZoom(width);
 
   const stage =
     stages.find((candidate) => candidate.id === activeStageId) ?? stages[0];
@@ -53,8 +56,22 @@ export function TacticViewer({ stages }: TacticViewerProps) {
         </div>
       ) : null}
 
-      <div ref={ref} className="overflow-x-auto">
-        <TacticCanvas stage={stage} width={width} readOnly />
+      <div ref={ref} className="relative overflow-hidden rounded-xl border">
+        <TacticCanvas
+          stage={stage}
+          width={width}
+          zoom={stageZoom.zoom}
+          readOnly
+          onWheel={stageZoom.onWheel}
+          onStageMouseDown={stageZoom.onPanStart}
+          onStageMouseMove={stageZoom.onPanMove}
+          onStageMouseUp={stageZoom.onPanEnd}
+        />
+        <ZoomReadout
+          zoom={stageZoom.zoom.zoom}
+          onStep={stageZoom.step}
+          onReset={stageZoom.reset}
+        />
       </div>
     </div>
   );

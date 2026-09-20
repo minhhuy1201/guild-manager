@@ -22,6 +22,7 @@ import {
 } from "@guild/shared/schemas";
 
 import type { MapPoint } from "../lib/hit-test";
+import { INITIAL_ZOOM, type ZoomState } from "../lib/zoom";
 import { TOKEN_ICON_BOX, TOKEN_ICON_PATHS } from "../lib/icon-paths";
 import { stageScale, toMapPoint } from "../lib/stage-scale";
 import { COLOR_HEX, TOKEN_RADIUS } from "../lib/token-icon";
@@ -34,6 +35,9 @@ const ICON_STROKE_WIDTH = 2;
 
 /** Gap between a token's circle and the label under it, in virtual map units. */
 const LABEL_GAP = 6;
+
+/** The mouse button that draws. The middle one pans instead. */
+const PRIMARY_MOUSE_BUTTON = 0;
 
 /** How much bigger an arrow's head is than its shaft. */
 const ARROW_HEAD_RATIO = 4;
@@ -50,6 +54,10 @@ export interface TacticStageViewProps {
   readOnly?: boolean;
   /** Element the toolbar is acting on, drawn with a selection ring */
   selectedElementId?: string | null;
+  /** Height the canvas is rendered at, in CSS pixels; defaults to the map's own aspect ratio */
+  height?: number;
+  /** How far the map is zoomed in and how far it has been pushed */
+  zoom?: ZoomState;
   /** Called when a pointer goes down on the map, with map coordinates */
   onPointerDown?: (point: MapPoint) => void;
   /** Called while a pointer moves over the map, with map coordinates */
@@ -62,6 +70,14 @@ export interface TacticStageViewProps {
   onElementClick?: (elementId: string) => void;
   /** Called with the Konva stage once it is mounted, for the image export */
   onStageReady?: (stage: Konva.Stage | null) => void;
+  /** Wheel handler, for zooming around the pointer */
+  onWheel?: (event: Konva.KonvaEventObject<WheelEvent>) => void;
+  /** Mouse-down handler that runs before the drawing one, for the pan button */
+  onStageMouseDown?: (event: Konva.KonvaEventObject<MouseEvent>) => void;
+  /** Mouse-move handler that runs before the drawing one, for the pan button */
+  onStageMouseMove?: (event: Konva.KonvaEventObject<MouseEvent>) => void;
+  /** Mouse-up handler that runs before the drawing one, for the pan button */
+  onStageMouseUp?: () => void;
 }
 
 /**
@@ -76,6 +92,8 @@ export interface TacticStageViewProps {
 export function TacticStageView({
   stage,
   width,
+  height,
+  zoom = INITIAL_ZOOM,
   readOnly = false,
   selectedElementId = null,
   onPointerDown,
@@ -84,9 +102,15 @@ export function TacticStageView({
   onTokenMoved,
   onElementClick,
   onStageReady,
+  onWheel,
+  onStageMouseDown,
+  onStageMouseMove,
+  onStageMouseUp,
 }: TacticStageViewProps) {
   const [mapImage, setMapImage] = useState<HTMLImageElement | null>(null);
-  const scale = stageScale(width);
+  // The fit scale makes the map exactly as wide as the canvas; the zoom multiplies it.
+  const fitScale = stageScale(width);
+  const scale = fitScale * zoom.zoom;
 
   useEffect(() => {
     const image = new window.Image();
@@ -106,25 +130,42 @@ export function TacticStageView({
   function pointerPoint(konvaStage: Konva.Stage | null): MapPoint | null {
     const pointer = konvaStage?.getPointerPosition();
 
-    return pointer ? toMapPoint(pointer, scale) : null;
+    return pointer
+      ? toMapPoint(
+          { x: pointer.x - zoom.offset.x, y: pointer.y - zoom.offset.y },
+          scale
+        )
+      : null;
   }
 
   return (
     <Stage
       ref={(node) => onStageReady?.(node)}
-      width={TACTIC_MAP_WIDTH * scale}
-      height={TACTIC_MAP_HEIGHT * scale}
+      width={width}
+      height={height ?? TACTIC_MAP_HEIGHT * fitScale}
       scaleX={scale}
       scaleY={scale}
+      x={zoom.offset.x}
+      y={zoom.offset.y}
+      onWheel={onWheel}
       onMouseDown={(event) => {
+        onStageMouseDown?.(event);
+        // The middle button pans; only the primary one draws.
+        if (event.evt.button !== PRIMARY_MOUSE_BUTTON) return;
+
         const point = pointerPoint(event.target.getStage());
         if (point) onPointerDown?.(point);
       }}
       onMouseMove={(event) => {
+        onStageMouseMove?.(event);
+
         const point = pointerPoint(event.target.getStage());
         if (point) onPointerMove?.(point);
       }}
-      onMouseUp={() => onPointerUp?.()}
+      onMouseUp={() => {
+        onStageMouseUp?.();
+        onPointerUp?.();
+      }}
       onTouchStart={(event) => {
         const point = pointerPoint(event.target.getStage());
         if (point) onPointerDown?.(point);

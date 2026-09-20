@@ -3,6 +3,7 @@ import { Be_Vietnam_Pro, Noto_Serif } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { SiteFooter } from "@/components/shared/site-footer";
 import { SiteHeader } from "@/components/shared/site-header";
+import { APP_SHELL_WIDTH } from "@/lib/layout";
 import "./globals.css";
 
 // App-wide font: Be Vietnam Pro (sans-serif, full Vietnamese coverage).
@@ -48,7 +49,9 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <Providers>
           <SiteHeader />
-          <main className="mx-auto flex w-full max-w-[1600px] flex-col gap-6 px-4 pt-8 pb-12 sm:px-6">
+          <main
+            className={`mx-auto flex w-full ${APP_SHELL_WIDTH} flex-col gap-6 px-4 pt-8 pb-12 sm:px-6`}
+          >
             {children}
           </main>
           <SiteFooter />

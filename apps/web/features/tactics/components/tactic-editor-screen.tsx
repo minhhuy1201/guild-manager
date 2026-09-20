@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 
-import { PageHeader } from "@/components/shared/page-header";
 import { QueryBoundary } from "@/components/shared/query-boundary";
 import { UnsavedChangesBar } from "@/components/shared/unsaved-changes-bar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEditorShortcuts } from "../hooks/use-editor-shortcuts";
 import { useIsDesktop } from "../hooks/use-is-desktop";
 import { useStageSize } from "../hooks/use-stage-size";
+import { useStageZoom } from "../hooks/use-stage-zoom";
 import { useTacticEditor } from "../hooks/use-tactic-editor";
 import { useTacticExport } from "../hooks/use-tactic-export";
 import { useUnsavedGuard } from "../hooks/use-unsaved-guard";
@@ -17,8 +17,10 @@ import { ExportDialog } from "./export-dialog";
 import { MobileEditorNotice } from "./mobile-editor-notice";
 import { EditorToolbar } from "./editor-toolbar";
 import { StageBar } from "./stage-bar";
+import { TacticBreadcrumb } from "./tactic-breadcrumb";
 import { TacticCanvas } from "./tactic-canvas";
 import { TacticViewer } from "./tactic-viewer";
+import { ZoomReadout } from "./zoom-readout";
 import { TextNoteDialog } from "./text-note-dialog";
 import { TokenPalette } from "./token-palette";
 import { TokenPresetDialog } from "./token-preset-dialog";
@@ -46,6 +48,7 @@ export function TacticEditorScreen({
   const editor = useTacticEditor(tacticId, isAdmin);
   const isDesktop = useIsDesktop();
   const { ref, width } = useStageSize();
+  const stageZoom = useStageZoom(width);
   const [presetsOpen, setPresetsOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
 
@@ -84,12 +87,7 @@ export function TacticEditorScreen({
 
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader
-        banner="tactics"
-        size="compact"
-        title={editor.name || "Chiến thuật"}
-        description="Kéo quân cờ lên map, vẽ hướng đánh theo từng giai đoạn."
-      />
+      <TacticBreadcrumb name={editor.name} />
 
       <QueryBoundary
         state={editor.state}
@@ -148,19 +146,31 @@ export function TacticEditorScreen({
                 onManagePresets={() => setPresetsOpen(true)}
               />
 
-              <div ref={ref} className="min-w-0 flex-1 overflow-x-auto">
+              <div ref={ref} className="relative min-w-0 flex-1 overflow-hidden">
                 {editor.activeStage ? (
-                  <TacticCanvas
-                    stage={editor.activeStage}
-                    width={width}
-                    selectedElementId={selectedElementId}
-                    onPointerDown={editor.onPointerDown}
-                    onPointerMove={editor.onPointerMove}
-                    onPointerUp={editor.onPointerUp}
-                    onTokenMoved={editor.onTokenMoved}
-                    onElementClick={editor.onElementClick}
-                    onStageReady={editor.onStageReady}
-                  />
+                  <>
+                    <TacticCanvas
+                      stage={editor.activeStage}
+                      width={width}
+                      zoom={stageZoom.zoom}
+                      selectedElementId={selectedElementId}
+                      onPointerDown={editor.onPointerDown}
+                      onPointerMove={editor.onPointerMove}
+                      onPointerUp={editor.onPointerUp}
+                      onTokenMoved={editor.onTokenMoved}
+                      onElementClick={editor.onElementClick}
+                      onStageReady={editor.onStageReady}
+                      onWheel={stageZoom.onWheel}
+                      onStageMouseDown={stageZoom.onPanStart}
+                      onStageMouseMove={stageZoom.onPanMove}
+                      onStageMouseUp={stageZoom.onPanEnd}
+                    />
+                    <ZoomReadout
+                      zoom={stageZoom.zoom.zoom}
+                      onStep={stageZoom.step}
+                      onReset={stageZoom.reset}
+                    />
+                  </>
                 ) : null}
               </div>
             </div>

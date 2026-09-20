@@ -1,5 +1,6 @@
 import { BannerImage } from "@/components/shared/banner-image";
 import { GuildSeal } from "@/components/shared/guild-seal";
+import { APP_SHELL_WIDTH_PX } from "@/lib/layout";
 import { LANDING_HERO } from "@/lib/page-banners";
 
 import { AttendanceCta } from "./attendance-cta";
@@ -7,8 +8,8 @@ import { AttendanceCta } from "./attendance-cta";
 /** Ties the section to its heading, so the region carries a name. */
 const HERO_HEADING_ID = "gioi-thieu-tieu-de";
 
-/** Width hint for the hero image: the page shell never grows past 1600px. */
-const HERO_SIZES = "(min-width: 1600px) 1600px, 100vw";
+/** Width hint for the hero image: the page shell never grows past `APP_SHELL_WIDTH_PX`. */
+const HERO_SIZES = `(min-width: ${APP_SHELL_WIDTH_PX}px) ${APP_SHELL_WIDTH_PX}px, 100vw`;
 
 interface LandingHeroProps {
   /** Whether the visitor already has a session */

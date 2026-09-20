@@ -11,12 +11,23 @@ export interface BuiltInToken {
 /** How many numbered teams the palette offers, matching the team builder's ten columns. */
 const NUMBERED_TEAM_COUNT = 10;
 
+/** The three groups the palette shows, in display order. */
+export const TOKEN_GROUPS = ["insignia", "team", "custom"] as const;
+
+/** One group of the palette. */
+export type TokenGroup = (typeof TOKEN_GROUPS)[number];
+
+/** Vietnamese heading of each palette group. */
+export const TOKEN_GROUP_LABELS: Record<TokenGroup, string> = {
+  insignia: "Quân hiệu",
+  team: "Đội",
+  custom: "Custom",
+};
+
 /**
- * The palette's fixed entries: seven roles, then the ten numbered teams.
- * The numbers are labels, NOT `TeamName` rows — a tactic is a snapshot of an old decision and must
- * not change when a team is renamed.
+ * The palette's named roles — the "Quân hiệu" group.
  */
-export const BUILT_IN_TOKENS: readonly BuiltInToken[] = [
+export const INSIGNIA_TOKENS: readonly BuiltInToken[] = [
   { label: "Đội công", icon: "swords" },
   { label: "Đội thủ", icon: "shield" },
   { label: "Cơ động", icon: "footprints" },
@@ -24,8 +35,20 @@ export const BUILT_IN_TOKENS: readonly BuiltInToken[] = [
   { label: "Tập kết", icon: "flag" },
   { label: "Đội trụ", icon: "castle" },
   { label: "Bảo tiêu", icon: "truck" },
-  ...Array.from({ length: NUMBERED_TEAM_COUNT }, (_, index) => ({
-    label: `Đội ${index + 1}`,
-    icon: "users" as const,
-  })),
+];
+
+/**
+ * The ten numbered teams — the "Đội" group.
+ * The numbers are labels, NOT `TeamName` rows: a tactic is a snapshot of an old decision and must
+ * not change when a team is renamed.
+ */
+export const TEAM_TOKENS: readonly BuiltInToken[] = Array.from(
+  { length: NUMBERED_TEAM_COUNT },
+  (_, index) => ({ label: `Đội ${index + 1}`, icon: "users" as const })
+);
+
+/** Every entry the palette offers without an admin saving anything, in display order. */
+export const BUILT_IN_TOKENS: readonly BuiltInToken[] = [
+  ...INSIGNIA_TOKENS,
+  ...TEAM_TOKENS,
 ];
