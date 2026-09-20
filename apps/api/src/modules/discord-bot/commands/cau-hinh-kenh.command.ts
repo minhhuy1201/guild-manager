@@ -1,10 +1,8 @@
-import { canManageGuild } from '@guild/shared/lib';
 import { Logger } from '@nestjs/common';
 
-import { NOT_LINKED } from '../attendance-board';
 import { isDiscordForbidden } from '../discord-rest';
-import { callerDiscordId } from '../interaction.schema';
 import { ephemeralText } from '../reply';
+import { requireAdmin } from '../require-admin';
 import type { CommandReply, SlashCommand } from './command.types';
 
 /** Shown to a member who tried to configure the channel. */
@@ -53,10 +51,9 @@ export const cauHinhKenhCommand: SlashCommand = {
   },
 
   execute: async (interaction, deps): Promise<CommandReply> => {
-    const resolved = await deps.actors.resolve(callerDiscordId(interaction));
+    const check = await requireAdmin(interaction, deps, ADMIN_ONLY);
 
-    if (!resolved) return ephemeralText(NOT_LINKED);
-    if (!canManageGuild(resolved.actor.role)) return ephemeralText(ADMIN_ONLY);
+    if (!check.ok) return check.reply;
 
     const channelId = interaction.channel_id;
 

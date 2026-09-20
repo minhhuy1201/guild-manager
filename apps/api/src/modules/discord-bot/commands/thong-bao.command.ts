@@ -1,9 +1,6 @@
-import { canManageGuild } from '@guild/shared/lib';
-
 import { buildAnnouncement } from '../announcement';
-import { NOT_LINKED } from '../attendance-board';
-import { callerDiscordId } from '../interaction.schema';
-import { ephemeralText, publicMessage } from '../reply';
+import { publicMessage } from '../reply';
+import { requireAdmin } from '../require-admin';
 import type { CommandReply, SlashCommand } from './command.types';
 
 /**
@@ -30,10 +27,9 @@ export const thongBaoCommand: SlashCommand = {
   },
 
   execute: async (interaction, deps): Promise<CommandReply> => {
-    const resolved = await deps.actors.resolve(callerDiscordId(interaction));
+    const check = await requireAdmin(interaction, deps, ADMIN_ONLY);
 
-    if (!resolved) return ephemeralText(NOT_LINKED);
-    if (!canManageGuild(resolved.actor.role)) return ephemeralText(ADMIN_ONLY);
+    if (!check.ok) return check.reply;
 
     const sessions = await deps.battleSessions.listByWeek();
 

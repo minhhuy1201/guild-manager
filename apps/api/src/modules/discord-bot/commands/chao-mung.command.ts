@@ -1,9 +1,7 @@
-import { canManageGuild } from '@guild/shared/lib';
-
-import { NOT_LINKED } from '../attendance-board';
 import { COMMAND_OPTION_TYPE } from '../discord.constants';
-import { callerDiscordId, commandOptionValue } from '../interaction.schema';
-import { ephemeralText, publicMessage } from '../reply';
+import { commandOptionValue } from '../interaction.schema';
+import { publicMessage } from '../reply';
+import { requireAdmin } from '../require-admin';
 import type { CommandLinks, CommandReply, SlashCommand } from './command.types';
 
 /** Option names, used both when registering and when reading the invocation. */
@@ -72,10 +70,9 @@ export const chaoMungCommand: SlashCommand = {
   },
 
   execute: async (interaction, deps): Promise<CommandReply> => {
-    const resolved = await deps.actors.resolve(callerDiscordId(interaction));
+    const check = await requireAdmin(interaction, deps, ADMIN_ONLY);
 
-    if (!resolved) return ephemeralText(NOT_LINKED);
-    if (!canManageGuild(resolved.actor.role)) return ephemeralText(ADMIN_ONLY);
+    if (!check.ok) return check.reply;
 
     const newMemberId = commandOptionValue(interaction, MEMBER_OPTION);
     const sectChannelId = commandOptionValue(interaction, SECT_OPTION);

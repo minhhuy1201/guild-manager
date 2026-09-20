@@ -1,17 +1,14 @@
-import { canManageGuild } from '@guild/shared/lib';
-
 import { assertNever } from '../../../common';
 import type { ReminderScope } from '../../battle-sessions/battle-sessions.public';
-import { NOT_LINKED } from '../attendance-board';
 import { COMMAND_OPTION_TYPE } from '../discord.constants';
 import { isDiscordForbidden } from '../discord-rest';
 import {
   type ApplicationCommandInteraction,
-  callerDiscordId,
   commandOptionValue,
 } from '../interaction.schema';
 import { ephemeralText } from '../reply';
 import type { ReminderOutcome } from '../reminder.service';
+import { requireAdmin } from '../require-admin';
 import type { CommandReply, SlashCommand } from './command.types';
 
 /** Name of the option, used both when registering and when reading the invocation. */
@@ -108,10 +105,9 @@ export const nhacDiemDanhCommand: SlashCommand = {
   },
 
   execute: async (interaction, deps): Promise<CommandReply> => {
-    const resolved = await deps.actors.resolve(callerDiscordId(interaction));
+    const check = await requireAdmin(interaction, deps, ADMIN_ONLY);
 
-    if (!resolved) return ephemeralText(NOT_LINKED);
-    if (!canManageGuild(resolved.actor.role)) return ephemeralText(ADMIN_ONLY);
+    if (!check.ok) return check.reply;
 
     const scope = scopeOf(interaction);
 

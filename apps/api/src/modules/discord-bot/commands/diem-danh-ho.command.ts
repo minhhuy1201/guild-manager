@@ -1,13 +1,8 @@
-import { canManageGuild } from '@guild/shared/lib';
-
-import {
-  buildAttendanceBoard,
-  NOT_LINKED,
-  withPressNote,
-} from '../attendance-board';
+import { buildAttendanceBoard, withPressNote } from '../attendance-board';
 import { COMMAND_OPTION_TYPE } from '../discord.constants';
-import { callerDiscordId, commandOptionValue } from '../interaction.schema';
+import { commandOptionValue } from '../interaction.schema';
 import { ephemeralText, publicMessage } from '../reply';
+import { requireAdmin } from '../require-admin';
 import type { CommandReply, SlashCommand } from './command.types';
 
 /** Name of the option, used both when registering and when reading the invocation. */
@@ -43,10 +38,9 @@ export const diemDanhHoCommand: SlashCommand = {
   },
 
   execute: async (interaction, deps): Promise<CommandReply> => {
-    const resolved = await deps.actors.resolve(callerDiscordId(interaction));
+    const check = await requireAdmin(interaction, deps, ADMIN_ONLY);
 
-    if (!resolved) return ephemeralText(NOT_LINKED);
-    if (!canManageGuild(resolved.actor.role)) return ephemeralText(ADMIN_ONLY);
+    if (!check.ok) return check.reply;
 
     const targetDiscordId = commandOptionValue(interaction, TARGET_OPTION);
 
@@ -68,7 +62,7 @@ export const diemDanhHoCommand: SlashCommand = {
         characterName: row.name,
         discordId: row.discordId,
       },
-      resolved.actor,
+      check.caller.actor,
       deps,
     );
 
