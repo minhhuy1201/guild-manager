@@ -43,7 +43,7 @@ export function TeamRowGroup({
     <Collapsible.Root defaultOpen className="flex flex-col gap-3">
       <Collapsible.Trigger
         className={cn(
-          "group/row hidden min-h-11 items-center gap-2 rounded-md px-1 text-sm font-semibold outline-none md:flex",
+          "group/row hidden min-h-11 cursor-pointer items-center gap-2 rounded-md px-1 text-sm font-semibold outline-none md:flex",
           "transition-colors duration-[var(--duration-fast)] hover:bg-foreground/5 focus-visible:ring-3 focus-visible:ring-ring/50"
         )}
       >
