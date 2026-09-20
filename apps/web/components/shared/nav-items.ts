@@ -2,6 +2,7 @@ import {
   ClipboardCheck,
   History,
   Settings,
+  Swords,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -44,6 +45,13 @@ export const NAV_ITEMS: readonly NavItem[] = [
     shortLabel: "Xếp team",
     icon: Users,
     adminOnly: true,
+  },
+  {
+    href: ROUTES.tactics,
+    label: "Chiến thuật",
+    shortLabel: "Chiến thuật",
+    icon: Swords,
+    adminOnly: false,
   },
   {
     href: ROUTES.settings,
