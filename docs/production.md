@@ -87,7 +87,6 @@ by default, and each writes to whatever database it names.
 | `CRON_SECRET` | Secret guarding `GET /api/cron/attendance-reminder`, at least 32 characters (`openssl rand -hex 32`) — mark Sensitive. Vercel attaches it to the scheduled call by itself once the variable exists. **Set it before merging the PR that ships the reminder**: required, so a missing value kills the API at boot |
 | `WEB_ORIGIN` | The web app's real origin (`https://…`) — CORS matches this value exactly |
 | `WEB_PREVIEW_PROJECT` | The web app's Vercel project name (`mmgh-nth`) — makes CORS also accept that project's preview domains. Optional; omit it and only `WEB_ORIGIN` is allowed |
-| `APP_TIMEZONE` | `Asia/Ho_Chi_Minh` |
 
 `DISCORD_GUILD_ID` is deliberately **not** set here. Only
 `pnpm --filter api discord:register` reads it, that script is run by hand from a developer's

@@ -330,7 +330,6 @@ export const envSchema = z.object({
   AUTH_SECRET: z.string().min(32),
   DISCORD_CLIENT_ID: z.string().min(1),
   DISCORD_CLIENT_SECRET: z.string().min(1),
-  APP_TIMEZONE: z.string().default('Asia/Ho_Chi_Minh'),
 });
 
 export type Env = z.infer<typeof envSchema>;

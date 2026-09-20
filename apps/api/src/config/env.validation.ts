@@ -78,8 +78,6 @@ export const envSchema = z.object({
    * mean booting with that endpoint open to anyone who guesses the path.
    */
   CRON_SECRET: z.string().min(32),
-  /** Timezone used to compute attendance deadlines (see docs/architecture.md section 6). */
-  APP_TIMEZONE: z.string().default('Asia/Ho_Chi_Minh'),
 });
 
 /** The validated, coerced env type. */
