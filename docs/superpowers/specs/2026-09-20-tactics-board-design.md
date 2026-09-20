@@ -12,7 +12,7 @@ và bằng ảnh vẽ tay dán lên kênh chat: không ai sửa lại được, 
 trôi mất.
 
 App đã có màn Xếp team trả lời câu hỏi **ai đánh** (`FormationSlot`, mười cột đội). Cái còn thiếu là
-**đánh ở đâu và theo thứ tự nào**. Spec này thêm route thứ năm, `/chien-thuat`, để admin vẽ chiến
+**đánh ở đâu và theo thứ tự nào**. Spec này thêm một mục điều hướng thứ năm, `/chien-thuat`, để admin vẽ chiến
 thuật lên ảnh map và cả bang mở ra xem.
 
 Phạm vi cố tình hẹp: đây là **công cụ vẽ**, không phải mô phỏng trận đấu. Không có timeline chạy,
@@ -92,7 +92,11 @@ quyết định cũ.
 ### 4. Toạ độ lưu trong không gian map ảo 1920×1071
 
 Mọi `x`, `y`, `points`, `strokeWidth`, `fontSize` lưu theo hệ toạ độ của chính tấm ảnh map
-(`map-guild-war.png`, 1920×1071), không theo pixel màn hình.
+(`map-guild-war.webp`, 1920×1071), không theo pixel màn hình.
+
+Tấm map là **WebP**, không phải PNG: ảnh đục hoàn toàn nên kênh alpha là thừa, và Konva nạp ảnh
+bằng `new Image()` thô chứ không qua `next/image` — không có ai tối ưu hộ, trình duyệt tải đúng cái
+file trong `public/`. WebP q90 là 193KB so với 2.74MB của PNG, cùng 1920×1071.
 
 Konva `Stage` được scale bằng một hệ số duy nhất `stageWidth / 1920`. Nhờ vậy một chiến thuật vẽ trên
 màn 27 inch mở ra trên laptop 13 inch vẫn trùng khít, và xuất ảnh ở `pixelRatio` nào cũng ra đúng bố
@@ -202,6 +206,8 @@ Giới hạn cứng, kiểm ở Zod nên cả hai phía cùng một luật:
 | Điểm mỗi nét tự do | ≤ 4000 | Một nét kéo dài vài giây |
 | Độ dài `text` | ≤ 80 ký tự | Ghi chú trên map, không phải đoạn văn |
 | Tên giai đoạn | ≤ 40 ký tự | |
+| `Tactic.name` | ≤ 80 ký tự | |
+| `Tactic.description` | ≤ 500 ký tự | Khớp đúng `@db.VarChar(500)`, nếu không thì giới hạn database trả `500` thay vì `400` |
 
 Vượt bất kỳ giới hạn nào = `400` kèm thông báo tiếng Việt, hiển thị nguyên văn cho người dùng. Ở mức
 trần (20 × 400 phần tử) tài liệu vào khoảng vài trăm KB — dưới giới hạn body mặc định của Express.
@@ -259,7 +265,7 @@ Route và điều hướng:
 - `components/shared/nav-items.ts`: mục **Chiến thuật**, icon `Swords`, `adminOnly: false`, chèn
   giữa Xếp team và Thiết lập.
 - `lib/page-banners.ts`: khoá `tactics`, `src: "/img/bg/tactics.jpg"`, `tint: "#83653E"`.
-  `tactics.jpg` là bản sao của `map-guild-war.png` đã làm phẳng nền và nén JPEG — cùng lý do
+  `tactics.jpg` là bản sao của tấm map đã làm phẳng nền và nén JPEG — cùng lý do
   `landing.jpg` là bản sao của `login.jpg`: một khoá, một file, đổi cái này không kéo theo cái kia.
 - `app/chien-thuat/page.tsx` và `app/chien-thuat/[id]/page.tsx` — hai trang mỏng, mỗi trang render
   một component của feature.
@@ -316,7 +322,7 @@ Mobile:
 ├──────────────┬───────────────────────────────────────────────────────────────────────────────┤
 │ Quân cờ  [«] │                                                                               │
 │ Đội công     │                                                                               │
-│ Đội thủ      │                   map-guild-war.png trên Konva Stage                          │
+│ Đội thủ      │                   map-guild-war.webp trên Konva Stage                          │
 │ Cơ động      │                                                                               │
 │ …            │                                                                               │
 │ Đội 1…10     │                                                                               │
@@ -363,5 +369,5 @@ Ghi lại để không ai tưởng là sót:
 - Không có lịch sử phiên bản, không có khoá lạc quan (quyết định 7).
 - Không đọc `TeamName`: mười đội trên bảng quân cờ là nhãn cố định.
 - Không vẽ được trên điện thoại.
-- Không có nhiều map: đúng một tấm `map-guild-war.png`. Thêm map là đổi lược đồ scene, nên sẽ đi
+- Không có nhiều map: đúng một tấm `map-guild-war.webp`. Thêm map là đổi lược đồ scene, nên sẽ đi
   kèm `schemaVersion: 2`.
