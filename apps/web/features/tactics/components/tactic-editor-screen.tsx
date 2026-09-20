@@ -7,6 +7,7 @@ import { QueryBoundary } from "@/components/shared/query-boundary";
 import { UnsavedChangesBar } from "@/components/shared/unsaved-changes-bar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEditorShortcuts } from "../hooks/use-editor-shortcuts";
+import { useIsDesktop } from "../hooks/use-is-desktop";
 import { useStageSize } from "../hooks/use-stage-size";
 import { useTacticEditor } from "../hooks/use-tactic-editor";
 import { useTacticExport } from "../hooks/use-tactic-export";
@@ -17,6 +18,7 @@ import { MobileEditorNotice } from "./mobile-editor-notice";
 import { EditorToolbar } from "./editor-toolbar";
 import { StageBar } from "./stage-bar";
 import { TacticCanvas } from "./tactic-canvas";
+import { TacticViewer } from "./tactic-viewer";
 import { TextNoteDialog } from "./text-note-dialog";
 import { TokenPalette } from "./token-palette";
 import { TokenPresetDialog } from "./token-preset-dialog";
@@ -42,6 +44,7 @@ export function TacticEditorScreen({
   isAdmin,
 }: TacticEditorScreenProps) {
   const editor = useTacticEditor(tacticId, isAdmin);
+  const isDesktop = useIsDesktop();
   const { ref, width } = useStageSize();
   const [presetsOpen, setPresetsOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
@@ -73,8 +76,10 @@ export function TacticEditorScreen({
 
   const stages = scene?.stages ?? [];
   const exporter = useTacticExport(editor.name, stages, editor.stageRef);
+  // Drawing needs a pointer, a keyboard and room for the toolbar; everything else reads.
+  const canDraw = isAdmin && isDesktop === true;
 
-  useEditorShortcuts(isAdmin && loadedScene !== null, editor.onSave, editor.onDeleteSelected);
+  useEditorShortcuts(canDraw && loadedScene !== null, editor.onSave, editor.onDeleteSelected);
   useUnsavedGuard(dirty);
 
   return (
@@ -91,8 +96,8 @@ export function TacticEditorScreen({
         skeleton={<Skeleton className="h-96 w-full" />}
       >
         <div className="flex flex-col gap-3">
-          {isAdmin ? (
-            <div className="hidden flex-col gap-3 lg:flex">
+          {canDraw ? (
+            <div className="flex flex-col gap-3">
               <EditorToolbar
                 tool={tool}
                 color={color}
@@ -126,67 +131,46 @@ export function TacticEditorScreen({
             </div>
           ) : null}
 
-          <div className="lg:hidden">
-            <MobileEditorNotice />
-          </div>
+          {isAdmin && isDesktop === false ? <MobileEditorNotice /> : null}
 
-          <div className="flex rounded-xl border bg-card">
-            {isAdmin ? (
-              <div className="hidden lg:flex">
-                <TokenPalette
-                  collapsed={paletteCollapsed}
-                  isAdmin={isAdmin}
-                  selected={editor.paletteToken}
-                  onToggle={togglePalette}
-                  onSelect={(token) => {
-                    editor.selectPaletteToken(token);
-                    setTool("token");
-                  }}
-                  onManagePresets={() => setPresetsOpen(true)}
-                />
+          {/* A member, and anyone on a phone, reads the tactic through the viewer instead. */}
+          {canDraw ? (
+            <div className="flex rounded-xl border bg-card">
+              <TokenPalette
+                collapsed={paletteCollapsed}
+                isAdmin={isAdmin}
+                selected={editor.paletteToken}
+                onToggle={togglePalette}
+                onSelect={(token) => {
+                  editor.selectPaletteToken(token);
+                  setTool("token");
+                }}
+                onManagePresets={() => setPresetsOpen(true)}
+              />
+
+              <div ref={ref} className="min-w-0 flex-1 overflow-x-auto">
+                {editor.activeStage ? (
+                  <TacticCanvas
+                    stage={editor.activeStage}
+                    width={width}
+                    selectedElementId={selectedElementId}
+                    onPointerDown={editor.onPointerDown}
+                    onPointerMove={editor.onPointerMove}
+                    onPointerUp={editor.onPointerUp}
+                    onTokenMoved={editor.onTokenMoved}
+                    onElementClick={editor.onElementClick}
+                    onStageReady={editor.onStageReady}
+                  />
+                ) : null}
               </div>
-            ) : null}
-
-            <div ref={ref} className="min-w-0 flex-1 overflow-x-auto">
-              {editor.activeStage ? (
-                <TacticCanvas
-                  stage={editor.activeStage}
-                  width={width}
-                  readOnly={!isAdmin}
-                  selectedElementId={selectedElementId}
-                  onPointerDown={editor.onPointerDown}
-                  onPointerMove={editor.onPointerMove}
-                  onPointerUp={editor.onPointerUp}
-                  onTokenMoved={editor.onTokenMoved}
-                  onElementClick={editor.onElementClick}
-                  onStageReady={editor.onStageReady}
-                />
-              ) : null}
-            </div>
-          </div>
-
-          {!isAdmin && stages.length > 1 ? (
-            <div
-              role="tablist"
-              aria-label="Giai đoạn"
-              className="flex flex-wrap gap-2"
-            >
-              {stages.map((stage) => (
-                <button
-                  key={stage.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={stage.id === activeStageId}
-                  className="rounded-md border px-3 py-1 text-sm aria-selected:bg-primary aria-selected:text-primary-foreground"
-                  onClick={() => setActiveStage(stage.id)}
-                >
-                  {stage.name}
-                </button>
-              ))}
             </div>
           ) : null}
 
-          {isAdmin && dirty ? (
+          {isDesktop !== null && !canDraw ? (
+            <TacticViewer stages={stages} />
+          ) : null}
+
+          {canDraw && dirty ? (
             <UnsavedChangesBar
               message="Bản vẽ có thay đổi chưa lưu"
               resetLabel="Tải lại bản đã lưu"
