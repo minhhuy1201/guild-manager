@@ -17,15 +17,30 @@ export function newId(): string {
 }
 
 /**
+ * Whether a stage still has room for one more element.
+ * @param stage - The stage being drawn on
+ * @returns True once it holds the contract's maximum
+ */
+export function isStageFull(stage: TacticStage): boolean {
+  return stage.elements.length >= TACTIC_LIMITS.elementsPerStage;
+}
+
+/**
  * Put an element on a stage.
+ * A full stage is returned unchanged: the API would refuse the save with the whole drawing
+ * attached, so the ceiling is enforced here too and the editor says so on the spot.
  * @param stage - The stage to draw on
  * @param element - The element to add
- * @returns A new stage carrying the element last, so it draws on top
+ * @returns A new stage carrying the element last, so it draws on top; the same stage when full
  */
 export function addElement(
   stage: TacticStage,
   element: TacticElement
 ): TacticStage {
+  if (isStageFull(stage)) {
+    return stage;
+  }
+
   return { ...stage, elements: [...stage.elements, element] };
 }
 

@@ -212,6 +212,10 @@ Giới hạn cứng, kiểm ở Zod nên cả hai phía cùng một luật:
 | `Tactic.name` | ≤ 80 ký tự | |
 | `Tactic.description` | ≤ 500 ký tự | Khớp đúng `@db.VarChar(500)`, nếu không thì giới hạn database trả `500` thay vì `400` |
 
+Editor còn tự chặn ở hai chỗ mà lỗi `400` sẽ tới quá muộn: đủ 400 phần tử thì không thêm được nữa
+(hiện toast "Giai đoạn này đã đủ 400 phần tử…", riêng công cụ tẩy vẫn dùng được để dọn chỗ), và nét
+tự do ngừng dài thêm khi đạt 4000 điểm.
+
 Vượt bất kỳ giới hạn nào = `400` kèm thông báo tiếng Việt, hiển thị nguyên văn cho người dùng. Để câu
 đó tới được người dùng, `describeException` (`common/filters/all-exceptions.filter.ts`) lấy message
 của các issue Zod thay cho câu `"Validation failed"` mặc định của `nestjs-zod` — sửa ở đó vì nơi quyết

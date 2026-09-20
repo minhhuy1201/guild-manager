@@ -28,6 +28,13 @@ const UNIQUE_VIOLATION = 'P2002';
 /** Prisma error code for "record to update or delete does not exist". */
 const RECORD_NOT_FOUND = 'P2025';
 
+/**
+ * What every path answers when the tactic is gone.
+ * One constant because a write races a delete: the pre-read and the write itself must blame the
+ * same thing in the same words.
+ */
+const TACTIC_NOT_FOUND = 'Không tìm thấy chiến thuật.';
+
 @Injectable()
 export class TacticsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -79,14 +86,19 @@ export class TacticsService {
    * @throws NotFoundException when no tactic carries that id
    */
   async update(id: string, input: UpdateTacticInput): Promise<TacticSummary> {
-    await this.requireTactic(id);
-
-    const row = await this.prisma.tactic.update({
-      where: { id },
-      data: { name: input.name, description: input.description },
-    });
-
-    return toSummary(row);
+    try {
+      return toSummary(
+        await this.prisma.tactic.update({
+          where: { id },
+          data: { name: input.name, description: input.description },
+        }),
+      );
+    } catch (error) {
+      if (isPrismaError(error, RECORD_NOT_FOUND)) {
+        throw new NotFoundException(TACTIC_NOT_FOUND);
+      }
+      throw error;
+    }
   }
 
   /**
@@ -98,14 +110,19 @@ export class TacticsService {
    * @throws NotFoundException when no tactic carries that id
    */
   async saveStages(id: string, scene: TacticScene): Promise<TacticDetail> {
-    await this.requireTactic(id);
-
-    const row = await this.prisma.tactic.update({
-      where: { id },
-      data: { stages: scene },
-    });
-
-    return toDetail(row);
+    try {
+      return toDetail(
+        await this.prisma.tactic.update({
+          where: { id },
+          data: { stages: scene },
+        }),
+      );
+    } catch (error) {
+      if (isPrismaError(error, RECORD_NOT_FOUND)) {
+        throw new NotFoundException(TACTIC_NOT_FOUND);
+      }
+      throw error;
+    }
   }
 
   /**
@@ -118,7 +135,7 @@ export class TacticsService {
       await this.prisma.tactic.delete({ where: { id } });
     } catch (error) {
       if (isPrismaError(error, RECORD_NOT_FOUND)) {
-        throw new NotFoundException('Không tìm thấy chiến thuật.');
+        throw new NotFoundException(TACTIC_NOT_FOUND);
       }
       throw error;
     }
@@ -190,7 +207,7 @@ export class TacticsService {
     const row = await this.prisma.tactic.findUnique({ where: { id } });
 
     if (!row) {
-      throw new NotFoundException('Không tìm thấy chiến thuật.');
+      throw new NotFoundException(TACTIC_NOT_FOUND);
     }
 
     return row;

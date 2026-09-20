@@ -112,6 +112,11 @@ export function toDetail(row: TacticRow): TacticDetail {
 
 /**
  * Map a preset row to the wire shape.
+ *
+ * `safeParse` rather than `verifyResponse` on purpose: `icon` is a plain `String` column, not a
+ * Postgres enum, so a key renamed in `TACTIC_TOKEN_ICONS` leaves rows the web cannot draw — and
+ * `verifyResponse` is a no-op in production, exactly where that row would reach a browser. Do not
+ * "fix" this into the shared helper.
  * @param row - The preset row
  * @returns The preset
  * @throws InternalServerErrorException when the stored icon key is not one the app knows

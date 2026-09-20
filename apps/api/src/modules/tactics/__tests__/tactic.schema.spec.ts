@@ -150,3 +150,76 @@ describe('tactic scene limits', () => {
     expect(tacticSceneSchema.safeParse(scene).success).toBe(false);
   });
 });
+
+describe('tactic scene messages', () => {
+  it('answers in Vietnamese even for fields no user types into', () => {
+    const scene = {
+      schemaVersion: 1,
+      stages: [
+        {
+          id: 's1',
+          name: 'Giai đoạn 1',
+          elements: [
+            {
+              kind: 'token',
+              id: 'tk1',
+              label: 'Đội công',
+              icon: 'swords',
+              x: Number.POSITIVE_INFINITY,
+              y: 0,
+              size: 'md',
+              color: 'red',
+            },
+          ],
+        },
+      ],
+    };
+
+    const result = tacticSceneSchema.safeParse(scene);
+
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0].message).toBe('Toạ độ không hợp lệ.');
+  });
+
+  it('names an unknown colour in Vietnamese', () => {
+    const scene = {
+      schemaVersion: 1,
+      stages: [
+        {
+          id: 's1',
+          name: 'Giai đoạn 1',
+          elements: [
+            {
+              kind: 'arrow',
+              id: 'a1',
+              points: [0, 0, 1, 1],
+              color: 'chartreuse',
+              strokeWidth: 4,
+            },
+          ],
+        },
+      ],
+    };
+
+    const result = tacticSceneSchema.safeParse(scene);
+
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0].message).toBe('Màu vẽ không hợp lệ.');
+  });
+
+  it('names an unknown element kind in Vietnamese', () => {
+    const scene = {
+      schemaVersion: 1,
+      stages: [
+        { id: 's1', name: 'Giai đoạn 1', elements: [{ kind: 'vùng tô' }] },
+      ],
+    };
+
+    const result = tacticSceneSchema.safeParse(scene);
+
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0].message).toBe(
+      'Bản vẽ có phần tử lạ, không đọc được.',
+    );
+  });
+});

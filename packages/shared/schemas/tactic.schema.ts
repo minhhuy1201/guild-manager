@@ -24,39 +24,57 @@ export const TACTIC_LIMITS = {
   tokenLabelLength: 40,
 } as const;
 
+/** Smallest font a note may use, in virtual map units — below this it is unreadable on the map. */
+const MIN_FONT_SIZE = 12;
+
+/** Largest font a note may use, in virtual map units. */
+const MAX_FONT_SIZE = 96;
+
 /** Version of the scene document format the app writes today. */
 export const TACTIC_SCHEMA_VERSION = 1;
 
-const colorSchema = z.enum(TACTIC_COLORS);
+/**
+ * Every message below is Vietnamese, including the ones on fields no user types into: the API turns
+ * Zod issues into the sentence the screen shows, so a default English message would reach a browser
+ * the moment a request is hand-crafted or written by an older app.
+ */
+const colorSchema = z.enum(TACTIC_COLORS, { error: "Màu vẽ không hợp lệ." });
 
 /**
  * Stroke width as a literal set rather than `z.number()`: the toolbar offers four values and a
  * document carrying a fifth was not written by this app.
  */
-const strokeWidthSchema = z.union([
-  z.literal(2),
-  z.literal(4),
-  z.literal(8),
-  z.literal(14),
-]);
+const strokeWidthSchema = z.union(
+  [z.literal(2), z.literal(4), z.literal(8), z.literal(14)],
+  { error: "Cỡ nét không hợp lệ." },
+);
 
-const elementIdSchema = z.string().min(1).max(64);
+const elementIdSchema = z
+  .string("Phần tử thiếu mã định danh.")
+  .min(1, "Phần tử thiếu mã định danh.")
+  .max(64, "Mã định danh của phần tử quá dài.");
 
 /**
  * Coordinates are kept loose on purpose: a stroke may run slightly off the map while the pointer
  * leaves the stage, and clamping it server-side would silently move what the admin drew.
  */
-const coordinateSchema = z.number().finite();
+const coordinateSchema = z
+  .number("Toạ độ không hợp lệ.")
+  .finite("Toạ độ không hợp lệ.");
 
 /** A unit standing on the map. It captures its label and icon; it does NOT point at a preset. */
 export const tacticTokenSchema = z.object({
   kind: z.literal("token"),
   id: elementIdSchema,
-  label: z.string().trim().min(1).max(TACTIC_LIMITS.tokenLabelLength),
-  icon: z.enum(TACTIC_TOKEN_ICONS),
+  label: z
+    .string("Quân cờ thiếu tên.")
+    .trim()
+    .min(1, "Quân cờ thiếu tên.")
+    .max(TACTIC_LIMITS.tokenLabelLength, "Tên quân cờ tối đa 40 ký tự."),
+  icon: z.enum(TACTIC_TOKEN_ICONS, { error: "Icon quân cờ không hợp lệ." }),
   x: coordinateSchema,
   y: coordinateSchema,
-  size: z.enum(TACTIC_TOKEN_SIZES),
+  size: z.enum(TACTIC_TOKEN_SIZES, { error: "Cỡ quân cờ không hợp lệ." }),
   color: colorSchema,
 });
 
@@ -64,7 +82,9 @@ export const tacticTokenSchema = z.object({
 export const tacticArrowSchema = z.object({
   kind: z.literal("arrow"),
   id: elementIdSchema,
-  points: z.array(coordinateSchema).length(4),
+  points: z
+    .array(coordinateSchema)
+    .length(4, "Mũi tên phải có đúng hai điểm."),
   color: colorSchema,
   strokeWidth: strokeWidthSchema,
 });
@@ -75,7 +95,7 @@ export const tacticFreehandSchema = z.object({
   id: elementIdSchema,
   points: z
     .array(coordinateSchema)
-    .min(4)
+    .min(4, "Nét vẽ phải có ít nhất hai điểm.")
     .max(TACTIC_LIMITS.pointsPerStroke * 2, "Nét vẽ quá dài."),
   color: colorSchema,
   strokeWidth: strokeWidthSchema,
@@ -88,29 +108,37 @@ export const tacticTextSchema = z.object({
   x: coordinateSchema,
   y: coordinateSchema,
   text: z
-    .string()
+    .string("Ghi chú không được để trống.")
     .trim()
-    .min(1)
+    .min(1, "Ghi chú không được để trống.")
     .max(TACTIC_LIMITS.textLength, "Ghi chú tối đa 80 ký tự."),
   color: colorSchema,
-  fontSize: z.number().int().min(12).max(96),
+  fontSize: z
+    .number("Cỡ chữ không hợp lệ.")
+    .int("Cỡ chữ không hợp lệ.")
+    .min(MIN_FONT_SIZE, "Cỡ chữ quá nhỏ.")
+    .max(MAX_FONT_SIZE, "Cỡ chữ quá lớn."),
 });
 
 /** Anything that can sit on a stage. Switch on `kind` and end with `assertNever`. */
-export const tacticElementSchema = z.discriminatedUnion("kind", [
-  tacticTokenSchema,
-  tacticArrowSchema,
-  tacticFreehandSchema,
-  tacticTextSchema,
-]);
+export const tacticElementSchema = z.discriminatedUnion(
+  "kind",
+  [
+    tacticTokenSchema,
+    tacticArrowSchema,
+    tacticFreehandSchema,
+    tacticTextSchema,
+  ],
+  { error: "Bản vẽ có phần tử lạ, không đọc được." },
+);
 
 /** One phase of a tactic. */
 export const tacticStageSchema = z.object({
   id: elementIdSchema,
   name: z
-    .string()
+    .string("Giai đoạn thiếu tên.")
     .trim()
-    .min(1)
+    .min(1, "Giai đoạn thiếu tên.")
     .max(TACTIC_LIMITS.stageNameLength, "Tên giai đoạn tối đa 40 ký tự."),
   elements: z
     .array(tacticElementSchema)
@@ -122,7 +150,10 @@ export const tacticStageSchema = z.object({
  * column upgradable without guessing SQL over JSON later.
  */
 export const tacticSceneSchema = z.object({
-  schemaVersion: z.literal(TACTIC_SCHEMA_VERSION),
+  schemaVersion: z.literal(
+    TACTIC_SCHEMA_VERSION,
+    "Bản vẽ không thuộc phiên bản mà ứng dụng đọc được.",
+  ),
   stages: z
     .array(tacticStageSchema)
     .min(1, "Chiến thuật phải có ít nhất một giai đoạn.")
@@ -130,13 +161,13 @@ export const tacticSceneSchema = z.object({
 });
 
 const tacticNameSchema = z
-  .string()
+  .string("Tên chiến thuật không được để trống.")
   .trim()
   .min(1, "Tên chiến thuật không được để trống.")
   .max(TACTIC_LIMITS.tacticNameLength, "Tên chiến thuật tối đa 80 ký tự.");
 
 const tacticDescriptionSchema = z
-  .string()
+  .string("Mô tả không hợp lệ.")
   .trim()
   .max(TACTIC_LIMITS.tacticDescriptionLength, "Mô tả tối đa 500 ký tự.");
 
@@ -160,11 +191,11 @@ export const saveTacticStagesSchema = z.object({
 /** Body of POST /tactics/token-presets. */
 export const createTokenPresetSchema = z.object({
   label: z
-    .string()
+    .string("Tên quân cờ không được để trống.")
     .trim()
     .min(1, "Tên quân cờ không được để trống.")
     .max(TACTIC_LIMITS.tokenLabelLength, "Tên quân cờ tối đa 40 ký tự."),
-  icon: z.enum(TACTIC_TOKEN_ICONS),
+  icon: z.enum(TACTIC_TOKEN_ICONS, { error: "Icon quân cờ không hợp lệ." }),
 });
 
 /** A row of the tactics list — no scene, which is the heavy part of the record. */

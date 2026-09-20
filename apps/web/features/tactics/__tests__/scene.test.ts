@@ -1,9 +1,14 @@
 import { describe, expect, it } from "vitest";
-import type { TacticScene, TacticStage } from "@guild/shared/schemas";
+import {
+  TACTIC_LIMITS,
+  type TacticScene,
+  type TacticStage,
+} from "@guild/shared/schemas";
 
 import {
   addElement,
   addStage,
+  isStageFull,
   duplicateStage,
   moveToken,
   removeElement,
@@ -103,5 +108,37 @@ describe("scene edits", () => {
 
     expect(removeStage(scene, "s1").stages).toHaveLength(1);
     expect(removeStage(scene, "s1").stages[0].name).toBe("Giai đoạn 2");
+  });
+});
+
+describe("per-stage element ceiling", () => {
+  it("reports a stage as full at 400 elements", () => {
+    const full: TacticStage = {
+      id: "s1",
+      name: "Giai đoạn 1",
+      elements: Array.from({ length: TACTIC_LIMITS.elementsPerStage }, (_, index) => ({
+        ...token,
+        id: `tk${index}`,
+      })),
+    };
+
+    expect(isStageFull(full)).toBe(true);
+    expect(isStageFull(stage)).toBe(false);
+  });
+
+  it("refuses the 401st element instead of growing past the contract", () => {
+    const full: TacticStage = {
+      id: "s1",
+      name: "Giai đoạn 1",
+      elements: Array.from({ length: TACTIC_LIMITS.elementsPerStage }, (_, index) => ({
+        ...token,
+        id: `tk${index}`,
+      })),
+    };
+
+    const next = addElement(full, { ...token, id: "one-too-many" });
+
+    expect(next).toBe(full);
+    expect(next.elements).toHaveLength(TACTIC_LIMITS.elementsPerStage);
   });
 });

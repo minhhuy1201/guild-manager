@@ -3,8 +3,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type Konva from "konva";
 import type { TacticTokenSize } from "@guild/shared/enums";
-import type { TacticElement, TacticStage } from "@guild/shared/schemas";
+import {
+  TACTIC_LIMITS,
+  type TacticElement,
+  type TacticStage,
+} from "@guild/shared/schemas";
 
+import { toastError } from "@/components/shared/toast";
 import { errorMessageOf } from "@/lib/error-message";
 import { combineQueries, type QueryGroupState } from "@/lib/query-group";
 import type { BuiltInToken } from "../lib/built-in-tokens";
@@ -20,6 +25,7 @@ import { hitTest, type MapPoint } from "../lib/hit-test";
 import { migrateScene } from "../lib/migrate-scene";
 import {
   addElement,
+  isStageFull,
   moveToken,
   removeElement,
   resizeToken,
@@ -153,6 +159,14 @@ export function useTacticEditor(
   const onPointerDown = useCallback(
     (point: MapPoint) => {
       if (!isAdmin || !activeStage) {
+        return;
+      }
+
+      // Erasing is the one tool that still works on a full stage — it is how the admin makes room.
+      if (tool !== "eraser" && isStageFull(activeStage)) {
+        toastError(
+          `Giai đoạn này đã đủ ${TACTIC_LIMITS.elementsPerStage} phần tử. Xoá bớt hoặc thêm giai đoạn mới.`
+        );
         return;
       }
 
