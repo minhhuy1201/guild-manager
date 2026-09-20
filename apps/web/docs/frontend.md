@@ -171,13 +171,29 @@ the UI just creates two vocabularies for the same failure.
 
 The session lives in **httpOnly cookies**, so client JavaScript cannot read the access token and
 cannot set an `Authorization` header. Any call that needs admin rights therefore runs on the server:
-a `"use server"` module in `features/<feature>/api/` reads the token (`getAccessToken` from
-`features/auth`) and calls `apiFetch` with the header attached — `members-api.ts`,
-`mark-attendance-action.ts`, and the settings/team-builder equivalents all follow this shape.
+a `"use server"` module in `features/<feature>/api/` builds the header with `authHeader()` from
+`features/auth/server` and calls `apiFetch` with it attached — `members-api.ts`,
+`attendance-api.ts`, and the settings/team-builder equivalents all follow this shape.
 
-Each of those files repeats a tiny local `authHeader()` helper. That duplication is deliberate and
-documented in the code: a `"use server"` file may only export async functions, so the helper cannot
-be shared from one.
+`authHeader` lives beside `getAccessToken` in `features/auth/api/session.ts`, one copy for all four
+features. Each of those files used to hold its own, justified in a comment by "a `"use server"` file
+may only export async functions" — but the restriction is on what a `"use server"` file *exports*,
+not on what it may import: `session.ts` carries `import "server-only"` and no `"use server"`, which
+is how `getAccessToken` always travelled. The 401 it throws is the sentence the UI shows verbatim,
+and `features/auth/api/__tests__/auth-header.test.ts` pins that wording and the status.
+
+**Every write path hands a failure to `recoverSession` before showing it.** `useSessionRecovery`
+(`hooks/use-session-recovery.ts`) turns a 401 into `router.refresh()`, which is the only way the
+cookies get renewed - a Server Action cannot write them, so a press that failed on an expired token
+fails forever otherwise. A status that would fail again anyway (403, 409) is the call site's own
+business.
+
+It returns `true` when it took charge, and the call site must not show its own message on top -
+"phiên đã hết hạn" beside "phiên vừa được làm mới" contradicts itself. A site holding the message in
+local state gates it on that return value (`if (recoverSession(error)) return;` in
+`attendance-grid`, `member-attendance-card`, `mutation-form`). `use-formation-draft` derives its
+message from `saveMutation.error` instead of storing it, so it cannot early-return: it filters the
+401 out of `saveErrorMessage` with `isSessionExpired` and calls `recoverSession` unconditionally.
 
 ### The session
 

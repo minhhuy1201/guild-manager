@@ -7,26 +7,8 @@ import type {
   Week,
 } from "@guild/shared/schemas";
 
-import { getAccessToken } from "@/features/auth/server";
-import { ApiError, apiFetch } from "@/lib/api-client";
-
-/**
- * Get the signed-in admin's access token.
- * Runs on the server because the token lives in an httpOnly cookie the client cannot read.
- * @returns The prepared Authorization header
- * @throws ApiError when the session has expired
- */
-async function authHeader(): Promise<Record<string, string>> {
-  const accessToken = await getAccessToken();
-  if (!accessToken) {
-    throw new ApiError(
-      "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.",
-      401
-    );
-  }
-
-  return { Authorization: `Bearer ${accessToken}` };
-}
+import { authHeader } from "@/features/auth/server";
+import { apiFetch } from "@/lib/api-client";
 
 /**
  * Get the schedulable weeks: the open week and the next one.

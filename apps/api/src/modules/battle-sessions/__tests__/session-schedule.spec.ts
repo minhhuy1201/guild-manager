@@ -15,15 +15,7 @@ import {
   parseWeekStart,
   weekStartOf,
 } from '../session-schedule';
-
-/**
- * Build a Date from Vietnam time (UTC+7) for readability in tests.
- * @param iso - A string like '2026-07-22T12:00', read as Vietnam time
- * @returns The matching UTC Date
- */
-function vn(iso: string): Date {
-  return new Date(`${iso}:00+07:00`);
-}
+import { vn } from '../../../__tests__/vn-date';
 
 describe('session-schedule', () => {
   // Wednesday 2026-07-22 12:00 VN → the attendance week holding the Saturday 2026-07-25 Guild War.

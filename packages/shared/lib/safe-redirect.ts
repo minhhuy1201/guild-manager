@@ -1,5 +1,8 @@
-/** Default page after login, and the safe fallback when a redirect is invalid. */
-export const DEFAULT_REDIRECT = '/';
+/**
+ * Default page after login, and the safe fallback when a redirect is invalid.
+ * Not exported: callers read it back through `safeRedirect`, never on its own.
+ */
+const DEFAULT_REDIRECT = '/';
 
 /**
  * Characters a browser strips or normalises before resolving a URL, which is what lets them smuggle

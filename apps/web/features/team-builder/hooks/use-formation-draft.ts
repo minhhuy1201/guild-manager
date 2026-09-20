@@ -3,7 +3,9 @@
 import { useCallback, useMemo } from "react";
 import type { SessionFormation } from "@guild/shared/schemas";
 
+import { useSessionRecovery } from "@/hooks/use-session-recovery";
 import { ApiError } from "@/lib/api-client";
+import { isSessionExpired } from "@/lib/session-expired";
 import { resolveActiveMatchIndex } from "../lib/active-match";
 import { removeCharacters } from "../lib/assignment";
 import { countDayChanges, isDayDirty, isSameDay } from "../lib/formation-diff";
@@ -116,6 +118,7 @@ export function useFormationDraft(
   const undoInStore = useFormationStore((s) => s.undo);
 
   const saveMutation = useSaveFormation();
+  const recoverSession = useSessionRecovery();
 
   const savedBySession = useMemo(() => {
     const map: Record<string, MatchDraft[]> = {};
@@ -362,7 +365,9 @@ export function useFormationDraft(
    * Persist the open day's draft — both matches at once.
    * A failed save keeps the draft: the toolbar shows the message and the user
    * can retry. A 409 means the day just crossed its start time, so refetch to
-   * flip the screen into read-only.
+   * flip the screen into read-only. A 401 is the session having expired under a
+   * long edit: only a navigation can renew the cookies, so hand it to
+   * `recoverSession` — retrying the press would fail forever otherwise.
    */
   async function handleSave() {
     if (!activeSessionId) return;
@@ -376,7 +381,12 @@ export function useFormationDraft(
     } catch (error) {
       if (error instanceof ApiError && error.statusCode === CONFLICT_STATUS) {
         refetchFormations();
+
+        return;
       }
+
+      // The draft stays either way, so the work survives the navigation.
+      recoverSession(error);
     }
   }
 
@@ -407,8 +417,11 @@ export function useFormationDraft(
     applyDrop,
     handleSave,
     saving: saveMutation.isPending,
+    // An expired session is `recoverSession`'s message to tell, not the toolbar's: showing both
+    // leaves "phiên đã hết hạn" next to "phiên vừa được làm mới", which contradict each other.
     saveErrorMessage:
-      saveMutation.error instanceof ApiError
+      saveMutation.error instanceof ApiError &&
+      !isSessionExpired(saveMutation.error)
         ? saveMutation.error.message
         : undefined,
   };

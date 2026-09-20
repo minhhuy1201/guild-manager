@@ -3,7 +3,11 @@
 import { useRef, useState } from "react";
 import { AlarmClock, CalendarClock, Save, Swords } from "lucide-react";
 
-import { deadlineCapFor, isWithinDeadlineCap } from "@guild/shared/lib";
+import {
+  DEADLINE_HOUR,
+  deadlineCapFor,
+  isWithinDeadlineCap,
+} from "@guild/shared/lib";
 import {
   DEADLINE_CAP_MESSAGE,
   GUILD_WAR_DEADLINE_LABEL,
@@ -32,7 +36,9 @@ import { ReduceMatchCountDialog } from "./reduce-match-count-dialog";
 const DEFAULT_BATTLE_TIME = "20:30";
 // A day is played over two matches unless an admin says otherwise.
 const DEFAULT_MATCH_COUNT = 2;
-const DEFAULT_DEADLINE_TIME = "11:00";
+// Built from the hour the backend enforces, so the prefill can never be a value `deadlineCapFor`
+// would reject.
+const DEFAULT_DEADLINE_TIME = `${String(DEADLINE_HOUR).padStart(2, "0")}:00`;
 
 interface SessionFormDialogProps {
   /** Whether the dialog is open */

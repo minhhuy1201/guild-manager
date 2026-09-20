@@ -44,8 +44,6 @@ export const saveTeamNamesSchema = z.object({
 
 export type TeamNames = z.infer<typeof teamNamesSchema>;
 
-export type SaveTeamNamesInput = z.infer<typeof saveTeamNamesSchema>;
-
 /** One match: who stands where, plus each slot's note. */
 export const matchSchema = z.object({
   slots: assignmentSchema,
@@ -60,8 +58,6 @@ export const matchSchema = z.object({
 export const saveFormationSchema = z.object({
   matches: z.array(matchSchema).min(1).max(2),
 });
-
-export type AssignmentInput = z.infer<typeof assignmentSchema>;
 
 export type MatchInput = z.infer<typeof matchSchema>;
 

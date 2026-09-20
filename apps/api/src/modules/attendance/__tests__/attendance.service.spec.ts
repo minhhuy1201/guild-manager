@@ -10,16 +10,9 @@ import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { BattleSessionsService } from '../../battle-sessions/battle-sessions.public';
 import { CharactersService } from '../../characters/characters.public';
 import { TeamBuilderService } from '../../team-builder/team-builder.public';
+import { isAttendanceClosed } from '../../battle-sessions/battle-sessions.public';
 import { AttendanceService } from '../attendance.service';
-
-/**
- * Build a Date from Vietnam time (UTC+7) for readability in tests.
- * @param iso - A string like '2026-07-22T12:00', read as Vietnam time
- * @returns The matching UTC Date
- */
-function vn(iso: string): Date {
-  return new Date(`${iso}:00+07:00`);
-}
+import { vn } from '../../../__tests__/vn-date';
 
 // Wednesday — the Saturday Guild War is still open, the Tuesday session is past 10:00 and locked.
 const WEDNESDAY = vn('2026-07-22T12:00');
@@ -109,11 +102,19 @@ describe('AttendanceService', () => {
   let teamBuilder: { releaseCharacterFromSession: jest.Mock };
 
   /**
-   * Make `findById` return the fake schedule with the past-deadline flags computed at `now`,
-   * exactly as the real BattleSessionsService does.
-   * @param now - Moment used to compute `isAttendanceClosed`
+   * Make `findById` return the fake schedule with its closing flag built by the real rule.
+   *
+   * It calls `isAttendanceClosed` rather than comparing the deadline itself: the rule has two ways
+   * in - the deadline passing, and an admin announcing the line-up - and a hand-written comparison
+   * here silently dropped the second one, leaving that half of the rule untested.
+   *
+   * @param now - Moment the flag is computed at
+   * @param closedByHand - Per session id, when an admin announced the line-up. Omitted = nobody did
    */
-  const stubSchedule = (now: Date): void => {
+  const stubSchedule = (
+    now: Date,
+    closedByHand: Record<string, Date> = {},
+  ): void => {
     battleSessions.findById.mockImplementation((id: string) => {
       const found = SESSIONS.find((item) => item.id === id);
 
@@ -121,8 +122,11 @@ describe('AttendanceService', () => {
         found
           ? {
               ...found,
-              isAttendanceClosed:
-                now.getTime() > new Date(found.deadline).getTime(),
+              isAttendanceClosed: isAttendanceClosed(
+                new Date(found.deadline),
+                closedByHand[found.id] ?? null,
+                now,
+              ),
             }
           : null,
       );
@@ -405,6 +409,43 @@ describe('AttendanceService', () => {
           MEMBER,
         ),
       ).rejects.toThrow(ConflictException);
+    });
+
+    it('công bố đội hình là khoá ngày đó, dù hạn chót còn ở phía trước', async () => {
+      // The Saturday Guild War closes at 12:00 Friday; WEDNESDAY is well before that, so the only
+      // thing shutting the day is the admin having announced the line-up.
+      stubSchedule(WEDNESDAY, {
+        [SESSION_IDS['Thứ 7 · Bang Chiến']]: vn('2026-07-22T09:00'),
+      });
+
+      await expect(
+        service.mark(
+          {
+            characterId: CHARACTER_ID,
+            sessionId: SESSION_IDS['Thứ 7 · Bang Chiến'],
+            isPresent: true,
+          },
+          MEMBER,
+        ),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('quản trị viên vẫn sửa được ngày đã công bố đội hình', async () => {
+      stubSchedule(WEDNESDAY, {
+        [SESSION_IDS['Thứ 7 · Bang Chiến']]: vn('2026-07-22T09:00'),
+      });
+
+      const record = await service.mark(
+        {
+          characterId: CHARACTER_ID,
+          sessionId: SESSION_IDS['Thứ 7 · Bang Chiến'],
+          isPresent: false,
+        },
+        ADMIN,
+      );
+
+      expect(record.isPresent).toBe(false);
+      expect(record.sessionId).toBe(SESSION_IDS['Thứ 7 · Bang Chiến']);
     });
 
     it('quyết định theo cờ của lịch đánh, không tự tính lại từ hạn chót', async () => {

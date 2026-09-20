@@ -82,7 +82,6 @@ the app dies immediately with a Vietnamese error message instead of half-running
 | `CRON_SECRET` | ✅ | — | Secret guarding `GET /api/cron/attendance-reminder`; Vercel Cron sends it as `Authorization: Bearer …`. At least 32 characters (`openssl rand -hex 32`). Cron never fires locally, so any value of the right length does — **the API refuses to boot without it** |
 | `DISCORD_GUILD_ID` | script only | — | Id of the guild's Discord server (Developer Mode → right-click the server → Copy Server ID). Read by `discord:register` only |
 | `DISCORD_ENV_FILE` | script only | `.env` | Which file `discord:register` reads. Local and production are two **different** Discord Applications, so production registers with `DISCORD_ENV_FILE=.env.production`. Exactly one file is loaded, never merged — a named file that is missing is an error, not a silent fall back to `.env` |
-| `APP_TIMEZONE` | | `Asia/Ho_Chi_Minh` | Timezone used to compute attendance deadlines |
 
 `DIRECT_DATABASE_URL` is deliberately **absent** from `envSchema`: the runtime must never touch it.
 

@@ -8,6 +8,7 @@ import { ZodValidationPipe } from 'nestjs-zod';
 import { AppModule } from './app.module';
 import {
   AllExceptionsFilter,
+  Clock,
   LoggingInterceptor,
   TransformInterceptor,
   requestIdMiddleware,
@@ -44,7 +45,7 @@ async function bootstrap(): Promise<void> {
 
   app.setGlobalPrefix(API_PREFIX);
   app.useGlobalPipes(new ZodValidationPipe());
-  app.useGlobalFilters(new AllExceptionsFilter());
+  app.useGlobalFilters(new AllExceptionsFilter(app.get(Clock)));
   app.useGlobalInterceptors(
     new LoggingInterceptor(),
     new TransformInterceptor(app.get(Reflector)),

@@ -8,8 +8,8 @@ import type {
   TeamNames,
 } from "@guild/shared/schemas";
 
-import { getAccessToken } from "@/features/auth/server";
-import { ApiError, apiFetch } from "@/lib/api-client";
+import { authHeader } from "@/features/auth/server";
+import { apiFetch } from "@/lib/api-client";
 
 /**
  * Arguments of `saveFormation`. Not the request body: `sessionId` travels on the URL and only
@@ -20,23 +20,6 @@ export interface SaveFormationArgs {
   sessionId: string;
   /** Per match: the formation with empty slots dropped, and the notes with blank ones dropped */
   matches: MatchFormation[];
-}
-
-/**
- * Get the signed-in admin's access token.
- * @returns The prepared Authorization header
- * @throws ApiError when the session has expired
- */
-async function authHeader(): Promise<Record<string, string>> {
-  const accessToken = await getAccessToken();
-  if (!accessToken) {
-    throw new ApiError(
-      "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.",
-      401
-    );
-  }
-
-  return { Authorization: `Bearer ${accessToken}` };
 }
 
 /**

@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import type { ArgumentsHost } from '@nestjs/common';
 
+import { FixedClock } from '../../clock/clock';
 import { REQUEST_ID_HEADER } from '../../constants/http.constant';
 import {
   AllExceptionsFilter,
@@ -14,6 +15,9 @@ import {
   statusOf,
   type ErrorResponseBody,
 } from '../all-exceptions.filter';
+
+/** Fixed moment the filter stamps every response with, so `timestamp` is assertable. */
+const NOW = new Date('2026-09-20T05:00:00.000Z');
 
 describe('describeException', () => {
   it('exception lạ không lộ chi tiết ra ngoài', () => {
@@ -109,7 +113,7 @@ describe('AllExceptionsFilter.catch', () => {
       }),
     } as unknown as ArgumentsHost;
 
-    new AllExceptionsFilter().catch(exception, host);
+    new AllExceptionsFilter(new FixedClock(NOW)).catch(exception, host);
 
     return { body, warnLines, errorLines };
   }
@@ -134,6 +138,12 @@ describe('AllExceptionsFilter.catch', () => {
     const { body } = runFilter(new UnauthorizedException('Không có quyền.'));
 
     expect(body.requestId).toBe('id-tu-middleware');
+  });
+
+  it('timestamp đọc từ Clock, không phải đồng hồ máy', () => {
+    const { body } = runFilter(new UnauthorizedException('Không có quyền.'));
+
+    expect(body.timestamp).toBe(NOW.toISOString());
   });
 
   it('5xx vẫn log error kèm stack', () => {

@@ -31,10 +31,10 @@ export const GUILD_WAR_DEADLINE_LABEL = "11:00 Thứ 7";
  * Message shown when the week marker on the query string cannot be parsed.
  *
  * Its only reader is `weekStartQuerySchema` below — the single layer that builds the
- * Vietnamese sentence and the 400 for `?weekStart=`. Kept as a constant so the web app
- * can import it to repeat the exact wording, like `DEADLINE_CAP_MESSAGE`.
+ * Vietnamese sentence and the 400 for `?weekStart=`. Not exported: the web app never repeats this
+ * wording, and `DEADLINE_CAP_MESSAGE` is exported because it has a caller, not on principle.
  */
-export const INVALID_WEEK_MESSAGE = "Tuần không hợp lệ.";
+const INVALID_WEEK_MESSAGE = "Tuần không hợp lệ.";
 
 /**
  * A day is played over 1 or 2 matches. Both bounds and the message are shared by the schema, the
@@ -43,8 +43,8 @@ export const INVALID_WEEK_MESSAGE = "Tuần không hợp lệ.";
 export const MATCH_COUNT_MIN = 1;
 export const MATCH_COUNT_MAX = 2;
 
-/** Message shown when the match count falls outside its bounds. */
-export const MATCH_COUNT_MESSAGE = "Một ngày đánh 1 hoặc 2 trận.";
+/** Message shown when the match count falls outside its bounds. Read only by the schema below. */
+const MATCH_COUNT_MESSAGE = "Một ngày đánh 1 hoặc 2 trận.";
 
 /**
  * Query string of the week-scoped read endpoints (`?weekStart=`).
@@ -62,8 +62,6 @@ export const weekStartQuerySchema = z.object({
     z.iso.datetime({ offset: true, error: INVALID_WEEK_MESSAGE }).optional()
   ),
 });
-
-export type WeekStartQuery = z.infer<typeof weekStartQuerySchema>;
 
 /** The fields of a session, before any cross-field rule. */
 const battleSessionFields = z.object({

@@ -9,15 +9,7 @@ import {
   guildWarMatchCount,
   weekStartOf,
 } from '../session-schedule';
-
-/**
- * Build a Date from Vietnam time (UTC+7) for readability in tests.
- * @param iso - A string like '2026-07-22T12:00', read as Vietnam time
- * @returns The matching UTC Date
- */
-function vn(iso: string): Date {
-  return new Date(`${iso}:00+07:00`);
-}
+import { vn } from '../../../__tests__/vn-date';
 
 // Wednesday 2026-07-22 → the open week starts Monday 2026-07-20, the next one 2026-07-27.
 const WEDNESDAY = vn('2026-07-22T12:00');

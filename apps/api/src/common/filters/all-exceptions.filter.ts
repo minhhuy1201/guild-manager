@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 
+import type { Clock } from '../clock/clock';
 import { REQUEST_ID_HEADER } from '../constants/http.constant';
 
 /**
@@ -47,6 +48,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
   private readonly logger = new Logger(AllExceptionsFilter.name);
 
   /**
+   * @param clock - The app's single source of time; the filter is built by hand in `main.ts`, so
+   * the instance is passed in rather than injected
+   */
+  constructor(private readonly clock: Clock) {}
+
+  /**
    * Turn an exception into the uniform HTTP response.
    * @param exception - Any exception Nest caught
    * @param host - Execution context, used to get the Express request/response
@@ -63,7 +70,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       ...describeException(exception),
       path: request.url,
       requestId: String(request.headers[REQUEST_ID_HEADER] ?? ''),
-      timestamp: new Date().toISOString(),
+      timestamp: this.clock.now().toISOString(),
     };
 
     const line = `${request.method} ${request.url} -> ${status} [${body.requestId}]`;
