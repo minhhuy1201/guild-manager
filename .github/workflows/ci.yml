@@ -36,6 +36,9 @@ jobs:
       # untouched.
       api: ${{ steps.filter.outputs.api == 'true' || steps.filter.outputs.global == 'true' }}
       web: ${{ steps.filter.outputs.web == 'true' || steps.filter.outputs.global == 'true' }}
+      # Developer tooling is its own axis: it ships with neither app, so `global` would drag both
+      # of them into a run that only touched a script.
+      tooling: ${{ steps.filter.outputs.tooling }}
     steps:
       - uses: actions/checkout@v7
       - uses: dorny/paths-filter@v4
@@ -46,6 +49,8 @@ jobs:
               - 'apps/api/**'
             web:
               - 'apps/web/**'
+            tooling:
+              - 'packages/ci-triage/**'
             global:
               - 'packages/shared/**'
               - 'pnpm-lock.yaml'
@@ -307,3 +312,78 @@ jobs:
         with:
           project-id: ${{ env.VERCEL_WEB_PROJECT_ID }}
           token: ${{ secrets.VERCEL_TOKEN }}
+
+  # Developer tooling gets the same lint, format, typecheck and test treatment as the apps, in one
+  # job rather than four: it is a few hundred lines, and four runners to check them would cost more
+  # than the code is worth.
+  tooling-check:
+    name: Lint & typecheck tooling
+    needs: [changes]
+    if: needs.changes.outputs.tooling == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-workspace
+      - name: Lint ci-triage
+        run: pnpm --filter @guild/ci-triage lint
+      - name: Prettier ci-triage
+        run: pnpm --filter @guild/ci-triage format:check
+      - name: Typecheck ci-triage
+        run: pnpm --filter @guild/ci-triage typecheck
+      - name: Test ci-triage
+        run: pnpm --filter @guild/ci-triage test
+
+  # Diagnosis, not a gate. When something above goes red, this asks typesafe-ai/jev what kind of
+  # failure it is - flaky, a real regression, infrastructure, schema drift - and writes the answer
+  # into the run summary and onto the PR.
+  #
+  # It is NOT in the repository ruleset and must never be: the answer is a probability, and a
+  # probabilistic required check is a flaky required check. The nine deterministic gates stay the
+  # only thing that can block a merge.
+  #
+  # It also never fails. `if: failure()` means something is already red, and a second red job here
+  # would just be one more thing for the reader to rule out. The CLI exits 0 on every path it
+  # knows - missing key, empty log, gateway error - and continue-on-error covers the paths it does
+  # not, such as the checkout itself.
+  #
+  # `failure()` rather than `always()`: a cancelled run (a newer push superseded it) has nothing to
+  # diagnose.
+  triage:
+    name: Triage
+    needs: [backend-test, frontend-test, quality-api, quality-web, sonarqube, build-api, build-web]
+    if: failure()
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    permissions:
+      # actions:read to fetch the logs of the jobs that failed; pull-requests:write to leave the
+      # summary comment. Nothing else - this job reads logs and writes one comment.
+      actions: read
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-workspace
+      - name: Classify the failure
+        id: triage
+        env:
+          AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          pnpm --filter @guild/ci-triage triage | tee triage.txt
+      - name: Comment on the pull request
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+        # One comment per PR, edited in place. The marker is how the next run finds it; without it
+        # a busy PR collects one triage comment per red run and nobody reads any of them.
+        run: |
+          marker='<!-- ci-triage -->'
+          body="$marker"$'\n```\n'"$(cat triage.txt)"$'\n```'
+          id=$(gh api "/repos/${{ github.repository }}/issues/$PR/comments" \
+                 --jq "map(select(.body | startswith(\"$marker\"))) | .[0].id // empty")
+          if [ -n "$id" ]; then
+            gh api -X PATCH "/repos/${{ github.repository }}/issues/comments/$id" -f body="$body"
+          else
+            gh api -X POST "/repos/${{ github.repository }}/issues/$PR/comments" -f body="$body"
+          fi
