@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { Label } from "@/components/ui/label";
+import { FIELD_HEADING_CLASSES, Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
 /** Icon sizing and colour shared by every field heading, label or caption alike. */
@@ -60,11 +60,7 @@ export function FieldCaption({
 }: FieldCaptionProps) {
   return (
     <span
-      className={cn(
-        "flex items-center gap-2 text-base font-medium leading-none select-none",
-        FIELD_ICON_CLASSES,
-        className
-      )}
+      className={cn(FIELD_HEADING_CLASSES, FIELD_ICON_CLASSES, className)}
       {...props}
     >
       {icon}
