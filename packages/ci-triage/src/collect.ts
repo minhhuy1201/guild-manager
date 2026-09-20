@@ -69,33 +69,54 @@ export function buildState(
   jobs: FailedJob[],
   changedFiles: string[],
 ): TriageState {
-  // Every character that is not log text has to come out of the budget first: the section
-  // separators, then each job's own header, whose length depends on the job name. A flat estimate
-  // holds only for the job names that happen to exist today.
-  const separators = Math.max(0, jobs.length - 1) * SECTION_SEPARATOR.length;
-  const share = Math.floor(
-    (MAX_STATE_CHARS - separators) / Math.max(1, jobs.length),
-  );
+  // Held back up front so the "omitted" note always fits, whatever the sections end up costing.
+  const budget = MAX_STATE_CHARS - OMISSION_NOTE_ALLOWANCE_CHARS;
 
-  const logTail = jobs
-    .map((job) => {
-      const header = `### ${job.name}\n`;
-      const perJobChars = Math.max(
-        MIN_CHARS_PER_JOB,
-        share - header.length - MARKER_ALLOWANCE_CHARS,
-      );
-      const safe = redact(job.log);
-      return `${header}${truncateTail(safe, MAX_LINES_PER_JOB, perJobChars)}`;
-    })
-    .join(SECTION_SEPARATOR);
+  // Every character that is not log text comes out of the budget first: the section separators,
+  // then each job's own header, whose length depends on the job name. A flat estimate holds only
+  // for the job names that happen to exist today.
+  const separators = Math.max(0, jobs.length - 1) * SECTION_SEPARATOR.length;
+  const share = Math.floor((budget - separators) / Math.max(1, jobs.length));
+
+  const sections: string[] = [];
+  let used = 0;
+  let omitted = 0;
+
+  for (const job of jobs) {
+    const header = `### ${job.name}\n`;
+    const perJobChars = Math.max(
+      MIN_CHARS_PER_JOB,
+      share - header.length - MARKER_ALLOWANCE_CHARS,
+    );
+    const section = `${header}${truncateTail(redact(job.log), MAX_LINES_PER_JOB, perJobChars)}`;
+    const cost =
+      section.length + (sections.length > 0 ? SECTION_SEPARATOR.length : 0);
+
+    // The floor keeps each excerpt readable, but the budget cannot always pay for it - enough
+    // failed jobs, or long enough names, and the floor wins over the share. Honouring it anyway
+    // would push the join past the ceiling, and the backstop below cuts from the *front*, which
+    // shears whole headers off. Dropping a trailing section and saying so is honest; handing Jev
+    // a headless fragment is not.
+    if (used + cost > budget) {
+      omitted += 1;
+      continue;
+    }
+
+    sections.push(section);
+    used += cost;
+  }
+
+  if (omitted > 0) {
+    sections.push(
+      `### … ${omitted} more failed job(s) omitted to fit the budget …`,
+    );
+  }
 
   return {
     failedJobs: jobs.map(({ name, conclusion }) => ({ name, conclusion })),
     changedFiles,
-    // A hard backstop, never the primary limit. It cuts from the front, which would shear the
-    // first section's `###` header off - hence the per-job overhead reserved above, so the join
-    // already fits and this slice normally changes nothing.
-    logTail: logTail.slice(-MAX_STATE_CHARS),
+    // A backstop that should now never fire, kept because "should never" is not "cannot".
+    logTail: sections.join(SECTION_SEPARATOR).slice(-MAX_STATE_CHARS),
   };
 }
 
@@ -105,7 +126,10 @@ const SECTION_SEPARATOR = '\n\n';
 /** Room left per job for the `… earlier output omitted (N lines, M characters) …` marker. */
 const MARKER_ALLOWANCE_CHARS = 80;
 
-/** Floor on a job's excerpt, so many failed jobs at once still leave each one readable. */
+/** Room held back for the note naming how many job sections did not fit. */
+const OMISSION_NOTE_ALLOWANCE_CHARS = 80;
+
+/** Floor on a job's excerpt, so several failed jobs at once still leave each one readable. */
 const MIN_CHARS_PER_JOB = 500;
 
 /**

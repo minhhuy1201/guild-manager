@@ -97,6 +97,23 @@ describe('buildState', () => {
     assert.ok(buildState(jobs, []).logTail.length <= MAX_STATE_CHARS);
   });
 
+  it('drops trailing sections rather than shearing headers, and says how many', () => {
+    // Past roughly fifty jobs the per-job floor costs more than the budget has. Honouring it
+    // anyway would overflow, and the backstop cuts from the front - the first header goes first.
+    const jobs = Array.from({ length: 90 }, (_, i) =>
+      job(`${String(i)}-${'n'.repeat(140)}`, 'y'.repeat(200_000)),
+    );
+
+    const { logTail } = buildState(jobs, []);
+
+    assert.ok(logTail.length <= MAX_STATE_CHARS, 'budget overrun');
+    assert.ok(logTail.startsWith('### '), 'the first header was sheared off');
+    assert.match(
+      logTail,
+      /### … \d+ more failed job\(s\) omitted to fit the budget …$/,
+    );
+  });
+
   it('keeps the headers intact even when job names are long', () => {
     // The overhead is derived from each header, not a flat constant, so a long job name cannot
     // push the join past the budget and let the backstop slice shear the first section.

@@ -151,12 +151,13 @@ async function main(): Promise<void> {
   let result = cached;
 
   if (result === null) {
-    const state = buildState(jobs, changedFiles());
-    if (state.logTail.trim() === '') {
-      bail(`Log của run ${runId} rỗng sau khi lọc. Không có gì để phân loại.`);
-    }
-
     try {
+      const state = buildState(jobs, changedFiles());
+      if (state.logTail.trim() === '') {
+        bail(
+          `Log của run ${runId} rỗng sau khi lọc. Không có gì để phân loại.`,
+        );
+      }
       result = await runTriage(state);
     } catch (error) {
       if (error instanceof MissingApiKeyError) {
