@@ -23,8 +23,8 @@ interface FormationBannerProps {
  * The headline sitting above the ten team columns — which battle, when, against whom, and
  * which match of the day the grid below belongs to.
  *
- * Lives inside the grid and spans every column, so it lines up with the columns instead
- * of with the page. `tall` is about two slot cells high and grows when the line wraps;
+ * Sits above the rows of team columns and takes their full width, so it lines up with the columns
+ * instead of with the page. `tall` is about two slot cells high and grows when the line wraps;
  * `compact` is one line of text, since on screen it repeats what the day tab says.
  *
  * Both kinds of battle share one frame - the wording already says which one this is, and a
@@ -51,7 +51,7 @@ export function FormationBanner({
   return (
     <h2
       className={cn(
-        "col-span-full flex flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-xl border border-t-2 border-gold/60 border-t-gold bg-card px-4 text-center font-heading font-semibold tracking-wide text-primary",
+        "flex flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-xl border border-t-2 border-gold/60 border-t-gold bg-card px-4 text-center font-heading font-semibold tracking-wide text-primary",
         isTall ? "min-h-24 py-3 text-xl sm:text-2xl" : "py-1.5 text-base sm:text-lg"
       )}
     >
