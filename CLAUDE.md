@@ -24,6 +24,8 @@ nothing new belongs there: a dependency goes in the app or package that uses it.
 - [`docs/development.md`](docs/development.md) — local setup, the env variable tables, commands, the
   local database, seeding.
 - [`docs/production.md`](docs/production.md) — deploy, Supabase, the Vercel build, operations.
+- [`docs/ci-triage.md`](docs/ci-triage.md) — the Jev triage tool: what it classifies, what it
+  deliberately does **not** do, and why it is not a quality gate.
 - Per-app rules: [`apps/api/CLAUDE.md`](apps/api/CLAUDE.md),
   [`apps/web/CLAUDE.md`](apps/web/CLAUDE.md).
 

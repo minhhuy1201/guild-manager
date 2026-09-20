@@ -140,7 +140,8 @@ guild-manager/
 │   ├── api/        # NestJS 11 + Prisma 7 + PostgreSQL → http://localhost:3001/api
 │   └── web/        # Next.js 16 App Router + Tailwind 4 + shadcn/ui → http://localhost:3000
 ├── packages/
-│   └── shared/     # Enums + Zod schemas shared by both apps (@guild/shared)
+│   ├── shared/     # Enums + Zod schemas shared by both apps (@guild/shared)
+│   └── ci-triage/  # Dev tooling: classifies why a CI run went red (@guild/ci-triage)
 ├── docker/         # Dockerfile.dev and the initdb SQL behind docker-compose.yml
 └── docs/           # This file, development, production, specs and plans
 ```
@@ -600,6 +601,7 @@ one exception is `prisma/fix-deadlines.ts`, a one-off migration of rows written 
 | **A new Discord button** | A `custom_id` in `discord-bot/custom-id.ts` (encode **and** decode, so a stale button from an old build gets a clear message rather than a crash), plus a branch in `interaction-router.ts`. Never register it — buttons are not commands. |
 | **Anything that needs to know the current time** | Inject `Clock` from `common/clock`. **Never `new Date()`** outside that seam: it is what lets the week and deadline rules be tested without freezing the system clock. |
 | **Something that must run on a schedule** | A `crons` entry in `apps/api/vercel.json` pointing at a `GET` endpoint behind `CronSecretGuard`. **Never `@nestjs/schedule`**: the API is a Vercel Function, so no process is alive to tick and an in-process timer either never fires or fires whenever some unrelated request happens to wake an instance. The schedule is **UTC**, and the Hobby plan only guarantees the hour, not the minute — a rule needing an exact minute does not belong on this schedule. |
+| **A tool only developers or CI run** | Its own package under `packages/`, private and imported by nobody — never inside `apps/`, where it would be built and deployed. `packages/ci-triage` is the pattern: no build step, its own lint and test scripts, and a path filter in `ci.yml` so those scripts actually run. |
 | **Anything with a non-obvious "why"** | A spec in `docs/superpowers/specs/`, then link it from the code comment. |
 
 Tests sit next to what they cover: `__tests__/` beside the module or feature folder (Jest on the
@@ -629,6 +631,12 @@ hand, locally with `prisma:migrate`, and committed.
 The one scheduled job — the attendance reminder — inherits that gap: it reports only into Vercel's
 Cron Jobs tab and the function log, and nothing alerts when a run fails or silently sends nothing.
 That is why `/nhac-diem-danh` exists, to run the same code by hand and see the answer in chat.
+
+**Jev is not a tenth quality gate.** `packages/ci-triage` asks an evaluation model what *kind* of
+failure a red run is, and writes the answer into the run summary and the pull request. It is
+diagnosis after the fact: it reviews no code, blocks no merge, and is deliberately absent from the
+repository ruleset, because an answer expressed as a probability makes a flaky required check. See
+[`ci-triage.md`](ci-triage.md).
 
 CI does exist: `.github/workflows/ci.yml` runs the test suite, lint, Prettier, typecheck and build on
 every push and pull request against `main`, then deploys when `main` is green. The jobs are filtered

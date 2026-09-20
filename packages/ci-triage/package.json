@@ -1,0 +1,33 @@
+{
+  "name": "@guild/ci-triage",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "24.x"
+  },
+  "//": "Developer tooling, not product code. No app imports it, nothing bundles it, and it has no build step: Node 24 strips TypeScript types on the fly, so `node src/cli.ts` runs as-is. That is why tsconfig sets erasableSyntaxOnly - enum, namespace and parameter properties need emitted runtime code and would throw ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX.",
+  "scripts": {
+    "triage": "node --env-file-if-exists=../../.env.local src/cli.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint \"src/**/*.ts\"",
+    "lint:fix": "eslint \"src/**/*.ts\" --fix",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\"",
+    "test": "node --test \"src/**/__tests__/*.test.ts\""
+  },
+  "dependencies": {
+    "ai": "^7.0.107"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.18.0",
+    "@types/node": "^26.6.1",
+    "eslint": "^10.10.0",
+    "eslint-config-prettier": "^10.0.1",
+    "eslint-plugin-prettier": "^5.2.2",
+    "globals": "^17.12.0",
+    "prettier": "^3.9.7",
+    "typescript": "^5.8.0",
+    "typescript-eslint": "^8.69.0"
+  }
+}
