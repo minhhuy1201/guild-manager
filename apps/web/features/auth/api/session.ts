@@ -4,6 +4,8 @@ import { cookies } from "next/headers";
 import type { GuildRole } from "@guild/shared/enums";
 import type { AuthTokens } from "@guild/shared/schemas";
 
+import { ApiError } from "@/lib/api-client";
+
 import {
   ACCESS_TOKEN_COOKIE,
   ACCESS_TOKEN_MAX_AGE,
@@ -87,6 +89,29 @@ export async function getAccessToken(): Promise<string | null> {
   const cookieStore = await cookies();
 
   return cookieStore.get(ACCESS_TOKEN_COOKIE)?.value ?? null;
+}
+
+/**
+ * The `Authorization` header every Server Action sends to the backend.
+ *
+ * It lives beside `getAccessToken` because it reads the same cookie, and it is shared rather than
+ * copied per feature: this file carries `import "server-only"`, not `"use server"`, so a Server
+ * Action may import anything from it - which is how `getAccessToken` has always travelled.
+ *
+ * @returns The prepared Authorization header
+ * @throws ApiError 401 when no access token is in the cookies, with the sentence the UI shows
+ */
+export async function authHeader(): Promise<Record<string, string>> {
+  const accessToken = await getAccessToken();
+
+  if (!accessToken) {
+    throw new ApiError(
+      "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.",
+      401
+    );
+  }
+
+  return { Authorization: `Bearer ${accessToken}` };
 }
 
 /**

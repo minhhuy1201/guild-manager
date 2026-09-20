@@ -8,7 +8,8 @@ import { recordKey } from "../../lib/record-key";
  * also lets us assert that every request carries a Bearer token.
  */
 vi.mock("@/features/auth/server", () => ({
-  getAccessToken: () => Promise.resolve(ACCESS_TOKEN),
+  authHeader: () =>
+    Promise.resolve({ Authorization: `Bearer ${ACCESS_TOKEN}` }),
 }));
 
 const {

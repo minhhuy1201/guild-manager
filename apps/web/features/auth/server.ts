@@ -10,6 +10,7 @@ import "server-only";
  */
 export { fetchMe } from "./api/me";
 export {
+  authHeader,
   clearSession,
   createSession,
   getAccessToken,
