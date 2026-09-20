@@ -113,6 +113,12 @@ install → lint / typecheck / test / build / Sonar → (red) → Triage → run
   that later runs edit in place rather than stacking up.
 - It is skipped entirely on a docs-only commit, because the jobs it depends on are skipped too.
 
+**It covers seven of the nine required checks.** CodeQL and Security (Trivy, dependency review)
+live in their own workflow files, and `needs:` cannot reach across workflows, so a run that is red
+*only* from one of those gets no triage. That is a known limit, not an oversight: both are security
+scanners that already report a specific finding with a file and a rule id, which is the thing
+triage would otherwise have to guess.
+
 A separate `Lint & typecheck tooling` job runs this package's own lint, Prettier, `tsc` and tests
 whenever `packages/ci-triage/**` changes.
 

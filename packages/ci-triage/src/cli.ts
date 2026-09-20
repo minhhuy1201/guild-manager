@@ -112,6 +112,16 @@ function locateRun(options: Options): {
 }
 
 /**
+ * Renders an unknown thrown value as one readable line.
+ *
+ * @param error Whatever was caught.
+ * @returns Its message, or its string form when it is not an Error.
+ */
+function describeError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+/**
  * Runs one triage end to end: locate the run, build the state, ask Jev, print the answer.
  *
  * The state is never printed, with `--json` or without. It is redacted log text, redaction is best
@@ -119,7 +129,17 @@ function locateRun(options: Options): {
  */
 async function main(): Promise<void> {
   const options = parseArgs(process.argv.slice(2));
-  const { runId, branch, jobs } = locateRun(options);
+
+  // `locateRun` shells out to `gh` and to `git`. Each failure it anticipates already routes
+  // through `bail`, but an unanticipated one must not climb out of `main` and kill the process
+  // with a stack trace - the exit-0 promise has to hold for the paths nobody thought of too.
+  let located;
+  try {
+    located = locateRun(options);
+  } catch (error) {
+    bail(`Không đọc được run đỏ: ${describeError(error)}`);
+  }
+  const { runId, branch, jobs } = located;
 
   if (jobs.length === 0) {
     bail(
@@ -142,9 +162,7 @@ async function main(): Promise<void> {
       if (error instanceof MissingApiKeyError) {
         bail(error.message);
       }
-      bail(
-        `Gọi Jev thất bại: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      bail(`Gọi Jev thất bại: ${describeError(error)}`);
     }
 
     if (options.useCache) {

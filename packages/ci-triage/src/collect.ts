@@ -46,10 +46,12 @@ export function truncateTail(
     kept = kept.slice(kept.length - maxChars);
   }
 
-  const dropped = droppedLines > 0 || kept.length < log.length;
-  return dropped
-    ? `… earlier output omitted (${droppedLines} lines) …\n${kept}`
-    : kept;
+  const droppedChars = log.length - kept.length;
+  if (droppedChars === 0) return kept;
+
+  // Both numbers, because either limit can bite alone: a single 100,000-character line drops no
+  // lines at all, and a marker saying "0 lines" would claim nothing was cut.
+  return `… earlier output omitted (${droppedLines} lines, ${droppedChars} characters) …\n${kept}`;
 }
 
 /**
@@ -67,7 +69,11 @@ export function buildState(
   jobs: FailedJob[],
   changedFiles: string[],
 ): TriageState {
-  const perJobChars = Math.floor(MAX_STATE_CHARS / Math.max(1, jobs.length));
+  const perJobChars = Math.max(
+    MIN_CHARS_PER_JOB,
+    Math.floor(MAX_STATE_CHARS / Math.max(1, jobs.length)) -
+      SECTION_OVERHEAD_CHARS,
+  );
 
   const logTail = jobs
     .map((job) => {
@@ -79,9 +85,18 @@ export function buildState(
   return {
     failedJobs: jobs.map(({ name, conclusion }) => ({ name, conclusion })),
     changedFiles,
+    // A hard backstop, never the primary limit. It cuts from the front, which would shear the
+    // first section's `###` header off - hence the per-job overhead reserved above, so the join
+    // already fits and this slice normally changes nothing.
     logTail: logTail.slice(-MAX_STATE_CHARS),
   };
 }
+
+/** Room left per job for its `### <name>` header and the truncation marker line. */
+const SECTION_OVERHEAD_CHARS = 160;
+
+/** Floor on a job's excerpt, so many failed jobs at once still leave each one readable. */
+const MIN_CHARS_PER_JOB = 500;
 
 /**
  * Splits `gh run view --log-failed` output into one entry per job.
@@ -111,6 +126,27 @@ export function parseRunLog(raw: string): FailedJob[] {
     conclusion: 'failure',
     log: lines.join('\n'),
   }));
+}
+
+/**
+ * Parses `gh` output without letting a malformed response escape.
+ *
+ * Every caller already treats a missing result as "nothing to triage" and exits 0, so a parse
+ * failure has to land in the same place. Without this the exception would climb past `main()` and
+ * the process would die with a stack trace - the one thing this tool promises never to do.
+ *
+ * @param raw The stdout of a `gh` call.
+ * @returns The parsed value, or `null` when it is not the JSON that was asked for.
+ */
+function parseJson<T>(raw: string): T | null {
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    // `gh` printed something that is not the JSON we asked for - a retry notice on stdout, a
+    // truncated page, or an error envelope in a shape this tool does not know. Treated exactly
+    // like a failed `gh` call: nothing to triage, and the caller exits cleanly.
+    return null;
+  }
 }
 
 /**
@@ -156,8 +192,8 @@ export function findLatestFailedRun(branch: string): RunSummary | null {
   ]);
   if (!raw) return null;
 
-  const runs = JSON.parse(raw) as RunSummary[];
-  return runs[0] ?? null;
+  const runs = parseJson<RunSummary[]>(raw);
+  return runs?.[0] ?? null;
 }
 
 /**
@@ -206,7 +242,7 @@ export function fetchFailedJobsViaApi(
     .filter((line) => line.trim().startsWith('{'));
 
   const jobs = pages.flatMap(
-    (page) => (JSON.parse(page) as { jobs?: ApiJob[] }).jobs ?? [],
+    (page) => parseJson<{ jobs?: ApiJob[] }>(page)?.jobs ?? [],
   );
 
   return jobs

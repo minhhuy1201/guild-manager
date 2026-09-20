@@ -193,6 +193,11 @@ GET /repos/{owner}/{repo}/actions/jobs/{job_id}/logs
 **Không dùng `gh run view --log-failed` trong CI**: workflow run lúc đó vẫn `in_progress` (chính job
 triage đang chạy), và lệnh đó từ chối một run chưa kết thúc. Endpoint theo từng job thì không.
 
+`needs` chỉ với tới được job trong **cùng một workflow file**, nên job này phủ bảy trong chín cổng.
+CodeQL và Security (Trivy, dependency review) nằm ở file khác, và một run chỉ đỏ vì hai cái đó thì
+không được phân loại. Đây là giới hạn đã biết, không phải sót: cả hai đều là scanner bảo mật, chúng
+đã chỉ ra đúng file và đúng rule id — chính là thứ mà triage phải đoán.
+
 Kết quả ghi vào `$GITHUB_STEP_SUMMARY`, và nếu là pull request thì comment lên PR — một comment duy
 nhất, cập nhật tại chỗ theo `run_id` để không rải rác.
 
@@ -280,6 +285,14 @@ không đặt tên khác, vì đặt tên khác buộc phải viết code để 
 
 `__tests__/` cạnh `src/`, chạy bằng `node --test` (có sẵn trong Node 24, không thêm dependency test
 runner nào).
+
+### Kiểm dữ liệu trả về từ Jev
+
+`answers` là payload mạng từ một API còn mang tiền tố `experimental_`. Type của SDK là lời khai lúc
+biên dịch, không phải bảo đảm lúc chạy. Quy ước của repo là *validate at boundaries, trust
+TypeScript inside* — và đây đúng là boundary. `assertAnswerShape` kiểm bốn câu hỏi có mặt và đúng
+`type`, ném `MalformedAnswerError` nếu không. Hỏng ở đây cho một dòng rõ ràng; hỏng muộn hơn cho
+`Cannot read properties of undefined` từ trong `render.ts`.
 
 | Cái gì | Kiểm bằng |
 |---|---|

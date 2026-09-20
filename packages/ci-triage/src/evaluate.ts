@@ -62,6 +62,46 @@ export function buildGatewayOptions(env: NodeJS.ProcessEnv): GatewayOptions {
     : { only: ['typesafe-ai'] };
 }
 
+/** Thrown when the gateway answers in a shape this tool cannot read. */
+export class MalformedAnswerError extends Error {
+  constructor(detail: string) {
+    super(`Jev trả về dữ liệu không đúng dạng: ${detail}`);
+    this.name = 'MalformedAnswerError';
+  }
+}
+
+/**
+ * Checks that an evaluation response really carries the four answers, in the shapes `render.ts`
+ * reads.
+ *
+ * The AI SDK types this response, but a type is a compile-time claim about a network payload from
+ * an API still marked `experimental_`. The repository's rule is to validate at boundaries and
+ * trust TypeScript only inside, and this is the boundary. Failing here produces one clear line;
+ * failing later produces `Cannot read properties of undefined` from inside a render function.
+ *
+ * @param answers The `answers` object as returned.
+ * @throws MalformedAnswerError When any of the four is missing or of the wrong kind.
+ */
+export function assertAnswerShape(answers: unknown): void {
+  if (typeof answers !== 'object' || answers === null) {
+    throw new MalformedAnswerError('answers không phải một object');
+  }
+
+  const record = answers as Record<string, { type?: unknown } | undefined>;
+  const expected = {
+    category: 'choice',
+    ownerApp: 'choice',
+    rerunLikelyGreen: 'boolean',
+    blastRadius: 'score',
+  } as const;
+
+  for (const [key, type] of Object.entries(expected)) {
+    if (record[key]?.type !== type) {
+      throw new MalformedAnswerError(`thiếu ${key} kiểu ${type}`);
+    }
+  }
+}
+
 /** Thrown when the gateway credential is absent. The CLI turns this into one line and exits 0. */
 export class MissingApiKeyError extends Error {
   constructor() {
@@ -110,6 +150,8 @@ async function callJev(state: TriageState): Promise<TriageResult> {
     questions: TRIAGE_QUESTIONS,
     providerOptions: { gateway: buildGatewayOptions(process.env) },
   });
+
+  assertAnswerShape(result.answers);
 
   return {
     answers: result.answers,

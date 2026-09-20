@@ -27,7 +27,18 @@ describe('truncateTail', () => {
 
     assert.match(
       truncateTail(log, 100, 10_000),
-      /^… earlier output omitted \(200 lines\) …/,
+      /^… earlier output omitted \(200 lines, \d+ characters\) …/,
+    );
+  });
+
+  it('still reports the cut when only the character limit bit', () => {
+    // One very long line drops no lines at all. A marker saying "0 lines" with no character
+    // count would tell Jev - and a human reading --json - that nothing was removed.
+    const out = truncateTail('x'.repeat(5_000), 100, 1_000);
+
+    assert.match(
+      out,
+      /^… earlier output omitted \(0 lines, 4000 characters\) …/,
     );
   });
 
@@ -37,8 +48,10 @@ describe('truncateTail', () => {
 
   it('respects the character ceiling even when the line count fits', () => {
     const log = 'x'.repeat(5_000);
+    const out = truncateTail(log, 100, 1_000);
 
-    assert.ok(truncateTail(log, 100, 1_000).length <= 1_000 + 64);
+    // The budget covers the kept text; the marker line sits on top of it and is short.
+    assert.ok(out.split('\n').at(-1)!.length <= 1_000);
   });
 });
 
@@ -82,6 +95,23 @@ describe('buildState', () => {
     );
 
     assert.ok(buildState(jobs, []).logTail.length <= MAX_STATE_CHARS);
+  });
+
+  it('keeps every job header intact when all seven CI jobs fail at once', () => {
+    // The final slice trims from the front, so a budget that ignored the `### <name>` headers
+    // would shear the first one and hand Jev a fragment instead of a section.
+    const jobs = Array.from({ length: 7 }, (_, i) =>
+      job(`Job ${i}`, 'y'.repeat(100_000)),
+    );
+
+    const { logTail } = buildState(jobs, []);
+
+    for (let i = 0; i < 7; i += 1) {
+      assert.ok(
+        logTail.includes(`### Job ${i}`),
+        `header ${i} was sheared off`,
+      );
+    }
   });
 });
 
