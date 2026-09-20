@@ -69,9 +69,10 @@ model BattleSession {
   id                 String    @id @default(cuid())
   /// When the battle takes place.
   dateTime           DateTime
-  /// Attendance deadline. Scrim: set by an admin, at most 10:00 on the battle day
-  /// (the backend rejects rather than clamps); the form prefills 12:00 the day before.
-  /// Guild War: system-set to 12:00 Friday of the same week, not editable.
+  /// Attendance deadline. Scrim: set by an admin, at most 11:00 Vietnam time on the battle day and
+  /// never past the battle itself (the backend rejects rather than clamps); the form prefills 11:00
+  /// on that day. Guild War: system-set to 11:00 Saturday of the same week, not editable.
+  /// The hour and the cap are `DEADLINE_HOUR` and `deadlineCapFor` in packages/shared/lib.
   deadline           DateTime
   /// Opponent guild name. Null for a Guild War and for a scrim with no opponent yet.
   opponent           String?
