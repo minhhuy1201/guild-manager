@@ -192,8 +192,11 @@ tacticSceneSchema   = { schemaVersion: literal(1), stages: tacticStageSchema[] }
 | `TACTIC_TOKEN_SIZES` | `sm`, `md`, `lg` |
 | `TACTIC_TOKEN_ICONS` | Bộ icon cho phép, khoảng 20 khoá ánh xạ sang `lucide-react` ở phía web |
 
-Bảy quân mặc định (Đội công, Đội thủ, Cơ động, Trinh sát, Tập kết, Đội trụ, Bảo tiêu) và mười đội
-`Đội 1`…`Đội 10` **không** nằm trong `packages/shared`: chúng là bảng chọn để hiển thị, không phải
+Bảng quân cờ chia **ba nhóm**: **Quân hiệu** (bảy quân đặt tên: Đội công, Đội thủ, Cơ động, Trinh sát,
+Tập kết, Đội trụ, Bảo tiêu), **Đội** (`Đội 1`…`Đội 10`), **Custom** (preset admin tự thêm). Nhóm
+Custom giữ tiêu đề cả khi rỗng, để nút "Thêm đội" có chỗ thuộc về.
+
+Bảy quân mặc định và mười đội **không** nằm trong `packages/shared`: chúng là bảng chọn để hiển thị, không phải
 shape đi qua mạng — scene đã chụp lại `label` và `icon` rồi (quyết định 3). Chúng sống ở
 `features/tactics/lib/built-in-tokens.ts`.
 
@@ -267,11 +270,17 @@ Route và điều hướng:
 - `config/routes.ts`: `tactics: "/chien-thuat"` và một hàm dựng đường dẫn editor.
 - `components/shared/nav-items.ts`: mục **Chiến thuật**, icon `Swords`, `adminOnly: false`, chèn
   giữa Xếp team và Thiết lập.
-- `lib/page-banners.ts`: khoá `tactics`, `src: "/img/bg/tactics.jpg"`, `tint: "#83653E"`.
+- `lib/layout.ts`: `APP_SHELL_WIDTH` (`max-w-[1920px]`) — vỏ trang nới từ 1600 lên 1920 để tấm map
+  1920 đọc được trên màn 27 inch; header, cột nội dung và footer cùng đọc một hằng này.
+- `lib/page-banners.ts`: khoá `tactics`, `src: "/img/bg/tactics.jpg"`, `tint: "#83653E"`. Chỉ màn
+  danh sách dùng banner; màn chi tiết mở bằng breadcrumb (xem dưới).
   `tactics.jpg` là bản sao của tấm map đã làm phẳng nền và nén JPEG — cùng lý do
   `landing.jpg` là bản sao của `login.jpg`: một khoá, một file, đổi cái này không kéo theo cái kia.
 - `app/chien-thuat/page.tsx` và `app/chien-thuat/[id]/page.tsx` — hai trang mỏng, mỗi trang render
   một component của feature.
+- Màn chi tiết **không** có banner: đầu trang là `tactic-breadcrumb` — nút quay lại cộng
+  `Chiến thuật → <tên chiến thuật>`, dựng trên `components/ui/breadcrumb.tsx` của shadcn. Trang này
+  mở ra là để nhìn map, nên một dải ảnh trang trí chỉ đẩy map xuống.
 
 Quy ước trạng thái, không có ngoại lệ:
 
@@ -284,7 +293,13 @@ Konva:
 
 - `konva` + `react-konva` cài vào `apps/web` (không phải root — root là marker).
 - `tactic-canvas.tsx` nạp qua `next/dynamic` với `ssr: false`; Konva cần `window`.
-- Một `Stage` duy nhất, scale `stageWidth / 1920`. Ảnh map ở `Layer` dưới, phần tử ở `Layer` trên.
+- Một `Stage` duy nhất, rộng đúng bằng khung chứa, cao theo tỉ lệ map. Scale = `stageWidth / 1920`
+  (vừa khung) **nhân** với hệ số zoom. Ảnh map ở `Layer` dưới, phần tử ở `Layer` trên.
+- Zoom: lăn chuột phóng to quanh con trỏ (`lib/zoom.ts`, `hooks/use-stage-zoom.ts`), giới hạn
+  0.5×–4×; giữ chuột giữa để kéo map — nút trái vẫn để vẽ, nên hai thao tác không giẫm chân nhau.
+  Chỉ số zoom nằm ở **góc phải dưới** khung map (`zoom-readout`), kèm nút `-`, `+` và "Vừa khung"
+  cho ai không dùng lăn chuột. Trạng thái zoom là cách một người đang nhìn bản vẽ, không phải một
+  phần bản vẽ: nó nằm trong hook, không vào store và không bao giờ được lưu.
 - Đổi cỡ quân cờ bằng ba nút cỡ trên thanh công cụ khi đang chọn một quân, **không** dùng
   `Transformer` — không có xoay, không có resize tự do, nên handle chỉ là nhiễu.
 
@@ -334,11 +349,12 @@ Mobile:
 ├─ Giai đoạn 1* | Giai đoạn 2 | …            [+ Thêm giai đoạn] [⧉ Nhân bản]                   ┤
 ├──────────────┬───────────────────────────────────────────────────────────────────────────────┤
 │ Quân cờ  [«] │                                                                               │
-│ Đội công     │                                                                               │
-│ Đội thủ      │                   map-guild-war.webp trên Konva Stage                          │
-│ Cơ động      │                                                                               │
-│ …            │                                                                               │
+│ QUÂN HIỆU    │                                                                               │
+│ Đội công     │                   map-guild-war.webp trên Konva Stage                          │
+│ Đội thủ …    │                                                                               │
+│ ĐỘI          │                                                                               │
 │ Đội 1…10     │                                                                               │
+│ CUSTOM       │                                                                   [− 100% + ⛶] │
 │ [+ Thêm đội] │                                                                               │
 └──────────────┴───────────────────────────────────────────────────────────────────────────────┘
 ```
