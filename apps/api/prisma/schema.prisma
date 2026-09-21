@@ -196,3 +196,33 @@ model BotChannel {
   channelId String
   updatedAt DateTime @updatedAt
 }
+
+/// A guild war tactic drawing. Standalone: not tied to a week, not tied to a BattleSession.
+model Tactic {
+  id          String   @id @default(cuid())
+  /// Display name, set by an admin.
+  name        String
+  description String?  @db.VarChar(500)
+  /// Scene document: { schemaVersion, stages }, per tacticSceneSchema in @guild/shared.
+  /// Untrusted on read - the service always parses it with Zod, never casts.
+  stages      Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([updatedAt])
+}
+
+/// A named token shared by every tactic. Global configuration like TeamName: it belongs to no
+/// single tactic, so it carries no relation.
+/// A token placed on the map does NOT point here - it captures label and icon (decision 3).
+model TacticTokenPreset {
+  id        String   @id @default(cuid())
+  label     String   @db.VarChar(40)
+  /// A key of TACTIC_TOKEN_ICONS (@guild/shared/enums), not a free-form icon name.
+  icon      String
+  /// Display order in the token palette.
+  sortOrder Int
+  createdAt DateTime @default(now())
+
+  @@unique([label])
+}

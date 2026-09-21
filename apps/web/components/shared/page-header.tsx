@@ -2,11 +2,12 @@ import type { ReactNode } from "react";
 
 import { BannerImage } from "@/components/shared/banner-image";
 import { OrnamentDivider } from "@/components/shared/ornament-divider";
+import { APP_SHELL_WIDTH_PX } from "@/lib/layout";
 import { PAGE_BANNERS, type PageBannerKey } from "@/lib/page-banners";
 import { cn } from "@/lib/utils";
 
-/** Width hint for the banner image: the page shell never grows past 1600px. */
-const BANNER_SIZES = "(min-width: 1600px) 1600px, 100vw";
+/** Width hint for the banner image: the page shell never grows past `APP_SHELL_WIDTH_PX`. */
+const BANNER_SIZES = `(min-width: ${APP_SHELL_WIDTH_PX}px) ${APP_SHELL_WIDTH_PX}px, 100vw`;
 
 /**
  * How much of the screen the strip takes. `tall` is the attendance page's, where members land from

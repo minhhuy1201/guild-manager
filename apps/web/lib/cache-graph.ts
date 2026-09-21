@@ -3,6 +3,7 @@ import type { QueryKey } from "@tanstack/react-query";
 import { attendanceKeys } from "@/features/attendance/api/attendance-keys";
 import { memberKeys } from "@/features/members/api/members-keys";
 import { settingsKeys } from "@/features/settings/api/battle-sessions-keys";
+import { tacticKeys } from "@/features/tactics/api/tactics-keys";
 import { teamBuilderKeys } from "@/features/team-builder/api/team-builder-keys";
 
 /**
@@ -16,6 +17,7 @@ export const CACHE_TOPICS = [
   "attendance",
   "attendance-window",
   "formation",
+  "tactic",
 ] as const;
 
 /** A kind of data a write can make stale. */
@@ -69,4 +71,9 @@ export const CACHE_DEPENDENTS: Record<CacheTopic, () => QueryKey[]> = {
   ],
   /** Saving a formation only touches the team builder's own data. */
   formation: () => [teamBuilderKeys.all],
+  /**
+   * A tactic hangs off nothing — not a week, not a battle day — so writing one leaves every other
+   * screen's data untouched.
+   */
+  tactic: () => [tacticKeys.all],
 };

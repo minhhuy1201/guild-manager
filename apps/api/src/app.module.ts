@@ -10,6 +10,7 @@ import { BattleSessionsModule } from './modules/battle-sessions/battle-sessions.
 import { CharactersModule } from './modules/characters/characters.module';
 import { DiscordBotModule } from './modules/discord-bot/discord-bot.module';
 import { HealthModule } from './modules/health/health.module';
+import { TacticsModule } from './modules/tactics/tactics.module';
 import { TeamBuilderModule } from './modules/team-builder/team-builder.module';
 
 @Module({
@@ -27,6 +28,7 @@ import { TeamBuilderModule } from './modules/team-builder/team-builder.module';
     CharactersModule,
     AttendanceModule,
     TeamBuilderModule,
+    TacticsModule,
     DiscordBotModule,
   ],
 })

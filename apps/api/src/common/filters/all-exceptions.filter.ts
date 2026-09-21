@@ -145,11 +145,45 @@ export function describeException(exception: unknown): {
   };
 
   return {
-    message: Array.isArray(message)
-      ? message.join(', ')
-      : typeof message === 'string'
-        ? message
-        : exception.message,
+    message:
+      // A Zod failure carries "Validation failed" as its message and the sentences a user should
+      // read inside `errors` — every schema in `@guild/shared` writes those in Vietnamese, so they
+      // are what the screen shows.
+      issueMessages(errors) ??
+      (Array.isArray(message)
+        ? message.join(', ')
+        : typeof message === 'string'
+          ? message
+          : exception.message),
     errors,
   };
+}
+
+/**
+ * The messages of a Zod issue list, as one sentence.
+ * @param errors - The `errors` field of an exception payload
+ * @returns The joined messages, or null when `errors` is not an issue list
+ */
+function issueMessages(errors: unknown): string | null {
+  if (!Array.isArray(errors)) {
+    return null;
+  }
+
+  const messages = (errors as unknown[])
+    .map((issue): string | null => {
+      if (typeof issue !== 'object' || issue === null) {
+        return null;
+      }
+
+      const { message } = issue as { message?: unknown };
+
+      return typeof message === 'string' ? message : null;
+    })
+    .filter((text): text is string => text !== null);
+
+  // Duplicates happen when one limit fails on several fields at once; one sentence per rule reads
+  // better than the same line three times.
+  const unique = [...new Set(messages)];
+
+  return unique.length > 0 ? unique.join(' ') : null;
 }

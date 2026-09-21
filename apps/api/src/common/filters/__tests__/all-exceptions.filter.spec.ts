@@ -60,6 +60,37 @@ describe('describeException', () => {
     });
   });
 
+  it('lỗi Zod lấy câu tiếng Việt trong errors thay cho "Validation failed"', () => {
+    const exception = new BadRequestException({
+      message: 'Validation failed',
+      errors: [
+        {
+          path: ['scene', 'stages'],
+          message: 'Một chiến thuật tối đa 20 giai đoạn.',
+        },
+      ],
+    });
+
+    expect(describeException(exception)).toMatchObject({
+      message: 'Một chiến thuật tối đa 20 giai đoạn.',
+    });
+  });
+
+  it('nhiều issue trùng câu chỉ hiện một lần', () => {
+    const exception = new BadRequestException({
+      message: 'Validation failed',
+      errors: [
+        { path: ['a'], message: 'Ghi chú tối đa 80 ký tự.' },
+        { path: ['b'], message: 'Ghi chú tối đa 80 ký tự.' },
+        { path: ['c'], message: 'Tên giai đoạn tối đa 40 ký tự.' },
+      ],
+    });
+
+    expect(describeException(exception)).toMatchObject({
+      message: 'Ghi chú tối đa 80 ký tự. Tên giai đoạn tối đa 40 ký tự.',
+    });
+  });
+
   it('payload không có message dùng message của exception', () => {
     const exception = new HttpException({ statusCode: 418 }, 418);
 

@@ -12,7 +12,12 @@ export interface PageImage {
 }
 
 /** The pages that open with a banner. */
-export type PageBannerKey = "attendance" | "history" | "teamBuilder" | "settings";
+export type PageBannerKey =
+  | "attendance"
+  | "history"
+  | "teamBuilder"
+  | "tactics"
+  | "settings";
 
 /** Banner of each page - one scene per screen, so a page is recognised before it is read. */
 export const PAGE_BANNERS: Record<PageBannerKey, PageImage> = {
@@ -30,6 +35,11 @@ export const PAGE_BANNERS: Record<PageBannerKey, PageImage> = {
     src: "/img/bg/team-builder.jpg",
     objectPosition: "center 45%",
     tint: "#6b4a2c",
+  },
+  tactics: {
+    src: "/img/bg/tactics.jpg",
+    objectPosition: "center 45%",
+    tint: "#83653E",
   },
   settings: {
     src: "/img/bg/settings.jpg",

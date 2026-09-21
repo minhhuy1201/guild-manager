@@ -9,6 +9,8 @@ import { MobileTabBar } from "@/components/shared/mobile-tab-bar";
 import { ROUTES } from "@/config/routes";
 import { UserMenu } from "@/features/auth";
 import { fetchMe, getSession } from "@/features/auth/server";
+import { APP_SHELL_WIDTH } from "@/lib/layout";
+import { cn } from "@/lib/utils";
 
 /**
  * Layout of the brand block, shared by its link and its plain-text form. The padding, cancelled by
@@ -66,7 +68,12 @@ export async function SiteHeader() {
       {/* Not sticky on a short screen (a phone turned sideways): pinned there, it and the save
           bar took about 40% of the height. */}
       <header className="sticky top-0 z-10 border-b bg-card/90 backdrop-blur [@media(max-height:500px)]:static">
-        <div className="mx-auto flex h-14 max-w-[1600px] items-center gap-3 px-4 sm:px-6">
+        <div
+          className={cn(
+            "mx-auto flex h-14 items-center gap-3 px-4 sm:px-6",
+            APP_SHELL_WIDTH
+          )}
+        >
           {/* Signed in the mark leads to the week's attendance, signed out to the guild's public
               page - the one route besides the login screen a visitor can actually reach. */}
           <Link
