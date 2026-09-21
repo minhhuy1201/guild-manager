@@ -57,7 +57,7 @@ const SIZE_LABELS: Record<TacticTokenSize, string> = {
  * cannot read on both.
  */
 const KEY_CAP_CLASS =
-  "h-4.5 min-w-4.5 bg-current/12 px-1 text-[10px] text-current";
+  "h-4 min-w-4 bg-current/12 px-0.5 text-[9px] text-current";
 
 interface ShortcutKeysProps {
   /** The shortcut to draw */
@@ -150,8 +150,8 @@ export function EditorToolbar({
   const modifier = useModifierKey();
 
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border bg-card px-3 py-2 shadow-xs">
-      <div className="flex items-center gap-1">
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border bg-card px-2 py-1 shadow-xs">
+      <div className="flex items-center gap-0.5">
         {(Object.keys(TOOL_LABELS) as TacticTool[]).map((candidate) => {
           const Icon = TOOL_ICONS[candidate];
 
@@ -159,7 +159,7 @@ export function EditorToolbar({
             <Button
               key={candidate}
               type="button"
-              size="sm"
+              size="xs"
               variant={candidate === tool ? "default" : "ghost"}
               aria-pressed={candidate === tool}
               title={`${TOOL_LABELS[candidate]} (${TOOL_SHORTCUTS[candidate]})`}
@@ -175,9 +175,9 @@ export function EditorToolbar({
         })}
       </div>
 
-      <div className="h-6 w-px bg-border" aria-hidden />
+      <div className="h-5 w-px bg-border" aria-hidden />
 
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-1">
         {TACTIC_COLORS.map((candidate) => (
           <button
             key={candidate}
@@ -187,7 +187,7 @@ export function EditorToolbar({
             title={COLOR_LABELS[candidate]}
             className={cn(
               // The ring sits outside the swatch so it reads the same on black as on yellow.
-              "size-6 rounded-full ring-offset-2 ring-offset-card transition-transform hover:scale-110 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+              "size-5 rounded-full ring-offset-2 ring-offset-card transition-transform hover:scale-110 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
               candidate === color && "scale-110 ring-2 ring-foreground"
             )}
             style={{ backgroundColor: COLOR_HEX[candidate] }}
@@ -196,14 +196,14 @@ export function EditorToolbar({
         ))}
       </div>
 
-      <div className="h-6 w-px bg-border" aria-hidden />
+      <div className="h-5 w-px bg-border" aria-hidden />
 
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-0.5">
         {TACTIC_STROKE_WIDTHS.map((candidate) => (
           <Button
             key={candidate}
             type="button"
-            size="sm"
+            size="xs"
             variant={candidate === strokeWidth ? "default" : "ghost"}
             aria-pressed={candidate === strokeWidth}
             // "và", not the "+" of a chord: the two keys step the width one way each.
@@ -218,12 +218,12 @@ export function EditorToolbar({
       </div>
 
       {selectedTokenSize ? (
-        <div className="flex items-center gap-1 rounded-lg bg-muted/60 p-0.5">
+        <div className="flex items-center gap-0.5 rounded-lg bg-muted/60 p-0.5">
           {TACTIC_TOKEN_SIZES.map((candidate) => (
             <Button
               key={candidate}
               type="button"
-              size="sm"
+              size="xs"
               variant={candidate === selectedTokenSize ? "default" : "ghost"}
               aria-pressed={candidate === selectedTokenSize}
               onClick={() => onTokenSizeChange(candidate)}
@@ -234,10 +234,10 @@ export function EditorToolbar({
         </div>
       ) : null}
 
-      <div className="ml-auto flex items-center gap-1">
+      <div className="ml-auto flex items-center gap-0.5">
         <Button
           type="button"
-          size="sm"
+          size="xs"
           variant="outline"
           disabled={!canUndo}
           title={`Hoàn tác (${shortcutLabel(ACTION_SHORTCUTS.undo, modifier)})`}
@@ -249,7 +249,7 @@ export function EditorToolbar({
         </Button>
         <Button
           type="button"
-          size="sm"
+          size="xs"
           variant="outline"
           disabled={!canRedo}
           title={`Làm lại (${shortcutLabel(ACTION_SHORTCUTS.redo, modifier)})`}
@@ -264,7 +264,7 @@ export function EditorToolbar({
           <>
             <Button
               type="button"
-              size="sm"
+              size="xs"
               variant="outline"
               title="Xuất ảnh"
               onClick={onExport}
@@ -274,7 +274,7 @@ export function EditorToolbar({
             </Button>
             <Button
               type="button"
-              size="sm"
+              size="xs"
               disabled={saving || !dirty}
               title={`Lưu (${shortcutLabel(ACTION_SHORTCUTS.save, modifier)})`}
               onClick={onSave}

@@ -53,6 +53,23 @@ describe("TokenPalette", () => {
     ).toEqual(["Quân hiệu", "Đội", "Custom"]);
   });
 
+  it("gives each group its own panel, so the three read apart", () => {
+    renderPalette();
+
+    const panels = screen
+      .getAllByRole("heading")
+      .map((heading) => heading.parentElement as HTMLElement);
+
+    for (const panel of panels) {
+      expect(panel.className).toContain("border");
+    }
+    // One hue per group: the tints must not repeat down the column.
+    const tints = panels.map((panel) =>
+      panel.className.split(" ").filter((name) => name.startsWith("bg-")).join()
+    );
+    expect(new Set(tints).size).toBe(panels.length);
+  });
+
   it("files a named role under Quân hiệu and a numbered team under Đội", () => {
     renderPalette();
 

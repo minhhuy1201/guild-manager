@@ -3,11 +3,13 @@
 import { useState } from "react";
 import type { TacticStage } from "@guild/shared/schemas";
 
-import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { CANVAS_GRID_STYLE } from "../lib/canvas-grid";
 import { useStageArrows } from "../hooks/use-stage-arrows";
 import { useStageSize } from "../hooks/use-stage-size";
 import { useStageZoom } from "../hooks/use-stage-zoom";
 import { StageArrowHint } from "./stage-arrow-hint";
+import { StageTab } from "./stage-tab";
 import { TacticCanvas } from "./tactic-canvas";
 import { ZoomReadout } from "./zoom-readout";
 
@@ -45,29 +47,30 @@ export function TacticViewer({ stages }: TacticViewerProps) {
           ref={tablistRef}
           role="tablist"
           aria-label="Giai đoạn"
-          className="flex flex-wrap items-center gap-2"
+          className="flex flex-wrap items-center gap-1"
         >
-          {stages.map((candidate) => (
-            <Button
+          {stages.map((candidate, index) => (
+            <StageTab
               key={candidate.id}
-              type="button"
-              role="tab"
-              aria-selected={candidate.id === stage.id}
-              // Roving tabIndex: Tab reaches the strip once, the arrows move inside it.
-              tabIndex={candidate.id === stage.id ? 0 : -1}
-              size="sm"
-              variant={candidate.id === stage.id ? "default" : "ghost"}
-              onClick={() => setActiveStageId(candidate.id)}
-            >
-              {candidate.name}
-            </Button>
+              stage={candidate}
+              position={index + 1}
+              active={candidate.id === stage.id}
+              onSelect={() => setActiveStageId(candidate.id)}
+            />
           ))}
 
           <StageArrowHint stageCount={stages.length} />
         </div>
       ) : null}
 
-      <div ref={ref} className="relative overflow-hidden rounded-xl border">
+      <div
+        ref={ref}
+        style={CANVAS_GRID_STYLE}
+        className={cn(
+          "relative overflow-hidden rounded-xl border bg-muted/30",
+          stageZoom.panning && "cursor-grabbing"
+        )}
+      >
         <TacticCanvas
           stage={stage}
           width={width}
@@ -75,8 +78,6 @@ export function TacticViewer({ stages }: TacticViewerProps) {
           readOnly
           onWheel={stageZoom.onWheel}
           onStageMouseDown={stageZoom.onPanStart}
-          onStageMouseMove={stageZoom.onPanMove}
-          onStageMouseUp={stageZoom.onPanEnd}
         />
         <ZoomReadout
           zoom={stageZoom.zoom.zoom}
