@@ -6,11 +6,38 @@ export const EXPORT_PIXEL_RATIO = 2;
 /** Characters a file system refuses, replaced by a dash. */
 const UNSAFE_FILENAME_CHARS = /[\\/:*?"<>|]+/g;
 
+/** What an unsafe character becomes, and what gets cut off either end of a name. */
+const DASH = "-";
+
 /** What a name falls back to once every character in it was unsafe. */
 const FALLBACK_TACTIC_NAME = "chien-thuat";
 
 /** What a stage name falls back to once every character in it was unsafe. */
 const FALLBACK_STAGE_NAME = "giai-doan";
+
+/**
+ * Cut the dashes off both ends of a name.
+ *
+ * A scan rather than `/^-+|-+$/`: an anchored `-+` backtracks over a long run of dashes, which is
+ * quadratic on a name made mostly of them — and every character a file system refuses has just
+ * become one.
+ * @param value - The name, with the unsafe characters already replaced
+ * @returns The name without its leading and trailing dashes
+ */
+function trimDashes(value: string): string {
+  let start = 0;
+  let end = value.length;
+
+  while (start < end && value[start] === DASH) {
+    start += 1;
+  }
+
+  while (end > start && value[end - 1] === DASH) {
+    end -= 1;
+  }
+
+  return value.slice(start, end);
+}
 
 /**
  * Strip the characters a file system refuses, and the dashes they leave at either end.
@@ -19,10 +46,9 @@ const FALLBACK_STAGE_NAME = "giai-doan";
  * @returns A name safe to write to disk
  */
 function safeName(value: string, fallback: string): string {
-  const cleaned = value
-    .replace(UNSAFE_FILENAME_CHARS, "-")
-    .replace(/^-+|-+$/g, "")
-    .trim();
+  const cleaned = trimDashes(
+    value.replace(UNSAFE_FILENAME_CHARS, DASH)
+  ).trim();
 
   return cleaned === "" ? fallback : cleaned;
 }
