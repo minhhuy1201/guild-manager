@@ -11,6 +11,7 @@ const handlers = {
   onColorChange: vi.fn(),
   onStrokeWidthChange: vi.fn(),
   onTokenSizeChange: vi.fn(),
+  onDeleteSelected: vi.fn(),
   onUndo: vi.fn(),
   onRedo: vi.fn(),
   onSave: vi.fn(),
@@ -36,6 +37,7 @@ function renderToolbar(
       dirty
       isAdmin
       selectedTokenSize={null}
+      hasSelection={false}
       {...handlers}
       {...props}
     />
@@ -84,9 +86,28 @@ describe("EditorToolbar", () => {
     expect(screen.queryByRole("button", { name: "Cỡ lớn" })).toBeNull();
 
     cleanup();
-    renderToolbar({ selectedTokenSize: "md" });
+    renderToolbar({ selectedTokenSize: "md", hasSelection: true });
     fireEvent.click(screen.getByRole("button", { name: "Cỡ lớn" }));
 
     expect(handlers.onTokenSizeChange).toHaveBeenCalledWith("lg");
+  });
+
+  it("offers the select tool, which is what editing a placed piece goes through", () => {
+    renderToolbar();
+    fireEvent.click(screen.getByRole("button", { name: "Chọn" }));
+
+    expect(handlers.onToolChange).toHaveBeenCalledWith("select");
+  });
+
+  // Every element can be deleted, so the button answers to a selection, not to a token.
+  it("deletes the selected element, whatever kind it is", () => {
+    renderToolbar();
+    expect(screen.queryByRole("button", { name: /Xoá phần tử/ })).toBeNull();
+
+    cleanup();
+    renderToolbar({ hasSelection: true });
+    fireEvent.click(screen.getByRole("button", { name: /Xoá phần tử/ }));
+
+    expect(handlers.onDeleteSelected).toHaveBeenCalled();
   });
 });

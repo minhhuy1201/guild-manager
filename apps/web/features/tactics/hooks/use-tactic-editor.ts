@@ -164,6 +164,18 @@ export function useTacticEditor(
         return;
       }
 
+      // A click that lands on something already drawn edits that thing instead of drawing again:
+      // the select tool picks it up, and a token refuses to stack itself on the piece under the
+      // pointer. Both work on a full stage, since neither adds anything.
+      if (tool === "select" || tool === "token") {
+        const hit = hitTest(activeStage, point);
+
+        if (tool === "select" || hit) {
+          selectElement(hit);
+          return;
+        }
+      }
+
       // Erasing is the one tool that still works on a full stage — it is how the admin makes room.
       if (tool !== "eraser" && isStageFull(activeStage)) {
         toastError(
@@ -172,6 +184,7 @@ export function useTacticEditor(
         return;
       }
 
+      // `select` returned above, so it is not one of the cases left here.
       switch (tool) {
         case "token": {
           commitElements(
@@ -208,6 +221,7 @@ export function useTacticEditor(
       color,
       strokeWidth,
       commitElements,
+      selectElement,
     ]
   );
 

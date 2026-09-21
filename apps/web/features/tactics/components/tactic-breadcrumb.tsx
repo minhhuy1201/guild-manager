@@ -8,48 +8,45 @@ import {
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { buttonVariants } from "@/components/ui/button";
 import { ROUTES } from "@/config/routes";
-
-interface TacticBreadcrumbProps {
-  /** Name of the tactic on screen; empty while it is still loading */
-  name: string;
-}
+import { cn } from "@/lib/utils";
 
 /**
- * The top of a tactic's page: where you are, and the way back to the list.
- * A banner is what the list page opens with; this page opens with the drawing, so a strip of
- * scenery would only push the map down.
- * @param name - Name of the tactic on screen
+ * The trail inside the tactic page's banner: the way back to the list, and the list itself.
+ *
+ * It stops at the parent on purpose — the banner's `<h1>` is already the tactic's name, and a last
+ * crumb repeating it would print the same words twice in the same block. White on the scrim, like
+ * everything else drawn over a banner scene.
  * @returns The breadcrumb row
  */
-export function TacticBreadcrumb({ name }: TacticBreadcrumbProps) {
+export function TacticBreadcrumb() {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1.5">
       {/* A plain link wearing the icon button's clothes. This control navigates, so it has to be an
           anchor: Base UI's `Button` warns at runtime when it acts as a button while rendering
           something that is not one. */}
       <Link
         href={ROUTES.tactics}
         aria-label="Về danh sách chiến thuật"
-        className={buttonVariants({ variant: "ghost", size: "icon-sm" })}
+        className={cn(
+          buttonVariants({ variant: "ghost", size: "icon-sm" }),
+          "text-white/80 hover:bg-white/15 hover:text-white"
+        )}
       >
         <ArrowLeft />
       </Link>
 
       <Breadcrumb>
-        <BreadcrumbList>
+        <BreadcrumbList className="text-white/70">
           <BreadcrumbItem>
-            <BreadcrumbLink render={<Link href={ROUTES.tactics} />}>
+            <BreadcrumbLink
+              className="hover:text-white"
+              render={<Link href={ROUTES.tactics} />}
+            >
               Chiến thuật
             </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>{name || "Đang tải..."}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>

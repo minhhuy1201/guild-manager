@@ -7,11 +7,12 @@ import type { TacticTool } from "../types/tactic";
  * động"), and a row of digits matches the order the buttons sit in.
  */
 export const TOOL_SHORTCUTS: Record<TacticTool, string> = {
-  token: "1",
-  arrow: "2",
-  freehand: "3",
-  text: "4",
-  eraser: "5",
+  select: "1",
+  token: "2",
+  arrow: "3",
+  freehand: "4",
+  text: "5",
+  eraser: "6",
 };
 
 /** The tool each key picks — the reverse of `TOOL_SHORTCUTS`, built once. */

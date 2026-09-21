@@ -24,8 +24,9 @@ describe("tool shortcuts", () => {
   });
 
   it("picks the tool a key belongs to", () => {
-    expect(toolForKey("1")).toBe("token");
-    expect(toolForKey("5")).toBe("eraser");
+    expect(toolForKey("1")).toBe("select");
+    expect(toolForKey("2")).toBe("token");
+    expect(toolForKey("6")).toBe("eraser");
   });
 
   it("picks nothing for a key that belongs to no tool", () => {
