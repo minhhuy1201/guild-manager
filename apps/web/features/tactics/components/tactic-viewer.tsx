@@ -4,8 +4,10 @@ import { useState } from "react";
 import type { TacticStage } from "@guild/shared/schemas";
 
 import { Button } from "@/components/ui/button";
+import { useStageArrows } from "../hooks/use-stage-arrows";
 import { useStageSize } from "../hooks/use-stage-size";
 import { useStageZoom } from "../hooks/use-stage-zoom";
+import { StageArrowHint } from "./stage-arrow-hint";
 import { TacticCanvas } from "./tactic-canvas";
 import { ZoomReadout } from "./zoom-readout";
 
@@ -15,7 +17,8 @@ interface TacticViewerProps {
 }
 
 /**
- * The read-only view of a tactic: one stage at a time, switched from the tabs above it.
+ * The read-only view of a tactic: one stage at a time, switched from the tabs above it or with the
+ * left and right arrow keys.
  * This is what a member sees, and what the editor falls back to on a phone.
  * @param stages - Every stage of the tactic, in order
  * @returns The viewer
@@ -27,6 +30,9 @@ export function TacticViewer({ stages }: TacticViewerProps) {
 
   const stage =
     stages.find((candidate) => candidate.id === activeStageId) ?? stages[0];
+
+  // The arrows walk from the stage on screen, which is the first one until a tab is picked.
+  useStageArrows(stages, stage?.id ?? null, setActiveStageId);
 
   if (!stage) {
     return null;
@@ -53,6 +59,8 @@ export function TacticViewer({ stages }: TacticViewerProps) {
               {candidate.name}
             </Button>
           ))}
+
+          <StageArrowHint stageCount={stages.length} />
         </div>
       ) : null}
 

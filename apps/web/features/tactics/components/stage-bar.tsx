@@ -7,6 +7,8 @@ import { TACTIC_LIMITS, type TacticStage } from "@guild/shared/schemas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { useStageArrows } from "../hooks/use-stage-arrows";
+import { StageArrowHint } from "./stage-arrow-hint";
 
 interface StageBarProps {
   /** Every stage of the tactic, in order */
@@ -24,7 +26,7 @@ interface StageBarProps {
 
 /**
  * The stage strip: one tab per stage, plus add, duplicate, rename and delete for an admin.
- * Renaming happens in place — double-click a tab's name.
+ * Renaming happens in place — double-click a tab's name, and the arrow keys step between them.
  * @param props - The stages and the callbacks that change them
  * @returns The stage strip
  */
@@ -40,6 +42,8 @@ export function StageBar({
 }: StageBarProps) {
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const atLimit = stages.length >= TACTIC_LIMITS.stagesPerTactic;
+
+  useStageArrows(stages, activeStageId, onSelect);
 
   return (
     <div
@@ -84,6 +88,8 @@ export function StageBar({
           </Button>
         )
       )}
+
+      <StageArrowHint stageCount={stages.length} />
 
       {isAdmin ? (
         <div className="ml-auto flex items-center gap-1">

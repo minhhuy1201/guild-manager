@@ -669,6 +669,21 @@ keeps the arrow: it cannot act, so it reads as the inert text it behaves like, a
 `disabled:cursor-*` is needed either. A `div` given a click handler is not covered, which is the
 point: make it a `button`.
 
+### A row that opens a page → the whole card is the link
+
+A list row whose name links somewhere makes the *whole* row that link, not the few words of the name:
+a card-sized target is what a pointer aims at, and a 2mm-tall name is not. The tactics list
+(`features/tactics/components/tactic-list-screen.tsx`) is the worked example:
+
+- **One stretched link, not a clickable `div`.** The `Link` keeps the name and adds an
+  `absolute inset-0` span over the `relative` card, so the hit area grows while the row stays a
+  single real anchor — right-click, middle-click, keyboard focus and "copy link" all keep working,
+  and no `onClick` handler on a `div` has to reimplement them (see "A clickable element").
+- **The card carries the feedback**, since the card is the target: `hover:bg-foreground/5` for the
+  surface and `focus-within:ring-3 focus-within:ring-ring/50` for the ring the link inside it earns.
+- **Row actions sit above the overlay** — `RowActions` takes `relative`, so edit and delete keep
+  taking their own clicks instead of navigating.
+
 ### The surface behind a hovered or selected control
 
 **A bordered control carries `bg-card`, never a transparent fill.** `--border` and `--background`
@@ -947,6 +962,10 @@ is the worked example.
   the cap that advertises it. `shortcutLabel` writes the same shortcut out as one line for `title`.
 - **The caps are `aria-hidden`.** The button's `title` already carries the whole shortcut; a screen
   reader reading "⇧ Z" on top of it only repeats it.
+- **A tablist steps with the arrow keys.** Left goes back one tab, right goes on one, stopping at
+  both ends rather than wrapping — the tactic editor's stage strip and the read-only viewer share
+  `useStageArrows`, and both show the two caps through `StageArrowHint`. The keys are off while the
+  focus sits in a field (`isTypingTarget`), so renaming a stage still moves the caret.
 - **The modifier is the machine's**: `useModifierKey` says "⌘" on a Mac and "Ctrl" elsewhere. It
   reads the platform through `useSyncExternalStore`, whose server snapshot is "Ctrl" — reading
   `navigator` during render would be a hydration error rather than a wrong label.
