@@ -322,9 +322,12 @@ Undo/redo:
 
 Lưu và rời trang:
 
-- Nút **Lưu** và `Ctrl+S`. Không tự động lưu.
-- `components/shared/unsaved-changes-bar.tsx` dùng lại nguyên, cộng `beforeunload` khi còn thay đổi
-  chưa lưu.
+- Nút **Lưu** trên thanh công cụ và `Ctrl+S`. Không tự động lưu.
+- **Không** dùng `components/shared/unsaved-changes-bar.tsx`: thanh đó tồn tại cho màn không có chỗ
+  đặt nút Lưu, còn ở đây nút Lưu nằm sẵn trên thanh công cụ — thêm một thanh nữa là hai nút Lưu cho
+  cùng một việc. Trạng thái "chưa lưu" đọc ngay từ nút: nó mờ khi không có gì để lưu.
+- `beforeunload` khi còn thay đổi chưa lưu, vì đó là đường duy nhất bản vẽ mất mà người vẽ không chọn.
+- Lưu hỏng thì hiện toast mang nguyên văn câu của backend; bản vẽ giữ nguyên.
 
 Xuất ảnh (admin):
 
@@ -375,7 +378,8 @@ trang — app chưa dùng `localStorage` ở đâu cả, và một tuỳ chọn 
 
 ## Xử lý lỗi
 
-- Lỗi API tới dưới dạng `ApiError` mang thông báo tiếng Việt của backend, hiển thị nguyên văn.
+- Lỗi API tới dưới dạng `ApiError` mang thông báo tiếng Việt của backend, hiển thị nguyên văn (toast
+  ở màn editor, ngay trong dialog ở các hộp thoại ghi).
 - Lưu hỏng thì **không** xoá trạng thái chưa lưu trong store: người vẽ còn nguyên bản vẽ để thử lại.
 - `stages` trong DB không parse được = `500` với thông báo nêu rõ chiến thuật nào hỏng. Không trả
   scene rỗng, không "tự chữa" âm thầm.

@@ -3,7 +3,6 @@
 import { useState } from "react";
 
 import { QueryBoundary } from "@/components/shared/query-boundary";
-import { UnsavedChangesBar } from "@/components/shared/unsaved-changes-bar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEditorShortcuts } from "../hooks/use-editor-shortcuts";
 import { useIsDesktop } from "../hooks/use-is-desktop";
@@ -180,17 +179,6 @@ export function TacticEditorScreen({
             <TacticViewer stages={stages} />
           ) : null}
 
-          {canDraw && dirty ? (
-            <UnsavedChangesBar
-              message="Bản vẽ có thay đổi chưa lưu"
-              resetLabel="Tải lại bản đã lưu"
-              saving={editor.saving}
-              errorMessages={editor.saveError ? [editor.saveError] : []}
-              onSave={editor.onSave}
-              onReset={() => editor.state.refetch()}
-              undo={{ onUndo: undo, canUndo: editor.canUndo }}
-            />
-          ) : null}
         </div>
       </QueryBoundary>
 

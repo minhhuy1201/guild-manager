@@ -259,7 +259,7 @@ describe("useTacticEditor", () => {
     expect(vi.mocked(saveTacticStages).mock.calls[0][0].id).toBe("t1");
   });
 
-  it("keeps the draft and shows the backend's sentence when a save fails", async () => {
+  it("keeps the draft and toasts the backend's sentence when a save fails", async () => {
     vi.mocked(saveTacticStages).mockRejectedValue(
       new Error("Một chiến thuật tối đa 20 giai đoạn.")
     );
@@ -273,7 +273,7 @@ describe("useTacticEditor", () => {
     });
 
     await waitFor(() =>
-      expect(result.current.saveError).toBe(
+      expect(toastError).toHaveBeenCalledWith(
         "Một chiến thuật tối đa 20 giai đoạn."
       )
     );

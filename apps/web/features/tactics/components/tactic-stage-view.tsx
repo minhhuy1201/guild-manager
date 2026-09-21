@@ -138,6 +138,12 @@ export function TacticStageView({
       : null;
   }
 
+  // A stage 0 wide is an empty white box: better to draw nothing for the frame before the canvas
+  // box has been measured than to hand Konva a size that renders nothing.
+  if (width <= 0) {
+    return null;
+  }
+
   return (
     <Stage
       ref={(node) => onStageReady?.(node)}

@@ -165,6 +165,12 @@ describe("TacticStageView", () => {
     expect(props.y).toBe(-40);
   });
 
+  it("draws nothing at all before the canvas box has been measured", () => {
+    const { container } = render(<TacticStageView stage={stage} width={0} />);
+
+    expect(container.firstChild).toBeNull();
+  });
+
   it("draws an arrow, a freehand stroke and a note, each in its own colour", () => {
     render(<TacticStageView stage={busyStage} width={960} />);
 

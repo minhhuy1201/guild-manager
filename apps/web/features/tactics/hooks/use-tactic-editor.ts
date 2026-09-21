@@ -50,8 +50,6 @@ export interface TacticEditorScreen {
   canRedo: boolean;
   /** Whether a save is in flight */
   saving: boolean;
-  /** What the last failed save said, verbatim from the backend */
-  saveError: string | null;
   /** Palette entry the next click on the map drops */
   paletteToken: BuiltInToken | null;
   /** Where a note is being written, while the note dialog is open */
@@ -106,7 +104,6 @@ export function useTacticEditor(
   const [pendingTextPoint, setPendingTextPoint] = useState<MapPoint | null>(
     null
   );
-  const [saveError, setSaveError] = useState<string | null>(null);
   const loadedIdRef = useRef<string | null>(null);
 
   const scene = useTacticEditorStore((store) => store.scene);
@@ -324,13 +321,13 @@ export function useTacticEditor(
       return;
     }
 
-    setSaveError(null);
     saveTactic
       .mutateAsync({ id: tacticId, scene: current })
       .then(markSaved)
-      // A failed save keeps the draft: the drawing on screen is worth far more than the error.
+      // A failed save keeps the draft — the drawing on screen is worth far more than the error —
+      // and says so in a toast, since the toolbar has no room for a sentence.
       .catch((caught: unknown) =>
-        setSaveError(errorMessageOf(caught, "Không lưu được chiến thuật."))
+        toastError(errorMessageOf(caught, "Không lưu được chiến thuật."))
       );
   }, [isAdmin, saveTactic, tacticId, markSaved]);
 
@@ -347,7 +344,6 @@ export function useTacticEditor(
     canUndo: (history.past[activeStageId ?? ""] ?? []).length > 0,
     canRedo: (history.future[activeStageId ?? ""] ?? []).length > 0,
     saving: saveTactic.isPending,
-    saveError,
     paletteToken,
     selectPaletteToken: setPaletteToken,
     pendingTextPoint,

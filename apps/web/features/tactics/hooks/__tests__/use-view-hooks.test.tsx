@@ -57,7 +57,7 @@ describe("useIsDesktop", () => {
 });
 
 describe("useStageSize", () => {
-  it("measures nothing until its element exists", () => {
+  it("measures nothing until a box is handed to its ref", () => {
     vi.stubGlobal(
       "ResizeObserver",
       class {
@@ -70,7 +70,34 @@ describe("useStageSize", () => {
     const { result } = renderTacticHook(() => useStageSize());
 
     expect(result.current.width).toBe(0);
-    expect(result.current.ref.current).toBeNull();
+    // A callback ref, so the hook hands back a function rather than a ref object: the canvas box
+    // mounts later than the hook, and a ref object would never be looked at again.
+    expect(result.current.ref).toBeTypeOf("function");
+  });
+
+  it("forgets the width when its box goes away", () => {
+    const disconnect = vi.fn();
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        observe() {}
+        unobserve() {}
+        disconnect = disconnect;
+      }
+    );
+
+    const { result } = renderTacticHook(() => useStageSize());
+    const box = document.createElement("div");
+    vi.spyOn(box, "getBoundingClientRect").mockReturnValue({
+      width: 800,
+    } as DOMRect);
+
+    act(() => result.current.ref(box));
+    expect(result.current.width).toBe(800);
+
+    act(() => result.current.ref(null));
+    expect(result.current.width).toBe(0);
+    expect(disconnect).toHaveBeenCalled();
   });
 });
 

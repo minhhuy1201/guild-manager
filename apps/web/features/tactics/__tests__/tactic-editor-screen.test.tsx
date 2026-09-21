@@ -133,12 +133,16 @@ describe("TacticEditorScreen", () => {
     expect(screen.queryByRole("button", { name: "Đội hình" })).toBeNull();
   });
 
-  it("shows the unsaved bar only once the drawing changed", async () => {
+  it("keeps saving to the toolbar's own button, with no second bar for it", async () => {
     renderScreen(true);
 
     await waitFor(() =>
       expect(screen.getByRole("button", { name: "Đội hình" })).toBeTruthy()
     );
+    // Nothing to save yet, so the one Save button there is sits disabled.
+    expect(
+      screen.getByRole("button", { name: /Lưu/ }).hasAttribute("disabled")
+    ).toBe(true);
     expect(screen.queryByText("Bản vẽ có thay đổi chưa lưu")).toBeNull();
 
     useTacticEditorStore.getState().commit("s1", [
@@ -154,7 +158,11 @@ describe("TacticEditorScreen", () => {
     ]);
 
     await waitFor(() =>
-      expect(screen.getByText("Bản vẽ có thay đổi chưa lưu")).toBeTruthy()
+      expect(
+        screen.getByRole("button", { name: /Lưu/ }).hasAttribute("disabled")
+      ).toBe(false)
     );
+    expect(screen.getAllByRole("button", { name: /Lưu/ })).toHaveLength(1);
+    expect(screen.queryByText("Bản vẽ có thay đổi chưa lưu")).toBeNull();
   });
 });
