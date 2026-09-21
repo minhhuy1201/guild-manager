@@ -32,7 +32,7 @@ export function TacticViewer({ stages }: TacticViewerProps) {
     stages.find((candidate) => candidate.id === activeStageId) ?? stages[0];
 
   // The arrows walk from the stage on screen, which is the first one until a tab is picked.
-  useStageArrows(stages, stage?.id ?? null, setActiveStageId);
+  const tablistRef = useStageArrows(stages, stage?.id ?? null, setActiveStageId);
 
   if (!stage) {
     return null;
@@ -42,6 +42,7 @@ export function TacticViewer({ stages }: TacticViewerProps) {
     <div className="flex flex-col gap-3">
       {stages.length > 1 ? (
         <div
+          ref={tablistRef}
           role="tablist"
           aria-label="Giai đoạn"
           className="flex flex-wrap items-center gap-2"
@@ -52,6 +53,8 @@ export function TacticViewer({ stages }: TacticViewerProps) {
               type="button"
               role="tab"
               aria-selected={candidate.id === stage.id}
+              // Roving tabIndex: Tab reaches the strip once, the arrows move inside it.
+              tabIndex={candidate.id === stage.id ? 0 : -1}
               size="sm"
               variant={candidate.id === stage.id ? "default" : "ghost"}
               onClick={() => setActiveStageId(candidate.id)}

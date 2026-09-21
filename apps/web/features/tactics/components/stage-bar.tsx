@@ -43,10 +43,11 @@ export function StageBar({
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const atLimit = stages.length >= TACTIC_LIMITS.stagesPerTactic;
 
-  useStageArrows(stages, activeStageId, onSelect);
+  const tablistRef = useStageArrows(stages, activeStageId, onSelect);
 
   return (
     <div
+      ref={tablistRef}
       role="tablist"
       aria-label="Giai đoạn"
       className="flex flex-wrap items-center gap-2 rounded-xl border bg-card px-3 py-2"
@@ -76,6 +77,9 @@ export function StageBar({
             type="button"
             role="tab"
             aria-selected={stage.id === activeStageId}
+            // Roving tabIndex, as the ARIA tablist pattern asks: Tab reaches the strip once, and
+            // the arrow keys move between the tabs from there.
+            tabIndex={stage.id === activeStageId ? 0 : -1}
             size="sm"
             variant={stage.id === activeStageId ? "default" : "ghost"}
             className={cn(stage.id === activeStageId && "font-medium")}

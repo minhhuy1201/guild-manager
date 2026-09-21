@@ -1,5 +1,11 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, renderHook } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  renderHook,
+  screen,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { TacticStage } from "@guild/shared/schemas";
 
@@ -24,7 +30,79 @@ function renderArrows(activeStageId: string | null) {
   return onSelect;
 }
 
+/**
+ * Render a strip of real tabs the hook can carry the focus between.
+ * @param onSelect - Called with the stage an arrow lands on
+ * @param activeStageId - Stage whose tab is selected
+ * @returns The rendered strip
+ */
+function TabStrip({
+  onSelect,
+  activeStageId,
+}: {
+  onSelect: (stageId: string) => void;
+  activeStageId: string;
+}) {
+  const tablistRef = useStageArrows(stages, activeStageId, onSelect);
+
+  return (
+    <div ref={tablistRef} role="tablist" aria-label="Giai đoạn">
+      {stages.map((stage) => (
+        <button
+          key={stage.id}
+          type="button"
+          role="tab"
+          aria-selected={stage.id === activeStageId}
+          tabIndex={stage.id === activeStageId ? 0 : -1}
+        >
+          {stage.name}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 describe("useStageArrows", () => {
+  it("carries the focus along when the walk started on a tab", () => {
+    const onSelect = vi.fn();
+    const { rerender } = render(
+      <TabStrip onSelect={onSelect} activeStageId="s1" />
+    );
+
+    const first = screen.getByRole("tab", { name: "Giai đoạn 1" });
+    first.focus();
+    fireEvent.keyDown(window, { key: "ArrowRight" });
+    expect(onSelect).toHaveBeenCalledWith("s2");
+
+    // The screen answers the callback by selecting the next stage; the focus follows it.
+    rerender(<TabStrip onSelect={onSelect} activeStageId="s2" />);
+    expect(document.activeElement).toBe(
+      screen.getByRole("tab", { name: "Giai đoạn 2" })
+    );
+  });
+
+  it("leaves the focus where it is when the walk started off the strip", () => {
+    const onSelect = vi.fn();
+    const { rerender } = render(
+      <>
+        <button type="button">Trên bản vẽ</button>
+        <TabStrip onSelect={onSelect} activeStageId="s1" />
+      </>
+    );
+
+    const outside = screen.getByRole("button", { name: "Trên bản vẽ" });
+    outside.focus();
+    fireEvent.keyDown(window, { key: "ArrowRight" });
+
+    rerender(
+      <>
+        <button type="button">Trên bản vẽ</button>
+        <TabStrip onSelect={onSelect} activeStageId="s2" />
+      </>
+    );
+    expect(document.activeElement).toBe(outside);
+  });
+
   it("leaves a shortcut chord alone", () => {
     const onSelect = renderArrows("s1");
 

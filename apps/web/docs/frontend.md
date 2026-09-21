@@ -966,6 +966,11 @@ is the worked example.
   both ends rather than wrapping — the tactic editor's stage strip and the read-only viewer share
   `useStageArrows`, and both show the two caps through `StageArrowHint`. The keys are off while the
   focus sits in a field (`isTypingTarget`), so renaming a stage still moves the caret.
+- **The walk is the ARIA tablist pattern, not only a shortcut.** The keys answer from anywhere on the
+  page, because a hand on the map is where an admin walks the stages from; but each tab takes a
+  roving `tabIndex` (`0` on the selected one, `-1` on the rest) so Tab reaches the strip once, and a
+  walk that started on a tab carries the focus to the newly selected one. `useStageArrows` returns
+  the ref for that — put it on the element holding `role="tablist"`.
 - **The modifier is the machine's**: `useModifierKey` says "⌘" on a Mac and "Ctrl" elsewhere. It
   reads the platform through `useSyncExternalStore`, whose server snapshot is "Ctrl" — reading
   `navigator` during render would be a hydration error rather than a wrong label.
