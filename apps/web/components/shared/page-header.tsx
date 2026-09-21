@@ -25,6 +25,8 @@ const SIZE_CLASS: Record<PageHeaderSize, { strip: string; body: string }> = {
 interface PageHeaderProps {
   /** Scene drawn behind the header */
   banner: PageBannerKey;
+  /** Trail above the title, for a page that hangs off another one */
+  breadcrumb?: ReactNode;
   /** How much of the screen the strip takes */
   size: PageHeaderSize;
   /** The page's one `<h1>` */
@@ -41,6 +43,7 @@ interface PageHeaderProps {
  * block. Two scrims - one rising from the bottom, one from the left - keep white text readable on
  * the night scenes and the daylight ones alike, at either size.
  * @param banner - Which page's scene to draw
+ * @param breadcrumb - Trail above the title, if the page has a parent
  * @param size - How much of the screen the strip takes
  * @param title - The page title
  * @param description - Sentence under the title, if any
@@ -49,6 +52,7 @@ interface PageHeaderProps {
  */
 export function PageHeader({
   banner,
+  breadcrumb,
   size,
   title,
   description,
@@ -84,6 +88,8 @@ export function PageHeader({
           SIZE_CLASS[size].body
         )}
       >
+        {breadcrumb}
+
         <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
           <div className="flex min-w-0 flex-col gap-1.5">
             <h1 className="font-heading text-2xl font-semibold tracking-tight text-balance text-white [text-shadow:0_1px_12px_rgb(0_0_0/0.35)] sm:text-3xl">

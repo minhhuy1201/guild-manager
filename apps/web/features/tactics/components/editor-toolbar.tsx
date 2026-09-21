@@ -2,10 +2,12 @@
 
 import {
   Eraser,
+  MousePointer2,
   MoveUpRight,
   Pencil,
   Redo2,
   Save,
+  Trash2,
   Image as ImageIcon,
   Type,
   Undo2,
@@ -37,6 +39,7 @@ import { TOOL_LABELS, type TacticTool } from "../types/tactic";
 
 /** Icon of each tool, in the order the toolbar shows them. */
 const TOOL_ICONS: Record<TacticTool, typeof Users> = {
+  select: MousePointer2,
   token: Users,
   arrow: MoveUpRight,
   freehand: Pencil,
@@ -99,8 +102,10 @@ export interface EditorToolbarProps {
   color: TacticColor;
   /** Width every new stroke takes */
   strokeWidth: TacticStrokeWidth;
-  /** Size of the selected token, or null when nothing is selected */
+  /** Size of the selected token, or null when the selection is not a token */
   selectedTokenSize: TacticTokenSize | null;
+  /** Whether an element of the open stage is selected, of any kind */
+  hasSelection: boolean;
   /** Whether there is an edit to take back */
   canUndo: boolean;
   /** Whether there is an edit to put back */
@@ -115,6 +120,7 @@ export interface EditorToolbarProps {
   onColorChange: (color: TacticColor) => void;
   onStrokeWidthChange: (strokeWidth: TacticStrokeWidth) => void;
   onTokenSizeChange: (size: TacticTokenSize) => void;
+  onDeleteSelected: () => void;
   onUndo: () => void;
   onRedo: () => void;
   onSave: () => void;
@@ -133,6 +139,7 @@ export function EditorToolbar({
   color,
   strokeWidth,
   selectedTokenSize,
+  hasSelection,
   canUndo,
   canRedo,
   saving,
@@ -142,6 +149,7 @@ export function EditorToolbar({
   onColorChange,
   onStrokeWidthChange,
   onTokenSizeChange,
+  onDeleteSelected,
   onUndo,
   onRedo,
   onSave,
@@ -217,20 +225,38 @@ export function EditorToolbar({
         <ShortcutKeys shortcut={STROKE_WIDTH_SHORTCUT} modifier={modifier} />
       </div>
 
-      {selectedTokenSize ? (
+      {/* What the admin can do to the piece they picked up. Resizing only means something for a
+          token; deleting means the same for every kind of element. */}
+      {hasSelection ? (
         <div className="flex items-center gap-0.5 rounded-lg bg-muted/60 p-0.5">
-          {TACTIC_TOKEN_SIZES.map((candidate) => (
-            <Button
-              key={candidate}
-              type="button"
-              size="xs"
-              variant={candidate === selectedTokenSize ? "default" : "ghost"}
-              aria-pressed={candidate === selectedTokenSize}
-              onClick={() => onTokenSizeChange(candidate)}
-            >
-              {SIZE_LABELS[candidate]}
-            </Button>
-          ))}
+          {selectedTokenSize
+            ? TACTIC_TOKEN_SIZES.map((candidate) => (
+                <Button
+                  key={candidate}
+                  type="button"
+                  size="xs"
+                  variant={candidate === selectedTokenSize ? "default" : "ghost"}
+                  aria-pressed={candidate === selectedTokenSize}
+                  onClick={() => onTokenSizeChange(candidate)}
+                >
+                  {SIZE_LABELS[candidate]}
+                </Button>
+              ))
+            : null}
+          <Button
+            type="button"
+            size="xs"
+            variant="ghost"
+            className="text-destructive"
+            title="Xoá phần tử đang chọn (Delete)"
+            onClick={onDeleteSelected}
+          >
+            <Trash2 />
+            Xoá phần tử
+            <Kbd aria-hidden className={KEY_CAP_CLASS}>
+              Delete
+            </Kbd>
+          </Button>
         </div>
       ) : null}
 

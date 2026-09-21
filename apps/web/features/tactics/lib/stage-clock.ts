@@ -37,14 +37,5 @@ export const STAGE_CLOCK_FACES: readonly LucideIcon[] = [
   Clock12,
 ];
 
-/** The face a stage past the twelfth falls back to; its number beside it tells those apart. */
+/** The face a stage past the twelfth falls back to; the number beside it tells those apart. */
 export const PLAIN_CLOCK_FACE = Clock;
-
-/**
- * Whether a stage's number has to be written out next to its clock face.
- * @param position - Which stage this is, counting from 1
- * @returns True once the clock has run out of distinct faces
- */
-export function needsStageNumber(position: number): boolean {
-  return position > STAGE_CLOCK_FACES.length;
-}

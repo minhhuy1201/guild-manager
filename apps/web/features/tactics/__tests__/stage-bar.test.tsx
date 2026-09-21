@@ -46,19 +46,21 @@ describe("StageBar", () => {
     ).toBe("true");
   });
 
-  it("wears a clock face per stage, with the name left to the accessible one", () => {
+  it("wears a clock face and its number per stage, name left to the accessible one", () => {
     renderBar();
 
     const first = screen.getByRole("tab", { name: "Giai đoạn 1" });
     const second = screen.getByRole("tab", { name: "Giai đoạn 2" });
 
     expect(first.querySelector(".lucide-clock-1")).toBeTruthy();
+    expect(first.textContent).toContain("1");
     expect(second.querySelector(".lucide-clock-2")).toBeTruthy();
+    expect(second.textContent).toContain("2");
     // The name is there for a screen reader, not on screen beside the face.
     expect(first.querySelector(".sr-only")?.textContent).toBe("Giai đoạn 1");
   });
 
-  it("writes the number out once the clock runs out of faces", () => {
+  it("falls back to the plain face past the twelfth stage, number and all", () => {
     renderBar({
       stages: Array.from({ length: 13 }, (_, index) => ({
         id: `s${index}`,

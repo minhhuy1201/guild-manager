@@ -8,10 +8,9 @@ import { TacticBreadcrumb } from "../components/tactic-breadcrumb";
 afterEach(cleanup);
 
 describe("TacticBreadcrumb", () => {
-  it("names the tactic and leads back to the list", () => {
-    render(<TacticBreadcrumb name="Thủ cổng tây" />);
+  it("leads back to the list, twice over: the arrow and the crumb", () => {
+    render(<TacticBreadcrumb />);
 
-    expect(screen.getByText("Thủ cổng tây")).toBeTruthy();
     expect(
       screen.getByRole("link", { name: "Chiến thuật" }).getAttribute("href")
     ).toBe(ROUTES.tactics);
@@ -22,9 +21,10 @@ describe("TacticBreadcrumb", () => {
     ).toBe(ROUTES.tactics);
   });
 
-  it("says it is loading while the name is not in yet", () => {
-    render(<TacticBreadcrumb name="" />);
+  // The banner's own `<h1>` carries the tactic's name; a last crumb would print it twice.
+  it("stops at the parent instead of repeating the tactic's name", () => {
+    render(<TacticBreadcrumb />);
 
-    expect(screen.getByText("Đang tải...")).toBeTruthy();
+    expect(screen.getAllByRole("link")).toHaveLength(2);
   });
 });

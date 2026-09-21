@@ -180,6 +180,48 @@ describe("useTacticEditor", () => {
     expect(elements()).toHaveLength(0);
   });
 
+  it("picks up the element under the pointer with the select tool", async () => {
+    const { result } = await renderEditor();
+
+    act(() => result.current.onPointerDown({ x: 100, y: 100 }));
+    const tokenId = elements()[0].id;
+
+    act(() => useTacticEditorStore.getState().setTool("select"));
+    act(() => result.current.onPointerDown({ x: 104, y: 98 }));
+
+    expect(useTacticEditorStore.getState().selectedElementId).toBe(tokenId);
+    // Selecting draws nothing, so the stage still holds the one token.
+    expect(elements()).toHaveLength(1);
+
+    act(() => result.current.onPointerDown({ x: 900, y: 900 }));
+    expect(useTacticEditorStore.getState().selectedElementId).toBeNull();
+  });
+
+  // The complaint this answers: a click on a placed piece used to stack another one on top of it.
+  it("selects a placed token instead of dropping a second one on it", async () => {
+    const { result } = await renderEditor();
+
+    act(() => result.current.onPointerDown({ x: 100, y: 100 }));
+    const tokenId = elements()[0].id;
+
+    act(() => result.current.onPointerDown({ x: 100, y: 100 }));
+
+    expect(elements()).toHaveLength(1);
+    expect(useTacticEditorStore.getState().selectedElementId).toBe(tokenId);
+  });
+
+  it("still starts an arrow on top of a token, so it can point away from one", async () => {
+    const { result } = await renderEditor();
+
+    act(() => result.current.onPointerDown({ x: 100, y: 100 }));
+    act(() => useTacticEditorStore.getState().setTool("arrow"));
+    act(() => result.current.onPointerDown({ x: 100, y: 100 }));
+    act(() => result.current.onPointerMove({ x: 300, y: 300 }));
+
+    expect(elements()).toHaveLength(2);
+    expect(elements()[1]).toMatchObject({ kind: "arrow" });
+  });
+
   it("refuses a 401st element on the open stage and says so", async () => {
     const full = makeScene(1);
     full.stages[0].elements = Array.from(

@@ -8,11 +8,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  PLAIN_CLOCK_FACE,
-  STAGE_CLOCK_FACES,
-  needsStageNumber,
-} from "../lib/stage-clock";
+import { PLAIN_CLOCK_FACE, STAGE_CLOCK_FACES } from "../lib/stage-clock";
 
 interface StageTabProps {
   /** The stage this tab opens */
@@ -27,7 +23,8 @@ interface StageTabProps {
 }
 
 /**
- * One stage tab: a clock face, and the stage's name as its tooltip and accessible name.
+ * One stage tab: a clock face, its stage's number, and the stage's name as its tooltip and
+ * accessible name.
  * @param props - The stage, where it sits in the strip, and its two callbacks
  * @returns The tab
  */
@@ -51,7 +48,7 @@ export function StageTab({
             // Roving tabIndex, as the ARIA tablist pattern asks: Tab reaches the strip once, and
             // the arrow keys move between the tabs from there.
             tabIndex={active ? 0 : -1}
-            size={needsStageNumber(position) ? "xs" : "icon-xs"}
+            size="xs"
             variant={active ? "default" : "ghost"}
             onClick={onSelect}
             onDoubleClick={onRename}
@@ -59,10 +56,12 @@ export function StageTab({
         }
       >
         <ClockFace />
-        {/* Past twelve o'clock the faces repeat, so those tabs carry their number as well. */}
-        {needsStageNumber(position) ? (
-          <span className="text-[10px] tabular-nums">{position}</span>
-        ) : null}
+        {/* The number is what an admin counts stages by; the face only makes the strip read as a
+            timeline, and past twelve o'clock the faces repeat. It is `aria-hidden` because the
+            tab's accessible name is the stage's own name — "1 Giai đoạn 1" only stutters. */}
+        <span aria-hidden className="text-[10px] tabular-nums">
+          {position}
+        </span>
         <span className="sr-only">{stage.name}</span>
       </TooltipTrigger>
       <TooltipContent>{stage.name}</TooltipContent>

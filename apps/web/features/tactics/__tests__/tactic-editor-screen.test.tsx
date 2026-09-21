@@ -84,12 +84,16 @@ function renderScreen(isAdmin: boolean) {
 }
 
 describe("TacticEditorScreen", () => {
-  it("opens with the breadcrumb, not a banner", async () => {
+  it("opens with a banner carrying the breadcrumb and the tactic's name", async () => {
     renderScreen(true);
 
-    await waitFor(() => expect(screen.getByText("Thủ cổng tây")).toBeTruthy());
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
+        "Thủ cổng tây"
+      )
+    );
     expect(screen.getByRole("navigation", { name: "breadcrumb" })).toBeTruthy();
-    expect(document.querySelector("img")).toBeNull();
+    expect(document.querySelector("img")).not.toBeNull();
   });
 
   it("gives an admin on a wide screen the tools and the palette", async () => {

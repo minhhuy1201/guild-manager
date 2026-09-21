@@ -40,9 +40,11 @@ function press(key: string, options: KeyboardEventInit = {}) {
 describe("useEditorShortcuts", () => {
   it("picks a tool from its digit", () => {
     render(<Harness />);
-    press("5");
-
+    press("6");
     expect(useTacticEditorStore.getState().tool).toBe("eraser");
+
+    press("1");
+    expect(useTacticEditorStore.getState().tool).toBe("select");
   });
 
   it("walks the stroke widths with [ and ]", () => {
@@ -82,7 +84,7 @@ describe("useEditorShortcuts", () => {
     const input = getByLabelText("ô nhập");
     input.focus();
     input.dispatchEvent(
-      new KeyboardEvent("keydown", { key: "5", bubbles: true })
+      new KeyboardEvent("keydown", { key: "6", bubbles: true })
     );
 
     expect(useTacticEditorStore.getState().tool).toBe("token");
@@ -90,7 +92,7 @@ describe("useEditorShortcuts", () => {
 
   it("installs nothing while the editor is read-only", () => {
     render(<Harness enabled={false} />);
-    press("5");
+    press("6");
 
     expect(useTacticEditorStore.getState().tool).toBe("token");
   });

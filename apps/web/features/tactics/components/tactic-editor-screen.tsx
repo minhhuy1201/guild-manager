@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { PageHeader } from "@/components/shared/page-header";
 import { QueryBoundary } from "@/components/shared/query-boundary";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -88,7 +89,12 @@ export function TacticEditorScreen({
 
   return (
     <div className="flex flex-col gap-4">
-      <TacticBreadcrumb name={editor.name} />
+      <PageHeader
+        banner="tactics"
+        size="compact"
+        breadcrumb={<TacticBreadcrumb />}
+        title={editor.name || "Đang tải..."}
+      />
 
       <QueryBoundary
         state={editor.state}
@@ -102,6 +108,7 @@ export function TacticEditorScreen({
                 color={color}
                 strokeWidth={strokeWidth}
                 selectedTokenSize={editor.selectedTokenSize}
+                hasSelection={selectedElementId !== null}
                 canUndo={editor.canUndo}
                 canRedo={editor.canRedo}
                 saving={editor.saving}
@@ -111,6 +118,7 @@ export function TacticEditorScreen({
                 onColorChange={setColor}
                 onStrokeWidthChange={setStrokeWidth}
                 onTokenSizeChange={editor.onTokenSizeChange}
+                onDeleteSelected={editor.onDeleteSelected}
                 onUndo={undo}
                 onRedo={redo}
                 onSave={editor.onSave}

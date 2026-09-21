@@ -40,6 +40,25 @@ describe("PageHeader", () => {
     expect(strip.className).not.toContain("min-h-44");
   });
 
+  it("đặt breadcrumb lên trên tiêu đề, trong cùng lớp scrim", () => {
+    render(
+      <PageHeader
+        banner="tactics"
+        size="compact"
+        breadcrumb={<nav aria-label="breadcrumb" />}
+        title="Thủ cổng tây"
+      />
+    );
+
+    const breadcrumb = screen.getByRole("navigation", { name: "breadcrumb" });
+    const heading = screen.getByRole("heading", { level: 1 });
+
+    expect(
+      breadcrumb.compareDocumentPosition(heading) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
   it("cỡ compact vẫn có tiêu đề và mô tả", () => {
     renderStrip("compact");
 
