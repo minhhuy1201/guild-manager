@@ -76,12 +76,16 @@ describe("useTacticEditor", () => {
     });
   });
 
-  it("drops nothing while no palette entry is picked", async () => {
+  it("drops Đội công while the user has picked nothing else", async () => {
     const { result } = await renderEditor();
 
     act(() => result.current.onPointerDown({ x: 10, y: 10 }));
 
-    expect(elements()).toHaveLength(0);
+    expect(elements()[0]).toMatchObject({
+      kind: "token",
+      label: "Đội công",
+      icon: "swords",
+    });
   });
 
   it("draws an arrow from the press to the release", async () => {

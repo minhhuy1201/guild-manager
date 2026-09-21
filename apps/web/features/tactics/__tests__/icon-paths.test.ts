@@ -1,6 +1,6 @@
 import { createRequire } from "node:module";
 import { describe, expect, it } from "vitest";
-import { TACTIC_TOKEN_ICONS } from "@guild/shared/enums";
+import { TACTIC_LUCIDE_ICONS } from "@guild/shared/enums";
 
 import { TOKEN_ICON_PATHS } from "../lib/icon-paths";
 
@@ -14,20 +14,20 @@ const { iconToPaths } = require("../lib/icon-paths.build.cjs") as {
 };
 
 describe("token icon paths", () => {
-  it("covers every icon key the contract allows", () => {
+  it("covers every lucide icon key the contract allows", () => {
     expect(Object.keys(TOKEN_ICON_PATHS).sort()).toEqual(
-      [...TACTIC_TOKEN_ICONS].sort()
+      [...TACTIC_LUCIDE_ICONS].sort()
     );
   });
 
   it("still matches the lucide artwork it was generated from", () => {
-    for (const key of TACTIC_TOKEN_ICONS) {
+    for (const key of TACTIC_LUCIDE_ICONS) {
       expect(TOKEN_ICON_PATHS[key]).toEqual(iconToPaths(iconNodes[key]));
     }
   });
 
   it("gives every icon something to draw", () => {
-    for (const key of TACTIC_TOKEN_ICONS) {
+    for (const key of TACTIC_LUCIDE_ICONS) {
       expect(TOKEN_ICON_PATHS[key].length).toBeGreaterThan(0);
     }
   });

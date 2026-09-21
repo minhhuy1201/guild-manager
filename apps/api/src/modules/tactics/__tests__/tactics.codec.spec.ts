@@ -1,4 +1,5 @@
 import { InternalServerErrorException } from '@nestjs/common';
+import { TACTIC_SCHEMA_VERSION } from '@guild/shared/schemas';
 
 import {
   emptyScene,
@@ -20,7 +21,7 @@ describe('tactics.codec', () => {
   it('starts a tactic with exactly one empty stage named "Giai đoạn 1"', () => {
     const scene = emptyScene();
 
-    expect(scene.schemaVersion).toBe(1);
+    expect(scene.schemaVersion).toBe(TACTIC_SCHEMA_VERSION);
     expect(scene.stages).toHaveLength(1);
     expect(scene.stages[0].name).toBe('Giai đoạn 1');
     expect(scene.stages[0].elements).toEqual([]);
@@ -30,6 +31,34 @@ describe('tactics.codec', () => {
     expect(parseScene(row.stages as never, row.id, row.name)).toEqual(
       emptyScene(),
     );
+  });
+
+  it('lifts a v1 scene instead of refusing the colour it retired', () => {
+    const v1 = {
+      schemaVersion: 1,
+      stages: [
+        {
+          id: 's1',
+          name: 'Giai đoạn 1',
+          elements: [
+            {
+              kind: 'text',
+              id: 't1',
+              x: 10,
+              y: 10,
+              text: 'Tập kết',
+              color: 'white',
+              fontSize: 24,
+            },
+          ],
+        },
+      ],
+    };
+
+    const scene = parseScene(v1, 't1', 'Thủ cổng tây');
+
+    expect(scene.schemaVersion).toBe(TACTIC_SCHEMA_VERSION);
+    expect(scene.stages[0].elements[0].color).toBe('black');
   });
 
   it('fails loudly, naming the tactic, when the stored scene is broken', () => {
@@ -42,7 +71,7 @@ describe('tactics.codec', () => {
   });
 
   it('refuses a scene written by a newer app version', () => {
-    const future = { schemaVersion: 2, stages: [] };
+    const future = { schemaVersion: TACTIC_SCHEMA_VERSION + 1, stages: [] };
 
     expect(() => parseScene(future, 't1', 'Thủ cổng tây')).toThrow(
       /phiên bản mới hơn/,

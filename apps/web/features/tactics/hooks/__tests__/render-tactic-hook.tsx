@@ -6,7 +6,11 @@ import {
   type RenderHookResult,
 } from "@testing-library/react";
 import { afterEach } from "vitest";
-import type { TacticDetail, TacticScene } from "@guild/shared/schemas";
+import {
+  TACTIC_SCHEMA_VERSION,
+  type TacticDetail,
+  type TacticScene,
+} from "@guild/shared/schemas";
 
 import { useTacticEditorStore } from "../../store/editor-store";
 
@@ -50,7 +54,7 @@ export function renderTacticHook<T>(hook: () => T): RenderHookResult<T, void> {
  */
 export function makeScene(stageCount = 1): TacticScene {
   return {
-    schemaVersion: 1,
+    schemaVersion: TACTIC_SCHEMA_VERSION,
     stages: Array.from({ length: stageCount }, (_, index) => ({
       id: `s${index + 1}`,
       name: `Giai đoạn ${index + 1}`,

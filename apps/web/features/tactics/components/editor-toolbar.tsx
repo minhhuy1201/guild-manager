@@ -99,7 +99,7 @@ export function EditorToolbar({
   onExport,
 }: EditorToolbarProps) {
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border bg-card px-3 py-2">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border bg-card px-3 py-2 shadow-xs">
       <div className="flex items-center gap-1">
         {(Object.keys(TOOL_LABELS) as TacticTool[]).map((candidate) => {
           const Icon = TOOL_ICONS[candidate];
@@ -121,7 +121,9 @@ export function EditorToolbar({
         })}
       </div>
 
-      <div className="flex items-center gap-1">
+      <div className="h-6 w-px bg-border" aria-hidden />
+
+      <div className="flex items-center gap-1.5">
         {TACTIC_COLORS.map((candidate) => (
           <button
             key={candidate}
@@ -130,14 +132,17 @@ export function EditorToolbar({
             aria-label={COLOR_LABELS[candidate]}
             title={COLOR_LABELS[candidate]}
             className={cn(
-              "size-6 rounded-full border-2",
-              candidate === color ? "border-foreground" : "border-transparent"
+              // The ring sits outside the swatch so it reads the same on black as on yellow.
+              "size-6 rounded-full ring-offset-2 ring-offset-card transition-transform hover:scale-110 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+              candidate === color && "scale-110 ring-2 ring-foreground"
             )}
             style={{ backgroundColor: COLOR_HEX[candidate] }}
             onClick={() => onColorChange(candidate)}
           />
         ))}
       </div>
+
+      <div className="h-6 w-px bg-border" aria-hidden />
 
       <div className="flex items-center gap-1">
         {TACTIC_STROKE_WIDTHS.map((candidate) => (
@@ -148,6 +153,7 @@ export function EditorToolbar({
             variant={candidate === strokeWidth ? "default" : "ghost"}
             aria-pressed={candidate === strokeWidth}
             title={`Nét ${candidate} ([ và ] để đổi)`}
+            className="tabular-nums"
             onClick={() => onStrokeWidthChange(candidate)}
           >
             {candidate}
@@ -156,7 +162,7 @@ export function EditorToolbar({
       </div>
 
       {selectedTokenSize ? (
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 rounded-lg bg-muted/60 p-0.5">
           {TACTIC_TOKEN_SIZES.map((candidate) => (
             <Button
               key={candidate}

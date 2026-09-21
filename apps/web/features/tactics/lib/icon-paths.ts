@@ -1,7 +1,8 @@
-import type { TacticTokenIcon } from "@guild/shared/enums";
+import type { TacticLucideIcon } from "@guild/shared/enums";
 
 /**
- * The twenty token icons as SVG path data, in draw order.
+ * The twenty lucide token icons as SVG path data, in draw order. The numbered team icons are
+ * digits, not artwork, so they are drawn as text and deliberately absent here.
  *
  * Konva draws paths, so the lucide components cannot be used on the canvas: this is the same
  * artwork, flattened. It is generated from `lucide-static` (a devDependency) by
@@ -10,7 +11,7 @@ import type { TacticTokenIcon } from "@guild/shared/enums";
  *
  * Every icon is drawn in a 24x24 box, stroked, never filled.
  */
-export const TOKEN_ICON_PATHS: Record<TacticTokenIcon, string[]> = {
+export const TOKEN_ICON_PATHS: Record<TacticLucideIcon, string[]> = {
   swords: [
     "m13 19 6-6",
     "M14.5 17.5 3.586 6.586A2 2 0 013 5.172V3h2.172a2 2 0 011.414.586L17.5 14.5",

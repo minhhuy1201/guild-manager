@@ -19,7 +19,7 @@ import {
   useDeleteTokenPreset,
   useTokenPresets,
 } from "../hooks/use-token-presets";
-import { tokenIcon } from "../lib/token-icon";
+import { TokenGlyph } from "./token-glyph";
 
 interface TokenPresetDialogProps {
   /** Whether the dialog is open */
@@ -101,55 +101,47 @@ function TokenPresetBody({ onDone }: TokenPresetBodyProps) {
         aria-label="Icon quân cờ"
         className="grid grid-cols-10 gap-1"
       >
-        {TACTIC_TOKEN_ICONS.map((candidate) => {
-          const Icon = tokenIcon(candidate);
-
-          return (
-            <button
-              key={candidate}
-              type="button"
-              role="radio"
-              aria-checked={candidate === icon}
-              aria-label={candidate}
-              className={cn(
-                "flex items-center justify-center rounded-md border p-2",
-                candidate === icon ? "border-foreground" : "border-transparent"
-              )}
-              onClick={() => setIcon(candidate)}
-            >
-              <Icon className="size-4" />
-            </button>
-          );
-        })}
+        {TACTIC_TOKEN_ICONS.map((candidate) => (
+          <button
+            key={candidate}
+            type="button"
+            role="radio"
+            aria-checked={candidate === icon}
+            aria-label={candidate}
+            className={cn(
+              "flex items-center justify-center rounded-md border p-2 transition-colors hover:bg-accent",
+              candidate === icon ? "border-foreground" : "border-transparent"
+            )}
+            onClick={() => setIcon(candidate)}
+          >
+            <TokenGlyph icon={candidate} className="size-4" />
+          </button>
+        ))}
       </div>
 
       {presets.data && presets.data.length > 0 ? (
         <ul className="flex flex-col gap-1">
-          {presets.data.map((preset) => {
-            const Icon = tokenIcon(preset.icon);
-
-            return (
-              <li
-                key={preset.id}
-                className="flex items-center justify-between gap-2 text-sm"
+          {presets.data.map((preset) => (
+            <li
+              key={preset.id}
+              className="flex items-center justify-between gap-2 text-sm"
+            >
+              <span className="flex items-center gap-2">
+                <TokenGlyph icon={preset.icon} className="size-4" />
+                {preset.label}
+              </span>
+              <Button
+                type="button"
+                size="icon-sm"
+                variant="ghost"
+                className="text-destructive"
+                aria-label={`Xoá ${preset.label}`}
+                onClick={() => void deletePreset.mutateAsync(preset.id)}
               >
-                <span className="flex items-center gap-2">
-                  <Icon className="size-4" />
-                  {preset.label}
-                </span>
-                <Button
-                  type="button"
-                  size="icon-sm"
-                  variant="ghost"
-                  className="text-destructive"
-                  aria-label={`Xoá ${preset.label}`}
-                  onClick={() => void deletePreset.mutateAsync(preset.id)}
-                >
-                  <Trash2 />
-                </Button>
-              </li>
-            );
-          })}
+                <Trash2 />
+              </Button>
+            </li>
+          ))}
         </ul>
       ) : null}
     </MutationForm>

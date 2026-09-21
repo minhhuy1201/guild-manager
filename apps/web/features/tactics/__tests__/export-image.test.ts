@@ -20,6 +20,10 @@ describe("exportFileName", () => {
     expect(exportFileName("A/B", 2, "C:D")).toBe("A-B-2-C-D.png");
   });
 
+  it("cuts the dashes the unsafe characters left at either end", () => {
+    expect(exportFileName('<<A>>', 1, '"B|')).toBe("A-1-B.png");
+  });
+
   it("never returns an empty name", () => {
     expect(exportFileName("///", 1, "///")).toBe("chien-thuat-1-giai-doan.png");
   });

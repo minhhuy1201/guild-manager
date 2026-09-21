@@ -45,13 +45,13 @@ describe("element factories", () => {
   });
 
   it("starts a freehand stroke with the first point twice, so a dot still draws", () => {
-    expect(createFreehand({ x: 5, y: 6 }, "white", 8).points).toEqual([
+    expect(createFreehand({ x: 5, y: 6 }, "black", 8).points).toEqual([
       5, 6, 5, 6,
     ]);
   });
 
   it("appends to a freehand stroke", () => {
-    const stroke = extendFreehand(createFreehand({ x: 5, y: 6 }, "white", 8), {
+    const stroke = extendFreehand(createFreehand({ x: 5, y: 6 }, "black", 8), {
       x: 7,
       y: 8,
     });
@@ -60,7 +60,7 @@ describe("element factories", () => {
   });
 
   it("stops appending once the stroke is at its point limit", () => {
-    let stroke = createFreehand({ x: 0, y: 0 }, "white", 8);
+    let stroke = createFreehand({ x: 0, y: 0 }, "black", 8);
     for (let step = 0; step < 4100; step += 1) {
       stroke = extendFreehand(stroke, { x: step, y: step });
     }

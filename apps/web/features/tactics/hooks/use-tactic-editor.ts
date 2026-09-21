@@ -12,7 +12,10 @@ import {
 import { toastError } from "@/components/shared/toast";
 import { errorMessageOf } from "@/lib/error-message";
 import { combineQueries, type QueryGroupState } from "@/lib/query-group";
-import type { BuiltInToken } from "../lib/built-in-tokens";
+import {
+  DEFAULT_PALETTE_TOKEN,
+  type BuiltInToken,
+} from "../lib/built-in-tokens";
 import {
   createArrow,
   createFreehand,
@@ -50,8 +53,8 @@ export interface TacticEditorScreen {
   canRedo: boolean;
   /** Whether a save is in flight */
   saving: boolean;
-  /** Palette entry the next click on the map drops */
-  paletteToken: BuiltInToken | null;
+  /** Palette entry the next click on the map drops — always one, never nothing */
+  paletteToken: BuiltInToken;
   /** Where a note is being written, while the note dialog is open */
   pendingTextPoint: MapPoint | null;
   /** Write the note that was being composed */
@@ -100,7 +103,9 @@ export function useTacticEditor(
   const saveTactic = useSaveTactic();
   const stageRef = useRef<Konva.Stage | null>(null);
   const drawingRef = useRef<TacticElement | null>(null);
-  const [paletteToken, setPaletteToken] = useState<BuiltInToken | null>(null);
+  const [paletteToken, setPaletteToken] = useState<BuiltInToken>(
+    DEFAULT_PALETTE_TOKEN
+  );
   const [pendingTextPoint, setPendingTextPoint] = useState<MapPoint | null>(
     null
   );
@@ -169,7 +174,6 @@ export function useTacticEditor(
 
       switch (tool) {
         case "token": {
-          if (!paletteToken) return;
           commitElements(
             addElement(activeStage, createToken(paletteToken, point, color))
               .elements

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { TACTIC_SCHEMA_VERSION } from "@guild/shared/schemas";
 
 import { useEditorShortcuts } from "../hooks/use-editor-shortcuts";
 import { useTacticEditorStore } from "../store/editor-store";
@@ -20,7 +21,7 @@ afterEach(cleanup);
 beforeEach(() => {
   useTacticEditorStore.getState().reset();
   useTacticEditorStore.getState().loadScene({
-    schemaVersion: 1,
+    schemaVersion: TACTIC_SCHEMA_VERSION,
     stages: [{ id: "s1", name: "Giai đoạn 1", elements: [] }],
   });
 });
