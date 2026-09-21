@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   TACTIC_LIMITS,
+  TACTIC_SCHEMA_VERSION,
   type TacticScene,
   type TacticStage,
 } from "@guild/shared/schemas";
@@ -34,7 +35,7 @@ const token = {
  */
 function sceneWithToken(): TacticScene {
   return {
-    schemaVersion: 1,
+    schemaVersion: TACTIC_SCHEMA_VERSION,
     stages: [{ id: "s1", name: "Giai đoạn 1", elements: [token] }],
   };
 }

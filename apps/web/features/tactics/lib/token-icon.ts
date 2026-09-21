@@ -1,7 +1,10 @@
-import type {
-  TacticColor,
-  TacticTokenIcon,
-  TacticTokenSize,
+import {
+  isNumberIcon,
+  numberIconDigits,
+  type TacticColor,
+  type TacticLucideIcon,
+  type TacticTokenIcon,
+  type TacticTokenSize,
 } from "@guild/shared/enums";
 import {
   Anchor,
@@ -27,11 +30,22 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { TOKEN_ICON_PATHS } from "./icon-paths";
+
 /**
- * Every icon key the contract allows, mapped to the component that draws it. Declared as a full
- * `Record` so adding a key to the enum without an icon here is a compile error.
+ * How an icon key is drawn: lucide artwork, or the digits of a numbered team. The lucide variant
+ * carries both forms of the same drawing — the component for the DOM, the flattened paths for the
+ * canvas — so neither caller has to narrow the key a second time.
  */
-export const TOKEN_ICON_COMPONENTS: Record<TacticTokenIcon, LucideIcon> = {
+export type TokenIconArt =
+  | { kind: "lucide"; Icon: LucideIcon; paths: readonly string[] }
+  | { kind: "digits"; digits: string };
+
+/**
+ * Every lucide icon key the contract allows, mapped to the component that draws it. Declared as a
+ * full `Record` so adding a key to the enum without an icon here is a compile error.
+ */
+export const TOKEN_ICON_COMPONENTS: Record<TacticLucideIcon, LucideIcon> = {
   swords: Swords,
   shield: Shield,
   flag: Flag,
@@ -55,12 +69,18 @@ export const TOKEN_ICON_COMPONENTS: Record<TacticTokenIcon, LucideIcon> = {
 };
 
 /**
- * Resolve an icon key to its component.
+ * Resolve an icon key to what draws it: a lucide component, or the digits a number icon shows.
  * @param key - One of TACTIC_TOKEN_ICONS
- * @returns The lucide component drawn inside the token
+ * @returns The lucide component, or the digits — callers switch on `kind`
  */
-export function tokenIcon(key: TacticTokenIcon): LucideIcon {
-  return TOKEN_ICON_COMPONENTS[key];
+export function tokenIcon(key: TacticTokenIcon): TokenIconArt {
+  return isNumberIcon(key)
+    ? { kind: "digits", digits: numberIconDigits(key) }
+    : {
+        kind: "lucide",
+        Icon: TOKEN_ICON_COMPONENTS[key],
+        paths: TOKEN_ICON_PATHS[key],
+      };
 }
 
 /** Token circle radius per size, in virtual map units. */
@@ -72,16 +92,27 @@ export const TOKEN_RADIUS: Record<TacticTokenSize, number> = {
 
 /** Hex each drawing colour renders as. The stored value stays the key. */
 export const COLOR_HEX: Record<TacticColor, string> = {
-  red: "#e5484d",
   blue: "#3b82f6",
+  red: "#e5484d",
   yellow: "#f5c518",
-  white: "#f5f5f5",
+  black: "#101114",
 };
 
 /** Vietnamese name of each drawing colour, for the toolbar's accessible labels. */
 export const COLOR_LABELS: Record<TacticColor, string> = {
+  blue: "Xanh dương",
   red: "Đỏ",
-  blue: "Xanh",
   yellow: "Vàng",
-  white: "Trắng",
+  black: "Đen",
+};
+
+/**
+ * What a token's circle is filled with, per colour. Every colour but black sits on the dark disc
+ * the map was designed around; black needs the light one, or the icon disappears into the fill.
+ */
+export const TOKEN_FILL: Record<TacticColor, string> = {
+  blue: "rgba(12, 14, 18, 0.72)",
+  red: "rgba(12, 14, 18, 0.72)",
+  yellow: "rgba(12, 14, 18, 0.72)",
+  black: "rgba(244, 244, 245, 0.86)",
 };

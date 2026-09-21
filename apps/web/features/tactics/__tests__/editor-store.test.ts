@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import type { TacticElement, TacticScene } from "@guild/shared/schemas";
+import {
+  TACTIC_SCHEMA_VERSION,
+  type TacticElement,
+  type TacticScene,
+} from "@guild/shared/schemas";
 
 import { useTacticEditorStore } from "../store/editor-store";
 
@@ -9,7 +13,7 @@ import { useTacticEditorStore } from "../store/editor-store";
  */
 function scene(): TacticScene {
   return {
-    schemaVersion: 1,
+    schemaVersion: TACTIC_SCHEMA_VERSION,
     stages: [
       { id: "s1", name: "Giai đoạn 1", elements: [] },
       { id: "s2", name: "Giai đoạn 2", elements: [] },
@@ -158,8 +162,8 @@ describe("tactic editor store — the rest of the session", () => {
       "Mở màn"
     );
 
-    const edited = {
-      schemaVersion: 1 as const,
+    const edited: TacticScene = {
+      schemaVersion: TACTIC_SCHEMA_VERSION,
       stages: [{ id: "only", name: "Một mình", elements: [] }],
     };
     useTacticEditorStore.getState().applySceneEdit(edited);
@@ -180,7 +184,7 @@ describe("tactic editor store — the rest of the session", () => {
   it("leaves the last stage alone and stays clean about it", () => {
     useTacticEditorStore
       .getState()
-      .loadScene({ schemaVersion: 1, stages: [scene().stages[0]] });
+      .loadScene({ schemaVersion: TACTIC_SCHEMA_VERSION, stages: [scene().stages[0]] });
     useTacticEditorStore.getState().removeStage("s1");
 
     const state = useTacticEditorStore.getState();

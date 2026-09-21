@@ -1,8 +1,14 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { ChevronLeft, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 import {
   INSIGNIA_TOKENS,
   TEAM_TOKENS,
@@ -11,7 +17,7 @@ import {
   type TokenGroup,
 } from "../lib/built-in-tokens";
 import { useTokenPresets } from "../hooks/use-token-presets";
-import { tokenIcon } from "../lib/token-icon";
+import { TokenGlyph } from "./token-glyph";
 
 interface TokenPaletteProps {
   /** Whether the palette is folded away */
@@ -29,6 +35,11 @@ interface TokenPaletteProps {
  * The token palette, in three groups: the named roles ("Quân hiệu"), the ten numbered teams
  * ("Đội"), and whatever an admin saved ("Custom").
  * Picking an entry arms the token tool; the next click on the map drops it there.
+ *
+ * Entries show their icon alone and carry the name as a tooltip plus `sr-only` text: the column
+ * stays narrow next to the map, and every entry is still reachable by name.
+ * Collapsing changes the width of this same element rather than swapping it for another one, which
+ * is what lets the fold animate instead of jumping.
  * @param props - The palette state and its callbacks
  * @returns The palette column
  */
@@ -46,22 +57,6 @@ export function TokenPalette({
     icon: preset.icon,
   }));
 
-  if (collapsed) {
-    return (
-      <div className="flex flex-col items-center border-r px-1 py-2">
-        <Button
-          type="button"
-          size="icon-sm"
-          variant="ghost"
-          aria-label="Mở bảng quân cờ"
-          onClick={onToggle}
-        >
-          <ChevronRight />
-        </Button>
-      </div>
-    );
-  }
-
   const groups: { group: TokenGroup; tokens: readonly BuiltInToken[] }[] = [
     { group: "insignia", tokens: INSIGNIA_TOKENS },
     { group: "team", tokens: TEAM_TOKENS },
@@ -69,59 +64,88 @@ export function TokenPalette({
   ];
 
   return (
-    <div className="flex w-48 shrink-0 flex-col gap-2 border-r px-2 py-2">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-muted-foreground">
+    <aside
+      className={cn(
+        "flex shrink-0 flex-col overflow-hidden border-r transition-[width] duration-300 ease-out",
+        collapsed ? "w-12" : "w-24"
+      )}
+    >
+      <div className="flex items-center justify-between gap-1 py-2 pr-1 pl-2">
+        <span
+          className={cn(
+            "text-[11px] font-medium tracking-wide text-muted-foreground uppercase transition-opacity duration-200",
+            collapsed && "opacity-0"
+          )}
+        >
           Quân cờ
         </span>
         <Button
           type="button"
-          size="icon-sm"
+          size="icon-xs"
           variant="ghost"
-          aria-label="Thu bảng quân cờ"
+          aria-label={collapsed ? "Mở bảng quân cờ" : "Thu bảng quân cờ"}
           onClick={onToggle}
         >
-          <ChevronLeft />
+          <ChevronLeft
+            className={cn(
+              "transition-transform duration-300 ease-out",
+              collapsed && "rotate-180"
+            )}
+          />
         </Button>
       </div>
 
-      <div className="flex flex-col gap-3 overflow-y-auto">
+      {/* Kept mounted while folded, so the width can animate; `inert` takes it out of the page. */}
+      <div
+        inert={collapsed}
+        className={cn(
+          "flex min-h-0 flex-1 flex-col gap-3 overflow-x-hidden overflow-y-auto px-2 pb-2 transition-opacity duration-200",
+          collapsed && "opacity-0"
+        )}
+      >
         {groups.map(({ group, tokens }) =>
           // The custom group keeps its heading even while empty, so the "Thêm đội" button below it
           // has something to belong to.
           tokens.length === 0 && group !== "custom" ? null : (
-            <section key={group} className="flex flex-col gap-0.5">
-              <h3 className="px-1 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+            <section key={group} className="flex flex-col gap-1">
+              <h3 className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
                 {TOKEN_GROUP_LABELS[group]}
               </h3>
 
               {tokens.length === 0 ? (
-                <p className="px-1 text-xs text-muted-foreground">
+                <p className="text-[11px] leading-snug text-muted-foreground">
                   Chưa có quân cờ tự đặt.
                 </p>
               ) : (
-                <ul className="flex flex-col gap-0.5">
-                  {tokens.map((token) => {
-                    const Icon = tokenIcon(token.icon);
-
-                    return (
-                      <li key={token.label}>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant={
-                            selected?.label === token.label ? "default" : "ghost"
+                <ul className="grid grid-cols-2 gap-1">
+                  {tokens.map((token) => (
+                    <li key={token.label}>
+                      <Tooltip>
+                        <TooltipTrigger
+                          render={
+                            <Button
+                              type="button"
+                              size="icon-sm"
+                              variant={
+                                selected?.label === token.label
+                                  ? "default"
+                                  : "ghost"
+                              }
+                              aria-pressed={selected?.label === token.label}
+                              className="size-9 max-sm:size-9"
+                              onClick={() => onSelect(token)}
+                            />
                           }
-                          aria-pressed={selected?.label === token.label}
-                          className="w-full justify-start"
-                          onClick={() => onSelect(token)}
                         >
-                          <Icon />
+                          <TokenGlyph icon={token.icon} />
+                          <span className="sr-only">{token.label}</span>
+                        </TooltipTrigger>
+                        <TooltipContent side="right">
                           {token.label}
-                        </Button>
-                      </li>
-                    );
-                  })}
+                        </TooltipContent>
+                      </Tooltip>
+                    </li>
+                  ))}
                 </ul>
               )}
             </section>
@@ -129,18 +153,34 @@ export function TokenPalette({
         )}
       </div>
 
+      {/* Outside the scrolling list, so it stays reachable however long the palette grows. */}
       {isAdmin ? (
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className="mt-auto"
-          onClick={onManagePresets}
+        <div
+          inert={collapsed}
+          className={cn(
+            "px-2 pb-2 transition-opacity duration-200",
+            collapsed && "opacity-0"
+          )}
         >
-          <Plus />
-          Thêm đội
-        </Button>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  type="button"
+                  size="icon-sm"
+                  variant="outline"
+                  className="size-9 max-sm:size-9"
+                  onClick={onManagePresets}
+                />
+              }
+            >
+              <Plus />
+              <span className="sr-only">Thêm đội</span>
+            </TooltipTrigger>
+            <TooltipContent side="right">Thêm đội</TooltipContent>
+          </Tooltip>
+        </div>
       ) : null}
-    </div>
+    </aside>
   );
 }

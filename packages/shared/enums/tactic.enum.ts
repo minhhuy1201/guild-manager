@@ -1,5 +1,8 @@
-/** Drawing colours offered by the toolbar. Stored as keys, not hex: re-theming must not rewrite data. */
-export const TACTIC_COLORS = ["red", "blue", "yellow", "white"] as const;
+/**
+ * Drawing colours offered by the toolbar, in the order the toolbar shows them: blue first, because
+ * it is what a fresh editor draws with. Stored as keys, not hex: re-theming must not rewrite data.
+ */
+export const TACTIC_COLORS = ["blue", "red", "yellow", "black"] as const;
 
 /** One of the four drawing colours. */
 export type TacticColor = (typeof TACTIC_COLORS)[number];
@@ -17,10 +20,10 @@ export const TACTIC_TOKEN_SIZES = ["sm", "md", "lg"] as const;
 export type TacticTokenSize = (typeof TACTIC_TOKEN_SIZES)[number];
 
 /**
- * Icon keys a token may carry. Keys, not free-form icon names: the web maps each one to a
- * `lucide-react` component, so an unknown key can never reach the canvas.
+ * Icon keys drawn from `lucide`. The web maps each one to a component and, for the canvas, to the
+ * flattened artwork in `icon-paths.ts`.
  */
-export const TACTIC_TOKEN_ICONS = [
+export const TACTIC_LUCIDE_ICONS = [
   "swords",
   "shield",
   "flag",
@@ -43,5 +46,57 @@ export const TACTIC_TOKEN_ICONS = [
   "users",
 ] as const;
 
+/** One of the icon keys backed by lucide artwork. */
+export type TacticLucideIcon = (typeof TACTIC_LUCIDE_ICONS)[number];
+
+/**
+ * Icon keys that are a digit rather than a drawing — one per numbered team, so "Đội 3" reads as a
+ * "3" on the map and in the palette instead of the same crowd icon as every other team.
+ * Lucide has no digit artwork, so the web draws these as text; `icon-paths.ts` deliberately does
+ * not cover them.
+ */
+export const TACTIC_NUMBER_ICONS = [
+  "number-1",
+  "number-2",
+  "number-3",
+  "number-4",
+  "number-5",
+  "number-6",
+  "number-7",
+  "number-8",
+  "number-9",
+  "number-10",
+] as const;
+
+/** One of the digit icon keys. */
+export type TacticNumberIcon = (typeof TACTIC_NUMBER_ICONS)[number];
+
+/**
+ * Icon keys a token may carry. Keys, not free-form icon names: the web maps each one to artwork,
+ * so an unknown key can never reach the canvas.
+ */
+export const TACTIC_TOKEN_ICONS = [
+  ...TACTIC_LUCIDE_ICONS,
+  ...TACTIC_NUMBER_ICONS,
+] as const;
+
 /** One of the allowed token icon keys. */
 export type TacticTokenIcon = (typeof TACTIC_TOKEN_ICONS)[number];
+
+/**
+ * Whether an icon key is a digit rather than lucide artwork.
+ * @param icon - The icon key stored on a token
+ * @returns True when the key is one of TACTIC_NUMBER_ICONS
+ */
+export function isNumberIcon(icon: TacticTokenIcon): icon is TacticNumberIcon {
+  return (TACTIC_NUMBER_ICONS as readonly string[]).includes(icon);
+}
+
+/**
+ * The digit a number icon draws.
+ * @param icon - One of TACTIC_NUMBER_ICONS
+ * @returns The digits after the `number-` prefix, e.g. "10"
+ */
+export function numberIconDigits(icon: TacticNumberIcon): string {
+  return icon.slice("number-".length);
+}

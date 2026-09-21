@@ -3,6 +3,7 @@ import { createElement, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { TACTIC_SCHEMA_VERSION } from "@guild/shared/schemas";
 
 let isDesktop: boolean | null = true;
 
@@ -31,7 +32,7 @@ vi.mock("../api/tactics-api", () => ({
       stageCount: 2,
       updatedAt: "2026-09-20T10:00:00.000Z",
       scene: {
-        schemaVersion: 1,
+        schemaVersion: TACTIC_SCHEMA_VERSION,
         stages: [
           { id: "s1", name: "Giai đoạn 1", elements: [] },
           { id: "s2", name: "Giai đoạn 2", elements: [] },

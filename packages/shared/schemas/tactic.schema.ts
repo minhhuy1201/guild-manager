@@ -30,8 +30,11 @@ const MIN_FONT_SIZE = 12;
 /** Largest font a note may use, in virtual map units. */
 const MAX_FONT_SIZE = 96;
 
-/** Version of the scene document format the app writes today. */
-export const TACTIC_SCHEMA_VERSION = 1;
+/**
+ * Version of the scene document format the app writes today.
+ * v2 dropped the white drawing colour for black; `lift-tactic-scene.ts` converts v1 documents.
+ */
+export const TACTIC_SCHEMA_VERSION = 2;
 
 /**
  * Every message below is Vietnamese, including the ones on fields no user types into: the API turns

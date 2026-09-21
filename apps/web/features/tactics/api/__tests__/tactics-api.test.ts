@@ -1,4 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  TACTIC_SCHEMA_VERSION,
+  type TacticScene,
+} from "@guild/shared/schemas";
 
 import { tacticKeys } from "../tactics-keys";
 
@@ -27,8 +31,8 @@ const {
 /** The fake access token the `@/features/auth/server` mock returns. */
 const ACCESS_TOKEN = "access-token-gia";
 
-const SCENE = {
-  schemaVersion: 1 as const,
+const SCENE: TacticScene = {
+  schemaVersion: TACTIC_SCHEMA_VERSION,
   stages: [{ id: "s1", name: "Giai đoạn 1", elements: [] }],
 };
 

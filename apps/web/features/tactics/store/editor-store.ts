@@ -18,7 +18,7 @@ import {
 import type { TacticTool } from "../types/tactic";
 
 /** The colour a fresh editor draws in. */
-const DEFAULT_COLOR: TacticColor = "red";
+const DEFAULT_COLOR: TacticColor = "blue";
 
 /** The stroke width a fresh editor draws with. */
 const DEFAULT_STROKE_WIDTH: TacticStrokeWidth = 4;

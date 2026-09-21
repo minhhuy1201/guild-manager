@@ -1,5 +1,6 @@
 import {
   TACTIC_LIMITS,
+  TACTIC_SCHEMA_VERSION,
   saveTacticStagesSchema,
   tacticSceneSchema,
 } from '@guild/shared/schemas';
@@ -12,7 +13,7 @@ import {
  */
 function sceneWith(stageCount: number, elementsPerStage: number) {
   return {
-    schemaVersion: 1,
+    schemaVersion: TACTIC_SCHEMA_VERSION,
     stages: Array.from({ length: stageCount }, (_, stage) => ({
       id: `stage-${stage}`,
       name: `Giai đoạn ${stage + 1}`,
@@ -72,7 +73,7 @@ describe('tactic scene limits', () => {
 
   it('rejects a freehand stroke past 4000 points', () => {
     const scene = {
-      schemaVersion: 1,
+      schemaVersion: TACTIC_SCHEMA_VERSION,
       stages: [
         {
           id: 's1',
@@ -122,14 +123,17 @@ describe('tactic scene limits', () => {
   });
 
   it('rejects a scene written by a newer schema version', () => {
-    const scene = { ...sceneWith(1, 0), schemaVersion: 2 };
+    const scene = {
+      ...sceneWith(1, 0),
+      schemaVersion: TACTIC_SCHEMA_VERSION + 1,
+    };
 
     expect(saveTacticStagesSchema.safeParse({ scene }).success).toBe(false);
   });
 
   it('rejects a stroke width the toolbar never offers', () => {
     const scene = {
-      schemaVersion: 1,
+      schemaVersion: TACTIC_SCHEMA_VERSION,
       stages: [
         {
           id: 's1',
@@ -154,7 +158,7 @@ describe('tactic scene limits', () => {
 describe('tactic scene messages', () => {
   it('answers in Vietnamese even for fields no user types into', () => {
     const scene = {
-      schemaVersion: 1,
+      schemaVersion: TACTIC_SCHEMA_VERSION,
       stages: [
         {
           id: 's1',
@@ -183,7 +187,7 @@ describe('tactic scene messages', () => {
 
   it('names an unknown colour in Vietnamese', () => {
     const scene = {
-      schemaVersion: 1,
+      schemaVersion: TACTIC_SCHEMA_VERSION,
       stages: [
         {
           id: 's1',
@@ -209,7 +213,7 @@ describe('tactic scene messages', () => {
 
   it('names an unknown element kind in Vietnamese', () => {
     const scene = {
-      schemaVersion: 1,
+      schemaVersion: TACTIC_SCHEMA_VERSION,
       stages: [
         { id: 's1', name: 'Giai đoạn 1', elements: [{ kind: 'vùng tô' }] },
       ],

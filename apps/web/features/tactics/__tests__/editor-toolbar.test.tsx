@@ -28,7 +28,7 @@ function renderToolbar(
   render(
     <EditorToolbar
       tool="token"
-      color="red"
+      color="blue"
       strokeWidth={4}
       canUndo
       canRedo={false}
@@ -60,7 +60,7 @@ describe("EditorToolbar", () => {
 
   it("reports the colour the user picked", () => {
     renderToolbar();
-    fireEvent.click(screen.getByRole("button", { name: "Xanh" }));
+    fireEvent.click(screen.getByRole("button", { name: "Xanh dương" }));
 
     expect(handlers.onColorChange).toHaveBeenCalledWith("blue");
   });

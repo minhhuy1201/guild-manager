@@ -1,7 +1,10 @@
 // @vitest-environment jsdom
 import { act } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { TacticStage } from "@guild/shared/schemas";
+import {
+  TACTIC_SCHEMA_VERSION,
+  type TacticStage,
+} from "@guild/shared/schemas";
 
 const downloadDataUrl = vi.fn();
 const downloadBlob = vi.fn();
@@ -60,7 +63,7 @@ describe("useTacticExport", () => {
     );
     // The render helper resets the store, so the scene is loaded after it, not before.
     act(() =>
-      useTacticEditorStore.getState().loadScene({ schemaVersion: 1, stages })
+      useTacticEditorStore.getState().loadScene({ schemaVersion: TACTIC_SCHEMA_VERSION, stages })
     );
 
     act(() => result.current.exportActiveStage());
@@ -76,7 +79,7 @@ describe("useTacticExport", () => {
       useTacticExport("Thủ cổng tây", stages, { current: null } as never)
     );
     act(() =>
-      useTacticEditorStore.getState().loadScene({ schemaVersion: 1, stages })
+      useTacticEditorStore.getState().loadScene({ schemaVersion: TACTIC_SCHEMA_VERSION, stages })
     );
 
     act(() => result.current.exportActiveStage());
@@ -90,7 +93,7 @@ describe("useTacticExport", () => {
       useTacticExport("Thủ cổng tây", stages, { current: stage } as never)
     );
     act(() => {
-      useTacticEditorStore.getState().loadScene({ schemaVersion: 1, stages });
+      useTacticEditorStore.getState().loadScene({ schemaVersion: TACTIC_SCHEMA_VERSION, stages });
       useTacticEditorStore.getState().setActiveStage("s2");
     });
 
@@ -117,7 +120,7 @@ describe("useTacticExport", () => {
       useTacticExport("Thủ cổng tây", stages, { current: stage } as never)
     );
     act(() =>
-      useTacticEditorStore.getState().loadScene({ schemaVersion: 1, stages })
+      useTacticEditorStore.getState().loadScene({ schemaVersion: TACTIC_SCHEMA_VERSION, stages })
     );
 
     await act(async () => {

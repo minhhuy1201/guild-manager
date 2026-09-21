@@ -30,7 +30,7 @@ const stage: TacticStage = {
       x: 700,
       y: 700,
       text: "Tập kết",
-      color: "white",
+      color: "black",
       fontSize: 24,
     },
   ],

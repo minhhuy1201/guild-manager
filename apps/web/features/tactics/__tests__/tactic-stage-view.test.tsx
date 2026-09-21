@@ -119,7 +119,7 @@ const busyStage: TacticStage = {
       x: 40,
       y: 50,
       text: "Tập kết",
-      color: "white",
+      color: "black",
       fontSize: 28,
     },
   ],
@@ -176,8 +176,43 @@ describe("TacticStageView", () => {
 
     expect(propsOf("arrow").stroke).toBe("#3b82f6");
     expect(propsOf("line").stroke).toBe("#f5c518");
-    expect(propsOf("text").fill).toBe("#f5f5f5");
+    expect(propsOf("text").fill).toBe("#101114");
     expect(propsOf("text").text).toBe("Tập kết");
+  });
+
+  it("draws a numbered team as its digits rather than as artwork", () => {
+    const numbered: TacticStage = {
+      id: "s3",
+      name: "Giai đoạn 3",
+      elements: [
+        {
+          kind: "token",
+          id: "tk2",
+          label: "Đội 7",
+          icon: "number-7",
+          x: 40,
+          y: 40,
+          size: "md",
+          color: "blue",
+        },
+      ],
+    };
+
+    render(<TacticStageView stage={numbered} width={960} />);
+
+    expect(document.querySelector('[data-slot="path"]')).toBeNull();
+    expect(propsOf("text").text).toBe("7");
+  });
+
+  it("puts a black token on a light disc, so its icon stays readable", () => {
+    const black: TacticStage = {
+      ...stage,
+      elements: [{ ...stage.elements[0], color: "black" }],
+    };
+
+    render(<TacticStageView stage={black} width={960} />);
+
+    expect(propsOf("circle").fill).toBe("rgba(244, 244, 245, 0.86)");
   });
 
   it("lets a token be dragged only while the canvas is writable", () => {

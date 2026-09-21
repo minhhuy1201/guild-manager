@@ -132,7 +132,7 @@ export function TacticEditorScreen({
 
           {/* A member, and anyone on a phone, reads the tactic through the viewer instead. */}
           {canDraw ? (
-            <div className="flex rounded-xl border bg-card">
+            <div className="flex overflow-hidden rounded-xl border bg-card shadow-xs">
               <TokenPalette
                 collapsed={paletteCollapsed}
                 isAdmin={isAdmin}

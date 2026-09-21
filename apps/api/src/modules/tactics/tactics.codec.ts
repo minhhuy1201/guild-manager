@@ -1,6 +1,7 @@
 import { InternalServerErrorException } from '@nestjs/common';
 import {
   TACTIC_SCHEMA_VERSION,
+  liftTacticScene,
   tacticDetailSchema,
   tacticSceneSchema,
   tacticSummarySchema,
@@ -40,7 +41,8 @@ export function emptyScene(): TacticScene {
 }
 
 /**
- * Read a stored scene document. This is the ONLY place `Prisma.JsonValue` is opened.
+ * Read a stored scene document, lifting an older format first. This is the ONLY place
+ * `Prisma.JsonValue` is opened.
  * @param raw - The `stages` column as Prisma returns it
  * @param tacticId - Id of the tactic being read, for the error message
  * @param tacticName - Name of the tactic being read, for the error message
@@ -66,7 +68,7 @@ export function parseScene(
     );
   }
 
-  const parsed = tacticSceneSchema.safeParse(raw);
+  const parsed = tacticSceneSchema.safeParse(liftTacticScene(raw));
 
   if (!parsed.success) {
     throw new InternalServerErrorException(

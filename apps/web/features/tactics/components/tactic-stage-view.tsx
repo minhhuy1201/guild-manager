@@ -13,6 +13,7 @@ import {
   Text,
 } from "react-konva";
 import type Konva from "konva";
+import type { TacticTokenIcon } from "@guild/shared/enums";
 import { assertNever } from "@guild/shared/lib";
 import {
   TACTIC_MAP_HEIGHT,
@@ -23,9 +24,14 @@ import {
 
 import type { MapPoint } from "../lib/hit-test";
 import { INITIAL_ZOOM, type ZoomState } from "../lib/zoom";
-import { TOKEN_ICON_BOX, TOKEN_ICON_PATHS } from "../lib/icon-paths";
+import { TOKEN_ICON_BOX } from "../lib/icon-paths";
 import { stageScale, toMapPoint } from "../lib/stage-scale";
-import { COLOR_HEX, TOKEN_RADIUS } from "../lib/token-icon";
+import {
+  COLOR_HEX,
+  TOKEN_FILL,
+  TOKEN_RADIUS,
+  tokenIcon,
+} from "../lib/token-icon";
 
 /** Where the map picture is served from. Konva loads it with a plain `Image`, not `next/image`. */
 const MAP_SRC = "/img/map-guild-war.webp";
@@ -44,6 +50,9 @@ const ARROW_HEAD_RATIO = 4;
 
 /** Font size of a token's label, in virtual map units. */
 const LABEL_FONT_SIZE = 22;
+
+/** How tall a numbered token's digits are drawn, relative to the token's radius. */
+const DIGIT_FONT_RATIO = 1.15;
 
 export interface TacticStageViewProps {
   /** The stage being drawn */
@@ -237,7 +246,6 @@ function ElementShape({
   switch (element.kind) {
     case "token": {
       const radius = TOKEN_RADIUS[element.size];
-      const iconScale = (radius * 1.1) / TOKEN_ICON_BOX;
 
       return (
         <Group
@@ -250,25 +258,15 @@ function ElementShape({
         >
           <Circle
             radius={radius}
-            fill="rgba(12, 14, 18, 0.72)"
+            fill={TOKEN_FILL[element.color]}
             stroke={COLOR_HEX[element.color]}
             strokeWidth={selected ? 6 : 3}
           />
-          {TOKEN_ICON_PATHS[element.icon].map((data, index) => (
-            <Path
-              key={index}
-              data={data}
-              stroke={COLOR_HEX[element.color]}
-              strokeWidth={ICON_STROKE_WIDTH}
-              lineCap="round"
-              lineJoin="round"
-              scaleX={iconScale}
-              scaleY={iconScale}
-              x={(-TOKEN_ICON_BOX * iconScale) / 2}
-              y={(-TOKEN_ICON_BOX * iconScale) / 2}
-              listening={false}
-            />
-          ))}
+          <TokenArt
+            icon={element.icon}
+            radius={radius}
+            color={COLOR_HEX[element.color]}
+          />
           <Text
             text={element.label}
             fontSize={LABEL_FONT_SIZE}
@@ -324,5 +322,71 @@ function ElementShape({
       );
     default:
       return assertNever(element);
+  }
+}
+
+interface TokenArtProps {
+  /** Icon key the token carries */
+  icon: TacticTokenIcon;
+  /** Radius of the token's circle, in map units */
+  radius: number;
+  /** Hex the icon is drawn in */
+  color: string;
+}
+
+/**
+ * What sits inside a token's circle: the flattened lucide artwork, or the digits of a numbered
+ * team. Konva draws paths and text, never an SVG, so the two cases cannot share one shape.
+ * @param props - The icon key, the circle it has to fit inside, and its colour
+ * @returns The shapes inside the circle
+ */
+function TokenArt({ icon, radius, color }: TokenArtProps) {
+  const art = tokenIcon(icon);
+
+  switch (art.kind) {
+    case "lucide": {
+      const iconScale = (radius * 1.1) / TOKEN_ICON_BOX;
+
+      return (
+        <>
+          {art.paths.map((data, index) => (
+            <Path
+              key={index}
+              data={data}
+              stroke={color}
+              strokeWidth={ICON_STROKE_WIDTH}
+              lineCap="round"
+              lineJoin="round"
+              scaleX={iconScale}
+              scaleY={iconScale}
+              x={(-TOKEN_ICON_BOX * iconScale) / 2}
+              y={(-TOKEN_ICON_BOX * iconScale) / 2}
+              listening={false}
+            />
+          ))}
+        </>
+      );
+    }
+    case "digits": {
+      const fontSize = radius * DIGIT_FONT_RATIO;
+
+      return (
+        <Text
+          text={art.digits}
+          fontSize={fontSize}
+          fontStyle="bold"
+          fill={color}
+          align="center"
+          verticalAlign="middle"
+          width={radius * 2}
+          height={radius * 2}
+          x={-radius}
+          y={-radius}
+          listening={false}
+        />
+      );
+    }
+    default:
+      return assertNever(art);
   }
 }
