@@ -84,6 +84,12 @@ export function tokenIcon(key: TacticTokenIcon): TokenIconArt {
 }
 
 /** Token circle radius per size, in virtual map units. */
+/** Gap between a token's circle and the label under it, in virtual map units. */
+export const TOKEN_LABEL_GAP = 6;
+
+/** Font size of a token's label, in virtual map units. */
+export const TOKEN_LABEL_FONT_SIZE = 22;
+
 export const TOKEN_RADIUS: Record<TacticTokenSize, number> = {
   sm: 22,
   md: 32,

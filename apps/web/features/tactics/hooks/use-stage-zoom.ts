@@ -11,7 +11,7 @@ import {
   zoomAt,
   type ZoomState,
 } from "../lib/zoom";
-import { stageViewport } from "../lib/stage-scale";
+import { stageViewport, type StageViewport } from "../lib/stage-scale";
 
 /** Mouse button that pans the map. The middle one, so it never fights with drawing. */
 const PAN_BUTTON = 1;
@@ -20,6 +20,8 @@ const PAN_BUTTON = 1;
 export interface StageZoom {
   /** How far the map is zoomed in and how far it has been pushed */
   zoom: ZoomState;
+  /** The canvas the map is drawn into, already derived from the measured width */
+  viewport: StageViewport;
   /** Whether a middle-button drag is under way, so the cursor can say so */
   panning: boolean;
   /** Wheel handler to hand to the Konva stage */
@@ -133,5 +135,5 @@ export function useStageZoom(width: number): StageZoom {
 
   const reset = useCallback(() => setZoom(INITIAL_ZOOM), []);
 
-  return { zoom, panning, onWheel, onPanStart, step, reset };
+  return { zoom, viewport, panning, onWheel, onPanStart, step, reset };
 }
