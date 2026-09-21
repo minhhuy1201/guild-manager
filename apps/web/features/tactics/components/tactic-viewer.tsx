@@ -3,13 +3,13 @@
 import { useState } from "react";
 import type { TacticStage } from "@guild/shared/schemas";
 
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { CANVAS_GRID_STYLE } from "../lib/canvas-grid";
 import { useStageArrows } from "../hooks/use-stage-arrows";
 import { useStageSize } from "../hooks/use-stage-size";
 import { useStageZoom } from "../hooks/use-stage-zoom";
 import { StageArrowHint } from "./stage-arrow-hint";
-import { StageTab } from "./stage-tab";
 import { TacticCanvas } from "./tactic-canvas";
 import { ZoomReadout } from "./zoom-readout";
 
@@ -47,16 +47,24 @@ export function TacticViewer({ stages }: TacticViewerProps) {
           ref={tablistRef}
           role="tablist"
           aria-label="Giai đoạn"
-          className="flex flex-wrap items-center gap-1"
+          className="flex flex-wrap items-center gap-2"
         >
-          {stages.map((candidate, index) => (
-            <StageTab
+          {/* Names, not the editor's clock faces: this is the view a phone gets, where a
+              tooltip never opens and the name would have nowhere left to be read. */}
+          {stages.map((candidate) => (
+            <Button
               key={candidate.id}
-              stage={candidate}
-              position={index + 1}
-              active={candidate.id === stage.id}
-              onSelect={() => setActiveStageId(candidate.id)}
-            />
+              type="button"
+              role="tab"
+              aria-selected={candidate.id === stage.id}
+              // Roving tabIndex: Tab reaches the strip once, the arrows move inside it.
+              tabIndex={candidate.id === stage.id ? 0 : -1}
+              size="sm"
+              variant={candidate.id === stage.id ? "default" : "ghost"}
+              onClick={() => setActiveStageId(candidate.id)}
+            >
+              {candidate.name}
+            </Button>
           ))}
 
           <StageArrowHint stageCount={stages.length} />
