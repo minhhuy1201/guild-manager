@@ -63,3 +63,41 @@ export function shortcutLabel(
 
   return (shortcut.hasModifier ? [modifier, ...keys] : keys).join(" + ");
 }
+
+/** The two arrow keys that step through the stages, shown beside the stage tabs. */
+export const STAGE_STEP_SHORTCUT: ActionShortcut = {
+  hasModifier: false,
+  keys: ["←", "→"],
+};
+
+/**
+ * How far a key press moves through the stages: one back, one forward, or nowhere.
+ * @param key - `KeyboardEvent.key`
+ * @returns -1, 1, or null when the key steps no stage
+ */
+export function stageStepForKey(key: string): -1 | 1 | null {
+  if (key === "ArrowLeft") return -1;
+  if (key === "ArrowRight") return 1;
+
+  return null;
+}
+
+/**
+ * Whether a key event came from a field someone is typing in.
+ *
+ * Every tactics shortcut is off while the focus sits in a field, so renaming a stage never picks a
+ * tool and never jumps to another stage.
+ * @param target - What the key event came from
+ * @returns True when the key should be left to that field
+ */
+export function isTypingTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+
+  return (
+    target.isContentEditable ||
+    target.tagName === "INPUT" ||
+    target.tagName === "TEXTAREA"
+  );
+}

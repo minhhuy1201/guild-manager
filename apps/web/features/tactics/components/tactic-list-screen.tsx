@@ -19,6 +19,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { tacticEditorPath } from "@/config/routes";
 import { formatDateTime } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { combineQueries } from "@/lib/query-group";
 import { useDeleteTactic } from "../hooks/use-tactic-mutations";
 import { useTactics } from "../hooks/use-tactics";
@@ -86,13 +87,23 @@ export function TacticListScreen({ isAdmin }: TacticListScreenProps) {
           <ul className="flex flex-col gap-3">
             {tactics.map((tactic) => (
               <li key={tactic.id}>
-                <Card>
+                <Card
+                  className={cn(
+                    "relative transition-colors duration-[var(--duration-fast)]",
+                    // The row is one big link, so the whole card takes the hover surface and wears
+                    // the focus ring the link inside it earns.
+                    "hover:bg-foreground/5 focus-within:ring-3 focus-within:ring-ring/50"
+                  )}
+                >
                   <CardContent className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex min-w-0 flex-col gap-1">
                       <Link
                         href={tacticEditorPath(tactic.id)}
                         className="font-medium hover:underline"
                       >
+                        {/* The whole card opens the tactic: this overlay is the link's hit area, and
+                            the row actions sit above it so they still take their own clicks. */}
+                        <span className="absolute inset-0 rounded-xl" />
                         {tactic.name}
                       </Link>
                       {tactic.description ? (
@@ -108,7 +119,7 @@ export function TacticListScreen({ isAdmin }: TacticListScreenProps) {
                     </div>
 
                     {isAdmin ? (
-                      <RowActions>
+                      <RowActions className="relative">
                         <EditAction
                           label="Sửa chiến thuật"
                           onClick={() => {

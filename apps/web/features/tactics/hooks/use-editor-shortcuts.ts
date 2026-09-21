@@ -3,25 +3,8 @@
 import { useEffect } from "react";
 import { TACTIC_STROKE_WIDTHS } from "@guild/shared/enums";
 
-import { toolForKey } from "../lib/shortcuts";
+import { isTypingTarget, toolForKey } from "../lib/shortcuts";
 import { useTacticEditorStore } from "../store/editor-store";
-
-/**
- * Whether the keyboard belongs to a field the admin is typing in.
- * @param target - What the key event came from
- * @returns True when the key should be left to that field
- */
-function isTyping(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) {
-    return false;
-  }
-
-  return (
-    target.isContentEditable ||
-    target.tagName === "INPUT" ||
-    target.tagName === "TEXTAREA"
-  );
-}
 
 /**
  * The editor's keyboard: tools on 1-5, stroke width on [ and ], Delete for the selected element,
@@ -52,7 +35,7 @@ export function useEditorShortcuts(
      * @param event - The keyboard event
      */
     function handleKeyDown(event: KeyboardEvent) {
-      if (isTyping(event.target)) {
+      if (isTypingTarget(event.target)) {
         return;
       }
 

@@ -5,6 +5,7 @@ import {
   STROKE_WIDTH_SHORTCUT,
   TOOL_SHORTCUTS,
   shortcutLabel,
+  stageStepForKey,
   toolForKey,
 } from "../lib/shortcuts";
 import { TOOL_LABELS } from "../types/tactic";
@@ -46,5 +47,17 @@ describe("shortcutLabel", () => {
 
   it("leaves the modifier out of a shortcut that has none", () => {
     expect(shortcutLabel(STROKE_WIDTH_SHORTCUT, "Ctrl")).toBe("[ + ]");
+  });
+});
+
+describe("stageStepForKey", () => {
+  it("steps back on the left arrow and forward on the right", () => {
+    expect(stageStepForKey("ArrowLeft")).toBe(-1);
+    expect(stageStepForKey("ArrowRight")).toBe(1);
+  });
+
+  it("steps nowhere on any other key", () => {
+    expect(stageStepForKey("ArrowUp")).toBeNull();
+    expect(stageStepForKey("a")).toBeNull();
   });
 });

@@ -43,4 +43,32 @@ describe("TacticViewer", () => {
 
     expect(screen.getByTestId("canvas").textContent).toBe("Giai đoạn 2");
   });
+
+  it("walks the stages with the arrow keys", () => {
+    render(<TacticViewer stages={stages} />);
+
+    fireEvent.keyDown(window, { key: "ArrowRight" });
+    expect(screen.getByTestId("canvas").textContent).toBe("Giai đoạn 2");
+
+    fireEvent.keyDown(window, { key: "ArrowLeft" });
+    expect(screen.getByTestId("canvas").textContent).toBe("Giai đoạn 1");
+  });
+
+  it("stops at both ends rather than wrapping around", () => {
+    render(<TacticViewer stages={stages} />);
+
+    fireEvent.keyDown(window, { key: "ArrowLeft" });
+    expect(screen.getByTestId("canvas").textContent).toBe("Giai đoạn 1");
+
+    fireEvent.keyDown(window, { key: "ArrowRight" });
+    fireEvent.keyDown(window, { key: "ArrowRight" });
+    expect(screen.getByTestId("canvas").textContent).toBe("Giai đoạn 2");
+  });
+
+  it("hides the tabs and the arrow hint for a single stage", () => {
+    render(<TacticViewer stages={[stages[0]]} />);
+
+    expect(screen.queryByRole("tab")).toBeNull();
+    expect(screen.queryByText("→")).toBeNull();
+  });
 });

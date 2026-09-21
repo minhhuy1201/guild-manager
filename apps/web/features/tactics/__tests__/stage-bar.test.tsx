@@ -138,6 +138,24 @@ describe("StageBar", () => {
     expect(screen.queryByLabelText("Tên giai đoạn")).toBeNull();
   });
 
+  it("walks the stages with the arrow keys", () => {
+    renderBar();
+
+    fireEvent.keyDown(window, { key: "ArrowRight" });
+    expect(handlers.onSelect).toHaveBeenCalledWith("s2");
+  });
+
+  it("leaves the arrow keys to the rename field", () => {
+    renderBar();
+    fireEvent.doubleClick(screen.getByRole("tab", { name: "Giai đoạn 1" }));
+
+    fireEvent.keyDown(screen.getByLabelText("Tên giai đoạn"), {
+      key: "ArrowRight",
+    });
+
+    expect(handlers.onSelect).not.toHaveBeenCalled();
+  });
+
   it("hides every write action from a member", () => {
     renderBar({ isAdmin: false });
 

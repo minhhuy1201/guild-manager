@@ -69,6 +69,18 @@ describe("TacticListScreen", () => {
     ).toBe("/chien-thuat/t1");
   });
 
+  it("makes the whole row open the tactic, not only its name", () => {
+    const { container } = render(<TacticListScreen isAdmin={false} />);
+
+    const link = screen.getByRole("link", { name: /Thủ cổng tây/ });
+    const card = container.querySelector('[data-slot="card"]');
+
+    // The link stretches over the card through an overlay, so a click anywhere on it navigates.
+    expect(link.querySelector("span.absolute.inset-0")).toBeTruthy();
+    expect(card?.className).toContain("relative");
+    expect(card?.className).toContain("hover:bg-foreground/5");
+  });
+
   it("hides the write actions from a member", () => {
     render(<TacticListScreen isAdmin={false} />);
 
