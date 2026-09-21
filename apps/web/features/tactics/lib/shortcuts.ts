@@ -27,3 +27,39 @@ export const TOOL_BY_SHORTCUT: Record<string, TacticTool> = Object.fromEntries(
 export function toolForKey(key: string): TacticTool | null {
   return TOOL_BY_SHORTCUT[key] ?? null;
 }
+
+/** An action of the toolbar that has a keyboard shortcut, as the key badges spell it out. */
+export interface ActionShortcut {
+  /** Whether the shortcut is held with Ctrl (⌘ on a Mac) */
+  readonly hasModifier: boolean;
+  /** The keys pressed after the modifier, in the order they are shown */
+  readonly keys: readonly string[];
+}
+
+/** The toolbar actions that answer to a shortcut, keyed by the button they belong to. */
+export const ACTION_SHORTCUTS = {
+  undo: { hasModifier: true, keys: ["Z"] },
+  redo: { hasModifier: true, keys: ["⇧", "Z"] },
+  save: { hasModifier: true, keys: ["S"] },
+} as const satisfies Record<string, ActionShortcut>;
+
+/** The two keys that step the stroke width, shown on the width group. */
+export const STROKE_WIDTH_SHORTCUT: ActionShortcut = {
+  hasModifier: false,
+  keys: ["[", "]"],
+};
+
+/**
+ * A shortcut written out the way a tooltip says it, e.g. "Ctrl + Shift + Z".
+ * @param shortcut - The shortcut to spell out
+ * @param modifier - What the modifier is called on this platform
+ * @returns The shortcut as one line of text
+ */
+export function shortcutLabel(
+  shortcut: ActionShortcut,
+  modifier: string
+): string {
+  const keys = shortcut.keys.map((key) => (key === "⇧" ? "Shift" : key));
+
+  return (shortcut.hasModifier ? [modifier, ...keys] : keys).join(" + ");
+}

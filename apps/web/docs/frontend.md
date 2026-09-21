@@ -936,6 +936,21 @@ Data arrives, it does not snap in. Four pieces, all CSS, in `app/globals.css` an
   fold. `lg` and not `sm`, because a phone turned sideways is 640-1000px wide and the numbers
   overflowed it too. The "trang x/y" count beside it still says where you are.
 
+### A shortcut → a key cap (`Kbd`), on the button itself
+
+A button that also answers to the keyboard wears its keys as `Kbd` caps from `components/ui/kbd.tsx`
+(shadcn), beside the label rather than only in a tooltip nobody hovers. The tactic editor's toolbar
+is the worked example.
+
+- **One source for the keys.** `features/tactics/lib/shortcuts.ts` holds both the key map the
+  keyboard handler reads and the caps the toolbar draws, so a rebound key can never disagree with
+  the cap that advertises it. `shortcutLabel` writes the same shortcut out as one line for `title`.
+- **The caps are `aria-hidden`.** The button's `title` already carries the whole shortcut; a screen
+  reader reading "⇧ Z" on top of it only repeats it.
+- **The modifier is the machine's**: `useModifierKey` says "⌘" on a Mac and "Ctrl" elsewhere. It
+  reads the platform through `useSyncExternalStore`, whose server snapshot is "Ctrl" — reading
+  `navigator` during render would be a hydration error rather than a wrong label.
+
 ---
 
 ## 7. Naming conventions

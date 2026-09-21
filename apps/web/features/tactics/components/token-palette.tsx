@@ -70,11 +70,18 @@ export function TokenPalette({
         collapsed ? "w-12" : "w-24"
       )}
     >
-      <div className="flex items-center justify-between gap-1 py-2 pr-1 pl-2">
+      <div
+        className={cn(
+          "flex items-center gap-1 py-2 transition-[padding] duration-300 ease-out",
+          collapsed ? "justify-center px-1" : "justify-between pr-1 pl-2"
+        )}
+      >
+        {/* The title gives up its width when folded: left at its own, it pushed the toggle past
+            the folded column's edge, and `overflow-hidden` clipped the only way back open. */}
         <span
           className={cn(
-            "text-[11px] font-medium tracking-wide text-muted-foreground uppercase transition-opacity duration-200",
-            collapsed && "opacity-0"
+            "overflow-hidden text-[11px] font-medium tracking-wide whitespace-nowrap text-muted-foreground uppercase transition-all duration-200",
+            collapsed && "w-0 opacity-0"
           )}
         >
           Quân cờ
@@ -83,7 +90,9 @@ export function TokenPalette({
           type="button"
           size="icon-xs"
           variant="ghost"
+          className="shrink-0"
           aria-label={collapsed ? "Mở bảng quân cờ" : "Thu bảng quân cờ"}
+          title={collapsed ? "Mở bảng quân cờ" : "Thu bảng quân cờ"}
           onClick={onToggle}
         >
           <ChevronLeft
@@ -132,7 +141,7 @@ export function TokenPalette({
                                   : "ghost"
                               }
                               aria-pressed={selected?.label === token.label}
-                              className="size-9 max-sm:size-9"
+                              className="size-9 max-sm:size-9 transition-colors hover:bg-primary/15 hover:text-primary"
                               onClick={() => onSelect(token)}
                             />
                           }
