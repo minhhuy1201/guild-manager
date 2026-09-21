@@ -11,7 +11,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { ROUTES } from "@/config/routes";
 
 interface TacticBreadcrumbProps {
@@ -21,7 +21,7 @@ interface TacticBreadcrumbProps {
 
 /**
  * The top of a tactic's page: where you are, and the way back to the list.
- * A banner is what the list page opens with; this page opens with the drawing, so the strip of
+ * A banner is what the list page opens with; this page opens with the drawing, so a strip of
  * scenery would only push the map down.
  * @param name - Name of the tactic on screen
  * @returns The breadcrumb row
@@ -29,15 +29,16 @@ interface TacticBreadcrumbProps {
 export function TacticBreadcrumb({ name }: TacticBreadcrumbProps) {
   return (
     <div className="flex items-center gap-2">
-      <Button
-        type="button"
-        size="icon-sm"
-        variant="ghost"
+      {/* A plain link wearing the icon button's clothes. This control navigates, so it has to be an
+          anchor: Base UI's `Button` warns at runtime when it acts as a button while rendering
+          something that is not one. */}
+      <Link
+        href={ROUTES.tactics}
         aria-label="Về danh sách chiến thuật"
-        render={<Link href={ROUTES.tactics} />}
+        className={buttonVariants({ variant: "ghost", size: "icon-sm" })}
       >
         <ArrowLeft />
-      </Button>
+      </Link>
 
       <Breadcrumb>
         <BreadcrumbList>
