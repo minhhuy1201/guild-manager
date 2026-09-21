@@ -29,6 +29,8 @@ import { stageScale, toMapPoint } from "../lib/stage-scale";
 import {
   COLOR_HEX,
   TOKEN_FILL,
+  TOKEN_LABEL_FONT_SIZE,
+  TOKEN_LABEL_GAP,
   TOKEN_RADIUS,
   tokenIcon,
 } from "../lib/token-icon";
@@ -39,17 +41,11 @@ const MAP_SRC = "/img/map-guild-war.webp";
 /** How wide a drawn element's stroke is relative to the icon box, so icons read at every size. */
 const ICON_STROKE_WIDTH = 2;
 
-/** Gap between a token's circle and the label under it, in virtual map units. */
-const LABEL_GAP = 6;
-
 /** The mouse button that draws. The middle one pans instead. */
 const PRIMARY_MOUSE_BUTTON = 0;
 
 /** How much bigger an arrow's head is than its shaft. */
 const ARROW_HEAD_RATIO = 4;
-
-/** Font size of a token's label, in virtual map units. */
-const LABEL_FONT_SIZE = 22;
 
 /** How tall a numbered token's digits are drawn, relative to the token's radius. */
 const DIGIT_FONT_RATIO = 1.15;
@@ -341,12 +337,12 @@ function ElementShape({
           />
           <Text
             text={element.label}
-            fontSize={LABEL_FONT_SIZE}
+            fontSize={TOKEN_LABEL_FONT_SIZE}
             fill="#f5f5f5"
             align="center"
             width={radius * 6}
             x={-radius * 3}
-            y={radius + LABEL_GAP}
+            y={radius + TOKEN_LABEL_GAP}
             listening={false}
           />
         </Group>

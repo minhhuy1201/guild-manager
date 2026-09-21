@@ -171,13 +171,19 @@ describe("useTacticEditor", () => {
     expect(elements()[0]).toMatchObject({ x: 400, y: 500 });
 
     act(() => result.current.onElementClick(tokenId));
-    expect(result.current.selectedTokenSize).toBe("md");
+    // The whole element, not just its size: the action bar is drawn where the element is.
+    expect(result.current.selectedElement).toMatchObject({
+      id: tokenId,
+      kind: "token",
+      size: "md",
+    });
 
     act(() => result.current.onTokenSizeChange("lg"));
     expect(elements()[0]).toMatchObject({ size: "lg" });
 
     act(() => result.current.onDeleteSelected());
     expect(elements()).toHaveLength(0);
+    expect(result.current.selectedElement).toBeNull();
   });
 
   it("picks up the element under the pointer with the select tool", async () => {

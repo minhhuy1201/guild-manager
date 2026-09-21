@@ -46,11 +46,26 @@ vi.mock("../api/tactics-api", () => ({
 import { useTacticEditorStore } from "../store/editor-store";
 import { TacticEditorScreen } from "../components/tactic-editor-screen";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
 
 beforeEach(() => {
   isDesktop = true;
   useTacticEditorStore.getState().reset();
+  // jsdom measures every box as 0 wide, and a canvas 0 wide has nowhere to put the action bar.
+  vi.spyOn(Element.prototype, "getBoundingClientRect").mockReturnValue({
+    width: 1000,
+    height: 560,
+    top: 0,
+    left: 0,
+    right: 1000,
+    bottom: 560,
+    x: 0,
+    y: 0,
+    toJSON: () => ({}),
+  });
   vi.stubGlobal(
     "ResizeObserver",
     class {
@@ -136,6 +151,46 @@ describe("TacticEditorScreen", () => {
 
     expect(screen.queryByTestId("canvas")).toBeNull();
     expect(screen.queryByRole("button", { name: "Đội hình" })).toBeNull();
+  });
+
+  it("puts the selected element's actions on the map, not in the toolbar", async () => {
+    renderScreen(true);
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Đội hình" })).toBeTruthy()
+    );
+    expect(
+      screen.queryByRole("toolbar", { name: "Sửa phần tử đang chọn" })
+    ).toBeNull();
+
+    const token = {
+      kind: "token" as const,
+      id: "tok1",
+      x: 900,
+      y: 400,
+      size: "md" as const,
+      icon: "swords" as const,
+      label: "Đội công",
+      color: "blue" as const,
+    };
+
+    useTacticEditorStore.getState().commit("s1", [token]);
+    useTacticEditorStore.getState().selectElement("tok1");
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("toolbar", { name: "Sửa phần tử đang chọn" })
+      ).toBeTruthy()
+    );
+    expect(screen.getByRole("button", { name: "Cỡ lớn" })).toBeTruthy();
+
+    useTacticEditorStore.getState().selectElement(null);
+
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("toolbar", { name: "Sửa phần tử đang chọn" })
+      ).toBeNull()
+    );
   });
 
   it("keeps saving to the toolbar's own button, with no second bar for it", async () => {

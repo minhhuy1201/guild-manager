@@ -45,8 +45,8 @@ export interface TacticEditorScreen {
   name: string;
   /** The stage being drawn on, null until the scene has loaded */
   activeStage: TacticStage | null;
-  /** Size of the selected token, or null when no token is selected */
-  selectedTokenSize: TacticTokenSize | null;
+  /** The selected element, or null when nothing is selected — the action bar is drawn on it */
+  selectedElement: TacticElement | null;
   /** Whether there is an edit to take back on the open stage */
   canUndo: boolean;
   /** Whether there is an edit to put back on the open stage */
@@ -357,8 +357,7 @@ export function useTacticEditor(
     state: combineQueries([tacticQuery], "Không tải được chiến thuật."),
     name: tactic?.name ?? "",
     activeStage,
-    selectedTokenSize:
-      selectedElement?.kind === "token" ? selectedElement.size : null,
+    selectedElement,
     canUndo: (history.past[activeStageId ?? ""] ?? []).length > 0,
     canRedo: (history.future[activeStageId ?? ""] ?? []).length > 0,
     saving: saveTactic.isPending,

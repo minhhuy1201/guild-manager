@@ -7,7 +7,6 @@ import {
   Pencil,
   Redo2,
   Save,
-  Trash2,
   Image as ImageIcon,
   Type,
   Undo2,
@@ -16,10 +15,8 @@ import {
 import {
   TACTIC_COLORS,
   TACTIC_STROKE_WIDTHS,
-  TACTIC_TOKEN_SIZES,
   type TacticColor,
   type TacticStrokeWidth,
-  type TacticTokenSize,
 } from "@guild/shared/enums";
 
 import { Spinner } from "@/components/shared/spinner";
@@ -45,13 +42,6 @@ const TOOL_ICONS: Record<TacticTool, typeof Users> = {
   freehand: Pencil,
   text: Type,
   eraser: Eraser,
-};
-
-/** Vietnamese name of each token size, used on the three size buttons. */
-const SIZE_LABELS: Record<TacticTokenSize, string> = {
-  sm: "Cỡ nhỏ",
-  md: "Cỡ vừa",
-  lg: "Cỡ lớn",
 };
 
 /**
@@ -102,10 +92,6 @@ export interface EditorToolbarProps {
   color: TacticColor;
   /** Width every new stroke takes */
   strokeWidth: TacticStrokeWidth;
-  /** Size of the selected token, or null when the selection is not a token */
-  selectedTokenSize: TacticTokenSize | null;
-  /** Whether an element of the open stage is selected, of any kind */
-  hasSelection: boolean;
   /** Whether there is an edit to take back */
   canUndo: boolean;
   /** Whether there is an edit to put back */
@@ -119,8 +105,6 @@ export interface EditorToolbarProps {
   onToolChange: (tool: TacticTool) => void;
   onColorChange: (color: TacticColor) => void;
   onStrokeWidthChange: (strokeWidth: TacticStrokeWidth) => void;
-  onTokenSizeChange: (size: TacticTokenSize) => void;
-  onDeleteSelected: () => void;
   onUndo: () => void;
   onRedo: () => void;
   onSave: () => void;
@@ -128,7 +112,8 @@ export interface EditorToolbarProps {
 }
 
 /**
- * The editor's toolbar: tools, colours, stroke widths, undo/redo, save and export.
+ * The editor's toolbar: tools, colours, stroke widths, undo/redo, save and export. What can be
+ * done to the selected element lives on the map, under the element itself — see `SelectionActions`.
  * Every button that answers to a shortcut wears it as a key cap, so the keyboard is readable off
  * the toolbar itself rather than out of a tooltip nobody hovers.
  * @param props - The current tool state and the callbacks that change it
@@ -138,8 +123,6 @@ export function EditorToolbar({
   tool,
   color,
   strokeWidth,
-  selectedTokenSize,
-  hasSelection,
   canUndo,
   canRedo,
   saving,
@@ -148,8 +131,6 @@ export function EditorToolbar({
   onToolChange,
   onColorChange,
   onStrokeWidthChange,
-  onTokenSizeChange,
-  onDeleteSelected,
   onUndo,
   onRedo,
   onSave,
@@ -224,41 +205,6 @@ export function EditorToolbar({
         ))}
         <ShortcutKeys shortcut={STROKE_WIDTH_SHORTCUT} modifier={modifier} />
       </div>
-
-      {/* What the admin can do to the piece they picked up. Resizing only means something for a
-          token; deleting means the same for every kind of element. */}
-      {hasSelection ? (
-        <div className="flex items-center gap-0.5 rounded-lg bg-muted/60 p-0.5">
-          {selectedTokenSize
-            ? TACTIC_TOKEN_SIZES.map((candidate) => (
-                <Button
-                  key={candidate}
-                  type="button"
-                  size="xs"
-                  variant={candidate === selectedTokenSize ? "default" : "ghost"}
-                  aria-pressed={candidate === selectedTokenSize}
-                  onClick={() => onTokenSizeChange(candidate)}
-                >
-                  {SIZE_LABELS[candidate]}
-                </Button>
-              ))
-            : null}
-          <Button
-            type="button"
-            size="xs"
-            variant="ghost"
-            className="text-destructive"
-            title="Xoá phần tử đang chọn (Delete)"
-            onClick={onDeleteSelected}
-          >
-            <Trash2 />
-            Xoá phần tử
-            <Kbd aria-hidden className={KEY_CAP_CLASS}>
-              Delete
-            </Kbd>
-          </Button>
-        </div>
-      ) : null}
 
       <div className="ml-auto flex items-center gap-0.5">
         <Button

@@ -18,7 +18,7 @@ export interface MapPoint {
 const MIN_STROKE_HIT_WIDTH = 16;
 
 /** How wide one character of a note is, relative to its font size. */
-const TEXT_WIDTH_RATIO = 0.6;
+export const TEXT_WIDTH_RATIO = 0.6;
 
 /**
  * Find the element under a pointer.

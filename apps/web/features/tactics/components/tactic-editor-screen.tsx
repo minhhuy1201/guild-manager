@@ -15,11 +15,13 @@ import { useTacticEditor } from "../hooks/use-tactic-editor";
 import { useTacticExport } from "../hooks/use-tactic-export";
 import { useUnsavedGuard } from "../hooks/use-unsaved-guard";
 import { useTacticEditorStore } from "../store/editor-store";
+import { elementBounds, selectionPlacement } from "../lib/selection-anchor";
 import { ExportDialog } from "./export-dialog";
 import { MobileEditorNotice } from "./mobile-editor-notice";
 import { EditorToolbar } from "./editor-toolbar";
 import { StageBar } from "./stage-bar";
 import { TacticBreadcrumb } from "./tactic-breadcrumb";
+import { SelectionActions } from "./selection-actions";
 import { TacticCanvas } from "./tactic-canvas";
 import { TacticViewer } from "./tactic-viewer";
 import { ZoomReadout } from "./zoom-readout";
@@ -80,6 +82,15 @@ export function TacticEditorScreen({
   const loadedScene = useTacticEditorStore((store) => store.scene);
 
   const stages = scene?.stages ?? [];
+  // The action bar is a DOM overlay on the canvas, so where it goes follows the zoom and the pan.
+  const selection = editor.selectedElement;
+  const placement = selection
+    ? selectionPlacement(
+        elementBounds(selection),
+        stageZoom.viewport,
+        stageZoom.zoom
+      )
+    : null;
   const exporter = useTacticExport(editor.name, stages, editor.stageRef);
   // Drawing needs a pointer, a keyboard and room for the toolbar; everything else reads.
   const canDraw = isAdmin && isDesktop === true;
@@ -107,8 +118,6 @@ export function TacticEditorScreen({
                 tool={tool}
                 color={color}
                 strokeWidth={strokeWidth}
-                selectedTokenSize={editor.selectedTokenSize}
-                hasSelection={selectedElementId !== null}
                 canUndo={editor.canUndo}
                 canRedo={editor.canRedo}
                 saving={editor.saving}
@@ -117,8 +126,6 @@ export function TacticEditorScreen({
                 onToolChange={setTool}
                 onColorChange={setColor}
                 onStrokeWidthChange={setStrokeWidth}
-                onTokenSizeChange={editor.onTokenSizeChange}
-                onDeleteSelected={editor.onDeleteSelected}
                 onUndo={undo}
                 onRedo={redo}
                 onSave={editor.onSave}
@@ -182,6 +189,16 @@ export function TacticEditorScreen({
                       onWheel={stageZoom.onWheel}
                       onStageMouseDown={stageZoom.onPanStart}
                     />
+                    {placement ? (
+                      <SelectionActions
+                        placement={placement}
+                        tokenSize={
+                          selection?.kind === "token" ? selection.size : null
+                        }
+                        onTokenSizeChange={editor.onTokenSizeChange}
+                        onDeleteSelected={editor.onDeleteSelected}
+                      />
+                    ) : null}
                     <ZoomReadout
                       zoom={stageZoom.zoom.zoom}
                       onStep={stageZoom.step}
