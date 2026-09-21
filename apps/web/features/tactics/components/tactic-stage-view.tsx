@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Arrow,
   Circle,
@@ -53,6 +53,12 @@ const LABEL_FONT_SIZE = 22;
 
 /** How tall a numbered token's digits are drawn, relative to the token's radius. */
 const DIGIT_FONT_RATIO = 1.15;
+
+/** How far a hovered token's halo reaches past its circle, as a multiple of the radius. */
+const HOVER_HALO_RATIO = 1.28;
+
+/** How solid that halo is. Enough to pick the token out, not enough to hide the map under it. */
+const HOVER_HALO_OPACITY = 0.3;
 
 export interface TacticStageViewProps {
   /** The stage being drawn */
@@ -217,6 +223,69 @@ export function TacticStageView({
   );
 }
 
+/** What a hovered token does to the pointer, and the state that draws its halo. */
+interface TokenHover {
+  /** Whether the pointer is on the token */
+  hovered: boolean;
+  /** Take the hover, and the cursor with it */
+  onEnter: (event: Konva.KonvaEventObject<MouseEvent>) => void;
+  /** Give both back */
+  onLeave: (event: Konva.KonvaEventObject<MouseEvent>) => void;
+}
+
+/**
+ * Hover state of one element, and the cursor that goes with it.
+ *
+ * Konva draws on a single canvas, so there is no element to put `cursor` on — the pointer belongs
+ * to the stage, and the stage is what has to be told. That also means nothing releases the cursor
+ * for a node that goes away under the pointer: the eraser deletes a hovered token without any
+ * mouse-leave ever firing, so the container is remembered and cleared on unmount.
+ * @param movable - Whether the element answers to a drag, and so earns the grab cursor
+ * @returns The hover state and its two handlers
+ */
+function useTokenHover(movable: boolean): TokenHover {
+  const [hovered, setHovered] = useState(false);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(
+    () => () => {
+      if (containerRef.current) {
+        containerRef.current.style.cursor = "";
+      }
+    },
+    []
+  );
+
+  /**
+   * Point the container's cursor at a value, remembering the container on the way.
+   * @param event - The Konva event the pointer came with
+   * @param cursor - A CSS cursor, or "" to hand it back to the stylesheet
+   */
+  function setCursor(
+    event: Konva.KonvaEventObject<MouseEvent>,
+    cursor: string
+  ): void {
+    const container = event.target.getStage()?.container();
+
+    if (container) {
+      containerRef.current = container;
+      container.style.cursor = cursor;
+    }
+  }
+
+  return {
+    hovered,
+    onEnter: (event) => {
+      setHovered(true);
+      if (movable) setCursor(event, "grab");
+    },
+    onLeave: (event) => {
+      setHovered(false);
+      if (movable) setCursor(event, "");
+    },
+  };
+}
+
 interface ElementShapeProps {
   /** The element to draw */
   element: TacticElement;
@@ -243,6 +312,9 @@ function ElementShape({
   onDragEnd,
   onClick,
 }: ElementShapeProps) {
+  // Only a token reads this, but the hook has to run for every element kind all the same.
+  const { hovered, onEnter, onLeave } = useTokenHover(draggable);
+
   switch (element.kind) {
     case "token": {
       const radius = TOKEN_RADIUS[element.size];
@@ -254,8 +326,19 @@ function ElementShape({
           draggable={draggable}
           onClick={onClick}
           onTap={onClick}
+          onMouseEnter={onEnter}
+          onMouseLeave={onLeave}
           onDragEnd={(event) => onDragEnd(event.target.x(), event.target.y())}
         >
+          {/* Behind the token: the halo says which one the pointer is on before a click moves it. */}
+          {hovered ? (
+            <Circle
+              radius={radius * HOVER_HALO_RATIO}
+              fill={COLOR_HEX[element.color]}
+              opacity={HOVER_HALO_OPACITY}
+              listening={false}
+            />
+          ) : null}
           <Circle
             radius={radius}
             fill={TOKEN_FILL[element.color]}

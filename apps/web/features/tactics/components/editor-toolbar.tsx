@@ -22,9 +22,17 @@ import {
 
 import { Spinner } from "@/components/shared/spinner";
 import { Button } from "@/components/ui/button";
+import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { cn } from "@/lib/utils";
+import { useModifierKey } from "../hooks/use-modifier-key";
 import { COLOR_HEX, COLOR_LABELS } from "../lib/token-icon";
-import { TOOL_SHORTCUTS } from "../lib/shortcuts";
+import {
+  ACTION_SHORTCUTS,
+  STROKE_WIDTH_SHORTCUT,
+  TOOL_SHORTCUTS,
+  shortcutLabel,
+  type ActionShortcut,
+} from "../lib/shortcuts";
 import { TOOL_LABELS, type TacticTool } from "../types/tactic";
 
 /** Icon of each tool, in the order the toolbar shows them. */
@@ -42,6 +50,47 @@ const SIZE_LABELS: Record<TacticTokenSize, string> = {
   md: "Cỡ vừa",
   lg: "Cỡ lớn",
 };
+
+/**
+ * How a key cap is tinted inside a button. `currentColor` rather than the muted pair shadcn ships
+ * with: the cap sits on the filled Save button as well as on the ghost ones, and one fixed colour
+ * cannot read on both.
+ */
+const KEY_CAP_CLASS =
+  "h-4.5 min-w-4.5 bg-current/12 px-1 text-[10px] text-current";
+
+interface ShortcutKeysProps {
+  /** The shortcut to draw */
+  shortcut: ActionShortcut;
+  /** What the modifier is called on this platform */
+  modifier: string;
+}
+
+/**
+ * A shortcut as a row of key caps, sitting inside the button it belongs to.
+ *
+ * The caps are `aria-hidden`: the button already carries the whole shortcut in its `title`, and a
+ * screen reader spelling out "⇧ Z" on top of that only repeats it.
+ * @param shortcut - The shortcut to draw
+ * @param modifier - What the modifier is called on this platform
+ * @returns The key caps
+ */
+function ShortcutKeys({ shortcut, modifier }: ShortcutKeysProps) {
+  const keys = shortcut.hasModifier
+    ? [modifier, ...shortcut.keys]
+    : [...shortcut.keys];
+
+  return (
+    <KbdGroup aria-hidden className="gap-0.5">
+      {keys.map((key, index) => (
+        // Position, not the key: a shortcut may press the same key twice.
+        <Kbd key={`${index}-${key}`} className={KEY_CAP_CLASS}>
+          {key}
+        </Kbd>
+      ))}
+    </KbdGroup>
+  );
+}
 
 export interface EditorToolbarProps {
   /** Tool a click on the map uses */
@@ -74,8 +123,8 @@ export interface EditorToolbarProps {
 
 /**
  * The editor's toolbar: tools, colours, stroke widths, undo/redo, save and export.
- * Every button carries its keyboard shortcut in the `title`, so the shortcuts are discoverable
- * without a separate legend.
+ * Every button that answers to a shortcut wears it as a key cap, so the keyboard is readable off
+ * the toolbar itself rather than out of a tooltip nobody hovers.
  * @param props - The current tool state and the callbacks that change it
  * @returns The toolbar
  */
@@ -98,6 +147,8 @@ export function EditorToolbar({
   onSave,
   onExport,
 }: EditorToolbarProps) {
+  const modifier = useModifierKey();
+
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border bg-card px-3 py-2 shadow-xs">
       <div className="flex items-center gap-1">
@@ -116,6 +167,9 @@ export function EditorToolbar({
             >
               <Icon />
               {TOOL_LABELS[candidate]}
+              <Kbd aria-hidden className={KEY_CAP_CLASS}>
+                {TOOL_SHORTCUTS[candidate]}
+              </Kbd>
             </Button>
           );
         })}
@@ -152,13 +206,15 @@ export function EditorToolbar({
             size="sm"
             variant={candidate === strokeWidth ? "default" : "ghost"}
             aria-pressed={candidate === strokeWidth}
-            title={`Nét ${candidate} ([ và ] để đổi)`}
+            // "và", not the "+" of a chord: the two keys step the width one way each.
+            title={`Nét ${candidate} (${STROKE_WIDTH_SHORTCUT.keys.join(" và ")} để đổi)`}
             className="tabular-nums"
             onClick={() => onStrokeWidthChange(candidate)}
           >
             {candidate}
           </Button>
         ))}
+        <ShortcutKeys shortcut={STROKE_WIDTH_SHORTCUT} modifier={modifier} />
       </div>
 
       {selectedTokenSize ? (
@@ -184,22 +240,24 @@ export function EditorToolbar({
           size="sm"
           variant="outline"
           disabled={!canUndo}
-          title="Hoàn tác (Ctrl+Z)"
+          title={`Hoàn tác (${shortcutLabel(ACTION_SHORTCUTS.undo, modifier)})`}
           onClick={onUndo}
         >
           <Undo2 />
           Hoàn tác
+          <ShortcutKeys shortcut={ACTION_SHORTCUTS.undo} modifier={modifier} />
         </Button>
         <Button
           type="button"
           size="sm"
           variant="outline"
           disabled={!canRedo}
-          title="Làm lại (Ctrl+Shift+Z)"
+          title={`Làm lại (${shortcutLabel(ACTION_SHORTCUTS.redo, modifier)})`}
           onClick={onRedo}
         >
           <Redo2 />
           Làm lại
+          <ShortcutKeys shortcut={ACTION_SHORTCUTS.redo} modifier={modifier} />
         </Button>
 
         {isAdmin ? (
@@ -218,11 +276,15 @@ export function EditorToolbar({
               type="button"
               size="sm"
               disabled={saving || !dirty}
-              title="Lưu (Ctrl+S)"
+              title={`Lưu (${shortcutLabel(ACTION_SHORTCUTS.save, modifier)})`}
               onClick={onSave}
             >
               {saving ? <Spinner /> : <Save />}
               {saving ? "Đang lưu..." : "Lưu"}
+              <ShortcutKeys
+                shortcut={ACTION_SHORTCUTS.save}
+                modifier={modifier}
+              />
             </Button>
           </>
         ) : null}

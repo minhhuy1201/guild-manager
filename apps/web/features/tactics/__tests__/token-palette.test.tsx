@@ -93,6 +93,16 @@ describe("TokenPalette", () => {
     });
   });
 
+  it("keeps the toggle reachable once folded, so the palette can be opened again", () => {
+    renderPalette({ collapsed: true });
+
+    // The folded column holds the toggle and nothing else: the title is what used to push it out.
+    const toggle = screen.getByRole("button", { name: "Mở bảng quân cờ" });
+
+    fireEvent.click(toggle);
+    expect(handlers.onToggle).toHaveBeenCalled();
+  });
+
   it("hides the preset manager from a member", () => {
     renderPalette({ isAdmin: false });
 

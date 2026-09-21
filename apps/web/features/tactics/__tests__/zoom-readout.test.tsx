@@ -13,10 +13,10 @@ describe("ZoomReadout", () => {
     expect(screen.getByText("150%")).toBeTruthy();
   });
 
-  it("steps in and out, and puts the map back to fitting", () => {
+  it("steps in and out, and puts the map back to 100%", () => {
     const onStep = vi.fn();
     const onReset = vi.fn();
-    render(<ZoomReadout zoom={1} onStep={onStep} onReset={onReset} />);
+    render(<ZoomReadout zoom={2} onStep={onStep} onReset={onReset} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Phóng to" }));
     expect(onStep).toHaveBeenCalledWith(1);
@@ -24,7 +24,16 @@ describe("ZoomReadout", () => {
     fireEvent.click(screen.getByRole("button", { name: "Thu nhỏ" }));
     expect(onStep).toHaveBeenCalledWith(-1);
 
-    fireEvent.click(screen.getByRole("button", { name: "Vừa khung" }));
+    fireEvent.click(screen.getByRole("button", { name: "Đặt lại zoom 100%" }));
+    expect(onReset).toHaveBeenCalled();
+  });
+
+  it("offers the reset even while the map already sits at 100%", () => {
+    const onReset = vi.fn();
+    render(<ZoomReadout zoom={1} onStep={vi.fn()} onReset={onReset} />);
+
+    // A pan moves the map without changing the zoom, so this is the way back to the middle.
+    fireEvent.click(screen.getByRole("button", { name: "Đặt lại zoom 100%" }));
     expect(onReset).toHaveBeenCalled();
   });
 });

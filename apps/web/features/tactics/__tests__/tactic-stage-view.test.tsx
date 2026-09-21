@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render } from "@testing-library/react";
+import { act, cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { TACTIC_MAP_HEIGHT, TACTIC_MAP_WIDTH } from "@guild/shared/schemas";
 import type { TacticStage } from "@guild/shared/schemas";
@@ -313,6 +313,37 @@ describe("TacticStageView", () => {
 
     group.onClick();
     expect(onElementClick).toHaveBeenCalledWith("tk1");
+  });
+
+  it("puts a halo under the token the pointer is on, and takes it away again", () => {
+    const container = document.createElement("div");
+    const hoverEvent = {
+      target: { getStage: () => ({ container: () => container }) },
+    };
+
+    const { rerender } = render(
+      <TacticStageView stage={stage} width={960} />
+    );
+
+    const group = (rendered.get("group") ?? []).at(-1) as unknown as {
+      onMouseEnter: (event: unknown) => void;
+      onMouseLeave: (event: unknown) => void;
+    };
+
+    expect(document.querySelectorAll('[data-slot="circle"]').length).toBe(1);
+
+    act(() => group.onMouseEnter(hoverEvent));
+    rerender(<TacticStageView stage={stage} width={960} />);
+
+    // The halo is a second circle behind the token's own, in the token's colour.
+    expect(document.querySelectorAll('[data-slot="circle"]').length).toBe(2);
+    expect(container.style.cursor).toBe("grab");
+
+    act(() => group.onMouseLeave(hoverEvent));
+    rerender(<TacticStageView stage={stage} width={960} />);
+
+    expect(document.querySelectorAll('[data-slot="circle"]').length).toBe(1);
+    expect(container.style.cursor).toBe("");
   });
 
   it("draws a token as a circle with its icon and label", () => {
