@@ -1,5 +1,6 @@
-import type { MapPoint } from "./hit-test";
 import { TACTIC_MAP_HEIGHT, TACTIC_MAP_WIDTH } from "@guild/shared/schemas";
+
+import type { MapPoint } from "./hit-test";
 import type { StageViewport } from "./stage-scale";
 
 /**

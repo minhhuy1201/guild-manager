@@ -76,7 +76,10 @@ export function TacticViewer({ stages }: TacticViewerProps) {
         style={CANVAS_GRID_STYLE}
         className={cn(
           "relative overflow-hidden rounded-xl border bg-muted/30",
-          stageZoom.panning && "cursor-grabbing"
+          // Konva writes the hover cursor inline on its own container, so the drag cursor has to
+          // be marked important to be seen at all while panning.
+          stageZoom.panning &&
+            "cursor-grabbing [&_.konvajs-content]:cursor-grabbing!"
         )}
       >
         <TacticCanvas
