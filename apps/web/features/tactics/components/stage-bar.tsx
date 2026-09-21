@@ -6,9 +6,9 @@ import { TACTIC_LIMITS, type TacticStage } from "@guild/shared/schemas";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
 import { useStageArrows } from "../hooks/use-stage-arrows";
 import { StageArrowHint } from "./stage-arrow-hint";
+import { StageTab } from "./stage-tab";
 
 interface StageBarProps {
   /** Every stage of the tactic, in order */
@@ -26,7 +26,10 @@ interface StageBarProps {
 
 /**
  * The stage strip: one tab per stage, plus add, duplicate, rename and delete for an admin.
- * Renaming happens in place — double-click a tab's name, and the arrow keys step between them.
+ *
+ * A tab is a clock face — the first stage wears one o'clock, the second two — so twenty stages
+ * stay one short row above the map instead of a wall of names. The name itself is the tooltip and
+ * the tab's accessible name; renaming still happens in place, on a double-click.
  * @param props - The stages and the callbacks that change them
  * @returns The stage strip
  */
@@ -50,16 +53,16 @@ export function StageBar({
       ref={tablistRef}
       role="tablist"
       aria-label="Giai đoạn"
-      className="flex flex-wrap items-center gap-2 rounded-xl border bg-card px-3 py-2"
+      className="flex flex-wrap items-center gap-1 rounded-lg border bg-card px-2 py-1"
     >
-      {stages.map((stage) =>
+      {stages.map((stage, index) =>
         renamingId === stage.id ? (
           <Input
             key={stage.id}
             autoFocus
             defaultValue={stage.name}
             maxLength={TACTIC_LIMITS.stageNameLength}
-            className="h-8 w-40"
+            className="h-7 w-36"
             aria-label="Tên giai đoạn"
             onBlur={(event) => {
               const name = event.target.value.trim();
@@ -72,24 +75,16 @@ export function StageBar({
             }}
           />
         ) : (
-          <Button
+          <StageTab
             key={stage.id}
-            type="button"
-            role="tab"
-            aria-selected={stage.id === activeStageId}
-            // Roving tabIndex, as the ARIA tablist pattern asks: Tab reaches the strip once, and
-            // the arrow keys move between the tabs from there.
-            tabIndex={stage.id === activeStageId ? 0 : -1}
-            size="sm"
-            variant={stage.id === activeStageId ? "default" : "ghost"}
-            className={cn(stage.id === activeStageId && "font-medium")}
-            onClick={() => onSelect(stage.id)}
-            onDoubleClick={() => {
+            stage={stage}
+            position={index + 1}
+            active={stage.id === activeStageId}
+            onSelect={() => onSelect(stage.id)}
+            onRename={() => {
               if (isAdmin) setRenamingId(stage.id);
             }}
-          >
-            {stage.name}
-          </Button>
+          />
         )
       )}
 
@@ -99,7 +94,7 @@ export function StageBar({
         <div className="ml-auto flex items-center gap-1">
           <Button
             type="button"
-            size="sm"
+            size="xs"
             variant="outline"
             disabled={atLimit}
             title={
@@ -114,7 +109,7 @@ export function StageBar({
           </Button>
           <Button
             type="button"
-            size="sm"
+            size="xs"
             variant="outline"
             disabled={atLimit || !activeStageId}
             onClick={() => {
@@ -126,7 +121,7 @@ export function StageBar({
           </Button>
           <Button
             type="button"
-            size="sm"
+            size="xs"
             variant="outline"
             className="text-destructive"
             disabled={stages.length <= 1 || !activeStageId}

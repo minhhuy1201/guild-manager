@@ -89,10 +89,6 @@ export interface TacticStageViewProps {
   onWheel?: (event: Konva.KonvaEventObject<WheelEvent>) => void;
   /** Mouse-down handler that runs before the drawing one, for the pan button */
   onStageMouseDown?: (event: Konva.KonvaEventObject<MouseEvent>) => void;
-  /** Mouse-move handler that runs before the drawing one, for the pan button */
-  onStageMouseMove?: (event: Konva.KonvaEventObject<MouseEvent>) => void;
-  /** Mouse-up handler that runs before the drawing one, for the pan button */
-  onStageMouseUp?: () => void;
 }
 
 /**
@@ -119,8 +115,6 @@ export function TacticStageView({
   onStageReady,
   onWheel,
   onStageMouseDown,
-  onStageMouseMove,
-  onStageMouseUp,
 }: TacticStageViewProps) {
   const [mapImage, setMapImage] = useState<HTMLImageElement | null>(null);
   // The fit scale makes the map exactly as wide as the canvas; the zoom multiplies it.
@@ -178,15 +172,10 @@ export function TacticStageView({
         if (point) onPointerDown?.(point);
       }}
       onMouseMove={(event) => {
-        onStageMouseMove?.(event);
-
         const point = pointerPoint(event.target.getStage());
         if (point) onPointerMove?.(point);
       }}
-      onMouseUp={() => {
-        onStageMouseUp?.();
-        onPointerUp?.();
-      }}
+      onMouseUp={() => onPointerUp?.()}
       onTouchStart={(event) => {
         const point = pointerPoint(event.target.getStage());
         if (point) onPointerDown?.(point);

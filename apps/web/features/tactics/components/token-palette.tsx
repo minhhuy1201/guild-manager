@@ -19,6 +19,27 @@ import {
 import { useTokenPresets } from "../hooks/use-token-presets";
 import { TokenGlyph } from "./token-glyph";
 
+/**
+ * The tint each group wears, off the three accents the app already uses: gold for the named roles,
+ * the brand indigo for the numbered teams, jade for whatever an admin saved. The box and its
+ * heading share one hue, so the column reads as three shelves rather than one long list.
+ */
+const GROUP_STYLES: Record<TokenGroup, { box: string; hue: string }> = {
+  insignia: { box: "border-gold/35 bg-gold/10", hue: "var(--gold)" },
+  team: { box: "border-primary/25 bg-primary/8", hue: "var(--primary)" },
+  custom: { box: "border-jade/35 bg-jade/10", hue: "var(--jade)" },
+};
+
+/**
+ * A heading in its group's hue, pulled towards the page's text colour so it stays readable on both
+ * themes — gold at full strength is a light wash on a light card.
+ * @param hue - The group's colour
+ * @returns The colour to set on the heading
+ */
+function headingColor(hue: string): string {
+  return `color-mix(in oklch, ${hue}, var(--foreground) 40%)`;
+}
+
 interface TokenPaletteProps {
   /** Whether the palette is folded away */
   collapsed: boolean;
@@ -67,7 +88,7 @@ export function TokenPalette({
     <aside
       className={cn(
         "flex shrink-0 flex-col overflow-hidden border-r transition-[width] duration-300 ease-out",
-        collapsed ? "w-12" : "w-24"
+        collapsed ? "w-12" : "w-28"
       )}
     >
       <div
@@ -116,8 +137,17 @@ export function TokenPalette({
           // The custom group keeps its heading even while empty, so the "Thêm đội" button below it
           // has something to belong to.
           tokens.length === 0 && group !== "custom" ? null : (
-            <section key={group} className="flex flex-col gap-1">
-              <h3 className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
+            <section
+              key={group}
+              className={cn(
+                "flex flex-col gap-1 rounded-lg border p-1.5",
+                GROUP_STYLES[group].box
+              )}
+            >
+              <h3
+                className="text-[10px] font-semibold tracking-wide uppercase"
+                style={{ color: headingColor(GROUP_STYLES[group].hue) }}
+              >
                 {TOKEN_GROUP_LABELS[group]}
               </h3>
 

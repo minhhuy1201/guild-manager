@@ -1,4 +1,7 @@
-import { TACTIC_MAP_WIDTH } from "@guild/shared/schemas";
+import {
+  TACTIC_MAP_HEIGHT,
+  TACTIC_MAP_WIDTH,
+} from "@guild/shared/schemas";
 
 import type { MapPoint } from "./hit-test";
 
@@ -27,4 +30,31 @@ export function stageScale(stageWidth: number): number {
  */
 export function toMapPoint(pointer: MapPoint, scale: number): MapPoint {
   return { x: pointer.x / scale, y: pointer.y / scale };
+}
+
+/** The canvas the map is drawn into: its size on screen and the scale the map fits it at. */
+export interface StageViewport {
+  /** Width of the canvas, in CSS pixels */
+  width: number;
+  /** Height of the canvas, in CSS pixels */
+  height: number;
+  /** Scale at which the map exactly fits the canvas */
+  fitScale: number;
+}
+
+/**
+ * The canvas the map is drawn into, derived from the one width the editor measures.
+ * The height is never measured: it follows the map's aspect ratio, which is what keeps a tactic
+ * lined up across screens.
+ * @param stageWidth - Width the stage is rendered at, in CSS pixels
+ * @returns The viewport the zoom keeps the map balanced inside
+ */
+export function stageViewport(stageWidth: number): StageViewport {
+  const fitScale = stageScale(stageWidth);
+
+  return {
+    width: stageWidth,
+    height: TACTIC_MAP_HEIGHT * fitScale,
+    fitScale,
+  };
 }

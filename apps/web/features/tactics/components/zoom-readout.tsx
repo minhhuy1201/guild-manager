@@ -1,9 +1,9 @@
 "use client";
 
-import { Minus, Plus, RotateCcw } from "lucide-react";
+import { Minus, Mouse, Plus, RotateCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { ZOOM_FIT, zoomLabel } from "../lib/zoom";
+import { ZOOM_FIT, ZOOM_MAX, ZOOM_MIN, zoomLabel } from "../lib/zoom";
 
 interface ZoomReadoutProps {
   /** The current zoom, 1 meaning the map fits the canvas */
@@ -20,6 +20,9 @@ interface ZoomReadoutProps {
  *
  * It floats over the drawing, so it is built at the `xs` sizes throughout — the map is what the
  * admin is looking at, and a full-size control bar sits on top of the corner of it.
+ *
+ * A step button goes dead at its end of the range rather than clicking to no effect, and the mouse
+ * hint beside them is the only place the middle-button drag is written down.
  * @param zoom - The current zoom
  * @param onStep - Zoom in or out by one notch
  * @param onReset - Put the map back to filling the canvas
@@ -33,7 +36,12 @@ export function ZoomReadout({ zoom, onStep, onReset }: ZoomReadoutProps) {
         size="icon-xs"
         variant="ghost"
         aria-label="Thu nhỏ"
-        title="Thu nhỏ"
+        disabled={zoom <= ZOOM_MIN}
+        title={
+          zoom <= ZOOM_MIN
+            ? `Nhỏ nhất là ${zoomLabel(ZOOM_MIN)}`
+            : "Thu nhỏ"
+        }
         onClick={() => onStep(-1)}
       >
         <Minus />
@@ -46,11 +54,25 @@ export function ZoomReadout({ zoom, onStep, onReset }: ZoomReadoutProps) {
         size="icon-xs"
         variant="ghost"
         aria-label="Phóng to"
-        title="Phóng to"
+        disabled={zoom >= ZOOM_MAX}
+        title={
+          zoom >= ZOOM_MAX ? `Lớn nhất là ${zoomLabel(ZOOM_MAX)}` : "Phóng to"
+        }
         onClick={() => onStep(1)}
       >
         <Plus />
       </Button>
+
+      <div className="mx-0.5 h-4 w-px bg-border" aria-hidden />
+
+      {/* Not a button: the drag is done on the map itself, and this only says so. */}
+      <span
+        className="flex items-center text-muted-foreground"
+        title="Giữ chuột giữa để kéo bản đồ"
+      >
+        <Mouse className="size-3.5" />
+        <span className="sr-only">Giữ chuột giữa để kéo bản đồ</span>
+      </span>
 
       <div className="mx-0.5 h-4 w-px bg-border" aria-hidden />
 

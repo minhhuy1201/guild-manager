@@ -4,6 +4,8 @@ import { useState } from "react";
 import type { TacticStage } from "@guild/shared/schemas";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { CANVAS_GRID_STYLE } from "../lib/canvas-grid";
 import { useStageArrows } from "../hooks/use-stage-arrows";
 import { useStageSize } from "../hooks/use-stage-size";
 import { useStageZoom } from "../hooks/use-stage-zoom";
@@ -47,6 +49,8 @@ export function TacticViewer({ stages }: TacticViewerProps) {
           aria-label="Giai đoạn"
           className="flex flex-wrap items-center gap-2"
         >
+          {/* Names, not the editor's clock faces: this is the view a phone gets, where a
+              tooltip never opens and the name would have nowhere left to be read. */}
           {stages.map((candidate) => (
             <Button
               key={candidate.id}
@@ -67,7 +71,17 @@ export function TacticViewer({ stages }: TacticViewerProps) {
         </div>
       ) : null}
 
-      <div ref={ref} className="relative overflow-hidden rounded-xl border">
+      <div
+        ref={ref}
+        style={CANVAS_GRID_STYLE}
+        className={cn(
+          "relative overflow-hidden rounded-xl border bg-muted/30",
+          // Konva writes the hover cursor inline on its own container, so the drag cursor has to
+          // be marked important to be seen at all while panning.
+          stageZoom.panning &&
+            "cursor-grabbing [&_.konvajs-content]:cursor-grabbing!"
+        )}
+      >
         <TacticCanvas
           stage={stage}
           width={width}
@@ -75,8 +89,6 @@ export function TacticViewer({ stages }: TacticViewerProps) {
           readOnly
           onWheel={stageZoom.onWheel}
           onStageMouseDown={stageZoom.onPanStart}
-          onStageMouseMove={stageZoom.onPanMove}
-          onStageMouseUp={stageZoom.onPanEnd}
         />
         <ZoomReadout
           zoom={stageZoom.zoom.zoom}

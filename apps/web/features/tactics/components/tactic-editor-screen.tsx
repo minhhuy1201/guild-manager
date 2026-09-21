@@ -4,6 +4,8 @@ import { useState } from "react";
 
 import { QueryBoundary } from "@/components/shared/query-boundary";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+import { CANVAS_GRID_STYLE } from "../lib/canvas-grid";
 import { useEditorShortcuts } from "../hooks/use-editor-shortcuts";
 import { useIsDesktop } from "../hooks/use-is-desktop";
 import { useStageSize } from "../hooks/use-stage-size";
@@ -145,7 +147,17 @@ export function TacticEditorScreen({
                 onManagePresets={() => setPresetsOpen(true)}
               />
 
-              <div ref={ref} className="relative min-w-0 flex-1 overflow-hidden">
+              <div
+                ref={ref}
+                style={CANVAS_GRID_STYLE}
+                className={cn(
+                  "relative min-w-0 flex-1 overflow-hidden bg-muted/30",
+                  // Konva writes the hover cursor inline on its own container, so the drag cursor
+                  // has to be marked important to be seen at all while panning.
+                  stageZoom.panning &&
+                    "cursor-grabbing [&_.konvajs-content]:cursor-grabbing!"
+                )}
+              >
                 {editor.activeStage ? (
                   <>
                     <TacticCanvas
@@ -161,8 +173,6 @@ export function TacticEditorScreen({
                       onStageReady={editor.onStageReady}
                       onWheel={stageZoom.onWheel}
                       onStageMouseDown={stageZoom.onPanStart}
-                      onStageMouseMove={stageZoom.onPanMove}
-                      onStageMouseUp={stageZoom.onPanEnd}
                     />
                     <ZoomReadout
                       zoom={stageZoom.zoom.zoom}

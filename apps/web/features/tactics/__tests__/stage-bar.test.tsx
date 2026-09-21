@@ -46,6 +46,34 @@ describe("StageBar", () => {
     ).toBe("true");
   });
 
+  it("wears a clock face per stage, with the name left to the accessible one", () => {
+    renderBar();
+
+    const first = screen.getByRole("tab", { name: "Giai đoạn 1" });
+    const second = screen.getByRole("tab", { name: "Giai đoạn 2" });
+
+    expect(first.querySelector(".lucide-clock-1")).toBeTruthy();
+    expect(second.querySelector(".lucide-clock-2")).toBeTruthy();
+    // The name is there for a screen reader, not on screen beside the face.
+    expect(first.querySelector(".sr-only")?.textContent).toBe("Giai đoạn 1");
+  });
+
+  it("writes the number out once the clock runs out of faces", () => {
+    renderBar({
+      stages: Array.from({ length: 13 }, (_, index) => ({
+        id: `s${index}`,
+        name: `Giai đoạn ${index + 1}`,
+        elements: [],
+      })),
+      activeStageId: "s0",
+    });
+
+    const thirteenth = screen.getByRole("tab", { name: /Giai đoạn 13/ });
+
+    expect(thirteenth.querySelector(".lucide-clock")).toBeTruthy();
+    expect(thirteenth.textContent).toContain("13");
+  });
+
   it("reports the stage the user opened", () => {
     renderBar();
     fireEvent.click(screen.getByRole("tab", { name: "Giai đoạn 2" }));
