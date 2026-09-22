@@ -131,6 +131,11 @@ selection đi hai đường (Konva `onClick` và `hitTest` ở mousedown).
 event thô sang toạ độ map; session (T1) quyết định phần tử nào kéo được / click được theo tool. Tách
 `ElementShape` / `TokenArt` ra file riêng chỉ khi làm cùng, tách riêng là split nông.
 
+**Phạm vi đã làm ở PR 5.** Chỉ phần seam kết thúc gesture: `useTacticEditor` kết thúc nét trên `window`
+mouseup / touchend / blur, đối xứng với pan (B3). Không chuyển quyết định `draggable` vào session và
+không tách file view: B13 phụ thuộc thứ tự sự kiện thật của Konva, test hiện mock `react-konva` nên
+không tái hiện được - theo mục 2, B13 để lại là "chưa xác nhận", cần kiểm tay trên trình duyệt.
+
 ### T3 - Đọc scene một đường
 
 `tactics.codec.ts:52-78` (`parseScene`) và `lib/migrate-scene.ts:19-38` (`migrateScene`) là cùng ba

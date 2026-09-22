@@ -110,6 +110,40 @@ describe("useTacticEditor", () => {
     });
   });
 
+  it("ends a stroke released outside the canvas, so hovering back does not extend it", async () => {
+    const { result } = await renderEditor();
+
+    act(() => useTacticEditorStore.getState().setTool("arrow"));
+    act(() => result.current.onPointerDown({ x: 10, y: 10 }));
+    act(() => result.current.onPointerMove({ x: 80, y: 60 }));
+    // The button comes up over the toolbar: the canvas never sees it, the window does.
+    act(() => {
+      window.dispatchEvent(new MouseEvent("mouseup"));
+    });
+    act(() => result.current.onPointerMove({ x: 999, y: 999 }));
+
+    expect(elements()[0]).toMatchObject({
+      kind: "arrow",
+      points: [10, 10, 80, 60],
+    });
+  });
+
+  it("ends a stroke when the window loses focus mid-drag", async () => {
+    const { result } = await renderEditor();
+
+    act(() => useTacticEditorStore.getState().setTool("freehand"));
+    act(() => result.current.onPointerDown({ x: 10, y: 10 }));
+    act(() => {
+      window.dispatchEvent(new Event("blur"));
+    });
+    act(() => result.current.onPointerMove({ x: 500, y: 500 }));
+
+    expect(elements()[0]).toMatchObject({
+      kind: "freehand",
+      points: [10, 10, 10, 10],
+    });
+  });
+
   it("grows one freehand stroke instead of one per point", async () => {
     const { result } = await renderEditor();
 

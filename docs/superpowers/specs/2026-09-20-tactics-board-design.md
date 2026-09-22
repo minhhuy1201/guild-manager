@@ -312,6 +312,9 @@ Konva:
   Chỉ số zoom nằm ở **góc phải dưới** khung map (`zoom-readout`), kèm nút `-`, `+` và "Vừa khung"
   cho ai không dùng lăn chuột. Trạng thái zoom là cách một người đang nhìn bản vẽ, không phải một
   phần bản vẽ: nó nằm trong hook, không vào store và không bao giờ được lưu.
+- Một nét (mũi tên, vẽ tự do) kết thúc khi nhả chuột ở **bất kỳ đâu**, không chỉ trên canvas, và khi
+  cửa sổ mất focus - cùng bảo đảm mà kéo map có (`window` mouseup / touchend / blur). Nhả chuột trên
+  toolbar rồi rê lại vào map không còn vẽ tiếp.
 - Phần tử đang chọn có thanh action (`selection-actions`) đặt ngay dưới nó trên map, bám theo zoom
   và pan: nút `Xoá` cho mọi loại phần tử, cộng ba nút cỡ khi đó là quân cờ (#151). **Không** dùng
   `Transformer` - không có xoay, không có resize tự do, nên handle chỉ là nhiễu.
