@@ -47,6 +47,7 @@ vi.mock("react-konva", () => ({
   Text: konvaNode("text"),
 }));
 
+import { staticFrame, transitionFrame } from "../lib/stage-transition";
 import { TacticStageView } from "../components/tactic-stage-view";
 
 afterEach(() => {
@@ -141,7 +142,7 @@ function propsOf(slot: string): Record<string, unknown> {
 
 describe("TacticStageView", () => {
   it("fills the width it is given and keeps the map's aspect ratio", () => {
-    render(<TacticStageView stage={stage} width={960} />);
+    render(<TacticStageView frame={staticFrame(stage)} width={960} />);
 
     const props = stageProps();
     expect(props.width).toBe(960);
@@ -152,7 +153,7 @@ describe("TacticStageView", () => {
   it("multiplies the fit scale by the zoom and takes its offset", () => {
     render(
       <TacticStageView
-        stage={stage}
+        frame={staticFrame(stage)}
         width={960}
         zoom={{ zoom: 2, offset: { x: -30, y: -40 } }}
       />
@@ -166,13 +167,13 @@ describe("TacticStageView", () => {
   });
 
   it("draws nothing at all before the canvas box has been measured", () => {
-    const { container } = render(<TacticStageView stage={stage} width={0} />);
+    const { container } = render(<TacticStageView frame={staticFrame(stage)} width={0} />);
 
     expect(container.firstChild).toBeNull();
   });
 
   it("draws an arrow, a freehand stroke and a note, each in its own colour", () => {
-    render(<TacticStageView stage={busyStage} width={960} />);
+    render(<TacticStageView frame={staticFrame(busyStage)} width={960} />);
 
     expect(propsOf("arrow").stroke).toBe("#3b82f6");
     expect(propsOf("line").stroke).toBe("#f5c518");
@@ -198,7 +199,7 @@ describe("TacticStageView", () => {
       ],
     };
 
-    render(<TacticStageView stage={numbered} width={960} />);
+    render(<TacticStageView frame={staticFrame(numbered)} width={960} />);
 
     expect(document.querySelector('[data-slot="path"]')).toBeNull();
     expect(propsOf("text").text).toBe("7");
@@ -210,27 +211,27 @@ describe("TacticStageView", () => {
       elements: [{ ...stage.elements[0], color: "black" }],
     };
 
-    render(<TacticStageView stage={black} width={960} />);
+    render(<TacticStageView frame={staticFrame(black)} width={960} />);
 
     expect(propsOf("circle").fill).toBe("rgba(244, 244, 245, 0.86)");
   });
 
   it("lets a token be dragged only while the canvas is writable", () => {
-    render(<TacticStageView stage={stage} width={960} />);
+    render(<TacticStageView frame={staticFrame(stage)} width={960} />);
     expect(propsOf("group").draggable).toBe(true);
 
     cleanup();
-    render(<TacticStageView stage={stage} width={960} readOnly />);
+    render(<TacticStageView frame={staticFrame(stage)} width={960} readOnly />);
     expect(propsOf("group").draggable).toBe(false);
   });
 
   it("thickens the selected token's ring", () => {
-    render(<TacticStageView stage={stage} width={960} />);
+    render(<TacticStageView frame={staticFrame(stage)} width={960} />);
     const plain = propsOf("circle").strokeWidth;
 
     cleanup();
     render(
-      <TacticStageView stage={stage} width={960} selectedElementId="tk1" />
+      <TacticStageView frame={staticFrame(stage)} width={960} selectedElementId="tk1" />
     );
 
     expect(propsOf("circle").strokeWidth).toBeGreaterThan(Number(plain));
@@ -242,7 +243,7 @@ describe("TacticStageView", () => {
     const onPointerUp = vi.fn();
     render(
       <TacticStageView
-        stage={stage}
+        frame={staticFrame(stage)}
         width={TACTIC_MAP_WIDTH / 2}
         zoom={{ zoom: 2, offset: { x: 100, y: 50 } }}
         onPointerDown={onPointerDown}
@@ -274,7 +275,7 @@ describe("TacticStageView", () => {
     const onStageMouseDown = vi.fn();
     render(
       <TacticStageView
-        stage={stage}
+        frame={staticFrame(stage)}
         width={960}
         onPointerDown={onPointerDown}
         onStageMouseDown={onStageMouseDown}
@@ -292,21 +293,28 @@ describe("TacticStageView", () => {
   });
 
   it("reports a token's drag in map coordinates, and a click on an element", () => {
+    const onTokenDragStart = vi.fn();
     const onTokenMoved = vi.fn();
     const onElementClick = vi.fn();
     render(
       <TacticStageView
-        stage={stage}
+        frame={staticFrame(stage)}
         width={960}
+        onTokenDragStart={onTokenDragStart}
         onTokenMoved={onTokenMoved}
         onElementClick={onElementClick}
       />
     );
 
     const group = (rendered.get("group") ?? []).at(-1) as unknown as {
+      onDragStart: () => void;
       onDragEnd: (event: unknown) => void;
       onClick: () => void;
     };
+
+    // Said before any coordinate has moved, so the action bar can leave the token's old place.
+    group.onDragStart();
+    expect(onTokenDragStart).toHaveBeenCalledWith("tk1");
 
     group.onDragEnd({ target: { x: () => 300, y: () => 400 } });
     expect(onTokenMoved).toHaveBeenCalledWith("tk1", 300, 400);
@@ -322,7 +330,7 @@ describe("TacticStageView", () => {
     };
 
     const { rerender } = render(
-      <TacticStageView stage={stage} width={960} />
+      <TacticStageView frame={staticFrame(stage)} width={960} />
     );
 
     const group = (rendered.get("group") ?? []).at(-1) as unknown as {
@@ -333,26 +341,96 @@ describe("TacticStageView", () => {
     expect(document.querySelectorAll('[data-slot="circle"]').length).toBe(1);
 
     act(() => group.onMouseEnter(hoverEvent));
-    rerender(<TacticStageView stage={stage} width={960} />);
+    rerender(<TacticStageView frame={staticFrame(stage)} width={960} />);
 
     // The halo is a second circle behind the token's own, in the token's colour.
     expect(document.querySelectorAll('[data-slot="circle"]').length).toBe(2);
     expect(container.style.cursor).toBe("grab");
 
     act(() => group.onMouseLeave(hoverEvent));
-    rerender(<TacticStageView stage={stage} width={960} />);
+    rerender(<TacticStageView frame={staticFrame(stage)} width={960} />);
 
     expect(document.querySelectorAll('[data-slot="circle"]').length).toBe(1);
     expect(container.style.cursor).toBe("");
   });
 
   it("draws a token as a circle with its icon and label", () => {
-    render(<TacticStageView stage={stage} width={960} />);
+    render(<TacticStageView frame={staticFrame(stage)} width={960} />);
 
     expect(document.querySelector('[data-slot="circle"]')).not.toBeNull();
     expect(document.querySelectorAll('[data-slot="path"]').length).toBeGreaterThan(0);
     expect(
       document.querySelector('[data-slot="text"]')?.getAttribute("data-props")
     ).toContain("Đội công");
+  });
+});
+
+describe("a frame in motion", () => {
+  const from: TacticStage = {
+    id: "s1",
+    name: "Giai đoạn 1",
+    elements: [
+      {
+        kind: "token",
+        id: "a",
+        label: "Đội 1",
+        icon: "swords",
+        x: 0,
+        y: 0,
+        size: "md",
+        color: "red",
+      },
+    ],
+  };
+  const to: TacticStage = {
+    ...from,
+    id: "s2",
+    elements: [{ ...from.elements[0], id: "a", x: 100 } as TacticStage["elements"][number]],
+  };
+
+  it("draws a trail behind a moving token", () => {
+    render(
+      <TacticStageView
+        frame={transitionFrame(from, to, 0.5)}
+        width={960}
+        animating
+      />
+    );
+
+    const trail = (rendered.get("line") ?? []).find(
+      (props) => props.opacity !== undefined
+    );
+
+    expect(trail?.points).toEqual([0, 0, 50, 0]);
+  });
+
+  it("draws no trail while standing still", () => {
+    render(<TacticStageView frame={staticFrame(from)} width={960} />);
+
+    expect(rendered.get("line") ?? []).toHaveLength(0);
+  });
+
+  it("draws the onion skin faintly", () => {
+    render(<TacticStageView frame={staticFrame(to, from)} width={960} />);
+
+    const faint = (rendered.get("group") ?? []).filter(
+      (props) => (props.opacity as number) < 1
+    );
+
+    expect(faint).toHaveLength(1);
+  });
+
+  it("does not let a token be dragged while it moves", () => {
+    render(
+      <TacticStageView
+        frame={transitionFrame(from, to, 0.5)}
+        width={960}
+        animating
+      />
+    );
+
+    expect(
+      (rendered.get("group") ?? []).every((props) => props.draggable !== true)
+    ).toBe(true);
   });
 });

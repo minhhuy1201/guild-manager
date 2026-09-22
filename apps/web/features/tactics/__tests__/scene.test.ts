@@ -86,12 +86,45 @@ describe("scene edits", () => {
     expect(scene.stages).toHaveLength(20);
   });
 
-  it("duplicates a stage with fresh element ids", () => {
+  it("duplicates a stage under a copy's name", () => {
     const copy = duplicateStage(sceneWithToken(), "s1").stages[1];
 
     expect(copy.name).toBe("Giai đoạn 1 (bản sao)");
-    expect(copy.elements[0].id).not.toBe("tk1");
     expect(copy.elements[0]).toMatchObject({ x: 100, y: 200 });
+  });
+
+  it("keeps token ids across a duplicated stage, so the two can be paired", () => {
+    const next = duplicateStage(sceneWithToken(), "s1");
+    const [original, copy] = next.stages;
+
+    expect(copy.elements[0].id).toBe(original.elements[0].id);
+    // The id is shared on purpose; the object is not, so an in-place edit could never reach both.
+    expect(copy.elements[0]).not.toBe(original.elements[0]);
+  });
+
+  it("still gives a duplicated drawing a fresh id", () => {
+    const scene: TacticScene = {
+      schemaVersion: TACTIC_SCHEMA_VERSION,
+      stages: [
+        {
+          id: "s1",
+          name: "Giai đoạn 1",
+          elements: [
+            {
+              kind: "arrow",
+              id: "ar1",
+              points: [0, 0, 10, 10],
+              color: "red",
+              strokeWidth: 4,
+            },
+          ],
+        },
+      ],
+    };
+
+    const next = duplicateStage(scene, "s1");
+
+    expect(next.stages[1].elements[0].id).not.toBe("ar1");
   });
 
   it("renames a stage", () => {

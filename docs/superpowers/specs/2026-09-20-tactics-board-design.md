@@ -19,6 +19,11 @@ Phạm vi cố tình hẹp: đây là **công cụ vẽ**, không phải mô ph�
 không có animation, không có tính toán gì trên dữ liệu vẽ. Máy chủ lưu và trả lại đúng cái admin đã
 vẽ.
 
+> **Cập nhật 2026-09-23:** câu "không có animation" ở trên hết hiệu lực.
+> [`2026-09-23-tactic-stage-animation-design.md`](2026-09-23-tactic-stage-animation-design.md) thêm
+> chuyển động **giữa** các giai đoạn ở phía người xem. Phần còn lại của đoạn này vẫn đúng: không có
+> timeline trong tài liệu scene, không có tính toán trên dữ liệu vẽ.
+
 ## Đọc đề bài
 
 Yêu cầu gốc (`ba.md`, không commit) cộng với các câu đã chốt qua hỏi đáp:
@@ -319,7 +324,9 @@ Konva:
   toolbar rồi rê lại vào map không còn vẽ tiếp.
 - Phần tử đang chọn có thanh action (`selection-actions`) đặt ngay dưới nó trên map, bám theo zoom
   và pan: nút `Xoá` cho mọi loại phần tử, cộng ba nút cỡ khi đó là quân cờ (#151). **Không** dùng
-  `Transformer` - không có xoay, không có resize tự do, nên handle chỉ là nhiễu.
+  `Transformer` - không có xoay, không có resize tự do, nên handle chỉ là nhiễu. Thanh này **ẩn đi
+  trong lúc quân cờ đang bị kéo** và hiện lại ở chỗ mới khi thả: nó là overlay DOM, còn Konva chỉ
+  báo toạ độ mới lúc `dragend`, nên để nguyên thì nó đứng lại đúng chỗ quân cờ vừa rời đi.
 - Công cụ **Chọn** đứng đầu toolbar: bấm vào phần tử thì chọn nó, bấm chỗ trống thì bỏ chọn. Công cụ
   mặc định vẫn là đội hình; ở công cụ đó, bấm trúng một phần tử đã có thì chọn nó chứ không đặt quân
   chồng lên (#150).

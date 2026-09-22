@@ -236,3 +236,11 @@ describe("StageBar", () => {
     expect(screen.queryByRole("button", { name: /Nhân bản/ })).toBeNull();
   });
 });
+
+describe("StageBar playback controls", () => {
+  it("shows whatever playback controls it was handed", () => {
+    renderBar({ playbackControls: <button type="button">chạy</button> });
+
+    expect(screen.getByText("chạy")).not.toBeNull();
+  });
+});

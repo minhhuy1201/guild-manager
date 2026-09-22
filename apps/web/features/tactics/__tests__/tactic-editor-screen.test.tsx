@@ -2,6 +2,7 @@
 import { createElement, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -12,6 +13,8 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TACTIC_SCHEMA_VERSION } from "@guild/shared/schemas";
 
+import type { StageFrame } from "../lib/stage-transition";
+
 let isDesktop: boolean | null = true;
 const push = vi.fn();
 
@@ -21,10 +24,17 @@ vi.mock("../hooks/use-is-desktop", () => ({
   useIsDesktop: () => isDesktop,
 }));
 
+/** Props the canvas was last rendered with, so a test can fire its drag callbacks. */
+const canvasProps: { current: Record<string, unknown> } = { current: {} };
+
 vi.mock("../components/tactic-canvas", () => ({
-  TacticCanvas: ({ stage }: { stage: { name: string } }) => (
-    <div data-testid="canvas">{stage.name}</div>
-  ),
+  TacticCanvas: (props: { frame: StageFrame }) => {
+    canvasProps.current = props;
+
+    return (
+      <div data-testid="canvas">{props.frame.tokens[0]?.token.label ?? "trống"}</div>
+    );
+  },
 }));
 
 vi.mock("../hooks/use-token-presets", () => ({
@@ -55,6 +65,16 @@ vi.mock("../api/tactics-api", () => ({
 
 import { useTacticEditorStore } from "../store/editor-store";
 import { TacticEditorScreen } from "../components/tactic-editor-screen";
+
+// jsdom ships no matchMedia, which `useReducedMotion` reads. Nothing here turns animation off, so
+// the media query answers no.
+beforeEach(() => {
+  vi.stubGlobal("matchMedia", () => ({
+    matches: false,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  }));
+});
 
 afterEach(() => {
   cleanup();
@@ -200,6 +220,141 @@ describe("TacticEditorScreen", () => {
       expect(
         screen.queryByRole("toolbar", { name: "Sửa phần tử đang chọn" })
       ).toBeNull()
+    );
+  });
+
+  it("takes the action bar away while a token is being dragged", async () => {
+    renderScreen(true);
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Đội hình" })).toBeTruthy()
+    );
+
+    const token = {
+      kind: "token" as const,
+      id: "tok1",
+      x: 900,
+      y: 400,
+      size: "md" as const,
+      icon: "swords" as const,
+      label: "Đội công",
+      color: "blue" as const,
+    };
+
+    act(() => {
+      useTacticEditorStore.getState().commit("s1", [token]);
+      useTacticEditorStore.getState().selectElement("tok1");
+    });
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("toolbar", { name: "Sửa phần tử đang chọn" })
+      ).toBeTruthy()
+    );
+
+    // The bar is a DOM overlay; Konva moves the token on the canvas without telling the store, so
+    // leaving the bar up would strand it at the place the token has just left.
+    act(() => {
+      (canvasProps.current.onTokenDragStart as (id: string) => void)("tok1");
+    });
+
+    expect(
+      screen.queryByRole("toolbar", { name: "Sửa phần tử đang chọn" })
+    ).toBeNull();
+
+    act(() => {
+      (
+        canvasProps.current.onTokenMoved as (
+          id: string,
+          x: number,
+          y: number
+        ) => void
+      )("tok1", 300, 200);
+    });
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("toolbar", { name: "Sửa phần tử đang chọn" })
+      ).toBeTruthy()
+    );
+  });
+
+  it("gives the action bar back when the window is left mid-drag", async () => {
+    renderScreen(true);
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Đội hình" })).toBeTruthy()
+    );
+
+    act(() => {
+      useTacticEditorStore.getState().commit("s1", [
+        {
+          kind: "token" as const,
+          id: "tok1",
+          x: 900,
+          y: 400,
+          size: "md" as const,
+          icon: "swords" as const,
+          label: "Đội công",
+          color: "blue" as const,
+        },
+      ]);
+      useTacticEditorStore.getState().selectElement("tok1");
+      (canvasProps.current.onTokenDragStart as (id: string) => void)("tok1");
+    });
+
+    expect(
+      screen.queryByRole("toolbar", { name: "Sửa phần tử đang chọn" })
+    ).toBeNull();
+
+    // Alt-tab away mid-drag and the release never reaches Konva, so no `dragend` ever comes.
+    act(() => {
+      fireEvent.blur(window);
+    });
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("toolbar", { name: "Sửa phần tử đang chọn" })
+      ).toBeTruthy()
+    );
+  });
+
+  it("does not lose the action bar when the dragged token is deleted mid-drag", async () => {
+    renderScreen(true);
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Đội hình" })).toBeTruthy()
+    );
+
+    const token = {
+      kind: "token" as const,
+      id: "tok1",
+      x: 900,
+      y: 400,
+      size: "md" as const,
+      icon: "swords" as const,
+      label: "Đội công",
+      color: "blue" as const,
+    };
+    const other = { ...token, id: "tok2", x: 400, label: "Đội thủ" };
+
+    act(() => {
+      useTacticEditorStore.getState().commit("s1", [token, other]);
+      useTacticEditorStore.getState().selectElement("tok1");
+      (canvasProps.current.onTokenDragStart as (id: string) => void)("tok1");
+    });
+
+    // Delete answers the keyboard even with the button still held, and the token's Konva node goes
+    // with it, so no `dragend` is ever coming for this drag.
+    act(() => {
+      useTacticEditorStore.getState().commit("s1", [other]);
+      useTacticEditorStore.getState().selectElement("tok2");
+    });
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("toolbar", { name: "Sửa phần tử đang chọn" })
+      ).toBeTruthy()
     );
   });
 

@@ -51,6 +51,8 @@ export interface TacticEditorScreen {
   activeStage: TacticStage | null;
   /** The selected element, or null when nothing is selected — the action bar is drawn on it */
   selectedElement: TacticElement | null;
+  /** Token being dragged right now, or null; the action bar hides while one is */
+  draggingTokenId: string | null;
   /** Whether there is an edit to take back on the open stage */
   canUndo: boolean;
   /** Whether there is an edit to put back on the open stage */
@@ -73,6 +75,8 @@ export interface TacticEditorScreen {
   onPointerMove: (point: MapPoint) => void;
   /** Pointer was let go */
   onPointerUp: () => void;
+  /** A token started a drag */
+  onTokenDragStart: (tokenId: string) => void;
   /** A token finished a drag */
   onTokenMoved: (tokenId: string, x: number, y: number) => void;
   /** An element was clicked */
@@ -110,6 +114,7 @@ export function useTacticEditor(
   const [paletteToken, setPaletteToken] = useState<BuiltInToken>(
     DEFAULT_PALETTE_TOKEN
   );
+  const [draggedTokenId, setDraggingTokenId] = useState<string | null>(null);
   const [pendingTextPoint, setPendingTextPoint] = useState<MapPoint | null>(
     null
   );
@@ -287,23 +292,51 @@ export function useTacticEditor(
     drawingRef.current = null;
   }, []);
 
+  // A window that loses focus mid-drag never sees the release either, and Konva then fires no
+  // `dragend`. Blur only for the token: the release itself is Konva's own path, and clearing on
+  // `mouseup` here could win the race and flash the action bar at the place the token just left.
+  const onWindowBlur = useCallback(() => {
+    onPointerUp();
+    setDraggingTokenId(null);
+  }, [onPointerUp]);
+
   // The canvas only hears a release that happens over it. A button let go over the toolbar, or a
   // window that loses focus mid-drag, still has to end the stroke - the same guarantee the pan gets
   // in `useStageZoom` - or hovering back would keep drawing with no button held.
   useEffect(() => {
     window.addEventListener("mouseup", onPointerUp);
     window.addEventListener("touchend", onPointerUp);
-    window.addEventListener("blur", onPointerUp);
+    window.addEventListener("blur", onWindowBlur);
 
     return () => {
       window.removeEventListener("mouseup", onPointerUp);
       window.removeEventListener("touchend", onPointerUp);
-      window.removeEventListener("blur", onPointerUp);
+      window.removeEventListener("blur", onWindowBlur);
     };
-  }, [onPointerUp]);
+  }, [onPointerUp, onWindowBlur]);
+
+  const onTokenDragStart = useCallback(
+    (tokenId: string) => setDraggingTokenId(tokenId),
+    []
+  );
+
+  // A drag only counts while its token is still on the open stage. Deleting it, or undoing the edit
+  // that put it there, unmounts the Konva node, and an unmounted node never fires the `dragend`
+  // that would clear this - the flag would then hide the action bar for the rest of the session.
+  // Derived rather than cleared in each of those places, so a new way to remove an element cannot
+  // forget to do it.
+  const draggingTokenId =
+    draggedTokenId !== null &&
+    activeStage?.elements.some((element) => element.id === draggedTokenId)
+      ? draggedTokenId
+      : null;
 
   const onTokenMoved = useCallback(
     (tokenId: string, x: number, y: number) => {
+      // Cleared first, and outside the guard: a drag that changes nothing still has to give the
+      // action bar back, or a viewer who may not write would lose it for good.
+      setDraggingTokenId(null);
+
       if (isAdmin && activeStage) {
         commitElements(moveToken(activeStage, tokenId, x, y).elements);
       }
@@ -394,6 +427,7 @@ export function useTacticEditor(
     name: tactic?.name ?? "",
     activeStage,
     selectedElement,
+    draggingTokenId,
     canUndo: (history.past[activeStageId ?? ""] ?? []).length > 0,
     canRedo: (history.future[activeStageId ?? ""] ?? []).length > 0,
     saving: saveTactic.isPending,
@@ -405,6 +439,7 @@ export function useTacticEditor(
     onPointerDown,
     onPointerMove,
     onPointerUp,
+    onTokenDragStart,
     onTokenMoved,
     onElementClick,
     onTokenSizeChange,

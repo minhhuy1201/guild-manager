@@ -109,6 +109,41 @@ describe("useTacticExport", () => {
     expect(stage.selectedAtCapture).toEqual([null]);
   });
 
+  it("raises the export flag before it captures, so a running move is frozen out", async () => {
+    // Frames are held back rather than run inline, so the export can be caught mid-flight: this is
+    // the window in which `enabled: !exporting` has to have already frozen the canvas.
+    const frames: (() => void)[] = [];
+    vi.stubGlobal("requestAnimationFrame", (callback: () => void) => {
+      frames.push(callback);
+
+      return 0;
+    });
+
+    const stage = fakeStage();
+    const { result } = renderTacticHook(() =>
+      useTacticExport("Thủ cổng tây", stages, { current: stage } as never)
+    );
+    act(() =>
+      useTacticEditorStore.getState().loadScene({ schemaVersion: TACTIC_SCHEMA_VERSION, stages })
+    );
+
+    let running!: Promise<void>;
+    act(() => {
+      running = result.current.exportActiveStage();
+    });
+
+    expect(result.current.exporting).toBe(true);
+    expect(stage.toDataURL).not.toHaveBeenCalled();
+
+    await act(async () => {
+      while (frames.length) frames.shift()?.();
+      await running;
+    });
+
+    expect(stage.toDataURL).toHaveBeenCalledOnce();
+    expect(result.current.exporting).toBe(false);
+  });
+
   it("says so in a toast when the open stage cannot be captured", async () => {
     const stage = fakeStage();
     stage.toDataURL.mockImplementation(() => {

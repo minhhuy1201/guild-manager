@@ -9,7 +9,9 @@ import { cn } from "@/lib/utils";
 import { CANVAS_GRID_STYLE } from "../lib/canvas-grid";
 import { useEditorShortcuts } from "../hooks/use-editor-shortcuts";
 import { useIsDesktop } from "../hooks/use-is-desktop";
+import { useStagePlayback } from "../hooks/use-stage-playback";
 import { useStageSize } from "../hooks/use-stage-size";
+import { useStageTransition } from "../hooks/use-stage-transition";
 import { useStageZoom } from "../hooks/use-stage-zoom";
 import { useTacticEditor } from "../hooks/use-tactic-editor";
 import { useTacticExport } from "../hooks/use-tactic-export";
@@ -22,6 +24,7 @@ import { LeaveDialog } from "./leave-dialog";
 import { MobileEditorNotice } from "./mobile-editor-notice";
 import { EditorToolbar } from "./editor-toolbar";
 import { StageBar } from "./stage-bar";
+import { StagePlaybackControls } from "./stage-playback-controls";
 import { TacticBreadcrumb } from "./tactic-breadcrumb";
 import { SelectionActions } from "./selection-actions";
 import { TacticCanvas } from "./tactic-canvas";
@@ -57,6 +60,7 @@ export function TacticEditorScreen({
   const stageZoom = useStageZoom(width);
   const [presetsOpen, setPresetsOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+  const [onionSkin, setOnionSkin] = useState(false);
 
   const scene = useTacticEditorStore((store) => store.scene);
   const activeStageId = useTacticEditorStore((store) => store.activeStageId);
@@ -84,7 +88,9 @@ export function TacticEditorScreen({
 
   const stages = scene?.stages ?? [];
   // The action bar is a DOM overlay on the canvas, so where it goes follows the zoom and the pan.
-  const selection = editor.selectedElement;
+  // While a token is dragged, Konva moves it on the canvas without telling the store, so the bar
+  // would sit at the place the token has just left. It goes away until the drag reports a position.
+  const selection = editor.draggingTokenId ? null : editor.selectedElement;
   const placement = selection
     ? selectionPlacement(
         elementBounds(selection),
@@ -93,6 +99,27 @@ export function TacticEditorScreen({
       )
     : null;
   const exporter = useTacticExport(editor.name, stages, editor.stageRef);
+  // An export switches stage and screenshots two frames later. With a move running, every picture
+  // in the zip would catch the tokens mid-flight, so the canvas stands still until it is done.
+  const { frame, animating } = useStageTransition(stages, activeStageId, {
+    enabled: !exporter.exporting,
+    onionSkin: onionSkin && !exporter.exporting,
+  });
+  const playback = useStagePlayback(
+    stages,
+    activeStageId,
+    animating,
+    setActiveStage
+  );
+
+  /**
+   * Open a stage because the admin asked for it, which ends any playback that was running.
+   * @param stageId - Id of the stage to open
+   */
+  function selectStage(stageId: string): void {
+    playback.stop();
+    setActiveStage(stageId);
+  }
   // Drawing needs a pointer, a keyboard and room for the toolbar; everything else reads.
   const canDraw = isAdmin && isDesktop === true;
 
@@ -141,7 +168,16 @@ export function TacticEditorScreen({
                 stages={stages}
                 activeStageId={activeStageId}
                 isAdmin={isAdmin}
-                onSelect={setActiveStage}
+                playbackControls={
+                  <StagePlaybackControls
+                    playing={playback.playing}
+                    onionSkin={onionSkin}
+                    disabled={stages.length < 2}
+                    onTogglePlay={playback.toggle}
+                    onToggleOnionSkin={() => setOnionSkin((on) => !on)}
+                  />
+                }
+                onSelect={selectStage}
                 onAdd={addStage}
                 onDuplicate={duplicateStage}
                 onRename={renameStage}
@@ -178,16 +214,18 @@ export function TacticEditorScreen({
                     "cursor-grabbing [&_.konvajs-content]:cursor-grabbing!"
                 )}
               >
-                {editor.activeStage ? (
+                {frame ? (
                   <>
                     <TacticCanvas
-                      stage={editor.activeStage}
+                      frame={frame}
+                      animating={animating}
                       width={width}
                       zoom={stageZoom.zoom}
                       selectedElementId={selectedElementId}
                       onPointerDown={editor.onPointerDown}
                       onPointerMove={editor.onPointerMove}
                       onPointerUp={editor.onPointerUp}
+                      onTokenDragStart={editor.onTokenDragStart}
                       onTokenMoved={editor.onTokenMoved}
                       onElementClick={editor.onElementClick}
                       onStageReady={editor.onStageReady}

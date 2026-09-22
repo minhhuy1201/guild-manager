@@ -80,17 +80,20 @@ export function useTacticExport(
       return;
     }
 
-    // The selection ring is how the editor points at something, not part of the drawing.
+    // The selection ring is how the editor points at something, not part of the drawing. The flag
+    // does the same for the stage animation, which would otherwise be caught mid-move.
     selectElement(null);
-    await nextPaint();
-
-    const konvaStage = stageRef.current;
-
-    if (!konvaStage) {
-      return;
-    }
+    setExporting(true);
 
     try {
+      await nextPaint();
+
+      const konvaStage = stageRef.current;
+
+      if (!konvaStage) {
+        return;
+      }
+
       downloadDataUrl(
         captureMap(konvaStage),
         exportFileName(tacticName, index + 1, stages[index].name)
@@ -98,6 +101,8 @@ export function useTacticExport(
     } catch (caught) {
       // Fired from a click without awaiting it, like the zip: the toast is the only place left.
       toastError(errorMessageOf(caught, "Không xuất được ảnh."));
+    } finally {
+      setExporting(false);
     }
   }, [selectElement, stageRef, stages, tacticName]);
 

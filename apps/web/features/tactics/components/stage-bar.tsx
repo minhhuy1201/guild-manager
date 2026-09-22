@@ -18,6 +18,8 @@ interface StageBarProps {
   activeStageId: string | null;
   /** Whether the viewer may write */
   isAdmin: boolean;
+  /** The play and onion-skin buttons, built by the screen so this strip stays about stages */
+  playbackControls?: React.ReactNode;
   onSelect: (stageId: string) => void;
   onAdd: () => void;
   onDuplicate: (stageId: string) => void;
@@ -38,6 +40,7 @@ export function StageBar({
   stages,
   activeStageId,
   isAdmin,
+  playbackControls,
   onSelect,
   onAdd,
   onDuplicate,
@@ -91,6 +94,8 @@ export function StageBar({
       )}
 
       <StageArrowHint stageCount={stages.length} />
+
+      {playbackControls}
 
       {isAdmin ? (
         <div className="ml-auto flex items-center gap-1">
