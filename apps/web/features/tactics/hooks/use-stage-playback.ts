@@ -37,21 +37,23 @@ export function useStagePlayback(
   const index = stages.findIndex((stage) => stage.id === activeStageId);
   const next = index === -1 ? null : (stages[index + 1] ?? null);
 
+  // True when `next` is the last stage there is, so landing on it ends the walk.
+  const isLastHop = index !== -1 && index + 2 >= stages.length;
+
   useEffect(() => {
-    if (!playing || animating) {
+    if (!playing || animating || !next) {
       return;
     }
 
-    if (!next) {
-      setPlaying(false);
-
-      return;
-    }
-
-    const timer = setTimeout(() => onSelect(next.id), PLAYBACK_DWELL_MS);
+    const timer = setTimeout(() => {
+      onSelect(next.id);
+      // Stopped here rather than on the next render: a `setPlaying` in this effect's body would
+      // cascade a render for every stage the walk passes through.
+      if (isLastHop) setPlaying(false);
+    }, PLAYBACK_DWELL_MS);
 
     return () => clearTimeout(timer);
-  }, [playing, animating, next, onSelect]);
+  }, [playing, animating, next, isLastHop, onSelect]);
 
   const stop = useCallback(() => setPlaying(false), []);
 

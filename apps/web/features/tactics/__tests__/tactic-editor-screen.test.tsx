@@ -12,6 +12,8 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TACTIC_SCHEMA_VERSION } from "@guild/shared/schemas";
 
+import type { StageFrame } from "../lib/stage-transition";
+
 let isDesktop: boolean | null = true;
 const push = vi.fn();
 
@@ -22,8 +24,8 @@ vi.mock("../hooks/use-is-desktop", () => ({
 }));
 
 vi.mock("../components/tactic-canvas", () => ({
-  TacticCanvas: ({ stage }: { stage: { name: string } }) => (
-    <div data-testid="canvas">{stage.name}</div>
+  TacticCanvas: ({ frame }: { frame: StageFrame }) => (
+    <div data-testid="canvas">{frame.tokens[0]?.token.label ?? "trống"}</div>
   ),
 }));
 
@@ -55,6 +57,16 @@ vi.mock("../api/tactics-api", () => ({
 
 import { useTacticEditorStore } from "../store/editor-store";
 import { TacticEditorScreen } from "../components/tactic-editor-screen";
+
+// jsdom ships no matchMedia, which `useReducedMotion` reads. Nothing here turns animation off, so
+// the media query answers no.
+beforeEach(() => {
+  vi.stubGlobal("matchMedia", () => ({
+    matches: false,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  }));
+});
 
 afterEach(() => {
   cleanup();
