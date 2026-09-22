@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { TACTIC_LIMITS } from "@guild/shared/schemas";
+import { TACTIC_LIMITS, TACTIC_SCHEMA_VERSION } from "@guild/shared/schemas";
 import type { TacticElement } from "@guild/shared/schemas";
 
 vi.mock("../../api/tactics-api", () => ({
@@ -466,6 +466,19 @@ describe("useTacticEditor", () => {
     expect(useTacticEditorStore.getState().scene?.stages).toHaveLength(1);
     expect(result.current.state.isError).toBe(false);
     expect(toastError).toHaveBeenCalledWith(STALE_DRAFT_WARNING);
+  });
+
+  it("shows a scene from a newer app as the page's error instead of crashing the route", async () => {
+    vi.mocked(fetchTactic).mockResolvedValue({
+      ...makeTactic(),
+      scene: { ...makeScene(), schemaVersion: TACTIC_SCHEMA_VERSION + 1 },
+    } as never);
+
+    const { result } = renderTacticHook(() => useTacticEditor("t1", true));
+
+    await waitFor(() => expect(result.current.state.isError).toBe(true));
+    expect(result.current.state.errorMessage).toMatch(/phiên bản mới hơn/);
+    expect(useTacticEditorStore.getState().scene).toBeNull();
   });
 
   it("reports what can be undone on the open stage only", async () => {

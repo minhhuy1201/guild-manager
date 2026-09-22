@@ -25,7 +25,7 @@ import {
   pointArrow,
 } from "../lib/create-element";
 import { hitTest, type MapPoint } from "../lib/hit-test";
-import { migrateScene } from "../lib/migrate-scene";
+import { SceneReadError } from "../lib/read-scene";
 import {
   addElement,
   isStageFull,
@@ -37,7 +37,7 @@ import { useTacticEditorStore } from "../store/editor-store";
 import { useSaveTactic } from "./use-save-tactic";
 import { useTactic } from "./use-tactic";
 
-/** Said when the fresh read failed and the draft had to start from the copy already in the cache. */
+/** Said when the fresh read failed and the draft had to start from the copy left in the cache. */
 export const STALE_DRAFT_WARNING =
   "Không tải được bản mới nhất, đang mở bản đã lưu trong máy. Lưu lúc này có thể ghi đè thay đổi của admin khác.";
 
@@ -147,7 +147,7 @@ export function useTacticEditor(
     }
 
     loadedIdRef.current = tactic.id;
-    loadScene(migrateScene(tactic.scene));
+    loadScene(tactic.scene);
     if (isReadFailed) toastError(STALE_DRAFT_WARNING);
   }, [tactic, isReadSettled, isReadFailed, loadScene]);
 
@@ -371,9 +371,13 @@ export function useTacticEditor(
     stageRef.current = stage;
   }, []);
 
+  // A scene this app cannot open says why in its own sentence; any other failure gets the generic
+  // one.
   const queryState = combineQueries(
     [tacticQuery],
-    "Không tải được chiến thuật."
+    tacticQuery.error instanceof SceneReadError
+      ? tacticQuery.error.message
+      : "Không tải được chiến thuật."
   );
 
   return {

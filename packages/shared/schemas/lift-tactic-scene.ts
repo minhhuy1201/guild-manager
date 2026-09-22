@@ -1,6 +1,22 @@
 import type { TacticColor } from "../enums/tactic.enum";
 
-import { TACTIC_SCHEMA_VERSION } from "./tactic.schema";
+import {
+  TACTIC_SCHEMA_VERSION,
+  tacticSceneSchema,
+  type TacticScene,
+} from "./tactic.schema";
+
+/**
+ * What reading a stored scene document came to. Each side turns the two failures into its own
+ * error.
+ */
+export type TacticSceneRead =
+  /** The document, lifted to the current format and parsed */
+  | { status: "ok"; scene: TacticScene }
+  /** Written by a newer app than this one - not guessed at */
+  | { status: "newer" }
+  /** Does not parse even after lifting */
+  | { status: "corrupt" };
 
 /** The colour v1 documents could carry and v2 no longer offers. */
 const V1_DROPPED_COLOR = "white";
@@ -30,6 +46,32 @@ export function liftTacticScene(raw: unknown): unknown {
     schemaVersion: TACTIC_SCHEMA_VERSION,
     stages: Array.isArray(raw.stages) ? raw.stages.map(liftStage) : raw.stages,
   };
+}
+
+/**
+ * Read a stored scene document: refuse one from a newer app, lift an older one, then parse.
+ *
+ * The one read pipeline both sides run - the API on the `stages` column, the web on a response -
+ * so the version rule cannot drift between them.
+ * @param raw - The scene document as it came out of the database or off the wire
+ * @returns The parsed scene, or which of the two failures it was
+ */
+export function readTacticScene(raw: unknown): TacticSceneRead {
+  // Checked before the schema so a document from a newer app gets its own sentence rather than the
+  // generic "invalid literal" Zod would produce for `schemaVersion`.
+  if (
+    isRecord(raw) &&
+    typeof raw.schemaVersion === "number" &&
+    raw.schemaVersion > TACTIC_SCHEMA_VERSION
+  ) {
+    return { status: "newer" };
+  }
+
+  const parsed = tacticSceneSchema.safeParse(liftTacticScene(raw));
+
+  return parsed.success
+    ? { status: "ok", scene: parsed.data }
+    : { status: "corrupt" };
 }
 
 /**

@@ -146,6 +146,12 @@ bước: chặn version mới hơn, `liftTacticScene`, `tacticSceneSchema.safePa
 bằng `assertNever` ở mỗi nơi gọi. API map sang `InternalServerErrorException`; web gọi ở seam fetch
 (`fetchTactic`) nên bản hỏng thành lỗi query, hiện trong `QueryBoundary` (B7). Test gộp về shared.
 
+**Phạm vi đã làm ở PR 6.** `readTacticScene` nằm trong `lift-tactic-scene.ts`. Test **không** gộp về
+shared: `packages/shared` không có test runner, và thêm một runner chỉ cho việc này là over-engineering;
+test ở lại `tactics.codec.spec.ts` (api) và `read-scene.test.ts` (web). Web đọc scene trong `select`
+của `useTactic` (hàm cấp module, để không parse lại mỗi render). Test HTTP member → `403` dùng
+`@nestjs/testing` + `fetch` của Node, không thêm dependency.
+
 List (B11, T6): `toSummary` chỉ cần số giai đoạn. Đếm bằng `jsonb_array_length` qua `$queryRaw` có
 tham số, hoặc đọc mảng `stages` mà không parse toàn scene. Một row hỏng không còn làm hỏng cả list.
 

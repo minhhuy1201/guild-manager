@@ -71,11 +71,13 @@ sửa tay. Service parse bằng Zod ngay khi đọc, đúng quy ước "Zod thu�
 Cột lưu `{ schemaVersion, stages: [...] }`, không lưu trần mảng `stages`. Phiên bản hiện tại là
 `TACTIC_SCHEMA_VERSION` (đang là `2`).
 
-Đây là điểm mở rộng thật sự của phương án JSON. Khi định dạng đổi, `liftTacticScene` trong
-`packages/shared/schemas/lift-tactic-scene.ts` đọc bản cũ, nâng lên bản mới (API áp dụng khi đọc
-cột, web áp dụng qua `lib/migrate-scene.ts`), và app ghi lại bản mới ở lần lưu kế tiếp. Không có
-trường này thì một thay đổi định dạng buộc phải viết migration SQL đoán mò trên JSON - đúng cái
-bẫy mà người ta gán cho phương án JSON.
+Đây là điểm mở rộng thật sự của phương án JSON. Hai bên đọc tài liệu qua **một** đường duy nhất,
+`readTacticScene` trong `packages/shared/schemas/lift-tactic-scene.ts`: chặn bản từ app mới hơn, nâng
+bản cũ bằng `liftTacticScene`, rồi parse. Nó trả union có tag `ok | newer | corrupt`; API đổi hai nhánh
+hỏng thành `500` nêu tên chiến thuật, web đổi thành `SceneReadError` ngay trong `select` của
+`useTactic` để lỗi hiện qua `QueryBoundary`. App ghi lại bản mới ở lần lưu kế tiếp. Không có trường
+này thì một thay đổi định dạng buộc phải viết migration SQL đoán mò trên JSON - đúng cái bẫy mà
+người ta gán cho phương án JSON.
 
 `schemaVersion` lớn hơn bản app biết = lỗi rõ ràng bằng tiếng Việt, **không** cố đọc bừa. "Cấu hình
 sai thì hỏng to, không hỏng thầm."
@@ -410,6 +412,8 @@ trang — app chưa dùng `localStorage` ở đâu cả, và một tuỳ chọn 
   `useSessionRecovery` như mọi đường ghi khác.
 - Xuất nhiều giai đoạn hỏng thì toast câu lỗi: màn gọi việc xuất từ một click mà không chờ, nên
   toast là chỗ duy nhất lỗi còn được nhìn thấy.
+- Danh sách chỉ cần số giai đoạn nên chỉ kiểm có mảng `stages`; một phần tử hỏng không kéo sập cả
+  danh sách, chỉ màn chi tiết của chiến thuật đó báo lỗi. Không có cả mảng `stages` thì vẫn `500`.
 - `stages` trong DB không parse được = `500` với thông báo nêu rõ chiến thuật nào hỏng. Không trả
   scene rỗng, không "tự chữa" âm thầm.
 - `schemaVersion` lớn hơn bản app biết = lỗi rõ ràng, mời cập nhật trang.
@@ -429,7 +433,8 @@ Jest (`apps/api/src/modules/tactics/__tests__/`):
 - CRUD chiến thuật và preset.
 - Zod chặn vượt từng giới hạn, thông báo là tiếng Việt.
 - `stages` hỏng trong DB làm `GET /tactics/:id` hỏng to, không trả scene rỗng.
-- `AdminGuard` có mặt trên đúng các handler ghi; `MEMBER` đọc được, ghi thì `403`.
+- `AdminGuard` có mặt trên đúng các handler ghi; `MEMBER` đọc được, ghi thì `403`
+  (`tactics.http.spec.ts` đi qua HTTP thật với `AdminGuard` thật).
 
 ## Ngoài phạm vi
 
