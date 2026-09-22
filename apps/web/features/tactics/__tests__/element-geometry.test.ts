@@ -161,7 +161,7 @@ describe("elementBounds(…)", () => {
 
 describe("isElementHit and elementBounds together", () => {
   it.each(stage.elements.map((element) => [element.kind, element] as const))(
-    "hits a %s where its action bar anchors, so what can be clicked and what the bar hangs off agree",
+    "hits a %s where its action bar anchors, so a click and the bar agree",
     (_kind, element) => {
       const bounds = elementBounds(element);
       const middle = { x: bounds.centerX, y: (bounds.top + bounds.bottom) / 2 };
