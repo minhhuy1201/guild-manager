@@ -20,7 +20,8 @@ Từ vựng giống các đợt trước: *module*, *interface*, *implementation
   `401`. Đúng thiết kế.
 - E2E sau đăng nhập **chưa chạy**: login đi qua Discord OAuth, và bước tự ký JWT local bị chặn trong
   phiên rà soát. Walkthrough admin / member bên dưới là đọc code theo đúng đường render; mỗi bug đã
-  mở source kiểm lại. Mỗi PR sửa bug phải tái hiện bug trên trình duyệt trước khi sửa.
+  mở source kiểm lại. Mỗi PR sửa bug tái hiện bug bằng một test đỏ trước khi sửa; bước tái hiện trên
+  trình duyệt ghi thành checklist trong phần Tests của PR để chạy tay.
 
 ### Member
 
@@ -49,7 +50,7 @@ Các bug dưới đây đều nằm ở luồng của admin trên desktop.
 | **B10** | `isTypingTarget` chỉ loại input / textarea / contentEditable. Dialog mở, focus ở button: `Delete` vẫn xoá phần tử trên map, phím số vẫn đổi tool | `lib/shortcuts.ts`, `hooks/use-editor-shortcuts.ts:38,79` | Vừa |
 | **B11** | `GET /tactics` parse mọi scene chỉ để đếm giai đoạn; một row hỏng làm cả list `500` | `tactics.service.ts` `list()`, `tactics.codec.ts` `toSummary` | Thấp |
 
-Nghi ngờ, cần tái hiện trên trình duyệt trước khi xếp vào PR:
+Nghi ngờ, chỉ sửa khi test tái hiện được:
 
 - **B13** - đang ở tool mũi tên / vẽ tự do, mousedown trúng token có thể vừa bắt đầu nét vừa kéo
   token (`draggable` không xét tool, `tactic-stage-view.tsx:200`).
