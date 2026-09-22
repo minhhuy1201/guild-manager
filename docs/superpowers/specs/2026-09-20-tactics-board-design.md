@@ -358,11 +358,19 @@ Lưu và rời trang:
 
 Xuất ảnh (admin):
 
-- `stage.toDataURL({ pixelRatio: 2 })` cho giai đoạn đang mở.
+- Giai đoạn đang mở: bỏ chọn phần tử (vòng chọn không thuộc bản vẽ), chờ một khung hình, rồi
+  `toDataURL` với vùng `mapExportRegion` - đúng khung map theo scale và vị trí hiện tại của Stage, và
+  `pixelRatio = EXPORT_PIXEL_RATIO / scale`. Konva vẽ lại vùng đó chứ không chép canvas, nên map đang
+  zoom hay kéo lệch vẫn ra nguyên tấm, và mọi file đều `1920 × 1071 × EXPORT_PIXEL_RATIO` (3840×2142)
+  trên màn hình nào cũng vậy.
 - Nhiều giai đoạn: lần lượt mở từng giai đoạn trên chính canvas đang hiển thị, chụp sau hai khung
   hình, rồi gói bằng `jszip`, tên file `<tên chiến thuật>-<số>-<tên giai đoạn>.png`. Không dựng
   `Stage` ẩn: hai mươi canvas 1920×1071 cùng lúc là hàng trăm MB, còn canvas đang mở đã nạp sẵn ảnh
   map.
+- Trong lúc xuất nhiều giai đoạn, dialog xuất ảnh vẫn mở và là modal: tab giai đoạn nằm sau lớp phủ,
+  còn phím mũi tên bấm trong dialog bị `belongsElsewhere` bỏ qua, nên không gì đổi giai đoạn giữa
+  vòng lặp.
+- Xuất hỏng (một giai đoạn hay cả ZIP) thì toast câu lỗi.
 - `MEMBER` không thấy nút xuất ảnh.
 
 Mobile:

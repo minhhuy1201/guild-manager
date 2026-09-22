@@ -7,11 +7,11 @@ import type { TacticStage } from "@guild/shared/schemas";
 import { toastError } from "@/components/shared/toast";
 import { errorMessageOf } from "@/lib/error-message";
 import {
-  EXPORT_PIXEL_RATIO,
   buildStagesZip,
   downloadBlob,
   downloadDataUrl,
   exportFileName,
+  mapExportRegion,
   type ExportedStage,
 } from "../lib/export-image";
 import { useTacticEditorStore } from "../store/editor-store";
@@ -21,7 +21,7 @@ export interface TacticExport {
   /** Whether an export is running */
   exporting: boolean;
   /** Save the stage currently on screen as one PNG */
-  exportActiveStage: () => void;
+  exportActiveStage: () => Promise<void>;
   /** Save every stage as PNGs inside one zip */
   exportAllStages: () => Promise<void>;
 }
@@ -35,6 +35,21 @@ function nextPaint(): Promise<void> {
   return new Promise((resolve) => {
     requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
   });
+}
+
+/**
+ * Render the whole map off the live stage, at the export size, whatever the zoom and pan.
+ * @param konvaStage - The stage on screen
+ * @returns The PNG as a data URL
+ */
+function captureMap(konvaStage: Konva.Stage): string {
+  return konvaStage.toDataURL(
+    mapExportRegion({
+      scale: konvaStage.scaleX(),
+      x: konvaStage.x(),
+      y: konvaStage.y(),
+    })
+  );
 }
 
 /**
@@ -55,21 +70,36 @@ export function useTacticExport(
 ): TacticExport {
   const [exporting, setExporting] = useState(false);
   const setActiveStage = useTacticEditorStore((store) => store.setActiveStage);
+  const selectElement = useTacticEditorStore((store) => store.selectElement);
 
-  const exportActiveStage = useCallback(() => {
-    const konvaStage = stageRef.current;
+  const exportActiveStage = useCallback(async () => {
     const activeStageId = useTacticEditorStore.getState().activeStageId;
     const index = stages.findIndex((stage) => stage.id === activeStageId);
 
-    if (!konvaStage || index === -1) {
+    if (!stageRef.current || index === -1) {
       return;
     }
 
-    downloadDataUrl(
-      konvaStage.toDataURL({ pixelRatio: EXPORT_PIXEL_RATIO }),
-      exportFileName(tacticName, index + 1, stages[index].name)
-    );
-  }, [stageRef, stages, tacticName]);
+    // The selection ring is how the editor points at something, not part of the drawing.
+    selectElement(null);
+    await nextPaint();
+
+    const konvaStage = stageRef.current;
+
+    if (!konvaStage) {
+      return;
+    }
+
+    try {
+      downloadDataUrl(
+        captureMap(konvaStage),
+        exportFileName(tacticName, index + 1, stages[index].name)
+      );
+    } catch (caught) {
+      // Fired from a click without awaiting it, like the zip: the toast is the only place left.
+      toastError(errorMessageOf(caught, "Không xuất được ảnh."));
+    }
+  }, [selectElement, stageRef, stages, tacticName]);
 
   const exportAllStages = useCallback(async () => {
     const openStageId = useTacticEditorStore.getState().activeStageId;
@@ -79,17 +109,16 @@ export function useTacticExport(
 
     try {
       for (const [index, stage] of stages.entries()) {
+        // Switching stage also clears the selection, so no ring reaches the file.
         setActiveStage(stage.id);
         await nextPaint();
 
-        const dataUrl = stageRef.current?.toDataURL({
-          pixelRatio: EXPORT_PIXEL_RATIO,
-        });
+        const konvaStage = stageRef.current;
 
-        if (dataUrl) {
+        if (konvaStage) {
           files.push({
             name: exportFileName(tacticName, index + 1, stage.name),
-            dataUrl,
+            dataUrl: captureMap(konvaStage),
           });
         }
       }
