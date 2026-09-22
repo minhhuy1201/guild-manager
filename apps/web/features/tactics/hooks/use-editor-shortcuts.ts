@@ -7,7 +7,7 @@ import { isTypingTarget, toolForKey } from "../lib/shortcuts";
 import { useTacticEditorStore } from "../store/editor-store";
 
 /**
- * The editor's keyboard: tools on 1-5, stroke width on [ and ], Delete for the selected element,
+ * The editor's keyboard: tools on 1-6, stroke width on [ and ], Delete for the selected element,
  * Ctrl+Z / Ctrl+Shift+Z for history and Ctrl+S to save.
  *
  * Every shortcut is off while the focus sits in a field, so renaming a stage never changes a tool.

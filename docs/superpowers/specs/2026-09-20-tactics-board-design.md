@@ -29,7 +29,7 @@ Yêu cầu gốc (`ba.md`, không commit) cộng với các câu đã chốt qua
 | Tên mười đội | Cố định `Đội 1`…`Đội 10` trong frontend, **không** đọc `TeamName` |
 | Lưu gì | Chỉ JSON scene. Không lưu ảnh render |
 | Mobile | Desktop vẽ, mobile chỉ xem |
-| Cơ chế lưu | Thủ công (`Ctrl+S` / nút Lưu) + thanh chưa lưu + chặn rời trang |
+| Cơ chế lưu | Thủ công (`Ctrl+S` / nút Lưu) + chặn rời trang. Không có thanh chưa lưu riêng (xem mục Lưu và rời trang) |
 | Xuất nhiều giai đoạn | Một file ZIP |
 | Quân cờ tự đặt tên | Preset dùng chung, lưu DB |
 | Công cụ chữ | Có — nội dung nhập trong một dialog nhỏ (`text-note-dialog`), không gõ thẳng trên canvas |
@@ -68,12 +68,14 @@ sửa tay. Service parse bằng Zod ngay khi đọc, đúng quy ước "Zod thu�
 
 ### 2. Tài liệu scene mang số phiên bản
 
-Cột lưu `{ schemaVersion: 1, stages: [...] }`, không lưu trần mảng `stages`.
+Cột lưu `{ schemaVersion, stages: [...] }`, không lưu trần mảng `stages`. Phiên bản hiện tại là
+`TACTIC_SCHEMA_VERSION` (đang là `2`).
 
-Đây là điểm mở rộng thật sự của phương án JSON. Khi định dạng đổi, `lib/migrate-scene.ts` đọc bản
-cũ, nâng lên bản mới, và app ghi lại bản mới ở lần lưu kế tiếp. Không có trường này thì một thay đổi
-định dạng buộc phải viết migration SQL đoán mò trên JSON — đúng cái bẫy mà người ta gán cho phương
-án JSON.
+Đây là điểm mở rộng thật sự của phương án JSON. Khi định dạng đổi, `liftTacticScene` trong
+`packages/shared/schemas/lift-tactic-scene.ts` đọc bản cũ, nâng lên bản mới (API áp dụng khi đọc
+cột, web áp dụng qua `lib/migrate-scene.ts`), và app ghi lại bản mới ở lần lưu kế tiếp. Không có
+trường này thì một thay đổi định dạng buộc phải viết migration SQL đoán mò trên JSON - đúng cái
+bẫy mà người ta gán cho phương án JSON.
 
 `schemaVersion` lớn hơn bản app biết = lỗi rõ ràng bằng tiếng Việt, **không** cố đọc bừa. "Cấu hình
 sai thì hỏng to, không hỏng thầm."
@@ -180,14 +182,14 @@ tacticTextSchema     = { kind: "text",     id, x, y, text, color, fontSize }
 
 tacticElementSchema = discriminatedUnion("kind", [...])
 tacticStageSchema   = { id, name, elements: tacticElementSchema[] }
-tacticSceneSchema   = { schemaVersion: literal(1), stages: tacticStageSchema[] }
+tacticSceneSchema   = { schemaVersion: literal(TACTIC_SCHEMA_VERSION), stages: tacticStageSchema[] }
 ```
 
 `packages/shared/enums/tactic.enum.ts`:
 
 | Enum | Giá trị |
 |---|---|
-| `TACTIC_COLORS` | `red`, `blue`, `yellow`, `white` — bốn màu, lưu bằng khoá chứ không phải mã hex, để đổi bảng màu sau này không phải sửa dữ liệu cũ |
+| `TACTIC_COLORS` | `blue`, `red`, `yellow`, `black` - bốn màu, lưu bằng khoá chứ không phải mã hex, để đổi bảng màu sau này không phải sửa dữ liệu cũ. Màu mặc định là `blue` |
 | `TACTIC_STROKE_WIDTHS` | `2`, `4`, `8`, `14` (đơn vị map ảo) |
 | `TACTIC_TOKEN_SIZES` | `sm`, `md`, `lg` |
 | `TACTIC_TOKEN_ICONS` | Bộ icon cho phép, khoảng 20 khoá ánh xạ sang `lucide-react` ở phía web |
@@ -276,15 +278,15 @@ Route và điều hướng:
   giữa Xếp team và Thiết lập.
 - `lib/layout.ts`: `APP_SHELL_WIDTH` (`max-w-[1920px]`) — vỏ trang nới từ 1600 lên 1920 để tấm map
   1920 đọc được trên màn 27 inch; header, cột nội dung và footer cùng đọc một hằng này.
-- `lib/page-banners.ts`: khoá `tactics`, `src: "/img/bg/tactics.jpg"`, `tint: "#83653E"`. Chỉ màn
-  danh sách dùng banner; màn chi tiết mở bằng breadcrumb (xem dưới).
+- `lib/page-banners.ts`: khoá `tactics`, `src: "/img/bg/tactics.jpg"`, `tint: "#83653E"`. Cả hai màn
+  dùng banner này; màn chi tiết dùng bản `size="compact"` với breadcrumb nằm trong banner (xem dưới).
   `tactics.jpg` là bản sao của tấm map đã làm phẳng nền và nén JPEG — cùng lý do
   `landing.jpg` là bản sao của `login.jpg`: một khoá, một file, đổi cái này không kéo theo cái kia.
 - `app/chien-thuat/page.tsx` và `app/chien-thuat/[id]/page.tsx` — hai trang mỏng, mỗi trang render
   một component của feature.
-- Màn chi tiết **không** có banner: đầu trang là `tactic-breadcrumb` — nút quay lại cộng
-  `Chiến thuật → <tên chiến thuật>`, dựng trên `components/ui/breadcrumb.tsx` của shadcn. Trang này
-  mở ra là để nhìn map, nên một dải ảnh trang trí chỉ đẩy map xuống.
+- Màn chi tiết mở bằng `PageHeader banner="tactics" size="compact"`: `tactic-breadcrumb` (chỉ dẫn về
+  "Chiến thuật", chữ trắng trên ảnh) nằm trên `<h1>` là tên chiến thuật, cùng trong lớp scrim. Bản
+  `compact` giữ banner thấp để không đẩy map xuống quá (#150).
 
 Quy ước trạng thái, không có ngoại lệ:
 
@@ -304,8 +306,12 @@ Konva:
   Chỉ số zoom nằm ở **góc phải dưới** khung map (`zoom-readout`), kèm nút `-`, `+` và "Vừa khung"
   cho ai không dùng lăn chuột. Trạng thái zoom là cách một người đang nhìn bản vẽ, không phải một
   phần bản vẽ: nó nằm trong hook, không vào store và không bao giờ được lưu.
-- Đổi cỡ quân cờ bằng ba nút cỡ trên thanh công cụ khi đang chọn một quân, **không** dùng
-  `Transformer` — không có xoay, không có resize tự do, nên handle chỉ là nhiễu.
+- Phần tử đang chọn có thanh action (`selection-actions`) đặt ngay dưới nó trên map, bám theo zoom
+  và pan: nút `Xoá` cho mọi loại phần tử, cộng ba nút cỡ khi đó là quân cờ (#151). **Không** dùng
+  `Transformer` - không có xoay, không có resize tự do, nên handle chỉ là nhiễu.
+- Công cụ **Chọn** đứng đầu toolbar: bấm vào phần tử thì chọn nó, bấm chỗ trống thì bỏ chọn. Công cụ
+  mặc định vẫn là đội hình; ở công cụ đó, bấm trúng một phần tử đã có thì chọn nó chứ không đặt quân
+  chồng lên (#150).
 
 Undo/redo:
 
@@ -313,10 +319,11 @@ Undo/redo:
   của giai đoạn kia.
 - `Ctrl+Z` hoàn tác, `Ctrl+Shift+Z` làm lại, `Ctrl+S` lưu. Phím tắt chỉ gắn khi editor mở và tiêu
   điểm không nằm trong ô nhập liệu.
-- Phím tắt công cụ: `1` đội hình, `2` mũi tên, `3` vẽ tự do, `4` chữ, `5` tẩy; `[` và `]` đổi cỡ nét;
-  `Delete`/`Backspace` xoá phần tử đang chọn. Dùng số chứ không dùng chữ cái đầu vì tên tiếng Việt
-  trùng chữ đầu ("Chữ" và "Cơ động"), và hàng số khớp đúng thứ tự nút trên thanh công cụ. Mỗi nút mang
-  phím tắt của nó trong `title`, nên không cần bảng chú giải riêng.
+- Phím tắt công cụ: `1` chọn, `2` đội hình, `3` mũi tên, `4` vẽ tự do, `5` chữ, `6` tẩy; `[` và `]`
+  đổi cỡ nét; `Delete`/`Backspace` xoá phần tử đang chọn; `←`/`→` đổi giai đoạn. Dùng số chứ không
+  dùng chữ cái đầu vì tên tiếng Việt trùng chữ đầu ("Chữ" và "Cơ động"), và hàng số khớp đúng thứ
+  tự nút trên thanh công cụ. Mỗi nút mang phím tắt của nó trong `title`, nên không cần bảng chú giải
+  riêng.
 - Thêm/xoá/đổi tên/nhân bản giai đoạn **không** vào ngăn undo — chúng là thao tác trên tài liệu, và
   một `Ctrl+Z` làm sống lại cả một giai đoạn đã xoá thì khó đoán hơn là một hộp thoại xác nhận.
 
@@ -352,8 +359,8 @@ Mobile:
 ## Bố cục editor
 
 ```
-┌─ đội hình | mũi tên | vẽ tự do | chữ | tẩy ‖ 4 màu ‖ 4 cỡ nét ‖ Hoàn tác Làm lại ‖ Lưu  Xuất ┐
-├─ Giai đoạn 1* | Giai đoạn 2 | …            [+ Thêm giai đoạn] [⧉ Nhân bản]                   ┤
+┌─ chọn | đội hình | mũi tên | vẽ tự do | chữ | tẩy ‖ 4 màu ‖ 4 cỡ nét ‖ Hoàn tác Làm lại ‖ Lưu Xuất ┐
+├─ ◷1 | ◷2 | … ←/→      [+ Thêm giai đoạn] [⧉ Nhân bản] [Xoá giai đoạn]                        ┤
 ├──────────────┬───────────────────────────────────────────────────────────────────────────────┤
 │ Quân cờ  [«] │                                                                               │
 │ QUÂN HIỆU    │                                                                               │
