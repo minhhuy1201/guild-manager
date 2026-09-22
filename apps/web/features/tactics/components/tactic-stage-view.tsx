@@ -19,10 +19,10 @@ import {
   TACTIC_MAP_HEIGHT,
   TACTIC_MAP_WIDTH,
   type TacticElement,
-  type TacticStage,
 } from "@guild/shared/schemas";
 
 import type { MapPoint } from "../lib/element-geometry";
+import { TRAIL_OPACITY, type StageFrame } from "../lib/stage-transition";
 import { INITIAL_ZOOM, type ZoomState } from "../lib/zoom";
 import { TOKEN_ICON_BOX } from "../lib/icon-paths";
 import { stageScale, toMapPoint } from "../lib/stage-scale";
@@ -56,9 +56,14 @@ const HOVER_HALO_RATIO = 1.28;
 /** How solid that halo is. Enough to pick the token out, not enough to hide the map under it. */
 const HOVER_HALO_OPACITY = 0.3;
 
+/** How wide the line a moving token drags behind it is, in map units. */
+const TRAIL_STROKE_WIDTH = 3;
+
 export interface TacticStageViewProps {
-  /** The stage being drawn */
-  stage: TacticStage;
+  /** The frame being drawn: a stage standing still, or a moment part way between two */
+  frame: StageFrame;
+  /** Whether a stage change is running, which is when a token must not be dragged */
+  animating?: boolean;
   /** Width the canvas is rendered at, in CSS pixels */
   width: number;
   /** Whether the viewer may change anything */
@@ -97,7 +102,8 @@ export interface TacticStageViewProps {
  * @returns The canvas
  */
 export function TacticStageView({
-  stage,
+  frame,
+  animating = false,
   width,
   height,
   zoom = INITIAL_ZOOM,
@@ -192,15 +198,66 @@ export function TacticStageView({
         ) : null}
       </Layer>
 
+      {/* Onion skin and trails read the map, they are not part of it: no pointer, and the export
+          turns them off rather than baking them into a picture. */}
+      <Layer listening={false}>
+        {frame.ghosts.map((ghost) => (
+          <ElementShape
+            key={`ghost-${ghost.token.id}`}
+            element={ghost.token}
+            opacity={ghost.opacity}
+            draggable={false}
+            selected={false}
+            onDragEnd={() => {}}
+            onClick={() => {}}
+          />
+        ))}
+        {frame.tokens.map((unit) =>
+          unit.trail ? (
+            <Line
+              key={`trail-${unit.token.id}`}
+              points={unit.trail}
+              stroke={COLOR_HEX[unit.token.color]}
+              strokeWidth={TRAIL_STROKE_WIDTH}
+              opacity={TRAIL_OPACITY}
+              lineCap="round"
+            />
+          ) : null
+        )}
+      </Layer>
+
       <Layer>
-        {stage.elements.map((element) => (
+        {frame.outgoing.elements.map((element) => (
+          <ElementShape
+            key={`out-${element.id}`}
+            element={element}
+            opacity={frame.outgoing.opacity}
+            draggable={false}
+            selected={false}
+            onDragEnd={() => {}}
+            onClick={() => {}}
+          />
+        ))}
+        {frame.incoming.elements.map((element) => (
           <ElementShape
             key={element.id}
             element={element}
-            draggable={!readOnly && element.kind === "token"}
+            opacity={frame.incoming.opacity}
+            draggable={false}
             selected={element.id === selectedElementId}
-            onDragEnd={(x, y) => onTokenMoved?.(element.id, x, y)}
+            onDragEnd={() => {}}
             onClick={() => onElementClick?.(element.id)}
+          />
+        ))}
+        {frame.tokens.map((unit) => (
+          <ElementShape
+            key={unit.token.id}
+            element={unit.token}
+            opacity={unit.opacity}
+            draggable={!readOnly && !animating}
+            selected={unit.token.id === selectedElementId}
+            onDragEnd={(x, y) => onTokenMoved?.(unit.token.id, x, y)}
+            onClick={() => onElementClick?.(unit.token.id)}
           />
         ))}
       </Layer>
@@ -274,6 +331,8 @@ function useTokenHover(movable: boolean): TokenHover {
 interface ElementShapeProps {
   /** The element to draw */
   element: TacticElement;
+  /** How solid to draw it, from 0 to 1. It comes from the frame, never from the element itself */
+  opacity: number;
   /** Whether the element may be dragged */
   draggable: boolean;
   /** Whether to draw the selection ring */
@@ -287,11 +346,15 @@ interface ElementShapeProps {
 /**
  * One element of the scene. Switching on `kind` and ending with `assertNever` is what turns a new
  * element type into a compile error rather than a shape that silently never draws.
- * @param props - The element and its interaction callbacks
+ *
+ * Opacity is handed in rather than read off the element: how solid a shape is belongs to the frame
+ * being drawn, which is where a crossfade and an onion skin come from.
+ * @param props - The element, how solid to draw it, and its interaction callbacks
  * @returns The Konva shape
  */
 function ElementShape({
   element,
+  opacity,
   draggable,
   selected,
   onDragEnd,
@@ -308,6 +371,7 @@ function ElementShape({
         <Group
           x={element.x}
           y={element.y}
+          opacity={opacity}
           draggable={draggable}
           onClick={onClick}
           onTap={onClick}
@@ -352,6 +416,7 @@ function ElementShape({
       return (
         <Arrow
           points={element.points}
+          opacity={opacity}
           stroke={COLOR_HEX[element.color]}
           fill={COLOR_HEX[element.color]}
           strokeWidth={element.strokeWidth}
@@ -366,6 +431,7 @@ function ElementShape({
       return (
         <Line
           points={element.points}
+          opacity={opacity}
           stroke={COLOR_HEX[element.color]}
           strokeWidth={element.strokeWidth}
           lineCap="round"
@@ -380,6 +446,7 @@ function ElementShape({
         <Text
           x={element.x}
           y={element.y}
+          opacity={opacity}
           text={element.text}
           fontSize={element.fontSize}
           fontStyle="bold"
