@@ -109,4 +109,15 @@ describe("TokenPresetDialog", () => {
       expect(screen.getByText("Đã có quân cờ trùng tên.")).toBeTruthy()
     );
   });
+
+  it("says why a preset could not be deleted, inside the dialog", async () => {
+    deletePreset.mockRejectedValue(new Error("Không tìm thấy quân cờ."));
+    renderDialog();
+
+    fireEvent.click(screen.getByRole("button", { name: "Xoá Đội cảm tử" }));
+
+    await waitFor(() =>
+      expect(screen.getByText("Không tìm thấy quân cờ.")).toBeTruthy()
+    );
+  });
 });

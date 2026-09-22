@@ -3,14 +3,15 @@
 import { useEffect, useRef } from "react";
 import type { TacticStage } from "@guild/shared/schemas";
 
-import { isTypingTarget, stageStepForKey } from "../lib/shortcuts";
+import { belongsElsewhere } from "@/lib/keyboard-target";
+import { stageStepForKey } from "../lib/shortcuts";
 
 /**
  * Left and right arrow keys walk the stage tabs: left goes back a stage, right goes on to the next.
  *
  * The walk stops at both ends rather than wrapping — a tactic is read front to back, and jumping
  * from the last stage to the first would read as a glitch. The keys are off while the focus sits in
- * a field, so renaming a stage still moves the caret.
+ * a field or inside a dialog, so renaming a stage still moves the caret.
  *
  * The keys answer from anywhere on the page, because an admin walks the stages with a hand on the
  * map rather than on the strip. Once the focus *is* on a tab the walk carries it along, which is
@@ -45,7 +46,7 @@ export function useStageArrows(
         event.metaKey ||
         event.altKey ||
         event.shiftKey ||
-        isTypingTarget(event.target)
+        belongsElsewhere(event.target)
       ) {
         return;
       }

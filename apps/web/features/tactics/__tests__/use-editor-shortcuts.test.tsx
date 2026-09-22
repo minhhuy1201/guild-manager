@@ -9,11 +9,18 @@ import { useTacticEditorStore } from "../store/editor-store";
 const onSave = vi.fn();
 const onDeleteSelected = vi.fn();
 
-/** A component whose only job is to install the shortcuts. */
+/** A component whose only job is to install the shortcuts, next to an open dialog. */
 function Harness({ enabled = true }: { enabled?: boolean }) {
   useEditorShortcuts(enabled, onSave, onDeleteSelected);
 
-  return <input aria-label="ô nhập" />;
+  return (
+    <>
+      <input aria-label="ô nhập" />
+      <div role="dialog">
+        <button type="button">Trong hộp thoại</button>
+      </div>
+    </>
+  );
 }
 
 afterEach(cleanup);
@@ -87,6 +94,18 @@ describe("useEditorShortcuts", () => {
       new KeyboardEvent("keydown", { key: "6", bubbles: true })
     );
 
+    expect(useTacticEditorStore.getState().tool).toBe("token");
+  });
+
+  it("stands down while the focus is inside a dialog, so the map never changes behind it", () => {
+    const { getByRole } = render(<Harness />);
+    const button = getByRole("button", { name: "Trong hộp thoại" });
+
+    for (const init of [{ key: "Delete" }, { key: "6" }, { key: "z", ctrlKey: true }]) {
+      button.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, ...init }));
+    }
+
+    expect(onDeleteSelected).not.toHaveBeenCalled();
     expect(useTacticEditorStore.getState().tool).toBe("token");
   });
 
