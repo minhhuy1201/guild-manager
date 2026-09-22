@@ -24,17 +24,28 @@ afterEach(cleanup);
   true;
 
 /**
- * Render a tactics hook inside a fresh QueryClient, with the editor store reset.
- * Each test gets its own client, so one test's cached error cannot leak into the next.
- * @param hook - The hook to run
- * @returns The testing-library render result
+ * A QueryClient that neither retries nor shares a cache with another test.
+ * @returns The client
  */
-export function renderTacticHook<T>(hook: () => T): RenderHookResult<T, void> {
-  useTacticEditorStore.getState().reset();
-
-  const queryClient = new QueryClient({
+export function createTestQueryClient(): QueryClient {
+  return new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
+}
+
+/**
+ * Render a tactics hook inside a QueryClient, with the editor store reset.
+ * Each test gets its own client unless it passes one it has already filled, so one test's cached
+ * error cannot leak into the next.
+ * @param hook - The hook to run
+ * @param queryClient - The client to read from; a fresh one when omitted
+ * @returns The testing-library render result
+ */
+export function renderTacticHook<T>(
+  hook: () => T,
+  queryClient: QueryClient = createTestQueryClient()
+): RenderHookResult<T, void> {
+  useTacticEditorStore.getState().reset();
 
   return renderHook(hook, {
     /**

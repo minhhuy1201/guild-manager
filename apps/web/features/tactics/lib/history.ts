@@ -117,3 +117,35 @@ export function redoHistory(
     },
   };
 }
+
+/**
+ * Forget every step of one stage, both ways - for a stage that no longer exists, whose steps would
+ * lead back to nothing.
+ * @param history - The stacks to trim
+ * @param stageId - The stage whose steps go
+ * @returns New stacks without that stage; the others untouched
+ */
+export function dropStageHistory(
+  history: EditorHistory,
+  stageId: string
+): EditorHistory {
+  return {
+    past: withoutStage(history.past, stageId),
+    future: withoutStage(history.future, stageId),
+  };
+}
+
+/**
+ * One stack map minus one stage's entry.
+ * @param stacks - Steps keyed by stage id
+ * @param stageId - The stage whose entry goes
+ * @returns A new map without that entry
+ */
+function withoutStage(
+  stacks: EditorHistory["past"],
+  stageId: string
+): EditorHistory["past"] {
+  return Object.fromEntries(
+    Object.entries(stacks).filter(([id]) => id !== stageId)
+  );
+}

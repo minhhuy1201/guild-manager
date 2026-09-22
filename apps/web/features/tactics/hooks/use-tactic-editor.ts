@@ -37,6 +37,10 @@ import { useTacticEditorStore } from "../store/editor-store";
 import { useSaveTactic } from "./use-save-tactic";
 import { useTactic } from "./use-tactic";
 
+/** Said when the fresh read failed and the draft had to start from the copy already in the cache. */
+export const STALE_DRAFT_WARNING =
+  "Không tải được bản mới nhất, đang mở bản đã lưu trong máy. Lưu lúc này có thể ghi đè thay đổi của admin khác.";
+
 /** What the editor screen needs to render itself. */
 export interface TacticEditorScreen {
   /** Loading and error state of the tactic query */
@@ -110,6 +114,9 @@ export function useTacticEditor(
     null
   );
   const loadedIdRef = useRef<string | null>(null);
+  // A ref rather than the mutation's `isPending`: a second Ctrl+S can land before the render that
+  // would carry the first one's pending flag.
+  const savingRef = useRef(false);
 
   const scene = useTacticEditorStore((store) => store.scene);
   const activeStageId = useTacticEditorStore((store) => store.activeStageId);
@@ -123,21 +130,26 @@ export function useTacticEditor(
   const loadScene = useTacticEditorStore((store) => store.loadScene);
   const commit = useTacticEditorStore((store) => store.commit);
   const selectElement = useTacticEditorStore((store) => store.selectElement);
+  const updateDrawing = useTacticEditorStore((store) => store.updateDrawing);
   const markSaved = useTacticEditorStore((store) => store.markSaved);
   const reset = useTacticEditorStore((store) => store.reset);
 
   const tactic = tacticQuery.data;
+  const isReadSettled = !tacticQuery.isFetching;
+  const isReadFailed = tacticQuery.isError;
 
-  // The saved scene comes through this door exactly once per tactic: after that the store owns the
-  // drawing, and a refetch must not overwrite what the admin has drawn since.
+  // The saved scene comes through this door exactly once per tactic, and only once the read that
+  // opening the editor started has settled - a cached copy may be one another admin has since saved
+  // over. After that the store owns the drawing, and a refetch must not overwrite it.
   useEffect(() => {
-    if (!tactic || loadedIdRef.current === tactic.id) {
+    if (!tactic || !isReadSettled || loadedIdRef.current === tactic.id) {
       return;
     }
 
     loadedIdRef.current = tactic.id;
     loadScene(migrateScene(tactic.scene));
-  }, [tactic, loadScene]);
+    if (isReadFailed) toastError(STALE_DRAFT_WARNING);
+  }, [tactic, isReadSettled, isReadFailed, loadScene]);
 
   useEffect(() => reset, [reset]);
 
@@ -246,26 +258,9 @@ export function useTacticEditor(
 
       drawingRef.current = next;
       // While a stroke grows it replaces itself in place: one undo step per stroke, not per point.
-      useTacticEditorStore.setState((store) => ({
-        scene: store.scene
-          ? {
-              ...store.scene,
-              stages: store.scene.stages.map((stage) =>
-                stage.id === activeStage.id
-                  ? {
-                      ...stage,
-                      elements: stage.elements.map((element) =>
-                        element.id === next.id ? next : element
-                      ),
-                    }
-                  : stage
-              ),
-            }
-          : store.scene,
-        dirty: true,
-      }));
+      updateDrawing(activeStage.id, next);
     },
-    [activeStage]
+    [activeStage, updateDrawing]
   );
 
   const confirmText = useCallback(
@@ -335,9 +330,11 @@ export function useTacticEditor(
   const onSave = useCallback(async () => {
     const current = useTacticEditorStore.getState().scene;
 
-    if (!current || !isAdmin) {
+    if (!current || !isAdmin || savingRef.current) {
       return false;
     }
+
+    savingRef.current = true;
 
     try {
       await saveTactic.mutateAsync({ id: tacticId, scene: current });
@@ -346,9 +343,12 @@ export function useTacticEditor(
       // and says so in a toast, since the toolbar has no room for a sentence.
       toastError(errorMessageOf(caught, "Không lưu được chiến thuật."));
       return false;
+    } finally {
+      savingRef.current = false;
     }
 
-    markSaved();
+    // `current` is what the server now holds; anything drawn since the request left stays unsaved.
+    markSaved(current);
     return true;
   }, [isAdmin, saveTactic, tacticId, markSaved]);
 
@@ -356,8 +356,22 @@ export function useTacticEditor(
     stageRef.current = stage;
   }, []);
 
+  const queryState = combineQueries(
+    [tacticQuery],
+    "Không tải được chiến thuật."
+  );
+
   return {
-    state: combineQueries([tacticQuery], "Không tải được chiến thuật."),
+    // Once a copy exists, a failed read never swaps the drawing for an error page: the draft starts
+    // from that copy (with a warning), and a later background refetch failing changes nothing.
+    state: tactic
+      ? {
+          ...queryState,
+          isPending: scene === null,
+          isError: false,
+          errorMessage: "",
+        }
+      : queryState,
     name: tactic?.name ?? "",
     activeStage,
     selectedElement,
