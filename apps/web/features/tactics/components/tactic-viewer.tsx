@@ -7,9 +7,12 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { CANVAS_GRID_STYLE } from "../lib/canvas-grid";
 import { useStageArrows } from "../hooks/use-stage-arrows";
+import { useStagePlayback } from "../hooks/use-stage-playback";
 import { useStageSize } from "../hooks/use-stage-size";
+import { useStageTransition } from "../hooks/use-stage-transition";
 import { useStageZoom } from "../hooks/use-stage-zoom";
 import { StageArrowHint } from "./stage-arrow-hint";
+import { StagePlaybackControls } from "./stage-playback-controls";
 import { TacticCanvas } from "./tactic-canvas";
 import { ZoomReadout } from "./zoom-readout";
 
@@ -27,16 +30,36 @@ interface TacticViewerProps {
  */
 export function TacticViewer({ stages }: TacticViewerProps) {
   const [activeStageId, setActiveStageId] = useState<string | null>(null);
+  const [onionSkin, setOnionSkin] = useState(false);
   const { ref, width } = useStageSize();
   const stageZoom = useStageZoom(width);
 
   const stage =
     stages.find((candidate) => candidate.id === activeStageId) ?? stages[0];
 
-  // The arrows walk from the stage on screen, which is the first one until a tab is picked.
-  const tablistRef = useStageArrows(stages, stage?.id ?? null, setActiveStageId);
+  const { frame, animating } = useStageTransition(stages, stage?.id ?? null, {
+    onionSkin,
+  });
+  const playback = useStagePlayback(
+    stages,
+    stage?.id ?? null,
+    animating,
+    setActiveStageId
+  );
 
-  if (!stage) {
+  /**
+   * Open a stage because the person asked for it, which ends any playback that was running.
+   * @param stageId - Id of the stage to open
+   */
+  function selectStage(stageId: string): void {
+    playback.stop();
+    setActiveStageId(stageId);
+  }
+
+  // The arrows walk from the stage on screen, which is the first one until a tab is picked.
+  const tablistRef = useStageArrows(stages, stage?.id ?? null, selectStage);
+
+  if (!stage || !frame) {
     return null;
   }
 
@@ -61,13 +84,21 @@ export function TacticViewer({ stages }: TacticViewerProps) {
               tabIndex={candidate.id === stage.id ? 0 : -1}
               size="sm"
               variant={candidate.id === stage.id ? "default" : "ghost"}
-              onClick={() => setActiveStageId(candidate.id)}
+              onClick={() => selectStage(candidate.id)}
             >
               {candidate.name}
             </Button>
           ))}
 
           <StageArrowHint stageCount={stages.length} />
+
+          <StagePlaybackControls
+            playing={playback.playing}
+            onionSkin={onionSkin}
+            disabled={false}
+            onTogglePlay={playback.toggle}
+            onToggleOnionSkin={() => setOnionSkin((on) => !on)}
+          />
         </div>
       ) : null}
 
@@ -83,7 +114,8 @@ export function TacticViewer({ stages }: TacticViewerProps) {
         )}
       >
         <TacticCanvas
-          stage={stage}
+          frame={frame}
+          animating={animating}
           width={width}
           zoom={stageZoom.zoom}
           readOnly
