@@ -287,6 +287,21 @@ export function useTacticEditor(
     drawingRef.current = null;
   }, []);
 
+  // The canvas only hears a release that happens over it. A button let go over the toolbar, or a
+  // window that loses focus mid-drag, still has to end the stroke - the same guarantee the pan gets
+  // in `useStageZoom` - or hovering back would keep drawing with no button held.
+  useEffect(() => {
+    window.addEventListener("mouseup", onPointerUp);
+    window.addEventListener("touchend", onPointerUp);
+    window.addEventListener("blur", onPointerUp);
+
+    return () => {
+      window.removeEventListener("mouseup", onPointerUp);
+      window.removeEventListener("touchend", onPointerUp);
+      window.removeEventListener("blur", onPointerUp);
+    };
+  }, [onPointerUp]);
+
   const onTokenMoved = useCallback(
     (tokenId: string, x: number, y: number) => {
       if (isAdmin && activeStage) {
