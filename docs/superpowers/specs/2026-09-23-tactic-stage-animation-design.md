@@ -147,7 +147,7 @@ Frame`. Không có animation rút gọn, không có phiên bản nhẹ hơn — 
 | Tính năng | Quy tắc |
 |---|---|
 | Nút Play | Chạy tự động lần lượt qua các giai đoạn, dừng hẳn ở giai đoạn cuối, không lặp. Giữa hai giai đoạn dừng `PLAYBACK_DWELL_MS = 900` để đọc. Bấm tab hoặc bấm phím mũi tên thì dừng playback ngay |
-| Onion skin | Bật/tắt bằng nút. Khi bật, vẽ mờ vị trí token của giai đoạn **liền trước** ngay cả lúc đứng yên. Giai đoạn đầu tiên không có gì để vẽ mờ |
+| Onion skin | Bật/tắt bằng nút. Khi bật, vẽ mờ vị trí token của giai đoạn **liền trước**, lúc đứng yên. Trong lúc animation chạy thì không vẽ: vệt đuôi đã nói quân đến từ đâu, thêm bóng mờ chỉ là nhiễu. Giai đoạn đầu tiên không có gì để vẽ mờ |
 | Vệt đuôi | Không có nút. Chỉ tồn tại trong lúc animation chạy: một đoạn thẳng mờ từ điểm xuất phát tới vị trí hiện tại, màu của chính token đó |
 
 Nút Play và nút onion skin dùng chung một component (`stage-playback-controls.tsx`) cho cả viewer lẫn
