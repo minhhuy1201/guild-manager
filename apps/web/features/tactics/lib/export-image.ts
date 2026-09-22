@@ -1,7 +1,46 @@
 import JSZip from "jszip";
+import { TACTIC_MAP_HEIGHT, TACTIC_MAP_WIDTH } from "@guild/shared/schemas";
 
 /** How many device pixels one map unit is exported at. Two keeps the labels crisp when printed. */
 export const EXPORT_PIXEL_RATIO = 2;
+
+/** How the Konva stage is drawn right now: the fit-and-zoom scale and where the map's corner sits. */
+export interface StageTransform {
+  /** Screen pixels per map unit */
+  scale: number;
+  /** Where the map's left edge sits on the canvas, in screen pixels */
+  x: number;
+  /** Where the map's top edge sits on the canvas, in screen pixels */
+  y: number;
+}
+
+/** What Konva's `toDataURL` needs to render exactly the map, whatever the view. */
+export interface ExportRegion {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  pixelRatio: number;
+}
+
+/**
+ * The part of the canvas that is the map, and the pixel ratio that renders it at a fixed size.
+ *
+ * Konva redraws the region rather than copying the canvas, so a map zoomed past the edges or panned
+ * half out of view still comes out whole, and dividing by the scale makes every export the same
+ * size on any screen.
+ * @param transform - How the stage is drawn right now
+ * @returns The region to hand `toDataURL`
+ */
+export function mapExportRegion({ scale, x, y }: StageTransform): ExportRegion {
+  return {
+    x,
+    y,
+    width: TACTIC_MAP_WIDTH * scale,
+    height: TACTIC_MAP_HEIGHT * scale,
+    pixelRatio: EXPORT_PIXEL_RATIO / scale,
+  };
+}
 
 /** Characters a file system refuses, replaced by a dash. */
 const UNSAFE_FILENAME_CHARS = /[\\/:*?"<>|]+/g;

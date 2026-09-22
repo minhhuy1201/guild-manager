@@ -30,6 +30,7 @@ vi.mock("../../lib/export-image", async () => {
 });
 
 import { useTacticEditorStore } from "../../store/editor-store";
+import { mapExportRegion } from "../../lib/export-image";
 import { useTacticExport } from "../use-tactic-export";
 import { renderTacticHook } from "./render-tactic-hook";
 
@@ -38,13 +39,23 @@ const stages: TacticStage[] = [
   { id: "s2", name: "Giai đoạn 2", elements: [] },
 ];
 
-/** A Konva stage double that reports which stage was on screen when it was captured. */
+/**
+ * A Konva stage double, zoomed and panned, that reports which stage was on screen when it was
+ * captured and whether anything was still selected.
+ */
 function fakeStage() {
-  return {
-    toDataURL: vi.fn(() => {
-      const openStage = useTacticEditorStore.getState().activeStageId;
+  const selectedAtCapture: (string | null)[] = [];
 
-      return `data:image/png;base64,${openStage}`;
+  return {
+    selectedAtCapture,
+    scaleX: () => 1.5,
+    x: () => -200,
+    y: () => -100,
+    toDataURL: vi.fn(() => {
+      const state = useTacticEditorStore.getState();
+      selectedAtCapture.push(state.selectedElementId);
+
+      return `data:image/png;base64,${state.activeStageId}`;
     }),
   };
 }
@@ -62,7 +73,7 @@ beforeEach(() => {
 });
 
 describe("useTacticExport", () => {
-  it("saves the open stage as one PNG, named after it", () => {
+  it("saves the open stage as one PNG, named after it", async () => {
     const stage = fakeStage();
     const { result } = renderTacticHook(() =>
       useTacticExport("Thủ cổng tây", stages, { current: stage } as never)
@@ -72,7 +83,7 @@ describe("useTacticExport", () => {
       useTacticEditorStore.getState().loadScene({ schemaVersion: TACTIC_SCHEMA_VERSION, stages })
     );
 
-    act(() => result.current.exportActiveStage());
+    await act(() => result.current.exportActiveStage());
 
     expect(downloadDataUrl).toHaveBeenCalledWith(
       "data:image/png;base64,s1",
@@ -80,7 +91,45 @@ describe("useTacticExport", () => {
     );
   });
 
-  it("does nothing when there is no canvas to capture", () => {
+  it("captures the whole map, not the zoomed view, and leaves the selection ring out", async () => {
+    const stage = fakeStage();
+    const { result } = renderTacticHook(() =>
+      useTacticExport("Thủ cổng tây", stages, { current: stage } as never)
+    );
+    act(() => {
+      useTacticEditorStore.getState().loadScene({ schemaVersion: TACTIC_SCHEMA_VERSION, stages });
+      useTacticEditorStore.getState().selectElement("tok1");
+    });
+
+    await act(() => result.current.exportActiveStage());
+
+    expect(stage.toDataURL).toHaveBeenCalledWith(
+      mapExportRegion({ scale: 1.5, x: -200, y: -100 })
+    );
+    expect(stage.selectedAtCapture).toEqual([null]);
+  });
+
+  it("says so in a toast when the open stage cannot be captured", async () => {
+    const stage = fakeStage();
+    stage.toDataURL.mockImplementation(() => {
+      throw new Error("Canvas bị khoá.");
+    });
+    const { result } = renderTacticHook(() =>
+      useTacticExport("Thủ cổng tây", stages, { current: stage } as never)
+    );
+    act(() =>
+      useTacticEditorStore.getState().loadScene({ schemaVersion: TACTIC_SCHEMA_VERSION, stages })
+    );
+
+    await act(async () => {
+      await expect(result.current.exportActiveStage()).resolves.toBeUndefined();
+    });
+
+    expect(toastError).toHaveBeenCalledWith("Canvas bị khoá.");
+    expect(downloadDataUrl).not.toHaveBeenCalled();
+  });
+
+  it("does nothing when there is no canvas to capture", async () => {
     const { result } = renderTacticHook(() =>
       useTacticExport("Thủ cổng tây", stages, { current: null } as never)
     );
@@ -88,7 +137,7 @@ describe("useTacticExport", () => {
       useTacticEditorStore.getState().loadScene({ schemaVersion: TACTIC_SCHEMA_VERSION, stages })
     );
 
-    act(() => result.current.exportActiveStage());
+    await act(() => result.current.exportActiveStage());
 
     expect(downloadDataUrl).not.toHaveBeenCalled();
   });

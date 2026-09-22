@@ -237,7 +237,7 @@ export function TacticEditorScreen({
         stageCount={stages.length}
         onOpenChange={setExportOpen}
         onExportActive={() => {
-          exporter.exportActiveStage();
+          void exporter.exportActiveStage();
           setExportOpen(false);
         }}
         onExportAll={() => void exporter.exportAllStages()}

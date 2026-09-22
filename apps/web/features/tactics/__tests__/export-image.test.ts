@@ -1,8 +1,11 @@
 // @vitest-environment jsdom
 import JSZip from "jszip";
 import { describe, expect, it, vi } from "vitest";
+import { TACTIC_MAP_HEIGHT, TACTIC_MAP_WIDTH } from "@guild/shared/schemas";
 
 import {
+  EXPORT_PIXEL_RATIO,
+  mapExportRegion,
   buildStagesZip,
   downloadBlob,
   downloadDataUrl,
@@ -77,5 +80,33 @@ describe("writing the files out", () => {
     );
 
     vi.restoreAllMocks();
+  });
+});
+
+describe("mapExportRegion", () => {
+  it("frames the whole map at a fixed size, however the view is zoomed or panned", () => {
+    // Zoomed to 1.5x and panned so the map's corner sits off to the top left of the canvas.
+    const region = mapExportRegion({ scale: 1.5, x: -200, y: -100 });
+
+    expect(region).toEqual({
+      x: -200,
+      y: -100,
+      width: TACTIC_MAP_WIDTH * 1.5,
+      height: TACTIC_MAP_HEIGHT * 1.5,
+      pixelRatio: EXPORT_PIXEL_RATIO / 1.5,
+    });
+    // What reaches the file: the map at EXPORT_PIXEL_RATIO device pixels per map unit.
+    expect(region.width * region.pixelRatio).toBeCloseTo(
+      TACTIC_MAP_WIDTH * EXPORT_PIXEL_RATIO
+    );
+  });
+
+  it("gives the same file size on a narrow screen as on a wide one", () => {
+    const narrow = mapExportRegion({ scale: 0.5, x: 0, y: 0 });
+    const wide = mapExportRegion({ scale: 1, x: 0, y: 0 });
+
+    expect(narrow.width * narrow.pixelRatio).toBeCloseTo(
+      wide.width * wide.pixelRatio
+    );
   });
 });
