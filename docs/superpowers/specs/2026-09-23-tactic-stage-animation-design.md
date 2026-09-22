@@ -1,4 +1,4 @@
-# Animation chuyển giai đoạn của bảng chiến thuật — Design
+# Animation chuyển giai đoạn của bảng chiến thuật - Design
 
 Ngày: 2026-09-23 · Phạm vi: `apps/web` (feature `tactics`: một module thuần mới, ba hook mới, một
 component điều khiển mới, đổi interface của `TacticStageView`, sửa `duplicateStage`), tài liệu.
@@ -13,7 +13,7 @@ việc cần làm khi đó là vẽ và lưu được.
 
 Sau khi dùng thật, chỗ hụt lộ ra ở phía **người xem**, không phải người vẽ. Đổi giai đoạn hôm nay là
 thay thẳng `stage` đưa vào Konva: quân cờ biến mất ở chỗ này rồi hiện ra ở chỗ khác. Người xem đọc
-được *trạng thái* của từng giai đoạn nhưng không đọc được **quân nào đi đâu** — mà đó chính là thông
+được *trạng thái* của từng giai đoạn nhưng không đọc được **quân nào đi đâu** - mà đó chính là thông
 tin một bảng chiến thuật nhiều giai đoạn tồn tại để truyền đạt. Admin phải bù bằng cách bấm qua bấm
 lại hai tab và mô tả bằng lời trong Discord, đúng cái việc mà bảng chiến thuật sinh ra để thay thế.
 
@@ -57,20 +57,20 @@ Vì sao được phép:
   nguyên.
 
 Vì sao nét vẽ **không** được giữ id: hai nét vẽ trùng id ở hai giai đoạn không mang ý nghĩa gì cho
-người xem — không ai theo dõi "mũi tên này đi đâu". Giữ id cho chúng chỉ tạo ra khả năng gán nhầm.
+người xem - không ai theo dõi "mũi tên này đi đâu". Giữ id cho chúng chỉ tạo ra khả năng gán nhầm.
 Lý do gốc trong doc comment hiện tại ("undo và tẩy sẽ tác động lên cả hai") vẫn đúng cho nét vẽ, và
 không đúng cho token vì token đã được thao tác theo từng giai đoạn sẵn.
 
 ### 2. Bản vẽ cũ vẫn chạy được, nhờ ghép dự phòng theo `label + icon`
 
 Mọi chiến thuật đã lưu trước thay đổi ở mục 1 đều có id token lệch nhau giữa các giai đoạn. Nếu chỉ
-ghép theo id thì chúng mất animation cho tới khi ai đó vẽ lại — tức là tính năng này vô hình với đúng
+ghép theo id thì chúng mất animation cho tới khi ai đó vẽ lại - tức là tính năng này vô hình với đúng
 tập dữ liệu đang có.
 
 Quyết định: ghép **hai tầng**. Ghép theo `id` trước. Token còn dư hai bên thì ghép tiếp theo khoá
 `label + icon`, theo thứ tự xuất hiện, mỗi token bên trái ăn nhiều nhất một token bên phải.
 
-Đây là hai cơ chế, không phải một — chấp nhận có chủ đích. Tầng `id` là đường đi đúng và chính xác
+Đây là hai cơ chế, không phải một - chấp nhận có chủ đích. Tầng `id` là đường đi đúng và chính xác
 tuyệt đối kể cả khi hai quân trùng tên trùng icon. Tầng `label + icon` là đường cứu dữ liệu cũ, không
 chính xác tuyệt đối (hai quân trùng tên trùng icon có thể bị ghép chéo) nhưng sai ở đây chỉ làm
 đường trượt lạ mắt, không làm hỏng dữ liệu. Không có tầng thứ ba: token không ghép được thì fade.
@@ -80,7 +80,7 @@ chính xác tuyệt đối (hai quân trùng tên trùng icon có thể bị gh�
 `TacticStageView` hôm nay nhận `stage: TacticStage` và vẽ thẳng. Nếu thêm animation bằng cách thêm
 một nhánh render thì canvas có hai đường vẽ, và nhánh ít chạy hơn sẽ mục.
 
-Quyết định: đổi prop thành `frame: StageFrame` — một cấu trúc **đã nội suy xong**, đủ để vẽ, không
+Quyết định: đổi prop thành `frame: StageFrame` - một cấu trúc **đã nội suy xong**, đủ để vẽ, không
 biết gì về thời gian:
 
 ```ts
@@ -113,8 +113,8 @@ Thứ tự layer: map → onion skin → vệt đuôi → nét vẽ `outgoing` �
 ### 4. Quy tắc chuyển động nằm trong một module thuần
 
 `lib/stage-transition.ts` không import React, không import Konva. Nó nhận hai `TacticStage` và một
-`t` trong `[0, 1]`, trả về `StageFrame`. Toàn bộ quy tắc — ghép token, nội suy, fade, vệt đuôi,
-onion skin — ở đây, nên test được bằng giá trị chứ không phải bằng canvas.
+`t` trong `[0, 1]`, trả về `StageFrame`. Toàn bộ quy tắc - ghép token, nội suy, fade, vệt đuôi,
+onion skin - ở đây, nên test được bằng giá trị chứ không phải bằng canvas.
 
 Hook `use-stage-transition.ts` chỉ làm một việc: đẩy `t` theo `requestAnimationFrame`.
 
@@ -140,7 +140,7 @@ thấy phải chờ. Hai giá trị này là hằng số có tên trong module t
 ### 8. `prefers-reduced-motion` cắt thẳng
 
 Người bật "giảm chuyển động" trong hệ điều hành nhận `staticFrame` ngay, không chạy `requestAnimation
-Frame`. Không có animation rút gọn, không có phiên bản nhẹ hơn — cắt thẳng là cái họ yêu cầu.
+Frame`. Không có animation rút gọn, không có phiên bản nhẹ hơn - cắt thẳng là cái họ yêu cầu.
 
 ### 9. Ba tính năng đi kèm
 
@@ -156,7 +156,7 @@ editor, để hai màn không lệch nhau.
 ### 10. Xuất ảnh phải sạch
 
 `exportAllStages` (`apps/web/features/tactics/hooks/use-tactic-export.ts`) đổi giai đoạn rồi chờ hai
-khung hình rồi chụp. Với animation, nó sẽ chụp đúng khung hình **giữa chừng** — mỗi ảnh trong file
+khung hình rồi chụp. Với animation, nó sẽ chụp đúng khung hình **giữa chừng** - mỗi ảnh trong file
 ZIP là một cảnh quân cờ đang lơ lửng giữa hai vị trí.
 
 Quyết định: trong lúc xuất ảnh, `useStageTransition` chạy với `enabled: false`, và onion skin bị tắt
@@ -168,8 +168,8 @@ thuộc về bản vẽ.**
 
 ### 11. Không kéo được quân trong lúc animation chạy
 
-Token đặt `draggable={!readOnly && !animating}`. Kéo một quân đang trượt sẽ ghi toạ độ nội suy — một
-vị trí không ai chọn — vào tài liệu.
+Token đặt `draggable={!readOnly && !animating}`. Kéo một quân đang trượt sẽ ghi toạ độ nội suy - một
+vị trí không ai chọn - vào tài liệu.
 
 ## Phạm vi áp dụng
 
@@ -181,7 +181,7 @@ Cả hai màn: `TacticViewer` (member, và admin trên điện thoại) và canv
 - Không có trục thời gian, tốc độ hay thời điểm lưu trong tài liệu scene.
 - Không lặp vô hạn ở nút Play.
 - Không xuất ảnh động (GIF/video).
-- Không nội suy nét vẽ (`arrow`, `freehand`, `text`) — chúng crossfade. Biến một mũi tên thành một
+- Không nội suy nét vẽ (`arrow`, `freehand`, `text`) - chúng crossfade. Biến một mũi tên thành một
   mũi tên khác không mang nghĩa gì cho người xem.
 - Không đổi `TACTIC_SCHEMA_VERSION`.
 

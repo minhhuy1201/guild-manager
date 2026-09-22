@@ -1,4 +1,4 @@
-# Animation chuyển giai đoạn bảng chiến thuật — Implementation Plan
+# Animation chuyển giai đoạn bảng chiến thuật - Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -60,7 +60,7 @@ một đường vẽ cho cả lúc đứng yên lẫn lúc chạy.
 
 **Interfaces:**
 - Consumes: không có.
-- Produces: `duplicateStage(scene: TacticScene, stageId: string): TacticScene` — chữ ký không đổi,
+- Produces: `duplicateStage(scene: TacticScene, stageId: string): TacticScene` - chữ ký không đổi,
   hành vi đổi: phần tử `kind: "token"` trong bản sao giữ nguyên `id` của bản gốc; `arrow`,
   `freehand`, `text` nhận `newId()`.
 
@@ -106,7 +106,7 @@ it("still gives a duplicated drawing a fresh id", () => {
 - [ ] **Step 2: Chạy test, xác nhận hỏng**
 
 Run: `pnpm --filter web test -- scene.test.ts`
-Expected: FAIL ở test đầu — `expected 'tk1' to be <uuid>` (hàm hiện tại cấp id mới cho mọi phần tử).
+Expected: FAIL ở test đầu - `expected 'tk1' to be <uuid>` (hàm hiện tại cấp id mới cho mọi phần tử).
 Test thứ hai PASS sẵn.
 
 - [ ] **Step 3: Sửa `duplicateStage`**
@@ -437,7 +437,7 @@ describe("frameToStage", () => {
 - [ ] **Step 2: Chạy test, xác nhận hỏng**
 
 Run: `pnpm --filter web test -- stage-transition.test.ts`
-Expected: FAIL — `Failed to resolve import "../lib/stage-transition"`.
+Expected: FAIL - `Failed to resolve import "../lib/stage-transition"`.
 
 - [ ] **Step 3: Viết module**
 
@@ -479,7 +479,7 @@ export interface FrameDrawings {
  * One frame of the scene: enough to draw, and nothing more.
  *
  * The canvas takes this rather than a `TacticStage`, so standing still and moving are the same
- * render path — a still frame is just one whose opacities are all 1.
+ * render path - a still frame is just one whose opacities are all 1.
  */
 export interface StageFrame {
   /** Drawings of the stage being left, fading out */
@@ -739,7 +739,7 @@ git commit -m "feat(tactics): derive one frame from two neighbouring stages"
 
 **Interfaces:**
 - Consumes: không có.
-- Produces: `useReducedMotion(): boolean` — true khi hệ điều hành đang yêu cầu giảm chuyển động,
+- Produces: `useReducedMotion(): boolean` - true khi hệ điều hành đang yêu cầu giảm chuyển động,
   false trên máy chủ và khi không yêu cầu.
 
 - [ ] **Step 1: Viết test hỏng**
@@ -798,7 +798,7 @@ describe("useReducedMotion", () => {
 - [ ] **Step 2: Chạy test, xác nhận hỏng**
 
 Run: `pnpm --filter web test -- use-reduced-motion.test.tsx`
-Expected: FAIL — `Failed to resolve import "../hooks/use-reduced-motion"`.
+Expected: FAIL - `Failed to resolve import "../hooks/use-reduced-motion"`.
 
 - [ ] **Step 3: Viết hook**
 
@@ -1113,7 +1113,7 @@ describe("useStageTransition", () => {
 - [ ] **Step 2: Chạy test, xác nhận hỏng**
 
 Run: `pnpm --filter web test -- use-stage-transition.test.tsx`
-Expected: FAIL — `Failed to resolve import "../hooks/use-stage-transition"`.
+Expected: FAIL - `Failed to resolve import "../hooks/use-stage-transition"`.
 
 - [ ] **Step 3: Viết hook**
 
@@ -1363,7 +1363,7 @@ describe("a frame in motion", () => {
 - [ ] **Step 2: Chạy test, xác nhận hỏng**
 
 Run: `pnpm --filter web test -- tactic-stage-view.test.tsx`
-Expected: FAIL — TypeScript/runtime lỗi vì `TacticStageView` chưa nhận `frame`.
+Expected: FAIL - TypeScript/runtime lỗi vì `TacticStageView` chưa nhận `frame`.
 
 - [ ] **Step 3: Sửa `tactic-stage-view.tsx`**
 
@@ -1487,7 +1487,7 @@ khung hình, không từ phần tử.
 
 Run: `pnpm --filter web test -- tactic-stage-view.test.tsx`
 Expected: PASS. `pnpm --filter web typecheck` sẽ còn báo lỗi ở `tactic-viewer.tsx` và
-`tactic-editor-screen.tsx` — đúng như mong đợi, hai file đó là Task 6 và 7.
+`tactic-editor-screen.tsx` - đúng như mong đợi, hai file đó là Task 6 và 7.
 
 - [ ] **Step 5: Commit**
 
@@ -1641,7 +1641,7 @@ describe("useStagePlayback", () => {
 - [ ] **Step 2: Chạy test, xác nhận hỏng**
 
 Run: `pnpm --filter web test -- use-stage-playback.test.tsx`
-Expected: FAIL — `Failed to resolve import "../hooks/use-stage-playback"`.
+Expected: FAIL - `Failed to resolve import "../hooks/use-stage-playback"`.
 
 - [ ] **Step 3: Viết hook**
 
@@ -1827,7 +1827,7 @@ describe("StagePlaybackControls", () => {
 - [ ] **Step 6: Chạy test, xác nhận hỏng**
 
 Run: `pnpm --filter web test -- stage-playback-controls.test.tsx`
-Expected: FAIL — `Failed to resolve import "../components/stage-playback-controls"`.
+Expected: FAIL - `Failed to resolve import "../components/stage-playback-controls"`.
 
 - [ ] **Step 7: Viết component**
 
@@ -1963,7 +1963,7 @@ theo khuôn `konvaNode` trong `tactic-stage-view.test.tsx`.
 - [ ] **Step 2: Chạy test, xác nhận hỏng**
 
 Run: `pnpm --filter web test -- tactic-viewer.test.tsx`
-Expected: FAIL — canvas vẫn nhận `stage`, và không có nút nào.
+Expected: FAIL - canvas vẫn nhận `stage`, và không có nút nào.
 
 - [ ] **Step 3: Sửa `tactic-viewer.tsx`**
 
@@ -2059,7 +2059,7 @@ git commit -m "feat(tactics): animate stage changes in the viewer"
 
 **Interfaces:**
 - Consumes: mọi thứ từ Task 4 tới Task 7.
-- Produces: `StageBarProps` thêm `playbackControls?: React.ReactNode` — nút điều khiển do màn hình
+- Produces: `StageBarProps` thêm `playbackControls?: React.ReactNode` - nút điều khiển do màn hình
   dựng và truyền vào, để `StageBar` không phải tự biết về playback.
 
 - [ ] **Step 1: Viết test hỏng**
@@ -2093,7 +2093,7 @@ qua test này và ghi lý do trong commit body).
 - [ ] **Step 2: Chạy test, xác nhận hỏng**
 
 Run: `pnpm --filter web test -- stage-bar.test.tsx tactic-editor-screen.test.tsx`
-Expected: FAIL — `StageBar` chưa nhận `playbackControls`.
+Expected: FAIL - `StageBar` chưa nhận `playbackControls`.
 
 - [ ] **Step 3: Sửa `stage-bar.tsx`**
 
@@ -2231,7 +2231,7 @@ git commit -m "docs(tactics): record that a token keeps its id across stages"
 ## Verify (chạy hết sau Task 9)
 
 - [ ] `pnpm --filter @guild/shared build`
-- [ ] `pnpm --filter web test` — toàn bộ suite xanh
+- [ ] `pnpm --filter web test` - toàn bộ suite xanh
 - [ ] `pnpm --filter web typecheck`
 - [ ] `pnpm --filter web lint`
 - [ ] `pnpm --filter web build`

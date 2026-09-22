@@ -73,7 +73,6 @@ export function useStageTransition(
   // What the canvas showed before this render. Recorded by the effect at the bottom of this hook,
   // which runs after the one below, so the one below still sees the frame being walked away from.
   const frameRef = useRef<StageFrame | null>(null);
-  const movingRef = useRef(false);
   const shownStageRef = useRef<TacticStage | null>(null);
 
   const activeStageKey = activeStage?.id ?? null;
@@ -91,12 +90,13 @@ export function useStageTransition(
       return;
     }
 
-    // Interrupting a move: the frame still on screen belongs to the move being abandoned, so the
-    // tokens carry on from where they stand. Otherwise the stage being left is already that frame.
-    const source =
-      movingRef.current && frameRef.current
-        ? frameToStage(frameRef.current, previous)
-        : previous;
+    // Always walk from the frame on screen, never from `previous` alone. That stage object was
+    // captured when it became active, so an edit made since then - a dragged token, an undo - is
+    // not in it, and starting there would snap the token back before it moved. It still names the
+    // stage being left, which is all `frameToStage` takes from it.
+    const source = frameRef.current
+      ? frameToStage(frameRef.current, previous)
+      : previous;
 
     setMove({ from: source, to: target, t: 0 });
 
@@ -132,7 +132,6 @@ export function useStageTransition(
   // frame rather than the one this render has already rebuilt for the new stage.
   useEffect(() => {
     frameRef.current = frame;
-    movingRef.current = move !== null;
   });
 
   return { frame, animating: move !== null };

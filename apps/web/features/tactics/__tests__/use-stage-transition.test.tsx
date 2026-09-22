@@ -88,6 +88,31 @@ interface HarnessProps {
 }
 
 /**
+ * A screen whose first stage can be edited in place, the way dragging a token edits it.
+ * @returns The harness
+ */
+function EditableHarness() {
+  const [edited, setEdited] = useState(stages);
+  const [activeStageId, setActiveStageId] = useState("s1");
+  const { frame } = useStageTransition(edited, activeStageId, {});
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setEdited([stageAt("s1", 900), stages[1], stages[2]])}
+      >
+        drag
+      </button>
+      <button type="button" onClick={() => setActiveStageId("s2")}>
+        Giai đoạn s2
+      </button>
+      <span data-testid="x">{frame?.tokens[0]?.token.x ?? "none"}</span>
+    </div>
+  );
+}
+
+/**
  * A screen with one button per stage, printing where the token stands and whether it moves.
  * @param props - What to pass the hook
  * @returns The harness
@@ -176,6 +201,20 @@ describe("useStageTransition", () => {
 
     advance(TRANSITION_MS);
     expect(tokenX()).toBe(300);
+  });
+
+  it("walks from where a token was edited to, not from where its stage was loaded", () => {
+    render(<EditableHarness />);
+    fireEvent.click(screen.getByText("drag"));
+    expect(tokenX()).toBe(900);
+
+    fireEvent.click(screen.getByText("Giai đoạn s2"));
+
+    // The move starts at the dragged position. Starting at 0 would snap the token back first.
+    expect(tokenX()).toBe(900);
+
+    advance(TRANSITION_MS * 2);
+    expect(tokenX()).toBe(100);
   });
 
   it("cuts straight to the target while disabled, without asking for a frame", () => {

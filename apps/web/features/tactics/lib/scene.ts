@@ -152,8 +152,9 @@ export function addStage(scene: TacticScene): TacticScene {
  *
  * A token keeps its id: that id is what pairs the same unit across two stages, which is how the
  * viewer animates a move instead of blinking the token from one place to the next. An id only has
- * to be unique inside one stage, and every edit (`moveToken`, `removeElement`, undo) already works
- * on one stage at a time.
+ * to be unique inside one stage, and every edit (`moveToken`, `resizeToken`, `removeElement`, undo)
+ * already works on one stage at a time. The copy is still a new object, so the two stages share an
+ * id and nothing else.
  *
  * A drawing gets a fresh id instead. Nobody follows one arrow from stage to stage, so a shared id
  * would buy nothing and would let undo and the eraser act on both copies at once.
@@ -176,7 +177,7 @@ export function duplicateStage(
     id: newId(),
     name: `${source.name} (bản sao)`.slice(0, TACTIC_LIMITS.stageNameLength),
     elements: source.elements.map((element) =>
-      element.kind === "token" ? element : { ...element, id: newId() }
+      element.kind === "token" ? { ...element } : { ...element, id: newId() }
     ),
   };
 
