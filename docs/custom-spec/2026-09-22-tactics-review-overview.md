@@ -102,7 +102,8 @@ toast.
 - B1 hết theo thiết kế: lưu xong chỉ cập nhật snapshot bằng đúng bản đã gửi; nét vẽ sau đó vẫn khác
   snapshot nên vẫn `dirty`.
 - B2: khi mở editor, draft nạp từ lần fetch mới (không lấy bản cache đã stale); sau khi đã nạp thì
-  refetch nền vẫn không ghi đè draft, giữ nguyên quyết định hiện tại.
+  refetch nền vẫn không ghi đè draft, giữ nguyên quyết định hiện tại. Fetch mới hỏng mà còn cache thì
+  nạp cache kèm cảnh báo (mục 6).
 - B16: session từ chối bắt đầu lần lưu thứ hai khi lần đầu còn chạy.
 - Test: chuyển trạng thái thuần trên store, không cần `renderHook`.
 
@@ -180,8 +181,16 @@ Thứ tự đề xuất: 1 → 2 và 3 và 6 song song → 4 → 5 và 7.
   mỗi lúc, giữ đúng lý do bộ nhớ của spec gốc. B14: khoá đổi giai đoạn (phím mũi tên, tab) khi
   `exporting`.
 
-## 6. Câu hỏi mở
+## 6. Quyết định đã chốt
 
-1. B5: hộp xác nhận có cho phép "Lưu rồi rời" hay chỉ "Ở lại / Bỏ thay đổi"?
-2. B2: khi mở editor mà fetch mới thất bại nhưng có cache, hiện lỗi hay dùng cache kèm cảnh báo?
-3. T5: có kế hoạch thêm kind phần tử mới không? Nếu không, bỏ hẳn khỏi danh sách.
+1. **B5 - hộp xác nhận rời trang có ba lựa chọn:** *Lưu rồi rời*, *Bỏ thay đổi*, *Ở lại*. *Lưu rồi
+   rời* chạy đúng đường lưu của editor; lưu thành công mới điều hướng, lưu hỏng thì ở lại trang, giữ
+   draft và hiện toast lỗi như khi lưu bình thường. Hộp xác nhận xoá giai đoạn (B4) không có lựa chọn
+   lưu, chỉ *Xoá* / *Huỷ*.
+2. **B2 - fetch mới thất bại nhưng còn cache:** dùng bản cache và hiện cảnh báo rằng bản vẽ có thể
+   chưa phải bản mới nhất. Không có cache thì hiện lỗi qua `QueryBoundary` như hiện tại.
+
+## 7. Câu hỏi mở
+
+1. T5: có kế hoạch thêm kind phần tử mới (ví dụ vùng tròn, vùng chữ nhật) không? Nếu không, bỏ hẳn
+   PR 8 khỏi kế hoạch.
