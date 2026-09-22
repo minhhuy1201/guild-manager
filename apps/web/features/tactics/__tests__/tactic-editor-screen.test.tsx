@@ -319,6 +319,45 @@ describe("TacticEditorScreen", () => {
     );
   });
 
+  it("does not lose the action bar when the dragged token is deleted mid-drag", async () => {
+    renderScreen(true);
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Đội hình" })).toBeTruthy()
+    );
+
+    const token = {
+      kind: "token" as const,
+      id: "tok1",
+      x: 900,
+      y: 400,
+      size: "md" as const,
+      icon: "swords" as const,
+      label: "Đội công",
+      color: "blue" as const,
+    };
+    const other = { ...token, id: "tok2", x: 400, label: "Đội thủ" };
+
+    act(() => {
+      useTacticEditorStore.getState().commit("s1", [token, other]);
+      useTacticEditorStore.getState().selectElement("tok1");
+      (canvasProps.current.onTokenDragStart as (id: string) => void)("tok1");
+    });
+
+    // Delete answers the keyboard even with the button still held, and the token's Konva node goes
+    // with it, so no `dragend` is ever coming for this drag.
+    act(() => {
+      useTacticEditorStore.getState().commit("s1", [other]);
+      useTacticEditorStore.getState().selectElement("tok2");
+    });
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("toolbar", { name: "Sửa phần tử đang chọn" })
+      ).toBeTruthy()
+    );
+  });
+
   it("keeps saving to the toolbar's own button, with no second bar for it", async () => {
     renderScreen(true);
 
