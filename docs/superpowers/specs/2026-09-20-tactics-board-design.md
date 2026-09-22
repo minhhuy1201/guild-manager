@@ -324,7 +324,9 @@ Konva:
   toolbar rồi rê lại vào map không còn vẽ tiếp.
 - Phần tử đang chọn có thanh action (`selection-actions`) đặt ngay dưới nó trên map, bám theo zoom
   và pan: nút `Xoá` cho mọi loại phần tử, cộng ba nút cỡ khi đó là quân cờ (#151). **Không** dùng
-  `Transformer` - không có xoay, không có resize tự do, nên handle chỉ là nhiễu.
+  `Transformer` - không có xoay, không có resize tự do, nên handle chỉ là nhiễu. Thanh này **ẩn đi
+  trong lúc quân cờ đang bị kéo** và hiện lại ở chỗ mới khi thả: nó là overlay DOM, còn Konva chỉ
+  báo toạ độ mới lúc `dragend`, nên để nguyên thì nó đứng lại đúng chỗ quân cờ vừa rời đi.
 - Công cụ **Chọn** đứng đầu toolbar: bấm vào phần tử thì chọn nó, bấm chỗ trống thì bỏ chọn. Công cụ
   mặc định vẫn là đội hình; ở công cụ đó, bấm trúng một phần tử đã có thì chọn nó chứ không đặt quân
   chồng lên (#150).

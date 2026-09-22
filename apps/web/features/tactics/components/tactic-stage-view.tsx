@@ -80,6 +80,8 @@ export interface TacticStageViewProps {
   onPointerMove?: (point: MapPoint) => void;
   /** Called when the pointer is let go anywhere on the map */
   onPointerUp?: () => void;
+  /** Called when a token starts being dragged */
+  onTokenDragStart?: (tokenId: string) => void;
   /** Called when a token was dragged to a new place */
   onTokenMoved?: (tokenId: string, x: number, y: number) => void;
   /** Called when an element was clicked */
@@ -112,6 +114,7 @@ export function TacticStageView({
   onPointerDown,
   onPointerMove,
   onPointerUp,
+  onTokenDragStart,
   onTokenMoved,
   onElementClick,
   onStageReady,
@@ -208,6 +211,7 @@ export function TacticStageView({
             opacity={ghost.opacity}
             draggable={false}
             selected={false}
+            onDragStart={() => {}}
             onDragEnd={() => {}}
             onClick={() => {}}
           />
@@ -234,6 +238,7 @@ export function TacticStageView({
             opacity={frame.outgoing.opacity}
             draggable={false}
             selected={false}
+            onDragStart={() => {}}
             onDragEnd={() => {}}
             onClick={() => {}}
           />
@@ -245,6 +250,7 @@ export function TacticStageView({
             opacity={frame.incoming.opacity}
             draggable={false}
             selected={element.id === selectedElementId}
+            onDragStart={() => {}}
             onDragEnd={() => {}}
             onClick={() => onElementClick?.(element.id)}
           />
@@ -256,6 +262,7 @@ export function TacticStageView({
             opacity={unit.opacity}
             draggable={!readOnly && !animating}
             selected={unit.token.id === selectedElementId}
+            onDragStart={() => onTokenDragStart?.(unit.token.id)}
             onDragEnd={(x, y) => onTokenMoved?.(unit.token.id, x, y)}
             onClick={() => onElementClick?.(unit.token.id)}
           />
@@ -337,6 +344,8 @@ interface ElementShapeProps {
   draggable: boolean;
   /** Whether to draw the selection ring */
   selected: boolean;
+  /** Called when a drag starts, before any coordinate has changed */
+  onDragStart: () => void;
   /** Called with the new map coordinates once a drag ended */
   onDragEnd: (x: number, y: number) => void;
   /** Called when the element was clicked */
@@ -357,6 +366,7 @@ function ElementShape({
   opacity,
   draggable,
   selected,
+  onDragStart,
   onDragEnd,
   onClick,
 }: ElementShapeProps) {
@@ -377,6 +387,7 @@ function ElementShape({
           onTap={onClick}
           onMouseEnter={onEnter}
           onMouseLeave={onLeave}
+          onDragStart={onDragStart}
           onDragEnd={(event) => onDragEnd(event.target.x(), event.target.y())}
         >
           {/* Behind the token: the halo says which one the pointer is on before a click moves it. */}

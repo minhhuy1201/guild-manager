@@ -88,7 +88,9 @@ export function TacticEditorScreen({
 
   const stages = scene?.stages ?? [];
   // The action bar is a DOM overlay on the canvas, so where it goes follows the zoom and the pan.
-  const selection = editor.selectedElement;
+  // While a token is dragged, Konva moves it on the canvas without telling the store, so the bar
+  // would sit at the place the token has just left. It goes away until the drag reports a position.
+  const selection = editor.draggingTokenId ? null : editor.selectedElement;
   const placement = selection
     ? selectionPlacement(
         elementBounds(selection),
@@ -223,6 +225,7 @@ export function TacticEditorScreen({
                       onPointerDown={editor.onPointerDown}
                       onPointerMove={editor.onPointerMove}
                       onPointerUp={editor.onPointerUp}
+                      onTokenDragStart={editor.onTokenDragStart}
                       onTokenMoved={editor.onTokenMoved}
                       onElementClick={editor.onElementClick}
                       onStageReady={editor.onStageReady}

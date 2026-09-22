@@ -51,6 +51,8 @@ export interface TacticEditorScreen {
   activeStage: TacticStage | null;
   /** The selected element, or null when nothing is selected — the action bar is drawn on it */
   selectedElement: TacticElement | null;
+  /** Token being dragged right now, or null; the action bar hides while one is */
+  draggingTokenId: string | null;
   /** Whether there is an edit to take back on the open stage */
   canUndo: boolean;
   /** Whether there is an edit to put back on the open stage */
@@ -73,6 +75,8 @@ export interface TacticEditorScreen {
   onPointerMove: (point: MapPoint) => void;
   /** Pointer was let go */
   onPointerUp: () => void;
+  /** A token started a drag */
+  onTokenDragStart: (tokenId: string) => void;
   /** A token finished a drag */
   onTokenMoved: (tokenId: string, x: number, y: number) => void;
   /** An element was clicked */
@@ -110,6 +114,7 @@ export function useTacticEditor(
   const [paletteToken, setPaletteToken] = useState<BuiltInToken>(
     DEFAULT_PALETTE_TOKEN
   );
+  const [draggingTokenId, setDraggingTokenId] = useState<string | null>(null);
   const [pendingTextPoint, setPendingTextPoint] = useState<MapPoint | null>(
     null
   );
@@ -302,8 +307,28 @@ export function useTacticEditor(
     };
   }, [onPointerUp]);
 
+  const onTokenDragStart = useCallback(
+    (tokenId: string) => setDraggingTokenId(tokenId),
+    []
+  );
+
+  // A window that loses focus mid-drag may never see the release, and Konva then never fires the
+  // `dragend` that would give the action bar back. Blur only: the release itself is Konva's own
+  // path, and clearing on `mouseup` here could win the race and flash the bar at the old place.
+  useEffect(() => {
+    const onWindowBlur = () => setDraggingTokenId(null);
+
+    window.addEventListener("blur", onWindowBlur);
+
+    return () => window.removeEventListener("blur", onWindowBlur);
+  }, []);
+
   const onTokenMoved = useCallback(
     (tokenId: string, x: number, y: number) => {
+      // Cleared first, and outside the guard: a drag that changes nothing still has to give the
+      // action bar back, or a viewer who may not write would lose it for good.
+      setDraggingTokenId(null);
+
       if (isAdmin && activeStage) {
         commitElements(moveToken(activeStage, tokenId, x, y).elements);
       }
@@ -394,6 +419,7 @@ export function useTacticEditor(
     name: tactic?.name ?? "",
     activeStage,
     selectedElement,
+    draggingTokenId,
     canUndo: (history.past[activeStageId ?? ""] ?? []).length > 0,
     canRedo: (history.future[activeStageId ?? ""] ?? []).length > 0,
     saving: saveTactic.isPending,
@@ -405,6 +431,7 @@ export function useTacticEditor(
     onPointerDown,
     onPointerMove,
     onPointerUp,
+    onTokenDragStart,
     onTokenMoved,
     onElementClick,
     onTokenSizeChange,

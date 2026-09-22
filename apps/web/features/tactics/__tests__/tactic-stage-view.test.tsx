@@ -293,21 +293,28 @@ describe("TacticStageView", () => {
   });
 
   it("reports a token's drag in map coordinates, and a click on an element", () => {
+    const onTokenDragStart = vi.fn();
     const onTokenMoved = vi.fn();
     const onElementClick = vi.fn();
     render(
       <TacticStageView
         frame={staticFrame(stage)}
         width={960}
+        onTokenDragStart={onTokenDragStart}
         onTokenMoved={onTokenMoved}
         onElementClick={onElementClick}
       />
     );
 
     const group = (rendered.get("group") ?? []).at(-1) as unknown as {
+      onDragStart: () => void;
       onDragEnd: (event: unknown) => void;
       onClick: () => void;
     };
+
+    // Said before any coordinate has moved, so the action bar can leave the token's old place.
+    group.onDragStart();
+    expect(onTokenDragStart).toHaveBeenCalledWith("tk1");
 
     group.onDragEnd({ target: { x: () => 300, y: () => 400 } });
     expect(onTokenMoved).toHaveBeenCalledWith("tk1", 300, 400);
