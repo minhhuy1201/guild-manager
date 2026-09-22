@@ -163,6 +163,11 @@ Quyết định: trong lúc xuất ảnh, `useStageTransition` chạy với `ena
 theo. Ảnh xuất ra giữ đúng như hôm nay: chỉ map và nội dung của giai đoạn, không bóng mờ, không vệt
 đuôi, không khung hình dở dang.
 
+**Cả hai đường xuất đều bật cờ `exporting`**, kể cả `exportActiveStage` chỉ chụp một ảnh. Nó không tự
+đổi giai đoạn, nhưng một animation do thao tác ngay trước đó vẫn có thể đang chạy lúc nó chụp. Một
+đường được đóng băng còn đường kia thì không là loại bất đối xứng không có lý do, và nó đã từng là
+đúng lỗi đó.
+
 Đây cùng một lý do đã khiến `90a2254` bỏ vòng chọn khỏi ảnh xuất: **thứ giúp đọc màn hình không
 thuộc về bản vẽ.**
 

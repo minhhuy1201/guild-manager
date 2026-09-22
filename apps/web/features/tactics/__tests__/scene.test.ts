@@ -98,6 +98,8 @@ describe("scene edits", () => {
     const [original, copy] = next.stages;
 
     expect(copy.elements[0].id).toBe(original.elements[0].id);
+    // The id is shared on purpose; the object is not, so an in-place edit could never reach both.
+    expect(copy.elements[0]).not.toBe(original.elements[0]);
   });
 
   it("still gives a duplicated drawing a fresh id", () => {
