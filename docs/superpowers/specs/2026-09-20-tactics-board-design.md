@@ -19,6 +19,11 @@ Phạm vi cố tình hẹp: đây là **công cụ vẽ**, không phải mô ph�
 không có animation, không có tính toán gì trên dữ liệu vẽ. Máy chủ lưu và trả lại đúng cái admin đã
 vẽ.
 
+> **Cập nhật 2026-09-23:** câu "không có animation" ở trên hết hiệu lực.
+> [`2026-09-23-tactic-stage-animation-design.md`](2026-09-23-tactic-stage-animation-design.md) thêm
+> chuyển động **giữa** các giai đoạn ở phía người xem. Phần còn lại của đoạn này vẫn đúng: không có
+> timeline trong tài liệu scene, không có tính toán trên dữ liệu vẽ.
+
 ## Đọc đề bài
 
 Yêu cầu gốc (`ba.md`, không commit) cộng với các câu đã chốt qua hỏi đáp:
