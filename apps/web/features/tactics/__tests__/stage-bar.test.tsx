@@ -1,9 +1,19 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { TacticStage } from "@guild/shared/schemas";
 
 import { StageBar } from "../components/stage-bar";
+
+// The confirmation's write protocol recovers an expired session through the router.
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
 afterEach(cleanup);
 
@@ -120,17 +130,38 @@ describe("StageBar", () => {
     ).toBe(true);
   });
 
-  it("duplicates and deletes the stage that is open", () => {
+  it("duplicates and adds a stage", () => {
     renderBar();
 
     fireEvent.click(screen.getByRole("button", { name: /Nhân bản/ }));
     expect(handlers.onDuplicate).toHaveBeenCalledWith("s1");
 
-    fireEvent.click(screen.getByRole("button", { name: /Xoá giai đoạn/ }));
-    expect(handlers.onRemove).toHaveBeenCalledWith("s1");
-
     fireEvent.click(screen.getByRole("button", { name: /Thêm giai đoạn/ }));
     expect(handlers.onAdd).toHaveBeenCalled();
+  });
+
+  it("deletes the open stage only once the admin confirms, naming it", async () => {
+    renderBar();
+
+    fireEvent.click(screen.getByRole("button", { name: /Xoá giai đoạn/ }));
+    const dialog = await screen.findByRole("dialog");
+
+    expect(dialog.textContent).toContain("Giai đoạn 1");
+    expect(handlers.onRemove).not.toHaveBeenCalled();
+
+    fireEvent.click(within(dialog).getByRole("button", { name: /^Xoá$/ }));
+    await waitFor(() => expect(handlers.onRemove).toHaveBeenCalledWith("s1"));
+  });
+
+  it("keeps the stage when the admin backs out of the confirmation", async () => {
+    renderBar();
+
+    fireEvent.click(screen.getByRole("button", { name: /Xoá giai đoạn/ }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Huỷ" }));
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(handlers.onRemove).not.toHaveBeenCalled();
   });
 
   it("commits a rename on Enter and abandons it on Escape", () => {

@@ -288,8 +288,12 @@ describe("useTacticEditor", () => {
       result.current.selectPaletteToken({ label: "Đội công", icon: "swords" })
     );
     act(() => result.current.onPointerDown({ x: 100, y: 100 }));
-    act(() => result.current.onSave());
+    let saved: boolean | undefined;
+    await act(async () => {
+      saved = await result.current.onSave();
+    });
 
+    expect(saved).toBe(false);
     expect(elements()).toHaveLength(0);
     expect(saveTacticStages).not.toHaveBeenCalled();
   });
@@ -301,13 +305,14 @@ describe("useTacticEditor", () => {
     act(() => result.current.onPointerDown({ x: 1, y: 1 }));
     expect(useTacticEditorStore.getState().dirty).toBe(true);
 
+    let saved: boolean | undefined;
     await act(async () => {
-      result.current.onSave();
+      saved = await result.current.onSave();
     });
 
-    await waitFor(() =>
-      expect(useTacticEditorStore.getState().dirty).toBe(false)
-    );
+    // The answer is what lets "save and leave" leave only once the drawing is safe.
+    expect(saved).toBe(true);
+    expect(useTacticEditorStore.getState().dirty).toBe(false);
     expect(vi.mocked(saveTacticStages).mock.calls[0][0].id).toBe("t1");
   });
 
@@ -320,14 +325,14 @@ describe("useTacticEditor", () => {
     act(() => useTacticEditorStore.getState().setTool("arrow"));
     act(() => result.current.onPointerDown({ x: 1, y: 1 }));
 
+    let saved: boolean | undefined;
     await act(async () => {
-      result.current.onSave();
+      saved = await result.current.onSave();
     });
 
-    await waitFor(() =>
-      expect(toastError).toHaveBeenCalledWith(
-        "Một chiến thuật tối đa 20 giai đoạn."
-      )
+    expect(saved).toBe(false);
+    expect(toastError).toHaveBeenCalledWith(
+      "Một chiến thuật tối đa 20 giai đoạn."
     );
     expect(useTacticEditorStore.getState().dirty).toBe(true);
     expect(elements()).toHaveLength(1);

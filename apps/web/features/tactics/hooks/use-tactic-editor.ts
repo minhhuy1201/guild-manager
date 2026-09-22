@@ -77,8 +77,8 @@ export interface TacticEditorScreen {
   onTokenSizeChange: (size: TacticTokenSize) => void;
   /** Delete the selected element */
   onDeleteSelected: () => void;
-  /** Persist the whole scene */
-  onSave: () => void;
+  /** Persist the whole scene; resolves true once the server accepted it */
+  onSave: () => Promise<boolean>;
   /** Keep the Konva stage around for the image export */
   onStageReady: (stage: Konva.Stage | null) => void;
   /** The Konva stage, once it is mounted */
@@ -332,21 +332,24 @@ export function useTacticEditor(
     selectElement,
   ]);
 
-  const onSave = useCallback(() => {
+  const onSave = useCallback(async () => {
     const current = useTacticEditorStore.getState().scene;
 
     if (!current || !isAdmin) {
-      return;
+      return false;
     }
 
-    saveTactic
-      .mutateAsync({ id: tacticId, scene: current })
-      .then(markSaved)
-      // A failed save keeps the draft — the drawing on screen is worth far more than the error —
+    try {
+      await saveTactic.mutateAsync({ id: tacticId, scene: current });
+    } catch (caught) {
+      // A failed save keeps the draft - the drawing on screen is worth far more than the error -
       // and says so in a toast, since the toolbar has no room for a sentence.
-      .catch((caught: unknown) =>
-        toastError(errorMessageOf(caught, "Không lưu được chiến thuật."))
-      );
+      toastError(errorMessageOf(caught, "Không lưu được chiến thuật."));
+      return false;
+    }
+
+    markSaved();
+    return true;
   }, [isAdmin, saveTactic, tacticId, markSaved]);
 
   const onStageReady = useCallback((stage: Konva.Stage | null) => {
