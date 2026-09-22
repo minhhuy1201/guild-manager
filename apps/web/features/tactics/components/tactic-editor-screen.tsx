@@ -13,10 +13,11 @@ import { useStageSize } from "../hooks/use-stage-size";
 import { useStageZoom } from "../hooks/use-stage-zoom";
 import { useTacticEditor } from "../hooks/use-tactic-editor";
 import { useTacticExport } from "../hooks/use-tactic-export";
-import { useUnsavedGuard } from "../hooks/use-unsaved-guard";
+import { useLeaveGuard } from "../hooks/use-leave-guard";
 import { useTacticEditorStore } from "../store/editor-store";
 import { elementBounds, selectionPlacement } from "../lib/selection-anchor";
 import { ExportDialog } from "./export-dialog";
+import { LeaveDialog } from "./leave-dialog";
 import { MobileEditorNotice } from "./mobile-editor-notice";
 import { EditorToolbar } from "./editor-toolbar";
 import { StageBar } from "./stage-bar";
@@ -96,7 +97,7 @@ export function TacticEditorScreen({
   const canDraw = isAdmin && isDesktop === true;
 
   useEditorShortcuts(canDraw && loadedScene !== null, editor.onSave, editor.onDeleteSelected);
-  useUnsavedGuard(dirty);
+  const leaveGuard = useLeaveGuard(dirty, editor.onSave);
 
   return (
     <div className="flex flex-col gap-4">
@@ -224,6 +225,8 @@ export function TacticEditorScreen({
       />
 
       <TokenPresetDialog open={presetsOpen} onOpenChange={setPresetsOpen} />
+
+      <LeaveDialog guard={leaveGuard} />
 
       <ExportDialog
         open={exportOpen}

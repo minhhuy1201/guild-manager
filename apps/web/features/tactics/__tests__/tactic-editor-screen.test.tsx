@@ -1,11 +1,21 @@
 // @vitest-environment jsdom
 import { createElement, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TACTIC_SCHEMA_VERSION } from "@guild/shared/schemas";
 
 let isDesktop: boolean | null = true;
+const push = vi.fn();
+
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 
 vi.mock("../hooks/use-is-desktop", () => ({
   useIsDesktop: () => isDesktop,
@@ -224,5 +234,45 @@ describe("TacticEditorScreen", () => {
     );
     expect(screen.getAllByRole("button", { name: /Lưu/ })).toHaveLength(1);
     expect(screen.queryByText("Bản vẽ có thay đổi chưa lưu")).toBeNull();
+  });
+
+  it("asks before a link leaves an unsaved drawing, and follows it once discarded", async () => {
+    renderScreen(true);
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Đội hình" })).toBeTruthy()
+    );
+    useTacticEditorStore.getState().commit("s1", [
+      {
+        kind: "text",
+        id: "t1",
+        x: 1,
+        y: 1,
+        text: "Tập kết",
+        color: "red",
+        fontSize: 24,
+      },
+    ]);
+
+    // The guard arms once the screen has rendered the draft as dirty, as it has by the time a
+    // person could reach the link.
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: /Lưu/ }).hasAttribute("disabled")
+      ).toBe(false)
+    );
+
+    const back = within(
+      screen.getByRole("navigation", { name: "breadcrumb" })
+    ).getByRole("link", { name: /Chiến thuật/ });
+    fireEvent.click(back);
+
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByRole("button", { name: "Lưu rồi rời" })).toBeTruthy();
+    expect(within(dialog).getByRole("button", { name: "Ở lại" })).toBeTruthy();
+    expect(push).not.toHaveBeenCalled();
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "Bỏ thay đổi" }));
+    expect(push).toHaveBeenCalledWith("/chien-thuat");
   });
 });

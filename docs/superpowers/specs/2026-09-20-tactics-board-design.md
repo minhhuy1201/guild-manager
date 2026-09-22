@@ -333,7 +333,14 @@ Lưu và rời trang:
 - **Không** dùng `components/shared/unsaved-changes-bar.tsx`: thanh đó tồn tại cho màn không có chỗ
   đặt nút Lưu, còn ở đây nút Lưu nằm sẵn trên thanh công cụ — thêm một thanh nữa là hai nút Lưu cho
   cùng một việc. Trạng thái "chưa lưu" đọc ngay từ nút: nó mờ khi không có gì để lưu.
-- `beforeunload` khi còn thay đổi chưa lưu, vì đó là đường duy nhất bản vẽ mất mà người vẽ không chọn.
+- `beforeunload` khi còn thay đổi chưa lưu, cho reload và đóng tab.
+- Link trong app (breadcrumb, nav) khi còn thay đổi chưa lưu: `use-leave-guard` giữ click lại ở pha
+  capture, trước khi `<Link>` kịp điều hướng (App Router không có sự kiện điều hướng nào để huỷ), rồi
+  `leave-dialog` hỏi ba lựa chọn: **Lưu rồi rời** (lưu thành công mới đi; lưu hỏng thì ở lại, giữ bản
+  vẽ, toast lỗi), **Bỏ thay đổi**, **Ở lại**. Click có phím bổ trợ, `target="_blank"`, link ra ngoài
+  site và anchor cùng trang không bị giữ. Nút Back của trình duyệt chưa được chặn.
+- Xoá giai đoạn đi qua `ConfirmDeleteDialog` nêu tên giai đoạn - đó là cơ hội duy nhất để rút lại,
+  vì thao tác giai đoạn không vào ngăn undo.
 - Lưu hỏng thì hiện toast mang nguyên văn câu của backend; bản vẽ giữ nguyên.
 
 Xuất ảnh (admin):

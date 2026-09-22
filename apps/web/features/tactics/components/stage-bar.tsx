@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Copy, Plus, Trash2 } from "lucide-react";
 import { TACTIC_LIMITS, type TacticStage } from "@guild/shared/schemas";
 
+import { ConfirmDeleteDialog } from "@/components/shared/confirm-delete-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useStageArrows } from "../hooks/use-stage-arrows";
@@ -44,6 +45,7 @@ export function StageBar({
   onRemove,
 }: StageBarProps) {
   const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [removing, setRemoving] = useState<TacticStage | null>(null);
   const atLimit = stages.length >= TACTIC_LIMITS.stagesPerTactic;
 
   const tablistRef = useStageArrows(stages, activeStageId, onSelect);
@@ -126,7 +128,9 @@ export function StageBar({
             className="text-destructive"
             disabled={stages.length <= 1 || !activeStageId}
             onClick={() => {
-              if (activeStageId) onRemove(activeStageId);
+              setRemoving(
+                stages.find((stage) => stage.id === activeStageId) ?? null
+              );
             }}
           >
             <Trash2 />
@@ -134,6 +138,25 @@ export function StageBar({
           </Button>
         </div>
       ) : null}
+
+      {/* Stage operations skip the undo stack, so this dialog is the one chance to take a delete
+          back. */}
+      <ConfirmDeleteDialog
+        open={removing !== null}
+        onOpenChange={(open) => {
+          if (!open) setRemoving(null);
+        }}
+        // The shell does not mount the body while closed, so the empty branch never renders; it
+        // exists because `title` is a required string while `removing` is nullable.
+        title={removing ? `Xoá ${removing.name}?` : ""}
+        description="Mọi phần tử trên giai đoạn này mất theo, và không hoàn tác được."
+        submitLabel="Xoá"
+        pendingLabel="Đang xoá…"
+        fallbackError="Không xoá được giai đoạn này."
+        run={async () => {
+          if (removing) onRemove(removing.id);
+        }}
+      />
     </div>
   );
 }
