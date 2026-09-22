@@ -3,7 +3,7 @@ import {
   TACTIC_MAP_WIDTH,
 } from "@guild/shared/schemas";
 
-import type { MapPoint } from "./hit-test";
+import type { MapPoint } from "./element-geometry";
 
 /**
  * Narrowest stage the scale is computed from. A container measured before layout reports 0, and a

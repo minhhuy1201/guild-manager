@@ -22,7 +22,7 @@ import {
   type TacticStage,
 } from "@guild/shared/schemas";
 
-import type { MapPoint } from "../lib/hit-test";
+import type { MapPoint } from "../lib/element-geometry";
 import { INITIAL_ZOOM, type ZoomState } from "../lib/zoom";
 import { TOKEN_ICON_BOX } from "../lib/icon-paths";
 import { stageScale, toMapPoint } from "../lib/stage-scale";
