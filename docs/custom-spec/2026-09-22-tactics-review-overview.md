@@ -151,7 +151,7 @@ switcher của editor với viewer: hai cái cố ý khác nhau.
 
 ## 5. Kế hoạch PR
 
-Ước lượng: **7 PR bắt buộc + 1 PR tuỳ chọn**. Bug liên quan gộp cùng PR; mỗi PR sửa bug kèm test
+Ước lượng: **8 PR**. Bug liên quan gộp cùng PR; mỗi PR sửa bug kèm test
 tái hiện đỏ trước khi sửa, và cập nhật spec gốc nếu đổi behaviour.
 
 | PR | Branch | Nội dung | Đổi behaviour | Phụ thuộc |
@@ -163,7 +163,7 @@ tái hiện đỏ trước khi sửa, và cập nhật spec gốc nếu đổi b
 | **5** | `fix/tactics-pointer-gesture` | T2 + B3, B13 (nếu tái hiện được) | Có | 4 |
 | **6** | `refactor/tactics-scene-read` | T3 + B7, B11; test HTTP member nhận `403` trên mọi route ghi | Có (B7, B11) | 1 |
 | **7** | `fix/tactics-export-image` | B6 + B14 | Có | 4 |
-| 8 *(tuỳ chọn)* | `refactor/tactics-element-geometry` | T5 | Không | 5 |
+| **8** | `refactor/tactics-element-geometry` | T5 | Không | 5 |
 
 Thứ tự đề xuất: 1 → 2 và 3 và 6 song song → 4 → 5 và 7.
 
@@ -189,8 +189,5 @@ Thứ tự đề xuất: 1 → 2 và 3 và 6 song song → 4 → 5 và 7.
    lưu, chỉ *Xoá* / *Huỷ*.
 2. **B2 - fetch mới thất bại nhưng còn cache:** dùng bản cache và hiện cảnh báo rằng bản vẽ có thể
    chưa phải bản mới nhất. Không có cache thì hiện lỗi qua `QueryBoundary` như hiện tại.
-
-## 7. Câu hỏi mở
-
-1. T5: có kế hoạch thêm kind phần tử mới (ví dụ vùng tròn, vùng chữ nhật) không? Nếu không, bỏ hẳn
-   PR 8 khỏi kế hoạch.
+3. **T5 - giữ PR 8.** Sẽ có kind phần tử mới (vùng tròn, vùng chữ nhật…), nên module hình học theo
+   kind làm trước khi thêm kind đầu tiên.
