@@ -80,7 +80,6 @@ export function TacticEditorScreen({
   const removeStage = useTacticEditorStore((store) => store.removeStage);
   const undo = useTacticEditorStore((store) => store.undo);
   const redo = useTacticEditorStore((store) => store.redo);
-  const loadedScene = useTacticEditorStore((store) => store.scene);
 
   const stages = scene?.stages ?? [];
   // The action bar is a DOM overlay on the canvas, so where it goes follows the zoom and the pan.
@@ -96,7 +95,11 @@ export function TacticEditorScreen({
   // Drawing needs a pointer, a keyboard and room for the toolbar; everything else reads.
   const canDraw = isAdmin && isDesktop === true;
 
-  useEditorShortcuts(canDraw && loadedScene !== null, editor.onSave, editor.onDeleteSelected);
+  useEditorShortcuts(
+    canDraw && scene !== null,
+    () => void editor.onSave(),
+    editor.onDeleteSelected
+  );
   const leaveGuard = useLeaveGuard(dirty, editor.onSave);
 
   return (

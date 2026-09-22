@@ -16,9 +16,15 @@ vi.mock("@/components/shared/toast", () => ({
 }));
 
 import { fetchTactic, saveTacticStages } from "../../api/tactics-api";
+import { tacticKeys } from "../../api/tactics-keys";
 import { useTacticEditorStore } from "../../store/editor-store";
-import { useTacticEditor } from "../use-tactic-editor";
-import { makeScene, makeTactic, renderTacticHook } from "./render-tactic-hook";
+import { STALE_DRAFT_WARNING, useTacticEditor } from "../use-tactic-editor";
+import {
+  createTestQueryClient,
+  makeScene,
+  makeTactic,
+  renderTacticHook,
+} from "./render-tactic-hook";
 
 /** The elements the open stage holds right now. */
 function elements(): TacticElement[] {
@@ -336,6 +342,96 @@ describe("useTacticEditor", () => {
     );
     expect(useTacticEditorStore.getState().dirty).toBe(true);
     expect(elements()).toHaveLength(1);
+  });
+
+  it("keeps a stroke drawn while the save was out as unsaved", async () => {
+    let finish: (value: ReturnType<typeof makeTactic>) => void = () => {};
+    vi.mocked(saveTacticStages).mockImplementation(
+      () => new Promise((resolve) => (finish = resolve))
+    );
+    const { result } = await renderEditor();
+
+    act(() => useTacticEditorStore.getState().setTool("arrow"));
+    act(() => result.current.onPointerDown({ x: 1, y: 1 }));
+    act(() => result.current.onPointerUp());
+
+    let pending: Promise<boolean> = Promise.resolve(false);
+    act(() => {
+      pending = result.current.onSave();
+    });
+    await waitFor(() => expect(saveTacticStages).toHaveBeenCalled());
+    act(() => result.current.onPointerDown({ x: 50, y: 50 }));
+    act(() => result.current.onPointerUp());
+
+    await act(async () => {
+      finish(makeTactic());
+      await pending;
+    });
+
+    expect(elements()).toHaveLength(2);
+    expect(useTacticEditorStore.getState().dirty).toBe(true);
+  });
+
+  it("sends one save at a time, refusing a second press while the first is out", async () => {
+    let finish: (value: ReturnType<typeof makeTactic>) => void = () => {};
+    vi.mocked(saveTacticStages).mockImplementation(
+      () => new Promise((resolve) => (finish = resolve))
+    );
+    const { result } = await renderEditor();
+    act(() => useTacticEditorStore.getState().setTool("arrow"));
+    act(() => result.current.onPointerDown({ x: 1, y: 1 }));
+
+    let first: Promise<boolean> = Promise.resolve(false);
+    let second: Promise<boolean> = Promise.resolve(true);
+    act(() => {
+      first = result.current.onSave();
+      second = result.current.onSave();
+    });
+
+    await expect(second).resolves.toBe(false);
+    await waitFor(() => expect(saveTacticStages).toHaveBeenCalled());
+    await act(async () => {
+      finish(makeTactic());
+      await expect(first).resolves.toBe(true);
+    });
+    expect(saveTacticStages).toHaveBeenCalledTimes(1);
+  });
+
+  it("opens on a fresh read of the tactic, not on a copy left in the cache", async () => {
+    const queryClient = createTestQueryClient();
+    queryClient.setQueryData(
+      tacticKeys.detail("t1"),
+      makeTactic({ scene: makeScene(1) })
+    );
+    vi.mocked(fetchTactic).mockResolvedValue(makeTactic({ scene: makeScene(3) }));
+
+    renderTacticHook(() => useTacticEditor("t1", true), queryClient);
+
+    await waitFor(() =>
+      expect(useTacticEditorStore.getState().scene).not.toBeNull()
+    );
+    expect(useTacticEditorStore.getState().scene?.stages).toHaveLength(3);
+  });
+
+  it("falls back to the cached copy with a warning when the fresh read fails", async () => {
+    const queryClient = createTestQueryClient();
+    queryClient.setQueryData(
+      tacticKeys.detail("t1"),
+      makeTactic({ scene: makeScene(1) })
+    );
+    vi.mocked(fetchTactic).mockRejectedValue(new Error("mất mạng"));
+
+    const { result } = renderTacticHook(
+      () => useTacticEditor("t1", true),
+      queryClient
+    );
+
+    await waitFor(() =>
+      expect(useTacticEditorStore.getState().scene).not.toBeNull()
+    );
+    expect(useTacticEditorStore.getState().scene?.stages).toHaveLength(1);
+    expect(result.current.state.isError).toBe(false);
+    expect(toastError).toHaveBeenCalledWith(STALE_DRAFT_WARNING);
   });
 
   it("reports what can be undone on the open stage only", async () => {

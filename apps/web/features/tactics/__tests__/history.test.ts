@@ -4,6 +4,7 @@ import type { TacticElement } from "@guild/shared/schemas";
 import {
   HISTORY_LIMIT,
   createHistory,
+  dropStageHistory,
   pushHistory,
   redoHistory,
   undoHistory,
@@ -73,5 +74,17 @@ describe("per-stage history", () => {
     const afterEdit = pushHistory(undone.history, "s1", [note("c")]);
 
     expect(afterEdit.future.s1 ?? []).toHaveLength(0);
+  });
+
+  it("forgets one stage's steps both ways and keeps the others", () => {
+    let history = pushHistory(createHistory(), "s1", []);
+    history = pushHistory(history, "s2", []);
+    history = undoHistory(history, "s2", []).history;
+
+    const dropped = dropStageHistory(history, "s2");
+
+    expect(dropped.past.s2).toBeUndefined();
+    expect(dropped.future.s2).toBeUndefined();
+    expect(dropped.past.s1).toHaveLength(1);
   });
 });

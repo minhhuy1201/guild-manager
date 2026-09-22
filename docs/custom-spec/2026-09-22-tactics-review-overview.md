@@ -108,6 +108,19 @@ toast.
 - B16: session từ chối bắt đầu lần lưu thứ hai khi lần đầu còn chạy.
 - Test: chuyển trạng thái thuần trên store, không cần `renderHook`.
 
+**Phạm vi đã làm ở PR 4 (hẹp hơn mô tả trên, theo yêu cầu không over-engineer).** Store giữ vai trò
+module draft; không tách hook thành adapter mới. Cụ thể:
+
+- `markSaved(sent)`: sạch chỉ khi `scene === sent` (B1). Không cần lưu snapshot riêng: mọi sửa đổi đều
+  tạo scene mới, nên so tham chiếu là đủ.
+- `updateDrawing` thay cho `setState` thô trong hook khi nét đang lớn.
+- Bốn bản chép "thay elements của một stage" dùng lại `replaceStage` của `lib/scene`; prune history khi
+  xoá giai đoạn chuyển sang `dropStageHistory` trong `lib/history`.
+- Bỏ `applySceneEdit` (chỉ test gọi) và selector `loadedScene` trùng `scene`.
+- B2: `useTactic` đọc lại mỗi lần mở; draft chờ lần đọc đó. B16: một lần lưu mỗi lúc (ref, không dựa
+  vào `isPending` vốn trễ một render).
+- Giữ nguyên: `useTacticEditor` vẫn trả interface hiện có; `dirty` vẫn là field lưu trong store.
+
 ### T2 - Pointer gesture
 
 Nét vẽ kết thúc ở chỗ không bảo đảm, pan thì có (xem B3): hai gesture xử lý không đối xứng. Chính

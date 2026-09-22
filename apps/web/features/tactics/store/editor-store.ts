@@ -4,6 +4,7 @@ import type { TacticElement, TacticScene } from "@guild/shared/schemas";
 
 import {
   createHistory,
+  dropStageHistory,
   pushHistory,
   redoHistory,
   undoHistory,
@@ -14,6 +15,7 @@ import {
   duplicateStage,
   removeStage,
   renameStage,
+  replaceStage,
 } from "../lib/scene";
 import type { TacticTool } from "../types/tactic";
 
@@ -52,16 +54,22 @@ interface EditorState {
   togglePalette: () => void;
   /** Write one stage's elements, recording what they were so `undo` can put them back */
   commit: (stageId: string, elements: TacticElement[]) => void;
-  /** Replace the whole scene without recording a step — for stage operations */
-  applySceneEdit: (scene: TacticScene) => void;
+  /**
+   * Swap the element being drawn for its grown self, without a step: the stroke's one undo step
+   * was recorded by the `commit` that started it
+   */
+  updateDrawing: (stageId: string, element: TacticElement) => void;
   undo: () => void;
   redo: () => void;
   addStage: () => void;
   duplicateStage: (stageId: string) => void;
   renameStage: (stageId: string, name: string) => void;
   removeStage: (stageId: string) => void;
-  /** The draft has reached the server: keep it, but stop calling it unsaved */
-  markSaved: () => void;
+  /**
+   * The server accepted a scene: the draft is clean only if it is still that very scene, so edits
+   * made while the request was out stay unsaved
+   */
+  markSaved: (sent: TacticScene) => void;
   /** Throw the session away — leaving the editor, or discarding the draft */
   reset: () => void;
 }
@@ -116,17 +124,30 @@ export const useTacticEditorStore = create<EditorState>((set, get) => ({
       }
 
       return {
-        scene: {
-          ...scene,
-          stages: scene.stages.map((candidate) =>
-            candidate.id === stageId ? { ...candidate, elements } : candidate
-          ),
-        },
+        scene: replaceStage(scene, { ...stage, elements }),
         history: pushHistory(state.history, stageId, stage.elements),
         dirty: true,
       };
     }),
-  applySceneEdit: (scene) => set({ scene, dirty: true }),
+  updateDrawing: (stageId, element) =>
+    set((state) => {
+      const scene = state.scene;
+      const stage = scene?.stages.find((candidate) => candidate.id === stageId);
+
+      if (!scene || !stage) {
+        return state;
+      }
+
+      return {
+        scene: replaceStage(scene, {
+          ...stage,
+          elements: stage.elements.map((candidate) =>
+            candidate.id === element.id ? element : candidate
+          ),
+        }),
+        dirty: true,
+      };
+    }),
   undo: () =>
     set((state) => {
       const stageId = state.activeStageId;
@@ -145,14 +166,7 @@ export const useTacticEditorStore = create<EditorState>((set, get) => ({
       }
 
       return {
-        scene: {
-          ...state.scene,
-          stages: state.scene.stages.map((candidate) =>
-            candidate.id === stageId
-              ? { ...candidate, elements: step.elements ?? [] }
-              : candidate
-          ),
-        },
+        scene: replaceStage(state.scene, { ...stage, elements: step.elements }),
         history: step.history,
         selectedElementId: null,
         dirty: true,
@@ -176,14 +190,7 @@ export const useTacticEditorStore = create<EditorState>((set, get) => ({
       }
 
       return {
-        scene: {
-          ...state.scene,
-          stages: state.scene.stages.map((candidate) =>
-            candidate.id === stageId
-              ? { ...candidate, elements: step.elements ?? [] }
-              : candidate
-          ),
-        },
+        scene: replaceStage(state.scene, { ...stage, elements: step.elements }),
         history: step.history,
         selectedElementId: null,
         dirty: true,
@@ -242,18 +249,13 @@ export const useTacticEditorStore = create<EditorState>((set, get) => ({
     }
 
     const next = removeStage(scene, stageId);
-    const historyPast = { ...state.history.past };
-    const historyFuture = { ...state.history.future };
-    delete historyPast[stageId];
-    delete historyFuture[stageId];
 
     set({
       scene: next,
-      // The removed stage's steps lead back to a stage that no longer exists.
       history:
         next === scene
           ? state.history
-          : { past: historyPast, future: historyFuture },
+          : dropStageHistory(state.history, stageId),
       activeStageId:
         state.activeStageId === stageId
           ? (next.stages[0]?.id ?? null)
@@ -261,6 +263,6 @@ export const useTacticEditorStore = create<EditorState>((set, get) => ({
       dirty: next !== scene ? true : state.dirty,
     });
   },
-  markSaved: () => set({ dirty: false }),
+  markSaved: (sent) => set((state) => ({ dirty: state.scene !== sent })),
   reset: () => set({ ...INITIAL_STATE, history: createHistory() }),
 }));

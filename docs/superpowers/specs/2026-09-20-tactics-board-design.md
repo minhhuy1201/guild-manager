@@ -293,7 +293,13 @@ Quy ước trạng thái, không có ngoại lệ:
 - **TanStack Query** giữ dữ liệu đã lưu trên máy chủ.
 - **Zustand** giữ scene đang sửa, công cụ đang chọn, và ngăn undo/redo. Scene đang sửa là trạng thái
   UI của một phiên vẽ chưa gửi đi, không phải bản sao của response.
-- Mở editor = copy scene từ query vào store một lần. Lưu xong = invalidate query.
+- Mở editor = đọc lại chiến thuật (`refetchOnMount: "always"`), đợi lần đọc đó xong rồi copy scene
+  vào store một lần. Lần đọc hỏng mà cache còn bản cũ thì mở bản cũ kèm toast cảnh báo có thể ghi
+  đè; không có bản nào thì hiện lỗi. Khi đã có bản trên màn, refetch nền hỏng không thay bản vẽ bằng
+  trang lỗi.
+- Lưu xong = invalidate query, và store chỉ coi là sạch nếu scene hiện tại vẫn **chính là** bản đã
+  gửi: nét vẽ trong lúc request đang chạy vẫn là chưa lưu. Mỗi lúc chỉ một lần lưu; bấm lưu lần hai
+  khi lần đầu chưa xong thì bị bỏ qua.
 
 Konva:
 

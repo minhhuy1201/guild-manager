@@ -50,8 +50,38 @@ describe("tactic editor store", () => {
 
     expect(useTacticEditorStore.getState().dirty).toBe(true);
 
-    useTacticEditorStore.getState().markSaved();
+    const sent = useTacticEditorStore.getState().scene;
+    if (!sent) throw new Error("scene not loaded");
+    useTacticEditorStore.getState().markSaved(sent);
     expect(useTacticEditorStore.getState().dirty).toBe(false);
+  });
+
+  it("stays dirty after a save when the admin drew on while it was in flight", () => {
+    useTacticEditorStore.getState().loadScene(scene());
+    useTacticEditorStore.getState().commit("s1", [note]);
+    const sent = useTacticEditorStore.getState().scene;
+    if (!sent) throw new Error("scene not loaded");
+
+    // The request is out; this stroke is not in it.
+    useTacticEditorStore.getState().commit("s1", [note, { ...note, id: "t2" }]);
+    useTacticEditorStore.getState().markSaved(sent);
+
+    expect(useTacticEditorStore.getState().dirty).toBe(true);
+  });
+
+  it("grows a stroke in place without an undo step per point", () => {
+    useTacticEditorStore.getState().loadScene(scene());
+    useTacticEditorStore.getState().commit("s1", [note]);
+    useTacticEditorStore
+      .getState()
+      .updateDrawing("s1", { ...note, text: "Tập kết cổng tây" });
+
+    const state = useTacticEditorStore.getState();
+    expect(state.scene?.stages[0].elements).toEqual([
+      { ...note, text: "Tập kết cổng tây" },
+    ]);
+    expect(state.history.past.s1).toHaveLength(1);
+    expect(state.dirty).toBe(true);
   });
 
   it("undoes a commit back to the previous elements, then redoes it", () => {
@@ -155,19 +185,12 @@ describe("tactic editor store — the rest of the session", () => {
     expect(state.activeStageId).toBe(state.scene?.stages[1].id);
   });
 
-  it("renames a stage and applies a whole-scene edit", () => {
+  it("renames a stage", () => {
     useTacticEditorStore.getState().loadScene(scene());
     useTacticEditorStore.getState().renameStage("s1", "Mở màn");
     expect(useTacticEditorStore.getState().scene?.stages[0].name).toBe(
       "Mở màn"
     );
-
-    const edited: TacticScene = {
-      schemaVersion: TACTIC_SCHEMA_VERSION,
-      stages: [{ id: "only", name: "Một mình", elements: [] }],
-    };
-    useTacticEditorStore.getState().applySceneEdit(edited);
-    expect(useTacticEditorStore.getState().scene).toEqual(edited);
     expect(useTacticEditorStore.getState().dirty).toBe(true);
   });
 
