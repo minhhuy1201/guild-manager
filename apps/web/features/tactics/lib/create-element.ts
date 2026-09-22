@@ -8,7 +8,7 @@ import {
 } from "@guild/shared/schemas";
 
 import type { BuiltInToken } from "./built-in-tokens";
-import type { MapPoint } from "./hit-test";
+import type { MapPoint } from "./element-geometry";
 import { newId } from "./scene";
 
 /** Font size a new note takes, in virtual map units. */

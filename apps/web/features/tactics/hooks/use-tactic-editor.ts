@@ -24,7 +24,7 @@ import {
   extendFreehand,
   pointArrow,
 } from "../lib/create-element";
-import { hitTest, type MapPoint } from "../lib/hit-test";
+import { hitTest, type MapPoint } from "../lib/element-geometry";
 import { SceneReadError } from "../lib/read-scene";
 import {
   addElement,

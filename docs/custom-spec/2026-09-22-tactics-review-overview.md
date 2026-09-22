@@ -168,6 +168,14 @@ Ba switch theo kind: `lib/hit-test.ts`, `lib/selection-anchor.ts`, `tactic-stage
 rải rác (`TEXT_WIDTH_RATIO` export chéo, `TOKEN_RADIUS` ở `token-icon.ts`). Một module geometry theo kind
 (bounds, hit, anchor) để hit test và vị trí action bar luôn khớp. Chỉ làm khi thêm kind phần tử mới.
 
+**Phạm vi đã làm ở PR 8.** `lib/element-geometry.ts` giữ `MapPoint`, `hitTest`, `isElementHit`,
+`elementBounds` và một ước lượng bề rộng chữ dùng chung; `hit-test.ts` bị gộp vào (chỉ còn một vòng
+lặp). `selection-anchor.ts` chỉ còn phần đặt thanh action theo zoom/pan. Chọn hai hàm, mỗi hàm một
+`switch` trong cùng file, thay vì một object hình học: không phải tính khung mỗi lần hit test.
+**Chưa làm:** switch vẽ trong `tactic-stage-view.tsx` vẫn riêng (vẽ là việc khác), và bề rộng chữ
+vẫn là ước lượng - đo thật cần `measureText` của canvas, jsdom không có; Konva vẫn tự bắt click
+trên chữ theo khung thật của nó.
+
 ### Không phải candidate
 
 `use-tactic`, `use-tactics`, `use-save-tactic`, `use-token-presets` là pass-through nhưng

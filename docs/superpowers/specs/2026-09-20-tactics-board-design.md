@@ -264,8 +264,8 @@ apps/web/features/tactics/
 ├── hooks/       use-tactics, use-tactic, use-token-presets, use-save-tactic, …
 ├── store/       editor-store.ts — công cụ đang chọn, màu, cỡ nét, giai đoạn active,
 │                scene đang sửa, ngăn undo/redo
-├── lib/         scene.ts (tạo/sửa phần tử), hit-test.ts, history.ts, export-image.ts,
-│                migrate-scene.ts, built-in-tokens.ts, token-icon.ts
+├── lib/         scene.ts (tạo/sửa phần tử), element-geometry.ts, history.ts, export-image.ts,
+│                read-scene.ts, built-in-tokens.ts, token-icon.ts
 ├── types/
 ├── components/  tactic-list-screen, tactic-editor-screen, editor-toolbar, stage-bar,
 │                token-palette, tactic-canvas, tactic-viewer, export-dialog,
@@ -430,7 +430,9 @@ trang — app chưa dùng `localStorage` ở đâu cả, và một tuỳ chọn 
 
 Vitest (`apps/web/features/tactics/__tests__/`):
 
-- `hit-test` — tẩy trúng quân cờ, trúng nét tự do, trượt thì không xoá gì.
+- `element-geometry` - tẩy trúng quân cờ, trúng nét tự do, trượt thì không xoá gì; điểm giữa khung
+  mà thanh action bám vào luôn là điểm bấm trúng phần tử. Hit test và khung của mọi kind nằm chung một
+  file, mỗi bên kết thúc bằng `assertNever`, nên thêm kind mới là lỗi compile ở một chỗ.
 - `history` — đẩy, hoàn tác, làm lại, tràn ngăn 50 bước, ngăn của hai giai đoạn độc lập nhau.
 - `scene` — thêm/xoá/di chuyển/đổi cỡ phần tử trả về đối tượng mới, không sửa tại chỗ.
 - `migrate-scene` — bản 1 đi thẳng qua; `schemaVersion` lạ thì ném lỗi.
