@@ -86,6 +86,32 @@ describe('tactics.codec', () => {
     expect(toDetail(row as never).scene).toEqual(emptyScene());
   });
 
+  it('still lists a tactic whose drawing holds an element it cannot read', () => {
+    const broken = {
+      ...row,
+      stages: {
+        schemaVersion: TACTIC_SCHEMA_VERSION,
+        stages: [
+          { id: 's1', name: 'Giai đoạn 1', elements: [{ kind: 'circle' }] },
+          { id: 's2', name: 'Giai đoạn 2', elements: [] },
+        ],
+      },
+    };
+
+    // The list only needs the stage count; the detail read is where the broken element is reported.
+    expect(toSummary(broken as never).stageCount).toBe(2);
+    expect(() => toDetail(broken as never)).toThrow(/Thủ cổng tây/);
+  });
+
+  it('fails loudly, naming the tactic, when the list cannot even find the stages', () => {
+    const noStages = { ...row, stages: { nonsense: true } };
+
+    expect(() => toSummary(noStages as never)).toThrow(
+      InternalServerErrorException,
+    );
+    expect(() => toSummary(noStages as never)).toThrow(/Thủ cổng tây/);
+  });
+
   it('rejects a preset whose stored icon key is unknown', () => {
     expect(() =>
       toPreset({ id: 'p1', label: 'Đội công', icon: 'nope', sortOrder: 1 }),

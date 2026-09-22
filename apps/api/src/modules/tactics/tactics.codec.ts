@@ -1,9 +1,8 @@
 import { InternalServerErrorException } from '@nestjs/common';
 import {
   TACTIC_SCHEMA_VERSION,
-  liftTacticScene,
+  readTacticScene,
   tacticDetailSchema,
-  tacticSceneSchema,
   tacticSummarySchema,
   tacticTokenPresetSchema,
   type TacticDetail,
@@ -11,7 +10,9 @@ import {
   type TacticSummary,
   type TacticTokenPreset,
 } from '@guild/shared/schemas';
+import { z } from 'zod';
 
+import { assertNever } from '../../common';
 import { verifyResponse } from '../../config';
 import type { Prisma } from '../../generated/prisma/client';
 
@@ -41,8 +42,14 @@ export function emptyScene(): TacticScene {
 }
 
 /**
- * Read a stored scene document, lifting an older format first. This is the ONLY place
- * `Prisma.JsonValue` is opened.
+ * The part of a stored scene the list reads: that there is an array of stages, and how long it is.
+ * Validating only this much keeps one unreadable element from taking the whole list down with it.
+ */
+const stageCountSchema = z.object({ stages: z.array(z.unknown()) });
+
+/**
+ * Read a stored scene document through the shared read pipeline. `parseScene` and `countStages`
+ * are the ONLY places `Prisma.JsonValue` is opened.
  * @param raw - The `stages` column as Prisma returns it
  * @param tacticId - Id of the tactic being read, for the error message
  * @param tacticName - Name of the tactic being read, for the error message
@@ -54,42 +61,70 @@ export function parseScene(
   tacticId: string,
   tacticName: string,
 ): TacticScene {
-  // Checked before the schema so a document from a newer app gets its own sentence rather than the
-  // generic "invalid literal" Zod would produce for `schemaVersion`.
-  if (
-    typeof raw === 'object' &&
-    raw !== null &&
-    !Array.isArray(raw) &&
-    typeof raw.schemaVersion === 'number' &&
-    raw.schemaVersion > TACTIC_SCHEMA_VERSION
-  ) {
-    throw new InternalServerErrorException(
-      `Chiến thuật "${tacticName}" được lưu bằng phiên bản mới hơn của ứng dụng. Hãy tải lại trang.`,
-    );
-  }
+  const read = readTacticScene(raw);
 
-  const parsed = tacticSceneSchema.safeParse(liftTacticScene(raw));
+  switch (read.status) {
+    case 'ok':
+      return read.scene;
+    case 'newer':
+      throw new InternalServerErrorException(
+        `Chiến thuật "${tacticName}" được lưu bằng phiên bản mới hơn của ứng dụng. Hãy tải lại trang.`,
+      );
+    case 'corrupt':
+      throw corruptScene(tacticId, tacticName);
+    default:
+      return assertNever(read, 'Kết quả đọc chiến thuật ngoài dự kiến');
+  }
+}
+
+/**
+ * Count the stages of a stored scene without parsing its elements.
+ * @param raw - The `stages` column as Prisma returns it
+ * @param tacticId - Id of the tactic being read, for the error message
+ * @param tacticName - Name of the tactic being read, for the error message
+ * @returns How many stages the scene holds
+ * @throws InternalServerErrorException when the column holds no stage array at all
+ */
+function countStages(
+  raw: Prisma.JsonValue,
+  tacticId: string,
+  tacticName: string,
+): number {
+  const parsed = stageCountSchema.safeParse(raw);
 
   if (!parsed.success) {
-    throw new InternalServerErrorException(
-      `Dữ liệu chiến thuật "${tacticName}" (${tacticId}) bị hỏng, không đọc được.`,
-    );
+    throw corruptScene(tacticId, tacticName);
   }
 
-  return parsed.data;
+  return parsed.data.stages.length;
+}
+
+/**
+ * The error for a stored scene that cannot be read, naming the tactic so it can be found and fixed.
+ * @param tacticId - Id of the broken tactic
+ * @param tacticName - Name of the broken tactic
+ * @returns The exception to throw
+ */
+function corruptScene(
+  tacticId: string,
+  tacticName: string,
+): InternalServerErrorException {
+  return new InternalServerErrorException(
+    `Dữ liệu chiến thuật "${tacticName}" (${tacticId}) bị hỏng, không đọc được.`,
+  );
 }
 
 /**
  * Map a row to a list entry.
  * @param row - The tactic row
- * @returns The summary, with the stage count read out of the scene
+ * @returns The summary, with the stage count read out of the scene without parsing its elements
  */
 export function toSummary(row: TacticRow): TacticSummary {
   return verifyResponse(tacticSummarySchema, {
     id: row.id,
     name: row.name,
     description: row.description,
-    stageCount: parseScene(row.stages, row.id, row.name).stages.length,
+    stageCount: countStages(row.stages, row.id, row.name),
     updatedAt: row.updatedAt.toISOString(),
   } satisfies TacticSummary);
 }
