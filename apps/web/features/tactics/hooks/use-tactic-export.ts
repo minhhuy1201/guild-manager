@@ -4,6 +4,8 @@ import { useCallback, useState } from "react";
 import type Konva from "konva";
 import type { TacticStage } from "@guild/shared/schemas";
 
+import { toastError } from "@/components/shared/toast";
+import { errorMessageOf } from "@/lib/error-message";
 import {
   EXPORT_PIXEL_RATIO,
   buildStagesZip,
@@ -93,6 +95,10 @@ export function useTacticExport(
       }
 
       downloadBlob(await buildStagesZip(files), `${tacticName}.zip`);
+    } catch (caught) {
+      // The screen fires this from a click without awaiting it, so this toast is the only place a
+      // failure can still be seen.
+      toastError(errorMessageOf(caught, "Không xuất được ảnh."));
     } finally {
       if (openStageId) setActiveStage(openStageId);
       setExporting(false);

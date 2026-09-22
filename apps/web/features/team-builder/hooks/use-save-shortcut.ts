@@ -2,7 +2,7 @@
 
 import { useEffect, useEffectEvent } from "react";
 
-import { isInsideDialog } from "../lib/keyboard-target";
+import { isInsideDialog } from "@/lib/keyboard-target";
 
 /**
  * Bind Ctrl+S (Cmd+S on macOS) to the screen's save while it is mounted.

@@ -3,14 +3,16 @@
 import { useEffect } from "react";
 import { TACTIC_STROKE_WIDTHS } from "@guild/shared/enums";
 
-import { isTypingTarget, toolForKey } from "../lib/shortcuts";
+import { belongsElsewhere } from "@/lib/keyboard-target";
+import { toolForKey } from "../lib/shortcuts";
 import { useTacticEditorStore } from "../store/editor-store";
 
 /**
  * The editor's keyboard: tools on 1-6, stroke width on [ and ], Delete for the selected element,
  * Ctrl+Z / Ctrl+Shift+Z for history and Ctrl+S to save.
  *
- * Every shortcut is off while the focus sits in a field, so renaming a stage never changes a tool.
+ * Every shortcut is off while the focus sits in a field or inside a dialog, so renaming a stage never
+ * changes a tool and a key pressed in a dialog never edits the map behind it.
  * @param enabled - Whether the editor is on screen and writable
  * @param onSave - Called by Ctrl+S
  * @param onDeleteSelected - Called by Delete or Backspace with an element selected
@@ -35,7 +37,7 @@ export function useEditorShortcuts(
      * @param event - The keyboard event
      */
     function handleKeyDown(event: KeyboardEvent) {
-      if (isTypingTarget(event.target)) {
+      if (belongsElsewhere(event.target)) {
         return;
       }
 

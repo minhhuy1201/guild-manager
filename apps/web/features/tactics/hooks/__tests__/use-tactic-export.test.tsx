@@ -9,6 +9,11 @@ import {
 const downloadDataUrl = vi.fn();
 const downloadBlob = vi.fn();
 const buildStagesZip = vi.fn();
+const toastError = vi.fn();
+
+vi.mock("@/components/shared/toast", () => ({
+  toastError: (message: string) => toastError(message),
+}));
 
 vi.mock("../../lib/export-image", async () => {
   const actual = await vi.importActual<
@@ -48,6 +53,7 @@ beforeEach(() => {
   downloadDataUrl.mockReset();
   downloadBlob.mockReset();
   buildStagesZip.mockReset().mockResolvedValue(new Blob(["zip"]));
+  toastError.mockReset();
   vi.stubGlobal("requestAnimationFrame", (callback: () => void) => {
     callback();
 
@@ -113,7 +119,7 @@ describe("useTacticExport", () => {
     expect(result.current.exporting).toBe(false);
   });
 
-  it("stops reporting an export once one fails", async () => {
+  it("says so in a toast when an export fails, and stops reporting one", async () => {
     const stage = fakeStage();
     buildStagesZip.mockRejectedValue(new Error("hỏng"));
     const { result } = renderTacticHook(() =>
@@ -123,10 +129,13 @@ describe("useTacticExport", () => {
       useTacticEditorStore.getState().loadScene({ schemaVersion: TACTIC_SCHEMA_VERSION, stages })
     );
 
+    // The screen fires this without awaiting it, so a rejection would reach no one.
     await act(async () => {
-      await expect(result.current.exportAllStages()).rejects.toThrow("hỏng");
+      await expect(result.current.exportAllStages()).resolves.toBeUndefined();
     });
 
+    expect(toastError).toHaveBeenCalledWith("hỏng");
+    expect(downloadBlob).not.toHaveBeenCalled();
     expect(result.current.exporting).toBe(false);
   });
 });

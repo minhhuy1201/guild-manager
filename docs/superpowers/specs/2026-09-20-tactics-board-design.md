@@ -317,8 +317,10 @@ Undo/redo:
 
 - Ngăn riêng cho **từng giai đoạn**, mỗi ngăn tối đa 50 bước. Đổi giai đoạn không xáo trộn lịch sử
   của giai đoạn kia.
-- `Ctrl+Z` hoàn tác, `Ctrl+Shift+Z` làm lại, `Ctrl+S` lưu. Phím tắt chỉ gắn khi editor mở và tiêu
-  điểm không nằm trong ô nhập liệu.
+- `Ctrl+Z` hoàn tác, `Ctrl+Shift+Z` làm lại, `Ctrl+S` lưu. Phím tắt chỉ gắn khi editor mở, và đứng
+  yên khi tiêu điểm nằm trong ô nhập liệu hoặc trong một dialog (`belongsElsewhere` ở
+  `apps/web/lib/keyboard-target.ts`, dùng chung với team-builder) - phím bấm trong dialog không được
+  sửa map nằm sau nó.
 - Phím tắt công cụ: `1` chọn, `2` đội hình, `3` mũi tên, `4` vẽ tự do, `5` chữ, `6` tẩy; `[` và `]`
   đổi cỡ nét; `Delete`/`Backspace` xoá phần tử đang chọn; `←`/`→` đổi giai đoạn. Dùng số chứ không
   dùng chữ cái đầu vì tên tiếng Việt trùng chữ đầu ("Chữ" và "Cơ động"), và hàng số khớp đúng thứ
@@ -395,6 +397,10 @@ trang — app chưa dùng `localStorage` ở đâu cả, và một tuỳ chọn 
 - Lỗi API tới dưới dạng `ApiError` mang thông báo tiếng Việt của backend, hiển thị nguyên văn (toast
   ở màn editor, ngay trong dialog ở các hộp thoại ghi).
 - Lưu hỏng thì **không** xoá trạng thái chưa lưu trong store: người vẽ còn nguyên bản vẽ để thử lại.
+- Xoá preset hỏng thì câu lỗi hiện ngay trong dialog quản lý preset; `401` đi qua
+  `useSessionRecovery` như mọi đường ghi khác.
+- Xuất nhiều giai đoạn hỏng thì toast câu lỗi: màn gọi việc xuất từ một click mà không chờ, nên
+  toast là chỗ duy nhất lỗi còn được nhìn thấy.
 - `stages` trong DB không parse được = `500` với thông báo nêu rõ chiến thuật nào hỏng. Không trả
   scene rỗng, không "tự chữa" âm thầm.
 - `schemaVersion` lớn hơn bản app biết = lỗi rõ ràng, mời cập nhật trang.

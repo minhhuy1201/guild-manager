@@ -217,6 +217,18 @@ describe("StageBar", () => {
     expect(handlers.onSelect).not.toHaveBeenCalled();
   });
 
+  it("leaves the arrow keys alone while the delete confirmation is open", async () => {
+    renderBar();
+    fireEvent.click(screen.getByRole("button", { name: /Xoá giai đoạn/ }));
+    const dialog = await screen.findByRole("dialog");
+
+    fireEvent.keyDown(within(dialog).getByRole("button", { name: "Huỷ" }), {
+      key: "ArrowRight",
+    });
+
+    expect(handlers.onSelect).not.toHaveBeenCalled();
+  });
+
   it("hides every write action from a member", () => {
     renderBar({ isAdmin: false });
 

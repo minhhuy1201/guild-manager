@@ -8,11 +8,14 @@ import {
 } from "@guild/shared/enums";
 import { TACTIC_LIMITS } from "@guild/shared/schemas";
 
+import { ErrorNotice } from "@/components/shared/error-notice";
 import { FieldLabel } from "@/components/shared/field-label";
 import { MutationDialogShell } from "@/components/shared/mutation-dialog";
 import { MutationForm } from "@/components/shared/mutation-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useSessionRecovery } from "@/hooks/use-session-recovery";
+import { errorMessageOf } from "@/lib/error-message";
 import { cn } from "@/lib/utils";
 import {
   useCreateTokenPreset,
@@ -63,6 +66,25 @@ function TokenPresetBody({ onDone }: TokenPresetBodyProps) {
   const presets = useTokenPresets();
   const createPreset = useCreateTokenPreset();
   const deletePreset = useDeleteTokenPreset();
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const recoverSession = useSessionRecovery();
+
+  /**
+   * Delete one preset, keeping the reason on screen when the server refuses.
+   * @param presetId - Id of the preset to delete
+   */
+  async function removePreset(presetId: string) {
+    setDeleteError(null);
+
+    try {
+      await deletePreset.mutateAsync(presetId);
+    } catch (caught) {
+      // An expired session is renewed by a navigation, and the recovery says so itself.
+      if (!recoverSession(caught)) {
+        setDeleteError(errorMessageOf(caught, "Không xoá được quân cờ."));
+      }
+    }
+  }
 
   return (
     <MutationForm
@@ -119,6 +141,8 @@ function TokenPresetBody({ onDone }: TokenPresetBodyProps) {
         ))}
       </div>
 
+      {deleteError ? <ErrorNotice message={deleteError} /> : null}
+
       {presets.data && presets.data.length > 0 ? (
         <ul className="flex flex-col gap-1">
           {presets.data.map((preset) => (
@@ -136,7 +160,7 @@ function TokenPresetBody({ onDone }: TokenPresetBodyProps) {
                 variant="ghost"
                 className="text-destructive"
                 aria-label={`Xoá ${preset.label}`}
-                onClick={() => void deletePreset.mutateAsync(preset.id)}
+                onClick={() => void removePreset(preset.id)}
               >
                 <Trash2 />
               </Button>

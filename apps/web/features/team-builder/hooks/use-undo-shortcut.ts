@@ -2,7 +2,7 @@
 
 import { useEffect, useEffectEvent } from "react";
 
-import { isInsideDialog } from "../lib/keyboard-target";
+import { belongsElsewhere } from "@/lib/keyboard-target";
 
 /**
  * Bind Ctrl+Z (Cmd+Z on macOS) to the screen's undo while it is mounted.
@@ -33,19 +33,4 @@ export function useUndoShortcut(onUndo: () => void, enabled: boolean) {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
-}
-
-/**
- * Whether a key went somewhere Ctrl+Z means something other than a formation undo.
- * @param target - The event's target
- * @returns True for an input, a textarea, an editable element, or anything inside a dialog
- */
-function belongsElsewhere(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false;
-
-  return (
-    target.isContentEditable ||
-    target.matches("input, textarea") ||
-    isInsideDialog(target)
-  );
 }

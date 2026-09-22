@@ -82,23 +82,3 @@ export function stageStepForKey(key: string): -1 | 1 | null {
 
   return null;
 }
-
-/**
- * Whether a key event came from a field someone is typing in.
- *
- * Every tactics shortcut is off while the focus sits in a field, so renaming a stage never picks a
- * tool and never jumps to another stage.
- * @param target - What the key event came from
- * @returns True when the key should be left to that field
- */
-export function isTypingTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) {
-    return false;
-  }
-
-  return (
-    target.isContentEditable ||
-    target.tagName === "INPUT" ||
-    target.tagName === "TEXTAREA"
-  );
-}
