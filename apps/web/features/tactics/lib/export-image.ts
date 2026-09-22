@@ -4,7 +4,7 @@ import { TACTIC_MAP_HEIGHT, TACTIC_MAP_WIDTH } from "@guild/shared/schemas";
 /** How many device pixels one map unit is exported at. Two keeps the labels crisp when printed. */
 export const EXPORT_PIXEL_RATIO = 2;
 
-/** How the Konva stage is drawn right now: the fit-and-zoom scale and where the map's corner sits. */
+/** How the Konva stage is drawn now: the fit-and-zoom scale and where the map's corner sits. */
 export interface StageTransform {
   /** Screen pixels per map unit */
   scale: number;
