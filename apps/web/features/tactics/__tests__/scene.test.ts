@@ -11,11 +11,12 @@ import {
   addStage,
   isStageFull,
   duplicateStage,
-  moveToken,
   removeElement,
+  removeElements,
   removeStage,
   renameStage,
-  resizeToken,
+  resizeTokens,
+  translateElements,
 } from "../lib/scene";
 
 const token = {
@@ -60,18 +61,6 @@ describe("scene edits", () => {
     expect(removeElement(stage, "nope").elements).toHaveLength(1);
   });
 
-  it("moves a token to new coordinates, leaving the old object intact", () => {
-    const next = moveToken(stage, "tk1", 300, 400);
-
-    expect(next.elements[0]).toMatchObject({ x: 300, y: 400 });
-    expect(token.x).toBe(100);
-  });
-
-  it("resizes a token", () => {
-    expect(resizeToken(stage, "tk1", "lg").elements[0]).toMatchObject({
-      size: "lg",
-    });
-  });
 
   it("appends a stage with a generated name", () => {
     expect(addStage(sceneWithToken()).stages.at(-1)?.name).toBe("Giai đoạn 2");
@@ -174,5 +163,78 @@ describe("per-stage element ceiling", () => {
 
     expect(next).toBe(full);
     expect(next.elements).toHaveLength(TACTIC_LIMITS.elementsPerStage);
+  });
+});
+
+describe("editing several elements at once", () => {
+  const arrow = {
+    kind: "arrow" as const,
+    id: "ar1",
+    points: [10, 20, 30, 40],
+    color: "blue" as const,
+    strokeWidth: 4 as const,
+  };
+  const freehand = {
+    kind: "freehand" as const,
+    id: "fh1",
+    points: [0, 0, 5, 5, 10, 0],
+    color: "black" as const,
+    strokeWidth: 2 as const,
+  };
+  const note = {
+    kind: "text" as const,
+    id: "tx1",
+    x: 50,
+    y: 60,
+    text: "Tập kết",
+    color: "red" as const,
+    fontSize: 28,
+  };
+  const smallToken = { ...token, id: "tk2", size: "sm" as const };
+  const busy: TacticStage = {
+    id: "s1",
+    name: "Giai đoạn 1",
+    elements: [token, arrow, freehand, note, smallToken],
+  };
+
+  it("moves every kind of element by the same offset", () => {
+    const next = translateElements(
+      busy,
+      ["tk1", "ar1", "fh1", "tx1"],
+      100,
+      -10
+    );
+
+    expect(next.elements[0]).toMatchObject({ x: 200, y: 190 });
+    expect(next.elements[1]).toMatchObject({ points: [110, 10, 130, 30] });
+    expect(next.elements[2]).toMatchObject({
+      points: [100, -10, 105, -5, 110, -10],
+    });
+    expect(next.elements[3]).toMatchObject({ x: 150, y: 50 });
+  });
+
+  it("leaves elements outside the selection as they were, and the input untouched", () => {
+    const next = translateElements(busy, ["ar1"], 5, 5);
+
+    expect(next.elements[0]).toBe(token);
+    expect(next.elements[4]).toBe(smallToken);
+    expect(arrow.points).toEqual([10, 20, 30, 40]);
+  });
+
+  it("resizes only the tokens in the selection", () => {
+    const next = resizeTokens(busy, ["tk1", "ar1", "tk2"], "lg");
+
+    expect(next.elements[0]).toMatchObject({ size: "lg" });
+    expect(next.elements[4]).toMatchObject({ size: "lg" });
+    expect(next.elements[1]).toBe(arrow);
+  });
+
+  it("removes every selected element", () => {
+    expect(
+      removeElements(busy, ["tk1", "tx1"]).elements.map(
+        (element) => element.id
+      )
+    ).toEqual(["ar1", "fh1", "tk2"]);
+    expect(busy.elements).toHaveLength(5);
   });
 });

@@ -1,3 +1,5 @@
+import { teamColorGroup, type TeamColorGroup } from "@/lib/team-color-group";
+
 /** Classes one team renders with, each written out as a complete Tailwind literal. */
 interface TeamColors {
   /** Header surface and its text */
@@ -9,7 +11,7 @@ interface TeamColors {
 }
 
 /**
- * Fallback used by any team missing from TEAM_COLORS - the original look: a
+ * Fallback used by any team no colour group covers - the original look: a
  * primary header on the plain card. Edit here to change every unstyled team at once.
  */
 const DEFAULT_TEAM_COLORS: TeamColors = {
@@ -19,9 +21,8 @@ const DEFAULT_TEAM_COLORS: TeamColors = {
 };
 
 /*
- * The four groups the guild splits its ten teams into, each a quiet tint of one colour the palette
- * already owns - jade, the warm neutral, navy, gold - so the grid reads as grouped without adding a
- * hue of its own. Text stays `foreground` on every header: the tints are too light to need inverting.
+ * Each colour group as a quiet tint of its colour. Text stays `foreground` on every header: the tints
+ * are too light to need inverting.
  */
 const JADE: TeamColors = {
   header: "bg-jade/30 text-foreground",
@@ -48,23 +49,16 @@ const GOLD: TeamColors = {
 };
 
 /**
- * Colors of each team, keyed by team number. Add or edit an entry to recolor a
- * team; teams left out fall back to DEFAULT_TEAM_COLORS.
+ * Classes of each colour group. Which team sits in which group lives in `teamColorGroup`.
  *
  * Classes must be written as complete literals - Tailwind scans source text,
  * so a composed string like `bg-${x}-500` produces no CSS.
  */
-const TEAM_COLORS: Record<number, TeamColors> = {
-  1: JADE,
-  2: JADE,
-  3: JADE,
-  4: JADE,
-  5: JADE,
-  6: STONE,
-  7: STONE,
-  8: NAVY,
-  9: GOLD,
-  10: GOLD,
+const GROUP_COLORS: Record<TeamColorGroup, TeamColors> = {
+  jade: JADE,
+  stone: STONE,
+  navy: NAVY,
+  gold: GOLD,
 };
 
 /**
@@ -73,5 +67,7 @@ const TEAM_COLORS: Record<number, TeamColors> = {
  * @returns The team's header, border and background classes, or the default when it has none
  */
 export function getTeamColors(team: number): TeamColors {
-  return TEAM_COLORS[team] ?? DEFAULT_TEAM_COLORS;
+  const group = teamColorGroup(team);
+
+  return group ? GROUP_COLORS[group] : DEFAULT_TEAM_COLORS;
 }

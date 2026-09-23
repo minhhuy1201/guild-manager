@@ -6,6 +6,7 @@ import {
   type TacticTokenIcon,
   type TacticTokenSize,
 } from "@guild/shared/enums";
+import type { TacticToken } from "@guild/shared/schemas";
 import {
   Anchor,
   Bomb,
@@ -30,6 +31,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { teamColorGroup, type TeamColorGroup } from "@/lib/team-color-group";
 import { TOKEN_ICON_PATHS } from "./icon-paths";
 
 /**
@@ -96,6 +98,20 @@ export const TOKEN_RADIUS: Record<TacticTokenSize, number> = {
   lg: 46,
 };
 
+/** Full name of each token size, used as the accessible name of the action bar's size buttons. */
+export const TOKEN_SIZE_LABELS: Record<TacticTokenSize, string> = {
+  sm: "Cỡ nhỏ",
+  md: "Cỡ vừa",
+  lg: "Cỡ lớn",
+};
+
+/** What each size button shows; the word "Cỡ" is left to the label or to the group around it. */
+export const TOKEN_SIZE_TEXT: Record<TacticTokenSize, string> = {
+  sm: "Nhỏ",
+  md: "Vừa",
+  lg: "Lớn",
+};
+
 /** Hex each drawing colour renders as. The stored value stays the key. */
 export const COLOR_HEX: Record<TacticColor, string> = {
   blue: "#3b82f6",
@@ -103,6 +119,35 @@ export const COLOR_HEX: Record<TacticColor, string> = {
   yellow: "#f5c518",
   black: "#101114",
 };
+
+/**
+ * Hex a numbered team token's ring is drawn in, per team colour group. The team builder's headers
+ * are light tints on a light page; the map is a dark picture, so each group is drawn as a brighter,
+ * solid shade of the same hue (jade and gold are the dark theme's tokens, navy is the primary's hue
+ * lifted to be seen at all). Fixed like COLOR_HEX: the map has no theme.
+ */
+export const TEAM_GROUP_HEX: Record<TeamColorGroup, string> = {
+  jade: "#6fb59d",
+  stone: "#c2bdb7",
+  navy: "#6c84c3",
+  gold: "#d4b278",
+};
+
+/**
+ * The colour a token's ring - and everything drawn around it, its halo and its trail - takes. A
+ * numbered team wears its team builder group, so "Đội 3" reads as the same team on both screens; any
+ * other token wears the colour it was drawn in. Resolved on every render rather than stored, so
+ * drawings saved before this rule pick it up and regrouping a team recolours the map too.
+ * @param token - The token being drawn
+ * @returns The hex to draw its ring in
+ */
+export function tokenBorderHex(token: TacticToken): string {
+  const group = isNumberIcon(token.icon)
+    ? teamColorGroup(Number(numberIconDigits(token.icon)))
+    : null;
+
+  return group ? TEAM_GROUP_HEX[group] : COLOR_HEX[token.color];
+}
 
 /** Vietnamese name of each drawing colour, for the toolbar's accessible labels. */
 export const COLOR_LABELS: Record<TacticColor, string> = {

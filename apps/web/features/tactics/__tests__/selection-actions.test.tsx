@@ -22,7 +22,7 @@ function renderActions(
   render(
     <SelectionActions
       placement={{ left: 400, top: 260, above: false }}
-      tokenSize="md"
+      tokenSizes={["md"]}
       {...handlers}
       {...props}
     />
@@ -54,15 +54,30 @@ describe("SelectionActions", () => {
     expect(handlers.onTokenSizeChange).toHaveBeenCalledWith("lg");
   });
 
-  it("offers no size buttons for an element that is not a token", () => {
-    renderActions({ tokenSize: null });
+  it("marks a size only when every selected token wears it", () => {
+    renderActions({ tokenSizes: ["lg", "lg"] });
+    expect(
+      screen.getByRole("button", { name: "Cỡ lớn" }).getAttribute("aria-pressed")
+    ).toBe("true");
+
+    cleanup();
+    renderActions({ tokenSizes: ["lg", "sm"] });
+    expect(
+      screen
+        .getAllByRole("button", { name: /^Cỡ / })
+        .map((button) => button.getAttribute("aria-pressed"))
+    ).toEqual(["false", "false", "false"]);
+  });
+
+  it("offers no size buttons for a selection without a token", () => {
+    renderActions({ tokenSizes: [] });
 
     expect(screen.queryByRole("button", { name: "Cỡ lớn" })).toBeNull();
   });
 
   // Every kind of element can be deleted, so this button answers to the selection, not the token.
   it("deletes the selected element, whatever kind it is", () => {
-    renderActions({ tokenSize: null });
+    renderActions({ tokenSizes: [] });
     fireEvent.click(screen.getByRole("button", { name: "Xoá phần tử" }));
 
     expect(handlers.onDeleteSelected).toHaveBeenCalled();

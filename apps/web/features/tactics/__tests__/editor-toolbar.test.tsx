@@ -10,6 +10,7 @@ const handlers = {
   onToolChange: vi.fn(),
   onColorChange: vi.fn(),
   onStrokeWidthChange: vi.fn(),
+  onTokenSizeChange: vi.fn(),
   onUndo: vi.fn(),
   onRedo: vi.fn(),
   onSave: vi.fn(),
@@ -29,6 +30,7 @@ function renderToolbar(
       tool="token"
       color="blue"
       strokeWidth={4}
+      tokenSize="md"
       canUndo
       canRedo={false}
       saving={false}
@@ -77,7 +79,26 @@ describe("EditorToolbar", () => {
     expect(screen.queryByRole("button", { name: "Xuất ảnh" })).toBeNull();
   });
 
-  // Both moved onto the map, under the element they act on — the toolbar is too far from it.
+  // The size group sets what new tokens take, so it is named for that rather than for the selection.
+  it("offers a token size group starting on the middle size", () => {
+    renderToolbar();
+
+    expect(
+      screen.getByRole("button", { name: "Cỡ quân cờ: Vừa" }).getAttribute("aria-pressed")
+    ).toBe("true");
+    expect(
+      screen.getByRole("button", { name: "Cỡ quân cờ: Lớn" }).getAttribute("aria-pressed")
+    ).toBe("false");
+  });
+
+  it("reports the token size the user picked", () => {
+    renderToolbar();
+    fireEvent.click(screen.getByRole("button", { name: "Cỡ quân cờ: Nhỏ" }));
+
+    expect(handlers.onTokenSizeChange).toHaveBeenCalledWith("sm");
+  });
+
+  // Both stay on the map, under the element they act on: the toolbar is too far from it.
   it("leaves the selected element's own actions to the map", () => {
     renderToolbar();
 

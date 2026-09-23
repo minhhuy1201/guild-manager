@@ -1,4 +1,5 @@
 import type { TacticTokenSize } from "@guild/shared/enums";
+import { assertNever } from "@guild/shared/lib";
 import {
   TACTIC_LIMITS,
   type TacticElement,
@@ -61,49 +62,100 @@ export function removeElement(
 }
 
 /**
- * Move a token to new map coordinates.
- * @param stage - The stage the token stands on
- * @param tokenId - Id of the token
- * @param x - New x, in virtual map units
- * @param y - New y, in virtual map units
- * @returns A new stage with the token moved
+ * Take every selected element off a stage in one edit.
+ * @param stage - The stage to remove from
+ * @param elementIds - Ids of the elements to remove
+ * @returns A new stage without those elements
  */
-export function moveToken(
+export function removeElements(
   stage: TacticStage,
-  tokenId: string,
-  x: number,
-  y: number
+  elementIds: readonly string[]
 ): TacticStage {
+  const removed = new Set(elementIds);
+
+  return {
+    ...stage,
+    elements: stage.elements.filter((element) => !removed.has(element.id)),
+  };
+}
+
+/**
+ * Resize every selected token to one of the three offered sizes. Other kinds of element in the
+ * selection have no size and are left as they are.
+ * @param stage - The stage the tokens stand on
+ * @param elementIds - Ids of the selected elements
+ * @param size - The size to apply
+ * @returns A new stage with those tokens resized
+ */
+export function resizeTokens(
+  stage: TacticStage,
+  elementIds: readonly string[],
+  size: TacticTokenSize
+): TacticStage {
+  const selected = new Set(elementIds);
+
   return {
     ...stage,
     elements: stage.elements.map((element) =>
-      element.id === tokenId && element.kind === "token"
-        ? { ...element, x, y }
+      selected.has(element.id) && element.kind === "token"
+        ? { ...element, size }
         : element
     ),
   };
 }
 
 /**
- * Resize a token to one of the three offered sizes.
- * @param stage - The stage the token stands on
- * @param tokenId - Id of the token
- * @param size - The size to apply
- * @returns A new stage with the token resized
+ * Move every selected element by the same offset, whatever its kind.
+ * @param stage - The stage the elements are on
+ * @param elementIds - Ids of the elements to move
+ * @param dx - How far to move along the x axis, in virtual map units
+ * @param dy - How far to move along the y axis, in virtual map units
+ * @returns A new stage with those elements moved; the others keep their very objects
  */
-export function resizeToken(
+export function translateElements(
   stage: TacticStage,
-  tokenId: string,
-  size: TacticTokenSize
+  elementIds: readonly string[],
+  dx: number,
+  dy: number
 ): TacticStage {
+  const selected = new Set(elementIds);
+
   return {
     ...stage,
     elements: stage.elements.map((element) =>
-      element.id === tokenId && element.kind === "token"
-        ? { ...element, size }
-        : element
+      selected.has(element.id) ? translateElement(element, dx, dy) : element
     ),
   };
+}
+
+/**
+ * Move one element by an offset.
+ * @param element - The element to move
+ * @param dx - How far to move along the x axis, in virtual map units
+ * @param dy - How far to move along the y axis, in virtual map units
+ * @returns A new element at its new place
+ */
+function translateElement(
+  element: TacticElement,
+  dx: number,
+  dy: number
+): TacticElement {
+  switch (element.kind) {
+    case "token":
+    case "text":
+      return { ...element, x: element.x + dx, y: element.y + dy };
+    case "arrow":
+    case "freehand":
+      return {
+        ...element,
+        // Flat [x, y, x, y, …]: even indices are x, odd ones are y.
+        points: element.points.map((value, index) =>
+          index % 2 === 0 ? value + dx : value + dy
+        ),
+      };
+    default:
+      return assertNever(element);
+  }
 }
 
 /**
@@ -152,7 +204,7 @@ export function addStage(scene: TacticScene): TacticScene {
  *
  * A token keeps its id: that id is what pairs the same unit across two stages, which is how the
  * viewer animates a move instead of blinking the token from one place to the next. An id only has
- * to be unique inside one stage, and every edit (`moveToken`, `resizeToken`, `removeElement`, undo)
+ * to be unique inside one stage, and every edit (`translateElements`, `resizeTokens`, `removeElements`, undo)
  * already works on one stage at a time. The copy is still a new object, so the two stages share an
  * id and nothing else.
  *

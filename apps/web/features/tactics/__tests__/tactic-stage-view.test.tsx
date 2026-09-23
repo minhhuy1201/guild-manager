@@ -45,6 +45,7 @@ vi.mock("react-konva", () => ({
   Arrow: konvaNode("arrow"),
   Path: konvaNode("path"),
   Text: konvaNode("text"),
+  Rect: konvaNode("rect"),
 }));
 
 import { staticFrame, transitionFrame } from "../lib/stage-transition";
@@ -59,11 +60,22 @@ afterEach(() => {
  * A mouse event as Konva reports it, with the pointer at a known place on the stage.
  * @param button - Which button is down; 0 draws, 1 pans
  * @param pointer - Pointer position on the stage, in canvas pixels
+ * @param shiftKey - Whether Shift is held
  * @returns The event object the handlers read
  */
-function mouseEvent(button: number, pointer: { x: number; y: number }) {
+function mouseEvent(
+  button: number,
+  pointer: { x: number; y: number },
+  shiftKey = false
+) {
   return {
-    evt: { button, clientX: pointer.x, clientY: pointer.y, preventDefault: () => {} },
+    evt: {
+      button,
+      shiftKey,
+      clientX: pointer.x,
+      clientY: pointer.y,
+      preventDefault: () => {},
+    },
     target: { getStage: () => ({ getPointerPosition: () => pointer }) },
   };
 }
@@ -205,6 +217,34 @@ describe("TacticStageView", () => {
     expect(propsOf("text").text).toBe("7");
   });
 
+  it.each([
+    ["number-3", "#6fb59d"],
+    ["number-6", "#c2bdb7"],
+    ["number-8", "#6c84c3"],
+    ["number-10", "#d4b278"],
+  ] as const)(
+    "rings team token %s in its team builder colour, leaving the digits in the toolbar's",
+    (icon, border) => {
+      const team: TacticStage = {
+        ...stage,
+        elements: [
+          { ...stage.elements[0], icon, color: "red" } as TacticStage["elements"][number],
+        ],
+      };
+
+      render(<TacticStageView frame={staticFrame(team)} width={960} />);
+
+      expect(propsOf("circle").stroke).toBe(border);
+      expect(propsOf("text").fill).toBe("#e5484d");
+    }
+  );
+
+  it("rings any other token in the toolbar's colour", () => {
+    render(<TacticStageView frame={staticFrame(stage)} width={960} />);
+
+    expect(propsOf("circle").stroke).toBe("#e5484d");
+  });
+
   it("puts a black token on a light disc, so its icon stays readable", () => {
     const black: TacticStage = {
       ...stage,
@@ -216,22 +256,13 @@ describe("TacticStageView", () => {
     expect(propsOf("circle").fill).toBe("rgba(244, 244, 245, 0.86)");
   });
 
-  it("lets a token be dragged only while the canvas is writable", () => {
-    render(<TacticStageView frame={staticFrame(stage)} width={960} />);
-    expect(propsOf("group").draggable).toBe(true);
-
-    cleanup();
-    render(<TacticStageView frame={staticFrame(stage)} width={960} readOnly />);
-    expect(propsOf("group").draggable).toBe(false);
-  });
-
   it("thickens the selected token's ring", () => {
     render(<TacticStageView frame={staticFrame(stage)} width={960} />);
     const plain = propsOf("circle").strokeWidth;
 
     cleanup();
     render(
-      <TacticStageView frame={staticFrame(stage)} width={960} selectedElementId="tk1" />
+      <TacticStageView frame={staticFrame(stage)} width={960} selectedElementIds={["tk1"]} />
     );
 
     expect(propsOf("circle").strokeWidth).toBeGreaterThan(Number(plain));
@@ -261,7 +292,10 @@ describe("TacticStageView", () => {
     // Fit scale is 0.5 at half the map's width, doubled by the zoom: a pointer 200px right of the
     // 100px offset sits 100 map units in.
     props.onMouseDown(mouseEvent(0, { x: 200, y: 150 }));
-    expect(onPointerDown).toHaveBeenCalledWith({ x: 100, y: 100 });
+    expect(onPointerDown).toHaveBeenCalledWith({ x: 100, y: 100 }, { shift: false });
+
+    props.onMouseDown(mouseEvent(0, { x: 200, y: 150 }, true));
+    expect(onPointerDown).toHaveBeenLastCalledWith({ x: 100, y: 100 }, { shift: true });
 
     props.onMouseMove(mouseEvent(0, { x: 200, y: 150 }));
     expect(onPointerMove).toHaveBeenCalledWith({ x: 100, y: 100 });
@@ -292,35 +326,41 @@ describe("TacticStageView", () => {
     expect(onPointerDown).not.toHaveBeenCalled();
   });
 
-  it("reports a token's drag in map coordinates, and a click on an element", () => {
-    const onTokenDragStart = vi.fn();
-    const onTokenMoved = vi.fn();
-    const onElementClick = vi.fn();
+  it("draws the marquee being dragged out, and nothing when there is none", () => {
+    render(<TacticStageView frame={staticFrame(stage)} width={960} />);
+    expect(rendered.get("rect") ?? []).toHaveLength(0);
+
+    cleanup();
     render(
       <TacticStageView
         frame={staticFrame(stage)}
         width={960}
-        onTokenDragStart={onTokenDragStart}
-        onTokenMoved={onTokenMoved}
-        onElementClick={onElementClick}
+        marquee={{ left: 10, top: 20, right: 110, bottom: 220 }}
       />
     );
 
-    const group = (rendered.get("group") ?? []).at(-1) as unknown as {
-      onDragStart: () => void;
-      onDragEnd: (event: unknown) => void;
-      onClick: () => void;
-    };
+    expect(propsOf("rect")).toMatchObject({ x: 10, y: 20, width: 100, height: 200 });
+  });
 
-    // Said before any coordinate has moved, so the action bar can leave the token's old place.
-    group.onDragStart();
-    expect(onTokenDragStart).toHaveBeenCalledWith("tk1");
+  it("boxes a selected stroke or note, which have no ring of their own", () => {
+    render(
+      <TacticStageView
+        frame={staticFrame(busyStage)}
+        width={960}
+        selectedElementIds={["a1", "x1"]}
+      />
+    );
 
-    group.onDragEnd({ target: { x: () => 300, y: () => 400 } });
-    expect(onTokenMoved).toHaveBeenCalledWith("tk1", 300, 400);
+    expect(rendered.get("rect") ?? []).toHaveLength(2);
+    expect(propsOf("rect")).toMatchObject({ x: 0, y: 0, width: 100, height: 100 });
+  });
 
-    group.onClick();
-    expect(onElementClick).toHaveBeenCalledWith("tk1");
+  it("boxes no selected token: its thick ring already says so", () => {
+    render(
+      <TacticStageView frame={staticFrame(stage)} width={960} selectedElementIds={["tk1"]} />
+    );
+
+    expect(rendered.get("rect") ?? []).toHaveLength(0);
   });
 
   it("puts a halo under the token the pointer is on, and takes it away again", () => {
@@ -351,6 +391,20 @@ describe("TacticStageView", () => {
     rerender(<TacticStageView frame={staticFrame(stage)} width={960} />);
 
     expect(document.querySelectorAll('[data-slot="circle"]').length).toBe(1);
+    expect(container.style.cursor).toBe("");
+  });
+
+  it("offers no grab cursor when a press would not pick the token up", () => {
+    const container = document.createElement("div");
+    render(<TacticStageView frame={staticFrame(stage)} width={960} pickable={false} />);
+
+    const group = (rendered.get("group") ?? []).at(-1) as unknown as {
+      onMouseEnter: (event: unknown) => void;
+    };
+    act(() =>
+      group.onMouseEnter({ target: { getStage: () => ({ container: () => container }) } })
+    );
+
     expect(container.style.cursor).toBe("");
   });
 
@@ -404,6 +458,31 @@ describe("a frame in motion", () => {
     expect(trail?.points).toEqual([0, 0, 50, 0]);
   });
 
+  it("draws a team token's trail in its ring colour", () => {
+    const teamFrom: TacticStage = {
+      ...from,
+      elements: [{ ...from.elements[0], icon: "number-9" } as TacticStage["elements"][number]],
+    };
+    const teamTo: TacticStage = {
+      ...to,
+      elements: [{ ...teamFrom.elements[0], x: 100 } as TacticStage["elements"][number]],
+    };
+
+    render(
+      <TacticStageView
+        frame={transitionFrame(teamFrom, teamTo, 0.5)}
+        width={960}
+        animating
+      />
+    );
+
+    const trail = (rendered.get("line") ?? []).find(
+      (props) => props.opacity !== undefined
+    );
+
+    expect(trail?.stroke).toBe("#d4b278");
+  });
+
   it("draws no trail while standing still", () => {
     render(<TacticStageView frame={staticFrame(from)} width={960} />);
 
@@ -420,17 +499,22 @@ describe("a frame in motion", () => {
     expect(faint).toHaveLength(1);
   });
 
-  it("does not let a token be dragged while it moves", () => {
+  it("ignores a press while the stage change runs, so nothing is picked up mid-flight", () => {
+    const onPointerDown = vi.fn();
     render(
       <TacticStageView
         frame={transitionFrame(from, to, 0.5)}
         width={960}
         animating
+        onPointerDown={onPointerDown}
       />
     );
 
-    expect(
-      (rendered.get("group") ?? []).every((props) => props.draggable !== true)
-    ).toBe(true);
+    const props = stageProps() as unknown as {
+      onMouseDown: (event: unknown) => void;
+    };
+    props.onMouseDown(mouseEvent(0, { x: 10, y: 10 }));
+
+    expect(onPointerDown).not.toHaveBeenCalled();
   });
 });

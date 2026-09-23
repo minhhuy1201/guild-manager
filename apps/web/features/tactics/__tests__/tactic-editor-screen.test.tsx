@@ -205,7 +205,7 @@ describe("TacticEditorScreen", () => {
     };
 
     useTacticEditorStore.getState().commit("s1", [token]);
-    useTacticEditorStore.getState().selectElement("tok1");
+    useTacticEditorStore.getState().selectElements(["tok1"]);
 
     await waitFor(() =>
       expect(
@@ -214,7 +214,7 @@ describe("TacticEditorScreen", () => {
     );
     expect(screen.getByRole("button", { name: "Cỡ lớn" })).toBeTruthy();
 
-    useTacticEditorStore.getState().selectElement(null);
+    useTacticEditorStore.getState().clearSelection();
 
     await waitFor(() =>
       expect(
@@ -223,7 +223,24 @@ describe("TacticEditorScreen", () => {
     );
   });
 
-  it("takes the action bar away while a token is being dragged", async () => {
+  // A press on a token picks it up only with the select and token tools; the drawing tools draw on
+  // top of it, so the grab cursor would promise something the press does not do.
+  it("offers tokens to pick up only with a tool that picks them up", async () => {
+    renderScreen(true);
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Đội hình" })).toBeTruthy()
+    );
+    await waitFor(() => expect(canvasProps.current.pickable).toBe(true));
+
+    act(() => useTacticEditorStore.getState().setTool("arrow"));
+    await waitFor(() => expect(canvasProps.current.pickable).toBe(false));
+
+    act(() => useTacticEditorStore.getState().setTool("select"));
+    await waitFor(() => expect(canvasProps.current.pickable).toBe(true));
+  });
+
+  it("takes the action bar away while the selection is being dragged", async () => {
     renderScreen(true);
 
     await waitFor(() =>
@@ -243,7 +260,7 @@ describe("TacticEditorScreen", () => {
 
     act(() => {
       useTacticEditorStore.getState().commit("s1", [token]);
-      useTacticEditorStore.getState().selectElement("tok1");
+      useTacticEditorStore.getState().selectElements(["tok1"]);
     });
 
     await waitFor(() =>
@@ -252,25 +269,21 @@ describe("TacticEditorScreen", () => {
       ).toBeTruthy()
     );
 
-    // The bar is a DOM overlay; Konva moves the token on the canvas without telling the store, so
-    // leaving the bar up would strand it at the place the token has just left.
-    act(() => {
-      (canvasProps.current.onTokenDragStart as (id: string) => void)("tok1");
-    });
+    const pointer = canvasProps.current as unknown as {
+      onPointerDown: (point: { x: number; y: number }) => void;
+      onPointerMove: (point: { x: number; y: number }) => void;
+      onPointerUp: () => void;
+    };
+
+    // The bar would cover the piece being carried, so it waits for the drop.
+    act(() => pointer.onPointerDown({ x: 900, y: 400 }));
+    act(() => pointer.onPointerMove({ x: 1000, y: 450 }));
 
     expect(
       screen.queryByRole("toolbar", { name: "Sửa phần tử đang chọn" })
     ).toBeNull();
 
-    act(() => {
-      (
-        canvasProps.current.onTokenMoved as (
-          id: string,
-          x: number,
-          y: number
-        ) => void
-      )("tok1", 300, 200);
-    });
+    act(() => pointer.onPointerUp());
 
     await waitFor(() =>
       expect(
@@ -299,15 +312,20 @@ describe("TacticEditorScreen", () => {
           color: "blue" as const,
         },
       ]);
-      useTacticEditorStore.getState().selectElement("tok1");
-      (canvasProps.current.onTokenDragStart as (id: string) => void)("tok1");
     });
+
+    const pointer = canvasProps.current as unknown as {
+      onPointerDown: (point: { x: number; y: number }) => void;
+      onPointerMove: (point: { x: number; y: number }) => void;
+    };
+    act(() => pointer.onPointerDown({ x: 900, y: 400 }));
+    act(() => pointer.onPointerMove({ x: 1000, y: 450 }));
 
     expect(
       screen.queryByRole("toolbar", { name: "Sửa phần tử đang chọn" })
     ).toBeNull();
 
-    // Alt-tab away mid-drag and the release never reaches Konva, so no `dragend` ever comes.
+    // Alt-tab away mid-drag and the release never reaches the canvas.
     act(() => {
       fireEvent.blur(window);
     });
@@ -340,15 +358,19 @@ describe("TacticEditorScreen", () => {
 
     act(() => {
       useTacticEditorStore.getState().commit("s1", [token, other]);
-      useTacticEditorStore.getState().selectElement("tok1");
-      (canvasProps.current.onTokenDragStart as (id: string) => void)("tok1");
     });
 
-    // Delete answers the keyboard even with the button still held, and the token's Konva node goes
-    // with it, so no `dragend` is ever coming for this drag.
+    const pointer = canvasProps.current as unknown as {
+      onPointerDown: (point: { x: number; y: number }) => void;
+      onPointerMove: (point: { x: number; y: number }) => void;
+    };
+    act(() => pointer.onPointerDown({ x: 900, y: 400 }));
+    act(() => pointer.onPointerMove({ x: 1000, y: 450 }));
+
+    // Delete answers the keyboard even with the button still held.
     act(() => {
-      useTacticEditorStore.getState().commit("s1", [other]);
-      useTacticEditorStore.getState().selectElement("tok2");
+      fireEvent.keyDown(window, { key: "Delete" });
+      useTacticEditorStore.getState().selectElements(["tok2"]);
     });
 
     await waitFor(() =>

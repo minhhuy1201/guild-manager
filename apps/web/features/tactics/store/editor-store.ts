@@ -1,5 +1,9 @@
 import { create } from "zustand";
-import type { TacticColor, TacticStrokeWidth } from "@guild/shared/enums";
+import type {
+  TacticColor,
+  TacticStrokeWidth,
+  TacticTokenSize,
+} from "@guild/shared/enums";
 import type { TacticElement, TacticScene } from "@guild/shared/schemas";
 
 import {
@@ -25,6 +29,9 @@ const DEFAULT_COLOR: TacticColor = "blue";
 /** The stroke width a fresh editor draws with. */
 const DEFAULT_STROKE_WIDTH: TacticStrokeWidth = 4;
 
+/** The size a fresh editor drops tokens at. */
+const DEFAULT_TOKEN_SIZE: TacticTokenSize = "md";
+
 interface EditorState {
   /** What a click on the map does */
   tool: TacticTool;
@@ -32,12 +39,14 @@ interface EditorState {
   color: TacticColor;
   /** Width every new stroke takes */
   strokeWidth: TacticStrokeWidth;
+  /** Size every new token takes */
+  tokenSize: TacticTokenSize;
   /** The scene being edited — a draft, not a copy of a response; null before one is loaded */
   scene: TacticScene | null;
   /** Stage whose tab is open */
   activeStageId: string | null;
-  /** Element the toolbar's size buttons act on */
-  selectedElementId: string | null;
+  /** Elements the action bar, Delete and a drag act on, in the order they were picked */
+  selectedElementIds: readonly string[];
   /** Whether the token palette is folded away */
   paletteCollapsed: boolean;
   /** Whether the draft holds edits the server has not seen */
@@ -49,8 +58,13 @@ interface EditorState {
   setTool: (tool: TacticTool) => void;
   setColor: (color: TacticColor) => void;
   setStrokeWidth: (strokeWidth: TacticStrokeWidth) => void;
+  setTokenSize: (tokenSize: TacticTokenSize) => void;
   setActiveStage: (stageId: string) => void;
-  selectElement: (elementId: string | null) => void;
+  /** Replace the whole selection */
+  selectElements: (elementIds: readonly string[]) => void;
+  /** Add one element to the selection, or take it out when it is already in */
+  toggleElementSelection: (elementId: string) => void;
+  clearSelection: () => void;
   togglePalette: () => void;
   /** Write one stage's elements, recording what they were so `undo` can put them back */
   commit: (stageId: string, elements: TacticElement[]) => void;
@@ -59,6 +73,11 @@ interface EditorState {
    * was recorded by the `commit` that started it
    */
   updateDrawing: (stageId: string, element: TacticElement) => void;
+  /**
+   * Swap a stage's elements for their moved selves, without a step: a drag's one undo step was
+   * recorded by the `commit` its first move made
+   */
+  updateElements: (stageId: string, elements: TacticElement[]) => void;
   undo: () => void;
   redo: () => void;
   addStage: () => void;
@@ -79,9 +98,10 @@ const INITIAL_STATE = {
   tool: "token" as TacticTool,
   color: DEFAULT_COLOR,
   strokeWidth: DEFAULT_STROKE_WIDTH,
+  tokenSize: DEFAULT_TOKEN_SIZE,
   scene: null,
   activeStageId: null,
-  selectedElementId: null,
+  selectedElementIds: [] as readonly string[],
   paletteCollapsed: false,
   dirty: false,
   history: createHistory(),
@@ -100,18 +120,26 @@ export const useTacticEditorStore = create<EditorState>((set, get) => ({
     set({
       scene,
       activeStageId: scene.stages[0]?.id ?? null,
-      selectedElementId: null,
+      selectedElementIds: [],
       dirty: false,
       history: createHistory(),
     }),
-  // The selection drives the size buttons, which only make sense for the token tool; carrying it
-  // across a tool change would leave those buttons acting on something the admin stopped editing.
-  setTool: (tool) => set({ tool, selectedElementId: null }),
+  // Picking another tool means the admin moved on from what they had picked up; carrying the
+  // selection across would leave Delete and the toolbar's size buttons acting on it unseen.
+  setTool: (tool) => set({ tool, selectedElementIds: [] }),
   setColor: (color) => set({ color }),
   setStrokeWidth: (strokeWidth) => set({ strokeWidth }),
+  setTokenSize: (tokenSize) => set({ tokenSize }),
   setActiveStage: (stageId) =>
-    set({ activeStageId: stageId, selectedElementId: null }),
-  selectElement: (elementId) => set({ selectedElementId: elementId }),
+    set({ activeStageId: stageId, selectedElementIds: [] }),
+  selectElements: (elementIds) => set({ selectedElementIds: elementIds }),
+  toggleElementSelection: (elementId) =>
+    set((state) => ({
+      selectedElementIds: state.selectedElementIds.includes(elementId)
+        ? state.selectedElementIds.filter((id) => id !== elementId)
+        : [...state.selectedElementIds, elementId],
+    })),
+  clearSelection: () => set({ selectedElementIds: [] }),
   togglePalette: () =>
     set((state) => ({ paletteCollapsed: !state.paletteCollapsed })),
   commit: (stageId, elements) =>
@@ -148,6 +176,17 @@ export const useTacticEditorStore = create<EditorState>((set, get) => ({
         dirty: true,
       };
     }),
+  updateElements: (stageId, elements) =>
+    set((state) => {
+      const scene = state.scene;
+      const stage = scene?.stages.find((candidate) => candidate.id === stageId);
+
+      if (!scene || !stage) {
+        return state;
+      }
+
+      return { scene: replaceStage(scene, { ...stage, elements }), dirty: true };
+    }),
   undo: () =>
     set((state) => {
       const stageId = state.activeStageId;
@@ -168,7 +207,7 @@ export const useTacticEditorStore = create<EditorState>((set, get) => ({
       return {
         scene: replaceStage(state.scene, { ...stage, elements: step.elements }),
         history: step.history,
-        selectedElementId: null,
+        selectedElementIds: [],
         dirty: true,
       };
     }),
@@ -192,7 +231,7 @@ export const useTacticEditorStore = create<EditorState>((set, get) => ({
       return {
         scene: replaceStage(state.scene, { ...stage, elements: step.elements }),
         history: step.history,
-        selectedElementId: null,
+        selectedElementIds: [],
         dirty: true,
       };
     }),

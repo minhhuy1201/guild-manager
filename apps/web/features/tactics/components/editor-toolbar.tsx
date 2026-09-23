@@ -15,8 +15,10 @@ import {
 import {
   TACTIC_COLORS,
   TACTIC_STROKE_WIDTHS,
+  TACTIC_TOKEN_SIZES,
   type TacticColor,
   type TacticStrokeWidth,
+  type TacticTokenSize,
 } from "@guild/shared/enums";
 
 import { Spinner } from "@/components/shared/spinner";
@@ -24,7 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { cn } from "@/lib/utils";
 import { useModifierKey } from "../hooks/use-modifier-key";
-import { COLOR_HEX, COLOR_LABELS } from "../lib/token-icon";
+import { COLOR_HEX, COLOR_LABELS, TOKEN_SIZE_TEXT } from "../lib/token-icon";
 import {
   ACTION_SHORTCUTS,
   STROKE_WIDTH_SHORTCUT,
@@ -92,6 +94,8 @@ export interface EditorToolbarProps {
   color: TacticColor;
   /** Width every new stroke takes */
   strokeWidth: TacticStrokeWidth;
+  /** Size every new token takes */
+  tokenSize: TacticTokenSize;
   /** Whether there is an edit to take back */
   canUndo: boolean;
   /** Whether there is an edit to put back */
@@ -105,6 +109,8 @@ export interface EditorToolbarProps {
   onToolChange: (tool: TacticTool) => void;
   onColorChange: (color: TacticColor) => void;
   onStrokeWidthChange: (strokeWidth: TacticStrokeWidth) => void;
+  /** Called with the size picked, which new tokens take and the selected tokens are given */
+  onTokenSizeChange: (tokenSize: TacticTokenSize) => void;
   onUndo: () => void;
   onRedo: () => void;
   onSave: () => void;
@@ -112,7 +118,7 @@ export interface EditorToolbarProps {
 }
 
 /**
- * The editor's toolbar: tools, colours, stroke widths, undo/redo, save and export. What can be
+ * The editor's toolbar: tools, colours, stroke widths, token sizes, undo/redo, save and export. What can be
  * done to the selected element lives on the map, under the element itself — see `SelectionActions`.
  * Every button that answers to a shortcut wears it as a key cap, so the keyboard is readable off
  * the toolbar itself rather than out of a tooltip nobody hovers.
@@ -123,6 +129,7 @@ export function EditorToolbar({
   tool,
   color,
   strokeWidth,
+  tokenSize,
   canUndo,
   canRedo,
   saving,
@@ -131,6 +138,7 @@ export function EditorToolbar({
   onToolChange,
   onColorChange,
   onStrokeWidthChange,
+  onTokenSizeChange,
   onUndo,
   onRedo,
   onSave,
@@ -204,6 +212,27 @@ export function EditorToolbar({
           </Button>
         ))}
         <ShortcutKeys shortcut={STROKE_WIDTH_SHORTCUT} modifier={modifier} />
+      </div>
+
+      <div className="h-5 w-px bg-border" aria-hidden />
+
+      <div className="flex items-center gap-0.5">
+        {TACTIC_TOKEN_SIZES.map((candidate) => (
+          <Button
+            key={candidate}
+            type="button"
+            size="xs"
+            variant={candidate === tokenSize ? "default" : "ghost"}
+            aria-pressed={candidate === tokenSize}
+            // Named for what it sets, so it is not mistaken for the action bar's buttons, which
+            // resize only the selection.
+            aria-label={`Cỡ quân cờ: ${TOKEN_SIZE_TEXT[candidate]}`}
+            title={`Cỡ quân cờ: ${TOKEN_SIZE_TEXT[candidate]}`}
+            onClick={() => onTokenSizeChange(candidate)}
+          >
+            {TOKEN_SIZE_TEXT[candidate]}
+          </Button>
+        ))}
       </div>
 
       <div className="ml-auto flex items-center gap-0.5">

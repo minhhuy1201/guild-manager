@@ -9,6 +9,7 @@ import {
   Layer,
   Line,
   Path,
+  Rect,
   Stage,
   Text,
 } from "react-konva";
@@ -21,7 +22,11 @@ import {
   type TacticElement,
 } from "@guild/shared/schemas";
 
-import type { MapPoint } from "../lib/element-geometry";
+import {
+  elementBounds,
+  type MapPoint,
+  type MapRect,
+} from "../lib/element-geometry";
 import { TRAIL_OPACITY, type StageFrame } from "../lib/stage-transition";
 import { INITIAL_ZOOM, type ZoomState } from "../lib/zoom";
 import { TOKEN_ICON_BOX } from "../lib/icon-paths";
@@ -32,14 +37,19 @@ import {
   TOKEN_LABEL_FONT_SIZE,
   TOKEN_LABEL_GAP,
   TOKEN_RADIUS,
+  tokenBorderHex,
   tokenIcon,
 } from "../lib/token-icon";
+import type { PointerModifiers } from "../types/tactic";
 
 /** Where the map picture is served from. Konva loads it with a plain `Image`, not `next/image`. */
 const MAP_SRC = "/img/map-guild-war.webp";
 
 /** How wide a drawn element's stroke is relative to the icon box, so icons read at every size. */
 const ICON_STROKE_WIDTH = 2;
+
+/** Selection a canvas starts with - one shared empty array, so a default never reads as a change. */
+const NO_SELECTION: readonly string[] = [];
 
 /** The mouse button that draws. The middle one pans instead. */
 const PRIMARY_MOUSE_BUTTON = 0;
@@ -59,33 +69,44 @@ const HOVER_HALO_OPACITY = 0.3;
 /** How wide the line a moving token drags behind it is, in map units. */
 const TRAIL_STROKE_WIDTH = 3;
 
+/** How wide the marquee's and the selection boxes' dashed line is, in screen pixels. */
+const SELECTION_LINE_PX = 1;
+
+/** Dash and gap of that line, in screen pixels. */
+const SELECTION_DASH_PX = [6, 4];
+
+/** What the marquee and the selection boxes are drawn in: the light the token labels use on the map. */
+const SELECTION_STROKE = "#f5f5f5";
+
+/** How solid the marquee's fill is - enough to show the area, not enough to hide the map. */
+const MARQUEE_FILL = "rgba(245, 245, 245, 0.08)";
+
 export interface TacticStageViewProps {
   /** The frame being drawn: a stage standing still, or a moment part way between two */
   frame: StageFrame;
-  /** Whether a stage change is running, which is when a token must not be dragged */
+  /** Whether a stage change is running, which is when a press must not pick anything up */
   animating?: boolean;
   /** Width the canvas is rendered at, in CSS pixels */
   width: number;
-  /** Whether the viewer may change anything */
-  readOnly?: boolean;
-  /** Element the toolbar is acting on, drawn with a selection ring */
-  selectedElementId?: string | null;
+  /**
+   * Whether a press on a token picks it up, which earns the grab cursor. Off in the viewer, and in
+   * the editor for the tools that draw on top of a token instead
+   */
+  pickable?: boolean;
+  /** Elements the action bar acts on: a token gets a thick ring, anything else a dashed box */
+  selectedElementIds?: readonly string[];
+  /** The marquee being dragged out, in map units, or null when none is */
+  marquee?: MapRect | null;
   /** Height the canvas is rendered at, in CSS pixels; defaults to the map's own aspect ratio */
   height?: number;
   /** How far the map is zoomed in and how far it has been pushed */
   zoom?: ZoomState;
-  /** Called when a pointer goes down on the map, with map coordinates */
-  onPointerDown?: (point: MapPoint) => void;
+  /** Called when a pointer goes down on the map, with map coordinates and the keys held */
+  onPointerDown?: (point: MapPoint, modifiers: PointerModifiers) => void;
   /** Called while a pointer moves over the map, with map coordinates */
   onPointerMove?: (point: MapPoint) => void;
   /** Called when the pointer is let go anywhere on the map */
   onPointerUp?: () => void;
-  /** Called when a token starts being dragged */
-  onTokenDragStart?: (tokenId: string) => void;
-  /** Called when a token was dragged to a new place */
-  onTokenMoved?: (tokenId: string, x: number, y: number) => void;
-  /** Called when an element was clicked */
-  onElementClick?: (elementId: string) => void;
   /** Called with the Konva stage once it is mounted, for the image export */
   onStageReady?: (stage: Konva.Stage | null) => void;
   /** Wheel handler, for zooming around the pointer */
@@ -109,14 +130,12 @@ export function TacticStageView({
   width,
   height,
   zoom = INITIAL_ZOOM,
-  readOnly = false,
-  selectedElementId = null,
+  pickable = true,
+  selectedElementIds = NO_SELECTION,
+  marquee = null,
   onPointerDown,
   onPointerMove,
   onPointerUp,
-  onTokenDragStart,
-  onTokenMoved,
-  onElementClick,
   onStageReady,
   onWheel,
   onStageMouseDown,
@@ -125,6 +144,10 @@ export function TacticStageView({
   // The fit scale makes the map exactly as wide as the canvas; the zoom multiplies it.
   const fitScale = stageScale(width);
   const scale = fitScale * zoom.zoom;
+  const selected = new Set(selectedElementIds);
+  // Picking up and dragging go through the editor's pointer handlers, not Konva's own drag, so one
+  // mechanism moves a token, a stroke and a whole selection alike.
+  const movable = pickable && !animating;
 
   useEffect(() => {
     const image = new window.Image();
@@ -170,11 +193,12 @@ export function TacticStageView({
       onWheel={onWheel}
       onMouseDown={(event) => {
         onStageMouseDown?.(event);
-        // The middle button pans; only the primary one draws.
-        if (event.evt.button !== PRIMARY_MOUSE_BUTTON) return;
+        // The middle button pans; only the primary one draws. Mid stage change the canvas shows
+        // neither stage, so a press there would pick up a place no element is at.
+        if (event.evt.button !== PRIMARY_MOUSE_BUTTON || animating) return;
 
         const point = pointerPoint(event.target.getStage());
-        if (point) onPointerDown?.(point);
+        if (point) onPointerDown?.(point, { shift: event.evt.shiftKey });
       }}
       onMouseMove={(event) => {
         const point = pointerPoint(event.target.getStage());
@@ -182,8 +206,10 @@ export function TacticStageView({
       }}
       onMouseUp={() => onPointerUp?.()}
       onTouchStart={(event) => {
+        if (animating) return;
+
         const point = pointerPoint(event.target.getStage());
-        if (point) onPointerDown?.(point);
+        if (point) onPointerDown?.(point, { shift: false });
       }}
       onTouchMove={(event) => {
         const point = pointerPoint(event.target.getStage());
@@ -209,11 +235,8 @@ export function TacticStageView({
             key={`ghost-${ghost.token.id}`}
             element={ghost.token}
             opacity={ghost.opacity}
-            draggable={false}
+            movable={false}
             selected={false}
-            onDragStart={() => {}}
-            onDragEnd={() => {}}
-            onClick={() => {}}
           />
         ))}
         {frame.tokens.map((unit) =>
@@ -221,7 +244,7 @@ export function TacticStageView({
             <Line
               key={`trail-${unit.token.id}`}
               points={unit.trail}
-              stroke={COLOR_HEX[unit.token.color]}
+              stroke={tokenBorderHex(unit.token)}
               strokeWidth={TRAIL_STROKE_WIDTH}
               opacity={TRAIL_OPACITY}
               lineCap="round"
@@ -236,11 +259,8 @@ export function TacticStageView({
             key={`out-${element.id}`}
             element={element}
             opacity={frame.outgoing.opacity}
-            draggable={false}
+            movable={false}
             selected={false}
-            onDragStart={() => {}}
-            onDragEnd={() => {}}
-            onClick={() => {}}
           />
         ))}
         {frame.incoming.elements.map((element) => (
@@ -248,11 +268,8 @@ export function TacticStageView({
             key={element.id}
             element={element}
             opacity={frame.incoming.opacity}
-            draggable={false}
-            selected={element.id === selectedElementId}
-            onDragStart={() => {}}
-            onDragEnd={() => {}}
-            onClick={() => onElementClick?.(element.id)}
+            movable={false}
+            selected={selected.has(element.id)}
           />
         ))}
         {frame.tokens.map((unit) => (
@@ -260,13 +277,23 @@ export function TacticStageView({
             key={unit.token.id}
             element={unit.token}
             opacity={unit.opacity}
-            draggable={!readOnly && !animating}
-            selected={unit.token.id === selectedElementId}
-            onDragStart={() => onTokenDragStart?.(unit.token.id)}
-            onDragEnd={(x, y) => onTokenMoved?.(unit.token.id, x, y)}
-            onClick={() => onElementClick?.(unit.token.id)}
+            movable={movable}
+            selected={selected.has(unit.token.id)}
           />
         ))}
+      </Layer>
+
+      {/* How the editor points at things, not part of the drawing: no pointer, and never exported
+          (the export clears the selection first, and a marquee only lives while it is dragged). */}
+      <Layer listening={false}>
+        {frame.incoming.elements.map((element) =>
+          selected.has(element.id) ? (
+            <SelectionBox key={`box-${element.id}`} rect={elementBounds(element)} scale={scale} />
+          ) : null
+        )}
+        {marquee ? (
+          <SelectionBox rect={marquee} scale={scale} fill={MARQUEE_FILL} />
+        ) : null}
       </Layer>
     </Stage>
   );
@@ -340,16 +367,10 @@ interface ElementShapeProps {
   element: TacticElement;
   /** How solid to draw it, from 0 to 1. It comes from the frame, never from the element itself */
   opacity: number;
-  /** Whether the element may be dragged */
-  draggable: boolean;
+  /** Whether a press may pick the element up, which earns the grab cursor */
+  movable: boolean;
   /** Whether to draw the selection ring */
   selected: boolean;
-  /** Called when a drag starts, before any coordinate has changed */
-  onDragStart: () => void;
-  /** Called with the new map coordinates once a drag ended */
-  onDragEnd: (x: number, y: number) => void;
-  /** Called when the element was clicked */
-  onClick: () => void;
 }
 
 /**
@@ -358,43 +379,36 @@ interface ElementShapeProps {
  *
  * Opacity is handed in rather than read off the element: how solid a shape is belongs to the frame
  * being drawn, which is where a crossfade and an onion skin come from.
- * @param props - The element, how solid to draw it, and its interaction callbacks
+ * @param props - The element, how solid to draw it, and whether it can be picked up
  * @returns The Konva shape
  */
 function ElementShape({
   element,
   opacity,
-  draggable,
+  movable,
   selected,
-  onDragStart,
-  onDragEnd,
-  onClick,
 }: ElementShapeProps) {
   // Only a token reads this, but the hook has to run for every element kind all the same.
-  const { hovered, onEnter, onLeave } = useTokenHover(draggable);
+  const { hovered, onEnter, onLeave } = useTokenHover(movable);
 
   switch (element.kind) {
     case "token": {
       const radius = TOKEN_RADIUS[element.size];
+      const border = tokenBorderHex(element);
 
       return (
         <Group
           x={element.x}
           y={element.y}
           opacity={opacity}
-          draggable={draggable}
-          onClick={onClick}
-          onTap={onClick}
           onMouseEnter={onEnter}
           onMouseLeave={onLeave}
-          onDragStart={onDragStart}
-          onDragEnd={(event) => onDragEnd(event.target.x(), event.target.y())}
         >
           {/* Behind the token: the halo says which one the pointer is on before a click moves it. */}
           {hovered ? (
             <Circle
               radius={radius * HOVER_HALO_RATIO}
-              fill={COLOR_HEX[element.color]}
+              fill={border}
               opacity={HOVER_HALO_OPACITY}
               listening={false}
             />
@@ -402,7 +416,7 @@ function ElementShape({
           <Circle
             radius={radius}
             fill={TOKEN_FILL[element.color]}
-            stroke={COLOR_HEX[element.color]}
+            stroke={border}
             strokeWidth={selected ? 6 : 3}
           />
           <TokenArt
@@ -434,8 +448,6 @@ function ElementShape({
           pointerLength={element.strokeWidth * ARROW_HEAD_RATIO}
           pointerWidth={element.strokeWidth * ARROW_HEAD_RATIO}
           lineCap="round"
-          onClick={onClick}
-          onTap={onClick}
         />
       );
     case "freehand":
@@ -448,8 +460,6 @@ function ElementShape({
           lineCap="round"
           lineJoin="round"
           tension={0.4}
-          onClick={onClick}
-          onTap={onClick}
         />
       );
     case "text":
@@ -462,13 +472,40 @@ function ElementShape({
           fontSize={element.fontSize}
           fontStyle="bold"
           fill={COLOR_HEX[element.color]}
-          onClick={onClick}
-          onTap={onClick}
         />
       );
     default:
       return assertNever(element);
   }
+}
+
+interface SelectionBoxProps {
+  /** The box to draw, in map units */
+  rect: Pick<MapRect, "left" | "top" | "right" | "bottom">;
+  /** Map-to-screen scale, so the line stays one pixel at every zoom */
+  scale: number;
+  /** What to fill it with; nothing when left out */
+  fill?: string;
+}
+
+/**
+ * A dashed box on the map: the marquee, or the outline of a selected stroke or note.
+ * @param props - The box, the scale it is seen at, and its fill
+ * @returns The Konva rectangle
+ */
+function SelectionBox({ rect, scale, fill }: SelectionBoxProps) {
+  return (
+    <Rect
+      x={rect.left}
+      y={rect.top}
+      width={rect.right - rect.left}
+      height={rect.bottom - rect.top}
+      fill={fill}
+      stroke={SELECTION_STROKE}
+      strokeWidth={SELECTION_LINE_PX / scale}
+      dash={SELECTION_DASH_PX.map((length) => length / scale)}
+    />
+  );
 }
 
 interface TokenArtProps {

@@ -17,8 +17,9 @@ import { useTacticEditor } from "../hooks/use-tactic-editor";
 import { useTacticExport } from "../hooks/use-tactic-export";
 import { useLeaveGuard } from "../hooks/use-leave-guard";
 import { useTacticEditorStore } from "../store/editor-store";
-import { elementBounds } from "../lib/element-geometry";
+import { elementBounds, unionBounds } from "../lib/element-geometry";
 import { selectionPlacement } from "../lib/selection-anchor";
+import { PICKING_TOOLS } from "../types/tactic";
 import { ExportDialog } from "./export-dialog";
 import { LeaveDialog } from "./leave-dialog";
 import { MobileEditorNotice } from "./mobile-editor-notice";
@@ -71,8 +72,9 @@ export function TacticEditorScreen({
   const paletteCollapsed = useTacticEditorStore(
     (store) => store.paletteCollapsed
   );
-  const selectedElementId = useTacticEditorStore(
-    (store) => store.selectedElementId
+  const tokenSize = useTacticEditorStore((store) => store.tokenSize);
+  const selectedElementIds = useTacticEditorStore(
+    (store) => store.selectedElementIds
   );
   const setTool = useTacticEditorStore((store) => store.setTool);
   const setColor = useTacticEditorStore((store) => store.setColor);
@@ -88,16 +90,17 @@ export function TacticEditorScreen({
 
   const stages = scene?.stages ?? [];
   // The action bar is a DOM overlay on the canvas, so where it goes follows the zoom and the pan.
-  // While a token is dragged, Konva moves it on the canvas without telling the store, so the bar
-  // would sit at the place the token has just left. It goes away until the drag reports a position.
-  const selection = editor.draggingTokenId ? null : editor.selectedElement;
-  const placement = selection
-    ? selectionPlacement(
-        elementBounds(selection),
-        stageZoom.viewport,
-        stageZoom.zoom
-      )
-    : null;
+  // It steps aside while a drag or a marquee runs: it would cover what the pointer is working on.
+  const selection =
+    editor.isMoving || editor.marquee ? [] : editor.selectedElements;
+  const placement =
+    selection.length > 0
+      ? selectionPlacement(
+          unionBounds(selection.map(elementBounds)),
+          stageZoom.viewport,
+          stageZoom.zoom
+        )
+      : null;
   const exporter = useTacticExport(editor.name, stages, editor.stageRef);
   // An export switches stage and screenshots two frames later. With a move running, every picture
   // in the zip would catch the tokens mid-flight, so the canvas stands still until it is done.
@@ -150,6 +153,7 @@ export function TacticEditorScreen({
                 tool={tool}
                 color={color}
                 strokeWidth={strokeWidth}
+                tokenSize={tokenSize}
                 canUndo={editor.canUndo}
                 canRedo={editor.canRedo}
                 saving={editor.saving}
@@ -158,6 +162,7 @@ export function TacticEditorScreen({
                 onToolChange={setTool}
                 onColorChange={setColor}
                 onStrokeWidthChange={setStrokeWidth}
+                onTokenSizeChange={editor.onToolbarTokenSizeChange}
                 onUndo={undo}
                 onRedo={redo}
                 onSave={editor.onSave}
@@ -221,13 +226,12 @@ export function TacticEditorScreen({
                       animating={animating}
                       width={width}
                       zoom={stageZoom.zoom}
-                      selectedElementId={selectedElementId}
+                      pickable={PICKING_TOOLS.has(tool)}
+                      selectedElementIds={selectedElementIds}
+                      marquee={editor.marquee}
                       onPointerDown={editor.onPointerDown}
                       onPointerMove={editor.onPointerMove}
                       onPointerUp={editor.onPointerUp}
-                      onTokenDragStart={editor.onTokenDragStart}
-                      onTokenMoved={editor.onTokenMoved}
-                      onElementClick={editor.onElementClick}
                       onStageReady={editor.onStageReady}
                       onWheel={stageZoom.onWheel}
                       onStageMouseDown={stageZoom.onPanStart}
@@ -235,10 +239,10 @@ export function TacticEditorScreen({
                     {placement ? (
                       <SelectionActions
                         placement={placement}
-                        tokenSize={
-                          selection?.kind === "token" ? selection.size : null
-                        }
-                        onTokenSizeChange={editor.onTokenSizeChange}
+                        tokenSizes={selection.flatMap((element) =>
+                          element.kind === "token" ? [element.size] : []
+                        )}
+                        onTokenSizeChange={editor.onSelectionTokenSizeChange}
                         onDeleteSelected={editor.onDeleteSelected}
                       />
                     ) : null}

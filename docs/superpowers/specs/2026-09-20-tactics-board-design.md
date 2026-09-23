@@ -331,6 +331,11 @@ Konva:
   mặc định vẫn là đội hình; ở công cụ đó, bấm trúng một phần tử đã có thì chọn nó chứ không đặt quân
   chồng lên (#150).
 
+> **Cập nhật 2026-09-23:** vùng chọn giờ là nhiều phần tử (khung chọn kéo chuột, Shift+nhấn), kéo
+> phần tử đi qua logic con trỏ của editor thay cho kéo của Konva nên mũi tên, nét vẽ, chữ cũng kéo
+> được, toolbar có nhóm cỡ quân cờ, và quân Đội 1-10 có viền theo màu nhóm ở `/xep-team`. Xem
+> [`2026-09-23-tactics-token-size-team-border-marquee-design.md`](2026-09-23-tactics-token-size-team-border-marquee-design.md).
+
 Undo/redo:
 
 - Ngăn riêng cho **từng giai đoạn**, mỗi ngăn tối đa 50 bước. Đổi giai đoạn không xáo trộn lịch sử

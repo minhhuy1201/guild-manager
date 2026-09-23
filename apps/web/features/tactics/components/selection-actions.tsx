@@ -9,26 +9,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { SelectionPlacement } from "../lib/selection-anchor";
-
-/** Full name of each token size, used as the accessible name of its button. */
-const SIZE_LABELS: Record<TacticTokenSize, string> = {
-  sm: "Cỡ nhỏ",
-  md: "Cỡ vừa",
-  lg: "Cỡ lớn",
-};
-
-/** What each size button shows. The bar floats on the map, so the word "Cỡ" is left to the label. */
-const SIZE_TEXT: Record<TacticTokenSize, string> = {
-  sm: "Nhỏ",
-  md: "Vừa",
-  lg: "Lớn",
-};
+import { TOKEN_SIZE_LABELS, TOKEN_SIZE_TEXT } from "../lib/token-icon";
 
 export interface SelectionActionsProps {
   /** Where the bar sits over the canvas, in CSS pixels */
   placement: SelectionPlacement;
-  /** Size of the selected token, or null when the selection is not a token */
-  tokenSize: TacticTokenSize | null;
+  /** Size of every selected token; empty when the selection holds none */
+  tokenSizes: readonly TacticTokenSize[];
   onTokenSizeChange: (size: TacticTokenSize) => void;
   onDeleteSelected: () => void;
 }
@@ -38,7 +25,8 @@ export interface SelectionActionsProps {
  *
  * It sits here rather than in the toolbar because the eye is already on the piece: resizing a
  * token used to mean a trip to the top of the page and back to see what changed. Resizing only
- * means something for a token; deleting means the same for every kind of element.
+ * means something for a token; deleting means the same for every kind of element. Both act on the
+ * whole selection, however many elements the marquee took in.
  *
  * The bar is positioned by its own middle, so it stays centred on the element whatever it is wide,
  * and flips to hang above the element when there is no room underneath.
@@ -47,10 +35,15 @@ export interface SelectionActionsProps {
  */
 export function SelectionActions({
   placement,
-  tokenSize,
+  tokenSizes,
   onTokenSizeChange,
   onDeleteSelected,
 }: SelectionActionsProps) {
+  // A size reads as the selection's only while every token wears it; a mixed selection presses none.
+  const sharedSize = tokenSizes.every((size) => size === tokenSizes[0])
+    ? (tokenSizes[0] ?? null)
+    : null;
+
   return (
     <div
       role="toolbar"
@@ -61,19 +54,19 @@ export function SelectionActions({
         placement.above && "-translate-y-full"
       )}
     >
-      {tokenSize
+      {tokenSizes.length > 0
         ? TACTIC_TOKEN_SIZES.map((candidate) => (
             <Button
               key={candidate}
               type="button"
               size="xs"
-              variant={candidate === tokenSize ? "default" : "ghost"}
-              aria-pressed={candidate === tokenSize}
-              aria-label={SIZE_LABELS[candidate]}
-              title={SIZE_LABELS[candidate]}
+              variant={candidate === sharedSize ? "default" : "ghost"}
+              aria-pressed={candidate === sharedSize}
+              aria-label={TOKEN_SIZE_LABELS[candidate]}
+              title={TOKEN_SIZE_LABELS[candidate]}
               onClick={() => onTokenSizeChange(candidate)}
             >
-              {SIZE_TEXT[candidate]}
+              {TOKEN_SIZE_TEXT[candidate]}
             </Button>
           ))
         : null}

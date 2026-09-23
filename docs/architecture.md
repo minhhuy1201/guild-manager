@@ -401,7 +401,7 @@ apps/web/
 │   └── providers.tsx # QueryClientProvider
 ├── hooks/            # cross-feature hooks (use-table-pagination)
 ├── config/           # routes.ts (ROUTES), api.ts (FETCH_API_URL, PUBLIC_API_URL)
-└── lib/              # api-client.ts (apiFetch + ApiError), format.ts, guild-class.ts, utils.ts
+└── lib/              # api-client.ts (apiFetch + ApiError), format.ts, guild-class.ts, team-color-group.ts, utils.ts
 ```
 
 Features: `attendance`, `auth`, `landing`, `members`, `settings`, `tactics`, `team-builder`.
