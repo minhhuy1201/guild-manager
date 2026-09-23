@@ -31,7 +31,7 @@ import {
   isStageFull,
   moveToken,
   removeElement,
-  resizeToken,
+  resizeTokens,
 } from "../lib/scene";
 import { useTacticEditorStore } from "../store/editor-store";
 import { useSaveTactic } from "./use-save-tactic";
@@ -205,7 +205,7 @@ export function useTacticEditor(
       switch (tool) {
         case "token": {
           commitElements(
-            addElement(activeStage, createToken(paletteToken, point, color))
+            addElement(activeStage, createToken(paletteToken, point, color, "md"))
               .elements
           );
           return;
@@ -355,7 +355,7 @@ export function useTacticEditor(
     (size: TacticTokenSize) => {
       if (isAdmin && activeStage && selectedElementId) {
         commitElements(
-          resizeToken(activeStage, selectedElementId, size).elements
+          resizeTokens(activeStage, [selectedElementId], size).elements
         );
       }
     },

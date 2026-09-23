@@ -14,7 +14,8 @@ describe("element factories", () => {
     const token = createToken(
       { label: "Đội công", icon: "swords" },
       { x: 100, y: 200 },
-      "blue"
+      "blue",
+      "md"
     );
 
     expect(token).toMatchObject({
@@ -27,6 +28,17 @@ describe("element factories", () => {
       color: "blue",
     });
     expect(token.id).toBeTypeOf("string");
+  });
+
+  it("drops a token at the size picked on the toolbar", () => {
+    const token = createToken(
+      { label: "Đội 1", icon: "number-1" },
+      { x: 0, y: 0 },
+      "red",
+      "lg"
+    );
+
+    expect(token.size).toBe("lg");
   });
 
   it("starts an arrow as a zero-length segment at the pointer", () => {

@@ -1,4 +1,8 @@
-import type { TacticColor, TacticStrokeWidth } from "@guild/shared/enums";
+import type {
+  TacticColor,
+  TacticStrokeWidth,
+  TacticTokenSize,
+} from "@guild/shared/enums";
 import {
   TACTIC_LIMITS,
   type TacticArrow,
@@ -21,12 +25,14 @@ export const DEFAULT_FONT_SIZE = 28;
  * @param source - The palette entry being dragged out
  * @param point - Where it lands, in virtual map units
  * @param color - Colour picked on the toolbar
+ * @param size - Token size picked on the toolbar
  * @returns The new token
  */
 export function createToken(
   source: BuiltInToken,
   point: MapPoint,
-  color: TacticColor
+  color: TacticColor,
+  size: TacticTokenSize
 ): TacticToken {
   return {
     kind: "token",
@@ -35,7 +41,7 @@ export function createToken(
     icon: source.icon,
     x: point.x,
     y: point.y,
-    size: "md",
+    size,
     color,
   };
 }

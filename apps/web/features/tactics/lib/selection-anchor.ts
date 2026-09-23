@@ -40,7 +40,8 @@ export interface SelectionPlacement {
  * @returns The placement, or null while a pan has taken the element off the canvas
  */
 export function selectionPlacement(
-  bounds: ElementBounds,
+  // Only the vertical edges and the middle: the bar is centred on the element, never aligned to a side.
+  bounds: Pick<ElementBounds, "centerX" | "top" | "bottom">,
   viewport: StageViewport,
   zoom: ZoomState
 ): SelectionPlacement | null {

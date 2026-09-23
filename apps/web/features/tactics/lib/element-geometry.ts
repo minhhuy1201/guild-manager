@@ -22,8 +22,24 @@ export interface MapPoint {
   y: number;
 }
 
+/** A box on the map, in virtual map units — what a marquee drag covers. */
+export interface MapRect {
+  /** Left edge */
+  left: number;
+  /** Top edge */
+  top: number;
+  /** Right edge */
+  right: number;
+  /** Bottom edge */
+  bottom: number;
+}
+
 /** What an element takes up on the map, in virtual map units. */
 export interface ElementBounds {
+  /** Left edge of the element */
+  left: number;
+  /** Right edge of the element */
+  right: number;
   /** Middle of the element along the x axis */
   centerX: number;
   /** Top edge of the element */
@@ -103,7 +119,11 @@ export function elementBounds(element: TacticElement): ElementBounds {
         ? TOKEN_LABEL_GAP + TOKEN_LABEL_FONT_SIZE
         : 0;
 
+      // Only the circle counts across: the label's text box is `radius * 6` wide whatever the text,
+      // and a marquee would have to be absurdly wide to take a token in if that box counted.
       return {
+        left: element.x - radius,
+        right: element.x + radius,
         centerX: element.x,
         top: element.y - radius,
         bottom: element.y + radius + labelHeight,
@@ -111,6 +131,8 @@ export function elementBounds(element: TacticElement): ElementBounds {
     }
     case "text":
       return {
+        left: element.x,
+        right: element.x + textWidth(element),
         centerX: element.x + textWidth(element) / 2,
         top: element.y,
         bottom: element.y + element.fontSize,
@@ -121,6 +143,61 @@ export function elementBounds(element: TacticElement): ElementBounds {
     default:
       return assertNever(element);
   }
+}
+
+/**
+ * The box between two corners of a drag, whichever way the pointer went.
+ * @param from - Where the drag started, in virtual map units
+ * @param to - Where the pointer is now, in virtual map units
+ * @returns The box, with its edges in order
+ */
+export function rectFromPoints(from: MapPoint, to: MapPoint): MapRect {
+  return {
+    left: Math.min(from.x, to.x),
+    top: Math.min(from.y, to.y),
+    right: Math.max(from.x, to.x),
+    bottom: Math.max(from.y, to.y),
+  };
+}
+
+/**
+ * The elements a marquee takes in: those whose whole box sits inside it. An edge touching the
+ * marquee's edge still counts as inside.
+ * @param stage - The stage being drawn on
+ * @param rect - The marquee, in virtual map units
+ * @returns Ids of the elements inside, in drawing order
+ */
+export function elementsInRect(stage: TacticStage, rect: MapRect): string[] {
+  return stage.elements
+    .filter((element) => {
+      const bounds = elementBounds(element);
+
+      return (
+        bounds.left >= rect.left &&
+        bounds.right <= rect.right &&
+        bounds.top >= rect.top &&
+        bounds.bottom <= rect.bottom
+      );
+    })
+    .map((element) => element.id);
+}
+
+/**
+ * The box around several boxes - what the action bar of a multi-element selection hangs off.
+ * @param bounds - The boxes to wrap; at least one, since there is no box around nothing
+ * @returns One box around all of them, centred on the whole
+ */
+export function unionBounds(bounds: readonly ElementBounds[]): ElementBounds {
+  const left = Math.min(...bounds.map((box) => box.left));
+  const right = Math.max(...bounds.map((box) => box.right));
+
+  return {
+    left,
+    right,
+    centerX: (left + right) / 2,
+    top: Math.min(...bounds.map((box) => box.top)),
+    bottom: Math.max(...bounds.map((box) => box.bottom)),
+  };
 }
 
 /**
@@ -155,7 +232,13 @@ function polylineBounds(points: number[]): ElementBounds {
     maxY = Math.max(maxY, points[index + 1]);
   }
 
-  return { centerX: (minX + maxX) / 2, top: minY, bottom: maxY };
+  return {
+    left: minX,
+    right: maxX,
+    centerX: (minX + maxX) / 2,
+    top: minY,
+    bottom: maxY,
+  };
 }
 
 /**

@@ -3,8 +3,11 @@ import type { TacticElement, TacticStage } from "@guild/shared/schemas";
 
 import {
   elementBounds,
+  elementsInRect,
   hitTest,
   isElementHit,
+  rectFromPoints,
+  unionBounds,
 } from "../lib/element-geometry";
 import { TOKEN_RADIUS } from "../lib/token-icon";
 
@@ -87,6 +90,8 @@ describe("elementBounds(…)", () => {
   it("wraps a token in its own circle", () => {
     expect(elementBounds(token)).toEqual({
       centerX: 400,
+      left: 400 - TOKEN_RADIUS.md,
+      right: 400 + TOKEN_RADIUS.md,
       top: 200 - TOKEN_RADIUS.md,
       bottom: 200 + TOKEN_RADIUS.md,
     });
@@ -124,6 +129,8 @@ describe("elementBounds(…)", () => {
     expect(bounds.top).toBe(300);
     expect(bounds.bottom).toBe(324);
     expect(bounds.centerX).toBeGreaterThan(100);
+    expect(bounds.left).toBe(100);
+    expect(bounds.right).toBe(bounds.centerX * 2 - 100);
   });
 
   it("wraps a stroke in the box of its points, whichever way it was drawn", () => {
@@ -137,6 +144,8 @@ describe("elementBounds(…)", () => {
 
     expect(elementBounds(freehand)).toEqual({
       centerX: 200,
+      left: 100,
+      right: 300,
       top: 200,
       bottom: 400,
     });
@@ -153,6 +162,8 @@ describe("elementBounds(…)", () => {
 
     expect(elementBounds(arrow)).toEqual({
       centerX: 600,
+      left: 500,
+      right: 700,
       top: 100,
       bottom: 300,
     });
@@ -174,4 +185,64 @@ describe("isElementHit and elementBounds together", () => {
       expect(isElementHit(element, probe)).toBe(true);
     }
   );
+});
+
+describe("rectFromPoints", () => {
+  it.each([
+    ["down and right", { x: 10, y: 20 }, { x: 110, y: 220 }],
+    ["up and left", { x: 110, y: 220 }, { x: 10, y: 20 }],
+    ["up and right", { x: 10, y: 220 }, { x: 110, y: 20 }],
+    ["down and left", { x: 110, y: 20 }, { x: 10, y: 220 }],
+  ])("normalises a drag %s into one box", (_direction, from, to) => {
+    expect(rectFromPoints(from, to)).toEqual({
+      left: 10,
+      top: 20,
+      right: 110,
+      bottom: 220,
+    });
+  });
+});
+
+describe("elementsInRect", () => {
+  it("picks every kind of element whose whole box sits inside", () => {
+    expect(
+      elementsInRect(stage, { left: 0, top: 0, right: 1000, bottom: 1000 })
+    ).toEqual(["tk1", "fh1", "tx1"]);
+  });
+
+  it("leaves out an element that only partly sits inside", () => {
+    // The stroke runs from x 400 to 500; this box stops half way along it.
+    expect(
+      elementsInRect(stage, { left: 0, top: 0, right: 450, bottom: 1000 })
+    ).toEqual(["tk1"]);
+  });
+
+  it("counts an element whose box touches the edge as inside", () => {
+    expect(
+      elementsInRect(stage, { left: 400, top: 400, right: 500, bottom: 400 })
+    ).toEqual(["fh1"]);
+  });
+
+  it("finds nothing in a box over empty map", () => {
+    expect(
+      elementsInRect(stage, { left: 1200, top: 800, right: 1400, bottom: 900 })
+    ).toEqual([]);
+  });
+});
+
+describe("unionBounds", () => {
+  it("returns the one box it is given", () => {
+    const bounds = elementBounds(stage.elements[1]);
+
+    expect(unionBounds([bounds])).toEqual(bounds);
+  });
+
+  it("wraps several boxes and centres on the whole", () => {
+    expect(
+      unionBounds([
+        { left: 100, right: 200, centerX: 150, top: 50, bottom: 80 },
+        { left: 300, right: 500, centerX: 400, top: 10, bottom: 60 },
+      ])
+    ).toEqual({ left: 100, right: 500, centerX: 300, top: 10, bottom: 80 });
+  });
 });
