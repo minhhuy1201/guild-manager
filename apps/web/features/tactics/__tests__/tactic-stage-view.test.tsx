@@ -205,6 +205,34 @@ describe("TacticStageView", () => {
     expect(propsOf("text").text).toBe("7");
   });
 
+  it.each([
+    ["number-3", "#6fb59d"],
+    ["number-6", "#c2bdb7"],
+    ["number-8", "#6c84c3"],
+    ["number-10", "#d4b278"],
+  ] as const)(
+    "rings team token %s in its team builder colour, leaving the digits in the toolbar's",
+    (icon, border) => {
+      const team: TacticStage = {
+        ...stage,
+        elements: [
+          { ...stage.elements[0], icon, color: "red" } as TacticStage["elements"][number],
+        ],
+      };
+
+      render(<TacticStageView frame={staticFrame(team)} width={960} />);
+
+      expect(propsOf("circle").stroke).toBe(border);
+      expect(propsOf("text").fill).toBe("#e5484d");
+    }
+  );
+
+  it("rings any other token in the toolbar's colour", () => {
+    render(<TacticStageView frame={staticFrame(stage)} width={960} />);
+
+    expect(propsOf("circle").stroke).toBe("#e5484d");
+  });
+
   it("puts a black token on a light disc, so its icon stays readable", () => {
     const black: TacticStage = {
       ...stage,
@@ -402,6 +430,31 @@ describe("a frame in motion", () => {
     );
 
     expect(trail?.points).toEqual([0, 0, 50, 0]);
+  });
+
+  it("draws a team token's trail in its ring colour", () => {
+    const teamFrom: TacticStage = {
+      ...from,
+      elements: [{ ...from.elements[0], icon: "number-9" } as TacticStage["elements"][number]],
+    };
+    const teamTo: TacticStage = {
+      ...to,
+      elements: [{ ...teamFrom.elements[0], x: 100 } as TacticStage["elements"][number]],
+    };
+
+    render(
+      <TacticStageView
+        frame={transitionFrame(teamFrom, teamTo, 0.5)}
+        width={960}
+        animating
+      />
+    );
+
+    const trail = (rendered.get("line") ?? []).find(
+      (props) => props.opacity !== undefined
+    );
+
+    expect(trail?.stroke).toBe("#d4b278");
   });
 
   it("draws no trail while standing still", () => {

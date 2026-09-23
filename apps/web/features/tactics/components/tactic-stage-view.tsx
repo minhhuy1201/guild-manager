@@ -32,6 +32,7 @@ import {
   TOKEN_LABEL_FONT_SIZE,
   TOKEN_LABEL_GAP,
   TOKEN_RADIUS,
+  tokenBorderHex,
   tokenIcon,
 } from "../lib/token-icon";
 
@@ -221,7 +222,7 @@ export function TacticStageView({
             <Line
               key={`trail-${unit.token.id}`}
               points={unit.trail}
-              stroke={COLOR_HEX[unit.token.color]}
+              stroke={tokenBorderHex(unit.token)}
               strokeWidth={TRAIL_STROKE_WIDTH}
               opacity={TRAIL_OPACITY}
               lineCap="round"
@@ -376,6 +377,7 @@ function ElementShape({
   switch (element.kind) {
     case "token": {
       const radius = TOKEN_RADIUS[element.size];
+      const border = tokenBorderHex(element);
 
       return (
         <Group
@@ -394,7 +396,7 @@ function ElementShape({
           {hovered ? (
             <Circle
               radius={radius * HOVER_HALO_RATIO}
-              fill={COLOR_HEX[element.color]}
+              fill={border}
               opacity={HOVER_HALO_OPACITY}
               listening={false}
             />
@@ -402,7 +404,7 @@ function ElementShape({
           <Circle
             radius={radius}
             fill={TOKEN_FILL[element.color]}
-            stroke={COLOR_HEX[element.color]}
+            stroke={border}
             strokeWidth={selected ? 6 : 3}
           />
           <TokenArt
