@@ -58,6 +58,35 @@ describe("SiteHeader - khách chưa đăng nhập", () => {
   });
 });
 
+describe("SiteHeader - theme", () => {
+  // The header is an ink-navy band framing the page in both themes: it scopes the dark tokens to
+  // itself rather than following the page.
+  it("header luôn mang theme tối, kể cả khi trang đang ở theme sáng", async () => {
+    getSession.mockResolvedValue(null);
+
+    await renderHeader();
+
+    expect(screen.getByRole("banner").classList.contains("dark")).toBe(true);
+  });
+
+  it("khách chưa đăng nhập có nút Giao diện để đổi theme", async () => {
+    getSession.mockResolvedValue(null);
+
+    await renderHeader();
+
+    expect(screen.getByRole("button", { name: "Giao diện" })).toBeTruthy();
+  });
+
+  it("đã đăng nhập thì đổi theme trong menu tài khoản, header không có nút Giao diện riêng", async () => {
+    getSession.mockResolvedValue({ discordId: "1", role: GuildRole.MEMBER });
+    fetchMe.mockResolvedValue(null);
+
+    await renderHeader();
+
+    expect(screen.queryByRole("button", { name: "Giao diện" })).toBeNull();
+  });
+});
+
 describe("SiteHeader - đã đăng nhập", () => {
   it("tên bang dẫn về màn điểm danh và không còn nút đăng nhập", async () => {
     getSession.mockResolvedValue({

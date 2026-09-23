@@ -2,6 +2,7 @@
 import { createElement } from "react";
 import type { ComponentProps } from "react";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { ThemeProvider } from "next-themes";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ROUTES } from "@/config/routes";
@@ -51,6 +52,17 @@ import { UserMenu } from "../user-menu";
   unobserve() {}
   disconnect() {}
 };
+// next-themes reads the colour-scheme media query even with `enableSystem={false}`; jsdom has none.
+window.matchMedia ??= ((query: string) => ({
+  matches: false,
+  media: query,
+  onchange: null,
+  addListener() {},
+  removeListener() {},
+  addEventListener() {},
+  removeEventListener() {},
+  dispatchEvent: () => false,
+})) as typeof window.matchMedia;
 
 /**
  * Render the menu and open it.
@@ -115,6 +127,25 @@ describe("UserMenu", () => {
       ...document.querySelectorAll("[data-slot='dropdown-menu-label']"),
     ].map((label) => label.textContent);
     expect(labels).toEqual(["Giao diện"]);
+  });
+
+  it("chọn Tối trong menu tài khoản thì cả trang chuyển sang tối", async () => {
+    localStorage.clear();
+    document.documentElement.className = "";
+    render(
+      <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+        <UserMenu label="Mèo Mập" discordId="123456789012345678" avatarHash={null} />
+      </ThemeProvider>
+    );
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button"));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("menuitemradio", { name: "Tối" }));
+    });
+
+    expect(document.documentElement.classList.contains("dark")).toBe(true);
   });
 
   it("bấm Đăng xuất thì xoá phiên rồi mới chuyển về trang đăng nhập", async () => {
