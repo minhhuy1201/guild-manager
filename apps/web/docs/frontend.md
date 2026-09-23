@@ -965,6 +965,9 @@ Data arrives, it does not snap in. Four pieces, all CSS, in `app/globals.css` an
   `table-body-state`. (The attendance grid no longer has one: an admin presses the cells.)
 - A row that summarises the columns (the attendance grid's "Cả bang" totals) is a second header row
   of `td` cells: it stays in view above the rows, and it adds no `th` to the column count.
+- The table's look lives in `DataTable`'s `TABLE_SKIN` (`components/shared/data-table.tsx`), never in
+  `components/ui/table.tsx`, which a shadcn update would overwrite: header rows on `secondary` (a
+  navy tint), body rows striped `card` / `muted`, a neutral hover.
 - Paging → `use-table-pagination` (client-side, resets to page 1 when the filter changes) rendered
   with `table-pagination-bar` / `page-size-select`. The pagination bar **always** renders, even at one
   page, so filtering does not move the layout. Below `lg` the page numbers hide and only the four

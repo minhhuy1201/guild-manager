@@ -37,11 +37,13 @@ interface DataTableProps<TItem> {
  * The table's own skin, kept here rather than in `components/ui/table.tsx`, which stays shadcn CLI output.
  * Rows are striped by position — the skeleton bands like the loaded rows — and both bands are opaque, so a
  * pinned column can take the row colour with `bg-inherit` and hide what scrolls underneath.
+ * The header row sits on `secondary` (a navy tint), set apart from both the card and the warm
+ * stripes, so the column names read as a band of their own in either theme.
  * The hover rule is marked important because it ties with the stripe rule on specificity.
  */
 const TABLE_SKIN = [
   "[&_thead_th]:h-11",
-  "[&_thead_tr]:bg-card",
+  "[&_thead_tr]:bg-secondary",
   "[&_tbody_tr]:bg-card",
   "[&_tbody_tr:nth-child(even)]:bg-muted",
   "[&_tbody_tr:hover]:bg-foreground/5!",
