@@ -278,68 +278,70 @@ export function useTacticEditor(
     [activeStageId, commit]
   );
 
+  /**
+   * Pick up the element a press landed on, ready to drag it with the rest of the selection.
+   * @param stage - The open stage
+   * @param elementId - The element under the pointer
+   * @param press - Where the press went down
+   * @param toggle - Whether the press adds or removes this one element instead
+   */
+  const pressElement = useCallback(
+    (
+      stage: TacticStage,
+      elementId: string,
+      press: MapPoint,
+      toggle: boolean
+    ) => {
+      if (toggle) {
+        toggleElementSelection(elementId);
+        return;
+      }
+
+      const selection = useTacticEditorStore.getState().selectedElementIds;
+      // Pressing inside the selection carries all of it; pressing outside starts a new one.
+      const ids = selection.includes(elementId) ? selection : [elementId];
+
+      if (ids !== selection) selectElements(ids);
+      gestureRef.current = {
+        kind: "move",
+        origin: press,
+        stage,
+        ids,
+        pressedId: elementId,
+        written: stage.elements,
+      };
+    },
+    [toggleElementSelection, selectElements]
+  );
+
+  /**
+   * Begin a marquee on empty map.
+   * @param stage - The open stage
+   * @param press - Where the press went down
+   * @param additive - Whether it adds to the selection rather than replacing it
+   */
+  const startMarquee = useCallback(
+    (stage: TacticStage, press: MapPoint, additive: boolean) => {
+      const base = additive
+        ? useTacticEditorStore.getState().selectedElementIds
+        : [];
+
+      if (!additive) clearSelection();
+      gestureRef.current = {
+        kind: "marquee",
+        origin: press,
+        stage,
+        base,
+        rect: null,
+      };
+    },
+    [clearSelection]
+  );
+
   const onPointerDown = useCallback(
     (point: MapPoint, modifiers: PointerModifiers = NO_MODIFIERS) => {
       if (!isAdmin || !activeStage) {
         return;
-      }
-
-      /**
-       * Pick up the element a press landed on, ready to drag it with the rest of the selection.
-       * @param stage - The open stage
-       * @param elementId - The element under the pointer
-       * @param press - Where the press went down
-       * @param toggle - Whether the press adds or removes this one element instead
-       */
-      function pressElement(
-        stage: TacticStage,
-        elementId: string,
-        press: MapPoint,
-        toggle: boolean
-      ): void {
-        if (toggle) {
-          toggleElementSelection(elementId);
-          return;
-        }
-
-        const selection = useTacticEditorStore.getState().selectedElementIds;
-        // Pressing inside the selection carries all of it; pressing outside starts a new one.
-        const ids = selection.includes(elementId) ? selection : [elementId];
-
-        if (ids !== selection) selectElements(ids);
-        gestureRef.current = {
-          kind: "move",
-          origin: press,
-          stage,
-          ids,
-          pressedId: elementId,
-          written: stage.elements,
-        };
-      }
-
-      /**
-       * Begin a marquee on empty map.
-       * @param stage - The open stage
-       * @param press - Where the press went down
-       * @param additive - Whether it adds to the selection rather than replacing it
-       */
-      function startMarquee(
-        stage: TacticStage,
-        press: MapPoint,
-        additive: boolean
-      ): void {
-        const base = additive
-          ? useTacticEditorStore.getState().selectedElementIds
-          : [];
-
-        if (!additive) clearSelection();
-        gestureRef.current = {
-          kind: "marquee",
-          origin: press,
-          stage,
-          base,
-          rect: null,
-        };
       }
 
       // A press that lands on something already drawn edits that thing instead of drawing again:
@@ -408,9 +410,8 @@ export function useTacticEditor(
       strokeWidth,
       tokenSize,
       commitElements,
-      selectElements,
-      toggleElementSelection,
-      clearSelection,
+      pressElement,
+      startMarquee,
     ]
   );
 
