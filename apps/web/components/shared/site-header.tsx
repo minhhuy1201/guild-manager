@@ -6,6 +6,7 @@ import { GuildSeal } from "@/components/shared/guild-seal";
 import { HeaderLoginButton } from "@/components/shared/header-login-button";
 import { MainNav } from "@/components/shared/main-nav";
 import { MobileTabBar } from "@/components/shared/mobile-tab-bar";
+import { ThemeMenu } from "@/components/shared/theme-menu";
 import { ROUTES } from "@/config/routes";
 import { UserMenu } from "@/features/auth";
 import { fetchMe, getSession } from "@/features/auth/server";
@@ -54,7 +55,7 @@ function GuildName() {
  * the header from `sm` up, in the tab bar at the bottom of a phone's screen below it. A visitor gets
  * the guild's public page behind the mark and a way to sign in.
  * Reads the session on the server to decide whether to show the nav at all, and whether it carries
- * the admin items.
+ * the admin items. The theme is picked from the account menu, or from `ThemeMenu` when signed out.
  * @returns The styled header, followed by the phone's tab bar when signed in
  */
 export async function SiteHeader() {
@@ -66,8 +67,13 @@ export async function SiteHeader() {
   return (
     <>
       {/* Not sticky on a short screen (a phone turned sideways): pinned there, it and the save
-          bar took about 40% of the height. */}
-      <header className="sticky top-0 z-10 border-b bg-card/90 backdrop-blur [@media(max-height:500px)]:static">
+          bar took about 40% of the height.
+          `dark` in both themes: the header is an ink-navy band framing the page, which is what
+          lifts it off the light plane. Scoping the dark tokens to it (rather than a set of header
+          tokens) keeps the nav, the seal and the avatar on the palette they already use.
+          `text-foreground` again because `color` inherits as a value from the body, not as the
+          variable. */}
+      <header className="dark sticky top-0 z-10 border-b bg-card/90 text-foreground backdrop-blur [@media(max-height:500px)]:static">
         <div
           className={cn(
             "mx-auto flex h-14 items-center gap-3 px-4 sm:px-6",
@@ -84,7 +90,8 @@ export async function SiteHeader() {
           </Link>
           {/* Signed out there is nothing to navigate between, only a way in. */}
           {!session && (
-            <div className="ml-auto shrink-0">
+            <div className="ml-auto flex shrink-0 items-center gap-2">
+              <ThemeMenu />
               <HeaderLoginButton />
             </div>
           )}

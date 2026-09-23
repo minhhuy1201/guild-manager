@@ -22,6 +22,9 @@ interface MobileTabBarProps {
  * (`--app-bottom-inset`), so no content - the save bars included - ends up under it. The bar must be
  * rendered outside the site header: the header's backdrop blur would otherwise become the containing
  * block of this `position: fixed` element.
+ *
+ * Like the header it always wears `.dark`, so the navigation reads as one ink band framing the page
+ * in both themes.
  * @param props.isAdmin - Whether to show the admin-only entries
  * @returns The tab bar
  */
@@ -32,7 +35,7 @@ export function MobileTabBar({ isAdmin }: MobileTabBarProps) {
     <nav
       data-slot="mobile-tab-bar"
       aria-label="Điều hướng chính"
-      className="fixed inset-x-0 bottom-0 z-30 border-t bg-card pb-[env(safe-area-inset-bottom)] sm:hidden"
+      className="dark fixed inset-x-0 bottom-0 z-30 border-t bg-card text-foreground pb-[env(safe-area-inset-bottom)] sm:hidden"
     >
       <ul className="flex h-16">
         {navItemsFor(isAdmin).map(({ href, shortLabel, icon: Icon }) => {

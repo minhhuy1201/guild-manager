@@ -376,17 +376,35 @@ System-wide, so screens look like one app. **Extend this section when you add a 
 ### Palette roles
 
 [`docs/design-direction.md`](../../../docs/design-direction.md) is the brief; the tokens live in
-`app/globals.css`. Every colour has one job:
+`app/globals.css`, once under `:root` (light, the default) and once under `.dark`. Every colour has
+one job, the same in both themes:
 
 | Token | Job |
 |---|---|
-| Warm neutrals (`--background`, `--card`, `--border`, `--muted-foreground` …) | Surfaces and text. One hue (85) for every grey - never mix in a cool one. |
+| Neutrals (`--background`, `--card`, `--border`, `--muted-foreground` …) | Surfaces and text. One hue per theme for every grey - warm 80-85 on light, navy 262 on dark - never mix the two within a theme. `--background` stays clearly darker than `--card` in both. |
 | `primary` (navy) | Primary actions, selected tabs, a battle's name (`SessionLabel`). |
 | `jade` | The accent: current page in the nav, focus ring (`--ring`), the guild seal, the page divider's diamond, hover edge of the session cards, and the fill of the header's login button - a visitor's one action. |
 | `gold` | Important highlights only: the formation banner's frame, the login ornament, the sheen crossing the header's login button on hover. Never a state. |
 | emerald / `destructive` / amber | Attendance state only: "Có" / "Không" / not answered yet. Never decoration. |
 
 Gold and amber stay apart by saturation: amber is a vivid state colour, gold a muted accent.
+
+### Themes → tokens only, switched by next-themes
+
+`ThemeProvider` (`components/providers.tsx`) puts `.dark` on `<html>`; light is the default and the
+operating system's preference is ignored. The pickers live in `components/shared/theme-menu.tsx`:
+`ThemeRadioItems` ("Giao diện": Sáng / Tối) inside the account menu, and `ThemeMenu`, a palette icon
+button in the header, for a signed-out visitor.
+
+- **A colour comes from a token**, so it follows the theme on its own. A literal colour is only for
+  something that must look the same in both: the scrims and white text on a picture, the attendance
+  state colours, a guild class's colour (`lib/guild-class.ts` mixes it against `--card`).
+- **A `dark:` variant is a last resort** - a token that fits both themes is the fix.
+- **The header and the phone's tab bar carry `className="dark"`** in both themes, which scopes the
+  dark tokens to their subtree (`.dark {}` and the `dark` variant match any ancestor, not only
+  `<html>`). They add `text-foreground` too: `color` inherits from the body as a resolved value, not
+  as the variable. Menus they open portal to `<body>` and follow the page's theme.
+- The toaster follows the theme through `useTheme()` (`components/ui/sonner.tsx`).
 
 **Team columns** (`features/team-builder/lib/team-colors.ts`) tint the same palette rather than
 bringing hues of their own: teams 1-5 jade, 6-7 the warm neutral, 8 navy, 9-10 gold. The header
@@ -825,12 +843,11 @@ whatever the window, no chips, and the tall banner as its only headline.
 
 ### Feedback after a write → a toast
 
-One `<Toaster position="top-center" theme="light" />` lives in `components/providers.tsx`; a screen
+One `<Toaster position="top-center" />` lives in `components/providers.tsx`; a screen
 raises one through **`components/shared/toast.ts`** (`toastSuccess` / `toastError`), never by calling
 `sonner` directly. Top centre because on a phone a thumb covers the bottom half of the screen, which
-is exactly where the attendance buttons sit; `theme="light"` because nothing in the app sets the
-`.dark` class, and left on `"system"` sonner follows the operating system and drops a dark toast onto
-a light page.
+is exactly where the attendance buttons sit. It takes no `theme`: `components/ui/sonner.tsx` reads the
+active one from next-themes, so the toast matches the page in both themes.
 
 The two tones are the app's own: emerald for a success, `destructive` for a failure — the "Có" and
 "Không" marks again. Sonner takes a surface as three custom properties, so `toast.ts` sets them
@@ -948,6 +965,9 @@ Data arrives, it does not snap in. Four pieces, all CSS, in `app/globals.css` an
   `table-body-state`. (The attendance grid no longer has one: an admin presses the cells.)
 - A row that summarises the columns (the attendance grid's "Cả bang" totals) is a second header row
   of `td` cells: it stays in view above the rows, and it adds no `th` to the column count.
+- The table's look lives in `DataTable`'s `TABLE_SKIN` (`components/shared/data-table.tsx`), never in
+  `components/ui/table.tsx`, which a shadcn update would overwrite: header rows on `secondary` (a
+  navy tint), body rows striped `card` / `muted`, a neutral hover.
 - Paging → `use-table-pagination` (client-side, resets to page 1 when the filter changes) rendered
   with `table-pagination-bar` / `page-size-select`. The pagination bar **always** renders, even at one
   page, so filtering does not move the layout. Below `lg` the page numbers hide and only the four

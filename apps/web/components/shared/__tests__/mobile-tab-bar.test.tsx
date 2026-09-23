@@ -65,4 +65,13 @@ describe("MobileTabBar", () => {
 
     expect(container.querySelector('[data-slot="mobile-tab-bar"]')).not.toBeNull();
   });
+
+  // The bar is an ink-navy band framing the page in both themes: it scopes the dark tokens to itself.
+  it("luôn mang theme tối, kể cả khi trang đang ở theme sáng", () => {
+    const { container } = render(<MobileTabBar isAdmin={false} />);
+
+    expect(
+      container.querySelector('[data-slot="mobile-tab-bar"]')?.classList.contains("dark")
+    ).toBe(true);
+  });
 });

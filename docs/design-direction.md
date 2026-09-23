@@ -27,13 +27,24 @@ immersion.
 ## Visual Direction
 
 - Clean layouts, strong visual hierarchy, generous spacing
-- Warm neutral surfaces (a silk/stone tone) with a faint jade and gold glow and a paper grain on the
-  page plane; thin borders, almost no shadow
-- A minimal palette with fixed roles:
+- **Two themes, picked by the member**, with light as the default:
+  - **Light** - a warm stone plane (clearly darker than the cards) with near-white cards lifted off
+    it by a visible border and a warm shadow, a faint jade and gold glow and a paper grain on the plane.
+  - **Dark ("night battle")** - an ink-navy plane, cards one step lighter, warm ivory text, and the
+    accents lifted so they carry on the dark.
+  - In both, the plane and the card sit far enough apart that a card reads as lifted without looking
+    for its border. The first light pass (2026-09-13) kept them ~3% apart and the whole app read as
+    one white sheet; the guild asked for more contrast on 2026-09-23.
+- **The header and the phone's tab bar are always an ink-navy band**, in both themes: the navigation
+  frames the page, and on the light theme it is the strongest contrast on the screen.
+- The theme is picked from the account menu ("Giao diện": Sáng / Tối), or from a small palette
+  button in the header when signed out. Never a sun/moon toggle, and never the operating system's
+  preference: light stays the default until a member picks otherwise.
+- A minimal palette with fixed roles, the same in both themes:
 
 | Colour | Role |
 |---|---|
-| Navy (`--primary`) | Primary actions and selected tabs - the app's working colour |
+| Navy (`--primary`) | Primary actions and selected tabs - the app's working colour; lit to a light navy on the dark theme |
 | Jade (`--jade`) | The accent: active navigation, focus ring, the guild seal, section dividers |
 | Antique gold (`--gold`) | Important highlights only: the formation headline, the login ornament |
 | Emerald / red / amber | Attendance state only ("Có" / "Không" / not answered yet) - never decoration |

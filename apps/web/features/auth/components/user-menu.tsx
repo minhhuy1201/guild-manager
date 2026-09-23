@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { LogOut } from "lucide-react";
 
+import { ThemeRadioItems } from "@/components/shared/theme-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,10 +31,12 @@ interface UserMenuProps {
 }
 
 /**
- * The account avatar in the header; clicking it opens a menu holding Sign out.
+ * The account avatar in the header; clicking it opens a menu holding the theme picker and Sign out.
  *
  * The header shows the avatar alone, so the name moves into the menu as its label — the shadcn
  * account-menu pattern: identity at the top, the destructive action last, a separator between them.
+ * The theme picker ("Giao diện") sits between the two - a preference of this account's browser, so
+ * it lives with the account rather than as one more button on a crowded header.
  *
  * Only rendered with a session: a signed-out visitor cannot reach any page other than `/dang-nhap`, so
  * there is no signed-out branch here.
@@ -92,6 +95,8 @@ export function UserMenu({ label, discordId, avatarHash }: UserMenuProps) {
             <DropdownMenuSeparator />
           </>
         )}
+        <ThemeRadioItems />
+        <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuItem
             variant="destructive"
