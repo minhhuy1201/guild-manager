@@ -1,7 +1,7 @@
 # Cỡ quân cờ trên toolbar, viền theo màu đội, chọn vùng nhiều phần tử - Implementation Plan
 
 > **For agentic workers:** Thực thi inline, task theo thứ tự (CLAUDE.md dự án: không spawn subagent
-> trừ khi được yêu cầu). Steps dùng checkbox (`- [ ]`).
+> trừ khi được yêu cầu). Steps dùng checkbox (`- [x]`).
 
 **Goal:** Toolbar có nhóm cỡ quân cờ (mặc định "Vừa"); quân Đội 1-10 có viền theo màu nhóm đội ở
 `/xep-team`; công cụ Chọn có khung chọn kéo chuột, Shift+nhấn, kéo cả nhóm, đổi cỡ và xoá cả nhóm.
@@ -37,15 +37,15 @@ trạng thái cử chỉ (khung chọn, kéo nhóm) và bỏ `draggable` của K
 | `apps/web/features/tactics/lib/element-geometry.ts` | `left`/`right` trong `ElementBounds`, `MapRect`, `rectFromPoints`, `elementsInRect`, `unionBounds` |
 | `apps/web/features/tactics/lib/scene.ts` | `translateElements`, `resizeTokens`, `removeElements`; bỏ `moveToken`, `resizeToken` nếu hết người dùng |
 | `apps/web/features/tactics/lib/create-element.ts` | `createToken(source, point, color, size)` |
-| `apps/web/features/tactics/lib/selection-anchor.ts` | Chữ ký không đổi; nhận `unionBounds` |
+| `apps/web/features/tactics/lib/selection-anchor.ts` | Tham số thu lại thành `Pick<ElementBounds, "centerX" \| "top" \| "bottom">`; nhận `unionBounds` |
 | `apps/web/features/tactics/store/editor-store.ts` | `tokenSize`, `selectedElementIds`, `selectElements`, `toggleElementSelection`, `clearSelection`, `updateElements` |
 | `apps/web/features/tactics/hooks/use-tactic-editor.ts` | Máy trạng thái cử chỉ, `selectedElements`, `marquee`, `isMoving`, `onToolbarTokenSizeChange` |
 | `apps/web/features/tactics/hooks/use-tactic-export.ts` | `selectElement(null)` thành `clearSelection()` |
 | `apps/web/features/tactics/components/tactic-stage-view.tsx` | Bỏ Konva drag; `selectedElementIds`, `marquee`; hộp nét đứt; `tokenBorderHex`; `onPointerDown(point, { shift })` |
 | `apps/web/features/tactics/components/editor-toolbar.tsx` | Nhóm cỡ quân cờ |
-| `apps/web/features/tactics/components/selection-actions.tsx` | Nhãn từ `token-icon.ts`; `tokenSize` null khi các token khác cỡ, ẩn nút cỡ khi không có token |
+| `apps/web/features/tactics/components/selection-actions.tsx` | Nhãn từ `token-icon.ts`; prop `tokenSizes` (rỗng thì ẩn nút cỡ, khác cỡ thì không nút nào sáng) |
 | `apps/web/features/tactics/components/tactic-editor-screen.tsx` | Nối các prop mới |
-| `apps/web/features/tactics/components/tactic-viewer.tsx` | Theo interface mới của `TacticStageView` |
+| `apps/web/features/tactics/hooks/use-editor-shortcuts.ts` | Doc: Delete xoá cả vùng chọn |
 
 ---
 
@@ -66,13 +66,13 @@ trạng thái cử chỉ (khung chọn, kéo nhóm) và bỏ `draggable` của K
 - `removeElements(stage, ids: readonly string[]): TacticStage`
 - `createToken(source, point, color, size: TacticTokenSize): TacticToken`
 
-- [ ] Viết test hỏng cho từng hàm theo mục "Kiểm thử" của spec (bốn hướng kéo, nằm trọn / chạm mép /
+- [x] Viết test hỏng cho từng hàm theo mục "Kiểm thử" của spec (bốn hướng kéo, nằm trọn / chạm mép /
   lòi ra, bốn `kind` khi dịch, không đột biến đầu vào, phần tử ngoài `ids` giữ nguyên tham chiếu).
-- [ ] `pnpm --filter web test -- element-geometry scene create-element`: thấy hỏng.
-- [ ] Cài đặt. Token bounds: `left/right = x ∓ radius`. `polylineBounds` trả thêm `left/right`.
+- [x] `pnpm --filter web test -- element-geometry scene create-element`: thấy hỏng.
+- [x] Cài đặt. Token bounds: `left/right = x ∓ radius`. `polylineBounds` trả thêm `left/right`.
   "Nằm trọn" dùng `>=`/`<=` (chạm mép vẫn tính).
-- [ ] Cập nhật caller của `createToken` trong `use-tactic-editor.ts` truyền tạm `"md"` để build xanh.
-- [ ] Chạy lại test: xanh. Commit `feat(tactics): add marquee geometry and multi-element scene edits`.
+- [x] Cập nhật caller của `createToken` trong `use-tactic-editor.ts` truyền tạm `"md"` để build xanh.
+- [x] Chạy lại test: xanh. Commit `feat(tactics): add marquee geometry and multi-element scene edits`.
 
 ## Task 2: Tách nhóm màu đội ra `apps/web/lib`
 
@@ -81,12 +81,12 @@ trạng thái cử chỉ (khung chọn, kéo nhóm) và bỏ `draggable` của K
 **Produces:** `type TeamColorGroup = "jade" | "stone" | "navy" | "gold"`;
 `teamColorGroup(team: number): TeamColorGroup | null`.
 
-- [ ] Chuyển bảng đội sang nhóm (1-5 jade, 6-7 stone, 8 navy, 9-10 gold) vào file mới, kèm comment
+- [x] Chuyển bảng đội sang nhóm (1-5 jade, 6-7 stone, 8 navy, 9-10 gold) vào file mới, kèm comment
   lý do đang có ("four groups the guild splits its ten teams into").
-- [ ] `team-colors.ts`: `GROUP_COLORS: Record<TeamColorGroup, TeamColors>`, `getTeamColors` =
+- [x] `team-colors.ts`: `GROUP_COLORS: Record<TeamColorGroup, TeamColors>`, `getTeamColors` =
   `group ? GROUP_COLORS[group] : DEFAULT_TEAM_COLORS`. Chữ ký `getTeamColors` không đổi.
-- [ ] `pnpm --filter web test -- team-builder` xanh; `pnpm --filter web lint` xanh.
-- [ ] Commit `refactor(web): share the team color grouping outside the team builder`.
+- [x] `pnpm --filter web test -- team-builder` xanh; `pnpm --filter web lint` xanh.
+- [x] Commit `refactor(web): share the team color grouping outside the team builder`.
 
 ## Task 3: Viền quân Đội N theo màu nhóm
 
@@ -98,11 +98,11 @@ hoặc tương tự; không tạo file mới)
 `{ jade: "#6fb59d", stone: "#c2bdb7", navy: "#6c84c3", gold: "#d4b278" }`;
 `tokenBorderHex(token: TacticToken): string`.
 
-- [ ] Test hỏng: quân `number-3` viền `#6fb59d`, `number-8` viền `#6c84c3`, quân `swords` màu `red`
+- [x] Test hỏng: quân `number-3` viền `#6fb59d`, `number-8` viền `#6c84c3`, quân `swords` màu `red`
   viền `COLOR_HEX.red`; chữ số vẫn `COLOR_HEX[color]`.
-- [ ] Cài đặt: số đội lấy qua `Number(numberIconDigits(icon))`. Dùng `tokenBorderHex` cho viền,
+- [x] Cài đặt: số đội lấy qua `Number(numberIconDigits(icon))`. Dùng `tokenBorderHex` cho viền,
   quầng hover, vệt đuôi.
-- [ ] Test xanh. Commit `feat(tactics): border team tokens in their team builder color`.
+- [x] Test xanh. Commit `feat(tactics): border team tokens in their team builder color`.
 
 ## Task 4: Store: cỡ mặc định và vùng chọn nhiều phần tử
 
@@ -114,11 +114,11 @@ hoặc tương tự; không tạo file mới)
 `clearSelection()`; `updateElements(stageId, elements)` (không ghi undo, `dirty: true`). Bỏ
 `selectedElementId` và `selectElement`.
 
-- [ ] Test hỏng theo spec. Giữ nguyên các test đang kiểm "đổi tool/stage/undo/redo/loadScene xoá
+- [x] Test hỏng theo spec. Giữ nguyên các test đang kiểm "đổi tool/stage/undo/redo/loadScene xoá
   vùng chọn", chỉ đổi sang `selectedElementIds` rỗng.
-- [ ] Cài đặt. Comment ở `setTool` sửa lại lý do (không còn gắn với nút cỡ của công cụ token).
-- [ ] Cập nhật `use-tactic-export.ts` sang `clearSelection()`.
-- [ ] Test xanh (build sẽ còn đỏ ở hook/screen đến Task 5-6: không commit riêng, gộp commit với
+- [x] Cài đặt. Comment ở `setTool` sửa lại lý do (không còn gắn với nút cỡ của công cụ token).
+- [x] Cập nhật `use-tactic-export.ts` sang `clearSelection()`.
+- [x] Test xanh (build sẽ còn đỏ ở hook/screen đến Task 5-6: không commit riêng, gộp commit với
   Task 5).
 
 ## Task 5: Hook: cử chỉ chọn, khung chọn, kéo nhóm, cỡ
@@ -135,7 +135,9 @@ hoặc tương tự; không tạo file mới)
 
 **Máy trạng thái** (một `gestureRef` kiểu union có `kind`, switch kết `assertNever`):
 - `{ kind: "marquee", origin, additive, base: readonly string[] }`
-- `{ kind: "move", origin, baseElements, ids, pressedId, moved: boolean }`
+- `{ kind: "move", origin, stage, ids, pressedId, written }` - `written` là mảng phần tử cú kéo ghi lần
+  cuối (ban đầu là `stage.elements`); khác mảng hiện có của giai đoạn nghĩa là có ai sửa giữa chừng,
+  cú kéo dừng (spec §5).
 - `null` khi không có cử chỉ. `marquee` hiển thị giữ trong `useState` để canvas vẽ lại.
 
 Luật theo bảng ở spec §4. Điểm cần chú ý:
@@ -145,14 +147,14 @@ Luật theo bảng ở spec §4. Điểm cần chú ý:
   thứ tự); `move` chưa `moved` và vùng chọn > 1 thì `selectElements([pressedId])`. Luôn xoá gesture.
 - Listener `window` `mouseup`/`touchend`/`blur` đang có tiếp tục gọi `onPointerUp`. Cần điểm cuối cho
   khung: lấy từ `marquee` state đã cập nhật ở lần move cuối, không phải từ event.
-- Không bắt đầu `move` khi `animating` (hook nhận thêm cờ này, hoặc screen chặn `onPointerDown` trong
-  lúc animation; chọn cách nào ít prop hơn khi làm, ghi lại trong commit).
+- Không bắt đầu `move` khi `animating`: `TacticStageView` (đã có prop `animating`) bỏ qua cú nhấn,
+  hook không cần thêm prop.
 
-- [ ] Test hỏng cho từng dòng mục `use-tactic-editor.test.tsx` trong spec. Cập nhật test đang dùng
+- [x] Test hỏng cho từng dòng mục `use-tactic-editor.test.tsx` trong spec. Cập nhật test đang dùng
   `onTokenMoved` sang cử chỉ con trỏ.
-- [ ] Cài đặt; bỏ `moveToken`, `resizeToken` khỏi `scene.ts` nếu không còn ai import (xoá test của
+- [x] Cài đặt; bỏ `moveToken`, `resizeToken` khỏi `scene.ts` nếu không còn ai import (xoá test của
   chúng cùng lúc).
-- [ ] Test xanh.
+- [x] Test xanh.
 
 ## Task 6: Canvas, toolbar, thanh nổi, màn hình
 
@@ -162,42 +164,41 @@ Luật theo bảng ở spec §4. Điểm cần chú ý:
 `editor-toolbar.test.tsx`, `selection-actions.test.tsx`, `tactic-editor-screen.test.tsx`,
 `tactic-viewer.test.tsx`
 
-- [ ] `token-icon.ts`: chuyển `SIZE_LABELS`/`SIZE_TEXT` từ `selection-actions.tsx` thành
+- [x] `token-icon.ts`: chuyển `SIZE_LABELS`/`SIZE_TEXT` từ `selection-actions.tsx` thành
   `TOKEN_SIZE_LABELS`/`TOKEN_SIZE_TEXT`.
-- [ ] `TacticStageView`: bỏ `draggable`, `onTokenDragStart`, `onTokenMoved`; prop
+- [x] `TacticStageView`: bỏ `draggable`, `onTokenDragStart`, `onTokenMoved`; prop
   `selectedElementIds?: readonly string[]`, `marquee?: MapRect | null`; `onPointerDown` truyền
   `{ shift: event.evt.shiftKey }` (touch: `false`); layer `listening={false}` vẽ khung chọn và hộp
   nét đứt của phần tử không phải token, nét chia `scale`. Cursor `grab` giữ theo `!readOnly`.
-- [ ] `EditorToolbar`: props `tokenSize`, `onTokenSizeChange`; nhóm ba nút sau nhóm nét, `title`
+- [x] `EditorToolbar`: props `tokenSize`, `onTokenSizeChange`; nhóm ba nút sau nhóm nét, `title`
   `"Cỡ quân cờ: Vừa"` v.v.
-- [ ] `SelectionActions`: `tokenSize: TacticTokenSize | null` và `hasTokens: boolean` (null + có
-  token = các token khác cỡ, không nút nào sáng).
-- [ ] `TacticEditorScreen`: placement từ `unionBounds(selectedElements.map(elementBounds))`; ẩn thanh
+- [x] `SelectionActions`: `tokenSizes: readonly TacticTokenSize[]`.
+- [x] `TacticEditorScreen`: placement từ `unionBounds(selectedElements.map(elementBounds))`; ẩn thanh
   khi `isMoving` hoặc `marquee`; nối toolbar với `onToolbarTokenSizeChange`.
-- [ ] Test hỏng trước, rồi cài đặt, rồi xanh:
+- [x] Test hỏng trước, rồi cài đặt, rồi xanh:
   `pnpm --filter web test -- tactics`.
-- [ ] `pnpm --filter web lint` và `pnpm --filter web typecheck` xanh.
-- [ ] Commit `feat(tactics): select several elements with a marquee and move them together`, rồi
+- [x] `pnpm --filter web lint` và `pnpm --filter web typecheck` xanh.
+- [x] Commit `feat(tactics): select several elements with a marquee and move them together`, rồi
   commit riêng `feat(tactics): pick the token size from the toolbar` nếu tách được sạch; không thì
   gộp.
 
 ## Task 7: Kiểm tra tay trên trình duyệt
 
-- [ ] `pnpm --filter api dev` + `pnpm --filter web dev`, đăng nhập admin, mở một chiến thuật.
-- [ ] Làm hết danh sách "Kiểm tra tay" ở cuối spec, và `/xep-team` còn đúng bốn nhóm màu.
-- [ ] Sai ở đâu thì sửa spec/plan trước (nếu là sai giả định), rồi sửa code.
+- [x] `pnpm --filter api dev` + `pnpm --filter web dev`, đăng nhập admin, mở một chiến thuật.
+- [x] Làm hết danh sách "Kiểm tra tay" ở cuối spec, và `/xep-team` còn đúng bốn nhóm màu.
+- [x] Sai ở đâu thì sửa spec/plan trước (nếu là sai giả định), rồi sửa code.
 
 ## Task 8: Tài liệu
 
-- [ ] `docs/superpowers/specs/2026-09-20-tactics-board-design.md`: thêm một dòng trỏ sang spec này ở
+- [x] `docs/superpowers/specs/2026-09-20-tactics-board-design.md`: thêm một dòng trỏ sang spec này ở
   chỗ nói về chọn một phần tử và kéo quân cờ (không sửa lịch sử).
-- [ ] `docs/architecture.md` §4.2: thêm `team-color-group.ts` vào dòng liệt kê `lib/`.
-- [ ] Commit `docs(tactics): record marquee selection and team token borders`.
+- [x] `docs/architecture.md` §4.2: thêm `team-color-group.ts` vào dòng liệt kê `lib/`.
+- [x] Commit `docs(tactics): record marquee selection and team token borders`.
 
 ## Verify (chạy hết sau Task 8)
 
-- [ ] `pnpm --filter web test` xanh toàn bộ.
-- [ ] `pnpm --filter web lint` xanh.
-- [ ] `pnpm --filter web typecheck` xanh.
-- [ ] `pnpm --filter web build` xanh.
-- [ ] Spec, plan, code, test khớp nhau.
+- [x] `pnpm --filter web test` xanh toàn bộ.
+- [x] `pnpm --filter web lint` xanh.
+- [x] `pnpm --filter web typecheck` xanh.
+- [x] `pnpm --filter web build` xanh.
+- [x] Spec, plan, code, test khớp nhau.

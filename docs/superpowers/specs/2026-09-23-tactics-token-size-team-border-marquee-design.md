@@ -37,7 +37,10 @@ và nhóm nét:
   trên thanh nổi.
 - Thanh nổi `SelectionActions` giữ nguyên vai trò: chỉ đổi cỡ vùng chọn, không đổi cỡ mặc định.
 - Nhãn "Nhỏ/Vừa/Lớn" và "Cỡ nhỏ/Cỡ vừa/Cỡ lớn" đang nằm trong `selection-actions.tsx`. Chúng được
-  chuyển ra `lib/token-icon.ts` để toolbar và thanh nổi dùng chung một nguồn.
+  chuyển ra `lib/token-icon.ts` (`TOKEN_SIZE_TEXT`, `TOKEN_SIZE_LABELS`) để toolbar và thanh nổi dùng
+  chung một nguồn.
+- Nút trên toolbar có tên truy cập "Cỡ quân cờ: Nhỏ/Vừa/Lớn", khác tên "Cỡ nhỏ/vừa/lớn" của thanh nổi:
+  hai nhóm làm hai việc khác nhau, trình đọc màn hình phải phân biệt được.
 - Không thêm phím tắt. Phím `[` `]` vẫn chỉ đổi độ dày nét.
 
 Không đổi schema: cỡ đã được lưu trên từng quân cờ từ trước.
@@ -150,7 +153,16 @@ Cách chạy:
 - Dịch chuyển tính từ điểm nhấn, áp lên bản gốc đã nhớ, không cộng dồn, nên không trôi sai số.
 - Hàm thuần `translateElements(stage, ids, dx, dy)` trong `lib/scene.ts`: token và chữ dịch `x`, `y`;
   mũi tên và nét vẽ dịch mọi cặp toạ độ trong `points`. Switch trên `kind`, kết bằng `assertNever`.
-- Không kéo được trong lúc animation chuyển giai đoạn đang chạy, như hôm nay.
+- Trong lúc animation chuyển giai đoạn đang chạy, canvas **bỏ qua mọi cú nhấn chuột trái**, không chỉ
+  cú kéo: khung hình lúc đó không phải giai đoạn nào, nên nhấn vào đâu cũng có thể trúng chỗ không có
+  phần tử. Animation chỉ dài 280ms.
+- **Stage đổi dưới tay thì bỏ cú kéo.** `Delete`, undo, redo hay đổi giai đoạn vẫn chạy được khi nút
+  chuột đang giữ. Mỗi lần di chuyển, hook so mảng phần tử hiện có của giai đoạn với mảng chính cú kéo
+  ghi lần trước; khác nhau (hoặc giai đoạn đang mở đã đổi) thì cú kéo dừng, không ghi gì. Nếu không,
+  lần di chuyển kế tiếp sẽ ghi lại phần tử vừa bị xoá. `isMoving` cũng suy ra theo cùng phép so đó, nên
+  thanh nổi hiện lại ngay sau `Delete`.
+- Bỏ luôn `onElementClick`: chọn phần tử đã đi hết qua `onPointerDown` (hit test), và một `click` của
+  Konva đến sau `mouseup` sẽ ghi đè vùng chọn vừa được Shift+nhấn sửa.
 - Con trỏ `grab` khi hover token giữ nguyên cho admin.
 
 ### 6. Hình học: hộp bao đầy đủ
@@ -170,18 +182,22 @@ Hàm thuần mới trong `lib/element-geometry.ts`:
 - `elementsInRect(stage, rect): string[]` trả id các phần tử có hộp bao nằm trọn trong khung.
 - `unionBounds(bounds[]): ElementBounds` gộp hộp bao, cho thanh nổi của vùng chọn nhiều phần tử.
 
+`selectionPlacement` chỉ đọc `centerX`, `top`, `bottom`, nên tham số của nó thu lại thành
+`Pick<ElementBounds, "centerX" | "top" | "bottom">`.
+
 ### 7. Hiển thị vùng chọn
 
-- **Khung chọn:** `TacticStageView` nhận prop `marquee: MapRect | null`, vẽ một `Rect` nét đứt trên
+- **Khung chọn:** `TacticStageView` nhận prop `marquee: MapRect | null`, vẽ một `Rect` nét đứt (màu
+  `#f5f5f5` như nhãn quân cờ, nền mờ 8%) trên
   một layer `listening={false}`. Độ dày nét và nét đứt chia cho `scale`, để nhìn như nhau ở mọi mức
   zoom.
 - **Phần tử đang chọn:** token giữ viền dày như hôm nay. Mũi tên, nét vẽ, chữ đang chọn có thêm một
   hộp nét đứt theo hộp bao, cũng trên layer `listening={false}`. Hôm nay chúng không có dấu hiệu
   chọn nào ngoài thanh nổi; với vùng chọn nhiều phần tử, không có dấu hiệu thì không biết cái gì đang
   được chọn. `TacticStageView` nhận `selectedElementIds` thay cho `selectedElementId`.
-- **Thanh nổi:** neo vào `unionBounds` của vùng chọn. Ẩn trong lúc kéo và lúc vẽ khung. Nút cỡ hiện
-  khi vùng chọn có ít nhất một token; nút nào được bấm sáng lên chỉ khi mọi token trong vùng chọn cùng
-  cỡ đó. Nút xoá xoá cả vùng chọn.
+- **Thanh nổi:** neo vào `unionBounds` của vùng chọn. Ẩn trong lúc kéo và lúc vẽ khung. Nhận
+  `tokenSizes` (cỡ của từng token trong vùng chọn): rỗng thì không có nút cỡ; nút nào được bấm sáng
+  lên chỉ khi mọi token cùng cỡ đó. Nút xoá xoá cả vùng chọn.
 - **Xuất ảnh:** đã xoá vùng chọn trước khi chụp; khung chọn chỉ tồn tại trong lúc kéo. Không đổi gì.
 
 ### 8. Xoá
