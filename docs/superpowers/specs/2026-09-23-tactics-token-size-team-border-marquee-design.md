@@ -161,6 +161,9 @@ Cách chạy:
   ghi lần trước; khác nhau (hoặc giai đoạn đang mở đã đổi) thì cú kéo dừng, không ghi gì. Nếu không,
   lần di chuyển kế tiếp sẽ ghi lại phần tử vừa bị xoá. `isMoving` cũng suy ra theo cùng phép so đó, nên
   thanh nổi hiện lại ngay sau `Delete`.
+- Luật này áp cho **cả khung chọn**: khung đang kéo mà giai đoạn bị đổi hoặc bị sửa thì khung biến mất
+  và không chọn gì. Token giữ id khi nhân bản giai đoạn, nên id đọc từ giai đoạn cũ có thể chọn nhầm
+  quân mà khung không hề phủ trên giai đoạn mới.
 - Bỏ luôn `onElementClick`: chọn phần tử đã đi hết qua `onPointerDown` (hit test), và một `click` của
   Konva đến sau `mouseup` sẽ ghi đè vùng chọn vừa được Shift+nhấn sửa.
 - Con trỏ `grab` khi hover token giữ nguyên cho admin.
@@ -234,7 +237,8 @@ Chỉ mở rộng các file test đã có trong `apps/web/features/tactics/__tes
 - `use-tactic-editor.test.tsx`: đặt quân lấy `tokenSize`; đổi cỡ toolbar áp cho token đang chọn trong
   một bước undo; khung chọn chọn đúng phần tử nằm trọn; Shift cộng dồn; Shift+nhấn thêm/bớt; nhấn
   dưới ngưỡng không tạo undo; kéo nhóm dịch mọi `kind` và là một bước undo; nhấn không kéo trên vùng
-  chọn nhiều phần tử thu về một; xoá nhiều phần tử là một bước undo.
+  chọn nhiều phần tử thu về một; xoá nhiều phần tử là một bước undo; cú kéo và khung chọn đều dừng khi
+  giai đoạn bị đổi hoặc bị sửa giữa chừng.
 - `editor-toolbar.test.tsx`: nhóm cỡ hiển thị, `aria-pressed` theo `tokenSize`, gọi callback.
 - `selection-actions.test.tsx`: trạng thái nút cỡ khi token cùng cỡ / khác cỡ / không có token.
 - `tactic-stage-view.test.tsx`: có khung chọn khi truyền `marquee`; viền quân Đội N theo nhóm, quân

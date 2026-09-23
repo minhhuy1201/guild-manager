@@ -543,7 +543,7 @@ function undoSteps(): number {
   return (state.history.past[state.activeStageId ?? ""] ?? []).length;
 }
 
-describe("useTacticEditor — token size", () => {
+describe("useTacticEditor - token size", () => {
   it("drops new tokens at the toolbar's size, without an undo step for picking it", async () => {
     const { result } = await renderEditor();
 
@@ -576,7 +576,7 @@ describe("useTacticEditor — token size", () => {
   });
 });
 
-describe("useTacticEditor — marquee and group moves", () => {
+describe("useTacticEditor - marquee and group moves", () => {
   beforeEach(() => {
     openWith([
       tokenAt("a", 100, 100),
@@ -724,6 +724,32 @@ describe("useTacticEditor — marquee and group moves", () => {
 
     const first = useTacticEditorStore.getState().scene?.stages[0].elements[0];
     expect(first).toMatchObject({ x: 150, y: 150 });
+  });
+
+  it("drops a marquee when the stage is switched mid-drag, selecting nothing on the new one", async () => {
+    // Tokens keep their id across a duplicated stage, so ids picked on the old stage would select
+    // pieces the marquee never covered on the new one.
+    vi.mocked(fetchTactic).mockResolvedValue(
+      makeTactic({
+        scene: {
+          ...makeScene(2),
+          stages: [
+            { id: "s1", name: "Giai đoạn 1", elements: [tokenAt("a", 100, 100)] },
+            { id: "s2", name: "Giai đoạn 2", elements: [tokenAt("a", 900, 900)] },
+          ],
+        },
+      })
+    );
+    const { result } = await renderSelecting();
+
+    act(() => result.current.onPointerDown({ x: 40, y: 40 }));
+    act(() => result.current.onPointerMove({ x: 160, y: 160 }));
+    act(() => useTacticEditorStore.getState().setActiveStage("s2"));
+    act(() => result.current.onPointerMove({ x: 200, y: 200 }));
+    act(() => result.current.onPointerUp());
+
+    expect(useTacticEditorStore.getState().selectedElementIds).toEqual([]);
+    expect(result.current.marquee).toBeNull();
   });
 
   it("narrows a selection to the element clicked without a drag", async () => {

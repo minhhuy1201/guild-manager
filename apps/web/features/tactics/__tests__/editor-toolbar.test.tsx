@@ -98,7 +98,7 @@ describe("EditorToolbar", () => {
     expect(handlers.onTokenSizeChange).toHaveBeenCalledWith("sm");
   });
 
-  // Both stay on the map, under the element they act on — the toolbar is too far from it.
+  // Both stay on the map, under the element they act on: the toolbar is too far from it.
   it("leaves the selected element's own actions to the map", () => {
     renderToolbar();
 

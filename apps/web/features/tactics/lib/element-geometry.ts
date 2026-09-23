@@ -22,7 +22,7 @@ export interface MapPoint {
   y: number;
 }
 
-/** A box on the map, in virtual map units — what a marquee drag covers. */
+/** A box on the map, in virtual map units: what a marquee drag covers. */
 export interface MapRect {
   /** Left edge */
   left: number;

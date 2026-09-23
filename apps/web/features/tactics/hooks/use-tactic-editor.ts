@@ -92,6 +92,43 @@ type Gesture =
       written: TacticElement[];
     };
 
+/**
+ * The elements a gesture expects its stage to hold right now: what a drag last wrote, or the stage
+ * as it was at the press for anything that writes nothing.
+ * @param gesture - The gesture still held down
+ * @returns The very array the stage should still hold
+ */
+function expectedElements(gesture: Gesture): TacticElement[] {
+  switch (gesture.kind) {
+    case "marquee":
+      return gesture.stage.elements;
+    case "move":
+      return gesture.written;
+    default:
+      return assertNever(gesture);
+  }
+}
+
+/**
+ * Whether something else changed the stage under a gesture: a Delete, an undo or a stage switch
+ * all still run while the button is held. Carrying on would write elements from before that edit
+ * back over it, or select ids read off a stage that is no longer open - tokens keep their id across
+ * a duplicated stage, so those ids can land on pieces the marquee never covered.
+ * @param gesture - The gesture still held down
+ * @returns True when the gesture has to be dropped
+ */
+function isStageChangedUnder(gesture: Gesture): boolean {
+  const state = useTacticEditorStore.getState();
+  const stage = state.scene?.stages.find(
+    (candidate) => candidate.id === gesture.stage.id
+  );
+
+  return (
+    state.activeStageId !== gesture.stage.id ||
+    stage?.elements !== expectedElements(gesture)
+  );
+}
+
 /** What the editor screen needs to render itself. */
 export interface TacticEditorScreen {
   /** Loading and error state of the tactic query */
@@ -100,7 +137,7 @@ export interface TacticEditorScreen {
   name: string;
   /** The stage being drawn on, null until the scene has loaded */
   activeStage: TacticStage | null;
-  /** The selected elements on the open stage, in drawing order — the action bar is drawn on them */
+  /** The selected elements on the open stage, in drawing order; the action bar is drawn on them */
   selectedElements: TacticElement[];
   /** The marquee being dragged out, or null when none is */
   marquee: MapRect | null;
@@ -379,6 +416,13 @@ export function useTacticEditor(
 
   const dragGesture = useCallback(
     (gesture: Gesture, point: MapPoint) => {
+      if (isStageChangedUnder(gesture)) {
+        gestureRef.current = null;
+        setMarquee(null);
+        setMovedElements(null);
+        return;
+      }
+
       const isPastThreshold =
         Math.hypot(point.x - gesture.origin.x, point.y - gesture.origin.y) >=
         DRAG_THRESHOLD;
@@ -396,22 +440,6 @@ export function useTacticEditor(
           const moved = gesture.written !== gesture.stage.elements;
 
           if (!moved && !isPastThreshold) return;
-
-          const state = useTacticEditorStore.getState();
-          const current = state.scene?.stages.find(
-            (stage) => stage.id === gesture.stage.id
-          );
-
-          // A Delete, an undo or a stage switch landed mid-drag: carrying on would write the
-          // elements from before it back over it.
-          if (
-            state.activeStageId !== gesture.stage.id ||
-            current?.elements !== gesture.written
-          ) {
-            gestureRef.current = null;
-            setMovedElements(null);
-            return;
-          }
 
           // Measured from the press on the stage as it was then, not added up move by move, so a
           // long drag cannot drift from the pointer.
@@ -497,6 +525,12 @@ export function useTacticEditor(
     gestureRef.current = null;
 
     if (!gesture) {
+      return;
+    }
+
+    if (isStageChangedUnder(gesture)) {
+      setMarquee(null);
+      setMovedElements(null);
       return;
     }
 
