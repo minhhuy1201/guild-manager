@@ -843,12 +843,11 @@ whatever the window, no chips, and the tall banner as its only headline.
 
 ### Feedback after a write → a toast
 
-One `<Toaster position="top-center" theme="light" />` lives in `components/providers.tsx`; a screen
+One `<Toaster position="top-center" />` lives in `components/providers.tsx`; a screen
 raises one through **`components/shared/toast.ts`** (`toastSuccess` / `toastError`), never by calling
 `sonner` directly. Top centre because on a phone a thumb covers the bottom half of the screen, which
-is exactly where the attendance buttons sit; `theme="light"` because nothing in the app sets the
-`.dark` class, and left on `"system"` sonner follows the operating system and drops a dark toast onto
-a light page.
+is exactly where the attendance buttons sit. It takes no `theme`: `components/ui/sonner.tsx` reads the
+active one from next-themes, so the toast matches the page in both themes.
 
 The two tones are the app's own: emerald for a success, `destructive` for a failure — the "Có" and
 "Không" marks again. Sonner takes a surface as three custom properties, so `toast.ts` sets them
