@@ -42,7 +42,7 @@ import {
   translateElements,
 } from "../lib/scene";
 import { useTacticEditorStore } from "../store/editor-store";
-import type { PointerModifiers } from "../types/tactic";
+import { PICKING_TOOLS, type PointerModifiers } from "../types/tactic";
 import { useSaveTactic } from "./use-save-tactic";
 import { useTactic } from "./use-tactic";
 
@@ -345,7 +345,7 @@ export function useTacticEditor(
       // A press that lands on something already drawn edits that thing instead of drawing again:
       // the select tool picks it up, and a token refuses to stack itself on the piece under the
       // pointer. Both work on a full stage, since neither adds anything.
-      if (tool === "select" || tool === "token") {
+      if (PICKING_TOOLS.has(tool)) {
         const hit = hitTest(activeStage, point);
 
         if (hit) {

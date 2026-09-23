@@ -88,8 +88,11 @@ export interface TacticStageViewProps {
   animating?: boolean;
   /** Width the canvas is rendered at, in CSS pixels */
   width: number;
-  /** Whether the viewer may change anything */
-  readOnly?: boolean;
+  /**
+   * Whether a press on a token picks it up, which earns the grab cursor. Off in the viewer, and in
+   * the editor for the tools that draw on top of a token instead
+   */
+  pickable?: boolean;
   /** Elements the action bar acts on: a token gets a thick ring, anything else a dashed box */
   selectedElementIds?: readonly string[];
   /** The marquee being dragged out, in map units, or null when none is */
@@ -127,7 +130,7 @@ export function TacticStageView({
   width,
   height,
   zoom = INITIAL_ZOOM,
-  readOnly = false,
+  pickable = true,
   selectedElementIds = NO_SELECTION,
   marquee = null,
   onPointerDown,
@@ -144,7 +147,7 @@ export function TacticStageView({
   const selected = new Set(selectedElementIds);
   // Picking up and dragging go through the editor's pointer handlers, not Konva's own drag, so one
   // mechanism moves a token, a stroke and a whole selection alike.
-  const movable = !readOnly && !animating;
+  const movable = pickable && !animating;
 
   useEffect(() => {
     const image = new window.Image();

@@ -166,7 +166,10 @@ Cách chạy:
   quân mà khung không hề phủ trên giai đoạn mới.
 - Bỏ luôn `onElementClick`: chọn phần tử đã đi hết qua `onPointerDown` (hit test), và một `click` của
   Konva đến sau `mouseup` sẽ ghi đè vùng chọn vừa được Shift+nhấn sửa.
-- Con trỏ `grab` khi hover token giữ nguyên cho admin.
+- Con trỏ `grab` khi hover token chỉ hiện khi nhấn vào token thật sự nhấc nó lên: công cụ Chọn và
+  Đội hình (`PICKING_TOOLS` trong `types/tactic.ts`, hook và canvas cùng đọc). Ở công cụ mũi tên, vẽ,
+  chữ, tẩy, nhấn vào token là vẽ đè lên nó, nên không có `grab`. Prop `readOnly` của
+  `TacticStageView` đổi thành `pickable` cho đúng nghĩa; viewer truyền `pickable={false}`.
 
 ### 6. Hình học: hộp bao đầy đủ
 

@@ -19,6 +19,7 @@ import { useLeaveGuard } from "../hooks/use-leave-guard";
 import { useTacticEditorStore } from "../store/editor-store";
 import { elementBounds, unionBounds } from "../lib/element-geometry";
 import { selectionPlacement } from "../lib/selection-anchor";
+import { PICKING_TOOLS } from "../types/tactic";
 import { ExportDialog } from "./export-dialog";
 import { LeaveDialog } from "./leave-dialog";
 import { MobileEditorNotice } from "./mobile-editor-notice";
@@ -225,6 +226,7 @@ export function TacticEditorScreen({
                       animating={animating}
                       width={width}
                       zoom={stageZoom.zoom}
+                      pickable={PICKING_TOOLS.has(tool)}
                       selectedElementIds={selectedElementIds}
                       marquee={editor.marquee}
                       onPointerDown={editor.onPointerDown}

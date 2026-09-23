@@ -223,6 +223,23 @@ describe("TacticEditorScreen", () => {
     );
   });
 
+  // A press on a token picks it up only with the select and token tools; the drawing tools draw on
+  // top of it, so the grab cursor would promise something the press does not do.
+  it("offers tokens to pick up only with a tool that picks them up", async () => {
+    renderScreen(true);
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Đội hình" })).toBeTruthy()
+    );
+    await waitFor(() => expect(canvasProps.current.pickable).toBe(true));
+
+    act(() => useTacticEditorStore.getState().setTool("arrow"));
+    await waitFor(() => expect(canvasProps.current.pickable).toBe(false));
+
+    act(() => useTacticEditorStore.getState().setTool("select"));
+    await waitFor(() => expect(canvasProps.current.pickable).toBe(true));
+  });
+
   it("takes the action bar away while the selection is being dragged", async () => {
     renderScreen(true);
 

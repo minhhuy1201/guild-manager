@@ -394,9 +394,9 @@ describe("TacticStageView", () => {
     expect(container.style.cursor).toBe("");
   });
 
-  it("offers no grab cursor on a canvas that cannot be written", () => {
+  it("offers no grab cursor when a press would not pick the token up", () => {
     const container = document.createElement("div");
-    render(<TacticStageView frame={staticFrame(stage)} width={960} readOnly />);
+    render(<TacticStageView frame={staticFrame(stage)} width={960} pickable={false} />);
 
     const group = (rendered.get("group") ?? []).at(-1) as unknown as {
       onMouseEnter: (event: unknown) => void;

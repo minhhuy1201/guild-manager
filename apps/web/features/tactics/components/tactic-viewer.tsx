@@ -118,7 +118,7 @@ export function TacticViewer({ stages }: TacticViewerProps) {
           animating={animating}
           width={width}
           zoom={stageZoom.zoom}
-          readOnly
+          pickable={false}
           onWheel={stageZoom.onWheel}
           onStageMouseDown={stageZoom.onPanStart}
         />
