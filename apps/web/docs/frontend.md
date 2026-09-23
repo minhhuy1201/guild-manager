@@ -376,17 +376,35 @@ System-wide, so screens look like one app. **Extend this section when you add a 
 ### Palette roles
 
 [`docs/design-direction.md`](../../../docs/design-direction.md) is the brief; the tokens live in
-`app/globals.css`. Every colour has one job:
+`app/globals.css`, once under `:root` (light, the default) and once under `.dark`. Every colour has
+one job, the same in both themes:
 
 | Token | Job |
 |---|---|
-| Warm neutrals (`--background`, `--card`, `--border`, `--muted-foreground` …) | Surfaces and text. One hue (85) for every grey - never mix in a cool one. |
+| Neutrals (`--background`, `--card`, `--border`, `--muted-foreground` …) | Surfaces and text. One hue per theme for every grey - warm 80-85 on light, navy 262 on dark - never mix the two within a theme. `--background` stays clearly darker than `--card` in both. |
 | `primary` (navy) | Primary actions, selected tabs, a battle's name (`SessionLabel`). |
 | `jade` | The accent: current page in the nav, focus ring (`--ring`), the guild seal, the page divider's diamond, hover edge of the session cards, and the fill of the header's login button - a visitor's one action. |
 | `gold` | Important highlights only: the formation banner's frame, the login ornament, the sheen crossing the header's login button on hover. Never a state. |
 | emerald / `destructive` / amber | Attendance state only: "Có" / "Không" / not answered yet. Never decoration. |
 
 Gold and amber stay apart by saturation: amber is a vivid state colour, gold a muted accent.
+
+### Themes → tokens only, switched by next-themes
+
+`ThemeProvider` (`components/providers.tsx`) puts `.dark` on `<html>`; light is the default and the
+operating system's preference is ignored. The pickers live in `components/shared/theme-menu.tsx`:
+`ThemeRadioItems` ("Giao diện": Sáng / Tối) inside the account menu, and `ThemeMenu`, a palette icon
+button in the header, for a signed-out visitor.
+
+- **A colour comes from a token**, so it follows the theme on its own. A literal colour is only for
+  something that must look the same in both: the scrims and white text on a picture, the attendance
+  state colours, a guild class's colour (`lib/guild-class.ts` mixes it against `--card`).
+- **A `dark:` variant is a last resort** - a token that fits both themes is the fix.
+- **The header and the phone's tab bar carry `className="dark"`** in both themes, which scopes the
+  dark tokens to their subtree (`.dark {}` and the `dark` variant match any ancestor, not only
+  `<html>`). They add `text-foreground` too: `color` inherits from the body as a resolved value, not
+  as the variable. Menus they open portal to `<body>` and follow the page's theme.
+- The toaster follows the theme through `useTheme()` (`components/ui/sonner.tsx`).
 
 **Team columns** (`features/team-builder/lib/team-colors.ts`) tint the same palette rather than
 bringing hues of their own: teams 1-5 jade, 6-7 the warm neutral, 8 navy, 9-10 gold. The header

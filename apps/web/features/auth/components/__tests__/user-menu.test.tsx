@@ -106,11 +106,15 @@ describe("UserMenu", () => {
     expect(screen.getByText("Đăng xuất")).toBeTruthy();
   });
 
-  it("không có tên thì menu chỉ còn Đăng xuất, không có hàng nhãn rỗng", async () => {
+  it("không có tên thì menu chỉ còn Giao diện và Đăng xuất, không có hàng nhãn rỗng", async () => {
     await openMenu(null);
 
     expect(screen.getByText("Đăng xuất")).toBeTruthy();
-    expect(document.querySelector("[data-slot='dropdown-menu-label']")).toBeNull();
+    // The theme group carries the only label left: no empty row where the name would be.
+    const labels = [
+      ...document.querySelectorAll("[data-slot='dropdown-menu-label']"),
+    ].map((label) => label.textContent);
+    expect(labels).toEqual(["Giao diện"]);
   });
 
   it("bấm Đăng xuất thì xoá phiên rồi mới chuyển về trang đăng nhập", async () => {

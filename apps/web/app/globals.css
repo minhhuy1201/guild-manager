@@ -91,36 +91,41 @@
     --color-destructive-foreground: var(--destructive-foreground);
 }
 
+/* Two themes, switched by next-themes (`components/providers.tsx`, `components/shared/theme-menu.tsx`):
+   light is the default, `.dark` is the night one. Both keep one rule: the plane is darker than the
+   card, far enough apart that a card reads as lifted without looking for its border. */
 :root {
-    /* A warm silk plane with near-white surfaces lifted off it by a thin border, not by shadow.
-       Every neutral shares one warm hue (85); only the navy primary and the two accents leave it.
-       Keep --background darker than --card, always. */
-    --background: oklch(0.968 0.006 85);
-    --foreground: oklch(0.255 0.012 70);
-    --card: oklch(0.995 0.002 85);
-    --card-foreground: oklch(0.255 0.012 70);
-    --popover: oklch(0.995 0.002 85);
-    --popover-foreground: oklch(0.255 0.012 70);
+    /* Light: a warm stone plane with near-white cards lifted off it by a visible border and a warm
+       shadow. Every neutral shares one warm hue (80-85); only the navy primary and the two accents
+       leave it. The header and the phone's tab bar are not here - they always wear `.dark`. */
+    --background: oklch(0.915 0.012 80);
+    --foreground: oklch(0.22 0.015 70);
+    --card: oklch(0.995 0.003 85);
+    --card-foreground: oklch(0.22 0.015 70);
+    --popover: oklch(0.995 0.003 85);
+    --popover-foreground: oklch(0.22 0.015 70);
     /* Navy stays the working colour: primary actions and every selected tab. */
-    --primary: oklch(0.34 0.085 268);
+    --primary: oklch(0.32 0.09 266);
     --primary-foreground: oklch(0.985 0.004 85);
-    --secondary: oklch(0.945 0.006 85);
-    --secondary-foreground: oklch(0.34 0.085 268);
-    --muted: oklch(0.945 0.006 85);
-    /* 0.5 keeps muted text above 4.5:1 on both the plane and the card. */
-    --muted-foreground: oklch(0.5 0.012 70);
-    --accent: oklch(0.945 0.006 85);
-    --accent-foreground: oklch(0.255 0.012 70);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.905 0.008 85);
-    --input: oklch(0.88 0.008 85);
+    /* Secondary leans navy, so a count badge or a secondary button reads as part of the working
+       colour instead of one more ivory box. */
+    --secondary: oklch(0.925 0.025 266);
+    --secondary-foreground: oklch(0.32 0.09 266);
+    --muted: oklch(0.93 0.01 85);
+    /* 0.46 keeps muted text above 4.5:1 on the darker plane as well as on the card. */
+    --muted-foreground: oklch(0.46 0.015 70);
+    --accent: oklch(0.94 0.009 85);
+    --accent-foreground: oklch(0.22 0.015 70);
+    --destructive: oklch(0.56 0.22 27);
+    --border: oklch(0.84 0.014 80);
+    --input: oklch(0.8 0.015 80);
     /* Jade is the accent: active navigation, the guild seal, section dividers, the focus ring.
        Gold marks the few important highlights and is never a state - amber is "not answered". */
-    --jade: oklch(0.54 0.075 170);
+    --jade: oklch(0.52 0.085 170);
     --jade-foreground: oklch(0.985 0.004 85);
-    --gold: oklch(0.7 0.085 80);
-    --gold-foreground: oklch(0.255 0.012 70);
-    --ring: oklch(0.54 0.075 170);
+    --gold: oklch(0.7 0.095 80);
+    --gold-foreground: oklch(0.22 0.015 70);
+    --ring: oklch(0.52 0.085 170);
     --chart-1: oklch(0.286 0.017 270.758);
     --chart-2: oklch(0.283 0.064 270.718);
     --chart-3: oklch(0.344 0.094 270.46);
@@ -141,84 +146,93 @@
     --font-sans: var(--font-be-vietnam-pro), ui-sans-serif, system-ui, sans-serif;
     --font-serif: var(--font-noto-serif), ui-serif, Georgia, serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    /* Shadows carry the plane's warm hue and stay faint: the border draws the edge. */
+    /* Shadows carry the plane's warm hue and are strong enough to see: with the border they draw
+       the edge of every card. */
     --shadow-color: #2a241c;
-    --shadow-opacity: 0.06;
+    --shadow-opacity: 0.1;
     --shadow-blur: 3px;
     --shadow-spread: 0px;
     --shadow-offset-x: 0;
     --shadow-offset-y: 1px;
     --letter-spacing: 0em;
     --spacing: 0.24rem;
-    --shadow-2xs: 0 1px 2px 0px hsl(35 20% 14% / 0.03);
-    --shadow-xs: 0 1px 2px 0px hsl(35 20% 14% / 0.04);
-    --shadow-sm: 0 1px 2px 0px hsl(35 20% 14% / 0.04);
-    --shadow: 0 1px 2px 0px hsl(35 20% 14% / 0.05), 0 2px 4px -1px hsl(35 20% 14% / 0.05);
-    --shadow-md: 0 1px 2px 0px hsl(35 20% 14% / 0.05), 0 4px 8px -2px hsl(35 20% 14% / 0.07);
-    --shadow-lg: 0 1px 2px 0px hsl(35 20% 14% / 0.05), 0 8px 16px -4px hsl(35 20% 14% / 0.08);
-    --shadow-xl: 0 1px 2px 0px hsl(35 20% 14% / 0.05), 0 16px 24px -8px hsl(35 20% 14% / 0.1);
-    --shadow-2xl: 0 24px 48px -12px hsl(35 20% 14% / 0.16);
+    --shadow-2xs: 0 1px 2px 0px hsl(35 25% 12% / 0.06);
+    --shadow-xs: 0 1px 2px 0px hsl(35 25% 12% / 0.08);
+    --shadow-sm: 0 1px 2px 0px hsl(35 25% 12% / 0.08), 0 2px 6px -1px hsl(35 25% 12% / 0.08);
+    --shadow: 0 1px 2px 0px hsl(35 25% 12% / 0.08), 0 3px 8px -2px hsl(35 25% 12% / 0.1);
+    --shadow-md: 0 1px 2px 0px hsl(35 25% 12% / 0.08), 0 6px 14px -4px hsl(35 25% 12% / 0.14);
+    --shadow-lg: 0 1px 2px 0px hsl(35 25% 12% / 0.08), 0 10px 22px -6px hsl(35 25% 12% / 0.16);
+    --shadow-xl: 0 1px 2px 0px hsl(35 25% 12% / 0.08), 0 18px 32px -10px hsl(35 25% 12% / 0.2);
+    --shadow-2xl: 0 24px 48px -12px hsl(35 25% 12% / 0.26);
     --tracking-normal: 0em;
+    /* Paper grain on the plane: fractal noise in dark ink, ~7% alpha. */
+    --plane-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.16 0 0 0 0 0.14 0 0 0 0 0.1 0.07 0 0 0 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 .dark {
-    /* Dark mode inverts the lift: the plane is the darker value, the card sits above it. */
-    --background: oklch(0.223 0.014 270.758);
-    --foreground: oklch(0.982 0.003 106.448);
-    --card: oklch(0.286 0.017 270.758);
-    --card-foreground: oklch(0.982 0.003 106.448);
-    --popover: oklch(0.286 0.017 270.758);
-    --popover-foreground: oklch(0.982 0.003 106.448);
-    --primary: oklch(0.982 0.003 106.448);
-    --primary-foreground: oklch(0.286 0.017 270.758);
-    --secondary: oklch(0.223 0.012 270.824);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.283 0.064 270.718);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.600 0.210 25.000);
-    --border: oklch(1 0 0 / 14%);
-    --input: oklch(1 0 0 / 18%);
-    --jade: oklch(0.72 0.08 170);
-    --jade-foreground: oklch(0.223 0.014 270.758);
-    --gold: oklch(0.78 0.085 80);
-    --gold-foreground: oklch(0.223 0.014 270.758);
-    --ring: oklch(0.72 0.08 170);
+    /* Dark, "night battle": an ink-navy plane with the card one step lighter above it. Every
+       neutral shares the navy hue (262), the text is warm ivory, and the accents are lifted so they
+       carry on the dark. Also worn by the header and the phone's tab bar in the light theme. */
+    --background: oklch(0.17 0.022 262);
+    --foreground: oklch(0.95 0.008 85);
+    --card: oklch(0.225 0.025 262);
+    --card-foreground: oklch(0.95 0.008 85);
+    --popover: oklch(0.25 0.027 262);
+    --popover-foreground: oklch(0.95 0.008 85);
+    /* Navy lit from within: still the working colour, light enough to stand on the navy plane. */
+    --primary: oklch(0.74 0.1 262);
+    --primary-foreground: oklch(0.17 0.022 262);
+    --secondary: oklch(0.3 0.045 262);
+    --secondary-foreground: oklch(0.88 0.05 262);
+    --muted: oklch(0.27 0.025 262);
+    --muted-foreground: oklch(0.72 0.02 262);
+    --accent: oklch(0.29 0.03 262);
+    --accent-foreground: oklch(0.95 0.008 85);
+    --destructive: oklch(0.64 0.2 25);
+    --border: oklch(0.34 0.03 262);
+    --input: oklch(0.38 0.03 262);
+    --jade: oklch(0.74 0.1 170);
+    --jade-foreground: oklch(0.17 0.022 262);
+    --gold: oklch(0.8 0.1 82);
+    --gold-foreground: oklch(0.17 0.022 262);
+    --ring: oklch(0.74 0.1 170);
     --chart-1: oklch(0.488 0.243 264.376);
     --chart-2: oklch(0.696 0.17 162.48);
     --chart-3: oklch(0.769 0.188 70.08);
     --chart-4: oklch(0.627 0.265 303.9);
     --chart-5: oklch(0.645 0.246 16.439);
-    --sidebar: oklch(0.286 0.017 270.758);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.439 0 0);
+    --sidebar: oklch(0.225 0.025 262);
+    --sidebar-foreground: oklch(0.95 0.008 85);
+    --sidebar-primary: oklch(0.74 0.1 262);
+    --sidebar-primary-foreground: oklch(0.17 0.022 262);
+    --sidebar-accent: oklch(0.29 0.03 262);
+    --sidebar-accent-foreground: oklch(0.95 0.008 85);
+    --sidebar-border: oklch(0.34 0.03 262);
+    --sidebar-ring: oklch(0.74 0.1 170);
     --destructive-foreground: oklch(0.9851 0 0);
     --radius: 0.375rem;
     --font-sans: var(--font-be-vietnam-pro), ui-sans-serif, system-ui, sans-serif;
     --font-serif: var(--font-noto-serif), ui-serif, Georgia, serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    --shadow-color: #000000;
-    --shadow-opacity: 0.05;
-    --shadow-blur: 2px;
+    /* Shadows sink into a deeper navy rather than grey, so they stay visible on the dark plane. */
+    --shadow-color: #05070d;
+    --shadow-opacity: 0.4;
+    --shadow-blur: 3px;
     --shadow-spread: 0px;
     --shadow-offset-x: 0;
     --shadow-offset-y: 1px;
     --letter-spacing: 0em;
     --spacing: 0.24rem;
-    --shadow-2xs: 0 1px 2px 0px hsl(0 0% 0% / 0.03);
-    --shadow-xs: 0 1px 2px 0px hsl(0 0% 0% / 0.03);
-    --shadow-sm: 0 1px 2px 0px hsl(0 0% 0% / 0.05), 0 1px 2px -1px hsl(0 0% 0% / 0.05);
-    --shadow: 0 1px 2px 0px hsl(0 0% 0% / 0.05), 0 1px 2px -1px hsl(0 0% 0% / 0.05);
-    --shadow-md: 0 1px 2px 0px hsl(0 0% 0% / 0.05), 0 2px 4px -1px hsl(0 0% 0% / 0.05);
-    --shadow-lg: 0 1px 2px 0px hsl(0 0% 0% / 0.05), 0 4px 6px -1px hsl(0 0% 0% / 0.05);
-    --shadow-xl: 0 1px 2px 0px hsl(0 0% 0% / 0.05), 0 8px 10px -1px hsl(0 0% 0% / 0.05);
-    --shadow-2xl: 0 1px 2px 0px hsl(0 0% 0% / 0.13);
+    --shadow-2xs: 0 1px 2px 0px hsl(228 45% 4% / 0.3);
+    --shadow-xs: 0 1px 2px 0px hsl(228 45% 4% / 0.35);
+    --shadow-sm: 0 1px 2px 0px hsl(228 45% 4% / 0.35), 0 2px 6px -1px hsl(228 45% 4% / 0.3);
+    --shadow: 0 1px 2px 0px hsl(228 45% 4% / 0.35), 0 3px 8px -2px hsl(228 45% 4% / 0.35);
+    --shadow-md: 0 1px 2px 0px hsl(228 45% 4% / 0.35), 0 6px 14px -4px hsl(228 45% 4% / 0.45);
+    --shadow-lg: 0 1px 2px 0px hsl(228 45% 4% / 0.35), 0 10px 22px -6px hsl(228 45% 4% / 0.5);
+    --shadow-xl: 0 1px 2px 0px hsl(228 45% 4% / 0.35), 0 18px 32px -10px hsl(228 45% 4% / 0.55);
+    --shadow-2xl: 0 24px 48px -12px hsl(228 45% 4% / 0.65);
+    /* The grain in light ink: dark ink would vanish into the navy plane. */
+    --plane-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.92 0 0 0 0 0.9 0 0 0 0 0.85 0.05 0 0 0 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 @layer base {
@@ -281,13 +295,14 @@
 
 @layer base {
   body {
-    /* The plane is not flat white: a jade and a gold glow at the top corners and a paper grain
-       (fractal noise, ~3% ink) under everything. Fixed, so the grain does not scroll with the page. */
+    /* The plane is not flat: a jade and a gold glow at the top corners and a paper grain under
+       everything, its ink set per theme (`--plane-grain`). Fixed, so the grain does not scroll
+       with the page. */
     background-color: var(--background);
     background-image:
-      radial-gradient(60rem 36rem at 0% -8%, color-mix(in oklab, var(--jade) 10%, transparent), transparent 70%),
-      radial-gradient(50rem 32rem at 100% -6%, color-mix(in oklab, var(--gold) 12%, transparent), transparent 70%),
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.16 0 0 0 0 0.14 0 0 0 0 0.1 0.07 0 0 0 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      radial-gradient(60rem 36rem at 0% -8%, color-mix(in oklab, var(--jade) 12%, transparent), transparent 70%),
+      radial-gradient(50rem 32rem at 100% -6%, color-mix(in oklab, var(--gold) 14%, transparent), transparent 70%),
+      var(--plane-grain);
     background-attachment: fixed;
   }
 
