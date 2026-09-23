@@ -127,10 +127,57 @@ describe("tactic editor store", () => {
 
   it("drops the selection when the tool changes", () => {
     useTacticEditorStore.getState().loadScene(scene());
-    useTacticEditorStore.getState().selectElement("t1");
+    useTacticEditorStore.getState().selectElements(["t1"]);
     useTacticEditorStore.getState().setTool("eraser");
 
-    expect(useTacticEditorStore.getState().selectedElementId).toBeNull();
+    expect(useTacticEditorStore.getState().selectedElementIds).toEqual([]);
+  });
+
+  it("replaces the selection, toggles one element in and out, and clears it", () => {
+    const store = useTacticEditorStore.getState();
+    store.selectElements(["t1", "t2"]);
+    expect(useTacticEditorStore.getState().selectedElementIds).toEqual(["t1", "t2"]);
+
+    store.toggleElementSelection("t3");
+    expect(useTacticEditorStore.getState().selectedElementIds).toEqual([
+      "t1",
+      "t2",
+      "t3",
+    ]);
+
+    store.toggleElementSelection("t1");
+    expect(useTacticEditorStore.getState().selectedElementIds).toEqual(["t2", "t3"]);
+
+    store.clearSelection();
+    expect(useTacticEditorStore.getState().selectedElementIds).toEqual([]);
+  });
+
+  it("drops the selection on undo and redo, whose elements may no longer be the selected ones", () => {
+    useTacticEditorStore.getState().loadScene(scene());
+    useTacticEditorStore.getState().commit("s1", [note]);
+    useTacticEditorStore.getState().selectElements(["t1"]);
+    useTacticEditorStore.getState().undo();
+    expect(useTacticEditorStore.getState().selectedElementIds).toEqual([]);
+
+    useTacticEditorStore.getState().selectElements(["t1"]);
+    useTacticEditorStore.getState().redo();
+    expect(useTacticEditorStore.getState().selectedElementIds).toEqual([]);
+  });
+
+  it("moves several elements in place without an undo step per pointer move", () => {
+    useTacticEditorStore.getState().loadScene(scene());
+    useTacticEditorStore.getState().commit("s1", [note]);
+    useTacticEditorStore
+      .getState()
+      .updateElements("s1", [{ ...note, x: 90 }, { ...note, id: "t2" }]);
+
+    const state = useTacticEditorStore.getState();
+    expect(state.scene?.stages[0].elements).toEqual([
+      { ...note, x: 90 },
+      { ...note, id: "t2" },
+    ]);
+    expect(state.history.past.s1).toHaveLength(1);
+    expect(state.dirty).toBe(true);
   });
 });
 
@@ -139,17 +186,28 @@ describe("tactic editor store — the rest of the session", () => {
     useTacticEditorStore.getState().reset();
   });
 
+  it("starts new tokens at the middle size, and goes back to it on reset", () => {
+    expect(useTacticEditorStore.getState().tokenSize).toBe("md");
+
+    useTacticEditorStore.getState().setTokenSize("sm");
+    useTacticEditorStore.getState().reset();
+
+    expect(useTacticEditorStore.getState().tokenSize).toBe("md");
+  });
+
   it("keeps the toolbar's own choices", () => {
     const store = useTacticEditorStore.getState();
     store.setTool("freehand");
     store.setColor("yellow");
     store.setStrokeWidth(14);
+    store.setTokenSize("lg");
     store.togglePalette();
 
     const state = useTacticEditorStore.getState();
     expect(state.tool).toBe("freehand");
     expect(state.color).toBe("yellow");
     expect(state.strokeWidth).toBe(14);
+    expect(state.tokenSize).toBe("lg");
     expect(state.paletteCollapsed).toBe(true);
 
     useTacticEditorStore.getState().togglePalette();
@@ -232,9 +290,9 @@ describe("tactic editor store — the rest of the session", () => {
 
   it("clears the selection when the stage changes", () => {
     useTacticEditorStore.getState().loadScene(scene());
-    useTacticEditorStore.getState().selectElement("t1");
+    useTacticEditorStore.getState().selectElements(["t1"]);
     useTacticEditorStore.getState().setActiveStage("s2");
 
-    expect(useTacticEditorStore.getState().selectedElementId).toBeNull();
+    expect(useTacticEditorStore.getState().selectedElementIds).toEqual([]);
   });
 });

@@ -98,6 +98,20 @@ export const TOKEN_RADIUS: Record<TacticTokenSize, number> = {
   lg: 46,
 };
 
+/** Full name of each token size, used as the accessible name of the action bar's size buttons. */
+export const TOKEN_SIZE_LABELS: Record<TacticTokenSize, string> = {
+  sm: "Cỡ nhỏ",
+  md: "Cỡ vừa",
+  lg: "Cỡ lớn",
+};
+
+/** What each size button shows; the word "Cỡ" is left to the label or to the group around it. */
+export const TOKEN_SIZE_TEXT: Record<TacticTokenSize, string> = {
+  sm: "Nhỏ",
+  md: "Vừa",
+  lg: "Lớn",
+};
+
 /** Hex each drawing colour renders as. The stored value stays the key. */
 export const COLOR_HEX: Record<TacticColor, string> = {
   blue: "#3b82f6",

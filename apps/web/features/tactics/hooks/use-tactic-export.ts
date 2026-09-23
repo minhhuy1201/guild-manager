@@ -70,7 +70,9 @@ export function useTacticExport(
 ): TacticExport {
   const [exporting, setExporting] = useState(false);
   const setActiveStage = useTacticEditorStore((store) => store.setActiveStage);
-  const selectElement = useTacticEditorStore((store) => store.selectElement);
+  const clearSelection = useTacticEditorStore(
+    (store) => store.clearSelection
+  );
 
   const exportActiveStage = useCallback(async () => {
     const activeStageId = useTacticEditorStore.getState().activeStageId;
@@ -82,7 +84,7 @@ export function useTacticExport(
 
     // The selection ring is how the editor points at something, not part of the drawing. The flag
     // does the same for the stage animation, which would otherwise be caught mid-move.
-    selectElement(null);
+    clearSelection();
     setExporting(true);
 
     try {
@@ -104,7 +106,7 @@ export function useTacticExport(
     } finally {
       setExporting(false);
     }
-  }, [selectElement, stageRef, stages, tacticName]);
+  }, [clearSelection, stageRef, stages, tacticName]);
 
   const exportAllStages = useCallback(async () => {
     const openStageId = useTacticEditorStore.getState().activeStageId;

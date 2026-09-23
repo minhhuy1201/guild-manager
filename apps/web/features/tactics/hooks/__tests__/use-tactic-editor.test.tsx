@@ -205,25 +205,25 @@ describe("useTacticEditor", () => {
       result.current.selectPaletteToken({ label: "Đội công", icon: "swords" })
     );
     act(() => result.current.onPointerDown({ x: 100, y: 100 }));
-
     const tokenId = elements()[0].id;
-    act(() => result.current.onTokenMoved(tokenId, 400, 500));
+
+    // Pressing a placed token picks it up; dragging it moves it by as far as the pointer went.
+    act(() => result.current.onPointerDown({ x: 100, y: 100 }));
+    act(() => result.current.onPointerMove({ x: 400, y: 500 }));
+    act(() => result.current.onPointerUp());
     expect(elements()[0]).toMatchObject({ x: 400, y: 500 });
 
-    act(() => result.current.onElementClick(tokenId));
     // The whole element, not just its size: the action bar is drawn where the element is.
-    expect(result.current.selectedElement).toMatchObject({
-      id: tokenId,
-      kind: "token",
-      size: "md",
-    });
+    expect(result.current.selectedElements).toEqual([
+      expect.objectContaining({ id: tokenId, kind: "token", size: "md" }),
+    ]);
 
-    act(() => result.current.onTokenSizeChange("lg"));
+    act(() => result.current.onSelectionTokenSizeChange("lg"));
     expect(elements()[0]).toMatchObject({ size: "lg" });
 
     act(() => result.current.onDeleteSelected());
     expect(elements()).toHaveLength(0);
-    expect(result.current.selectedElement).toBeNull();
+    expect(result.current.selectedElements).toEqual([]);
   });
 
   it("picks up the element under the pointer with the select tool", async () => {
@@ -234,13 +234,15 @@ describe("useTacticEditor", () => {
 
     act(() => useTacticEditorStore.getState().setTool("select"));
     act(() => result.current.onPointerDown({ x: 104, y: 98 }));
+    act(() => result.current.onPointerUp());
 
-    expect(useTacticEditorStore.getState().selectedElementId).toBe(tokenId);
+    expect(useTacticEditorStore.getState().selectedElementIds).toEqual([tokenId]);
     // Selecting draws nothing, so the stage still holds the one token.
     expect(elements()).toHaveLength(1);
 
     act(() => result.current.onPointerDown({ x: 900, y: 900 }));
-    expect(useTacticEditorStore.getState().selectedElementId).toBeNull();
+    act(() => result.current.onPointerUp());
+    expect(useTacticEditorStore.getState().selectedElementIds).toEqual([]);
   });
 
   // The complaint this answers: a click on a placed piece used to stack another one on top of it.
@@ -253,7 +255,7 @@ describe("useTacticEditor", () => {
     act(() => result.current.onPointerDown({ x: 100, y: 100 }));
 
     expect(elements()).toHaveLength(1);
-    expect(useTacticEditorStore.getState().selectedElementId).toBe(tokenId);
+    expect(useTacticEditorStore.getState().selectedElementIds).toEqual([tokenId]);
   });
 
   it("still starts an arrow on top of a token, so it can point away from one", async () => {
@@ -501,5 +503,268 @@ describe("useTacticEditor", () => {
     act(() => result.current.onStageReady(stage as never));
 
     expect(result.current.stageRef.current).toBe(stage);
+  });
+});
+
+/**
+ * Serve a one-stage tactic already holding these elements.
+ * @param stageElements - What the stage holds when the editor opens
+ */
+function openWith(stageElements: TacticElement[]): void {
+  const scene = makeScene(1);
+  scene.stages[0].elements = stageElements;
+  vi.mocked(fetchTactic).mockResolvedValue(makeTactic({ scene }));
+}
+
+/**
+ * A token standing at a point.
+ * @param id - Its id
+ * @param x - Where it stands along the x axis
+ * @param y - Where it stands along the y axis
+ * @returns The token
+ */
+function tokenAt(id: string, x: number, y: number): TacticElement {
+  return {
+    kind: "token",
+    id,
+    label: "Đội công",
+    icon: "swords",
+    x,
+    y,
+    size: "md",
+    color: "red",
+  };
+}
+
+/** How many undo steps the open stage holds. */
+function undoSteps(): number {
+  const state = useTacticEditorStore.getState();
+
+  return (state.history.past[state.activeStageId ?? ""] ?? []).length;
+}
+
+describe("useTacticEditor — token size", () => {
+  it("drops new tokens at the toolbar's size, without an undo step for picking it", async () => {
+    const { result } = await renderEditor();
+
+    act(() => result.current.onToolbarTokenSizeChange("sm"));
+    expect(useTacticEditorStore.getState().tokenSize).toBe("sm");
+    expect(undoSteps()).toBe(0);
+
+    act(() => result.current.onPointerDown({ x: 100, y: 100 }));
+    expect(elements()[0]).toMatchObject({ size: "sm" });
+  });
+
+  it("resizes the selected tokens from the toolbar in one undo step", async () => {
+    openWith([
+      tokenAt("a", 100, 100),
+      tokenAt("b", 300, 300),
+      { kind: "text", id: "n", x: 500, y: 500, text: "Tập kết", color: "red", fontSize: 28 },
+    ]);
+    const { result } = await renderEditor();
+    act(() => useTacticEditorStore.getState().selectElements(["a", "b", "n"]));
+
+    act(() => result.current.onToolbarTokenSizeChange("lg"));
+
+    expect(elements().map((element) => element.kind === "token" && element.size)).toEqual([
+      "lg",
+      "lg",
+      false,
+    ]);
+    expect(undoSteps()).toBe(1);
+    expect(useTacticEditorStore.getState().tokenSize).toBe("lg");
+  });
+});
+
+describe("useTacticEditor — marquee and group moves", () => {
+  beforeEach(() => {
+    openWith([
+      tokenAt("a", 100, 100),
+      tokenAt("b", 200, 200),
+      tokenAt("c", 800, 800),
+      { kind: "arrow", id: "r", points: [100, 300, 200, 300], color: "blue", strokeWidth: 4 },
+      { kind: "text", id: "n", x: 120, y: 400, text: "Cổng", color: "red", fontSize: 20 },
+    ]);
+  });
+
+  /**
+   * Open the editor on the select tool.
+   * @returns The render result
+   */
+  async function renderSelecting() {
+    const rendered = await renderEditor();
+    act(() => useTacticEditorStore.getState().setTool("select"));
+
+    return rendered;
+  }
+
+  it("selects every element whose whole box a marquee covers", async () => {
+    const { result } = await renderSelecting();
+
+    act(() => result.current.onPointerDown({ x: 300, y: 50 }));
+    act(() => result.current.onPointerMove({ x: 40, y: 330 }));
+    expect(result.current.marquee).toEqual({ left: 40, top: 50, right: 300, bottom: 330 });
+
+    act(() => result.current.onPointerUp());
+
+    expect(useTacticEditorStore.getState().selectedElementIds).toEqual(["a", "b", "r"]);
+    expect(result.current.marquee).toBeNull();
+  });
+
+  it("adds a Shift marquee to the selection instead of replacing it", async () => {
+    const { result } = await renderSelecting();
+    act(() => useTacticEditorStore.getState().selectElements(["c"]));
+
+    act(() => result.current.onPointerDown({ x: 40, y: 40 }, { shift: true }));
+    act(() => result.current.onPointerMove({ x: 160, y: 160 }));
+    act(() => result.current.onPointerUp());
+
+    expect(useTacticEditorStore.getState().selectedElementIds).toEqual(["c", "a"]);
+  });
+
+  it("ends a marquee released outside the canvas", async () => {
+    const { result } = await renderSelecting();
+
+    act(() => result.current.onPointerDown({ x: 40, y: 40 }));
+    act(() => result.current.onPointerMove({ x: 160, y: 160 }));
+    act(() => {
+      window.dispatchEvent(new MouseEvent("mouseup"));
+    });
+
+    expect(useTacticEditorStore.getState().selectedElementIds).toEqual(["a"]);
+    expect(result.current.marquee).toBeNull();
+  });
+
+  it("toggles one element in and out of the selection with Shift, moving nothing", async () => {
+    const { result } = await renderSelecting();
+    act(() => useTacticEditorStore.getState().selectElements(["a"]));
+
+    act(() => result.current.onPointerDown({ x: 200, y: 200 }, { shift: true }));
+    act(() => result.current.onPointerMove({ x: 400, y: 400 }));
+    act(() => result.current.onPointerUp());
+    expect(useTacticEditorStore.getState().selectedElementIds).toEqual(["a", "b"]);
+    expect(elements()[1]).toMatchObject({ x: 200, y: 200 });
+
+    act(() => result.current.onPointerDown({ x: 100, y: 100 }, { shift: true }));
+    act(() => result.current.onPointerUp());
+    expect(useTacticEditorStore.getState().selectedElementIds).toEqual(["b"]);
+  });
+
+  it("treats a press that barely moves as a click: no marquee and no undo step", async () => {
+    const { result } = await renderSelecting();
+
+    act(() => result.current.onPointerDown({ x: 100, y: 100 }));
+    act(() => result.current.onPointerMove({ x: 102, y: 101 }));
+    act(() => result.current.onPointerUp());
+    expect(elements()[0]).toMatchObject({ x: 100, y: 100 });
+
+    act(() => result.current.onPointerDown({ x: 600, y: 600 }));
+    act(() => result.current.onPointerMove({ x: 602, y: 601 }));
+    expect(result.current.marquee).toBeNull();
+    act(() => result.current.onPointerUp());
+
+    expect(undoSteps()).toBe(0);
+  });
+
+  it("moves the whole selection, every kind, as one undo step", async () => {
+    const { result } = await renderSelecting();
+    act(() => useTacticEditorStore.getState().selectElements(["a", "r", "n"]));
+
+    act(() => result.current.onPointerDown({ x: 100, y: 100 }));
+    act(() => result.current.onPointerMove({ x: 150, y: 120 }));
+    expect(result.current.isMoving).toBe(true);
+    act(() => result.current.onPointerMove({ x: 200, y: 140 }));
+    act(() => result.current.onPointerUp());
+
+    expect(result.current.isMoving).toBe(false);
+    expect(elements()[0]).toMatchObject({ x: 200, y: 140 });
+    expect(elements()[1]).toMatchObject({ x: 200, y: 200 });
+    expect(elements()[3]).toMatchObject({ points: [200, 340, 300, 340] });
+    expect(elements()[4]).toMatchObject({ x: 220, y: 440 });
+    expect(undoSteps()).toBe(1);
+
+    act(() => useTacticEditorStore.getState().undo());
+    expect(elements()[0]).toMatchObject({ x: 100, y: 100 });
+    expect(elements()[3]).toMatchObject({ points: [100, 300, 200, 300] });
+  });
+
+  it("drops a drag whose stage changed under it, instead of writing the deleted element back", async () => {
+    const { result } = await renderSelecting();
+
+    act(() => result.current.onPointerDown({ x: 100, y: 100 }));
+    act(() => result.current.onPointerMove({ x: 150, y: 150 }));
+    // Delete answers the keyboard even with the button still held.
+    act(() => result.current.onDeleteSelected());
+    expect(result.current.isMoving).toBe(false);
+
+    act(() => result.current.onPointerMove({ x: 200, y: 200 }));
+    act(() => result.current.onPointerUp());
+
+    expect(elements().map((element) => element.id)).toEqual(["b", "c", "r", "n"]);
+  });
+
+  it("drops a drag when the stage is switched mid-drag", async () => {
+    vi.mocked(fetchTactic).mockResolvedValue(
+      makeTactic({
+        scene: {
+          ...makeScene(2),
+          stages: [
+            { id: "s1", name: "Giai đoạn 1", elements: [tokenAt("a", 100, 100)] },
+            { id: "s2", name: "Giai đoạn 2", elements: [] },
+          ],
+        },
+      })
+    );
+    const { result } = await renderSelecting();
+
+    act(() => result.current.onPointerDown({ x: 100, y: 100 }));
+    act(() => result.current.onPointerMove({ x: 150, y: 150 }));
+    act(() => useTacticEditorStore.getState().setActiveStage("s2"));
+    act(() => result.current.onPointerMove({ x: 300, y: 300 }));
+
+    const first = useTacticEditorStore.getState().scene?.stages[0].elements[0];
+    expect(first).toMatchObject({ x: 150, y: 150 });
+  });
+
+  it("narrows a selection to the element clicked without a drag", async () => {
+    const { result } = await renderSelecting();
+    act(() => useTacticEditorStore.getState().selectElements(["a", "b"]));
+
+    act(() => result.current.onPointerDown({ x: 200, y: 200 }));
+    act(() => result.current.onPointerUp());
+
+    expect(useTacticEditorStore.getState().selectedElementIds).toEqual(["b"]);
+  });
+
+  it("deletes the whole selection as one undo step", async () => {
+    const { result } = await renderSelecting();
+    act(() => useTacticEditorStore.getState().selectElements(["a", "c", "n"]));
+
+    act(() => result.current.onDeleteSelected());
+
+    expect(elements().map((element) => element.id)).toEqual(["b", "r"]);
+    expect(useTacticEditorStore.getState().selectedElementIds).toEqual([]);
+    expect(undoSteps()).toBe(1);
+  });
+
+  it("draws no marquee with the token tool, where a press on empty map drops a token", async () => {
+    const { result } = await renderEditor();
+
+    act(() => result.current.onPointerDown({ x: 600, y: 600 }));
+    act(() => result.current.onPointerMove({ x: 700, y: 700 }));
+
+    expect(result.current.marquee).toBeNull();
+    expect(elements()).toHaveLength(6);
+  });
+
+  it("selects nothing for a member", async () => {
+    const { result } = await renderEditor(false);
+    act(() => useTacticEditorStore.getState().setTool("select"));
+
+    act(() => result.current.onPointerDown({ x: 40, y: 40 }));
+    act(() => result.current.onPointerMove({ x: 300, y: 300 }));
+    act(() => result.current.onPointerUp());
+
+    expect(useTacticEditorStore.getState().selectedElementIds).toEqual([]);
   });
 });

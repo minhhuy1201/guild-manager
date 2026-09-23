@@ -16,3 +16,9 @@ export const TOOL_LABELS: Record<TacticTool, string> = {
   text: "Chữ",
   eraser: "Tẩy",
 };
+
+/** Keys held while the pointer went down on the map. */
+export interface PointerModifiers {
+  /** Whether Shift was held, which adds to the selection instead of replacing it */
+  shift: boolean;
+}

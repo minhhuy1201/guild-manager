@@ -44,7 +44,7 @@ const stages: TacticStage[] = [
  * captured and whether anything was still selected.
  */
 function fakeStage() {
-  const selectedAtCapture: (string | null)[] = [];
+  const selectedAtCapture: (readonly string[])[] = [];
 
   return {
     selectedAtCapture,
@@ -53,7 +53,7 @@ function fakeStage() {
     y: () => -100,
     toDataURL: vi.fn(() => {
       const state = useTacticEditorStore.getState();
-      selectedAtCapture.push(state.selectedElementId);
+      selectedAtCapture.push(state.selectedElementIds);
 
       return `data:image/png;base64,${state.activeStageId}`;
     }),
@@ -98,7 +98,7 @@ describe("useTacticExport", () => {
     );
     act(() => {
       useTacticEditorStore.getState().loadScene({ schemaVersion: TACTIC_SCHEMA_VERSION, stages });
-      useTacticEditorStore.getState().selectElement("tok1");
+      useTacticEditorStore.getState().selectElements(["tok1"]);
     });
 
     await act(() => result.current.exportActiveStage());
@@ -106,7 +106,7 @@ describe("useTacticExport", () => {
     expect(stage.toDataURL).toHaveBeenCalledWith(
       mapExportRegion({ scale: 1.5, x: -200, y: -100 })
     );
-    expect(stage.selectedAtCapture).toEqual([null]);
+    expect(stage.selectedAtCapture).toEqual([[]]);
   });
 
   it("raises the export flag before it captures, so a running move is frozen out", async () => {

@@ -11,7 +11,6 @@ import {
   addStage,
   isStageFull,
   duplicateStage,
-  moveToken,
   removeElement,
   removeElements,
   removeStage,
@@ -62,13 +61,6 @@ describe("scene edits", () => {
     expect(removeElement(stage, "nope").elements).toHaveLength(1);
   });
 
-
-  it("moves a token to new coordinates, leaving the old object intact", () => {
-    const next = moveToken(stage, "tk1", 300, 400);
-
-    expect(next.elements[0]).toMatchObject({ x: 300, y: 400 });
-    expect(token.x).toBe(100);
-  });
 
   it("appends a stage with a generated name", () => {
     expect(addStage(sceneWithToken()).stages.at(-1)?.name).toBe("Giai đoạn 2");

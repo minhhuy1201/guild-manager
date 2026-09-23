@@ -62,30 +62,6 @@ export function removeElement(
 }
 
 /**
- * Move a token to new map coordinates.
- * @param stage - The stage the token stands on
- * @param tokenId - Id of the token
- * @param x - New x, in virtual map units
- * @param y - New y, in virtual map units
- * @returns A new stage with the token moved
- */
-export function moveToken(
-  stage: TacticStage,
-  tokenId: string,
-  x: number,
-  y: number
-): TacticStage {
-  return {
-    ...stage,
-    elements: stage.elements.map((element) =>
-      element.id === tokenId && element.kind === "token"
-        ? { ...element, x, y }
-        : element
-    ),
-  };
-}
-
-/**
  * Take every selected element off a stage in one edit.
  * @param stage - The stage to remove from
  * @param elementIds - Ids of the elements to remove
@@ -228,7 +204,7 @@ export function addStage(scene: TacticScene): TacticScene {
  *
  * A token keeps its id: that id is what pairs the same unit across two stages, which is how the
  * viewer animates a move instead of blinking the token from one place to the next. An id only has
- * to be unique inside one stage, and every edit (`moveToken`, `resizeToken`, `removeElement`, undo)
+ * to be unique inside one stage, and every edit (`translateElements`, `resizeTokens`, `removeElements`, undo)
  * already works on one stage at a time. The copy is still a new object, so the two stages share an
  * id and nothing else.
  *
