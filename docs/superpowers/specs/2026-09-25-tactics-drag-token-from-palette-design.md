@@ -75,7 +75,8 @@ web không chỉnh được độ mờ đó: dùng thử thì quân đang cầm 
   vì Firefox luôn báo toạ độ 0 cho sự kiện đó.
 - Hình giống quân sẽ được đặt: nền `TOKEN_FILL` và icon `COLOR_HEX` theo màu toolbar, viền
   `tokenBorderHex` (Đội 1-10 lấy màu nhóm), bán kính `TOKEN_RADIUS[tokenSize]` nhân với scale đang
-  hiển thị (`fitScale × zoom`). Thả trên map thì quân thật hiện ra đúng chỗ, đúng cỡ với hình vừa
+  hiển thị (`fitScale × zoom`). Cỡ icon và cỡ chữ số của Đội 1-10 lấy từ `tokenArtSize` trong
+  `lib/token-icon.ts`, hàm mà canvas cũng dùng, nên hai bên không thể vẽ cùng một quân với hai cỡ. Thả trên map thì quân thật hiện ra đúng chỗ, đúng cỡ với hình vừa
   cầm.
 - Hình chưa hiện cho tới `dragover` đầu tiên, vì trước đó chưa biết con trỏ ở đâu.
 

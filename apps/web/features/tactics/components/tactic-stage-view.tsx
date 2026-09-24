@@ -37,6 +37,7 @@ import {
   TOKEN_LABEL_FONT_SIZE,
   TOKEN_LABEL_GAP,
   TOKEN_RADIUS,
+  tokenArtSize,
   tokenBorderHex,
   tokenIcon,
 } from "../lib/token-icon";
@@ -56,9 +57,6 @@ const PRIMARY_MOUSE_BUTTON = 0;
 
 /** How much bigger an arrow's head is than its shaft. */
 const ARROW_HEAD_RATIO = 4;
-
-/** How tall a numbered token's digits are drawn, relative to the token's radius. */
-const DIGIT_FONT_RATIO = 1.15;
 
 /** How far a hovered token's halo reaches past its circle, as a multiple of the radius. */
 const HOVER_HALO_RATIO = 1.28;
@@ -523,7 +521,7 @@ function TokenArt({ icon, radius, color }: TokenArtProps) {
 
   switch (art.kind) {
     case "lucide": {
-      const iconScale = (radius * 1.1) / TOKEN_ICON_BOX;
+      const iconScale = tokenArtSize(icon, radius) / TOKEN_ICON_BOX;
 
       return (
         <>
@@ -546,7 +544,7 @@ function TokenArt({ icon, radius, color }: TokenArtProps) {
       );
     }
     case "digits": {
-      const fontSize = radius * DIGIT_FONT_RATIO;
+      const fontSize = tokenArtSize(icon, radius);
 
       return (
         <Text

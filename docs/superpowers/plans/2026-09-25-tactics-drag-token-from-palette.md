@@ -50,6 +50,8 @@ Nhánh: `feat/tactics-drag-token-from-sidebar`. Mỗi bước viết test trư�
   trỏ.
 - `tokenBorderHex` nhận `Pick<TacticToken, "icon" | "color">`, để hình xem trước dùng chung luật viền
   mà không phải dựng một quân giả.
+- `tokenArtSize(icon, radius)` trong `lib/token-icon.ts` gom tỉ lệ icon (1.1) và tỉ lệ chữ số (1.15)
+  đang nằm riêng trong `tactic-stage-view.tsx`; canvas và hình xem trước cùng gọi.
 - `TacticEditorScreen` dựng `PaletteDragPreview` khi `editor.draggedPaletteToken` khác null.
 - Test: `__tests__/palette-drag-preview.test.tsx`, cập nhật `token-palette.test.tsx`.
 

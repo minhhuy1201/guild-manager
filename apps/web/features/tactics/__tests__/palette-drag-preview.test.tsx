@@ -3,7 +3,13 @@ import { act, cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { PaletteDragPreview } from "../components/palette-drag-preview";
-import { COLOR_HEX, TEAM_GROUP_HEX, TOKEN_FILL, TOKEN_RADIUS } from "../lib/token-icon";
+import {
+  COLOR_HEX,
+  TEAM_GROUP_HEX,
+  TOKEN_FILL,
+  TOKEN_RADIUS,
+  tokenArtSize,
+} from "../lib/token-icon";
 
 afterEach(() => {
   cleanup();
@@ -75,6 +81,34 @@ describe("PaletteDragPreview", () => {
 
     dragOverAt(320, 240);
     expect(preview.style.left).toBe(`${320 - diameter / 2}px`);
+  });
+
+  it("draws the icon and a team's digits as large as the canvas does", () => {
+    const { rerender } = render(
+      <PaletteDragPreview
+        token={{ label: "Trinh sát", icon: "eye" }}
+        color="blue"
+        size="md"
+        scale={0.5}
+      />
+    );
+    dragOverAt(10, 10);
+
+    const preview = () => screen.getByTestId("palette-drag-preview");
+    expect(preview().style.fontSize).toBe(`${tokenArtSize("eye", TOKEN_RADIUS.md) * 0.5}px`);
+
+    rerender(
+      <PaletteDragPreview
+        token={{ label: "Đội 1", icon: "number-1" }}
+        color="blue"
+        size="md"
+        scale={0.5}
+      />
+    );
+    expect(preview().style.fontSize).toBe(
+      `${tokenArtSize("number-1", TOKEN_RADIUS.md) * 0.5}px`
+    );
+    expect(tokenArtSize("number-1", 10)).not.toBe(tokenArtSize("eye", 10));
   });
 
   it("borders a numbered team in its team builder colour, as on the map", () => {

@@ -9,15 +9,13 @@ import {
   COLOR_HEX,
   TOKEN_FILL,
   TOKEN_RADIUS,
+  tokenArtSize,
   tokenBorderHex,
 } from "../lib/token-icon";
 import { TokenGlyph } from "./token-glyph";
 
 /** Width of the ring, in map units - the canvas draws an unselected token's ring this wide. */
 const RING_WIDTH = 3;
-
-/** How much of the circle the icon spans, as on the canvas. */
-const ICON_RATIO = 0.55;
 
 interface PaletteDragPreviewProps {
   /** The palette entry being dragged */
@@ -66,7 +64,8 @@ export function PaletteDragPreview({
     return null;
   }
 
-  const diameter = TOKEN_RADIUS[size] * 2 * scale;
+  const radius = TOKEN_RADIUS[size] * scale;
+  const diameter = radius * 2;
 
   return (
     <div
@@ -82,7 +81,8 @@ export function PaletteDragPreview({
         borderColor: tokenBorderHex({ icon: token.icon, color }),
         backgroundColor: TOKEN_FILL[color],
         color: COLOR_HEX[color],
-        fontSize: diameter * ICON_RATIO,
+        // The glyph is sized in `em`, so one font size draws an icon and a team's digits alike.
+        fontSize: tokenArtSize(token.icon, radius),
       }}
     >
       <TokenGlyph
