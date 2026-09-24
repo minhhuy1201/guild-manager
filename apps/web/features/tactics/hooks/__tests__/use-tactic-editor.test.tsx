@@ -794,3 +794,102 @@ describe("useTacticEditor - marquee and group moves", () => {
     expect(useTacticEditorStore.getState().selectedElementIds).toEqual([]);
   });
 });
+
+describe("useTacticEditor - dragging a token out of the palette", () => {
+  const scout = { label: "Trinh sát", icon: "eye" as const };
+
+  it("drops the dragged token where it was let go, in one undo step", async () => {
+    const { result } = await renderEditor();
+    act(() => useTacticEditorStore.getState().setColor("red"));
+    act(() => result.current.onToolbarTokenSizeChange("lg"));
+
+    act(() => result.current.onPaletteDragStart(scout));
+    expect(result.current.isDraggingPaletteToken()).toBe(true);
+    expect(result.current.draggedPaletteToken).toEqual(scout);
+    act(() => result.current.onPaletteDrop({ x: 640, y: 320 }));
+    act(() => result.current.onPaletteDragEnd());
+
+    expect(elements()).toEqual([
+      expect.objectContaining({
+        kind: "token",
+        label: "Trinh sát",
+        icon: "eye",
+        x: 640,
+        y: 320,
+        color: "red",
+        size: "lg",
+      }),
+    ]);
+    expect(undoSteps()).toBe(1);
+    expect(result.current.isDraggingPaletteToken()).toBe(false);
+    expect(result.current.draggedPaletteToken).toBeNull();
+  });
+
+  it("arms the dropped token and the token tool, as a click on it in the palette would", async () => {
+    const { result } = await renderEditor();
+    act(() => useTacticEditorStore.getState().setTool("arrow"));
+
+    act(() => result.current.onPaletteDragStart(scout));
+    act(() => result.current.onPaletteDrop({ x: 100, y: 100 }));
+
+    expect(result.current.paletteToken).toEqual(scout);
+    expect(useTacticEditorStore.getState().tool).toBe("token");
+  });
+
+  it("drops a new token even onto one already standing there", async () => {
+    openWith([tokenAt("a", 100, 100)]);
+    const { result } = await renderEditor();
+
+    act(() => result.current.onPaletteDragStart(scout));
+    act(() => result.current.onPaletteDrop({ x: 100, y: 100 }));
+
+    expect(elements()).toHaveLength(2);
+    expect(elements()[1]).toMatchObject({ label: "Trinh sát", x: 100, y: 100 });
+  });
+
+  it("ignores a drop with no palette drag behind it - a file, or a drag from another tab", async () => {
+    const { result } = await renderEditor();
+
+    expect(result.current.isDraggingPaletteToken()).toBe(false);
+    act(() => result.current.onPaletteDrop({ x: 100, y: 100 }));
+
+    expect(elements()).toHaveLength(0);
+  });
+
+  it("forgets a drag cancelled without a drop", async () => {
+    const { result } = await renderEditor();
+
+    act(() => result.current.onPaletteDragStart(scout));
+    act(() => result.current.onPaletteDragEnd());
+    act(() => result.current.onPaletteDrop({ x: 100, y: 100 }));
+
+    expect(result.current.isDraggingPaletteToken()).toBe(false);
+    expect(elements()).toHaveLength(0);
+  });
+
+  it("refuses a drop onto a full stage and says so", async () => {
+    openWith(
+      Array.from({ length: TACTIC_LIMITS.elementsPerStage }, (_, index) =>
+        tokenAt(`tk${index}`, 10, 10)
+      )
+    );
+    const { result } = await renderEditor();
+
+    act(() => result.current.onPaletteDragStart(scout));
+    act(() => result.current.onPaletteDrop({ x: 500, y: 500 }));
+
+    expect(elements()).toHaveLength(TACTIC_LIMITS.elementsPerStage);
+    expect(toastError).toHaveBeenCalledWith(
+      expect.stringContaining("đã đủ 400 phần tử")
+    );
+  });
+
+  it("writes nothing for a member", async () => {
+    const { result } = await renderEditor(false);
+
+    act(() => result.current.onPaletteDragStart(scout));
+    act(() => result.current.onPaletteDrop({ x: 100, y: 100 }));
+
+    expect(elements()).toHaveLength(0);
+  });
+});

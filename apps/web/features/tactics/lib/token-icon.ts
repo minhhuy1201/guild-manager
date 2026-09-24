@@ -6,6 +6,7 @@ import {
   type TacticTokenIcon,
   type TacticTokenSize,
 } from "@guild/shared/enums";
+import { assertNever } from "@guild/shared/lib";
 import type { TacticToken } from "@guild/shared/schemas";
 import {
   Anchor,
@@ -85,13 +86,13 @@ export function tokenIcon(key: TacticTokenIcon): TokenIconArt {
       };
 }
 
-/** Token circle radius per size, in virtual map units. */
 /** Gap between a token's circle and the label under it, in virtual map units. */
 export const TOKEN_LABEL_GAP = 6;
 
 /** Font size of a token's label, in virtual map units. */
 export const TOKEN_LABEL_FONT_SIZE = 22;
 
+/** Token circle radius per size, in virtual map units. */
 export const TOKEN_RADIUS: Record<TacticTokenSize, number> = {
   sm: 22,
   md: 32,
@@ -138,15 +139,44 @@ export const TEAM_GROUP_HEX: Record<TeamColorGroup, string> = {
  * numbered team wears its team builder group, so "Đội 3" reads as the same team on both screens; any
  * other token wears the colour it was drawn in. Resolved on every render rather than stored, so
  * drawings saved before this rule pick it up and regrouping a team recolours the map too.
- * @param token - The token being drawn
+ * @param token - The token being drawn, or the one a palette drag is about to drop
  * @returns The hex to draw its ring in
  */
-export function tokenBorderHex(token: TacticToken): string {
+export function tokenBorderHex(
+  token: Pick<TacticToken, "icon" | "color">
+): string {
   const group = isNumberIcon(token.icon)
     ? teamColorGroup(Number(numberIconDigits(token.icon)))
     : null;
 
   return group ? TEAM_GROUP_HEX[group] : COLOR_HEX[token.color];
+}
+
+/** How wide a token's icon is drawn, relative to the token's radius. */
+const TOKEN_ICON_RATIO = 1.1;
+
+/** How tall a numbered token's digits are drawn, relative to the token's radius. */
+const TOKEN_DIGIT_FONT_RATIO = 1.15;
+
+/**
+ * How big the art inside a token's circle is drawn: the width of a lucide icon, or the font size of
+ * a numbered team's digits. One place for both, so the canvas and the palette drag preview cannot
+ * draw the same token at two sizes.
+ * @param icon - Icon key the token carries
+ * @param radius - Radius of the token's circle, in whatever unit the caller draws in
+ * @returns The art's size, in that same unit
+ */
+export function tokenArtSize(icon: TacticTokenIcon, radius: number): number {
+  const art = tokenIcon(icon);
+
+  switch (art.kind) {
+    case "lucide":
+      return radius * TOKEN_ICON_RATIO;
+    case "digits":
+      return radius * TOKEN_DIGIT_FONT_RATIO;
+    default:
+      return assertNever(art);
+  }
 }
 
 /** Vietnamese name of each drawing colour, for the toolbar's accessible labels. */

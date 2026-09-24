@@ -159,6 +159,16 @@ export interface TacticEditorScreen {
   cancelText: () => void;
   /** Pick a palette entry */
   selectPaletteToken: (token: BuiltInToken) => void;
+  /** A palette entry started being dragged out of the palette */
+  onPaletteDragStart: (token: BuiltInToken) => void;
+  /** That drag ended, dropped or cancelled */
+  onPaletteDragEnd: () => void;
+  /** Palette entry being dragged towards the map, drawn under the pointer; null when none is */
+  draggedPaletteToken: BuiltInToken | null;
+  /** Whether a palette entry is being dragged, so the map may accept the drop */
+  isDraggingPaletteToken: () => boolean;
+  /** The dragged palette entry was let go over the map, at this point */
+  onPaletteDrop: (point: MapPoint) => void;
   /** Pointer went down on the map, with the keys held; none when left out */
   onPointerDown: (point: MapPoint, modifiers?: PointerModifiers) => void;
   /** Pointer moved over the map */
@@ -201,6 +211,10 @@ export function useTacticEditor(
     DEFAULT_PALETTE_TOKEN
   );
   const gestureRef = useRef<Gesture | null>(null);
+  // State, not a ref: the editor draws the dragged entry itself, since the browser's own drag image
+  // is too faded to see. Drag events are discrete, so React commits it before the next one lands.
+  const [draggedPaletteToken, setDraggedPaletteToken] =
+    useState<BuiltInToken | null>(null);
   const [marquee, setMarquee] = useState<MapRect | null>(null);
   // What the running drag last wrote, or null: a drag counts as running only while the open stage
   // still holds exactly that, so a Delete or an undo mid-drag gives the action bar back at once.
@@ -233,6 +247,7 @@ export function useTacticEditor(
   );
   const clearSelection = useTacticEditorStore((store) => store.clearSelection);
   const setTokenSize = useTacticEditorStore((store) => store.setTokenSize);
+  const setTool = useTacticEditorStore((store) => store.setTool);
   const updateDrawing = useTacticEditorStore((store) => store.updateDrawing);
   const updateElements = useTacticEditorStore((store) => store.updateElements);
   const markSaved = useTacticEditorStore((store) => store.markSaved);
@@ -276,6 +291,38 @@ export function useTacticEditor(
       if (activeStageId) commit(activeStageId, elements);
     },
     [activeStageId, commit]
+  );
+
+  /**
+   * Refuse to add to a stage that holds as many elements as a stage may, saying so.
+   * @param stage - The stage about to receive an element
+   * @returns True when the stage is full and nothing may be added
+   */
+  const refuseFullStage = useCallback((stage: TacticStage): boolean => {
+    if (!isStageFull(stage)) {
+      return false;
+    }
+
+    toastError(
+      `Giai đoạn này đã đủ ${TACTIC_LIMITS.elementsPerStage} phần tử. Xoá bớt hoặc thêm giai đoạn mới.`
+    );
+    return true;
+  }, []);
+
+  /**
+   * Stand a palette entry on the stage at the toolbar's colour and size, as one undo step. Room on
+   * the stage is the caller's to check.
+   * @param stage - The open stage
+   * @param token - The palette entry to place
+   * @param point - Where it stands, in map units
+   */
+  const placeToken = useCallback(
+    (stage: TacticStage, token: BuiltInToken, point: MapPoint) => {
+      commitElements(
+        addElement(stage, createToken(token, point, color, tokenSize)).elements
+      );
+    },
+    [color, tokenSize, commitElements]
   );
 
   /**
@@ -363,24 +410,15 @@ export function useTacticEditor(
       }
 
       // Erasing is the one tool that still works on a full stage — it is how the admin makes room.
-      if (tool !== "eraser" && isStageFull(activeStage)) {
-        toastError(
-          `Giai đoạn này đã đủ ${TACTIC_LIMITS.elementsPerStage} phần tử. Xoá bớt hoặc thêm giai đoạn mới.`
-        );
+      if (tool !== "eraser" && refuseFullStage(activeStage)) {
         return;
       }
 
       // `select` returned above, so it is not one of the cases left here.
       switch (tool) {
-        case "token": {
-          commitElements(
-            addElement(
-              activeStage,
-              createToken(paletteToken, point, color, tokenSize)
-            ).elements
-          );
+        case "token":
+          placeToken(activeStage, paletteToken, point);
           return;
-        }
         case "arrow":
           drawingRef.current = createArrow(point, color, strokeWidth);
           commitElements([...activeStage.elements, drawingRef.current]);
@@ -408,8 +446,9 @@ export function useTacticEditor(
       paletteToken,
       color,
       strokeWidth,
-      tokenSize,
       commitElements,
+      refuseFullStage,
+      placeToken,
       pressElement,
       startMarquee,
     ]
@@ -518,6 +557,40 @@ export function useTacticEditor(
   );
 
   const cancelText = useCallback(() => setPendingTextPoint(null), []);
+
+  const onPaletteDragEnd = useCallback(() => setDraggedPaletteToken(null), []);
+
+  const isDraggingPaletteToken = useCallback(
+    () => draggedPaletteToken !== null,
+    [draggedPaletteToken]
+  );
+
+  const onPaletteDrop = useCallback(
+    (point: MapPoint) => {
+      const token = draggedPaletteToken;
+      setDraggedPaletteToken(null);
+
+      if (!token || !isAdmin || !activeStage) {
+        return;
+      }
+
+      // Dropping an entry says the same as clicking it in the palette, so the palette shows what
+      // the next click on the map drops. Unlike a click, a drop never picks up what is under it:
+      // dragging a piece out of the palette can only mean adding one.
+      setPaletteToken(token);
+      setTool("token");
+      if (refuseFullStage(activeStage)) return;
+      placeToken(activeStage, token, point);
+    },
+    [
+      draggedPaletteToken,
+      isAdmin,
+      activeStage,
+      setTool,
+      refuseFullStage,
+      placeToken,
+    ]
+  );
 
   const onPointerUp = useCallback(() => {
     drawingRef.current = null;
@@ -672,6 +745,11 @@ export function useTacticEditor(
     saving: saveTactic.isPending,
     paletteToken,
     selectPaletteToken: setPaletteToken,
+    draggedPaletteToken,
+    onPaletteDragStart: setDraggedPaletteToken,
+    onPaletteDragEnd,
+    isDraggingPaletteToken,
+    onPaletteDrop,
     pendingTextPoint,
     confirmText,
     cancelText,

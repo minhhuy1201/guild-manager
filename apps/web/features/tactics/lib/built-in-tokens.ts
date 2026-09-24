@@ -3,6 +3,13 @@ import {
   type TacticTokenIcon,
 } from "@guild/shared/enums";
 
+/**
+ * The `dataTransfer` type a palette entry is dragged under, so the map can tell it from a file or
+ * a piece of text dragged in from elsewhere. Which entry it is stays with the editor: the payload
+ * is never read back, so nothing from outside the page is trusted.
+ */
+export const TOKEN_DRAG_TYPE = "application/x-guild-tactic-token";
+
 /** A token the palette always offers, independent of what an admin saved. */
 export interface BuiltInToken {
   /** Label the token carries onto the map */

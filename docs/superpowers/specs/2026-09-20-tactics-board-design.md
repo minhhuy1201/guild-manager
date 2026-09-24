@@ -336,6 +336,11 @@ Konva:
 > được, toolbar có nhóm cỡ quân cờ, và quân Đội 1-10 có viền theo màu nhóm ở `/xep-team`. Xem
 > [`2026-09-23-tactics-token-size-team-border-marquee-design.md`](2026-09-23-tactics-token-size-team-border-marquee-design.md).
 
+> **Cập nhật 2026-09-25:** ngoài bấm ô rồi bấm map, quân cờ còn đặt được bằng cách kéo thẳng một ô
+> trong bảng quân cờ ra map (drag and drop gốc của trình duyệt); thả luôn đặt quân mới, kể cả lên
+> phần tử có sẵn. Xem
+> [`2026-09-25-tactics-drag-token-from-palette-design.md`](2026-09-25-tactics-drag-token-from-palette-design.md).
+
 Undo/redo:
 
 - Ngăn riêng cho **từng giai đoạn**, mỗi ngăn tối đa 50 bước. Đổi giai đoạn không xáo trộn lịch sử

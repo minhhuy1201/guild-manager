@@ -19,10 +19,12 @@ import { useLeaveGuard } from "../hooks/use-leave-guard";
 import { useTacticEditorStore } from "../store/editor-store";
 import { elementBounds, unionBounds } from "../lib/element-geometry";
 import { selectionPlacement } from "../lib/selection-anchor";
+import { canvasToMapPoint } from "../lib/stage-scale";
 import { PICKING_TOOLS } from "../types/tactic";
 import { ExportDialog } from "./export-dialog";
 import { LeaveDialog } from "./leave-dialog";
 import { MobileEditorNotice } from "./mobile-editor-notice";
+import { PaletteDragPreview } from "./palette-drag-preview";
 import { EditorToolbar } from "./editor-toolbar";
 import { StageBar } from "./stage-bar";
 import { StagePlaybackControls } from "./stage-playback-controls";
@@ -206,10 +208,32 @@ export function TacticEditorScreen({
                   setTool("token");
                 }}
                 onManagePresets={() => setPresetsOpen(true)}
+                onDragStart={editor.onPaletteDragStart}
+                onDragEnd={editor.onPaletteDragEnd}
               />
 
               <div
                 ref={ref}
+                // A palette entry lands here through the browser's own drag and drop, which the
+                // Konva stage never hears about - so the drop is caught on the box around it.
+                onDragOver={(event) => {
+                  if (!editor.isDraggingPaletteToken()) return;
+
+                  event.preventDefault();
+                  event.dataTransfer.dropEffect = "copy";
+                }}
+                onDrop={(event) => {
+                  event.preventDefault();
+
+                  const box = event.currentTarget.getBoundingClientRect();
+                  editor.onPaletteDrop(
+                    canvasToMapPoint(
+                      { x: event.clientX - box.left, y: event.clientY - box.top },
+                      stageZoom.zoom,
+                      stageZoom.viewport.fitScale
+                    )
+                  );
+                }}
                 style={CANVAS_GRID_STYLE}
                 className={cn(
                   "relative min-w-0 flex-1 overflow-hidden bg-muted/30",
@@ -263,6 +287,15 @@ export function TacticEditorScreen({
 
         </div>
       </QueryBoundary>
+
+      {editor.draggedPaletteToken ? (
+        <PaletteDragPreview
+          token={editor.draggedPaletteToken}
+          color={color}
+          size={tokenSize}
+          scale={stageZoom.viewport.fitScale * stageZoom.zoom.zoom}
+        />
+      ) : null}
 
       <TextNoteDialog
         open={editor.pendingTextPoint !== null}

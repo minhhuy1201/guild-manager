@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import {
   INSIGNIA_TOKENS,
   TEAM_TOKENS,
+  TOKEN_DRAG_TYPE,
   TOKEN_GROUP_LABELS,
   type BuiltInToken,
   type TokenGroup,
@@ -29,6 +30,19 @@ const GROUP_STYLES: Record<TokenGroup, { box: string; hue: string }> = {
   team: { box: "border-primary/25 bg-primary/8", hue: "var(--primary)" },
   custom: { box: "border-jade/35 bg-jade/10", hue: "var(--jade)" },
 };
+
+/**
+ * The drag image a palette entry is dragged with: one transparent pixel, so the browser draws
+ * nothing and the editor's solid preview is all that follows the pointer. Made once, up front, in
+ * the browser only: an image still loading when the drag starts falls back to the faded default.
+ */
+const EMPTY_DRAG_IMAGE: HTMLImageElement | null =
+  typeof window === "undefined" ? null : new window.Image();
+
+if (EMPTY_DRAG_IMAGE) {
+  EMPTY_DRAG_IMAGE.src =
+    "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+}
 
 /**
  * A heading in its group's hue, pulled towards the page's text colour so it stays readable on both
@@ -50,12 +64,17 @@ interface TokenPaletteProps {
   onToggle: () => void;
   onSelect: (token: BuiltInToken) => void;
   onManagePresets: () => void;
+  /** An entry started being dragged towards the map */
+  onDragStart: (token: BuiltInToken) => void;
+  /** That drag ended, dropped or cancelled */
+  onDragEnd: () => void;
 }
 
 /**
  * The token palette, in three groups: the named roles ("Quân hiệu"), the ten numbered teams
  * ("Đội"), and whatever an admin saved ("Custom").
- * Picking an entry arms the token tool; the next click on the map drops it there.
+ * Picking an entry arms the token tool; the next click on the map drops it there. Dragging an entry
+ * onto the map drops it where it is let go, in one move.
  *
  * Entries show their icon alone and carry the name as a tooltip plus `sr-only` text: the column
  * stays narrow next to the map, and every entry is still reachable by name.
@@ -71,6 +90,8 @@ export function TokenPalette({
   onToggle,
   onSelect,
   onManagePresets,
+  onDragStart,
+  onDragEnd,
 }: TokenPaletteProps) {
   const presets = useTokenPresets();
   const customTokens: BuiltInToken[] = (presets.data ?? []).map((preset) => ({
@@ -173,6 +194,24 @@ export function TokenPalette({
                               aria-pressed={selected?.label === token.label}
                               className="size-9 max-sm:size-9 transition-colors hover:bg-primary/15 hover:text-primary"
                               onClick={() => onSelect(token)}
+                              draggable
+                              onDragStart={(event) => {
+                                // Firefox starts no drag with an empty payload.
+                                event.dataTransfer.setData(
+                                  TOKEN_DRAG_TYPE,
+                                  token.label
+                                );
+                                event.dataTransfer.effectAllowed = "copy";
+                                if (EMPTY_DRAG_IMAGE) {
+                                  event.dataTransfer.setDragImage(
+                                    EMPTY_DRAG_IMAGE,
+                                    0,
+                                    0
+                                  );
+                                }
+                                onDragStart(token);
+                              }}
+                              onDragEnd={onDragEnd}
                             />
                           }
                         >
