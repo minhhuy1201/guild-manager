@@ -805,6 +805,7 @@ describe("useTacticEditor - dragging a token out of the palette", () => {
 
     act(() => result.current.onPaletteDragStart(scout));
     expect(result.current.isDraggingPaletteToken()).toBe(true);
+    expect(result.current.draggedPaletteToken).toEqual(scout);
     act(() => result.current.onPaletteDrop({ x: 640, y: 320 }));
     act(() => result.current.onPaletteDragEnd());
 
@@ -821,6 +822,7 @@ describe("useTacticEditor - dragging a token out of the palette", () => {
     ]);
     expect(undoSteps()).toBe(1);
     expect(result.current.isDraggingPaletteToken()).toBe(false);
+    expect(result.current.draggedPaletteToken).toBeNull();
   });
 
   it("arms the dropped token and the token tool, as a click on it in the palette would", async () => {

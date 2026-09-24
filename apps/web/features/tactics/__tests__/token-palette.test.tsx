@@ -117,7 +117,8 @@ describe("TokenPalette", () => {
     renderPalette();
     const entry = screen.getByRole("button", { name: "Đội cảm tử" });
     const setData = vi.fn();
-    const dataTransfer = { setData, effectAllowed: "all" };
+    const setDragImage = vi.fn();
+    const dataTransfer = { setData, setDragImage, effectAllowed: "all" };
 
     expect(entry.getAttribute("draggable")).toBe("true");
     fireEvent.dragStart(entry, { dataTransfer });
@@ -129,6 +130,8 @@ describe("TokenPalette", () => {
     });
     expect(setData).toHaveBeenCalledWith(TOKEN_DRAG_TYPE, "Đội cảm tử");
     expect(dataTransfer.effectAllowed).toBe("copy");
+    // The browser's own drag image is always faded; the editor draws a solid one instead.
+    expect(setDragImage).toHaveBeenCalledWith(expect.any(HTMLImageElement), 0, 0);
     expect(handlers.onDragEnd).toHaveBeenCalled();
   });
 

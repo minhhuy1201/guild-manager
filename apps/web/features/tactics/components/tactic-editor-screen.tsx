@@ -24,6 +24,7 @@ import { PICKING_TOOLS } from "../types/tactic";
 import { ExportDialog } from "./export-dialog";
 import { LeaveDialog } from "./leave-dialog";
 import { MobileEditorNotice } from "./mobile-editor-notice";
+import { PaletteDragPreview } from "./palette-drag-preview";
 import { EditorToolbar } from "./editor-toolbar";
 import { StageBar } from "./stage-bar";
 import { StagePlaybackControls } from "./stage-playback-controls";
@@ -286,6 +287,15 @@ export function TacticEditorScreen({
 
         </div>
       </QueryBoundary>
+
+      {editor.draggedPaletteToken ? (
+        <PaletteDragPreview
+          token={editor.draggedPaletteToken}
+          color={color}
+          size={tokenSize}
+          scale={stageZoom.viewport.fitScale * stageZoom.zoom.zoom}
+        />
+      ) : null}
 
       <TextNoteDialog
         open={editor.pendingTextPoint !== null}

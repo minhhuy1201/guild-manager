@@ -163,6 +163,8 @@ export interface TacticEditorScreen {
   onPaletteDragStart: (token: BuiltInToken) => void;
   /** That drag ended, dropped or cancelled */
   onPaletteDragEnd: () => void;
+  /** Palette entry being dragged towards the map, drawn under the pointer; null when none is */
+  draggedPaletteToken: BuiltInToken | null;
   /** Whether a palette entry is being dragged, so the map may accept the drop */
   isDraggingPaletteToken: () => boolean;
   /** The dragged palette entry was let go over the map, at this point */
@@ -209,9 +211,10 @@ export function useTacticEditor(
     DEFAULT_PALETTE_TOKEN
   );
   const gestureRef = useRef<Gesture | null>(null);
-  // A ref, not state: nothing on screen changes while an entry is dragged - the browser draws the
-  // drag itself - and the drop is read in the same event loop turn as the last dragover.
-  const draggedTokenRef = useRef<BuiltInToken | null>(null);
+  // State, not a ref: the editor draws the dragged entry itself, since the browser's own drag image
+  // is too faded to see. Drag events are discrete, so React commits it before the next one lands.
+  const [draggedPaletteToken, setDraggedPaletteToken] =
+    useState<BuiltInToken | null>(null);
   const [marquee, setMarquee] = useState<MapRect | null>(null);
   // What the running drag last wrote, or null: a drag counts as running only while the open stage
   // still holds exactly that, so a Delete or an undo mid-drag gives the action bar back at once.
@@ -555,23 +558,17 @@ export function useTacticEditor(
 
   const cancelText = useCallback(() => setPendingTextPoint(null), []);
 
-  const onPaletteDragStart = useCallback((token: BuiltInToken) => {
-    draggedTokenRef.current = token;
-  }, []);
-
-  const onPaletteDragEnd = useCallback(() => {
-    draggedTokenRef.current = null;
-  }, []);
+  const onPaletteDragEnd = useCallback(() => setDraggedPaletteToken(null), []);
 
   const isDraggingPaletteToken = useCallback(
-    () => draggedTokenRef.current !== null,
-    []
+    () => draggedPaletteToken !== null,
+    [draggedPaletteToken]
   );
 
   const onPaletteDrop = useCallback(
     (point: MapPoint) => {
-      const token = draggedTokenRef.current;
-      draggedTokenRef.current = null;
+      const token = draggedPaletteToken;
+      setDraggedPaletteToken(null);
 
       if (!token || !isAdmin || !activeStage) {
         return;
@@ -585,7 +582,14 @@ export function useTacticEditor(
       if (refuseFullStage(activeStage)) return;
       placeToken(activeStage, token, point);
     },
-    [isAdmin, activeStage, setTool, refuseFullStage, placeToken]
+    [
+      draggedPaletteToken,
+      isAdmin,
+      activeStage,
+      setTool,
+      refuseFullStage,
+      placeToken,
+    ]
   );
 
   const onPointerUp = useCallback(() => {
@@ -741,7 +745,8 @@ export function useTacticEditor(
     saving: saveTactic.isPending,
     paletteToken,
     selectPaletteToken: setPaletteToken,
-    onPaletteDragStart,
+    draggedPaletteToken,
+    onPaletteDragStart: setDraggedPaletteToken,
     onPaletteDragEnd,
     isDraggingPaletteToken,
     onPaletteDrop,

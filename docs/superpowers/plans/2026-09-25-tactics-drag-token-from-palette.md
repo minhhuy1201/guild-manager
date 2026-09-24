@@ -40,7 +40,20 @@ Nhánh: `feat/tactics-drag-token-from-sidebar`. Mỗi bước viết test trư�
 - Nối `onDragStart/onDragEnd` của bảng vào editor.
 - Test: `__tests__/tactic-editor-screen.test.tsx`.
 
-## 5. Tài liệu và kiểm
+## 5. Quân đang kéo rõ hơn (sau review tay trên PR #164)
+
+- `useTacticEditor`: `draggedTokenRef` thành state `draggedPaletteToken`, trả ra cho màn hình;
+  `isDraggingPaletteToken()` đọc state đó.
+- `TokenPalette`: `dragstart` gọi `setDragImage(ảnh trong suốt 1×1, 0, 0)`. Ảnh tạo sẵn một lần ở
+  phía trình duyệt, vì ảnh chưa tải xong thì trình duyệt quay về ảnh ma mặc định.
+- `components/palette-drag-preview.tsx` (mới): nghe `dragover` trên `document`, vẽ quân đậm tại con
+  trỏ.
+- `tokenBorderHex` nhận `Pick<TacticToken, "icon" | "color">`, để hình xem trước dùng chung luật viền
+  mà không phải dựng một quân giả.
+- `TacticEditorScreen` dựng `PaletteDragPreview` khi `editor.draggedPaletteToken` khác null.
+- Test: `__tests__/palette-drag-preview.test.tsx`, cập nhật `token-palette.test.tsx`.
+
+## 6. Tài liệu và kiểm
 
 - Ghi thêm một dòng "Cập nhật 2026-09-25" vào spec tactics board (mục quân cờ trên map).
 - `pnpm --filter web test`, `pnpm --filter web lint`, `pnpm --filter web build`.

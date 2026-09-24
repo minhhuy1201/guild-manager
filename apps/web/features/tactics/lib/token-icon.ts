@@ -138,10 +138,12 @@ export const TEAM_GROUP_HEX: Record<TeamColorGroup, string> = {
  * numbered team wears its team builder group, so "Đội 3" reads as the same team on both screens; any
  * other token wears the colour it was drawn in. Resolved on every render rather than stored, so
  * drawings saved before this rule pick it up and regrouping a team recolours the map too.
- * @param token - The token being drawn
+ * @param token - The token being drawn, or the one a palette drag is about to drop
  * @returns The hex to draw its ring in
  */
-export function tokenBorderHex(token: TacticToken): string {
+export function tokenBorderHex(
+  token: Pick<TacticToken, "icon" | "color">
+): string {
   const group = isNumberIcon(token.icon)
     ? teamColorGroup(Number(numberIconDigits(token.icon)))
     : null;

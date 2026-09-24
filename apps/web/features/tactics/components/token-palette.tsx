@@ -32,6 +32,19 @@ const GROUP_STYLES: Record<TokenGroup, { box: string; hue: string }> = {
 };
 
 /**
+ * The drag image a palette entry is dragged with: one transparent pixel, so the browser draws
+ * nothing and the editor's solid preview is all that follows the pointer. Made once, up front, in
+ * the browser only: an image still loading when the drag starts falls back to the faded default.
+ */
+const EMPTY_DRAG_IMAGE: HTMLImageElement | null =
+  typeof window === "undefined" ? null : new window.Image();
+
+if (EMPTY_DRAG_IMAGE) {
+  EMPTY_DRAG_IMAGE.src =
+    "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+}
+
+/**
  * A heading in its group's hue, pulled towards the page's text colour so it stays readable on both
  * themes — gold at full strength is a light wash on a light card.
  * @param hue - The group's colour
@@ -189,6 +202,13 @@ export function TokenPalette({
                                   token.label
                                 );
                                 event.dataTransfer.effectAllowed = "copy";
+                                if (EMPTY_DRAG_IMAGE) {
+                                  event.dataTransfer.setDragImage(
+                                    EMPTY_DRAG_IMAGE,
+                                    0,
+                                    0
+                                  );
+                                }
                                 onDragStart(token);
                               }}
                               onDragEnd={onDragEnd}

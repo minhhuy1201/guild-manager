@@ -234,15 +234,24 @@ describe("TacticEditorScreen", () => {
 
     const entry = screen.getByRole("button", { name: "Trinh sát" });
     const map = screen.getByTestId("canvas").parentElement as HTMLElement;
-    const dataTransfer = { setData: vi.fn(), effectAllowed: "all", dropEffect: "none" };
+    const dataTransfer = {
+      setData: vi.fn(),
+      setDragImage: vi.fn(),
+      effectAllowed: "all",
+      dropEffect: "none",
+    };
 
     fireEvent.dragStart(entry, { dataTransfer });
+    // The solid token that stands in for the browser's faded drag image follows the pointer.
+    fireEvent.dragOver(entry, { dataTransfer, clientX: 40, clientY: 300 });
+    expect(screen.getByTestId("palette-drag-preview")).toBeTruthy();
     // Accepting the drag is what lets the browser drop it here at all.
     expect(fireEvent.dragOver(map, { dataTransfer })).toBe(false);
     // The canvas is 1000px wide and the map 1920 units, unzoomed and unpanned.
     fireEvent.drop(map, { dataTransfer, clientX: 500, clientY: 250 });
     fireEvent.dragEnd(entry, { dataTransfer });
 
+    expect(screen.queryByTestId("palette-drag-preview")).toBeNull();
     const stage = useTacticEditorStore.getState().scene?.stages[0];
     expect(stage?.elements).toEqual([
       expect.objectContaining({

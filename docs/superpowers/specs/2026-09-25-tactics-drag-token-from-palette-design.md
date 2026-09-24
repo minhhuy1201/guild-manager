@@ -60,12 +60,30 @@ Theo đúng luật đặt quân bằng bấm, trừ một chỗ:
   sẽ được đặt.
 - Vùng chọn không đổi thêm gì ngoài việc đổi công cụ vốn đã xoá vùng chọn (`setTool`).
 
-### 5. Không đổi
+### 5. Quân đang kéo tự vẽ, không dùng ảnh ma của trình duyệt
+
+Ảnh ma trình duyệt vẽ cho một lần kéo gốc luôn bán trong suốt (Chromium tự giảm độ đậm), và trang
+web không chỉnh được độ mờ đó: dùng thử thì quân đang cầm quá mờ để nhận ra (#164). Nên:
+
+- `dragstart` thay ảnh ma bằng một ảnh trong suốt 1×1 (`setDragImage`), tức là trình duyệt không vẽ
+  gì cả.
+- Editor giữ quân đang kéo trong **state** (không còn là ref): màn hình cần vẽ lại khi bắt đầu và
+  khi kết thúc kéo.
+- `PaletteDragPreview` vẽ quân đó **đậm hoàn toàn**, `position: fixed`, tâm đúng ở con trỏ, không
+  nhận con trỏ (`pointer-events: none`). Vị trí lấy từ `dragover` trên `document`: sự kiện này chạy
+  ở mọi chỗ con trỏ đi qua, kể cả bảng quân cờ và canvas. `drag` trên ô nguồn thì không dùng được,
+  vì Firefox luôn báo toạ độ 0 cho sự kiện đó.
+- Hình giống quân sẽ được đặt: nền `TOKEN_FILL` và icon `COLOR_HEX` theo màu toolbar, viền
+  `tokenBorderHex` (Đội 1-10 lấy màu nhóm), bán kính `TOKEN_RADIUS[tokenSize]` nhân với scale đang
+  hiển thị (`fitScale × zoom`). Thả trên map thì quân thật hiện ra đúng chỗ, đúng cỡ với hình vừa
+  cầm.
+- Hình chưa hiện cho tới `dragover` đầu tiên, vì trước đó chưa biết con trỏ ở đâu.
+
+### 6. Không đổi
 
 - Bấm ô rồi bấm map vẫn chạy y như cũ.
 - Bảng đang thu gọn (`inert`) thì không kéo được, như không bấm được.
 - Viewer (thành viên, điện thoại) không có bảng quân cờ, nên không có gì để kéo.
-- Không có đổi giao diện nào ngoài con trỏ và ảnh ma do trình duyệt vẽ.
 
 ## Kiểm tra
 
@@ -73,8 +91,10 @@ Theo đúng luật đặt quân bằng bấm, trừ một chỗ:
 - `use-tactic-editor.test.tsx`: thả đặt quân đúng chỗ, một bước undo, dùng màu và cỡ toolbar; thả
   không có quân đang kéo (hoặc sau `onDragEnd`) không làm gì; thả lên phần tử có sẵn vẫn đặt quân
   mới; giai đoạn đầy thì toast; thành viên không ghi được; sau khi thả, ô chọn sẵn và công cụ đổi.
-- `token-palette.test.tsx`: ô là `draggable`, `dragstart` báo đúng quân và đặt kiểu MIME, `dragend`
-  báo lại.
+- `token-palette.test.tsx`: ô là `draggable`, `dragstart` báo đúng quân, đặt kiểu MIME và thay ảnh
+  ma bằng ảnh trong suốt, `dragend` báo lại.
+- `palette-drag-preview.test.tsx`: chưa hiện trước `dragover` đầu tiên; sau đó tâm hình nằm ở con
+  trỏ, cỡ bằng bán kính × scale, dùng màu toolbar và viền đội; bỏ listener khi unmount.
 - `tactic-editor-screen.test.tsx`: kéo một ô từ bảng và thả lên map thì quân xuất hiện trên
   giai đoạn đang mở, ở toạ độ map tương ứng điểm thả; kéo thứ khác (không phải quân cờ) vào map thì
   `dragover` không được `preventDefault`.
