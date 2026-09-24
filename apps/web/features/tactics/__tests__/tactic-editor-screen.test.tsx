@@ -79,6 +79,8 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  // Every stub is set again in a `beforeEach`, except the ones a single test sets for itself.
+  vi.unstubAllGlobals();
 });
 
 beforeEach(() => {
@@ -221,6 +223,46 @@ describe("TacticEditorScreen", () => {
         screen.queryByRole("toolbar", { name: "Sửa phần tử đang chọn" })
       ).toBeNull()
     );
+  });
+
+  it("drops a token dragged out of the palette where it is let go on the map", async () => {
+    // jsdom has no DragEvent, and the plain Event it falls back to drops the pointer's position.
+    vi.stubGlobal("DragEvent", class extends MouseEvent {});
+    renderScreen(true);
+
+    await waitFor(() => expect(screen.getByTestId("canvas")).toBeTruthy());
+
+    const entry = screen.getByRole("button", { name: "Trinh sát" });
+    const map = screen.getByTestId("canvas").parentElement as HTMLElement;
+    const dataTransfer = { setData: vi.fn(), effectAllowed: "all", dropEffect: "none" };
+
+    fireEvent.dragStart(entry, { dataTransfer });
+    // Accepting the drag is what lets the browser drop it here at all.
+    expect(fireEvent.dragOver(map, { dataTransfer })).toBe(false);
+    // The canvas is 1000px wide and the map 1920 units, unzoomed and unpanned.
+    fireEvent.drop(map, { dataTransfer, clientX: 500, clientY: 250 });
+    fireEvent.dragEnd(entry, { dataTransfer });
+
+    const stage = useTacticEditorStore.getState().scene?.stages[0];
+    expect(stage?.elements).toEqual([
+      expect.objectContaining({
+        kind: "token",
+        label: "Trinh sát",
+        x: expect.closeTo(960),
+        y: expect.closeTo(480),
+      }),
+    ]);
+  });
+
+  it("refuses anything but a palette entry dragged over the map", async () => {
+    renderScreen(true);
+
+    await waitFor(() => expect(screen.getByTestId("canvas")).toBeTruthy());
+
+    const map = screen.getByTestId("canvas").parentElement as HTMLElement;
+
+    // A file dragged in from the desktop: not prevented, so the browser refuses the drop.
+    expect(fireEvent.dragOver(map, { dataTransfer: { dropEffect: "none" } })).toBe(true);
   });
 
   // A press on a token picks it up only with the select and token tools; the drawing tools draw on

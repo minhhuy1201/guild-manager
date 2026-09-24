@@ -30,7 +30,7 @@ import {
 import { TRAIL_OPACITY, type StageFrame } from "../lib/stage-transition";
 import { INITIAL_ZOOM, type ZoomState } from "../lib/zoom";
 import { TOKEN_ICON_BOX } from "../lib/icon-paths";
-import { stageScale, toMapPoint } from "../lib/stage-scale";
+import { canvasToMapPoint, stageScale } from "../lib/stage-scale";
 import {
   COLOR_HEX,
   TOKEN_FILL,
@@ -167,12 +167,7 @@ export function TacticStageView({
   function pointerPoint(konvaStage: Konva.Stage | null): MapPoint | null {
     const pointer = konvaStage?.getPointerPosition();
 
-    return pointer
-      ? toMapPoint(
-          { x: pointer.x - zoom.offset.x, y: pointer.y - zoom.offset.y },
-          scale
-        )
-      : null;
+    return pointer ? canvasToMapPoint(pointer, zoom, fitScale) : null;
   }
 
   // A stage 0 wide is an empty white box: better to draw nothing for the frame before the canvas

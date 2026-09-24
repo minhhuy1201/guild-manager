@@ -10,6 +10,7 @@ vi.mock("../hooks/use-token-presets", () => ({
 }));
 
 import { TokenPalette } from "../components/token-palette";
+import { TOKEN_DRAG_TYPE } from "../lib/built-in-tokens";
 
 afterEach(cleanup);
 
@@ -17,6 +18,8 @@ const handlers = {
   onToggle: vi.fn(),
   onSelect: vi.fn(),
   onManagePresets: vi.fn(),
+  onDragStart: vi.fn(),
+  onDragEnd: vi.fn(),
 };
 
 beforeEach(() => {
@@ -108,6 +111,25 @@ describe("TokenPalette", () => {
       label: "Đội thủ",
       icon: "shield",
     });
+  });
+
+  it("lets every entry be dragged out towards the map, saying which one it is", () => {
+    renderPalette();
+    const entry = screen.getByRole("button", { name: "Đội cảm tử" });
+    const setData = vi.fn();
+    const dataTransfer = { setData, effectAllowed: "all" };
+
+    expect(entry.getAttribute("draggable")).toBe("true");
+    fireEvent.dragStart(entry, { dataTransfer });
+    fireEvent.dragEnd(entry, { dataTransfer });
+
+    expect(handlers.onDragStart).toHaveBeenCalledWith({
+      label: "Đội cảm tử",
+      icon: "skull",
+    });
+    expect(setData).toHaveBeenCalledWith(TOKEN_DRAG_TYPE, "Đội cảm tử");
+    expect(dataTransfer.effectAllowed).toBe("copy");
+    expect(handlers.onDragEnd).toHaveBeenCalled();
   });
 
   it("keeps the toggle reachable once folded, so the palette can be opened again", () => {
