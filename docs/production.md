@@ -498,8 +498,10 @@ unaffected because the `postgres` role has `rolbypassrls`.
 — that stays per-table and must be done by hand. `20260825071500_bat_rls_cho_bang_moi` catches up the
 three tables created since (`AuthExchange`, `FormationMatch`, `FormationSlot`); `AuthExchange` is the
 one that matters most, because it holds live single-use login codes and reading one inside its 60s
-TTL is enough to take over a session. **Every new table needs its own `ENABLE ROW LEVEL SECURITY`
-line in the migration that creates it.**
+TTL is enough to take over a session. `20260925004158_enable_rls_on_tactics` does the same for
+`Tactic` and `TacticTokenPreset`, which shipped without it. **Every new table needs its own
+`ENABLE ROW LEVEL SECURITY` line in the migration that creates it**, and
+`src/__tests__/migration-rls.spec.ts` fails CI when one is missing.
 
 After adding any new table, re-check both layers:
 
