@@ -61,7 +61,7 @@ saturation.
   keeps the white title readable whatever the scene's light. Data (tables, the formation grid)
   never sits on a picture.
 - The banner comes in two heights: tall on the attendance page, where members arrive, and compact
-  on the tools used every day (history, team builder, settings), so their data starts higher. Still
+  on the tools used every day (history, team builder, tactics, settings), so their data starts higher. Still
   one scene per page.
 - **The login page** is the one full-screen scene, behind a translucent card.
 - **The landing page** (`/trang-chu`) opens on its own scene, `landing.jpg`, in a tall hero rather

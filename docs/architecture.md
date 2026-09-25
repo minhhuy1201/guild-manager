@@ -68,7 +68,7 @@ graph TB
     Tailwind CSS 4 · shadcn/ui on @base-ui/react
     TanStack Query — server state
     Zustand — UI state
-    dnd-kit · recharts · Vitest"]
+    dnd-kit · recharts · Konva · next-themes · Vitest"]
 
     API["<b>apps/api</b> — one Vercel Function
     NestJS 11 on Express
@@ -163,9 +163,9 @@ the sources after compiling — see [`production.md`](production.md) §4.
 
 | Import | Contents |
 |---|---|
-| `@guild/shared/enums` | `GuildClass`, and `attendanceLabel(isPresent)` — the Vietnamese "Có"/"Không" label |
-| `@guild/shared/schemas` | Zod schemas for attendance, auth, battle sessions, characters, formations |
-| `@guild/shared/lib` | The Vietnam clock (`vnWeekday`, `vnParts`, `shiftVnDate`, `atVnTime`) and the deadline-cap rules both sides share |
+| `@guild/shared/enums` | `GuildClass`, `GuildRole`, `attendanceLabel(isPresent)` — the Vietnamese "Có"/"Không" label — and the tactic enums (`TACTIC_COLORS`, `TACTIC_STROKE_WIDTHS`, `TACTIC_TOKEN_SIZES`, `TACTIC_TOKEN_ICONS`) |
+| `@guild/shared/schemas` | Zod schemas for attendance, auth, battle sessions, characters, formations, tactics (the scene document, plus `liftTacticScene` for older `schemaVersion`s) |
+| `@guild/shared/lib` | The Vietnam clock (`vnWeekday`, `vnParts`, `shiftVnDate`, `atVnTime`), the deadline-cap rules both sides share, `canManageGuild(role)`, `safeRedirect` and `assertNever` |
 
 The package is intentionally **not** `"type": "module"`: `apps/api` is CommonJS under `nodenext`,
 which would force `.js` suffixes on relative imports, and Turbopack in `apps/web` cannot resolve
@@ -255,7 +255,7 @@ Each is `<domain>.module.ts` + `<domain>.controller.ts` + `<domain>.service.ts`,
 `@guild/shared/schemas`, and the object is built through
 `verifyResponse(<shape>Schema, { … } satisfies <Shape>)`: `satisfies` is compile-time only, so an
 `as` cast on a database enum passes it silently. `verifyResponse` parses outside production and is a
-no-op in it. `attendance`, `battle-sessions` and `characters` keep that mapping in a
+no-op in it. `attendance`, `battle-sessions`, `characters` and `tactics` keep that mapping in a
 `<domain>.codec.ts` beside the service.
 
 | Module | Owns | Access |
@@ -280,10 +280,10 @@ Endpoints, all behind the `/api` prefix:
 | `POST` | `/auth/refresh` | Exchange a refresh token for a new pair | Public |
 | `GET` | `/auth/me` | Session behind the current access token | Bearer |
 | `POST` | `/auth/login` | Tombstone of the old username/password login — always `410 Gone`, kept only until every cached web build is gone | Public |
-| `GET` | `/characters` | Member list | Bearer |
-| `POST` | `/characters` | Create a member | Bearer |
-| `PATCH` | `/characters/:id` | Update a member | Bearer |
-| `DELETE` | `/characters/:id` | Delete a member | Bearer |
+| `GET` | `/characters` | Member list | Admin |
+| `POST` | `/characters` | Create a member | Admin |
+| `PATCH` | `/characters/:id` | Update a member | Admin |
+| `DELETE` | `/characters/:id` | Delete a member | Admin |
 | `GET` | `/battle-sessions/weeks` | Weeks an admin may edit | Admin |
 | `GET` | `/battle-sessions/current-week` | The open attendance week (every attendance screen reads it) | Bearer |
 | `GET` | `/battle-sessions` | Matches of a week with their deadlines | Bearer |
@@ -295,8 +295,8 @@ Endpoints, all behind the `/api` prefix:
 | `GET` | `/attendance/records?weekStart=` | Attendance entries of a week, the open one by default (the whole guild, any role) | Bearer |
 | `GET` | `/attendance/summary?weekStart=` | Yes/no counts per match of a week, the open one by default, no identities. **No caller today** — kept for the attendance dashboard | Bearer |
 | `POST` | `/attendance` | Mark one character for one match (with a reason when the answer is "Không") | Bearer (own character; admin marks for anyone and bypasses the deadline) |
-| `GET` | `/team-builder/weeks` | Weeks that still have roster data | Bearer |
-| `GET` | `/team-builder/formations?weekStart=` | Match rosters of a week | Bearer |
+| `GET` | `/team-builder/weeks` | Weeks that still have roster data | Admin |
+| `GET` | `/team-builder/formations?weekStart=` | Match rosters of a week | Admin |
 | `PUT` | `/team-builder/formations/:sessionId` | Overwrite one match's roster | Admin |
 | `POST` | `/team-builder/formations/:sessionId/announce` | Post the day's roster images to Discord with the gathering announcement, then close that day's attendance | Admin |
 | `GET` | `/team-builder/team-names` | Names of the grid's team columns | Admin |
@@ -376,7 +376,8 @@ is one file in `commands/` plus one line in `commands/index.ts`; see §7.
 ### 4.1 Stack
 
 Next.js 16 App Router (React 19) · Tailwind CSS 4 + shadcn/ui on `@base-ui/react` · TanStack Query
-for server state · Zustand for UI state · dnd-kit on the team builder · Vitest.
+for server state · Zustand for UI state · dnd-kit on the team builder · Konva (`react-konva`) on the tactics board ·
+next-themes for the light/dark theme · Vitest.
 
 All user-facing copy is **Vietnamese**.
 
@@ -398,10 +399,10 @@ apps/web/
 ├── components/
 │   ├── ui/           # generated by the shadcn CLI — never hand-edited
 │   ├── shared/       # cross-feature wrappers and the app shell
-│   └── providers.tsx # QueryClientProvider
-├── hooks/            # cross-feature hooks (use-table-pagination)
+│   └── providers.tsx # ThemeProvider (next-themes) + QueryClientProvider + Toaster
+├── hooks/            # cross-feature hooks (use-table-pagination, use-invalidate, use-session-recovery)
 ├── config/           # routes.ts (ROUTES), api.ts (FETCH_API_URL, PUBLIC_API_URL)
-└── lib/              # api-client.ts (apiFetch + ApiError), format.ts, guild-class.ts, team-color-group.ts, utils.ts
+└── lib/              # api-client.ts (apiFetch + ApiError), format.ts, keyboard-target.ts, motion.ts, page-banners.ts, utils.ts, …
 ```
 
 Features: `attendance`, `auth`, `landing`, `members`, `settings`, `tactics`, `team-builder`.
@@ -412,7 +413,7 @@ public/private, because the split is what the runtimes force:
 | Entry point | Runtime | Holds |
 |---|---|---|
 | `index.ts` | anywhere | Components and hooks — safe for a Client Component |
-| `server.ts` | Server Components, Server Actions, Route Handlers | Everything touching cookies: `getSession`, `getAccessToken`, `createSession`, `fetchMe`. Marked `server-only` |
+| `server.ts` | Server Components, Server Actions, Route Handlers | Everything touching cookies: `getSession`, `getAccessToken`, `authHeader`, `createSession`, `fetchMe`. Marked `server-only` |
 | `core/index.ts` | Edge | `verifyJwt`, `decideAccess`, the cookie names — no `next/headers`, so `proxy.ts` can load it |
 
 That is not tidiness. Before the split, `members-panel.tsx` importing the barrel for `useSession`
@@ -428,9 +429,8 @@ Rules, in the order they get broken:
   `useQuery` directly — they call the feature's hook.
 - **Those request functions are Server Actions** (`"use server"`), and that is forced, not stylistic:
   the access token lives in an httpOnly cookie, so only the server can read it and attach
-  `Authorization: Bearer`. It has one visible cost — a `"use server"` file may export nothing but
-  async functions, so the little `authHeader()` helper is duplicated across the four features that
-  need it rather than shared.
+  `Authorization: Bearer`. Every feature builds that header with the one `authHeader()` from
+  `@/features/auth/server`.
 - Errors arrive as `ApiError` with the backend's Vietnamese `message`; render it as-is.
 - Never import another feature's internal file — go through its `index.ts`, or, for `auth`, the
   runtime-appropriate entry point above.
@@ -540,8 +540,8 @@ than a foreign key, because a rescue admin may match no `Character` at all.
 | `AuthExchange` | A single-use code the web app trades for a JWT pair after the API finishes the OAuth callback. Lives 60 seconds; expired rows are swept during the next exchange. Holds `discordId`, not a foreign key, because a rescue admin may match no `Character`. |
 | `FormationSlot` | One cell of the roster grid: a person, a note, or both. A cell that is empty *and* unannotated has no row — that is how "slot 2 is empty" differs from "there is no slot 2". An answer of "Không" takes that member out of every cell of the day (`TeamBuilderService.releaseCharacterFromSession`): an annotated cell keeps its note and only loses its occupant, and a day already played is left untouched. **Deleting the member does the same thing**, guild-wide: the foreign key is `SetNull`, and `CharactersService.remove` deletes the cells that carried no note in the same transaction. |
 | `TeamName` | Display name of one team column, keyed by team number. Global configuration, not per battle day: the same names apply to every week and every match, which is why it hangs off nothing in the diagram above. A team still showing its plain number has no row. |
+| `FormationMatch` | One match of a battle day's roster, `matchIndex` 1 or 2, assigned by the backend from the array position. The row exists even when nobody is placed yet — that is how "this day has 2 matches" differs from "match 2 is empty". Deleted with its `BattleSession` (cascade). |
 | `BotChannel` | Which Discord channel the bot posts a given kind of message to, keyed by `purpose`. Global configuration like `TeamName`, which is why it hangs off nothing in the diagram above. Today it holds one row, `ATTENDANCE_REMINDER`, written by `/cau-hinh-kenh`. `purpose` is a `String` and not an enum on purpose: the value never crosses the network to the web app, so it need not stay in step with `packages/shared/enums`. |
-
 | `Tactic` | One guild war tactic drawing. `stages` is a `Json` column holding the whole scene document — `{ schemaVersion, stages }` per `tacticSceneSchema` in `@guild/shared` — rather than normalised stage and element tables: a new kind of drawn element is then a branch in the shared union and a branch in the renderer, with no migration, and the editor only ever saves the whole document anyway. The column is **untrusted on read** (an older app or a hand edit may have written it), so `tactics.codec.ts` parses it with Zod and fails loudly, naming the tactic, rather than returning an empty scene. `schemaVersion` is what makes a format change an upgrade step instead of guessed SQL over JSON: `liftTacticScene` in `@guild/shared` runs before the parse on both sides, and today it lifts a v1 document (which could be drawn in white) to v2 (where white became black). A token **keeps its `id` when a stage is duplicated**, so the same unit is recognisable on two neighbouring stages and the viewer can draw the path it takes; an id only has to be unique inside one stage, and every edit works on one stage at a time. Scenes saved before that rule carry a different id per stage and are paired by `label + icon` instead - see [`superpowers/specs/2026-09-23-tactic-stage-animation-design.md`](superpowers/specs/2026-09-23-tactic-stage-animation-design.md). |
 | `TacticTokenPreset` | A named token in the tactics palette, shared by every tactic. Global configuration like `TeamName`, which is why it hangs off nothing above. A token placed on a map does **not** point here: it captured the label and icon when it was dropped, so renaming or deleting a preset never rewrites a tactic drawn last week. |
 
@@ -605,7 +605,7 @@ one exception is `prisma/fix-deadlines.ts`, a one-off migration of rows written 
 | **A new backend domain** | `src/modules/<domain>/` with `<domain>.module.ts`, `.controller.ts`, `.service.ts`, plus `dto/`. Register it in `app.module.ts`. Its request **and** response shapes go in `packages/shared/schemas/`. Add a `<domain>.repository.ts` only once the queries are complex or repeated; simple CRUD calls `PrismaService` from the service. |
 | **A database column or table** | `prisma/schema.prisma` → `pnpm --filter api prisma:migrate` → commit the migration folder. Enums must stay in step with `packages/shared/enums`. Then check the Data API grants ([`production.md`](production.md) §5). |
 | **A request/response shape, an enum, a validation rule** | `packages/shared` — never re-declared per app. |
-| **A new page** | A thin `app/<route>/page.tsx` that renders one feature component, the path added to `config/routes.ts`. Admin-only? Add the prefix to `ADMIN_PATH_PREFIXES` in `proxy.ts` **and** re-check `getSession()` in the page. Readable without signing in? Add it to `PUBLIC_PATH_PREFIXES` in `features/auth/core/access.ts`, and remember every visitor on the internet can then read it. |
+| **A new page** | A thin `app/<route>/page.tsx` that renders one feature component, the path added to `config/routes.ts`. Admin-only? Add the prefix to `ADMIN_PATH_PREFIXES` in `features/auth/core/access.ts` **and** re-check `getSession()` in the page. Readable without signing in? Add it to `PUBLIC_PATH_PREFIXES` in `features/auth/core/access.ts`, and remember every visitor on the internet can then read it. |
 | **Frontend behavior for an existing feature** | Inside that `features/<feature>/`: request function in `api/`, hook in `hooks/`, UI state in `store/`, pure logic in `lib/`. Export it from `index.ts` only if another feature needs it. |
 | **A new frontend feature** | A new `features/<feature>/` with the same folders and an `index.ts`. Do not reach into another feature's files. |
 | **A component used by two or more features** | `components/shared/`. If it is a stock shadcn component, generate it into `components/ui/` with the CLI and wrap it. |
@@ -633,7 +633,7 @@ limiting, and no automatic rollback. Details and consequences are in
 
 **No optimistic locking on the roster or on a tactic.** `PUT /tactics/:id/stages`,
 `PUT /team-builder/formations/:sessionId` and
-`PUT /team-builder/team-names` both clear by key and rebuild from the payload; neither compares
+`PUT /team-builder/team-names` all overwrite from the payload; none compares
 against what the client read when it opened the page. Two admins editing the same battle day means
 the later save wins and the earlier one's work disappears with no conflict, no warning and no merge.
 This is an accepted risk, not an oversight: the guild runs one or two admins, and a version column

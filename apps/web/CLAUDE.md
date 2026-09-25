@@ -32,7 +32,7 @@ The rules that get broken first, in the order they get broken:
   never recompute one on the client.
 - **Server Component by default**; `"use client"` only where interactivity requires it. Route paths
   come from `ROUTES` in `config/routes.ts`, never string literals.
-- **A new admin route needs all three**: the prefix in `ADMIN_PATH_PREFIXES` (`proxy.ts`), a
+- **A new admin route needs all three**: the prefix in `ADMIN_PATH_PREFIXES` (`features/auth/core/access.ts`, applied by `proxy.ts`), a
   `getSession()` check in the page, and the guard on the API. Hiding the nav link is cosmetic.
 - **`@/*` is the app's only alias**; shared code comes in by real package name
   (`@guild/shared/enums|schemas|lib`), same as `apps/api`. The alias is declared **twice** —

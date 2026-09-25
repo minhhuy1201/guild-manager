@@ -19,7 +19,7 @@ The rules that get broken first, in the order they get broken:
   reintroduce it.
 - **Controller → Service → (Repository) → Prisma.** A controller never touches Prisma, and never
   returns a Prisma model: map it to the response shape from `@guild/shared/schemas` (with
-  `satisfies`) so `password` cannot leak.
+  `satisfies`) so a column outside the shape (e.g. `discordAvatar` beyond `/auth/me`) cannot leak.
 - **`common/` and `config/` never import from `modules/` or `infrastructure/`**, and a module reaches
   another module only through its `<domain>.public.ts` (code) or `*.module.ts` (DI registration).
   `eslint-plugin-boundaries` enforces the module rule on resolved paths, so it holds at any directory
@@ -30,7 +30,8 @@ The rules that get broken first, in the order they get broken:
 - **Nothing reads `process.env`.** Declare the variable in `config/env.validation.ts` and inject
   `AppConfigService` (`config.get('X', { infer: true })`) so the value keeps its parsed type.
   `DIRECT_DATABASE_URL` stays out of the schema on purpose: Prisma CLI only, never the runtime. The
-  single exception is `config/response-verification.ts` (codecs are module-level, outside DI).
+  exceptions are `config/response-verification.ts` (codecs are module-level, outside DI) and the
+  hand-run `src/scripts/` (no DI there).
 - **Every response object is built through `verifyResponse(<shape>Schema, { … } satisfies <Shape>)`**
   — `satisfies` alone cannot see through the `as` cast on a database enum.
 - **Add a piece when a second caller appears** — `guards/`, `decorators/`, `<domain>.repository.ts`.

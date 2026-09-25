@@ -511,7 +511,9 @@ where table_schema = 'public' and grantee in ('anon', 'authenticated');
 -- Layer 2: RLS on. Every row must read `t` except `_prisma_migrations`.
 select relname, relrowsecurity from pg_class
 where relkind = 'r' and relnamespace = 'public'::regnamespace order by relname;
-``` **Still open:** turn the Data API off entirely in the dashboard
+```
+
+**Still open:** turn the Data API off entirely in the dashboard
 (Settings → API) — RLS already blocks it, but disabling what you do not use is better.
 
 ### Free-tier limits
