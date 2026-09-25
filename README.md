@@ -80,7 +80,8 @@ A login resolves against `Character.discordId`, a column an admin fills in by ha
 database lets nobody in. Put your own Discord ID in `DISCORD_ADMIN_IDS` — those ids always sign in as
 `ADMIN`, matching character or not, and are the way in before anyone has been linked.
 
-**Every page needs a session** except `/dang-nhap` and the guild's public page `/trang-chu`. There are two roles: an
+**Every page needs a session** except `/dang-nhap` and the guild's public page `/trang-chu`.
+There are two roles: an
 `ADMIN` administers the guild and marks attendance for anyone, past the deadline included, while a
 `MEMBER` sees the whole guild's week read-only and marks only their own character, only while the
 deadline is open.

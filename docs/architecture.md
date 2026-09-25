@@ -376,8 +376,8 @@ is one file in `commands/` plus one line in `commands/index.ts`; see §7.
 ### 4.1 Stack
 
 Next.js 16 App Router (React 19) · Tailwind CSS 4 + shadcn/ui on `@base-ui/react` · TanStack Query
-for server state · Zustand for UI state · dnd-kit on the team builder · Konva (`react-konva`) on the tactics board ·
-next-themes for the light/dark theme · Vitest.
+for server state · Zustand for UI state · dnd-kit on the team builder ·
+Konva (`react-konva`) on the tactics board · next-themes for the light/dark theme · Vitest.
 
 All user-facing copy is **Vietnamese**.
 

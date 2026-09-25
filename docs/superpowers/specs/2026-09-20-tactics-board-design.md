@@ -404,8 +404,8 @@ Mobile:
 ## Bố cục editor
 
 ```
-┌─ chọn | đội hình | mũi tên | vẽ tự do | chữ | tẩy ‖ 4 màu ‖ 4 cỡ nét ‖ 3 cỡ quân ‖ Hoàn tác Làm lại ‖ Lưu Xuất ┐
-├─ ◷1 | ◷2 | … ←/→  [▶ Chạy] [◐ Bóng mờ]  [+ Thêm giai đoạn] [⧉ Nhân bản] [Xoá giai đoạn]                ┤
+┌─ chọn|đội hình|mũi tên|vẽ tự do|chữ|tẩy ‖ 4 màu ‖ 4 cỡ nét ‖ 3 cỡ quân ‖ ↶ ↷ ‖ Lưu Xuất      ┐
+├─ ◷1 | ◷2 | … ←/→  [▶ Chạy] [◐ Bóng mờ]  [+ Thêm giai đoạn] [⧉ Nhân bản] [Xoá giai đoạn]      ┤
 ├──────────────┬───────────────────────────────────────────────────────────────────────────────┤
 │ Quân cờ  [«] │                                                                               │
 │ QUÂN HIỆU    │                                                                               │
