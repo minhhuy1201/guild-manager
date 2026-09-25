@@ -80,7 +80,8 @@ A login resolves against `Character.discordId`, a column an admin fills in by ha
 database lets nobody in. Put your own Discord ID in `DISCORD_ADMIN_IDS` — those ids always sign in as
 `ADMIN`, matching character or not, and are the way in before anyone has been linked.
 
-**Every page needs a session**; `/dang-nhap` is the only public route. There are two roles: an
+**Every page needs a session** except `/dang-nhap` and the guild's public page `/trang-chu`.
+There are two roles: an
 `ADMIN` administers the guild and marks attendance for anyone, past the deadline included, while a
 `MEMBER` sees the whole guild's week read-only and marks only their own character, only while the
 deadline is open.
@@ -91,10 +92,12 @@ More detail (environment variables, common commands, troubleshooting): [`docs/de
 
 | Route | Purpose | Access |
 |---|---|---|
-| `/dang-nhap` | Sign in with Discord | Public — the only page reachable without a session |
+| `/trang-chu` | The guild's public page | Public |
+| `/dang-nhap` | Sign in with Discord | Public |
 | `/` | Mark attendance for the current week | Signed in — a member marks their own character, an admin edits the whole grid |
 | `/lich-su-diem-danh` | Attendance history | Signed in |
 | `/xep-team` | Build the roster for each match | Admin only |
+| `/chien-thuat` | Guild war tactics board: the list, and one tactic's editor at `/chien-thuat/[id]` | Signed in to view; admin to draw and edit |
 | `/thiet-lap` | Two tabs: "Match setup" (the week's schedule) and "Member management" (add/edit/delete members, including each one's Discord ID and role) | Admin only |
 
 ## Discord bot
@@ -149,6 +152,8 @@ terminal never reaches it, and branch protection on `main` remains the real enfo
 | [`docs/architecture.md`](docs/architecture.md) | How the system is built, the rules that hold it together, where new behavior goes |
 | [`docs/development.md`](docs/development.md) | Local setup, environment variables, commands, workflow |
 | [`docs/production.md`](docs/production.md) | Build, deploy, migrating the real database, operations |
+| [`docs/ci-triage.md`](docs/ci-triage.md) | The Jev CI failure triage tool: what it classifies and why it is not a quality gate |
+| [`docs/design-direction.md`](docs/design-direction.md) | Visual direction: palette, banners, motion, light and dark themes |
 | [`apps/api/README.md`](apps/api/README.md) | Backend: running it, commands, the database |
 | [`apps/web/README.md`](apps/web/README.md) | Frontend: running it, commands, env |
 | [`CLAUDE.md`](CLAUDE.md) | Code conventions for humans and AI agents; [`apps/api/CLAUDE.md`](apps/api/CLAUDE.md) and [`apps/web/CLAUDE.md`](apps/web/CLAUDE.md) add the per-app rules |

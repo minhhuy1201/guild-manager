@@ -199,7 +199,7 @@ tacticSceneSchema   = { schemaVersion: literal(TACTIC_SCHEMA_VERSION), stages: t
 | `TACTIC_COLORS` | `blue`, `red`, `yellow`, `black` - bốn màu, lưu bằng khoá chứ không phải mã hex, để đổi bảng màu sau này không phải sửa dữ liệu cũ. Màu mặc định là `blue` |
 | `TACTIC_STROKE_WIDTHS` | `2`, `4`, `8`, `14` (đơn vị map ảo) |
 | `TACTIC_TOKEN_SIZES` | `sm`, `md`, `lg` |
-| `TACTIC_TOKEN_ICONS` | Bộ icon cho phép, khoảng 20 khoá ánh xạ sang `lucide-react` ở phía web |
+| `TACTIC_TOKEN_ICONS` | Bộ icon cho phép: 20 khoá lucide (`TACTIC_LUCIDE_ICONS`, ánh xạ sang `lucide-react` ở phía web) và 10 khoá số `number-1`…`number-10` (`TACTIC_NUMBER_ICONS`, vẽ bằng chữ) |
 
 Bảng quân cờ chia **ba nhóm**: **Quân hiệu** (bảy quân đặt tên: Đội công, Đội thủ, Cơ động, Trinh sát,
 Tập kết, Đội trụ, Bảo tiêu), **Đội** (`Đội 1`…`Đội 10`), **Custom** (preset admin tự thêm). Nhóm
@@ -265,7 +265,7 @@ nặng nhất của bản ghi.
 
 ```
 apps/web/features/tactics/
-├── api/         tactics.ts ("use server") + query key factory
+├── api/         tactics-api.ts ("use server") + tactics-keys.ts (query key factory)
 ├── hooks/       use-tactics, use-tactic, use-token-presets, use-save-tactic, …
 ├── store/       editor-store.ts — công cụ đang chọn, màu, cỡ nét, giai đoạn active,
 │                scene đang sửa, ngăn undo/redo
@@ -404,8 +404,8 @@ Mobile:
 ## Bố cục editor
 
 ```
-┌─ chọn | đội hình | mũi tên | vẽ tự do | chữ | tẩy ‖ 4 màu ‖ 4 cỡ nét ‖ Hoàn tác Làm lại ‖ Lưu Xuất ┐
-├─ ◷1 | ◷2 | … ←/→      [+ Thêm giai đoạn] [⧉ Nhân bản] [Xoá giai đoạn]                        ┤
+┌─ chọn|đội hình|mũi tên|vẽ tự do|chữ|tẩy ‖ 4 màu ‖ 4 cỡ nét ‖ 3 cỡ quân ‖ ↶ ↷ ‖ Lưu Xuất      ┐
+├─ ◷1 | ◷2 | … ←/→  [▶ Chạy] [◐ Bóng mờ]  [+ Thêm giai đoạn] [⧉ Nhân bản] [Xoá giai đoạn]      ┤
 ├──────────────┬───────────────────────────────────────────────────────────────────────────────┤
 │ Quân cờ  [«] │                                                                               │
 │ QUÂN HIỆU    │                                                                               │
@@ -426,7 +426,8 @@ bằng `icon-paths.build.cjs`. `__tests__/icon-paths.test.ts` sinh lại lúc ch
 
 Quân cờ trên map là vòng tròn, icon ở giữa, viền theo màu đang chọn trên thanh công
 cụ. Bảng quân cờ bên trái collapse được, trạng thái collapse nằm trong Zustand và reset khi tải lại
-trang — app chưa dùng `localStorage` ở đâu cả, và một tuỳ chọn hiển thị chưa đáng để mở đường đó. Màu sắc lấy nguyên token của `globals.css`, không đẻ màu mới ngoài bốn màu vẽ.
+trang — một tuỳ chọn hiển thị của riêng editor chưa đáng để lưu vào `localStorage` (theme của app
+thì có, qua next-themes, #163). Màu sắc lấy nguyên token của `globals.css`, không đẻ màu mới ngoài bốn màu vẽ.
 
 ## Xử lý lỗi
 
@@ -452,7 +453,8 @@ Vitest (`apps/web/features/tactics/__tests__/`):
   file, mỗi bên kết thúc bằng `assertNever`, nên thêm kind mới là lỗi compile ở một chỗ.
 - `history` — đẩy, hoàn tác, làm lại, tràn ngăn 50 bước, ngăn của hai giai đoạn độc lập nhau.
 - `scene` — thêm/xoá/di chuyển/đổi cỡ phần tử trả về đối tượng mới, không sửa tại chỗ.
-- `migrate-scene` — bản 1 đi thẳng qua; `schemaVersion` lạ thì ném lỗi.
+- `read-scene` — bản hiện tại đi thẳng qua; bản 1 được nâng lên (trắng thành đen); `schemaVersion`
+  mới hơn thì ném lỗi tiếng Việt; tài liệu không parse được thì ném lỗi.
 - `built-in-tokens` — đủ bảy quân mặc định và mười đội, mỗi quân một icon hợp lệ.
 
 Jest (`apps/api/src/modules/tactics/__tests__/`):
@@ -474,4 +476,4 @@ Ghi lại để không ai tưởng là sót:
 - Không đọc `TeamName`: mười đội trên bảng quân cờ là nhãn cố định.
 - Không vẽ được trên điện thoại.
 - Không có nhiều map: đúng một tấm `map-guild-war.webp`. Thêm map là đổi lược đồ scene, nên sẽ đi
-  kèm `schemaVersion: 2`.
+  kèm một `schemaVersion` mới (hiện là 2).
