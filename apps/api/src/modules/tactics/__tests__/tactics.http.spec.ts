@@ -11,6 +11,7 @@ import { TacticsService } from '../tactics.service';
 const WRITE_ROUTES = [
   ['POST', '/tactics', { name: 'Thủ cổng tây' }],
   ['PATCH', '/tactics/t1', { name: 'Thủ cổng đông' }],
+  ['PATCH', '/tactics/t1', { notes: 'Giữ cổng tây tới khi có lệnh.' }],
   ['PUT', '/tactics/t1/stages', { scene: emptyScene() }],
   ['DELETE', '/tactics/t1', undefined],
   ['POST', '/tactics/token-presets', { label: 'Đội cảm tử', icon: 'skull' }],

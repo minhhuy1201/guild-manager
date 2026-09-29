@@ -79,7 +79,7 @@ export class TacticsService {
   }
 
   /**
-   * Rename a tactic or rewrite its description. The scene has its own endpoint.
+   * Rename a tactic, or rewrite its description or its notes. The scene has its own endpoint.
    * @param id - Tactic id
    * @param input - The fields to change; an absent field is left alone
    * @returns The updated summary
@@ -90,7 +90,11 @@ export class TacticsService {
       return toSummary(
         await this.prisma.tactic.update({
           where: { id },
-          data: { name: input.name, description: input.description },
+          data: {
+            name: input.name,
+            description: input.description,
+            notes: input.notes,
+          },
         }),
       );
     } catch (error) {

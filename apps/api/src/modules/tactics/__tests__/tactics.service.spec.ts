@@ -26,6 +26,7 @@ describe('TacticsService', () => {
     id: 't1',
     name: 'Thủ cổng tây',
     description: null,
+    notes: null,
     stages: emptyScene() as unknown,
     updatedAt: new Date('2026-09-20T10:00:00.000Z'),
   };
@@ -135,6 +136,7 @@ describe('TacticsService — the rest of the surface', () => {
     id: 't1',
     name: 'Thủ cổng tây',
     description: null,
+    notes: null,
     stages: emptyScene() as unknown,
     updatedAt: new Date('2026-09-20T10:00:00.000Z'),
   };
@@ -160,7 +162,20 @@ describe('TacticsService — the rest of the surface', () => {
     ).resolves.toMatchObject({ name: 'Mở màn' });
     expect(prisma.tactic.update).toHaveBeenCalledWith({
       where: { id: 't1' },
-      data: { name: 'Mở màn', description: undefined },
+      data: { name: 'Mở màn', description: undefined, notes: undefined },
+    });
+  });
+
+  it('rewrites the notes alone, leaving the name and description be', async () => {
+    const prisma = createPrisma();
+    prisma.tactic.update.mockResolvedValue({ ...row, notes: 'Giữ cổng.' });
+    const service = new TacticsService(prisma as never);
+
+    await service.update('t1', { notes: 'Giữ cổng.' });
+
+    expect(prisma.tactic.update).toHaveBeenCalledWith({
+      where: { id: 't1' },
+      data: { name: undefined, description: undefined, notes: 'Giữ cổng.' },
     });
   });
 

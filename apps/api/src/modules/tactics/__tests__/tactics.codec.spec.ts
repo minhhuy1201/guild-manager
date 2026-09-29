@@ -14,6 +14,7 @@ describe('tactics.codec', () => {
     id: 't1',
     name: 'Thủ cổng tây',
     description: null,
+    notes: null,
     stages: emptyScene() as unknown,
     updatedAt: new Date('2026-09-20T10:00:00.000Z'),
   };
@@ -84,6 +85,15 @@ describe('tactics.codec', () => {
     expect(summary.stageCount).toBe(1);
     expect(summary).not.toHaveProperty('scene');
     expect(toDetail(row as never).scene).toEqual(emptyScene());
+  });
+
+  it('hands the notes to the detail, and keeps them off the list', () => {
+    const withNotes = { ...row, notes: 'Giữ cổng tây tới khi có lệnh.' };
+
+    expect(toDetail(withNotes as never).notes).toBe(
+      'Giữ cổng tây tới khi có lệnh.',
+    );
+    expect(toSummary(withNotes as never)).not.toHaveProperty('notes');
   });
 
   it('still lists a tactic whose drawing holds an element it cannot read', () => {

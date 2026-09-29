@@ -203,6 +203,8 @@ model Tactic {
   /// Display name, set by an admin.
   name        String
   description String?  @db.VarChar(500)
+  /// Long plain-text notes read beside the map; the list never loads them.
+  notes       String?  @db.Text
   /// Scene document: { schemaVersion, stages }, per tacticSceneSchema in @guild/shared.
   /// Untrusted on read - the service always parses it with Zod, never casts.
   stages      Json
