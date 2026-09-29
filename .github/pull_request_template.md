@@ -17,13 +17,12 @@
 
 ## Self-review
 
-<!--
-Run `/pr-review` in Claude Code after your last commit, then paste its Review Summary
-below. The verdict must be Approve with 0 unresolved 🔴 Blockers before you request review.
-Answer any 💬 Question the skill raised, and note any 🟡 Nit you consciously skipped.
--->
+<!-- REQUIRED. Run the pr-review skill on your branch (say "review my changes") and
+     paste its "Self-review" block here, replacing this comment. The block carries a
+     hidden "pr-review: sha=..." marker for the commit you reviewed. The "Self-review"
+     check fails and blocks merge when the block is missing or the sha no longer
+     matches the PR head, so re-run the review after every push. -->
 
-- [ ] `/pr-review` passed on the commit being pushed
 - [ ] Tests added/updated for the new behaviour
 - [ ] No secrets, `.env`, or debug output in the diff
 

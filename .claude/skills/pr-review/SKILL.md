@@ -25,7 +25,8 @@ See [references/checklist.md](references/checklist.md) for the full printable ch
 ## How to use
 
 1. If a PR link/number is given, fetch the diff first. Read the PR description and
-   tests before reading the code so you understand the intent.
+   tests before reading the code so you understand the intent. For a self-review
+   before the PR exists, diff the branch against its base: `git diff origin/main...HEAD` (PRs target `main`).
 2. Walk through every group in the checklist below.
 3. For each issue, state its severity — 🔴 Blocker / 🟡 Nit / 💬 Question — with a
    `file:line` reference and a concrete fix suggestion.
@@ -42,17 +43,26 @@ See [references/checklist.md](references/checklist.md) for the full printable ch
    checks. Do NOT write it on Request changes. Any new commit after this changes
    HEAD and invalidates the marker, so re-run the review before pushing again.
 
-6. **Opening the PR — always use `@.github/pull_request_template.md`.** Read that file
-   and fill in its sections (`## What & Why`, `## Tests`, `## Note`,
-   `## Self-review`) rather
-   than inventing a structure. `gh pr create` does NOT apply the template when `--body`
-   is passed, so a hand-written body silently drops it and the reviewer loses the
-   checklist they expect.
+6. **Emit the PR self-review block.** Right after step 5, print the block below with
+   the same SHA (`git rev-parse HEAD`, full 40 characters) and the real counts, and
+   tell the user to paste it under the `## Self-review` heading of the PR description.
+   The HTML comment is machine-read by the `PR Self-review` workflow
+   (`.github/workflows/pr-self-review.yml`), which fails the PR when the block is
+   missing or the SHA no longer matches the PR head. After any new push, re-run the
+   review and replace the block. When opening the PR, fill every section of
+   `.github/pull_request_template.md` - `gh pr create --body` replaces the template
+   rather than applying it.
 
-   Paste this review's Review Summary verbatim under `## Self-review`, answer every
-   💬 Question it raised, and name any 🟡 Nit consciously skipped. Tick a checkbox only
-   when it is actually true — an unticked box with one line saying why is useful; a
-   ticked box that is false is worse than no PR body at all.
+   ```
+   <!-- pr-review: sha=<full HEAD sha> -->
+   - 🔴 Blockers: <n> (fixed: <n>)
+   - 🟡 Nits: <n>
+   - Checklist: [x] Context [x] Correctness [x] Tests [x] Security [x] Performance [x] Quality [x] Architecture [x] Docs
+
+   ### Findings
+   1. 🔴 [file:line] <description> → <how it was fixed>
+   2. 🟡 [file:line] <description>
+   ```
 
 ## Checklist
 

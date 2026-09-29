@@ -1,0 +1,50 @@
+name: PR Self-review
+
+# Merge gate: the PR description must carry the self-review block emitted by the
+# pr-review skill (.claude/skills/pr-review), and the sha it records must match the
+# current PR head. A new push changes the head, so the author has to re-run the
+# review and update the description. Meant to be a required status check on main.
+#
+# Bot authors (Dependabot and other GitHub Apps) are exempt: there is no human
+# author to run the skill, and the human approval required by branch protection
+# still applies to their PRs.
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+
+permissions:
+  pull-requests: write
+  issues: write
+
+jobs:
+  self-review:
+    name: Self-review
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            if (pr.user.type === 'Bot') {
+              core.info(`Bot author ${pr.user.login}: self-review not required.`);
+              return;
+            }
+            const body = pr.body || '';
+            const m = body.match(/<!--\s*pr-review:\s*sha=([0-9a-f]{7,40})\s*-->/i);
+            const head = pr.head.sha;
+            const ok = !!m && head.startsWith(m[1].toLowerCase());
+            const label = 'needs-self-review';
+            const ref = { owner: context.repo.owner, repo: context.repo.repo, issue_number: pr.number };
+
+            if (ok) {
+              // Swallows the 404 when the label is not on the PR; the label is only a hint.
+              await github.rest.issues.removeLabel({ ...ref, name: label }).catch(() => {});
+              core.info(`Self-review block matches PR head ${head.slice(0, 7)}.`);
+              return;
+            }
+
+            // Swallows the 403 on fork PRs, whose token is read-only; setFailed below is the real gate.
+            await github.rest.issues.addLabels({ ...ref, labels: [label] }).catch(() => {});
+            core.setFailed(m
+              ? `Self-review is stale: it reviewed ${m[1].slice(0, 7)} but the PR head is ${head.slice(0, 7)}. Re-run the pr-review skill and replace the Self-review block in the PR description.`
+              : 'Missing Self-review block. Run the pr-review skill on your branch and paste its Self-review block (with the pr-review sha comment) into the PR description.');
