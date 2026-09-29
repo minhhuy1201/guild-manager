@@ -426,7 +426,7 @@ Never give a `<label>` to a field with no control: it announces a control that i
 
 ### Page header → `PageHeader` on its banner
 
-Every page opens with `components/shared/page-header.tsx` (`<PageHeader banner title description?
+Every page but the tactic page (below) opens with `components/shared/page-header.tsx` (`<PageHeader banner title description?
 actions? />`): a `rounded-2xl` strip holding the page's scene, the page's one `<h1>` in white
 `font-heading` (Noto Serif), an optional one-sentence description, page-wide controls at the bottom
 right (the team builder's week picker), and the `OrnamentDivider` (a hairline with a small jade
@@ -447,11 +447,10 @@ sans face.
 - **`BannerImage`** draws the picture: `next/image` with `fill` and `preload`, transparent until
   `onLoad`, then an opacity fade over the tint. The login page's full-screen backdrop
   (`LOGIN_BACKDROP`) uses it too.
-- **`breadcrumb` is the slot for a page that hangs off another one**, rendered above the `<h1>`
-  inside the same scrims - the tactic editor's trail
-  (`features/tactics/components/tactic-breadcrumb.tsx`) sits there. Such a trail stops at the parent
-  page and leaves the current one to the `<h1>`, and its links wear the banner's white, not the
-  muted foreground.
+- **One exception: the tactic page (`/chien-thuat/[id]`)** opens with `TacticHeader`
+  (`features/tactics/components/tactic-header.tsx`) instead - one plain line, `← Chiến thuật / <name>`,
+  with the name as the `<h1>` after the trail. It is a drawing tool, and the banner spent the top of
+  the screen on decoration before the map. A new page does not follow it; a new tool page asks first.
 - **Pictures stop at the header.** Tables, the formation grid and forms stay on plain surfaces.
 - **Every picture is credited once, in `SiteFooter`** (`components/shared/site-footer.tsx`, in the
   root layout, so the public login page carries it too). Another scene from the game needs nothing

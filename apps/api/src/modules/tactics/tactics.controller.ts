@@ -107,14 +107,14 @@ export class TacticsController {
   }
 
   /**
-   * Rename a tactic or rewrite its description.
+   * Rename a tactic, or rewrite its description or its notes.
    * @param id - Tactic id
    * @param body - The fields to change
    * @returns The updated summary
    */
   @Patch(':id')
   @UseGuards(AdminGuard)
-  @ApiOperation({ summary: 'Đổi tên hoặc mô tả chiến thuật' })
+  @ApiOperation({ summary: 'Đổi tên, mô tả hoặc ghi chú chiến thuật' })
   update(
     @Param('id') id: string,
     @Body() body: UpdateTacticDto,

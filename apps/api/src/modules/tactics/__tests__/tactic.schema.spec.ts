@@ -3,6 +3,7 @@ import {
   TACTIC_SCHEMA_VERSION,
   saveTacticStagesSchema,
   tacticSceneSchema,
+  updateTacticSchema,
 } from '@guild/shared/schemas';
 
 /**
@@ -224,6 +225,35 @@ describe('tactic scene messages', () => {
     expect(result.success).toBe(false);
     expect(result.error?.issues[0].message).toBe(
       'Bản vẽ có phần tử lạ, không đọc được.',
+    );
+  });
+});
+
+describe('tactic notes', () => {
+  it('trims the notes an admin sends', () => {
+    expect(updateTacticSchema.parse({ notes: '  Giữ cổng tây.\n' })).toEqual({
+      notes: 'Giữ cổng tây.',
+    });
+  });
+
+  it('accepts null, which clears the notes', () => {
+    expect(updateTacticSchema.parse({ notes: null })).toEqual({ notes: null });
+  });
+
+  it('keeps line breaks inside the notes', () => {
+    expect(updateTacticSchema.parse({ notes: '- Mở màn\n- Rút' }).notes).toBe(
+      '- Mở màn\n- Rút',
+    );
+  });
+
+  it('refuses notes past the limit, in Vietnamese', () => {
+    const result = updateTacticSchema.safeParse({
+      notes: 'a'.repeat(TACTIC_LIMITS.tacticNotesLength + 1),
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0].message).toBe(
+      'Ghi chú chiến thuật tối đa 5000 ký tự.',
     );
   });
 });

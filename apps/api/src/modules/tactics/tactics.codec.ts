@@ -21,6 +21,7 @@ export interface TacticRow {
   id: string;
   name: string;
   description: string | null;
+  notes: string | null;
   stages: Prisma.JsonValue;
   updatedAt: Date;
 }
@@ -143,6 +144,7 @@ export function toDetail(row: TacticRow): TacticDetail {
     description: row.description,
     stageCount: scene.stages.length,
     updatedAt: row.updatedAt.toISOString(),
+    notes: row.notes,
     scene,
   } satisfies TacticDetail);
 }

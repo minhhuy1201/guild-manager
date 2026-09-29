@@ -118,7 +118,8 @@ export interface EditorToolbarProps {
 }
 
 /**
- * The editor's toolbar: tools, colours, stroke widths, token sizes, undo/redo, save and export. What can be
+ * The editor's toolbar: tools, colours, stroke widths, token sizes, undo/redo, save and export. It is
+ * the top edge of the editor frame, so it draws no box of its own. What can be
  * done to the selected element lives on the map, under the element itself — see `SelectionActions`.
  * Every button that answers to a shortcut wears it as a key cap, so the keyboard is readable off
  * the toolbar itself rather than out of a tooltip nobody hovers.
@@ -147,7 +148,7 @@ export function EditorToolbar({
   const modifier = useModifierKey();
 
   return (
-    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border bg-card px-2 py-1 shadow-xs">
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 px-2 py-1">
       <div className="flex items-center gap-0.5">
         {(Object.keys(TOOL_LABELS) as TacticTool[]).map((candidate) => {
           const Icon = TOOL_ICONS[candidate];

@@ -17,6 +17,7 @@ import type { StageFrame } from "../lib/stage-transition";
 
 let isDesktop: boolean | null = true;
 const push = vi.fn();
+const updateTactic = vi.fn();
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 
@@ -49,6 +50,7 @@ vi.mock("../api/tactics-api", () => ({
       id: "t1",
       name: "Thủ cổng tây",
       description: null,
+      notes: "Giữ cổng tây tới khi có lệnh.",
       stageCount: 2,
       updatedAt: "2026-09-20T10:00:00.000Z",
       scene: {
@@ -61,6 +63,7 @@ vi.mock("../api/tactics-api", () => ({
     })
   ),
   saveTacticStages: vi.fn(),
+  updateTactic: (input: unknown) => updateTactic(input),
 }));
 
 import { useTacticEditorStore } from "../store/editor-store";
@@ -85,6 +88,9 @@ afterEach(() => {
 
 beforeEach(() => {
   isDesktop = true;
+  push.mockReset();
+  updateTactic.mockReset();
+  updateTactic.mockResolvedValue({});
   useTacticEditorStore.getState().reset();
   // jsdom measures every box as 0 wide, and a canvas 0 wide has nowhere to put the action bar.
   vi.spyOn(Element.prototype, "getBoundingClientRect").mockReturnValue({
@@ -131,7 +137,8 @@ function renderScreen(isAdmin: boolean) {
 }
 
 describe("TacticEditorScreen", () => {
-  it("opens with a banner carrying the breadcrumb and the tactic's name", async () => {
+  // The map is the page: no banner scene spends the top of the screen before it.
+  it("opens with a one-line trail and the tactic's name, and no banner", async () => {
     renderScreen(true);
 
     await waitFor(() =>
@@ -140,7 +147,30 @@ describe("TacticEditorScreen", () => {
       )
     );
     expect(screen.getByRole("navigation", { name: "breadcrumb" })).toBeTruthy();
-    expect(document.querySelector("img")).not.toBeNull();
+    expect(document.querySelector("img")).toBeNull();
+  });
+
+  it("frames the toolbar, the palette, the map, the notes and the stage bar as one block", async () => {
+    renderScreen(true);
+
+    await waitFor(() => expect(screen.getByTestId("canvas")).toBeTruthy());
+
+    const frame = screen.getByTestId("editor-frame");
+
+    expect(
+      within(frame).getByRole("button", { name: "Đội hình" })
+    ).toBeTruthy();
+    expect(within(frame).getByRole("heading", { name: "Quân hiệu" })).toBeTruthy();
+    expect(within(frame).getByTestId("canvas")).toBeTruthy();
+    expect(within(frame).getByRole("tablist", { name: "Giai đoạn" })).toBeTruthy();
+    expect(
+      within(
+        within(frame).getByRole("complementary", {
+          name: "Ghi chú chiến thuật",
+        })
+      ).getByText("Giữ cổng tây tới khi có lệnh.")
+    ).toBeTruthy();
+    expect(within(frame).getByRole("button", { name: "Sửa" })).toBeTruthy();
   });
 
   it("gives an admin on a wide screen the tools and the palette", async () => {
@@ -175,6 +205,8 @@ describe("TacticEditorScreen", () => {
     expect(screen.queryByRole("button", { name: "Đội hình" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Xuất ảnh" })).toBeNull();
     expect(screen.queryByText("Mở trên máy tính để vẽ chiến thuật.")).toBeNull();
+    expect(screen.getByText("Giữ cổng tây tới khi có lệnh.")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Sửa" })).toBeNull();
   });
 
   it("renders neither half until the screen width is known", () => {
@@ -502,5 +534,31 @@ describe("TacticEditorScreen", () => {
 
     fireEvent.click(within(dialog).getByRole("button", { name: "Bỏ thay đổi" }));
     expect(push).toHaveBeenCalledWith("/chien-thuat");
+  });
+
+  it("asks before a link leaves unsaved notes, and saves them on the way out", async () => {
+    renderScreen(true);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Sửa" }));
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Ghi chú chiến thuật" }),
+      { target: { value: "Rút về cổng đông." } }
+    );
+
+    const back = within(
+      screen.getByRole("navigation", { name: "breadcrumb" })
+    ).getByRole("link", { name: /Chiến thuật/ });
+    fireEvent.click(back);
+
+    const dialog = await screen.findByRole("dialog");
+    expect(push).not.toHaveBeenCalled();
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "Lưu rồi rời" }));
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/chien-thuat"));
+    expect(updateTactic).toHaveBeenCalledWith({
+      id: "t1",
+      notes: "Rút về cổng đông.",
+    });
   });
 });

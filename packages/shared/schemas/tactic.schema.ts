@@ -21,6 +21,7 @@ export const TACTIC_LIMITS = {
   stageNameLength: 40,
   tacticNameLength: 80,
   tacticDescriptionLength: 500,
+  tacticNotesLength: 5000,
   tokenLabelLength: 40,
 } as const;
 
@@ -174,16 +175,29 @@ const tacticDescriptionSchema = z
   .trim()
   .max(TACTIC_LIMITS.tacticDescriptionLength, "Mô tả tối đa 500 ký tự.");
 
+/**
+ * The long read-me an admin writes beside the map. Plain text: line breaks are kept on display, and
+ * nothing is parsed out of it.
+ */
+const tacticNotesSchema = z
+  .string("Ghi chú chiến thuật không hợp lệ.")
+  .trim()
+  .max(
+    TACTIC_LIMITS.tacticNotesLength,
+    "Ghi chú chiến thuật tối đa 5000 ký tự."
+  );
+
 /** Body of POST /tactics. */
 export const createTacticSchema = z.object({
   name: tacticNameSchema,
   description: tacticDescriptionSchema.optional(),
 });
 
-/** Body of PATCH /tactics/:id — name and description only; the scene has its own endpoint. */
+/** Body of PATCH /tactics/:id — everything but the scene, which has its own endpoint. */
 export const updateTacticSchema = z.object({
   name: tacticNameSchema.optional(),
   description: tacticDescriptionSchema.nullable().optional(),
+  notes: tacticNotesSchema.nullable().optional(),
 });
 
 /** Body of PUT /tactics/:id/stages — the whole scene, every time. */
@@ -210,8 +224,9 @@ export const tacticSummarySchema = z.object({
   updatedAt: z.string(),
 });
 
-/** One tactic with its whole scene. */
+/** One tactic with its whole scene, and the notes the list leaves out. */
 export const tacticDetailSchema = tacticSummarySchema.extend({
+  notes: z.string().nullable(),
   scene: tacticSceneSchema,
 });
 

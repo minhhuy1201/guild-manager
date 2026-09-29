@@ -86,6 +86,7 @@ export function makeTactic(overrides: Partial<TacticDetail> = {}): TacticDetail 
     id: "t1",
     name: "Thủ cổng tây",
     description: null,
+    notes: null,
     stageCount: scene.stages.length,
     updatedAt: "2026-09-20T10:00:00.000Z",
     scene,

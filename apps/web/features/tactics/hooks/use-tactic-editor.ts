@@ -135,6 +135,8 @@ export interface TacticEditorScreen {
   state: QueryGroupState;
   /** Name of the tactic, empty until it has loaded */
   name: string;
+  /** The tactic's notes, null when it has none or until it has loaded */
+  notes: string | null;
   /** The stage being drawn on, null until the scene has loaded */
   activeStage: TacticStage | null;
   /** The selected elements on the open stage, in drawing order; the action bar is drawn on them */
@@ -736,6 +738,7 @@ export function useTacticEditor(
         }
       : queryState,
     name: tactic?.name ?? "",
+    notes: tactic?.notes ?? null,
     activeStage,
     selectedElements,
     marquee,
