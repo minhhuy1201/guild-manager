@@ -72,8 +72,11 @@ export async function SiteHeader() {
           lifts it off the light plane. Scoping the dark tokens to it (rather than a set of header
           tokens) keeps the nav, the seal and the avatar on the palette they already use.
           `text-foreground` again because `color` inherits as a value from the body, not as the
-          variable. */}
-      <header className="dark sticky top-0 z-10 border-b bg-card/90 text-foreground backdrop-blur [@media(max-height:500px)]:static">
+          variable.
+          `z-40`: above every layer the page itself raises (sticky table columns, the save bar at
+          z-20, overlays at z-10) - on equal z-index the page, later in the DOM, paints over the
+          header. Below the portalled popups and dialogs at z-50. */}
+      <header className="dark sticky top-0 z-40 border-b bg-card/90 text-foreground backdrop-blur [@media(max-height:500px)]:static">
         <div
           className={cn(
             "mx-auto flex h-14 items-center gap-3 px-4 sm:px-6",
