@@ -131,7 +131,8 @@ function renderScreen(isAdmin: boolean) {
 }
 
 describe("TacticEditorScreen", () => {
-  it("opens with a banner carrying the breadcrumb and the tactic's name", async () => {
+  // The map is the page: no banner scene spends the top of the screen before it.
+  it("opens with a one-line trail and the tactic's name, and no banner", async () => {
     renderScreen(true);
 
     await waitFor(() =>
@@ -140,7 +141,22 @@ describe("TacticEditorScreen", () => {
       )
     );
     expect(screen.getByRole("navigation", { name: "breadcrumb" })).toBeTruthy();
-    expect(document.querySelector("img")).not.toBeNull();
+    expect(document.querySelector("img")).toBeNull();
+  });
+
+  it("frames the toolbar, the palette, the map and the stage bar as one block", async () => {
+    renderScreen(true);
+
+    await waitFor(() => expect(screen.getByTestId("canvas")).toBeTruthy());
+
+    const frame = screen.getByTestId("editor-frame");
+
+    expect(
+      within(frame).getByRole("button", { name: "Đội hình" })
+    ).toBeTruthy();
+    expect(within(frame).getByRole("heading", { name: "Quân hiệu" })).toBeTruthy();
+    expect(within(frame).getByTestId("canvas")).toBeTruthy();
+    expect(within(frame).getByRole("tablist", { name: "Giai đoạn" })).toBeTruthy();
   });
 
   it("gives an admin on a wide screen the tools and the palette", async () => {

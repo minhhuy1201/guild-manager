@@ -29,9 +29,10 @@ interface StageBarProps {
 
 /**
  * The stage strip: one tab per stage, plus add, duplicate, rename and delete for an admin.
+ * It is the bottom edge of the editor frame, so it draws no box of its own.
  *
  * A tab is a clock face — the first stage wears one o'clock, the second two — so twenty stages
- * stay one short row above the map instead of a wall of names. The name itself is the tooltip and
+ * stay one short row under the map instead of a wall of names. The name itself is the tooltip and
  * the tab's accessible name; renaming still happens in place, on a double-click.
  * @param props - The stages and the callbacks that change them
  * @returns The stage strip
@@ -58,7 +59,7 @@ export function StageBar({
       ref={tablistRef}
       role="tablist"
       aria-label="Giai đoạn"
-      className="flex flex-wrap items-center gap-1 rounded-lg border bg-card px-2 py-1"
+      className="flex flex-wrap items-center gap-1 px-2 py-1"
     >
       {stages.map((stage, index) =>
         renamingId === stage.id ? (
