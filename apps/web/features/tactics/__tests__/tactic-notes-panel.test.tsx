@@ -31,24 +31,22 @@ beforeEach(() => {
 interface HarnessProps {
   /** Notes as saved */
   notes: string | null;
-  /** Whether the viewer may edit */
-  canEdit: boolean;
 }
 
 /**
  * The panel wired to the real draft hook, as the editor screen wires it.
- * @param props - Saved notes and whether they may be edited
+ * @param props - Saved notes
  * @returns The panel
  */
-function Harness({ notes, canEdit }: HarnessProps) {
+function Harness({ notes }: HarnessProps) {
   const draft = useTacticNotesDraft("t1", notes);
 
-  return <TacticNotesPanel notes={notes} canEdit={canEdit} draft={draft} />;
+  return <TacticNotesPanel notes={notes} draft={draft} />;
 }
 
 /**
  * Render the harness inside a fresh QueryClient.
- * @param props - Saved notes and whether they may be edited
+ * @param props - Saved notes
  */
 function renderPanel(props: HarnessProps) {
   const queryClient = new QueryClient({
@@ -66,7 +64,7 @@ function renderPanel(props: HarnessProps) {
 
 describe("TacticNotesPanel", () => {
   it("opens on the notes when there are some, keeping their line breaks", () => {
-    renderPanel({ notes: "- Mở màn\n- Rút", canEdit: false });
+    renderPanel({ notes: "- Mở màn\n- Rút" });
 
     const text = screen.getByText(/Mở màn/);
 
@@ -75,7 +73,7 @@ describe("TacticNotesPanel", () => {
   });
 
   it("starts folded when there is nothing to read, and unfolds on demand", () => {
-    renderPanel({ notes: null, canEdit: true });
+    renderPanel({ notes: null });
 
     expect(screen.queryByText("Chưa có ghi chú.")).toBeNull();
 
@@ -92,14 +90,8 @@ describe("TacticNotesPanel", () => {
     expect(screen.queryByText("Chưa có ghi chú.")).toBeNull();
   });
 
-  it("offers a member no way to edit", () => {
-    renderPanel({ notes: "Giữ cổng.", canEdit: false });
-
-    expect(screen.queryByRole("button", { name: "Sửa" })).toBeNull();
-  });
-
   it("saves what the admin wrote, trimmed", async () => {
-    renderPanel({ notes: "Giữ cổng.", canEdit: true });
+    renderPanel({ notes: "Giữ cổng." });
 
     fireEvent.click(screen.getByRole("button", { name: "Sửa" }));
     fireEvent.change(screen.getByRole("textbox"), {
@@ -117,7 +109,7 @@ describe("TacticNotesPanel", () => {
   });
 
   it("clears the notes when saved empty", async () => {
-    renderPanel({ notes: "Giữ cổng.", canEdit: true });
+    renderPanel({ notes: "Giữ cổng." });
 
     fireEvent.click(screen.getByRole("button", { name: "Sửa" }));
     fireEvent.change(screen.getByRole("textbox"), { target: { value: "  " } });
@@ -129,7 +121,7 @@ describe("TacticNotesPanel", () => {
   });
 
   it("drops the draft on cancel", () => {
-    renderPanel({ notes: "Giữ cổng.", canEdit: true });
+    renderPanel({ notes: "Giữ cổng." });
 
     fireEvent.click(screen.getByRole("button", { name: "Sửa" }));
     fireEvent.change(screen.getByRole("textbox"), {
@@ -146,7 +138,7 @@ describe("TacticNotesPanel", () => {
     updateTactic.mockRejectedValue(
       new ApiError("Ghi chú chiến thuật tối đa 5000 ký tự.", 400)
     );
-    renderPanel({ notes: null, canEdit: true });
+    renderPanel({ notes: null });
 
     fireEvent.click(
       screen.getByRole("button", { name: "Mở ghi chú chiến thuật" })

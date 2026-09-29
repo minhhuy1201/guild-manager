@@ -26,8 +26,6 @@ export function TacticNotesText({ notes }: TacticNotesTextProps) {
 interface TacticNotesPanelProps {
   /** The notes as saved, null when there are none */
   notes: string | null;
-  /** Whether the viewer may edit — the API is what actually enforces it */
-  canEdit: boolean;
   /** The draft the screen holds, so its leave guard sees unsaved notes */
   draft: TacticNotesDraft;
 }
@@ -38,15 +36,12 @@ interface TacticNotesPanelProps {
  * takes room from the map.
  *
  * Its content scrolls inside a box pinned to the column, so long notes never make the row taller
- * than the map.
- * @param props - The saved notes, whether they may be edited, and the draft
+ * than the map. It only ever renders for an admin at the drawing tools; everyone else reads the
+ * notes in `TacticViewer`.
+ * @param props - The saved notes and the draft
  * @returns The notes column
  */
-export function TacticNotesPanel({
-  notes,
-  canEdit,
-  draft,
-}: TacticNotesPanelProps) {
+export function TacticNotesPanel({ notes, draft }: TacticNotesPanelProps) {
   const [open, setOpen] = useState(notes !== null);
   const toggleLabel = open ? "Thu ghi chú chiến thuật" : "Mở ghi chú chiến thuật";
 
@@ -96,18 +91,16 @@ export function TacticNotesPanel({
                 ) : (
                   <TacticNotesText notes={notes} />
                 )}
-                {canEdit ? (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    className="self-start"
-                    onClick={draft.start}
-                  >
-                    <Pencil />
-                    Sửa
-                  </Button>
-                ) : null}
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="self-start"
+                  onClick={draft.start}
+                >
+                  <Pencil />
+                  Sửa
+                </Button>
               </>
             )}
           </div>

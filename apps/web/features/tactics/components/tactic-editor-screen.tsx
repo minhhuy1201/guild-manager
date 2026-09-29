@@ -264,11 +264,7 @@ export function TacticEditorScreen({
                   ) : null}
                 </div>
 
-                <TacticNotesPanel
-                  notes={editor.notes}
-                  canEdit={isAdmin}
-                  draft={notesDraft}
-                />
+                <TacticNotesPanel notes={editor.notes} draft={notesDraft} />
               </div>
 
               <div className="border-t">
