@@ -14,6 +14,7 @@ import { useStageTransition } from "../hooks/use-stage-transition";
 import { useStageZoom } from "../hooks/use-stage-zoom";
 import { useTacticEditor } from "../hooks/use-tactic-editor";
 import { useTacticExport } from "../hooks/use-tactic-export";
+import { useTacticNotesDraft } from "../hooks/use-tactic-notes-draft";
 import { useLeaveGuard } from "../hooks/use-leave-guard";
 import { useTacticEditorStore } from "../store/editor-store";
 import { elementBounds, unionBounds } from "../lib/element-geometry";
@@ -28,6 +29,7 @@ import { EditorToolbar } from "./editor-toolbar";
 import { StageBar } from "./stage-bar";
 import { StagePlaybackControls } from "./stage-playback-controls";
 import { TacticHeader } from "./tactic-header";
+import { TacticNotesPanel } from "./tactic-notes-panel";
 import { SelectionActions } from "./selection-actions";
 import { TacticCanvas } from "./tactic-canvas";
 import { TacticViewer } from "./tactic-viewer";
@@ -132,7 +134,14 @@ export function TacticEditorScreen({
     () => void editor.onSave(),
     editor.onDeleteSelected
   );
-  const leaveGuard = useLeaveGuard(dirty, editor.onSave);
+  const notesDraft = useTacticNotesDraft(tacticId, editor.notes);
+  // The drawing and the notes save on separate requests, so leaving saves whichever is unsaved and
+  // stops at the first that fails.
+  const leaveGuard = useLeaveGuard(dirty || notesDraft.dirty, async () => {
+    if (dirty && !(await editor.onSave())) return false;
+
+    return notesDraft.dirty ? notesDraft.save() : true;
+  });
 
   return (
     <div className="flex flex-col gap-4">
@@ -254,6 +263,12 @@ export function TacticEditorScreen({
                     </>
                   ) : null}
                 </div>
+
+                <TacticNotesPanel
+                  notes={editor.notes}
+                  canEdit={isAdmin}
+                  draft={notesDraft}
+                />
               </div>
 
               <div className="border-t">
@@ -281,7 +296,7 @@ export function TacticEditorScreen({
           ) : null}
 
           {isDesktop !== null && !canDraw ? (
-            <TacticViewer stages={stages} />
+            <TacticViewer stages={stages} notes={editor.notes} />
           ) : null}
         </div>
       </QueryBoundary>

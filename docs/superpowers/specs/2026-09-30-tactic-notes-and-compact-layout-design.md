@@ -31,6 +31,7 @@ Yêu cầu:
   `text-foreground` cho tên), không còn màu trắng trên scrim.
 - Khi chiến thuật chưa tải xong, `<h1>` là "Đang tải..." như trước.
 - Màn danh sách `/chien-thuat` giữ nguyên `PageHeader` có banner.
+- Prop `breadcrumb` của `PageHeader` chỉ màn này dùng, nên bị xoá cùng test của nó.
 - Lý do: màn này là công cụ làm việc, map là nội dung chính. `apps/web/docs/frontend.md` §6 ghi
   ngoại lệ này.
 
@@ -91,12 +92,12 @@ Chỉ áp cho admin trên máy tính (`canDraw`). Một khung `rounded-xl border
 - Mặc định: mở nếu chiến thuật đã có ghi chú, đóng nếu chưa có. Trạng thái đóng/mở là state UI của
   component, không lưu lại.
 - Chế độ xem: ghi chú, hoặc "Chưa có ghi chú." khi trống; nút `[Sửa]`.
-- Chế độ sửa: `Textarea` (`maxLength` 5000, có đếm ký tự), nút `[Lưu ghi chú]` và `[Hủy]`.
+- Chế độ sửa: `Textarea` (`maxLength` 5000, có đếm ký tự), nút `[Lưu ghi chú]` và `[Huỷ]`.
   - Lưu gọi `useUpdateTactic` (`PATCH` có sẵn), rồi query `tactic` được invalidate như mọi lần sửa
     chiến thuật. Bản vẽ đang sửa không bị ảnh hưởng: editor chỉ nạp scene một lần cho mỗi id.
   - Lỗi hiện ngay trong panel, nguyên văn `ApiError.message` (panel có chỗ cho một câu; bản vẽ báo lỗi
     bằng toast chỉ vì toolbar không có chỗ).
-  - Hủy bỏ bản nháp, quay về chế độ xem.
+  - Huỷ bỏ bản nháp, quay về chế độ xem.
 - Ghi chú lưu độc lập với bản vẽ: không đi qua `dirty`, undo/redo, hay nút "Lưu" của toolbar.
 - Trạng thái sửa nằm trong hook `useTacticNotesDraft`, dùng ở `TacticEditorScreen`, để leave guard
   đọc được. Ghi chú "chưa lưu" khi đang sửa và bản nháp (sau trim) khác ghi chú đã lưu.
@@ -120,8 +121,8 @@ Chỉ áp cho admin trên máy tính (`canDraw`). Một khung `rounded-xl border
 
 - Shared (`tactic.schema.spec.ts` bên API): `updateTacticSchema` nhận `notes` (trim, `null`), từ
   chối chuỗi dài hơn 5000 ký tự.
-- API: codec trả `notes` trong detail; service `update` ghi `notes`; http spec: `PATCH` có `notes`
-  với admin thì được, với thành viên thì 403.
+- API: codec trả `notes` trong detail và không trả trong summary; service `update` ghi `notes`; http
+  spec: thành viên gửi `PATCH` có `notes` thì nhận 403.
 - Web:
   - `TacticHeader`: hai link về danh sách, `<h1>` là tên chiến thuật.
   - `TacticNotesPanel`: xem, sửa, hủy, lưu (gửi `null` khi rỗng), hiện lỗi, đóng/mở, mặc định đóng

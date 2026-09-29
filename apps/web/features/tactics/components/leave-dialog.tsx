@@ -35,8 +35,8 @@ export function LeaveDialog({ guard }: { guard: LeaveGuard }) {
         <DialogHeader>
           <DialogTitle>Rời trang khi chưa lưu?</DialogTitle>
           <DialogDescription>
-            Bản vẽ có thay đổi chưa lưu. Rời trang mà không lưu thì các thay
-            đổi đó mất.
+            Bản vẽ hoặc ghi chú có thay đổi chưa lưu. Rời trang mà không lưu
+            thì các thay đổi đó mất.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>

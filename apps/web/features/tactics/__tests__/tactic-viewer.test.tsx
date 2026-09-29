@@ -66,20 +66,20 @@ const stages: TacticStage[] = [
 
 describe("TacticViewer", () => {
   it("opens on the first stage", () => {
-    render(<TacticViewer stages={stages} />);
+    render(<TacticViewer stages={stages} notes={null} />);
 
     expect(screen.getByTestId("canvas").textContent).toBe("Giai đoạn 1");
   });
 
   it("switches stage from the tabs", () => {
-    render(<TacticViewer stages={stages} />);
+    render(<TacticViewer stages={stages} notes={null} />);
     fireEvent.click(screen.getByRole("tab", { name: "Giai đoạn 2" }));
 
     expect(screen.getByTestId("canvas").textContent).toBe("Giai đoạn 2");
   });
 
   it("walks the stages with the arrow keys", () => {
-    render(<TacticViewer stages={stages} />);
+    render(<TacticViewer stages={stages} notes={null} />);
 
     fireEvent.keyDown(window, { key: "ArrowRight" });
     expect(screen.getByTestId("canvas").textContent).toBe("Giai đoạn 2");
@@ -89,7 +89,7 @@ describe("TacticViewer", () => {
   });
 
   it("stops at both ends rather than wrapping around", () => {
-    render(<TacticViewer stages={stages} />);
+    render(<TacticViewer stages={stages} notes={null} />);
 
     fireEvent.keyDown(window, { key: "ArrowLeft" });
     expect(screen.getByTestId("canvas").textContent).toBe("Giai đoạn 1");
@@ -100,14 +100,14 @@ describe("TacticViewer", () => {
   });
 
   it("hides the tabs and the arrow hint for a single stage", () => {
-    render(<TacticViewer stages={[stages[0]]} />);
+    render(<TacticViewer stages={[stages[0]]} notes={null} />);
 
     expect(screen.queryByRole("tab")).toBeNull();
     expect(screen.queryByText("→")).toBeNull();
   });
 
   it("offers the play and onion-skin buttons once there are two stages", () => {
-    render(<TacticViewer stages={stages} />);
+    render(<TacticViewer stages={stages} notes={null} />);
 
     expect(
       screen.getByRole("button", { name: "Chạy các giai đoạn" })
@@ -118,10 +118,24 @@ describe("TacticViewer", () => {
   });
 
   it("keeps both buttons off a one-stage tactic", () => {
-    render(<TacticViewer stages={[stages[0]]} />);
+    render(<TacticViewer stages={[stages[0]]} notes={null} />);
 
     expect(
       screen.queryByRole("button", { name: "Chạy các giai đoạn" })
     ).toBeNull();
+  });
+
+  it("shows the notes beside the map when there are some", () => {
+    render(<TacticViewer stages={stages} notes={"- Mở màn\n- Rút"} />);
+
+    const notes = screen.getByRole("region", { name: "Ghi chú chiến thuật" });
+
+    expect(notes.textContent).toContain("- Mở màn\n- Rút");
+  });
+
+  it("leaves no empty notes box when there are none", () => {
+    render(<TacticViewer stages={stages} notes={null} />);
+
+    expect(screen.queryByText("Ghi chú chiến thuật")).toBeNull();
   });
 });
