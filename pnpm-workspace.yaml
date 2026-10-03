@@ -15,7 +15,7 @@ allowBuilds:
 
 engineStrict: true
 
-# Raises the version floor for transitive dependencies with an advisory open on Dependabot.
+# Raises the version floor for transitive dependencies with an advisory open on Dependabot or code scanning.
 # No package in the workspace declares them directly, so an override is the only place the patched
 # version can be forced. Drop a line once the parent dependency has moved past that mark itself.
 overrides:
