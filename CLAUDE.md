@@ -12,8 +12,10 @@ nothing new belongs there: a dependency goes in the app or package that uses it.
 
 - **Implement simple tasks directly.** Brainstorming, spec review and written plans are for large or
   explicitly requested work; when a plan is warranted, keep it short.
-- **Execute plans inline.** Spawn subagents only for a large task or on request.
-- **One review at the end**, by one agent. The user reviews all generated code.
+- **Execute plans inline.** Spawn subagents only for a large task, on request, or for the final
+  review below.
+- **Final review by a separate agent**, never the session that wrote the code - run `pr-review`
+  there. The user reviews all generated code.
 
 ## Read before writing code
 
