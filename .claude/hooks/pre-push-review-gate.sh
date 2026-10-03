@@ -90,7 +90,8 @@ fi
 cat >&2 <<EOF
 🔴 Push blocked: code review is required before pushing.
 
-Run the "pr-review" skill on the current changes first (say: "review PR").
+Run the "pr-review" skill on the current changes first, from a reviewer agent
+separate from the session that wrote the code.
 When the review verdict is Approve, the skill records approval for commit:
   ${head_sha:-<unknown>}
 by writing .claude/.pr-review-passed — then the push is allowed.
