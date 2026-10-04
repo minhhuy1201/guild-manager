@@ -68,7 +68,9 @@ export function effectiveRecords(
   leaves: LeaveWindow[],
   sessions: CoverageSession[],
 ): AttendanceRecord[] {
-  const answered = new Set(records.map((r) => `${r.sessionId}:${r.characterId}`));
+  const answered = new Set(
+    records.map((r) => `${r.sessionId}:${r.characterId}`),
+  );
   const implied: AttendanceRecord[] = [];
 
   for (const session of sessions) {

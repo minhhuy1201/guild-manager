@@ -36,7 +36,12 @@ describe('isLeaveCovering', () => {
     ['session on startDate', { startDate: '2026-10-10' }, {}, true],
     ['session on endDate', { endDate: '2026-10-10' }, {}, true],
     ['session the day after endDate', { endDate: '2026-10-09' }, {}, false],
-    ['session the day before startDate', { startDate: '2026-10-11' }, {}, false],
+    [
+      'session the day before startDate',
+      { startDate: '2026-10-11' },
+      {},
+      false,
+    ],
     [
       'session at 00:30 VN on day D is day D, not D-1 in UTC',
       { startDate: '2026-10-10', endDate: '2026-10-10' },
@@ -98,13 +103,18 @@ describe('isLeaveCovering', () => {
     ],
   ])('%s', (_name, leaveOverrides, sessionOverrides, expected) => {
     expect(
-      isLeaveCovering(leave(leaveOverrides), { ...SESSION, ...sessionOverrides }),
+      isLeaveCovering(leave(leaveOverrides), {
+        ...SESSION,
+        ...sessionOverrides,
+      }),
     ).toBe(expected);
   });
 });
 
 describe('effectiveRecords', () => {
-  const answer = (overrides: Partial<AttendanceRecord> = {}): AttendanceRecord => ({
+  const answer = (
+    overrides: Partial<AttendanceRecord> = {},
+  ): AttendanceRecord => ({
     characterId: 'c1',
     sessionId: 's1',
     isPresent: true,
@@ -115,7 +125,9 @@ describe('effectiveRecords', () => {
   });
 
   it('keeps a pressed answer over a covering leave', () => {
-    expect(effectiveRecords([answer()], [leave()], [SESSION])).toEqual([answer()]);
+    expect(effectiveRecords([answer()], [leave()], [SESSION])).toEqual([
+      answer(),
+    ]);
   });
 
   it('fills an unanswered cell covered by a leave', () => {

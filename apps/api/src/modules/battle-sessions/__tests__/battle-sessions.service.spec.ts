@@ -712,14 +712,13 @@ describe('BattleSessionsService', () => {
         row({ attendanceClosedAt: vn('2026-07-21T08:00') }),
       ]);
 
-      await expect(service.readCoverageByIds(['session-tue'])).resolves.toEqual([
-        {
-          id: 'session-tue',
-          dateTime: vn('2026-07-21T20:30'),
-          deadline: vn('2026-07-21T10:00'),
-          attendanceClosedAt: vn('2026-07-21T08:00'),
-        },
-      ]);
+      // The mock ignores `select`, so assert the query asks for the closing moments.
+      const [result] = await service.readCoverageByIds(['session-tue']);
+
+      expect(result.attendanceClosedAt).toEqual(vn('2026-07-21T08:00'));
+      expect(firstArg(prisma.battleSession.findMany, 0)).toMatchObject({
+        select: { deadline: true, attendanceClosedAt: true },
+      });
       expect(firstArg(prisma.battleSession.findMany, 0)).toMatchObject({
         where: { id: { in: ['session-tue'] } },
       });
