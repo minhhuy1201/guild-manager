@@ -166,7 +166,10 @@ model Leave {
 
 **Files:**
 - Create: `apps/api/src/modules/attendance/leave-coverage.ts`
-- Test: `apps/api/src/modules/attendance/__tests__/leave-coverage.spec.ts`
+- Modify: `apps/api/src/modules/battle-sessions/session-schedule.ts` (`closingMoment`),
+  `battle-sessions.public.ts` (export)
+- Test: `apps/api/src/modules/attendance/__tests__/leave-coverage.spec.ts`,
+  `apps/api/src/modules/battle-sessions/__tests__/session-schedule.spec.ts`
 
 **Produces:**
 
