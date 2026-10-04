@@ -9,7 +9,6 @@ const { toastSuccess, toastError } = vi.hoisted(() => ({
   toastError: vi.fn(),
 }));
 const cancel = vi.fn();
-const pending = { isPending: false, variables: undefined as string | undefined };
 
 const CHARACTERS: Character[] = [
   { id: "char-1", name: "Mèo Mập", guildClass: GuildClass.CUU_LINH },
@@ -38,14 +37,13 @@ const LEAVES: Leave[] = [
 
 vi.mock("../hooks/use-leaves", () => ({
   useLeaves: () => ({ data: LEAVES }),
-  useCancelLeave: () => ({
-    mutateAsync: cancel,
-    isPending: pending.isPending,
-    variables: pending.variables,
-  }),
+  useCancelLeave: () => ({ mutateAsync: cancel }),
 }));
 vi.mock("../hooks/use-attendance", () => ({
   useCharacters: () => ({ data: CHARACTERS }),
+}));
+vi.mock("@/hooks/use-session-recovery", () => ({
+  useSessionRecovery: () => () => false,
 }));
 vi.mock("@/features/auth", () => ({
   useSession: () => ({ data: { character: { id: "char-1" } } }),
@@ -61,8 +59,6 @@ import { LeavePanel } from "../components/leave-panel";
 beforeEach(() => {
   cancel.mockReset().mockResolvedValue({});
   toastSuccess.mockReset();
-  pending.isPending = false;
-  pending.variables = undefined;
 });
 afterEach(cleanup);
 
@@ -88,31 +84,58 @@ describe("LeavePanel", () => {
     expect(screen.getByRole("columnheader", { name: "Người khai" })).toBeTruthy();
   });
 
-  it("nút Hủy của dòng nào gọi cancel với id dòng đó", async () => {
+  it("bấm Hủy chỉ mở hộp xác nhận nêu tên và khoảng ngày, chưa hủy", () => {
     render(<LeavePanel />);
     const row = screen.getAllByRole("row")[2];
 
-    fireEvent.click(within(row).getByRole("button", { name: /Hủy/ }));
+    fireEvent.click(within(row).getByRole("button", { name: "Hủy" }));
 
-    await waitFor(() => expect(cancel).toHaveBeenCalledWith("l2"));
-    expect(toastSuccess).toHaveBeenCalledWith("Đã hủy lần nghỉ.");
+    expect(screen.getByText("Hủy lần nghỉ của Cún Con?")).toBeTruthy();
+    expect(screen.getByText(/Lần nghỉ 08\/10 - 09\/10 sẽ bị hủy/)).toBeTruthy();
+    // Said plainly: an admin cancel also frees days that already closed.
+    expect(screen.getByText(/đã khoá/)).toBeTruthy();
+    expect(cancel).not.toHaveBeenCalled();
   });
 
-  it("khoá nút Hủy của dòng đang hủy, các dòng khác vẫn bấm được", () => {
-    pending.isPending = true;
-    pending.variables = "l2";
+  it("xác nhận thì hủy đúng lần nghỉ của dòng đó và báo thành công", async () => {
     render(<LeavePanel />);
+    fireEvent.click(
+      within(screen.getAllByRole("row")[2]).getByRole("button", { name: "Hủy" })
+    );
 
-    const rows = screen.getAllByRole("row");
+    fireEvent.click(screen.getByRole("button", { name: /Hủy lần nghỉ/ }));
 
-    expect(
-      (within(rows[2]).getByRole("button", { name: /Hủy/ }) as HTMLButtonElement)
-        .disabled
-    ).toBe(true);
-    expect(
-      (within(rows[1]).getByRole("button", { name: /Hủy/ }) as HTMLButtonElement)
-        .disabled
-    ).toBe(false);
+    await waitFor(() => expect(cancel).toHaveBeenCalledWith("l2"));
+    await waitFor(() =>
+      expect(toastSuccess).toHaveBeenCalledWith("Đã hủy lần nghỉ.")
+    );
+    await waitFor(() =>
+      expect(screen.queryByText("Hủy lần nghỉ của Cún Con?")).toBeNull()
+    );
+  });
+
+  it("bỏ qua hộp xác nhận thì không hủy gì", () => {
+    render(<LeavePanel />);
+    fireEvent.click(
+      within(screen.getAllByRole("row")[2]).getByRole("button", { name: "Hủy" })
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Huỷ" }));
+
+    expect(cancel).not.toHaveBeenCalled();
+  });
+
+  it("hiện nguyên câu lỗi của server và giữ hộp xác nhận", async () => {
+    cancel.mockRejectedValue(new Error("Lần nghỉ không còn tồn tại."));
+    render(<LeavePanel />);
+    fireEvent.click(
+      within(screen.getAllByRole("row")[2]).getByRole("button", { name: "Hủy" })
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Hủy lần nghỉ/ }));
+
+    expect(await screen.findByText("Lần nghỉ không còn tồn tại.")).toBeTruthy();
+    expect(toastSuccess).not.toHaveBeenCalled();
   });
 
   it("Khai hộ mở dialog ở chế độ admin", () => {

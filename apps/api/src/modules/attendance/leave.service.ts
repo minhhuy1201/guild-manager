@@ -121,26 +121,30 @@ export class LeaveService {
       throw new BadRequestException(LEAVE_ENDED);
     }
 
-    const active = await this.prisma.leave.findMany({
-      where: { characterId, cancelledAt: null },
-    });
-    const clash = active
-      .map(toLeaveWindow)
-      .find(
-        (other) => other.startDate <= endDate && other.endDate >= startDate,
-      );
-    if (clash) {
-      throw new ConflictException(
-        `Khoảng nghỉ trùng với lần nghỉ ${dayMonth(clash.startDate)} - ${dayMonth(clash.endDate)}.`,
-      );
-    }
-
     const sessions = await this.battleSessions.readCoverageInRange(
       startDate,
       endDate,
     );
 
     return this.prisma.$transaction(async (tx) => {
+      // Serialises filings for one character: the overlap read below and the insert after it must
+      // not interleave with another filing, or both pass the check. Released at commit/rollback.
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${characterId}))`;
+
+      const active = await tx.leave.findMany({
+        where: { characterId, cancelledAt: null },
+      });
+      const clash = active
+        .map(toLeaveWindow)
+        .find(
+          (other) => other.startDate <= endDate && other.endDate >= startDate,
+        );
+      if (clash) {
+        throw new ConflictException(
+          `Khoảng nghỉ trùng với lần nghỉ ${dayMonth(clash.startDate)} - ${dayMonth(clash.endDate)}.`,
+        );
+      }
+
       const created = await tx.leave.create({
         data: {
           characterId,

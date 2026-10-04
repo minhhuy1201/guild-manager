@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Plane } from "lucide-react";
+import type { Leave } from "@guild/shared/schemas";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,9 +16,9 @@ import {
 } from "@/components/ui/table";
 import { useSession } from "@/features/auth";
 import { useCharacters } from "../hooks/use-attendance";
-import { useCancelLeaveWithToast } from "../hooks/use-cancel-leave-with-toast";
 import { useLeaves } from "../hooks/use-leaves";
 import { formatLeaveRange } from "../lib/leave-label";
+import { CancelLeaveDialog } from "./cancel-leave-dialog";
 import { LeaveDialog } from "./leave-dialog";
 
 /**
@@ -30,7 +31,7 @@ export function LeavePanel() {
   const { data: session } = useSession();
   const { data: leaves } = useLeaves();
   const { data: characters } = useCharacters();
-  const { cancel, isCancelling } = useCancelLeaveWithToast();
+  const [cancelling, setCancelling] = useState<Leave | null>(null);
 
   const nameOf = new Map((characters ?? []).map((c) => [c.id, c.name]));
 
@@ -90,8 +91,7 @@ export function LeavePanel() {
                     type="button"
                     variant="ghost"
                     size="sm"
-                    disabled={isCancelling(leave.id)}
-                    onClick={() => cancel(leave.id)}
+                    onClick={() => setCancelling(leave)}
                   >
                     Hủy
                   </Button>
@@ -102,6 +102,11 @@ export function LeavePanel() {
         </Table>
       )}
 
+      <CancelLeaveDialog
+        leave={cancelling}
+        memberName={cancelling ? (nameOf.get(cancelling.characterId) ?? "—") : ""}
+        onClose={() => setCancelling(null)}
+      />
       <LeaveDialog
         open={isOpen}
         onOpenChange={setIsOpen}

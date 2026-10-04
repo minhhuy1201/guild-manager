@@ -297,7 +297,7 @@ Message lỗi là hằng số đầu file, đúng bảng spec §5.2. Thứ tự 
     `cancelledAt`
   - `listActive` bỏ lần đã hủy và lần có `endDate` trước hôm nay
 - [x] **Bước 2:** `pnpm --filter api test -- leave.service` → FAIL.
-- [x] **Bước 3:** code. `create` chạy trong `prisma.$transaction(async (tx) => …)`: tạo `Leave` với
+- [x] **Bước 3:** code. `create` chạy trong `prisma.$transaction(async (tx) => …)`: lấy khoá advisory theo nhân vật (`tx.$executeRaw` `pg_advisory_xact_lock(hashtext(characterId))`), đọc các lần nghỉ chưa hủy và báo 409 nếu chồng ngày, rồi tạo `Leave` với
   `createdAt: now`, `createdByAdmin: canManageGuild(actor.role)`, `cancelledByAdmin: false`; lọc
   `readCoverageInRange` bằng chính `isLeaveCovering(created, s)` (một luật cho cả đọc lẫn ghi); `tx.attendanceRecord.deleteMany({ where: { characterId, sessionId: { in } } })`; release từng trận.
   `leave.codec.ts` đổi `@db.Date` sang chuỗi bằng `toISOString().slice(0, 10)` (cột Date về dạng

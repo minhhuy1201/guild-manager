@@ -64,6 +64,7 @@ describe('LeaveService', () => {
   let service: LeaveService;
   let prisma: {
     $transaction: jest.Mock;
+    $executeRaw: jest.Mock;
     leave: {
       findMany: jest.Mock;
       findUnique: jest.Mock;
@@ -100,6 +101,7 @@ describe('LeaveService', () => {
   beforeEach(() => {
     prisma = {
       $transaction: jest.fn(),
+      $executeRaw: jest.fn().mockResolvedValue([]),
       leave: {
         findMany: jest.fn().mockResolvedValue([]),
         findUnique: jest.fn(),
@@ -236,6 +238,37 @@ describe('LeaveService', () => {
       await expect(service.create(createInput(), MEMBER)).rejects.toThrow(
         new ConflictException('Khoảng nghỉ trùng với lần nghỉ 12/10 - 15/10.'),
       );
+    });
+
+    it('takes the per-character lock before it reads overlaps, so two filings cannot both pass', async () => {
+      await service.create(createInput(), MEMBER);
+
+      expect(prisma.$executeRaw).toHaveBeenCalledTimes(1);
+      expect(prisma.$executeRaw.mock.invocationCallOrder[0]).toBeLessThan(
+        prisma.leave.findMany.mock.invocationCallOrder[0],
+      );
+      expect(prisma.leave.findMany.mock.invocationCallOrder[0]).toBeLessThan(
+        prisma.leave.create.mock.invocationCallOrder[0],
+      );
+    });
+
+    it('locks nothing and reads nothing when the request is refused before the transaction', async () => {
+      await expect(
+        service.create(createInput({ characterId: OTHER_CHARACTER }), MEMBER),
+      ).rejects.toThrow(ForbiddenException);
+
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+      expect(prisma.$executeRaw).not.toHaveBeenCalled();
+    });
+
+    it('creates nothing when it overlaps', async () => {
+      prisma.leave.findMany.mockResolvedValue([leaveRow()]);
+
+      await expect(service.create(createInput(), MEMBER)).rejects.toThrow(
+        ConflictException,
+      );
+
+      expect(prisma.leave.create).not.toHaveBeenCalled();
     });
 
     it('only compares against leaves that are not cancelled', async () => {

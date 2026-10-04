@@ -150,8 +150,12 @@ Service kiểm tra, theo thứ tự (lỗi cụ thể nhất trước, cùng tin
 Thành viên được để `startDate` ở quá khứ ("đang nghỉ từ hôm qua"): ngày đã qua đều đã khoá nên luật
 4.2 tự bỏ qua chúng. Admin được khai cả khoảng đã qua (sửa sau trận, như ghi hộ hiện nay).
 
-Không chặn hai yêu cầu đồng thời bằng khoá DB: một người tự khai hai lần trong cùng một giây là
-trường hợp không thực tế với guild 1-2 admin (cùng lập luận architecture.md §8).
+Kiểm tra trùng chạy **trong** transaction tạo lần nghỉ, sau khoá advisory theo nhân vật
+(`pg_advisory_xact_lock(hashtext(characterId))`, nhả lúc commit/rollback): hai yêu cầu đồng thời cho
+cùng một người (web và `/nghi-phep` cùng lúc) nối đuôi nhau, nên yêu cầu sau thấy lần nghỉ của yêu cầu
+trước và nhận 409. Postgres không có ràng buộc loại trừ khoảng ngày nếu thiếu `btree_gist`, nên khoá
+advisory là cách đơn giản nhất. (Bản đầu của spec chấp nhận không khoá; đổi vì rủi ro là lần nghỉ
+chồng ngày hiện đôi trong banner và `/huy-nghi-phep`.)
 
 ### 5.3 Ghi khi khai nghỉ
 
