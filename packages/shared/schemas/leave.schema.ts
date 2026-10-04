@@ -5,8 +5,13 @@ import { ATTENDANCE_REASON_MAX_LENGTH } from "./attendance.schema";
 export const leaveDateSchema = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, "Ngày không hợp lệ.")
-  // Rejects `2026-02-31`, which Date.UTC would roll over into March.
-  .refine((value) => new Date(`${value}T00:00:00Z`).toISOString().startsWith(value), "Ngày không hợp lệ.");
+  // Rejects `2026-02-31` (Date.UTC would roll it into March) and `2026-13-01` (an Invalid Date, whose
+  // `toISOString()` throws - a throw inside a refine escapes `safeParse` as a 500).
+  .refine((value) => {
+    const date = new Date(`${value}T00:00:00Z`);
+
+    return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(value);
+  }, "Ngày không hợp lệ.");
 
 export const createLeaveSchema = z
   .object({

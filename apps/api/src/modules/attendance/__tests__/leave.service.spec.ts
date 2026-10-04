@@ -404,6 +404,9 @@ describe('LeaveService', () => {
           startDate: { lte: new Date('2026-10-10T00:00:00Z') },
           endDate: { gte: new Date('2026-10-04T00:00:00Z') },
         },
+        // Two leaves can cover one cell (a cancelled one still covers days that closed before it);
+        // newest first makes the one the cell reads deterministic.
+        orderBy: { createdAt: 'desc' },
       });
       expect(windows[0]).toMatchObject({
         startDate: '2026-10-05',

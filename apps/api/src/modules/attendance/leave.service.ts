@@ -84,6 +84,9 @@ export class LeaveService {
         startDate: { lte: fromDateKey(days[days.length - 1]) },
         endDate: { gte: fromDateKey(days[0]) },
       },
+      // Two leaves can cover one cell (a cancelled one still covers days that closed before it);
+      // newest first makes the one the cell reads deterministic.
+      orderBy: { createdAt: 'desc' },
     });
 
     return rows.map(toLeaveWindow);
