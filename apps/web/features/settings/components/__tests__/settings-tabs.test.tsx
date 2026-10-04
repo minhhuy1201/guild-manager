@@ -23,6 +23,9 @@ vi.mock("@/components/shared/banner-image", () => ({ BannerImage: () => null }))
 vi.mock("@/features/members", () => ({
   MembersPanel: () => <div data-testid="members-panel" />,
 }));
+vi.mock("@/features/attendance", () => ({
+  LeavePanel: () => <div data-testid="leave-panel" />,
+}));
 vi.mock("../settings-screen", () => ({
   SettingsScreen: () => <div data-testid="settings-screen" />,
 }));
@@ -61,6 +64,15 @@ describe("SettingsTabs - tab nằm trên URL", () => {
     expect(screen.getByTestId("members-panel")).toBeTruthy();
   });
 
+  it("?tab=leaves mở tab nghỉ phép", () => {
+    params = new URLSearchParams("tab=leaves");
+
+    render(<SettingsTabs />);
+
+    expect(tab(/Nghỉ phép/).getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByTestId("leave-panel")).toBeTruthy();
+  });
+
   it("giá trị lạ thì mở tab lịch đánh", () => {
     params = new URLSearchParams("tab=khong-co");
 
@@ -96,6 +108,7 @@ describe("SettingsTabs - vừa màn điện thoại", () => {
   it.each([
     ["Thiết lập lịch đánh", "Lịch đánh"],
     ["Quản lý thành viên", "Thành viên"],
+    ["Nghỉ phép của thành viên", "Nghỉ phép"],
   ])(
     "tab %s: tên truy cập là nhãn đầy đủ, dưới sm hiện chữ ngắn %s",
     (fullLabel, shortLabel) => {
