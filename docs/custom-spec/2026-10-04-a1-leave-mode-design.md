@@ -30,7 +30,7 @@ nghỉ.
 | D3 | Hủy giữa chừng | Ngày còn mở quay về "chưa phản hồi"; ngày đã khoá giữ "Không". |
 | D4 | Độ dài | Không giới hạn; chỉ cần `endDate >= startDate`. Không tự coi là rời bang - rời bang vẫn là admin xoá thành viên. |
 | D5 | Ngày đã khoá | Lần nghỉ thành viên tự khai chỉ phủ ngày còn mở lúc khai; thành viên hủy chỉ "nhả" ngày còn mở. |
-| D6 | Kênh khai | Web + lệnh bot `/nghi-phep`, `/huy-nghi-phep` + nút "Xin nghỉ" dưới tin `/thong-bao`. |
+| D6 | Kênh khai | Web + nút "Xin nghỉ" dưới tin `/thong-bao` (không thêm lệnh slash: tránh rối danh sách lệnh; hủy nghỉ chỉ làm trên web). |
 | D7 | Đội hình | Khai nghỉ gỡ người đó khỏi đội hình các ngày được phủ, như trả lời "Không". |
 | D8 | Admin vượt khoá | Có, đúng như admin ghi điểm danh hiện nay. Lần nghỉ **admin tạo** phủ cả ngày đã khoá trong khoảng, kể cả khoảng đã qua; **admin hủy** thì nhả mọi ngày, kể cả ngày đã khoá. Quyền được chụp lúc bấm (`createdByAdmin`, `cancelledByAdmin`), không đọc lại role hiện tại. |
 | D9 | Câu trả lời cũ | Khai nghỉ ghi đè câu trả lời cũ trong khoảng: xoá record của người đó ở mọi ngày lần nghỉ phủ (thành viên: ngày còn mở; admin: mọi ngày trong khoảng). Ví dụ đã "Có" thứ 5, khai nghỉ thứ 4 - thứ 6 thì thứ 5 thành "Không (nghỉ)". Hủy nghỉ không khôi phục câu trả lời đã xoá (khớp D3: về "chưa phản hồi"). |
@@ -152,10 +152,10 @@ Thành viên được để `startDate` ở quá khứ ("đang nghỉ từ hôm 
 
 Kiểm tra trùng chạy **trong** transaction tạo lần nghỉ, sau khoá advisory theo nhân vật
 (`pg_advisory_xact_lock(hashtext(characterId))`, nhả lúc commit/rollback): hai yêu cầu đồng thời cho
-cùng một người (web và `/nghi-phep` cùng lúc) nối đuôi nhau, nên yêu cầu sau thấy lần nghỉ của yêu cầu
+cùng một người (web và nút Xin nghỉ cùng lúc) nối đuôi nhau, nên yêu cầu sau thấy lần nghỉ của yêu cầu
 trước và nhận 409. Postgres không có ràng buộc loại trừ khoảng ngày nếu thiếu `btree_gist`, nên khoá
 advisory là cách đơn giản nhất. (Bản đầu của spec chấp nhận không khoá; đổi vì rủi ro là lần nghỉ
-chồng ngày hiện đôi trong banner và `/huy-nghi-phep`.)
+chồng ngày hiện đôi trong banner.)
 
 ### 5.3 Ghi khi khai nghỉ
 
@@ -196,13 +196,10 @@ ngày dạng `YYYY-MM-DD`; `createdByCharacterId` null với rescue admin (bản
 
 ## 6. Bot Discord
 
-### 6.1 Lệnh
+### 6.1 Nhập ngày
 
-- `/nghi-phep tu-ngay den-ngay [ly-do]`: khai cho nhân vật của người gọi. Ngày gõ `dd/mm` hoặc
-  `dd/mm/yyyy`. Khai hộ chỉ có trên web (admin đã có `/diem-danh-ho` cho từng ô; thêm bản hộ cho
-  nghỉ phép là chưa cần).
-- `/huy-nghi-phep`: hủy lần nghỉ đang diễn ra của người gọi, nếu không có thì lần sắp tới gần nhất.
-  Trả lời ephemeral nêu khoảng ngày đã hủy, hoặc `Bạn không có lần nghỉ nào để hủy.`
+Không có lệnh slash riêng: khai nghỉ trên Discord đi qua nút "Xin nghỉ" (mục 6.2), hủy nghỉ chỉ có trên
+web. Ngày gõ `dd/mm` hoặc `dd/mm/yyyy`; khai hộ chỉ có trên web.
 
 Ngày thiếu năm: lấy năm sao cho ngày đó gần hôm nay nhất (trong ±6 tháng), để `02/01` gõ ngày 28/12
 ra năm sau còn `27/12` gõ ngày 02/01 ra năm trước. Riêng `den-ngay` thiếu năm: lấy lần xuất hiện đầu tiên từ
@@ -220,7 +217,7 @@ và rơi về quy tắc gần hôm nay nhất, để schema báo "Ngày kết th
   `den-ngay` (short), `ly-do` (paragraph, không bắt buộc, max 255).
 - Gửi modal → interaction type `5` (MODAL_SUBMIT). `interactionSchema` thêm nhánh này;
   `InteractionRouter` thêm `case`. Đọc giá trị qua `data.components[].component.{custom_id, value}`,
-  rồi đi qua cùng parser và cùng `LeaveService.create` với lệnh `/nghi-phep`. Trả lời ephemeral.
+  rồi đi qua parser ngày và `LeaveService.create`. Trả lời ephemeral.
 
 Danh tính lấy từ payload đã ký (`callerDiscordId`), không bao giờ từ custom_id.
 
@@ -269,7 +266,7 @@ qua `index.ts`.
   hình ở đúng các ngày được phủ (thành viên: ngày còn mở; admin: mọi ngày), hủy idempotent.
 - `AttendanceService`: `getRecords` / `getSummary` trả câu trả lời hiệu lực; record thắng lần nghỉ.
 - `ReminderService`: người đang nghỉ không bị nhắc.
-- Bot: parse ngày (có/không năm, qua năm, sai định dạng), `/nghi-phep`, `/huy-nghi-phep`, nút mở
+- Bot: parse ngày (có/không năm, qua năm, sai định dạng), nút mở
   modal, modal submit đi đúng service.
 - Web: dialog (validate khoảng, admin chọn thành viên), banner, nhãn `Nghỉ phép`, tab Thiết lập.
 

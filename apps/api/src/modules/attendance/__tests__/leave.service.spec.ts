@@ -419,19 +419,6 @@ describe('LeaveService', () => {
         orderBy: { startDate: 'asc' },
       });
     });
-
-    it('narrows to one character for listActiveFor', async () => {
-      await service.listActiveFor(MEMBER_CHARACTER);
-
-      expect(prisma.leave.findMany).toHaveBeenCalledWith({
-        where: {
-          characterId: MEMBER_CHARACTER,
-          cancelledAt: null,
-          endDate: { gte: new Date('2026-10-04T00:00:00Z') },
-        },
-        orderBy: { startDate: 'asc' },
-      });
-    });
   });
 
   describe('windowsForSessions', () => {

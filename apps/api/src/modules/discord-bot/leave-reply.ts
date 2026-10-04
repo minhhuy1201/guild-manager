@@ -9,17 +9,17 @@ import { ephemeralText } from './reply';
 const BAD_DATE = 'Ngày phải có dạng dd/mm, ví dụ 05/10.';
 
 /** The caller's identity and character, or the refusal to show instead. */
-export type LeaveCaller =
+type LeaveCaller =
   | { ok: true; actor: JwtPayload; characterId: string }
   | { ok: false; reply: CommandReply };
 
 /**
- * Who is filing or cancelling a leave.
+ * Who is filing a leave.
  * @param discordId - Discord ID from the signed interaction
  * @param deps - Services the bot reaches
  * @returns The actor with their own character, or a ready-made refusal
  */
-export async function resolveLeaveCaller(
+async function resolveLeaveCaller(
   discordId: string,
   deps: CommandDeps,
 ): Promise<LeaveCaller> {
@@ -42,7 +42,7 @@ export async function resolveLeaveCaller(
  * @param endDate - Last day
  * @returns The range as members write it
  */
-export function formatLeaveRange(startDate: string, endDate: string): string {
+function formatLeaveRange(startDate: string, endDate: string): string {
   const dayMonth = (key: string): string =>
     `${key.slice(8, 10)}/${key.slice(5, 7)}`;
 
@@ -50,7 +50,7 @@ export function formatLeaveRange(startDate: string, endDate: string): string {
 }
 
 /**
- * File a leave for the caller and phrase the private answer - shared by `/nghi-phep` and the modal.
+ * File a leave for the caller and phrase the private answer - the answer to the leave modal.
  * A refusal from the service (overlap, already ended) is thrown and becomes the answer in the router.
  * @param discordId - Discord ID from the signed interaction
  * @param raw - The three texts the member typed; `to` and `reason` come straight from the form

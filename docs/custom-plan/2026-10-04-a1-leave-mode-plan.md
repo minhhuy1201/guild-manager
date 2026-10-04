@@ -273,9 +273,7 @@ class LeaveService {
   listActive(): Promise<Leave[]>                                   // GET /leaves
   create(input: CreateLeaveInput, actor: JwtPayload): Promise<Leave>  // POST /leaves
   cancel(id: string, actor: JwtPayload): Promise<Leave>            // POST /leaves/:id/cancel
-  /** Active or upcoming leave of one character, nearest first - for /huy-nghi-phep and the web banner. */
-  listActiveFor(characterId: string): Promise<Leave[]>
-  /** Leaves overlapping a set of sessions, as LeaveWindow - for AttendanceService. */
+    /** Leaves overlapping a set of sessions, as LeaveWindow - for AttendanceService. */
   windowsForSessions(sessions: CoverageSession[]): Promise<LeaveWindow[]>
 }
 ```
@@ -329,19 +327,18 @@ Message lỗi là hằng số đầu file, đúng bảng spec §5.2. Thứ tự 
 
 **Files:**
 - Create: `apps/api/src/modules/discord-bot/leave-date-input.ts`,
-  `commands/nghi-phep.command.ts`, `commands/huy-nghi-phep.command.ts`, `leave-reply.ts` (câu trả
-  lời dùng chung cho lệnh và modal)
-- Modify: `commands/index.ts`, `commands/command.types.ts` (`CommandDeps` thêm `leaves: LeaveService`),
+  `leave-reply.ts` (câu trả lời của modal). Không có lệnh slash riêng (quyết định sau review: tránh
+  rối danh sách lệnh)
+- Modify: `commands/command.types.ts` (`CommandDeps` thêm `leaves: LeaveService`),
   `interaction-router.ts` (truyền `leaves`), `discord-bot.module.ts` nếu cần
-- Test: `__tests__/leave-date-input.spec.ts`, `__tests__/nghi-phep.command.spec.ts`,
-  `__tests__/huy-nghi-phep.command.spec.ts`
+- Test: `__tests__/leave-date-input.spec.ts`, `__tests__/leave-reply.spec.ts`
 
 **Produces:**
 
 ```ts
 /** `dd/mm` or `dd/mm/yyyy` → `YYYY-MM-DD`; a missing year picks the occurrence nearest `today`. Null when unreadable. */
 export function parseLeaveDateInput(text: string, today: Date): string | null
-/** Create a leave for the caller and phrase the ephemeral answer - shared by /nghi-phep and the modal. */
+/** Create a leave for the caller and phrase the ephemeral answer - the answer to the leave modal. */
 export async function submitLeave(discordId: string, raw: { from: string; to: string; reason: string | null }, deps: CommandDeps): Promise<CommandReply>
 ```
 
@@ -349,16 +346,14 @@ export async function submitLeave(discordId: string, raw: { from: string; to: st
   như trên; `02/01` ngày 2026-12-28 → `2027-01-02`; `27/12` ngày 2027-01-02 → `2026-12-27`;
   `05/10/2027` → `2027-10-05`; `31/02` → `null`; `abc`, `` , `32/01` → `null` (Review Focus 5).
   Regex có nhóm rõ ràng: `/^(\d{1,2})\/(\d{1,2})(\/(\d{4}))?$/`.
-- [x] **Bước 2: test đỏ** lệnh: `/nghi-phep` hợp lệ → ephemeral `Đã khai nghỉ 05/10 - 12/10.`; sai
+- [x] **Bước 2: test đỏ** `submitLeave`: khai hợp lệ → ephemeral `Đã khai nghỉ 05/10 - 12/10.`; sai
   định dạng → `Ngày phải có dạng dd/mm, ví dụ 05/10.`; lỗi 409 của service → message của service
-  hiện nguyên văn; `/huy-nghi-phep` khi có lần đang diễn ra → hủy lần đó; khi không có →
-  `Bạn không có lần nghỉ nào để hủy.`
-- [x] **Bước 3:** code. Option: `tu-ngay` (string, required), `den-ngay` (string, required),
-  `ly-do` (string, optional). Danh tính qua `ActorResolver` như `/diem-danh`; actor JWT-like dựng
-  theo cách `/diem-danh` đang truyền vào `AttendanceService.mark`.
+  hiện nguyên văn.
+- [x] **Bước 3:** code. Danh tính qua `ActorResolver` như `/diem-danh`; actor JWT-like dựng theo cách
+  `/diem-danh` đang truyền vào `AttendanceService.mark`.
 - [x] **Bước 4:** `pnpm --filter api test -- discord-bot` → PASS.
-- [x] **Bước 5: commit** `feat(api): add leave slash commands`. Ghi chú cho người dùng chạy
-  `pnpm --filter api discord:register` sau khi deploy.
+- [x] **Bước 5: commit** `feat(api): add leave slash commands` (sau đó hai lệnh bị bỏ, chỉ còn nút + modal;
+  không cần `discord:register`).
 
 ### Task 8: Bot - nút "Xin nghỉ" và modal
 
@@ -455,4 +450,4 @@ const modalSubmitInteractionSchema = z.object({
   riêng); dán danh sách Needs human review.
 - [ ] **Bước 5:** `git diff --shortstat main...HEAD`; vượt 900 thì dừng, chờ người dùng gõ
   `override rule PR size`, rồi `gh pr create` theo `.github/pull_request_template.md`. Sau merge:
-  `pnpm --filter api discord:register` để Discord thấy hai lệnh mới.
+  không cần `discord:register` (không có lệnh slash mới).

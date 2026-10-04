@@ -55,16 +55,7 @@ export class LeaveService {
    * @returns Leaves soonest first
    */
   async listActive(): Promise<Leave[]> {
-    return this.readActive({});
-  }
-
-  /**
-   * Uncancelled leaves of one character that have not ended yet - for `/huy-nghi-phep` and the web banner.
-   * @param characterId - Whose leaves
-   * @returns Leaves soonest first
-   */
-  async listActiveFor(characterId: string): Promise<Leave[]> {
-    return this.readActive({ characterId });
+    return this.readActive();
   }
 
   /**
@@ -212,10 +203,9 @@ export class LeaveService {
     return toLeave(cancelled);
   }
 
-  private async readActive(filter: { characterId?: string }): Promise<Leave[]> {
+  private async readActive(): Promise<Leave[]> {
     const rows = await this.prisma.leave.findMany({
       where: {
-        ...filter,
         cancelledAt: null,
         endDate: { gte: fromDateKey(vnDateKey(this.clock.now())) },
       },

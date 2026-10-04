@@ -3,8 +3,6 @@ import { chaoMungCommand } from './chao-mung.command';
 import type { SlashCommand, SlashCommandDefinition } from './command.types';
 import { diemDanhHoCommand } from './diem-danh-ho.command';
 import { diemDanhCommand } from './diem-danh.command';
-import { huyNghiPhepCommand } from './huy-nghi-phep.command';
-import { nghiPhepCommand } from './nghi-phep.command';
 import { nhacDiemDanhCommand } from './nhac-diem-danh.command';
 import { pingCommand } from './ping.command';
 import { thongBaoCommand } from './thong-bao.command';
@@ -23,8 +21,6 @@ export const commands: readonly SlashCommand[] = [
   cauHinhKenhCommand,
   nhacDiemDanhCommand,
   chaoMungCommand,
-  nghiPhepCommand,
-  huyNghiPhepCommand,
 ];
 
 /** Exactly what `discord:register` sends to Discord. */
