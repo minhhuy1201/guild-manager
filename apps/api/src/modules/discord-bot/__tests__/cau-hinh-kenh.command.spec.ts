@@ -142,7 +142,7 @@ describe('/cau-hinh-kenh', () => {
 
     await expect(
       cauHinhKenhCommand.execute(withPurpose('NOPE'), deps),
-    ).rejects.toThrow('NOPE');
+    ).rejects.toThrow('discord:register');
     expect(set).not.toHaveBeenCalled();
     expect(postMessage).not.toHaveBeenCalled();
   });

@@ -37,9 +37,9 @@ export const DISCORD_FORBIDDEN = 403;
 /**
  * Whether this error is Discord refusing a post for lack of permission.
  *
- * Three callers translate that refusal - `/cau-hinh-kenh`, the roster announcement and
- * `/nhac-diem-danh` - and each says something different about which channel and which permission,
- * so only the detection is shared. Copying the `instanceof` plus the status a third time is what
+ * Several callers translate that refusal - `/cau-hinh-kenh`, the roster announcement,
+ * `/nhac-diem-danh` and the cron's admin alert - and each says something different about which
+ * channel and which permission, so only the detection is shared. Copying the `instanceof` plus the status again is what
  * `CLAUDE.md` calls the sign of a missed extraction.
  *
  * @param error - The caught error

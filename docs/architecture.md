@@ -652,10 +652,11 @@ Migrations are **not** in that list: the `migrate` job in `ci.yml` applies them 
 green and before `deploy-api`, so new code never meets the old schema. They are still authored by
 hand, locally with `prisma:migrate`, and committed.
 
-The one scheduled job — the attendance reminder — reports its own trouble: a run that throws, or that finds no
-reminder channel, posts one line in the `ADMIN_ALERT` channel (`ReminderService.runScheduled`) and still
-fails the request so Vercel records it. Nothing can alert when the cron is never called at all, so
-that gap stays: check the Cron Jobs tab. That is also why `/nhac-diem-danh` exists, to run the same code by hand and see the answer in chat.
+The one scheduled job — the attendance reminder — reports its own trouble: a run that throws, or
+that finds no reminder channel, posts one line in the `ADMIN_ALERT` channel
+(`ReminderService.runScheduled`) and still fails the request so Vercel records it. Nothing can alert
+when the cron is never called at all, so that gap stays: check the Cron Jobs tab. That is also why
+`/nhac-diem-danh` exists, to run the same code by hand and see the answer in chat.
 
 **Jev is not a tenth quality gate.** `packages/ci-triage` asks an evaluation model what *kind* of
 failure a red run is, and writes the answer into the run summary and the pull request. It is

@@ -70,7 +70,7 @@ function scopeOf(interaction: ApplicationCommandInteraction): ReminderScope {
 
   if (!choice) {
     throw new Error(
-      `Option ${SCOPE_OPTION} của /nhac-diem-danh không hợp lệ: ${value}`,
+      `Option ${SCOPE_OPTION} của /nhac-diem-danh không hợp lệ: ${value} - chạy pnpm --filter api discord:register`,
     );
   }
 

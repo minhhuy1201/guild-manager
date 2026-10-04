@@ -81,7 +81,7 @@ function purposeOf(
 
   if (!choice) {
     throw new Error(
-      `Option ${PURPOSE_OPTION} của /cau-hinh-kenh không hợp lệ: ${value}`,
+      `Option ${PURPOSE_OPTION} của /cau-hinh-kenh không hợp lệ: ${value} - chạy pnpm --filter api discord:register`,
     );
   }
 
@@ -92,8 +92,8 @@ function purposeOf(
  * Point the daily attendance reminder, or the admin failure alert, at the channel this command was
  * typed in — admins only.
  *
- * No channel option: the channel is already inside the signed interaction, and asking an admin to enable
- * Developer Mode and copy an id adds three steps and a place to mistype.
+ * No channel option: the channel is already inside the signed interaction, and asking an admin to
+ * enable Developer Mode and copy an id adds three steps and a place to mistype.
  *
  * The confirmation is posted **before** the row is written, and a refusal aborts the whole command.
  * A channel the bot cannot post in is not a configuration; without this check the mistake would
