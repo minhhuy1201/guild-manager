@@ -26,5 +26,7 @@ export function toAttendanceRecord(row: AttendanceRecordRow): AttendanceRecord {
     isPresent: row.isPresent,
     markedAt: row.markedAt.toISOString(),
     reason: row.reason,
+    // A row in the table is always a pressed button; leave-derived entries never reach it.
+    source: 'answer',
   } satisfies AttendanceRecord);
 }

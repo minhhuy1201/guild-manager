@@ -18,6 +18,7 @@ describe('toAttendanceRecord', () => {
       isPresent: true,
       markedAt: '2026-07-22T05:00:00.000Z',
       reason: null,
+      source: 'answer',
     });
   });
 
@@ -36,6 +37,7 @@ describe('toAttendanceRecord', () => {
       isPresent: false,
       markedAt: '2026-07-22T05:00:00.000Z',
       reason: null,
+      source: 'answer',
     });
   });
 
@@ -54,6 +56,7 @@ describe('toAttendanceRecord', () => {
       isPresent: false,
       markedAt: '2026-07-22T05:00:00.000Z',
       reason: 'Bận đi công tác',
+      source: 'answer',
     });
   });
 });
