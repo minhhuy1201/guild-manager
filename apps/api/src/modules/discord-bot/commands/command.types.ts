@@ -1,4 +1,8 @@
-import type { AttendanceService } from '../../attendance/attendance.public';
+import type { Clock } from '../../../common';
+import type {
+  AttendanceService,
+  LeaveService,
+} from '../../attendance/attendance.public';
 import type { BattleSessionsService } from '../../battle-sessions/battle-sessions.public';
 import type { CharactersService } from '../../characters/characters.public';
 import type { ActorResolver } from '../actor-resolver';
@@ -150,6 +154,7 @@ export interface CommandLinks {
  */
 export interface CommandDeps {
   attendance: AttendanceService;
+  leaves: LeaveService;
   battleSessions: BattleSessionsService;
   characters: CharactersService;
   actors: ActorResolver;
@@ -160,6 +165,8 @@ export interface CommandDeps {
   reminders: ReminderService;
   /** Outgoing Discord calls — needed by a command that posts outside its own reply */
   rest: DiscordRestClient;
+  /** Now - the leave commands read a typed `dd/mm` against today's date */
+  clock: Clock;
 }
 
 /**

@@ -45,7 +45,7 @@ export const NOT_LINKED =
   'Bạn chưa được gán nhân vật nào. Nhờ admin thêm Discord ID của bạn.';
 
 /** Shown to a rescue admin who has no character of their own to mark. */
-const NO_OWN_CHARACTER =
+export const NO_OWN_CHARACTER =
   'Tài khoản admin này không gắn với nhân vật nào — dùng /diem-danh-ho.';
 
 /**

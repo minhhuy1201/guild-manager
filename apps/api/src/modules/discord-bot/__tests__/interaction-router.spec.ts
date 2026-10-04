@@ -21,6 +21,8 @@ function makeRouter(resolve: unknown = null): InteractionRouter {
     {} as never,
     {} as never,
     {} as never,
+    {} as never,
+    {} as never,
   );
 }
 
@@ -104,6 +106,8 @@ describe('InteractionRouter', () => {
       {} as never,
       { resolve: jest.fn().mockResolvedValue(null) } as never,
       { get } as never,
+      {} as never,
+      {} as never,
       {} as never,
       {} as never,
       {} as never,

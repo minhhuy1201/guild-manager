@@ -1,9 +1,12 @@
 import { HttpException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-import { assertNever } from '../../common';
+import { assertNever, Clock } from '../../common';
 import type { Env } from '../../config';
-import { AttendanceService } from '../attendance/attendance.public';
+import {
+  AttendanceService,
+  LeaveService,
+} from '../attendance/attendance.public';
 import { BattleSessionsService } from '../battle-sessions/battle-sessions.public';
 import { CharactersService } from '../characters/characters.public';
 import { ActorResolver } from './actor-resolver';
@@ -63,6 +66,8 @@ export class InteractionRouter {
     private readonly channels: BotChannelService,
     private readonly reminders: ReminderService,
     private readonly rest: DiscordRestClient,
+    private readonly leaves: LeaveService,
+    private readonly clock: Clock,
   ) {}
 
   private readonly logger = new Logger(InteractionRouter.name);
@@ -171,6 +176,7 @@ export class InteractionRouter {
   private get deps(): CommandDeps {
     return {
       attendance: this.attendance,
+      leaves: this.leaves,
       battleSessions: this.battleSessions,
       characters: this.characters,
       actors: this.actors,
@@ -192,6 +198,7 @@ export class InteractionRouter {
       channels: this.channels,
       reminders: this.reminders,
       rest: this.rest,
+      clock: this.clock,
     };
   }
 }
