@@ -1,26 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarDays, MessageSquareText, Plane, User } from "lucide-react";
-import type { DateRange } from "react-day-picker";
-import { vi } from "react-day-picker/locale";
+import { MessageSquareText, Plane } from "lucide-react";
 import { vnDateKey } from "@guild/shared/lib";
 import {
   ATTENDANCE_REASON_MAX_LENGTH,
   type Character,
 } from "@guild/shared/schemas";
 
-import { FieldCaption, FieldLabel } from "@/components/shared/field-label";
+import { FieldLabel } from "@/components/shared/field-label";
 import { MutationDialogShell } from "@/components/shared/mutation-dialog";
 import { MutationForm } from "@/components/shared/mutation-form";
 import { toastSuccess } from "@/components/shared/toast";
-import { Calendar } from "@/components/ui/calendar";
 import { Textarea } from "@/components/ui/textarea";
 import { useCreateLeave } from "../hooks/use-leaves";
-import { fromDayKey, toDayKey } from "../lib/leave-date";
 import { formatLeaveRange } from "../lib/leave-label";
+import { LeaveDayField } from "./leave-day-field";
+import { MemberPicker } from "./member-picker";
 
-const PICK_RANGE_ERROR = "Vui lòng chọn khoảng ngày nghỉ.";
+const PICK_START_ERROR = "Vui lòng chọn ngày bắt đầu nghỉ.";
 const PICK_MEMBER_ERROR = "Vui lòng chọn thành viên.";
 
 interface LeaveDialogProps {
@@ -81,16 +79,26 @@ function LeaveForm({
   characters,
   onDone,
 }: LeaveFormProps) {
-  const [range, setRange] = useState<DateRange | undefined>();
+  const [startDay, setStartDay] = useState("");
+  const [endDay, setEndDay] = useState("");
   const [characterId, setCharacterId] = useState(ownCharacterId ?? "");
   const [reason, setReason] = useState("");
   const createLeave = useCreateLeave();
 
   // A member cannot file a leave that already ended; the server says so too, this only stops the
-  // picker offering what would be refused. Admins fix past days, so for them nothing is disabled.
-  const disabledDays = isAdmin
-    ? undefined
-    : { before: fromDayKey(vnDateKey(new Date())) };
+  // pickers offering what would be refused. Admins fix past days, so for them nothing is bounded.
+  const today = vnDateKey(new Date());
+  const earliestDay = isAdmin ? undefined : today;
+
+  /**
+   * Pick the first day. The last day follows it unless it is already on or after it, so one day off
+   * is a single pick and a longer leave only needs the end moved.
+   * @param day - The picked first day, `YYYY-MM-DD`
+   */
+  function handleStartChange(day: string) {
+    setStartDay(day);
+    if (endDay === "" || endDay < day) setEndDay(day);
+  }
 
   /**
    * Validate the form, then file the leave.
@@ -98,19 +106,16 @@ function LeaveForm({
    * @returns A promise resolving once saved
    */
   async function submitLeave() {
-    if (!range?.from) throw new Error(PICK_RANGE_ERROR);
+    if (!startDay) throw new Error(PICK_START_ERROR);
     if (!characterId) throw new Error(PICK_MEMBER_ERROR);
-
-    const startDate = toDayKey(range.from);
-    const endDate = toDayKey(range.to ?? range.from);
 
     await createLeave.mutateAsync({
       characterId,
-      startDate,
-      endDate,
+      startDate: startDay,
+      endDate: endDay,
       reason: reason.trim() || null,
     });
-    toastSuccess(`Đã khai nghỉ ${formatLeaveRange(startDate, endDate)}.`);
+    toastSuccess(`Đã khai nghỉ ${formatLeaveRange(startDay, endDay)}.`);
   }
 
   return (
@@ -124,35 +129,28 @@ function LeaveForm({
       run={submitLeave}
     >
       {isAdmin && (
-        <div className="flex flex-col gap-1.5">
-          <FieldLabel htmlFor="leave-member" icon={<User />}>
-            Thành viên
-          </FieldLabel>
-          <select
-            id="leave-member"
-            value={characterId}
-            onChange={(event) => setCharacterId(event.target.value)}
-            className="h-9 rounded-md border border-input bg-background px-2 text-sm"
-          >
-            <option value="">Chọn thành viên</option>
-            {characters.map((character) => (
-              <option key={character.id} value={character.id}>
-                {character.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        <MemberPicker
+          id="leave-member"
+          characters={characters}
+          value={characterId}
+          onChange={setCharacterId}
+        />
       )}
 
-      <div className="flex flex-col gap-1.5">
-        <FieldCaption icon={<CalendarDays />}>Khoảng ngày nghỉ</FieldCaption>
-        <Calendar
-          mode="range"
-          locale={vi}
-          selected={range}
-          onSelect={setRange}
-          disabled={disabledDays}
-          className="self-center rounded-md border"
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <LeaveDayField
+          id="leave-start"
+          label="Từ ngày"
+          value={startDay}
+          onChange={handleStartChange}
+          minDay={earliestDay}
+        />
+        <LeaveDayField
+          id="leave-end"
+          label="Đến ngày"
+          value={endDay}
+          onChange={setEndDay}
+          minDay={startDay || earliestDay}
         />
       </div>
 
