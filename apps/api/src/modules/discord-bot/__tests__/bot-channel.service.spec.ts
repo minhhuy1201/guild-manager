@@ -50,7 +50,9 @@ describe('BotChannelService', () => {
 
     await service.get('ADMIN_ALERT');
 
-    expect(findUnique).toHaveBeenCalledWith({ where: { purpose: 'ADMIN_ALERT' } });
+    expect(findUnique).toHaveBeenCalledWith({
+      where: { purpose: 'ADMIN_ALERT' },
+    });
   });
 
   it('ghi theo đúng purpose, không đụng purpose khác', async () => {

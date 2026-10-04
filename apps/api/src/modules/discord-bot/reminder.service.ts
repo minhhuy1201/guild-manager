@@ -13,6 +13,10 @@ import { CharactersService } from '../characters/characters.public';
 import { BotChannelService } from './bot-channel.service';
 import { DiscordRestClient } from './discord-rest';
 import { buildReminder, type DueSession } from './reminder';
+import {
+  REMINDER_NO_CHANNEL_ALERT,
+  reminderFailureText,
+} from './reminder-alert';
 
 /**
  * What one run did — the cron response body, and what `/nhac-diem-danh` reports back.
@@ -70,6 +74,30 @@ export class ReminderService {
   ) {}
 
   private readonly logger = new Logger(ReminderService.name);
+
+  /**
+   * The cron's run: `run('today')`, plus an alert in the admin channel when it threw or found no
+   * reminder channel. The error is rethrown so Vercel still records the run as failed.
+   * `/nhac-diem-danh` keeps calling `run`: the admin already reads the outcome in chat.
+   *
+   * @returns What the run did
+   * @throws The error `run` threw, unchanged
+   */
+  async runScheduled(): Promise<ReminderOutcome> {
+    let outcome: ReminderOutcome;
+    try {
+      outcome = await this.run('today');
+    } catch (error) {
+      await this.alert(reminderFailureText(error));
+      throw error;
+    }
+
+    if (outcome.status === 'no-channel') {
+      await this.alert(REMINDER_NO_CHANNEL_ALERT);
+    }
+
+    return outcome;
+  }
 
   /**
    * Post the reminder, if there is anything to remind about.
@@ -148,5 +176,27 @@ export class ReminderService {
         due.flatMap((day) => day.missing.map((member) => member.name)),
       ).size,
     };
+  }
+
+  /**
+   * Post one line to the admin channel. Never throws: the run's own failure is what must reach
+   * Vercel, and a failing alert must not replace it.
+   * @param content - The message to post
+   */
+  private async alert(content: string): Promise<void> {
+    try {
+      const channelId = await this.channels.get('ADMIN_ALERT');
+      if (!channelId) {
+        this.logger.warn(
+          'Chưa cấu hình channel cảnh báo admin - chạy /cau-hinh-kenh với mục đích "Cảnh báo admin".',
+        );
+
+        return;
+      }
+      await this.rest.postMessage(channelId, { content });
+    } catch (error) {
+      // Swallowed: see above. The log is the only place left to say it.
+      this.logger.error('Không gửi được tin cảnh báo admin', error as Error);
+    }
   }
 }

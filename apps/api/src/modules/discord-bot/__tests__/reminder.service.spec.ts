@@ -2,6 +2,11 @@ import type { BattleSession } from '@guild/shared/schemas';
 
 import { FixedClock } from '../../../common';
 import type { MessagePayload } from '../commands/command.types';
+import { DiscordApiError } from '../discord-rest';
+import {
+  REMINDER_NO_CHANNEL_ALERT,
+  reminderFailureText,
+} from '../reminder-alert';
 import { ReminderService } from '../reminder.service';
 
 /** 09:00 Vietnam time on Friday 04/09/2026 - the morning of the Bang Chiến's 12:00 deadline. */
@@ -36,6 +41,8 @@ function session(overrides: Partial<BattleSession> = {}): BattleSession {
 
 interface Options {
   channelId?: string | null;
+  adminChannelId?: string | null;
+  adminChannelGet?: jest.Mock;
   sessions?: BattleSession[];
   records?: {
     characterId: string;
@@ -77,10 +84,18 @@ function makeService(options: Options = {}) {
         ),
     } as never,
     {
-      get: jest
-        .fn()
-        .mockResolvedValue(
-          options.channelId === undefined ? '424242' : options.channelId,
+      get:
+        options.adminChannelGet ??
+        jest.fn((purpose: string) =>
+          Promise.resolve(
+            purpose === 'ADMIN_ALERT'
+              ? options.adminChannelId === undefined
+                ? '999'
+                : options.adminChannelId
+              : options.channelId === undefined
+                ? '424242'
+                : options.channelId,
+          ),
         ),
     } as never,
     { postMessage } as never,
@@ -346,5 +361,93 @@ describe('ReminderService.run - phạm vi cả tuần', () => {
       status: 'nothing-due',
     });
     expect(postMessage).not.toHaveBeenCalled();
+  });
+});
+
+describe('ReminderService.runScheduled', () => {
+  const adminCalls = (postMessage: jest.Mock) =>
+    postMessage.mock.calls.filter(([channelId]) => channelId === '999');
+
+  it('sent: không gửi tin báo', async () => {
+    const { service, postMessage } = makeService();
+
+    await expect(service.runScheduled()).resolves.toMatchObject({
+      status: 'sent',
+    });
+    expect(adminCalls(postMessage)).toHaveLength(0);
+  });
+
+  it('nothing-due: không gửi tin báo', async () => {
+    const { service, postMessage } = makeService({ sessions: [] });
+
+    await expect(service.runScheduled()).resolves.toEqual({
+      status: 'nothing-due',
+    });
+    expect(postMessage).not.toHaveBeenCalled();
+  });
+
+  it('no-channel: báo vào kênh admin, trả outcome', async () => {
+    const { service, postMessage } = makeService({ channelId: null });
+
+    await expect(service.runScheduled()).resolves.toEqual({
+      status: 'no-channel',
+    });
+    expect(postMessage).toHaveBeenCalledWith('999', {
+      content: REMINDER_NO_CHANNEL_ALERT,
+    });
+  });
+
+  it('run ném: báo rồi ném lại chính lỗi gốc', async () => {
+    const boom = new DiscordApiError(403, '424242', '{}');
+    const { service, postMessage } = makeService();
+    postMessage.mockRejectedValueOnce(boom).mockResolvedValueOnce(undefined);
+
+    await expect(service.runScheduled()).rejects.toBe(boom);
+    expect(postMessage).toHaveBeenLastCalledWith('999', {
+      content: reminderFailureText(boom),
+    });
+  });
+
+  it('thiếu kênh admin: không gửi, vẫn ném lỗi gốc', async () => {
+    const boom = new Error('boom');
+    const { service, postMessage } = makeService({ adminChannelId: null });
+    postMessage.mockRejectedValueOnce(boom);
+
+    await expect(service.runScheduled()).rejects.toBe(boom);
+    expect(adminCalls(postMessage)).toHaveLength(0);
+  });
+
+  it('gửi tin báo cũng lỗi: lỗi ném ra vẫn là lỗi gốc', async () => {
+    const boom = new Error('boom');
+    const { service, postMessage } = makeService();
+    postMessage.mockRejectedValue(boom);
+
+    await expect(service.runScheduled()).rejects.toBe(boom);
+  });
+
+  it('đọc kênh admin ném: lỗi ném ra vẫn là lỗi gốc', async () => {
+    const boom = new Error('boom');
+    const adminChannelGet = jest.fn((purpose: string) =>
+      purpose === 'ADMIN_ALERT'
+        ? Promise.reject(new Error('db down'))
+        : Promise.resolve('424242'),
+    );
+    const { service, postMessage } = makeService({ adminChannelGet });
+    postMessage.mockRejectedValueOnce(boom);
+
+    await expect(service.runScheduled()).rejects.toBe(boom);
+  });
+
+  it('no-channel mà kênh admin ném: vẫn trả outcome', async () => {
+    const adminChannelGet = jest.fn((purpose: string) =>
+      purpose === 'ADMIN_ALERT'
+        ? Promise.reject(new Error('db down'))
+        : Promise.resolve(null),
+    );
+    const { service } = makeService({ adminChannelGet });
+
+    await expect(service.runScheduled()).resolves.toEqual({
+      status: 'no-channel',
+    });
   });
 });
