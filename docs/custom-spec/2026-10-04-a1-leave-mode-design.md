@@ -277,7 +277,7 @@ và cột `source`, §6 luật phủ, §1.1 sơ đồ bot (thêm modal submit). 
 
 ## Nguồn
 
-- Luật khoá ngày: `apps/api/src/modules/battle-sessions/session-schedule.ts:321` (`isAttendanceClosed`).
+- Luật khoá ngày: `apps/api/src/modules/battle-sessions/session-schedule.ts` (`isAttendanceClosed`, `closingMoment`).
 - Gỡ đội hình: `apps/api/src/modules/team-builder/team-builder.service.ts:273`
   (`releaseCharacterFromSession`).
 - Reminder coi "có record" là đã trả lời: `apps/api/src/modules/discord-bot/reminder.service.ts`

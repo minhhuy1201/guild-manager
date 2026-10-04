@@ -175,7 +175,8 @@ export interface CoverageSession { id: string; dateTime: Date; deadline: Date; a
 export interface LeaveWindow { id: string; characterId: string; startDate: string; endDate: string;
   reason: string | null; createdAt: Date; createdByAdmin: boolean; cancelledAt: Date | null;
   cancelledByAdmin: boolean }
-export function closingMoment(session: CoverageSession): Date
+// closingMoment(deadline, closedAt) lives in battle-sessions/session-schedule.ts (exported via
+// battle-sessions.public.ts): the closing rule stays in one file.
 export function isLeaveCovering(leave: LeaveWindow, session: CoverageSession): boolean
 export function effectiveRecords(records: AttendanceRecord[], leaves: LeaveWindow[],
   sessions: CoverageSession[]): AttendanceRecord[]
@@ -199,16 +200,17 @@ export function effectiveRecords(records: AttendanceRecord[], leaves: LeaveWindo
 - [x] **Bước 4: code**
 
 ```ts
-export function closingMoment(session: CoverageSession): Date {
-  // An announcement closes the day before its deadline does - the same two ways in as isAttendanceClosed.
-  return session.attendanceClosedAt ?? session.deadline;
+// session-schedule.ts: an announcement closes the day before its deadline does - the same two ways in
+// as isAttendanceClosed.
+export function closingMoment(deadline: Date, closedAt: Date | null): Date {
+  return closedAt ?? deadline;
 }
 
 export function isLeaveCovering(leave: LeaveWindow, session: CoverageSession): boolean {
   const day = vnDateKey(session.dateTime);
   if (day < leave.startDate || day > leave.endDate) return false;
 
-  const closeAt = closingMoment(session).getTime();
+  const closeAt = closingMoment(session.deadline, session.attendanceClosedAt).getTime();
   // An admin may act on a closed day, exactly as when marking attendance; a member may not.
   const isCreatedInTime = leave.createdByAdmin || leave.createdAt.getTime() < closeAt;
   if (!isCreatedInTime) return false;
