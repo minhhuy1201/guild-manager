@@ -1,4 +1,11 @@
-import { ANNOUNCEMENT_ATTENDANCE_ID } from '../custom-id';
+import { GuildRole } from '@guild/shared/enums';
+
+import { FixedClock, TOKEN_TYPE } from '../../../common';
+import { vn } from '../../../__tests__/vn-date';
+import {
+  ANNOUNCEMENT_ATTENDANCE_ID,
+  ANNOUNCEMENT_LEAVE_ID,
+} from '../custom-id';
 import { INTERACTION_RESPONSE_TYPE, MESSAGE_FLAG } from '../discord.constants';
 import { InteractionRouter } from '../interaction-router';
 
@@ -126,5 +133,97 @@ describe('InteractionRouter', () => {
     ]) {
       expect(get).toHaveBeenCalledWith(key, { infer: true });
     }
+  });
+  describe('xin nghỉ', () => {
+    const MODAL_SUBMIT = {
+      type: 5 as const,
+      data: {
+        custom_id: 'modal:nghi-phep',
+        components: [
+          { component: { custom_id: 'tu-ngay', value: '05/10' } },
+          { component: { custom_id: 'den-ngay', value: '12/10' } },
+          { component: { custom_id: 'ly-do', value: '' } },
+        ],
+      },
+      member: { user: { id: '111' } },
+    };
+
+    /** A router whose leave service and clock are real enough for the modal path. */
+    function leaveRouter(create: jest.Mock): InteractionRouter {
+      return new InteractionRouter(
+        {} as never,
+        {} as never,
+        {} as never,
+        {
+          resolve: jest.fn().mockResolvedValue({
+            actor: {
+              sub: '111',
+              role: GuildRole.MEMBER,
+              type: TOKEN_TYPE.access,
+            },
+            character: { id: 'meo-beo', name: 'Mèo Béo', discordId: '111' },
+          }),
+        } as never,
+        { get: jest.fn().mockReturnValue('') } as never,
+        {} as never,
+        {} as never,
+        {} as never,
+        { create } as never,
+        new FixedClock(vn('2026-10-04T12:00')),
+      );
+    }
+
+    it('bấm nút Xin nghỉ mở modal, không gửi tin mới', async () => {
+      const reply = await leaveRouter(jest.fn()).route({
+        type: 3,
+        data: { custom_id: ANNOUNCEMENT_LEAVE_ID },
+        member: { user: { id: '111' } },
+      });
+
+      expect(reply).toMatchObject({
+        type: INTERACTION_RESPONSE_TYPE.modal,
+        data: { custom_id: 'modal:nghi-phep', title: 'Xin nghỉ' },
+      });
+    });
+
+    it('submit modal đi đúng service với ô lý do rỗng là null', async () => {
+      const create = jest
+        .fn()
+        .mockResolvedValue({ startDate: '2026-10-05', endDate: '2026-10-12' });
+
+      const reply = await leaveRouter(create).route(MODAL_SUBMIT);
+
+      expect(create).toHaveBeenCalledWith(
+        {
+          characterId: 'meo-beo',
+          startDate: '2026-10-05',
+          endDate: '2026-10-12',
+          reason: null,
+        },
+        expect.objectContaining({ sub: '111' }),
+      );
+      expect(reply).toEqual({
+        type: INTERACTION_RESPONSE_TYPE.channelMessageWithSource,
+        data: {
+          content: 'Đã khai nghỉ 05/10 - 12/10.',
+          flags: MESSAGE_FLAG.ephemeral,
+        },
+      });
+    });
+
+    it('modal có custom_id lạ thì báo nút cũ, không lỗi 500', async () => {
+      const create = jest.fn();
+
+      const reply = await leaveRouter(create).route({
+        ...MODAL_SUBMIT,
+        data: { ...MODAL_SUBMIT.data, custom_id: 'modal:cu' },
+      });
+
+      expect(create).not.toHaveBeenCalled();
+      expect(reply).toMatchObject({
+        type: INTERACTION_RESPONSE_TYPE.channelMessageWithSource,
+        data: { flags: MESSAGE_FLAG.ephemeral },
+      });
+    });
   });
 });

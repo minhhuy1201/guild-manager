@@ -18,9 +18,16 @@ import { commands } from './commands';
 import type {
   CommandDeps,
   CommandReply,
+  ModalReply,
   UpdateMessageReply,
 } from './commands/command.types';
-import { ANNOUNCEMENT_ATTENDANCE_ID } from './custom-id';
+import {
+  ANNOUNCEMENT_ATTENDANCE_ID,
+  ANNOUNCEMENT_LEAVE_ID,
+  LEAVE_MODAL_ID,
+} from './custom-id';
+import { buildLeaveModal, readLeaveModal } from './leave-modal';
+import { submitLeave } from './leave-reply';
 import {
   INTERACTION_RESPONSE_TYPE,
   INTERACTION_TYPE,
@@ -29,6 +36,7 @@ import {
   callerDiscordId,
   type Interaction,
   type MessageComponentInteraction,
+  type ModalSubmitInteraction,
 } from './interaction.schema';
 import { ephemeral, ephemeralText } from './reply';
 
@@ -38,10 +46,14 @@ interface PongReply {
 }
 
 /** Everything the bot may answer an interaction with. */
-export type InteractionReply = PongReply | CommandReply | UpdateMessageReply;
+export type InteractionReply =
+  PongReply | CommandReply | UpdateMessageReply | ModalReply;
 
 /** Shown when something failed that the user can do nothing about. */
 const UNEXPECTED = 'Có lỗi xảy ra. Thử lại sau hoặc điểm danh trên web.';
+
+/** Shown when a submitted form is not one this build knows how to read. */
+const STALE_FORM = 'Biểu mẫu này không còn dùng được. Bấm lại nút Xin nghỉ.';
 
 /** Built once: the registry never changes after the module is loaded. */
 const commandsByName = new Map(
@@ -125,6 +137,9 @@ export class InteractionRouter {
       case INTERACTION_TYPE.messageComponent:
         return this.routeComponent(interaction);
 
+      case INTERACTION_TYPE.modalSubmit:
+        return this.routeModalSubmit(interaction);
+
       default:
         return assertNever(interaction, 'Interaction type ngoài dự kiến');
     }
@@ -149,6 +164,10 @@ export class InteractionRouter {
   private async routeComponent(
     interaction: MessageComponentInteraction,
   ): Promise<InteractionReply> {
+    if (interaction.data.custom_id === ANNOUNCEMENT_LEAVE_ID) {
+      return buildLeaveModal(this.clock.now());
+    }
+
     if (interaction.data.custom_id === ANNOUNCEMENT_ATTENDANCE_ID) {
       return ephemeral(
         await buildOwnBoard(callerDiscordId(interaction), this.deps),
@@ -170,6 +189,26 @@ export class InteractionRouter {
       default:
         return assertNever(outcome, 'Kết quả bấm nút ngoài dự kiến');
     }
+  }
+
+  /**
+   * Answer a submitted modal. The leave form is the only one the bot opens, so a different
+   * `custom_id` is a form from an older deploy.
+   * @param interaction - The validated submission
+   * @returns The private answer
+   */
+  private async routeModalSubmit(
+    interaction: ModalSubmitInteraction,
+  ): Promise<InteractionReply> {
+    if (interaction.data.custom_id !== LEAVE_MODAL_ID) {
+      return ephemeralText(STALE_FORM);
+    }
+
+    return submitLeave(
+      callerDiscordId(interaction),
+      readLeaveModal(interaction),
+      this.deps,
+    );
   }
 
   /** The services and configuration a command may reach, bundled once. */

@@ -23,6 +23,32 @@ function pressWithFlags(flags?: number): MessageComponentInteraction {
 }
 
 describe('interactionSchema', () => {
+  it('nhận gói modal submit, chỉ giữ custom_id và value của từng ô', () => {
+    const parsed = interactionSchema.parse({
+      type: 5,
+      data: {
+        custom_id: 'modal:nghi-phep',
+        components: [
+          {
+            type: 18,
+            id: 1,
+            component: { type: 4, id: 2, custom_id: 'tu-ngay', value: '05/10' },
+          },
+        ],
+      },
+      member: { user: { id: '111' } },
+    });
+
+    expect(parsed).toEqual({
+      type: 5,
+      data: {
+        custom_id: 'modal:nghi-phep',
+        components: [{ component: { custom_id: 'tu-ngay', value: '05/10' } }],
+      },
+      member: { user: { id: '111' } },
+    });
+  });
+
   it('đọc được gói PING Discord dùng để kiểm tra endpoint', () => {
     const parsed = interactionSchema.parse({ type: 1 });
 

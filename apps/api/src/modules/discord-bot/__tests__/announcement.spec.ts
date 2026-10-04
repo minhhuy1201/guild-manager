@@ -140,9 +140,9 @@ describe('buildAnnouncement', () => {
     expect(description).not.toContain('🎮');
   });
 
-  it('hai nút: điểm danh mang custom_id hằng số, mở web là link button', () => {
+  it('ba nút: điểm danh mang custom_id hằng số, mở web là link button', () => {
     const payload = buildAnnouncement([session()], LINKS);
-    const [attendance, website] = payload.components![0].components;
+    const [attendance, , website] = payload.components![0].components;
 
     expect(attendance).toEqual({
       type: 2,

@@ -114,6 +114,32 @@ export interface CommandReply {
   data: MessagePayload;
 }
 
+/** One text box of a modal, wrapped in a Label. Snake_case because it is Discord's payload. */
+export interface TextInputComponent {
+  type: (typeof COMPONENT_TYPE)['textInput'];
+  custom_id: string;
+  /** A value from `TEXT_INPUT_STYLE` */
+  style: number;
+  required: boolean;
+  /** Pre-filled text; omitted for an empty box */
+  value?: string;
+  placeholder?: string;
+  max_length?: number;
+}
+
+/** A captioned text input - the only component a modal holds here. */
+export interface LabelComponent {
+  type: (typeof COMPONENT_TYPE)['label'];
+  label: string;
+  component: TextInputComponent;
+}
+
+/** A reply that opens a form instead of sending a message. */
+export interface ModalReply {
+  type: (typeof INTERACTION_RESPONSE_TYPE)['modal'];
+  data: { custom_id: string; title: string; components: LabelComponent[] };
+}
+
 /** A reply that rewrites the message the button sits on. */
 export interface UpdateMessageReply {
   type: (typeof INTERACTION_RESPONSE_TYPE)['updateMessage'];
