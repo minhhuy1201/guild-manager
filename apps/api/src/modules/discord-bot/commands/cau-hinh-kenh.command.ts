@@ -73,7 +73,7 @@ export const cauHinhKenhCommand: SlashCommand = {
       );
     }
 
-    await deps.channels.set(channelId);
+    await deps.channels.set('ATTENDANCE_REMINDER', channelId);
 
     return ephemeralText(SAVED);
   },

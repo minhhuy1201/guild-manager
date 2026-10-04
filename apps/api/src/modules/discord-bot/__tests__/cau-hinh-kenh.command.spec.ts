@@ -52,7 +52,7 @@ describe('/cau-hinh-kenh', () => {
 
     expect(postMessage).toHaveBeenCalledTimes(1);
     expect(postMessage).toHaveBeenCalledWith('424242', expect.anything());
-    expect(set).toHaveBeenCalledWith('424242');
+    expect(set).toHaveBeenCalledWith('ATTENDANCE_REMINDER', '424242');
     expect(reply.data.flags).toBe(MESSAGE_FLAG.ephemeral);
   });
 

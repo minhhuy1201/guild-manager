@@ -83,7 +83,7 @@ export class ReminderService {
    * @throws Error when Discord rejects the message — the caller decides how loud that is
    */
   async run(scope: ReminderScope): Promise<ReminderOutcome> {
-    const channelId = await this.channels.get();
+    const channelId = await this.channels.get('ATTENDANCE_REMINDER');
 
     if (!channelId) {
       this.logger.warn(
