@@ -60,6 +60,13 @@ export function vnParts(date: Date): VnParts {
   };
 }
 
+/** Vietnam calendar day of an instant, as `YYYY-MM-DD` - the format leave dates are stored and sent in. */
+export function vnDateKey(date: Date): string {
+  const { year, month, day } = vnParts(date);
+
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
 /**
  * The UTC instant a Vietnam wall clock reading points at - the inverse of `vnParts`.
  *
