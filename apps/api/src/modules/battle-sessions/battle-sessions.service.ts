@@ -3,7 +3,11 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { guildWarDeadline, isWithinDeadlineCap } from '@guild/shared/lib';
+import {
+  fromVnParts,
+  guildWarDeadline,
+  isWithinDeadlineCap,
+} from '@guild/shared/lib';
 import {
   DEADLINE_CAP_MESSAGE,
   GUILD_WAR_DEADLINE_LABEL,
@@ -70,6 +74,40 @@ export interface ScheduledSession {
   isGuildWar: boolean;
   matchCount: number;
   opponent: string | null;
+}
+
+/** What the leave coverage rule needs from a session; the public shape leaves the closing moments out. */
+export interface CoverageSessionRow {
+  id: string;
+  dateTime: Date;
+  deadline: Date;
+  attendanceClosedAt: Date | null;
+}
+
+const COVERAGE_SELECT = {
+  id: true,
+  dateTime: true,
+  deadline: true,
+  attendanceClosedAt: true,
+} as const;
+
+/**
+ * Midnight Vietnam time at the start of a `YYYY-MM-DD` day.
+ * @param day - Validated calendar day
+ * @param offsetDays - Whole days to add; Date.UTC rolls month ends over
+ * @returns The UTC instant
+ */
+function vnMidnight(day: string, offsetDays: number): Date {
+  const [year, month, date] = day.split('-').map(Number);
+  const shifted = new Date(Date.UTC(year, month - 1, date + offsetDays));
+
+  return fromVnParts({
+    year: shifted.getUTCFullYear(),
+    month: shifted.getUTCMonth() + 1,
+    day: shifted.getUTCDate(),
+    hour: 0,
+    minute: 0,
+  });
 }
 
 /**
@@ -231,6 +269,37 @@ export class BattleSessionsService {
       matchCount: row.matchCount,
       opponent: row.opponent,
     }));
+  }
+
+  /**
+   * Sessions by id, carrying what the leave coverage rule needs.
+   * @param ids - Session ids; unknown ids are simply absent
+   * @returns One row per found session
+   */
+  async readCoverageByIds(ids: string[]): Promise<CoverageSessionRow[]> {
+    return this.prisma.battleSession.findMany({
+      where: { id: { in: ids } },
+      select: COVERAGE_SELECT,
+    });
+  }
+
+  /**
+   * Sessions whose battle falls on a Vietnam day in [startDate, endDate].
+   * @param startDate - First day, `YYYY-MM-DD`
+   * @param endDate - Last day, `YYYY-MM-DD`
+   * @returns Matching sessions, earliest first
+   */
+  async readCoverageInRange(
+    startDate: string,
+    endDate: string,
+  ): Promise<CoverageSessionRow[]> {
+    return this.prisma.battleSession.findMany({
+      where: {
+        dateTime: { gte: vnMidnight(startDate, 0), lt: vnMidnight(endDate, 1) },
+      },
+      orderBy: { dateTime: 'asc' },
+      select: COVERAGE_SELECT,
+    });
   }
 
   /**

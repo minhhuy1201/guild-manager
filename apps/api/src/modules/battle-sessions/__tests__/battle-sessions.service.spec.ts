@@ -688,4 +688,41 @@ describe('BattleSessionsService', () => {
       expect(prisma.formationMatch.deleteMany).not.toHaveBeenCalled();
     });
   });
+  describe('đọc mốc khoá cho luật nghỉ phép', () => {
+    it('readCoverageInRange hỏi nửa mở [00:00 ngày đầu, 00:00 ngày sau ngày cuối) giờ VN', async () => {
+      await service.readCoverageInRange('2026-10-05', '2026-10-12');
+
+      expect(firstArg(prisma.battleSession.findMany, 0)).toMatchObject({
+        where: {
+          dateTime: { gte: vn('2026-10-05T00:00'), lt: vn('2026-10-13T00:00') },
+        },
+      });
+    });
+
+    it('readCoverageInRange xử lý được ngày cuối tháng', async () => {
+      await service.readCoverageInRange('2026-10-30', '2026-10-31');
+
+      expect(firstArg(prisma.battleSession.findMany, 0)).toMatchObject({
+        where: { dateTime: { lt: vn('2026-11-01T00:00') } },
+      });
+    });
+
+    it('readCoverageByIds trả về mốc khoá của các trận', async () => {
+      prisma.battleSession.findMany.mockResolvedValue([
+        row({ attendanceClosedAt: vn('2026-07-21T08:00') }),
+      ]);
+
+      await expect(service.readCoverageByIds(['session-tue'])).resolves.toEqual([
+        {
+          id: 'session-tue',
+          dateTime: vn('2026-07-21T20:30'),
+          deadline: vn('2026-07-21T10:00'),
+          attendanceClosedAt: vn('2026-07-21T08:00'),
+        },
+      ]);
+      expect(firstArg(prisma.battleSession.findMany, 0)).toMatchObject({
+        where: { id: { in: ['session-tue'] } },
+      });
+    });
+  });
 });
