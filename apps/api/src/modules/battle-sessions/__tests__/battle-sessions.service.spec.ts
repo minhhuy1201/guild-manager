@@ -688,4 +688,40 @@ describe('BattleSessionsService', () => {
       expect(prisma.formationMatch.deleteMany).not.toHaveBeenCalled();
     });
   });
+  describe('đọc mốc khoá cho luật nghỉ phép', () => {
+    it('readCoverageInRange hỏi nửa mở [00:00 ngày đầu, 00:00 ngày sau ngày cuối) giờ VN', async () => {
+      await service.readCoverageInRange('2026-10-05', '2026-10-12');
+
+      expect(firstArg(prisma.battleSession.findMany, 0)).toMatchObject({
+        where: {
+          dateTime: { gte: vn('2026-10-05T00:00'), lt: vn('2026-10-13T00:00') },
+        },
+      });
+    });
+
+    it('readCoverageInRange xử lý được ngày cuối tháng', async () => {
+      await service.readCoverageInRange('2026-10-30', '2026-10-31');
+
+      expect(firstArg(prisma.battleSession.findMany, 0)).toMatchObject({
+        where: { dateTime: { lt: vn('2026-11-01T00:00') } },
+      });
+    });
+
+    it('readCoverageByIds trả về mốc khoá của các trận', async () => {
+      prisma.battleSession.findMany.mockResolvedValue([
+        row({ attendanceClosedAt: vn('2026-07-21T08:00') }),
+      ]);
+
+      // The mock ignores `select`, so assert the query asks for the closing moments.
+      const [result] = await service.readCoverageByIds(['session-tue']);
+
+      expect(result.attendanceClosedAt).toEqual(vn('2026-07-21T08:00'));
+      expect(firstArg(prisma.battleSession.findMany, 0)).toMatchObject({
+        select: { deadline: true, attendanceClosedAt: true },
+      });
+      expect(firstArg(prisma.battleSession.findMany, 0)).toMatchObject({
+        where: { id: { in: ['session-tue'] } },
+      });
+    });
+  });
 });

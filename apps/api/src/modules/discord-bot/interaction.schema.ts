@@ -60,18 +60,36 @@ const messageComponentInteractionSchema = z.object({
   ...invokerFields,
 });
 
+const modalSubmitInteractionSchema = z.object({
+  type: z.literal(INTERACTION_TYPE.modalSubmit),
+  data: z.object({
+    custom_id: z.string().min(1),
+    // Each Label wraps one Text Input; only the inner custom_id and value are read.
+    components: z.array(
+      z.object({
+        component: z.object({
+          custom_id: z.string().min(1),
+          value: z.string(),
+        }),
+      }),
+    ),
+  }),
+  ...invokerFields,
+});
+
 /**
  * Every interaction the bot accepts. An unlisted `type` fails here, at the edge.
  *
  * That failure is a raw `ZodError`, not an `HttpException`, so `AllExceptionsFilter` answers 500 and
- * logs it as if it were a bug. An autocomplete or modal-submit interaction would land there — the
- * bot declares neither — and whoever reads that log later needs to know the 500 is this rejection
+ * logs it as if it were a bug. An autocomplete interaction would land there — the bot declares
+ * none; a modal submit is accepted since the leave form — and whoever reads that log later needs to know the 500 is this rejection
  * working, not a crash.
  */
 export const interactionSchema = z.discriminatedUnion('type', [
   pingInteractionSchema,
   applicationCommandInteractionSchema,
   messageComponentInteractionSchema,
+  modalSubmitInteractionSchema,
 ]);
 
 /** A validated interaction, narrowed by `type`. */
@@ -87,19 +105,27 @@ export type MessageComponentInteraction = z.infer<
   typeof messageComponentInteractionSchema
 >;
 
+/** A validated modal submission. */
+export type ModalSubmitInteraction = z.infer<
+  typeof modalSubmitInteractionSchema
+>;
+
 /**
  * Discord ID of whoever triggered the interaction.
  *
  * This is the bot's only trustworthy identity: it arrived inside a payload the Ed25519 signature
  * covers. Anything carried in a `custom_id` is client data and is never used in its place.
  *
- * @param interaction - A command invocation or a button press
+ * @param interaction - A command invocation, a button press or a modal submission
  * @returns The caller's Discord ID
  * @throws Error when neither `member.user` nor `user` is present — Discord always sends one, so
  *   this is a payload we misread, not something a user can cause
  */
 export function callerDiscordId(
-  interaction: ApplicationCommandInteraction | MessageComponentInteraction,
+  interaction:
+    | ApplicationCommandInteraction
+    | MessageComponentInteraction
+    | ModalSubmitInteraction,
 ): string {
   const id = interaction.member?.user.id ?? interaction.user?.id;
 

@@ -37,7 +37,12 @@ function session(overrides: Partial<BattleSession> = {}): BattleSession {
 interface Options {
   channelId?: string | null;
   sessions?: BattleSession[];
-  records?: { characterId: string; sessionId: string; isPresent?: boolean }[];
+  records?: {
+    characterId: string;
+    sessionId: string;
+    isPresent?: boolean;
+    source?: 'answer' | 'leave';
+  }[];
   members?: { id: string; name: string; discordId: string | null }[];
   now?: Date;
 }
@@ -103,6 +108,32 @@ describe('ReminderService.run', () => {
     });
     expect(postMessage).toHaveBeenCalledTimes(1);
     expect(postMessage).toHaveBeenCalledWith('424242', expect.anything());
+  });
+
+  // The leave arrives as one more record from AttendanceService, so "has a record" stays the whole test.
+  it('không nhắc người có lần nghỉ phủ trận, vẫn nhắc người khác', async () => {
+    const { service, postMessage } = makeService({
+      members: [
+        { id: 'meo-beo', name: 'Mèo Béo', discordId: '111' },
+        { id: 'cun', name: 'Cún', discordId: '222' },
+      ],
+      records: [
+        {
+          characterId: 'meo-beo',
+          sessionId: 'gw-2026-09-05',
+          isPresent: false,
+          source: 'leave',
+        },
+      ],
+    });
+
+    await expect(service.run('today')).resolves.toMatchObject({
+      status: 'sent',
+      missingCount: 1,
+    });
+    const [, message] = postMessage.mock.calls[0] as [string, unknown];
+    expect(JSON.stringify(message)).toContain('Cún');
+    expect(JSON.stringify(message)).not.toContain('Mèo Béo');
   });
 
   it('không gửi gì khi chưa cấu hình channel', async () => {

@@ -61,6 +61,7 @@ const RECORD: AttendanceRecord = {
   isPresent: true,
   markedAt: "2026-08-17T10:00:00.000Z",
   reason: null,
+  source: "answer",
 };
 
 beforeEach(() => {

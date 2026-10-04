@@ -142,7 +142,10 @@ export function AttendanceLogTable() {
                 </TableCell>
                 <TableCell>{session?.label ?? "—"}</TableCell>
                 <TableCell className="text-center">
-                  <AttendanceStatusIcon isPresent={record.isPresent} />
+                  <AttendanceStatusIcon
+                    isPresent={record.isPresent}
+                    source={record.source}
+                  />
                 </TableCell>
                 {/* A 255-character sentence would stretch the table, so the cell is capped at two
                     lines and a tap opens the whole reason. */}

@@ -22,6 +22,10 @@ export const markAttendanceSchema = z.object({
 
 export type MarkAttendanceInput = z.infer<typeof markAttendanceSchema>;
 
+/** Where an attendance entry comes from: a button somebody pressed, or a leave covering the day. */
+export const attendanceSourceSchema = z.enum(["answer", "leave"]);
+export type AttendanceSource = z.infer<typeof attendanceSourceSchema>;
+
 /** One attendance entry as the API returns it. */
 export const attendanceRecordSchema = z.object({
   characterId: z.string(),
@@ -32,6 +36,7 @@ export const attendanceRecordSchema = z.object({
   markedAt: z.string(),
   /** Why the member answered "Không"; null for a "Có" answer or when none was given. */
   reason: z.string().nullable(),
+  source: attendanceSourceSchema,
 });
 
 export type AttendanceRecord = z.infer<typeof attendanceRecordSchema>;

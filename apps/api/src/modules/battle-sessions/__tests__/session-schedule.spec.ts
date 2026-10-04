@@ -7,6 +7,7 @@ import {
   guildWarMatchCount,
   guildWarSessionId,
   canReopenAttendance,
+  closingMoment,
   isAttendanceClosed,
   isDueForReminder,
   isReminderDay,
@@ -177,6 +178,20 @@ describe('session-schedule', () => {
       const asUtc = parseWeekStart('2026-07-19T17:00:00.000Z', wednesday);
 
       expect(isSameWeek(asOffset, asUtc)).toBe(true);
+    });
+  });
+
+  describe('closingMoment', () => {
+    const deadline = vn('2026-07-23T17:00');
+
+    it('là deadline khi chưa ai gửi đội hình', () => {
+      expect(closingMoment(deadline, null)).toEqual(deadline);
+    });
+
+    it('là lúc gửi đội hình khi admin đã gửi, dù sớm hơn deadline', () => {
+      const announcedAt = vn('2026-07-23T09:00');
+
+      expect(closingMoment(deadline, announcedAt)).toEqual(announcedAt);
     });
   });
 

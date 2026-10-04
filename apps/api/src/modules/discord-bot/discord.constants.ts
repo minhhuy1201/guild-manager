@@ -11,6 +11,8 @@ export const INTERACTION_TYPE = {
   applicationCommand: 2,
   /** Someone pressed a button or used a select menu on one of the bot's messages */
   messageComponent: 3,
+  /** Someone submitted a modal the bot opened */
+  modalSubmit: 5,
 } as const;
 
 /** Response types the bot may answer with. */
@@ -24,6 +26,8 @@ export const INTERACTION_RESPONSE_TYPE = {
    * Pressing three buttons then leaves one message showing the latest state, not three.
    */
   updateMessage: 7,
+  /** Open a form for the presser to fill in */
+  modal: 9,
 } as const;
 
 /** Message flags. A bit field, so values are OR-ed if more are ever needed. */
@@ -36,6 +40,15 @@ export const MESSAGE_FLAG = {
 export const COMPONENT_TYPE = {
   actionRow: 1,
   button: 2,
+  textInput: 4,
+  /** Wraps one input inside a modal and gives it a caption */
+  label: 18,
+} as const;
+
+/** Text input styles. */
+export const TEXT_INPUT_STYLE = {
+  short: 1,
+  paragraph: 2,
 } as const;
 
 /**

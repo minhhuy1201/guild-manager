@@ -1,4 +1,5 @@
 export { AttendanceScreen } from "./components/attendance-screen";
+export { LeavePanel } from "./components/leave-panel";
 export { AttendanceHistoryScope } from "./components/attendance-history-scope";
 export { AttendanceLogTable } from "./components/attendance-log-table";
 export { AttendanceSummaryDashboard } from "./components/attendance-summary-dashboard";

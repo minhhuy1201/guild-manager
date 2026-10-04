@@ -11,6 +11,11 @@ vi.mock("../components/attendance-grid", () => ({
     <div data-testid="grid" data-admin={String(isAdmin)} />
   ),
 }));
+vi.mock("../components/leave-section", () => ({
+  LeaveSection: ({ isAdmin }: { isAdmin: boolean }) => (
+    <div data-testid="leave" data-admin={String(isAdmin)} />
+  ),
+}));
 vi.mock("../components/member-attendance-card", () => ({
   MemberAttendanceCard: () => <div data-testid="member-card" />,
 }));
@@ -31,13 +36,13 @@ describe("AttendanceScreen", () => {
 
   // The week schedule folded into the personal card and the filters into the table's card: the page
   // is down to two blocks.
-  it("thẻ tuần của bạn đứng đầu, rồi tới card bảng, không còn thẻ lọc riêng", () => {
+  it("mục xin nghỉ, rồi thẻ tuần của bạn, rồi card bảng, không còn thẻ lọc riêng", () => {
     const { container } = render(<AttendanceScreen role={GuildRole.MEMBER} />);
     const order = [...container.querySelectorAll("[data-testid]")].map(
       (node) => node.getAttribute("data-testid")
     );
 
-    expect(order).toEqual(["member-card", "grid"]);
+    expect(order).toEqual(["leave", "member-card", "grid"]);
   });
 
   it("admin cũng thấy thẻ cá nhân, và lưới cho sửa được", () => {

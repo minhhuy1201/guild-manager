@@ -271,7 +271,7 @@ export class TeamBuilderService {
    * @returns Number of slots the character was taken out of; 0 when the day is already played
    */
   async releaseCharacterFromSession(
-    session: BattleSession,
+    session: Pick<BattleSession, 'id' | 'dateTime'>,
     characterId: string,
     client: PrismaTransactionClient,
   ): Promise<number> {

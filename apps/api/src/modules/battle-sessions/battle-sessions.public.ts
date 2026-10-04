@@ -9,8 +9,12 @@
  * other that is a real domain cycle, and the answer is a third module, not `forwardRef()`.
  */
 export { BattleSessionsService } from './battle-sessions.service';
-export type { ScheduledSession } from './battle-sessions.service';
+export type {
+  CoverageSessionRow,
+  ScheduledSession,
+} from './battle-sessions.service';
 export {
+  closingMoment,
   formatDeadlineLabel,
   formatSessionLabel,
   isAttendanceClosed,

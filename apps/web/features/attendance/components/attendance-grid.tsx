@@ -343,11 +343,11 @@ function DayTotalsCell({ session, totals }: DayTotalsCellProps) {
         className="flex items-center justify-center gap-3 text-sm font-medium tabular-nums"
       >
         <span className="inline-flex items-center gap-1">
-          <AttendanceStatusIcon isPresent />
+          <AttendanceStatusIcon isPresent source="answer" />
           {totals.co}
         </span>
         <span className="inline-flex items-center gap-1">
-          <AttendanceStatusIcon isPresent={false} />
+          <AttendanceStatusIcon isPresent={false} source="answer" />
           {totals.khong}
         </span>
         {/* Amber is the palette's "not answered yet" (frontend.md §6). A bare dash before the

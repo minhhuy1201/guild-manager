@@ -11,6 +11,8 @@ export const attendanceKeys = {
   /** One week's sessions; null is the open week. */
   sessionsOf: (weekStart: string | null) =>
     [...attendanceKeys.sessions(), weekStart] as const,
+  /** Active leaves, guild-wide. */
+  leaves: () => [...attendanceKeys.all, "leaves"] as const,
   week: () => [...attendanceKeys.all, "week"] as const,
   /** Prefix over every week's records - what an invalidation targets. */
   records: () => [...attendanceKeys.all, "records"] as const,

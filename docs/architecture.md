@@ -264,10 +264,10 @@ no-op in it. `attendance`, `battle-sessions`, `characters` and `tactics` keep th
 | `auth` | Discord OAuth2 sign-in, the single-use code exchange, refresh, `me` | Public except `me` |
 | `characters` | Member CRUD, Discord identity and guild role | Admin (`JwtAuthGuard, AdminGuard` on the controller) |
 | `battle-sessions` | The week's schedule, deadlines, the Guild War session, time rules | Reads signed-in, writes admin |
-| `attendance` | Marking attendance and reading records; a "Không" answer also releases that member from the day's formation, through `team-builder` | Bearer required; reads are guild-wide for everyone, admin bypasses the deadline and marks for others |
+| `attendance` | Marking attendance and reading records; a "Không" answer also releases that member from the day's formation, through `team-builder`. Also **leaves** (`LeaveService`): a member's declared stretch of days away, merged into the records at read time | Bearer required; reads are guild-wide for everyone, admin bypasses the deadline and marks for others |
 | `team-builder` | Per-match formations, and the team names shown on the grid | Admin |
 | `tactics` | Guild war tactic drawings and the shared token palette. The scene is one JSON document per tactic, parsed with Zod on every read (`tactics.codec.ts`) | Reads signed-in, writes admin (`AdminGuard` per handler) |
-| `discord-bot` | The Discord interactions endpoint, the slash command registry, attendance recorded from Discord — by command (`/diem-danh`, `/diem-danh-ho`) **and by button**: the private attendance board answers with a Có/Không button per match, and the two guild-wide messages carry one "Điểm danh ngay" button that opens that board, both reaching the router as message-component interactions — the weekly schedule announcement (`/thong-bao`), the announcement channel (`/cau-hinh-kenh`), the daily attendance reminder — run by Vercel Cron, or by hand with `/nhac-diem-danh` — and the welcome for a new member (`/chao-mung`), which links three channels configured in the environment plus the sect channel picked when the command is typed. The last four are admin only | Discord's Ed25519 signature for interactions; `CRON_SECRET` in a bearer header for the scheduled reminder — no JWT, no session; the identity comes from the signed payload and the write rules stay `AttendanceService`'s |
+| `discord-bot` | The Discord interactions endpoint, the slash command registry, attendance recorded from Discord — by command (`/diem-danh`, `/diem-danh-ho`) **and by button**: the private attendance board answers with a Có/Không button per match, and the two guild-wide messages carry an "Điểm danh ngay" button that opens that board and a "Xin nghỉ" button that opens a leave form (a modal, whose submission reaches the router as a modal-submit interaction), both reaching the router as message-component interactions — the weekly schedule announcement (`/thong-bao`), the announcement channel (`/cau-hinh-kenh`), the daily attendance reminder — run by Vercel Cron, or by hand with `/nhac-diem-danh` — and the welcome for a new member (`/chao-mung`), which links three channels configured in the environment plus the sect channel picked when the command is typed. The last four are admin only | Discord's Ed25519 signature for interactions; `CRON_SECRET` in a bearer header for the scheduled reminder — no JWT, no session; the identity comes from the signed payload and the write rules stay `AttendanceService`'s |
 
 Endpoints, all behind the `/api` prefix:
 
@@ -294,6 +294,9 @@ Endpoints, all behind the `/api` prefix:
 | `GET` | `/attendance/characters` | Characters for the attendance board (the whole guild, any role) | Bearer |
 | `GET` | `/attendance/records?weekStart=` | Attendance entries of a week, the open one by default (the whole guild, any role) | Bearer |
 | `GET` | `/attendance/summary?weekStart=` | Yes/no counts per match of a week, the open one by default, no identities. **No caller today** — kept for the attendance dashboard | Bearer |
+| `GET` | `/leaves` | Leaves that are not cancelled and have not ended, soonest first (the whole guild, any role) | Bearer |
+| `POST` | `/leaves` | File a leave; clears the answers and line-up slots it covers | Bearer (own character; admin files for anyone, and for past days) |
+| `POST` | `/leaves/:id/cancel` | Cancel a leave (stamps `cancelledAt`; a second call returns it unchanged) | Bearer (own leave, or admin) |
 | `POST` | `/attendance` | Mark one character for one match (with a reason when the answer is "Không") | Bearer (own character; admin marks for anyone and bypasses the deadline) |
 | `GET` | `/team-builder/weeks` | Weeks that still have roster data | Admin |
 | `GET` | `/team-builder/formations?weekStart=` | Match rosters of a week | Admin |
@@ -324,7 +327,8 @@ flowchart TB
     S --> R{"InteractionRouter<br/>switch on the interaction type"}
     R -->|"ping"| P["pong"]
     R -->|"application command"| C["commands/ registry, by name"]
-    R -->|"message component"| BT["attendance buttons<br/>board Có/Không, or Điểm danh ngay"]
+    R -->|"message component"| BT["attendance buttons<br/>board Có/Không, Điểm danh ngay, or Xin nghỉ (opens the modal)"]
+    R -->|"modal submit"| LV["leave form → LeaveService"]
     C --> AR["ActorResolver<br/>Discord ID → Character"]
     BT --> AR
     AR --> SVC["AttendanceService · BattleSessionsService · CharactersService<br/>through each module's *.public.ts"]
@@ -515,6 +519,7 @@ reasoning in comments.
 ```mermaid
 erDiagram
     Character ||--o{ AttendanceRecord : "answers"
+    Character ||--o{ Leave : "is away"
     BattleSession ||--o{ AttendanceRecord : "is answered for"
     BattleSession ||--o{ FormationMatch : "is played as"
     FormationMatch ||--o{ FormationSlot : "has cells"
@@ -536,6 +541,7 @@ than a foreign key, because a rescue admin may match no `Character` at all.
 |---|---|
 | `Character` | Member. Id is a slug of the name plus a random suffix (`meo-beo-k7ma3x`), not a game id. `discordId` is nullable and unique — an admin types it in, and it is what a login resolves against; `role` is `GuildRole` — `ADMIN` or `MEMBER`, the only two roles, defaulting to `MEMBER`; `discordUsername`, `discordAvatar` and `lastLoginAt` are written on each sign-in so an admin can confirm the right person was linked. `discordAvatar` holds Discord's avatar **hash**, not a URL — the CDN URL format belongs to Discord and the web app builds it; it reaches the browser through `/auth/me` only, never through the members list. |
 | `BattleSession` | One match in a week. `weekStart` (Monday 00:00 VN) groups matches into weeks. Guild War uses the deterministic id `gw-<YYYY-MM-DD>` so it can be upserted idempotently; scrims get a `cuid()`. `deadline` is the admin's value for a scrim, capped at 11:00 on the match day and prefilled by the form with that cap; for Guild War it is system-owned (11:00 Saturday). `matchCount` is how many matches the day holds (1 or 2): an admin picks it for a scrim, defaulting to 2, while the system derives it for Guild War from the week's alternating rule. It is an **upper bound** on the number of `FormationMatch` rows, not an instruction — a two-match day may perfectly well be rostered with one formation shared by both. `attendanceClosedAt` is when an admin announced the line-up in Discord, which closes attendance regardless of `deadline`; null means the deadline alone still governs. |
+| `Leave` | A stretch of Vietnam calendar days (`startDate`..`endDate`, both inclusive, `@db.Date`) a character will be away. It **never writes `AttendanceRecord` rows**: the effective answer is computed on read (§6). `createdAt` is the moment the coverage rule compares with a day's closing moment; `cancelledAt` is stamped instead of deleting, so days that closed before the cancel stay "Không". `createdByAdmin` / `cancelledByAdmin` capture the role at that moment (an admin's leave also covers closed days, an admin's cancel also releases them). `createdByCharacterId` / `cancelledByCharacterId` are plain ids, no relation, for the same reason as `markedByCharacterId`. |
 | `AttendanceRecord` | One `(character, session)` pair, unique. The answer is `isPresent Boolean` — `true` = "Có", `false` = "Không"; not answered at all is the absence of a row. `markedAt` updates whenever the answer flips. `markedByCharacterId` records who pressed the button — no relation on purpose, so deleting that person cannot take someone else's entry with them. `reason` is the explanation (≤255 characters) attached to a "Không" answer; it is always `null` when `isPresent = true`, and the server decides that value itself rather than trusting the body. |
 | `AuthExchange` | A single-use code the web app trades for a JWT pair after the API finishes the OAuth callback. Lives 60 seconds; expired rows are swept during the next exchange. Holds `discordId`, not a foreign key, because a rescue admin may match no `Character`. |
 | `FormationSlot` | One cell of the roster grid: a person, a note, or both. A cell that is empty *and* unannotated has no row — that is how "slot 2 is empty" differs from "there is no slot 2". An answer of "Không" takes that member out of every cell of the day (`TeamBuilderService.releaseCharacterFromSession`): an annotated cell keeps its note and only loses its occupant, and a day already played is left untouched. **Deleting the member does the same thing**, guild-wide: the foreign key is `SetNull`, and `CharactersService.remove` deletes the cells that carried no note in the same transaction. |
@@ -558,6 +564,7 @@ needs it really needs one of those four functions. The week and deadline rules s
 frontend only mirrors `isAttendanceClosed` to grey out a column.
 
 - An attendance week runs **Monday 00:00 → Saturday 23:59**.
+- **A leave turns a day into "Không" at read time** (`attendance/leave-coverage.ts`, one pure function used by both the reads and the filing): the day's Vietnam calendar date is inside `startDate`..`endDate`, the leave was filed before the day's closing moment (`attendanceClosedAt`, else `deadline`; an admin's leave is exempt), and it was not cancelled before that moment (an admin's cancel releases closed days too). A pressed answer always wins over a leave, and the record the response returns carries `source: 'answer' | 'leave'`. Filing a leave deletes the character's records and line-up slots for the days it covers; cancelling does not bring them back. The reminder needs no change: a leave arrives as one more record, and a record existing is already the whole "answered" test.
 - The next week opens at **22:00 Saturday** (`getActiveWeek`). Between the close of one week and that
   moment, the finished week is still shown, read-only.
 - Guild War is fixed at **20:00 Saturday**, generated by the system, and cannot be deleted.

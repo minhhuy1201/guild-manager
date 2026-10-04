@@ -20,6 +20,12 @@ const PART_COUNT = 4;
  */
 export const ANNOUNCEMENT_ATTENDANCE_ID = 'ann:diem-danh';
 
+/** custom_id of the "Xin nghỉ" button; it opens the leave modal for whoever presses it. */
+export const ANNOUNCEMENT_LEAVE_ID = 'ann:nghi-phep';
+
+/** custom_id of the leave modal, read back when it is submitted. */
+export const LEAVE_MODAL_ID = 'modal:nghi-phep';
+
 /** What one attendance button carries, since Discord keeps no state between presses. */
 export interface AttendanceButtonId {
   sessionId: string;

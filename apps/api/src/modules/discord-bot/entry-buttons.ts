@@ -1,5 +1,5 @@
 import type { ActionRow } from './commands/command.types';
-import { ANNOUNCEMENT_ATTENDANCE_ID } from './custom-id';
+import { ANNOUNCEMENT_ATTENDANCE_ID, ANNOUNCEMENT_LEAVE_ID } from './custom-id';
 import { BUTTON_STYLE, COMPONENT_TYPE } from './discord.constants';
 
 /**
@@ -19,11 +19,11 @@ const ATTENDANCE_ENTRY_PATH = '/dang-nhap?redirect=%2F';
  * The row of buttons under any message the bot addresses to the whole guild.
  *
  * Shared by the weekly announcement and the attendance reminder rather than built inside each: the
- * two messages make the same offer — answer here, or go look at the site — and two copies of one
+ * two messages make the same offer — answer here, ask for leave, or go look at the site — and two copies of one
  * row drift the first time a label changes.
  *
  * @param webOrigin - Origin of the web app
- * @returns One action row holding both buttons
+ * @returns One action row holding the three buttons
  */
 export function buildEntryButtons(webOrigin: string): ActionRow {
   return {
@@ -34,6 +34,12 @@ export function buildEntryButtons(webOrigin: string): ActionRow {
         style: BUTTON_STYLE.primary,
         label: '✅ Điểm danh ngay',
         custom_id: ANNOUNCEMENT_ATTENDANCE_ID,
+      },
+      {
+        type: COMPONENT_TYPE.button,
+        style: BUTTON_STYLE.secondary,
+        label: '🏖️ Xin nghỉ',
+        custom_id: ANNOUNCEMENT_LEAVE_ID,
       },
       {
         type: COMPONENT_TYPE.button,

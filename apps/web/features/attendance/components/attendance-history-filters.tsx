@@ -49,6 +49,7 @@ function PresenceOption({ option }: PresenceOptionProps) {
       ) : (
         <AttendanceStatusIcon
           isPresent={option === "present"}
+          source="answer"
           className={OPTION_ICON}
         />
       )}
