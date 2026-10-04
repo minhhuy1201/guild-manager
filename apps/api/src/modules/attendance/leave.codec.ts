@@ -11,6 +11,7 @@ export type LeaveRow = {
   endDate: Date;
   reason: string | null;
   createdAt: Date;
+  createdByCharacterId: string | null;
   createdByAdmin: boolean;
   cancelledAt: Date | null;
   cancelledByAdmin: boolean;
@@ -46,6 +47,7 @@ export function toLeave(row: LeaveRow): Leave {
     startDate: toDateKey(row.startDate),
     endDate: toDateKey(row.endDate),
     reason: row.reason,
+    createdByCharacterId: row.createdByCharacterId,
     createdAt: row.createdAt.toISOString(),
   } satisfies Leave);
 }

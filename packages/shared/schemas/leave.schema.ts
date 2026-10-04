@@ -33,6 +33,8 @@ export const leaveSchema = z.object({
   startDate: leaveDateSchema,
   endDate: leaveDateSchema,
   reason: z.string().nullable(),
+  /** Character of whoever filed it - a member, or an admin acting for them; null for a rescue admin */
+  createdByCharacterId: z.string().nullable(),
   /** ISO instant */
   createdAt: z.string(),
 });

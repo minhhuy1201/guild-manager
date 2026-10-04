@@ -39,6 +39,17 @@ export function LeavePanel() {
   const nameOf = new Map((characters ?? []).map((c) => [c.id, c.name]));
 
   /**
+   * Who filed a leave, as the table shows it.
+   * @param filerId - Character of the filer; null when a rescue admin without a character did
+   * @returns The character's name, "Admin" for a rescue admin, "—" for a character since removed
+   */
+  function filerName(filerId: string | null): string {
+    if (filerId === null) return "Admin";
+
+    return nameOf.get(filerId) ?? "—";
+  }
+
+  /**
    * Cancel one leave and report the outcome in a toast.
    * @param id - Leave to cancel
    * @returns A promise settled once the toast is shown
@@ -75,6 +86,7 @@ export function LeavePanel() {
               <TableHead>Thành viên</TableHead>
               <TableHead>Khoảng ngày</TableHead>
               <TableHead>Lý do</TableHead>
+              <TableHead>Người khai</TableHead>
               <TableHead />
             </TableRow>
           </TableHeader>
@@ -90,6 +102,7 @@ export function LeavePanel() {
                 <TableCell className="text-muted-foreground">
                   {leave.reason ?? ""}
                 </TableCell>
+                <TableCell>{filerName(leave.createdByCharacterId)}</TableCell>
                 <TableCell className="text-right">
                   <Button
                     type="button"

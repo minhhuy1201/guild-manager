@@ -67,8 +67,10 @@ export async function submitLeave(
 
   const today = deps.clock.now();
   const startDate = parseLeaveDateInput(raw.from, today);
-  const endDate = parseLeaveDateInput(raw.to, today);
-  if (!startDate || !endDate) return ephemeralText(BAD_DATE);
+  if (!startDate) return ephemeralText(BAD_DATE);
+
+  const endDate = parseLeaveDateInput(raw.to, today, startDate);
+  if (!endDate) return ephemeralText(BAD_DATE);
 
   const parsed = createLeaveSchema.safeParse({
     characterId: caller.characterId,

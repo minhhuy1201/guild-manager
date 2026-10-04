@@ -301,6 +301,22 @@ describe('LeaveService', () => {
       });
     });
 
+    it('returns who filed the leave', async () => {
+      signInAs('admin-char');
+
+      await expect(
+        service.create(createInput({ characterId: OTHER_CHARACTER }), ADMIN),
+      ).resolves.toMatchObject({ createdByCharacterId: 'admin-char' });
+    });
+
+    it('returns a null filer for a rescue admin', async () => {
+      signInAs(null);
+
+      await expect(
+        service.create(createInput({ characterId: OTHER_CHARACTER }), ADMIN),
+      ).resolves.toMatchObject({ createdByCharacterId: null });
+    });
+
     it('returns dates as YYYY-MM-DD', async () => {
       await expect(
         service.create(createInput(), MEMBER),

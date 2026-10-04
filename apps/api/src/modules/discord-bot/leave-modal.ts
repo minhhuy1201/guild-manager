@@ -57,7 +57,7 @@ export function buildLeaveModal(today: Date): ModalReply {
           component: {
             type: COMPONENT_TYPE.textInput,
             custom_id: REASON_INPUT,
-            style: TEXT_INPUT_STYLE.short,
+            style: TEXT_INPUT_STYLE.paragraph,
             required: false,
             max_length: ATTENDANCE_REASON_MAX_LENGTH,
           },

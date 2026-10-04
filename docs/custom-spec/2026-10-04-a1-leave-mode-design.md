@@ -187,8 +187,8 @@ và không cần có.
 `type AttendanceSource = 'answer' | 'leave'` (type alias, theo luật union). Mọi chỗ switch trên
 `source` kết thúc bằng `assertNever`.
 
-`leaveSchema` (response): `{ id, characterId, startDate, endDate, reason, createdAt }`, ngày dạng
-`YYYY-MM-DD`.
+`leaveSchema` (response): `{ id, characterId, startDate, endDate, reason, createdByCharacterId, createdAt }`,
+ngày dạng `YYYY-MM-DD`; `createdByCharacterId` null với rescue admin (bảng admin hiện "Admin").
 
 ## 6. Bot Discord
 
@@ -201,7 +201,9 @@ và không cần có.
   Trả lời ephemeral nêu khoảng ngày đã hủy, hoặc `Bạn không có lần nghỉ nào để hủy.`
 
 Ngày thiếu năm: lấy năm sao cho ngày đó gần hôm nay nhất (trong ±6 tháng), để `02/01` gõ ngày 28/12
-ra năm sau còn `27/12` gõ ngày 02/01 ra năm trước. Parse sai định dạng → trả lời ephemeral
+ra năm sau còn `27/12` gõ ngày 02/01 ra năm trước. Riêng `den-ngay` thiếu năm: lấy lần xuất hiện đầu tiên từ
+`tu-ngay` trở đi nếu cách không quá 183 ngày (`30/12 - 05/01` ra qua năm sau); xa hơn thì coi là gõ nhầm
+và rơi về quy tắc gần hôm nay nhất, để schema báo "Ngày kết thúc phải từ ngày bắt đầu trở đi." Parse sai định dạng → trả lời ephemeral
 `Ngày phải có dạng dd/mm, ví dụ 05/10.`
 
 ### 6.2 Nút "Xin nghỉ" và modal

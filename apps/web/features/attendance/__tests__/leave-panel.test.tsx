@@ -21,6 +21,7 @@ const LEAVES: Leave[] = [
     startDate: "2026-10-05",
     endDate: "2026-10-12",
     reason: "du lịch",
+    createdByCharacterId: "char-2",
     createdAt: "2026-10-04T05:00:00.000Z",
   },
   {
@@ -29,6 +30,7 @@ const LEAVES: Leave[] = [
     startDate: "2026-10-08",
     endDate: "2026-10-09",
     reason: null,
+    createdByCharacterId: null,
     createdAt: "2026-10-04T06:00:00.000Z",
   },
 ];
@@ -65,12 +67,23 @@ describe("LeavePanel", () => {
 
     expect(within(row).getByText("05/10 - 12/10")).toBeTruthy();
     expect(within(row).getByText("du lịch")).toBeTruthy();
-    expect(screen.getByText("Cún Con")).toBeTruthy();
+    expect(within(screen.getAllByRole("row")[2]).getByText("Cún Con")).toBeTruthy();
+  });
+
+  it("cột người khai: tên người khai, hoặc Admin khi không có nhân vật", () => {
+    render(<LeavePanel />);
+
+    const filedByOther = screen.getByText("Mèo Mập").closest("tr") as HTMLElement;
+    const filedByRescue = screen.getAllByRole("row")[2];
+
+    expect(within(filedByOther).getByText("Cún Con")).toBeTruthy();
+    expect(within(filedByRescue).getByText("Admin")).toBeTruthy();
+    expect(screen.getByRole("columnheader", { name: "Người khai" })).toBeTruthy();
   });
 
   it("nút Hủy của dòng nào gọi cancel với id dòng đó", async () => {
     render(<LeavePanel />);
-    const row = screen.getByText("Cún Con").closest("tr") as HTMLElement;
+    const row = screen.getAllByRole("row")[2];
 
     fireEvent.click(within(row).getByRole("button", { name: /Hủy/ }));
 

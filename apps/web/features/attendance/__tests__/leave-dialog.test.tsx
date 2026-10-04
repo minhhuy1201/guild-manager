@@ -121,6 +121,12 @@ describe("LeaveDialog", () => {
     );
   });
 
+  it("ô lý do là textarea nhiều dòng", () => {
+    renderDialog(false);
+
+    expect(screen.getByLabelText("Lý do").tagName).toBe("TEXTAREA");
+  });
+
   it("chỉ khoá ngày đã qua với member, admin chọn được mọi ngày", () => {
     renderDialog(false);
     expect(calendarProps.current?.disabled).toMatchObject({

@@ -46,6 +46,8 @@ describe('buildLeaveModal', () => {
     const reason = buildLeaveModal(vn('2026-10-04T12:00')).data.components[2];
 
     expect(reason.component.max_length).toBe(255);
+    // A reason is a sentence, so it gets the multi-line box.
+    expect(reason.component.style).toBe(2);
   });
 });
 

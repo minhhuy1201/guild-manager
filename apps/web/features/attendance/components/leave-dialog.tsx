@@ -15,7 +15,7 @@ import { MutationDialogShell } from "@/components/shared/mutation-dialog";
 import { MutationForm } from "@/components/shared/mutation-form";
 import { toastSuccess } from "@/components/shared/toast";
 import { Calendar } from "@/components/ui/calendar";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useCreateLeave } from "../hooks/use-leaves";
 import { fromDayKey, toDayKey } from "../lib/leave-date";
 import { formatLeaveRange } from "../lib/leave-label";
@@ -160,8 +160,9 @@ function LeaveForm({
         <FieldLabel htmlFor="leave-reason" icon={<MessageSquareText />}>
           Lý do
         </FieldLabel>
-        <Input
+        <Textarea
           id="leave-reason"
+          rows={3}
           maxLength={ATTENDANCE_REASON_MAX_LENGTH}
           placeholder="Không bắt buộc"
           value={reason}

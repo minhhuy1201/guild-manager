@@ -31,6 +31,7 @@ const leave = (overrides: Partial<Leave>): Leave => ({
   startDate: "2026-10-05",
   endDate: "2026-10-12",
   reason: null,
+  createdByCharacterId: "char-1",
   createdAt: "2026-10-04T05:00:00.000Z",
   ...overrides,
 });
