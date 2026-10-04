@@ -15,6 +15,7 @@ interface SeedState {
     Pick<
       ReturnType<typeof useFormationStore.getState>,
       | "drafts"
+      | "baseVersions"
       | "history"
       | "activeSessionId"
       | "activeMatchIndex"
@@ -25,6 +26,8 @@ interface SeedState {
   poolFilter?: Partial<ReturnType<typeof usePoolFilterStore.getState>>;
   /** Unsaved team names, null for "nothing typed yet" */
   teamNameDraft?: TeamNames | null;
+  /** Saved version the team name draft started from, null when there is no draft */
+  teamNameBaseVersion?: number | null;
 }
 
 // A hook left mounted keeps reacting to the Zustand stores, so a later test's
@@ -50,6 +53,7 @@ export function renderFormationHook<T>(
 ): RenderHookResult<T, void> {
   useFormationStore.setState({
     drafts: {},
+    baseVersions: {},
     history: {},
     activeSessionId: null,
     activeMatchIndex: 0,
@@ -61,7 +65,10 @@ export function renderFormationHook<T>(
     guildClasses: [],
     ...seed.poolFilter,
   });
-  useTeamNameStore.setState({ draft: seed.teamNameDraft ?? null });
+  useTeamNameStore.setState({
+    draft: seed.teamNameDraft ?? null,
+    baseVersion: seed.teamNameBaseVersion ?? null,
+  });
 
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -97,6 +104,7 @@ export function makeSession(
     opponent: null,
     locked: false,
     matches: [],
+    version: 0,
     ...overrides,
   };
 }

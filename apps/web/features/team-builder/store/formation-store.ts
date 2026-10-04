@@ -16,6 +16,12 @@ export interface UndoStep {
 interface FormationState {
   /** Unsaved edits per battle day, keyed by session id. Missing key = untouched. */
   drafts: Record<string, MatchDraft[]>;
+  /**
+   * The saved version each draft started from, keyed like `drafts`. Captured with the draft and never
+   * re-read at save time: a background refetch moves the saved copy's version under the draft, and
+   * saving with that one would defeat the optimistic lock.
+   */
+  baseVersions: Record<string, number>;
   /** Undo steps per battle day, oldest first. Dropped with the day's draft. */
   history: Record<string, UndoStep[]>;
   /** Battle day whose tab is open */
@@ -34,9 +40,16 @@ interface FormationState {
    * Start a day's draft from `initial`, or leave the draft it already has.
    * This is the only door the saved copy comes through, and it comes as a
    * starting value the caller already holds: the store never fetches it and
-   * never keeps a second copy of it beside the draft.
+   * never keeps a second copy of it beside the draft. `baseVersion` is the
+   * saved copy's version at that moment; it is kept only when the draft is new.
    */
-  ensureDraft: (sessionId: string, initial: MatchDraft[]) => void;
+  ensureDraft: (
+    sessionId: string,
+    initial: MatchDraft[],
+    baseVersion: number
+  ) => void;
+  /** Re-base a day's draft onto a newer saved version, keeping the draft itself */
+  rebase: (sessionId: string, version: number) => void;
   /**
    * Replace a day's draft outright. `useFormationDraft` owns this — nothing
    * else may write `drafts` wholesale, or two hooks end up deciding what a
@@ -77,6 +90,7 @@ interface FormationState {
  */
 export const useFormationStore = create<FormationState>((set) => ({
   drafts: {},
+  baseVersions: {},
   history: {},
   activeSessionId: null,
   activeMatchIndex: 0,
@@ -88,16 +102,24 @@ export const useFormationStore = create<FormationState>((set) => ({
     set({
       selectedWeekStart: weekStart,
       drafts: {},
+      baseVersions: {},
       history: {},
       activeSessionId: null,
       activeMatchIndex: 0,
     }),
-  ensureDraft: (sessionId, initial) =>
+  ensureDraft: (sessionId, initial, baseVersion) =>
     set((state) =>
       state.drafts[sessionId]
         ? state
-        : { drafts: { ...state.drafts, [sessionId]: initial } }
+        : {
+            drafts: { ...state.drafts, [sessionId]: initial },
+            baseVersions: { ...state.baseVersions, [sessionId]: baseVersion },
+          }
     ),
+  rebase: (sessionId, version) =>
+    set((state) => ({
+      baseVersions: { ...state.baseVersions, [sessionId]: version },
+    })),
   setDraft: (sessionId, matches) =>
     set((state) => ({ drafts: { ...state.drafts, [sessionId]: matches } })),
   clearDraft: (sessionId) =>
@@ -108,7 +130,9 @@ export const useFormationStore = create<FormationState>((set) => ({
       // over the saved copy would resurrect edits the user threw away.
       const history = { ...state.history };
       delete history[sessionId];
-      return { drafts, history };
+      const baseVersions = { ...state.baseVersions };
+      delete baseVersions[sessionId];
+      return { drafts, history, baseVersions };
     }),
   pushUndo: (sessionId, step) =>
     set((state) => {
@@ -128,11 +152,16 @@ export const useFormationStore = create<FormationState>((set) => ({
       if (!step) return state;
 
       const drafts = { ...state.drafts };
+      const baseVersions = { ...state.baseVersions };
       if (step.draft) drafts[sessionId] = step.draft;
-      else delete drafts[sessionId];
+      else {
+        delete drafts[sessionId];
+        delete baseVersions[sessionId];
+      }
 
       return {
         drafts,
+        baseVersions,
         history: { ...state.history, [sessionId]: past.slice(0, -1) },
         activeMatchIndex: step.matchIndex,
       };

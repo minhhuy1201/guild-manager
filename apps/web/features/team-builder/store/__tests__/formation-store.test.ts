@@ -18,13 +18,14 @@ const ONE_MATCH: MatchDraft[] = [{ assignment: SAVED, notes: {} }];
  * @param initial - Saved copy of that day
  */
 function openDraft(sessionId: string, initial: MatchDraft[] = ONE_MATCH) {
-  useFormationStore.getState().ensureDraft(sessionId, initial);
+  useFormationStore.getState().ensureDraft(sessionId, initial, 0);
 }
 
 describe("useFormationStore", () => {
   beforeEach(() => {
     useFormationStore.setState({
       drafts: {},
+      baseVersions: {},
       history: {},
       activeSessionId: null,
       activeMatchIndex: 0,
@@ -302,6 +303,48 @@ describe("useFormationStore", () => {
       setWeek("2026-07-13T00:00:00.000Z");
 
       expect(useFormationStore.getState().history).toEqual({});
+    });
+  });
+
+  describe("baseVersions", () => {
+    it("ensureDraft ghi baseVersion lần đầu, không đổi khi nháp đã có", () => {
+      const store = useFormationStore.getState();
+      store.ensureDraft("s1", ONE_MATCH, 3);
+      store.ensureDraft("s1", ONE_MATCH, 4); // refetch dưới nháp
+
+      expect(useFormationStore.getState().baseVersions.s1).toBe(3);
+    });
+
+    it("clearDraft xoá baseVersion", () => {
+      useFormationStore.getState().ensureDraft("s1", ONE_MATCH, 3);
+      useFormationStore.getState().clearDraft("s1");
+
+      expect(useFormationStore.getState().baseVersions).toEqual({});
+    });
+
+    it("undo về không nháp xoá baseVersion", () => {
+      const store = useFormationStore.getState();
+      store.ensureDraft("s1", ONE_MATCH, 3);
+      store.pushUndo("s1", { draft: undefined, matchIndex: 0, mergeKey: null });
+      store.undo("s1");
+
+      expect(useFormationStore.getState().drafts.s1).toBeUndefined();
+      expect(useFormationStore.getState().baseVersions).toEqual({});
+    });
+
+    it("setWeek xoá mọi baseVersion", () => {
+      useFormationStore.getState().ensureDraft("s1", ONE_MATCH, 3);
+      useFormationStore.getState().setWeek("2026-08-17T00:00:00.000Z");
+
+      expect(useFormationStore.getState().baseVersions).toEqual({});
+    });
+
+    it("rebase đổi baseVersion, giữ nháp", () => {
+      useFormationStore.getState().ensureDraft("s1", ONE_MATCH, 3);
+      useFormationStore.getState().rebase("s1", 8);
+
+      expect(useFormationStore.getState().baseVersions.s1).toBe(8);
+      expect(useFormationStore.getState().drafts.s1).toBe(ONE_MATCH);
     });
   });
 });

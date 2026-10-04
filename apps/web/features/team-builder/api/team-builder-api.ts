@@ -4,8 +4,9 @@ import type {
   AnnouncementResult,
   FormationWeek,
   MatchFormation,
+  SaveTeamNamesInput,
   SessionFormation,
-  TeamNames,
+  TeamNamesState,
 } from "@guild/shared/schemas";
 
 import { authHeader } from "@/features/auth/server";
@@ -13,13 +14,15 @@ import { apiFetch } from "@/lib/api-client";
 
 /**
  * Arguments of `saveFormation`. Not the request body: `sessionId` travels on the URL and only
- * `matches` is sent — that body is `SaveFormationInput` in `@guild/shared/schemas`.
+ * `matches` and `version` are sent — that body is `SaveFormationInput` in `@guild/shared/schemas`.
  */
 export interface SaveFormationArgs {
   /** Id of the battle day to save */
   sessionId: string;
   /** Per match: the formation with empty slots dropped, and the notes with blank ones dropped */
   matches: MatchFormation[];
+  /** The saved version this draft was started from */
+  version: number;
 }
 
 /**
@@ -55,7 +58,7 @@ export async function fetchFormations(
  * Overwrite the whole day's formation (1 or 2 matches), notes included.
  * @param input - sessionId and each match's formation to save
  * @returns The battle day with the formation just written
- * @throws ApiError when signed out, the day is locked (409), or the backend rejects it
+ * @throws ApiError when signed out, the day is locked (409), the version is stale (412), or the backend rejects it
  */
 export async function saveFormation(
   input: SaveFormationArgs
@@ -64,7 +67,7 @@ export async function saveFormation(
     `/team-builder/formations/${encodeURIComponent(input.sessionId)}`,
     {
       method: "PUT",
-      body: JSON.stringify({ matches: input.matches }),
+      body: JSON.stringify({ matches: input.matches, version: input.version }),
       headers: await authHeader(),
     }
   );
@@ -73,25 +76,27 @@ export async function saveFormation(
 /**
  * Get the team names shown on the grid's column headers.
  * Global data — one map for the whole app, not one per week or per battle day.
- * @returns Team number (as a decimal string) → name; teams still on their number are absent
+ * @returns Team number (as a decimal string) → name, teams still on their number are absent, plus the version
  * @throws ApiError when signed out or the backend rejects it
  */
-export async function fetchTeamNames(): Promise<TeamNames> {
-  return apiFetch<TeamNames>("/team-builder/team-names", {
+export async function fetchTeamNames(): Promise<TeamNamesState> {
+  return apiFetch<TeamNamesState>("/team-builder/team-names", {
     headers: await authHeader(),
   });
 }
 
 /**
  * Overwrite the whole team name map.
- * @param names - Team number (as a decimal string) → name; a team left out loses its name
- * @returns The map just written
- * @throws ApiError when signed out or the backend rejects it
+ * @param input - Team number (as a decimal string) → name, a team left out loses its name, plus the version the draft started from
+ * @returns The map just written, at its new version
+ * @throws ApiError when signed out, the version is stale (412), or the backend rejects it
  */
-export async function saveTeamNames(names: TeamNames): Promise<TeamNames> {
-  return apiFetch<TeamNames>("/team-builder/team-names", {
+export async function saveTeamNames(
+  input: SaveTeamNamesInput
+): Promise<TeamNamesState> {
+  return apiFetch<TeamNamesState>("/team-builder/team-names", {
     method: "PUT",
-    body: JSON.stringify({ names }),
+    body: JSON.stringify(input),
     headers: await authHeader(),
   });
 }

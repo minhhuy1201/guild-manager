@@ -23,6 +23,9 @@ vi.mock("@/hooks/use-session-recovery", () => ({
 
 const saveFormationMock = vi.mocked(saveFormation);
 
+/** Stand-in for the week hook's `fetchFormationVersion`. */
+const fetchVersionMock = vi.fn<(sessionId: string) => Promise<number>>();
+
 const SLOT = "team-1-pos-1";
 const SESSION_ID = "session-1";
 
@@ -38,12 +41,13 @@ const SAVED_SESSION = makeSession(SESSION_ID, {
  */
 function renderDraft(refetchFormations = vi.fn()) {
   return renderFormationHook(() =>
-    useFormationDraft([SAVED_SESSION], SESSION_ID, true, refetchFormations)
+    useFormationDraft([SAVED_SESSION], SESSION_ID, true, refetchFormations, fetchVersionMock)
   );
 }
 
 beforeEach(() => {
   saveFormationMock.mockReset();
+  fetchVersionMock.mockReset();
   recoverSessionMock.mockClear();
 });
 
@@ -62,7 +66,7 @@ describe("useFormationDraft — đọc bản đã lưu", () => {
 
   it("ngày chưa xếp gì vẫn cho đúng một trận rỗng", () => {
     const { result } = renderFormationHook(() =>
-      useFormationDraft([makeSession(SESSION_ID)], SESSION_ID, true, vi.fn())
+      useFormationDraft([makeSession(SESSION_ID)], SESSION_ID, true, vi.fn(), fetchVersionMock)
     );
 
     expect(result.current.matchCount).toBe(1);
@@ -76,7 +80,7 @@ describe("useFormationDraft — thêm và xoá trận 2", () => {
       matches: [{ slots: { [SLOT]: "char-1" }, notes: { [SLOT]: "giữ buồng" } }],
     });
     const { result } = renderFormationHook(() =>
-      useFormationDraft([session], SESSION_ID, true, vi.fn())
+      useFormationDraft([session], SESSION_ID, true, vi.fn(), fetchVersionMock)
     );
 
     act(() => result.current.addMatch());
@@ -99,7 +103,7 @@ describe("useFormationDraft — thêm và xoá trận 2", () => {
 
   it("ngày đã khoá thì không cho thêm trận", () => {
     const { result } = renderFormationHook(() =>
-      useFormationDraft([SAVED_SESSION], SESSION_ID, false, vi.fn())
+      useFormationDraft([SAVED_SESSION], SESSION_ID, false, vi.fn(), fetchVersionMock)
     );
 
     expect(result.current.canAddMatch).toBe(false);
@@ -216,6 +220,7 @@ describe("useFormationDraft — lưu", () => {
       {
         sessionId: SESSION_ID,
         matches: [{ slots: { [SLOT]: "char-1" }, notes: { [SLOT]: "vào sau" } }],
+        version: 0,
       },
       expect.anything()
     );
@@ -247,6 +252,7 @@ describe("useFormationDraft — lưu", () => {
       {
         sessionId: SESSION_ID,
         matches: [{ slots: { [SLOT]: "char-1" }, notes: {} }],
+        version: 0,
       },
       expect.anything()
     );
@@ -321,7 +327,7 @@ describe("useFormationDraft — lưu", () => {
 
   it("chưa chọn ngày nào thì không gọi API", async () => {
     const { result } = renderFormationHook(() =>
-      useFormationDraft([], null, false, vi.fn())
+      useFormationDraft([], null, false, vi.fn(), fetchVersionMock)
     );
 
     await act(async () => {
@@ -335,7 +341,7 @@ describe("useFormationDraft — lưu", () => {
 describe("useFormationDraft — nạp đề xuất và nền của lần ghi đầu", () => {
   it("seedFrom nạp đề xuất vào ngày chưa có nháp", () => {
     const { result } = renderFormationHook(() =>
-      useFormationDraft([makeSession(SESSION_ID)], SESSION_ID, true, vi.fn())
+      useFormationDraft([makeSession(SESSION_ID)], SESSION_ID, true, vi.fn(), fetchVersionMock)
     );
 
     act(() =>
@@ -409,7 +415,7 @@ describe("useFormationDraft — trần số đội hình theo số trận của 
   it("ngày chỉ đánh 1 trận thì không tạo được đội hình thứ hai", () => {
     const session = makeSession(SESSION_ID, { matchCount: 1 });
     const { result } = renderFormationHook(() =>
-      useFormationDraft([session], SESSION_ID, true, vi.fn())
+      useFormationDraft([session], SESSION_ID, true, vi.fn(), fetchVersionMock)
     );
 
     expect(result.current.canAddMatch).toBe(false);
@@ -418,7 +424,7 @@ describe("useFormationDraft — trần số đội hình theo số trận của 
   it("ngày đánh 2 trận vẫn cho phép chỉ có 1 đội hình, và mời tạo trận 2", () => {
     const session = makeSession(SESSION_ID, { matchCount: 2 });
     const { result } = renderFormationHook(() =>
-      useFormationDraft([session], SESSION_ID, true, vi.fn())
+      useFormationDraft([session], SESSION_ID, true, vi.fn(), fetchVersionMock)
     );
 
     expect(result.current.matchCount).toBe(1);
@@ -427,7 +433,7 @@ describe("useFormationDraft — trần số đội hình theo số trận của 
 
   it("chưa chọn ngày nào thì không mời tạo gì", () => {
     const { result } = renderFormationHook(() =>
-      useFormationDraft([], null, true, vi.fn())
+      useFormationDraft([], null, true, vi.fn(), fetchVersionMock)
     );
 
     expect(result.current.canAddMatch).toBe(false);
@@ -452,7 +458,7 @@ describe("useFormationDraft — nhận một trận được copy", () => {
 
   it("không đụng tới trận còn lại của ngày", () => {
     const { result } = renderFormationHook(
-      () => useFormationDraft([SAVED_SESSION], SESSION_ID, true, vi.fn()),
+      () => useFormationDraft([SAVED_SESSION], SESSION_ID, true, vi.fn(), fetchVersionMock),
       {
         formation: {
           activeMatchIndex: 1,
@@ -479,7 +485,7 @@ describe("useFormationDraft — nhận một trận được copy", () => {
 
   it("không làm gì khi chưa mở ngày nào", () => {
     const { result } = renderFormationHook(() =>
-      useFormationDraft([], null, true, vi.fn())
+      useFormationDraft([], null, true, vi.fn(), fetchVersionMock)
     );
 
     act(() =>
@@ -556,7 +562,7 @@ describe("useFormationDraft - hoàn tác (Ctrl+Z)", () => {
   // on gives "giữ buồngx".
   it("gõ dấu cách cuối một ghi chú đã lưu thì dấu cách vẫn còn", () => {
     const { result } = renderFormationHook(() =>
-      useFormationDraft([NOTED_SESSION], SESSION_ID, true, vi.fn())
+      useFormationDraft([NOTED_SESSION], SESSION_ID, true, vi.fn(), fetchVersionMock)
     );
 
     act(() => result.current.setNote(SLOT, "giữ buồng "));
@@ -566,7 +572,7 @@ describe("useFormationDraft - hoàn tác (Ctrl+Z)", () => {
 
   it("dấu cách gõ sau một lần kéo thả là một bước riêng", () => {
     const { result } = renderFormationHook(() =>
-      useFormationDraft([NOTED_SESSION], SESSION_ID, true, vi.fn())
+      useFormationDraft([NOTED_SESSION], SESSION_ID, true, vi.fn(), fetchVersionMock)
     );
     moveToSecondSlot(result);
     act(() => result.current.setNote(SLOT, "giữ buồng "));
@@ -667,7 +673,7 @@ describe("useFormationDraft - hoàn tác (Ctrl+Z)", () => {
 
   it("ngày đã khoá thì không hoàn tác", () => {
     const { result } = renderFormationHook(
-      () => useFormationDraft([SAVED_SESSION], SESSION_ID, false, vi.fn()),
+      () => useFormationDraft([SAVED_SESSION], SESSION_ID, false, vi.fn(), fetchVersionMock),
       {
         formation: {
           history: {
@@ -693,7 +699,7 @@ describe("useFormationDraft - gỡ người đã báo nghỉ", () => {
 
   it("không đụng tới trận còn lại của ngày", () => {
     const { result } = renderFormationHook(
-      () => useFormationDraft([SAVED_SESSION], SESSION_ID, true, vi.fn()),
+      () => useFormationDraft([SAVED_SESSION], SESSION_ID, true, vi.fn(), fetchVersionMock),
       {
         formation: {
           activeMatchIndex: 1,
@@ -720,5 +726,155 @@ describe("useFormationDraft - gỡ người đã báo nghỉ", () => {
 
     expect(result.current.dirty).toBe(false);
     expect(useFormationStore.getState().drafts[SESSION_ID]).toBeUndefined();
+  });
+});
+
+describe("useFormationDraft — xung đột phiên bản", () => {
+  /** A day whose saved copy is at `version`, with one draft edit made on top of it. */
+  function renderStale(savedVersion: number, baseVersion?: number) {
+    const session = makeSession(SESSION_ID, {
+      matches: [{ slots: { [SLOT]: "char-1" }, notes: {} }],
+      version: savedVersion,
+    });
+    const refetchFormations = vi.fn();
+    const rendered = renderFormationHook(
+      () =>
+        useFormationDraft(
+          [session],
+          SESSION_ID,
+          true,
+          refetchFormations,
+          fetchVersionMock
+        ),
+      baseVersion === undefined
+        ? {}
+        : {
+            formation: {
+              baseVersions: { [SESSION_ID]: baseVersion },
+              drafts: {
+                [SESSION_ID]: [
+                  { assignment: { [SLOT]: "char-1" }, notes: { [SLOT]: "x" } },
+                ],
+              },
+            },
+          }
+    );
+
+    return { ...rendered, refetchFormations };
+  }
+
+  it("lưu gửi baseVersion của nháp, không phải version của bản refetch", async () => {
+    saveFormationMock.mockResolvedValue(SAVED_SESSION);
+    const { result } = renderStale(5, 3);
+
+    await act(async () => {
+      await result.current.handleSave();
+    });
+
+    expect(saveFormationMock).toHaveBeenCalledWith(
+      expect.objectContaining({ version: 3 }),
+      expect.anything()
+    );
+  });
+
+  it("nháp mới lấy version của bản đã lưu lúc sửa lần đầu", async () => {
+    saveFormationMock.mockResolvedValue(SAVED_SESSION);
+    const { result } = renderStale(5);
+
+    act(() => result.current.setNote(SLOT, "vào sau"));
+    await act(async () => {
+      await result.current.handleSave();
+    });
+
+    expect(saveFormationMock).toHaveBeenCalledWith(
+      expect.objectContaining({ version: 5 }),
+      expect.anything()
+    );
+  });
+
+  it("412: isStale = true, nháp còn, không refetch", async () => {
+    saveFormationMock.mockRejectedValue(new ApiError("Cũ rồi.", 412));
+    const { result, refetchFormations } = renderStale(5, 3);
+
+    await act(async () => {
+      await result.current.handleSave();
+    });
+
+    expect(result.current.isStale).toBe(true);
+    expect(result.current.dirty).toBe(true);
+    expect(result.current.saveErrorMessage).toBeUndefined();
+    expect(refetchFormations).not.toHaveBeenCalled();
+  });
+
+  it("409: hành vi cũ - refetch, isStale = false", async () => {
+    saveFormationMock.mockRejectedValue(new ApiError("Đã khoá.", 409));
+    const { result, refetchFormations } = renderStale(5, 3);
+
+    await act(async () => {
+      await result.current.handleSave();
+    });
+
+    expect(result.current.isStale).toBe(false);
+    expect(refetchFormations).toHaveBeenCalledTimes(1);
+  });
+
+  it("discardStale: xoá nháp, isStale = false, refetch", async () => {
+    saveFormationMock.mockRejectedValue(new ApiError("Cũ rồi.", 412));
+    const { result, refetchFormations } = renderStale(5, 3);
+    await act(async () => {
+      await result.current.handleSave();
+    });
+
+    act(() => result.current.discardStale());
+
+    expect(result.current.isStale).toBe(false);
+    expect(result.current.dirty).toBe(false);
+    expect(refetchFormations).toHaveBeenCalledTimes(1);
+  });
+
+  it("dismissStale giữ nháp, isStale = false", async () => {
+    saveFormationMock.mockRejectedValue(new ApiError("Cũ rồi.", 412));
+    const { result } = renderStale(5, 3);
+    await act(async () => {
+      await result.current.handleSave();
+    });
+
+    act(() => result.current.dismissStale());
+
+    expect(result.current.isStale).toBe(false);
+    expect(result.current.dirty).toBe(true);
+  });
+
+  it("overwriteStale: rebase lên version mới nhất rồi lưu với nó", async () => {
+    saveFormationMock.mockRejectedValueOnce(new ApiError("Cũ rồi.", 412));
+    saveFormationMock.mockResolvedValueOnce(SAVED_SESSION);
+    fetchVersionMock.mockResolvedValue(6);
+    const { result } = renderStale(5, 3);
+    await act(async () => {
+      await result.current.handleSave();
+    });
+
+    await act(async () => {
+      await result.current.overwriteStale();
+    });
+
+    expect(saveFormationMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ version: 6 }),
+      expect.anything()
+    );
+    expect(result.current.isStale).toBe(false);
+  });
+
+  it("overwriteStale gặp 412 lần nữa: isStale vẫn true, nháp còn", async () => {
+    saveFormationMock.mockRejectedValue(new ApiError("Cũ rồi.", 412));
+    fetchVersionMock.mockResolvedValue(6);
+    const { result } = renderStale(5, 3);
+
+    await act(async () => {
+      await result.current.overwriteStale();
+    });
+
+    expect(result.current.isStale).toBe(true);
+    expect(result.current.dirty).toBe(true);
   });
 });

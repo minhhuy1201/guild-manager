@@ -37,6 +37,11 @@ export interface FormationWeekState {
   records: AttendanceRecordLike[];
   /** Reload only the formations — used when a save hits a locked battle */
   refetchFormations: () => void;
+  /**
+   * Reload the formations and read one day's version, for overwriting a stale save.
+   * @throws Error when the day is gone from the reloaded week
+   */
+  fetchFormationVersion: (sessionId: string) => Promise<number>;
 }
 
 /**
@@ -115,6 +120,18 @@ export function useFormationWeek(): FormationWeekState {
     records,
     refetchFormations: () => {
       void formationsGroup.refetch();
+    },
+    fetchFormationVersion: async (sessionId) => {
+      const { data } = await formationsQuery.refetch();
+      const version = data?.find(
+        (session) => session.sessionId === sessionId
+      )?.version;
+      // The day was open a moment ago; gone now means it was deleted - say so instead of guessing.
+      if (version === undefined) {
+        throw new Error("Ngày đánh này không còn tồn tại, hãy tải lại trang.");
+      }
+
+      return version;
     },
   };
 }

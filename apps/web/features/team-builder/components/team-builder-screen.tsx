@@ -31,6 +31,7 @@ import { MemberCard } from "./member-card";
 import { MemberPool } from "./member-pool";
 import { MatchTabs } from "./match-tabs";
 import { PrefillBanner } from "./prefill-banner";
+import { SaveConflictDialog } from "./save-conflict-dialog";
 import { SessionTabs } from "./session-tabs";
 import { WeekPicker } from "./week-picker";
 
@@ -241,6 +242,28 @@ export function TeamBuilderScreen() {
             names={screen.teamNames.names}
           />
         ) : null}
+
+        <SaveConflictDialog
+          formationLabel={activeSession.label}
+          isFormationStale={screen.draft.isStale}
+          isTeamNamesStale={screen.teamNames.isStale}
+          onReload={() => {
+            if (screen.draft.isStale) screen.draft.discardStale();
+            if (screen.teamNames.isStale) screen.teamNames.discardStale();
+          }}
+          onOverwrite={async () => {
+            await Promise.all([
+              screen.draft.isStale ? screen.draft.overwriteStale() : undefined,
+              screen.teamNames.isStale
+                ? screen.teamNames.overwriteStale()
+                : undefined,
+            ]);
+          }}
+          onClose={() => {
+            screen.draft.dismissStale();
+            screen.teamNames.dismissStale();
+          }}
+        />
 
         <PrefillBanner
           result={screen.pool.prefill}

@@ -1,6 +1,7 @@
 "use client";
 
-import type { TeamNames } from "@guild/shared/schemas";
+import { useCallback } from "react";
+import type { TeamNamesState } from "@guild/shared/schemas";
 
 import {
   useFormationCopy,
@@ -30,7 +31,7 @@ import {
 import { useTeamNames } from "./use-team-names";
 
 /** Stable stand-in while the names are still loading, so memos do not rerun. */
-const EMPTY_TEAM_NAMES: TeamNames = {};
+const EMPTY_TEAM_NAMES_STATE: TeamNamesState = { names: {}, version: 0 };
 
 /** The seven branches of the formation screen, kept apart on purpose. */
 export interface FormationScreenState {
@@ -70,7 +71,8 @@ export function useFormationScreen(): FormationScreenState {
     selection.sessions,
     selection.activeSessionId,
     selection.editable,
-    week.refetchFormations
+    week.refetchFormations,
+    week.fetchFormationVersion
   );
   const pool = useFormationPool(
     selection.sessions,
@@ -95,7 +97,18 @@ export function useFormationScreen(): FormationScreenState {
   );
   const dnd = useFormationDnd(draft.applyDrop, pool.charactersById);
   const teamNamesQuery = useTeamNames();
-  const teamNames = useTeamNameDraft(teamNamesQuery.data ?? EMPTY_TEAM_NAMES);
+  const { refetch: refetchTeamNamesQuery } = teamNamesQuery;
+  const refetchTeamNames = useCallback(async () => {
+    const { data } = await refetchTeamNamesQuery();
+    if (!data) throw new Error("Không tải được tên đội, hãy tải lại trang.");
+
+    return data;
+  }, [refetchTeamNamesQuery]);
+  // The empty state only stands in until the query lands, when nothing can be edited yet.
+  const teamNames = useTeamNameDraft(
+    teamNamesQuery.data ?? EMPTY_TEAM_NAMES_STATE,
+    refetchTeamNames
+  );
 
   return { week, selection, draft, pool, copy, dnd, teamNames };
 }

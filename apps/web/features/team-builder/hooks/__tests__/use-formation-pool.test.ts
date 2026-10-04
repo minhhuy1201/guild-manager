@@ -70,7 +70,7 @@ interface PoolArgs {
  */
 function makeSeedFrom() {
   return vi.fn((proposal: MatchDraft[]) => {
-    useFormationStore.getState().ensureDraft(SESSION_ID, proposal);
+    useFormationStore.getState().ensureDraft(SESSION_ID, proposal, 0);
   });
 }
 
