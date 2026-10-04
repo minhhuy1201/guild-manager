@@ -71,10 +71,23 @@ describe('TeamBuilderController — tên đội', () => {
     });
   });
 
-  it('lưu bằng chính map trong body, không bọc thêm', async () => {
-    const names = { '2': 'Xung kích' };
+  it('lưu bằng chính body, version đi cùng names', async () => {
+    const body = { names: { '2': 'Xung kích' }, version: 4 };
 
-    await expect(controller.saveTeamNames({ names })).resolves.toEqual(names);
-    expect(teamBuilder.saveTeamNames).toHaveBeenCalledWith(names);
+    await controller.saveTeamNames(body);
+
+    expect(teamBuilder.saveTeamNames).toHaveBeenCalledWith(body);
+  });
+
+  it('lưu đội hình bằng cả body, version đi cùng matches', async () => {
+    const saveFormation = jest.fn().mockResolvedValue({});
+    const withFormation = new TeamBuilderController({
+      saveFormation,
+    } as unknown as TeamBuilderService);
+    const body = { matches: [{ slots: {}, notes: {} }], version: 3 };
+
+    await withFormation.saveFormation('s1', body);
+
+    expect(saveFormation).toHaveBeenCalledWith('s1', body);
   });
 });

@@ -11,7 +11,7 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import type {
   FormationWeek,
   SessionFormation,
-  TeamNames,
+  TeamNamesState,
 } from '@guild/shared/schemas';
 
 import { AdminGuard, JwtAuthGuard, WeekStartQueryDto } from '../../common';
@@ -51,8 +51,9 @@ export class TeamBuilderController {
   /**
    * Overwrite the whole day's formation (1 or 2 matches), notes included.
    * @param sessionId - Id of the battle day to save
-   * @param body - matches: each match's formation and notes, in order
-   * @returns The battle day with the formation just written
+   * @param body - matches: each match's formation and notes, in order; version: the one the draft
+   *   was based on
+   * @returns The battle day with the formation just written (412 when the version is stale)
    */
   @Put('formations/:sessionId')
   @ApiOperation({ summary: 'Lưu đội hình cả ngày (tối đa 2 trận)' })
@@ -60,27 +61,28 @@ export class TeamBuilderController {
     @Param('sessionId') sessionId: string,
     @Body() body: SaveFormationDto,
   ): Promise<SessionFormation> {
-    return this.teamBuilder.saveFormation(sessionId, body.matches);
+    return this.teamBuilder.saveFormation(sessionId, body);
   }
 
   /**
    * The team names shown on the grid's column headers — global, not per battle day.
-   * @returns Team number (as a decimal string) → name
+   * @returns Team number (as a decimal string) → name, plus the version
    */
   @Get('team-names')
   @ApiOperation({ summary: 'Tên các đội trên lưới đội hình' })
-  getTeamNames(): Promise<TeamNames> {
+  getTeamNames(): Promise<TeamNamesState> {
     return this.teamBuilder.getTeamNames();
   }
 
   /**
    * Overwrite the whole team name map.
-   * @param body - names: team number → name; a team left out loses its name
-   * @returns The map just written
+   * @param body - names: team number → name, a team left out loses its name; version: the one the
+   *   draft was based on
+   * @returns The map just written (412 when the version is stale)
    */
   @Put('team-names')
   @ApiOperation({ summary: 'Lưu tên các đội' })
-  saveTeamNames(@Body() body: SaveTeamNamesDto): Promise<TeamNames> {
-    return this.teamBuilder.saveTeamNames(body.names);
+  saveTeamNames(@Body() body: SaveTeamNamesDto): Promise<TeamNamesState> {
+    return this.teamBuilder.saveTeamNames(body);
   }
 }

@@ -1,3 +1,5 @@
+import { PreconditionFailedException } from '@nestjs/common';
+
 import { FixedClock } from '../../../common';
 import { BattleSessionsService } from '../../battle-sessions/battle-sessions.public';
 import { CharactersService } from '../../characters/characters.public';
@@ -9,6 +11,7 @@ const NOW = new Date('2026-07-22T12:00:00+07:00');
 /** The transaction client `saveTeamNames` writes through. */
 interface TeamNameTx {
   teamName: { deleteMany: jest.Mock; createMany: jest.Mock };
+  teamNameVersion: { updateMany: jest.Mock };
 }
 
 describe('TeamBuilderService — tên đội', () => {
@@ -16,6 +19,7 @@ describe('TeamBuilderService — tên đội', () => {
   let tx: TeamNameTx;
   let prisma: {
     teamName: { findMany: jest.Mock };
+    teamNameVersion: { findUniqueOrThrow: jest.Mock };
     $transaction: jest.Mock;
   };
   let battleSessions: {
@@ -31,10 +35,16 @@ describe('TeamBuilderService — tên đội', () => {
         deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
         createMany: jest.fn().mockResolvedValue({ count: 0 }),
       },
+      teamNameVersion: {
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      },
     };
 
     prisma = {
       teamName: { findMany: jest.fn().mockResolvedValue([]) },
+      teamNameVersion: {
+        findUniqueOrThrow: jest.fn().mockResolvedValue({ id: 1, version: 5 }),
+      },
       $transaction: jest.fn((run: (client: TeamNameTx) => Promise<unknown>) =>
         run(tx),
       ),
@@ -63,19 +73,30 @@ describe('TeamBuilderService — tên đội', () => {
       ]);
 
       await expect(service.getTeamNames()).resolves.toEqual({
-        '1': 'Thủ nhà',
-        '7': 'Dự bị',
+        names: { '1': 'Thủ nhà', '7': 'Dự bị' },
+        version: 5,
       });
     });
 
     it('chưa đội nào có tên thì trả về map rỗng', async () => {
-      await expect(service.getTeamNames()).resolves.toEqual({});
+      await expect(service.getTeamNames()).resolves.toEqual({
+        names: {},
+        version: 5,
+      });
+    });
+
+    it('thiếu dòng TeamNameVersion: ném, không tự dựng lại', async () => {
+      prisma.teamNameVersion.findUniqueOrThrow.mockRejectedValue(
+        new Error('No record found'),
+      );
+
+      await expect(service.getTeamNames()).rejects.toThrow('No record found');
     });
   });
 
   describe('saveTeamNames', () => {
     it('xoá sạch rồi tạo lại, cả hai trong một transaction', async () => {
-      await service.saveTeamNames({ '3': 'Thủ nhà' });
+      await service.saveTeamNames({ names: { '3': 'Thủ nhà' }, version: 5 });
 
       expect(prisma.$transaction).toHaveBeenCalledTimes(1);
       expect(tx.teamName.deleteMany).toHaveBeenCalledWith({});
@@ -85,7 +106,7 @@ describe('TeamBuilderService — tên đội', () => {
     });
 
     it('map rỗng vẫn xoá sạch nhưng không gọi createMany', async () => {
-      await service.saveTeamNames({});
+      await service.saveTeamNames({ names: {}, version: 5 });
 
       expect(tx.teamName.deleteMany).toHaveBeenCalledWith({});
       expect(tx.teamName.createMany).not.toHaveBeenCalled();
@@ -93,12 +114,33 @@ describe('TeamBuilderService — tên đội', () => {
 
     it('trả về đúng map vừa ghi', async () => {
       await expect(
-        service.saveTeamNames({ '2': 'Xung kích' }),
-      ).resolves.toEqual({ '2': 'Xung kích' });
+        service.saveTeamNames({ names: { '2': 'Xung kích' }, version: 5 }),
+      ).resolves.toEqual({ names: { '2': 'Xung kích' }, version: 6 });
+    });
+
+    it('đúng version: tăng 1 rồi mới xoá-dựng lại', async () => {
+      await service.saveTeamNames({ names: { '3': 'Thủ nhà' }, version: 5 });
+
+      expect(tx.teamNameVersion.updateMany).toHaveBeenCalledWith({
+        where: { id: 1, version: 5 },
+        data: { version: { increment: 1 } },
+      });
+      expect(
+        tx.teamNameVersion.updateMany.mock.invocationCallOrder[0],
+      ).toBeLessThan(tx.teamName.deleteMany.mock.invocationCallOrder[0]);
+    });
+
+    it('sai version: 412, không deleteMany', async () => {
+      tx.teamNameVersion.updateMany.mockResolvedValue({ count: 0 });
+
+      await expect(
+        service.saveTeamNames({ names: { '3': 'Thủ nhà' }, version: 4 }),
+      ).rejects.toBeInstanceOf(PreconditionFailedException);
+      expect(tx.teamName.deleteMany).not.toHaveBeenCalled();
     });
 
     it('không kiểm tra khoá trận: tên đội không thuộc ngày đánh nào', async () => {
-      await service.saveTeamNames({ '1': 'Thủ nhà' });
+      await service.saveTeamNames({ names: { '1': 'Thủ nhà' }, version: 5 });
 
       expect(battleSessions.findById).not.toHaveBeenCalled();
       expect(characters.listIds).not.toHaveBeenCalled();

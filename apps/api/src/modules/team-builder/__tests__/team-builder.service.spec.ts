@@ -1,4 +1,8 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  NotFoundException,
+  PreconditionFailedException,
+} from '@nestjs/common';
 import type { BattleSession } from '@guild/shared/schemas';
 
 import { FixedClock } from '../../../common';
@@ -60,6 +64,7 @@ describe('TeamBuilderService.getFormations', () => {
   let service: TeamBuilderService;
   let prisma: {
     formationMatch: { findMany: jest.Mock };
+    battleSession: { findMany: jest.Mock };
   };
   let battleSessions: {
     getActiveWeek: jest.Mock;
@@ -72,6 +77,13 @@ describe('TeamBuilderService.getFormations', () => {
     prisma = {
       formationMatch: {
         findMany: jest.fn().mockResolvedValue(FORMATION_MATCH_ROWS),
+      },
+      battleSession: {
+        findMany: jest.fn().mockResolvedValue([
+          { id: 'session-tue', formationVersion: 0 },
+          { id: 'session-thu', formationVersion: 0 },
+          { id: 'session-sat', formationVersion: 7 },
+        ]),
       },
     };
 
@@ -99,6 +111,20 @@ describe('TeamBuilderService.getFormations', () => {
       'session-thu',
       'session-sat',
     ]);
+  });
+
+  it('trả version của từng ngày', async () => {
+    const result = await service.getFormations();
+
+    expect(result.map((item) => item.version)).toEqual([0, 0, 7]);
+  });
+
+  it('thiếu version của một ngày (bị xoá giữa hai truy vấn) thì ném, không đoán 0', async () => {
+    prisma.battleSession.findMany.mockResolvedValue([
+      { id: 'session-tue', formationVersion: 0 },
+    ]);
+
+    await expect(service.getFormations()).rejects.toThrow('session-thu');
   });
 
   it('ngày chưa xếp thì matches rỗng', async () => {
@@ -362,6 +388,7 @@ const SAVED_DAY = {
 describe('TeamBuilderService.saveFormation', () => {
   let service: TeamBuilderService;
   let tx: {
+    battleSession: { updateMany: jest.Mock };
     formationMatch: {
       deleteMany: jest.Mock;
       create: jest.Mock<Promise<object>, [CreateMatchArgs]>;
@@ -376,6 +403,9 @@ describe('TeamBuilderService.saveFormation', () => {
 
   beforeEach(() => {
     tx = {
+      battleSession: {
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      },
       formationMatch: {
         deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
         create: jest
@@ -403,10 +433,13 @@ describe('TeamBuilderService.saveFormation', () => {
   });
 
   it('lưu hai trận thành hai FormationMatch, matchIndex 1 và 2', async () => {
-    await service.saveFormation('session-thu', [
-      { slots: { 'team-1-pos-1': 'char-1' }, notes: {} },
-      { slots: { 'team-1-pos-1': 'char-2' }, notes: {} },
-    ]);
+    await service.saveFormation('session-thu', {
+      matches: [
+        { slots: { 'team-1-pos-1': 'char-1' }, notes: {} },
+        { slots: { 'team-1-pos-1': 'char-2' }, notes: {} },
+      ],
+      version: 0,
+    });
 
     expect(tx.formationMatch.create).toHaveBeenCalledTimes(2);
     expect(tx.formationMatch.create.mock.calls[0][0].data).toEqual({
@@ -420,7 +453,10 @@ describe('TeamBuilderService.saveFormation', () => {
   });
 
   it('xoá sạch đội hình cũ của ngày trước khi ghi lại', async () => {
-    await service.saveFormation('session-thu', [{ slots: {}, notes: {} }]);
+    await service.saveFormation('session-thu', {
+      matches: [{ slots: {}, notes: {} }],
+      version: 0,
+    });
 
     expect(tx.formationMatch.deleteMany).toHaveBeenCalledWith({
       where: { sessionId: 'session-thu' },
@@ -428,18 +464,24 @@ describe('TeamBuilderService.saveFormation', () => {
   });
 
   it('lưu lại mảng một phần tử thì chỉ còn một trận', async () => {
-    await service.saveFormation('session-thu', [{ slots: {}, notes: {} }]);
+    await service.saveFormation('session-thu', {
+      matches: [{ slots: {}, notes: {} }],
+      version: 0,
+    });
 
     expect(tx.formationMatch.create).toHaveBeenCalledTimes(1);
   });
 
   it('bỏ characterId không còn trong bảng Character', async () => {
-    const result = await service.saveFormation('session-thu', [
-      {
-        slots: { 'team-1-pos-1': 'char-1', 'team-1-pos-2': 'char-99' },
-        notes: {},
-      },
-    ]);
+    const result = await service.saveFormation('session-thu', {
+      matches: [
+        {
+          slots: { 'team-1-pos-1': 'char-1', 'team-1-pos-2': 'char-99' },
+          notes: {},
+        },
+      ],
+      version: 0,
+    });
 
     expect(tx.formationMatch.create.mock.calls[0][0].data.slots.create).toEqual(
       [{ slotId: 'team-1-pos-1', characterId: 'char-1', note: null }],
@@ -450,9 +492,10 @@ describe('TeamBuilderService.saveFormation', () => {
   });
 
   it('ô chỉ có ghi chú mà chưa xếp ai vẫn được lưu', async () => {
-    await service.saveFormation('session-thu', [
-      { slots: {}, notes: { 'team-1-pos-4': 'chừa cho X' } },
-    ]);
+    await service.saveFormation('session-thu', {
+      matches: [{ slots: {}, notes: { 'team-1-pos-4': 'chừa cho X' } }],
+      version: 0,
+    });
 
     expect(tx.formationMatch.create.mock.calls[0][0].data.slots.create).toEqual(
       [{ slotId: 'team-1-pos-4', characterId: null, note: 'chừa cho X' }],
@@ -460,12 +503,15 @@ describe('TeamBuilderService.saveFormation', () => {
   });
 
   it('ô vừa có người vừa có ghi chú chỉ tạo một hàng', async () => {
-    await service.saveFormation('session-thu', [
-      {
-        slots: { 'team-1-pos-1': 'char-1' },
-        notes: { 'team-1-pos-1': 'giữ buồng' },
-      },
-    ]);
+    await service.saveFormation('session-thu', {
+      matches: [
+        {
+          slots: { 'team-1-pos-1': 'char-1' },
+          notes: { 'team-1-pos-1': 'giữ buồng' },
+        },
+      ],
+      version: 0,
+    });
 
     expect(tx.formationMatch.create.mock.calls[0][0].data.slots.create).toEqual(
       [{ slotId: 'team-1-pos-1', characterId: 'char-1', note: 'giữ buồng' }],
@@ -473,12 +519,15 @@ describe('TeamBuilderService.saveFormation', () => {
   });
 
   it('characterId không còn trong bang bị lọc nhưng ghi chú của ô đó vẫn giữ', async () => {
-    const result = await service.saveFormation('session-thu', [
-      {
-        slots: { 'team-1-pos-2': 'char-99' },
-        notes: { 'team-1-pos-2': 'vào sau' },
-      },
-    ]);
+    const result = await service.saveFormation('session-thu', {
+      matches: [
+        {
+          slots: { 'team-1-pos-2': 'char-99' },
+          notes: { 'team-1-pos-2': 'vào sau' },
+        },
+      ],
+      version: 0,
+    });
 
     expect(tx.formationMatch.create.mock.calls[0][0].data.slots.create).toEqual(
       [{ slotId: 'team-1-pos-2', characterId: null, note: 'vào sau' }],
@@ -491,28 +540,41 @@ describe('TeamBuilderService.saveFormation', () => {
   it('gửi hai lần cùng payload cho cùng kết quả', async () => {
     const matches = [{ slots: { 'team-1-pos-1': 'char-1' }, notes: {} }];
 
-    const first = await service.saveFormation('session-thu', matches);
-    const second = await service.saveFormation('session-thu', matches);
+    const first = await service.saveFormation('session-thu', {
+      matches: matches,
+      version: 0,
+    });
+    const second = await service.saveFormation('session-thu', {
+      matches: matches,
+      version: 0,
+    });
 
     expect(second).toEqual(first);
   });
 
   it('đọc danh sách nhân vật bằng chính client của transaction', async () => {
-    await service.saveFormation('session-thu', [{ slots: {}, notes: {} }]);
+    await service.saveFormation('session-thu', {
+      matches: [{ slots: {}, notes: {} }],
+      version: 0,
+    });
 
     expect(characters.listIds).toHaveBeenCalledWith(tx);
   });
 
   it('trận vừa lưu chưa khoá — giờ đánh còn ở tương lai', async () => {
-    const result = await service.saveFormation('session-thu', [
-      { slots: {}, notes: {} },
-    ]);
+    const result = await service.saveFormation('session-thu', {
+      matches: [{ slots: {}, notes: {} }],
+      version: 0,
+    });
 
     expect(result.locked).toBe(false);
   });
 
   it('dọn đội hình quá hạn trên đường ghi, theo đồng hồ ứng dụng', async () => {
-    await service.saveFormation('session-thu', [{ slots: {}, notes: {} }]);
+    await service.saveFormation('session-thu', {
+      matches: [{ slots: {}, notes: {} }],
+      version: 0,
+    });
 
     expect(prisma.formationMatch.deleteMany).toHaveBeenCalledWith({
       where: { session: { weekStart: { lt: vn('2026-05-27T12:00') } } },
@@ -532,7 +594,10 @@ describe('TeamBuilderService.saveFormation', () => {
       },
     );
 
-    await service.saveFormation('session-thu', [{ slots: {}, notes: {} }]);
+    await service.saveFormation('session-thu', {
+      matches: [{ slots: {}, notes: {} }],
+      version: 0,
+    });
 
     expect(order).toEqual(['purge', 'write']);
   });
@@ -547,7 +612,10 @@ describe('TeamBuilderService.saveFormation', () => {
     });
 
     await expect(
-      service.saveFormation('session-tue', [{ slots: {}, notes: {} }]),
+      service.saveFormation('session-tue', {
+        matches: [{ slots: {}, notes: {} }],
+        version: 0,
+      }),
     ).rejects.toBeInstanceOf(ConflictException);
     expect(prisma.formationMatch.deleteMany).not.toHaveBeenCalled();
   });
@@ -556,7 +624,10 @@ describe('TeamBuilderService.saveFormation', () => {
     battleSessions.findById.mockResolvedValue(null);
 
     await expect(
-      service.saveFormation('khong-co', [{ slots: {}, notes: {} }]),
+      service.saveFormation('khong-co', {
+        matches: [{ slots: {}, notes: {} }],
+        version: 0,
+      }),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 
@@ -570,7 +641,10 @@ describe('TeamBuilderService.saveFormation', () => {
     });
 
     await expect(
-      service.saveFormation('session-tue', [{ slots: {}, notes: {} }]),
+      service.saveFormation('session-tue', {
+        matches: [{ slots: {}, notes: {} }],
+        version: 0,
+      }),
     ).rejects.toBeInstanceOf(ConflictException);
   });
 
@@ -584,9 +658,10 @@ describe('TeamBuilderService.saveFormation', () => {
     );
 
     await expect(
-      service.saveFormation('session-thu', [
-        { slots: { 'team-1-pos-1': 'char-1' }, notes: {} },
-      ]),
+      service.saveFormation('session-thu', {
+        matches: [{ slots: { 'team-1-pos-1': 'char-1' }, notes: {} }],
+        version: 0,
+      }),
     ).rejects.toBeInstanceOf(ConflictException);
   });
 
@@ -595,10 +670,54 @@ describe('TeamBuilderService.saveFormation', () => {
     tx.formationMatch.create.mockRejectedValue(failure);
 
     await expect(
-      service.saveFormation('session-thu', [
-        { slots: { 'team-1-pos-1': 'char-1' }, notes: {} },
-      ]),
+      service.saveFormation('session-thu', {
+        matches: [{ slots: { 'team-1-pos-1': 'char-1' }, notes: {} }],
+        version: 0,
+      }),
     ).rejects.toBe(failure);
+  });
+
+  describe('version', () => {
+    const MATCH = { slots: {}, notes: {} };
+
+    it('đúng version: tăng 1 rồi mới ghi, trả version mới', async () => {
+      const result = await service.saveFormation('session-thu', {
+        matches: [MATCH],
+        version: 3,
+      });
+
+      expect(tx.battleSession.updateMany).toHaveBeenCalledWith({
+        where: { id: 'session-thu', formationVersion: 3 },
+        data: { formationVersion: { increment: 1 } },
+      });
+      expect(result.version).toBe(4);
+      expect(
+        tx.battleSession.updateMany.mock.invocationCallOrder[0],
+      ).toBeLessThan(tx.formationMatch.deleteMany.mock.invocationCallOrder[0]);
+    });
+
+    it('sai version: 412, không xoá gì', async () => {
+      tx.battleSession.updateMany.mockResolvedValue({ count: 0 });
+
+      await expect(
+        service.saveFormation('session-thu', { matches: [MATCH], version: 2 }),
+      ).rejects.toBeInstanceOf(PreconditionFailedException);
+      expect(tx.formationMatch.deleteMany).not.toHaveBeenCalled();
+      expect(tx.formationMatch.create).not.toHaveBeenCalled();
+    });
+
+    it('trận đã đánh + sai version: 409, không chạm version', async () => {
+      battleSessions.findById.mockResolvedValue({
+        ...SAVED_DAY,
+        id: 'session-tue',
+        dateTime: vn('2026-07-21T20:30').toISOString(),
+      });
+
+      await expect(
+        service.saveFormation('session-tue', { matches: [MATCH], version: 0 }),
+      ).rejects.toBeInstanceOf(ConflictException);
+      expect(tx.battleSession.updateMany).not.toHaveBeenCalled();
+    });
   });
 
   describe('số trận là trần trên của số đội hình', () => {
@@ -609,17 +728,21 @@ describe('TeamBuilderService.saveFormation', () => {
       });
 
       await expect(
-        service.saveFormation('session-thu', [
-          { slots: {}, notes: {} },
-          { slots: {}, notes: {} },
-        ]),
+        service.saveFormation('session-thu', {
+          matches: [
+            { slots: {}, notes: {} },
+            { slots: {}, notes: {} },
+          ],
+          version: 0,
+        }),
       ).rejects.toThrow(ConflictException);
     });
 
     it('cho lưu 1 đội hình cho ngày đánh 2 trận — cả hai trận dùng chung', async () => {
-      const saved = await service.saveFormation('session-thu', [
-        { slots: {}, notes: {} },
-      ]);
+      const saved = await service.saveFormation('session-thu', {
+        matches: [{ slots: {}, notes: {} }],
+        version: 0,
+      });
 
       expect(saved.matches).toHaveLength(1);
       expect(saved.matchCount).toBe(2);
@@ -642,6 +765,7 @@ describe('TeamBuilderService.releaseCharacterFromSession', () => {
   /** The transaction client the caller hands in — this method opens none of its own. */
   let tx: {
     formationSlot: { deleteMany: jest.Mock; updateMany: jest.Mock };
+    battleSession: { update: jest.Mock };
   };
   let prisma: { $transaction: jest.Mock };
 
@@ -651,6 +775,7 @@ describe('TeamBuilderService.releaseCharacterFromSession', () => {
         deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
+      battleSession: { update: jest.fn().mockResolvedValue({}) },
     };
     prisma = { $transaction: jest.fn() };
     service = new TeamBuilderService(
@@ -685,6 +810,33 @@ describe('TeamBuilderService.releaseCharacterFromSession', () => {
     expect(released).toBe(2);
   });
 
+  it('gỡ ít nhất một ô: tăng version qua client được truyền vào', async () => {
+    await service.releaseCharacterFromSession(
+      THURSDAY_SESSION,
+      'char-1',
+      tx as never,
+    );
+
+    expect(tx.battleSession.update).toHaveBeenCalledWith({
+      where: { id: 'session-thu' },
+      data: { formationVersion: { increment: 1 } },
+    });
+  });
+
+  it('không gỡ ô nào: không tăng version', async () => {
+    tx.formationSlot.deleteMany.mockResolvedValue({ count: 0 });
+    tx.formationSlot.updateMany.mockResolvedValue({ count: 0 });
+
+    const released = await service.releaseCharacterFromSession(
+      THURSDAY_SESSION,
+      'char-1',
+      tx as never,
+    );
+
+    expect(released).toBe(0);
+    expect(tx.battleSession.update).not.toHaveBeenCalled();
+  });
+
   it('không đụng vào đội hình của trận đã đánh xong', async () => {
     const released = await service.releaseCharacterFromSession(
       {
@@ -699,5 +851,6 @@ describe('TeamBuilderService.releaseCharacterFromSession', () => {
     expect(released).toBe(0);
     expect(tx.formationSlot.deleteMany).not.toHaveBeenCalled();
     expect(tx.formationSlot.updateMany).not.toHaveBeenCalled();
+    expect(tx.battleSession.update).not.toHaveBeenCalled();
   });
 });

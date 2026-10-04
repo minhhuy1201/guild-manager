@@ -35,14 +35,31 @@ export const teamNamesSchema = z.record(
 );
 
 /**
+ * The version a save was based on. Required, never defaulted: a body without it comes from a client
+ * that predates the check, and saving it would be the silent overwrite this field exists to stop.
+ */
+const versionSchema = z.number().int().nonnegative();
+
+/**
  * Body of PUT /team-builder/team-names — the WHOLE map every time, like the formation save.
  * A name dropped from the map is a name deleted.
  */
 export const saveTeamNamesSchema = z.object({
   names: teamNamesSchema,
+  version: versionSchema,
 });
 
 export type TeamNames = z.infer<typeof teamNamesSchema>;
+
+export type SaveTeamNamesInput = z.infer<typeof saveTeamNamesSchema>;
+
+/** GET/PUT /team-builder/team-names answer: the map plus the version it is at. */
+export const teamNamesStateSchema = z.object({
+  names: teamNamesSchema,
+  version: z.number().int(),
+});
+
+export type TeamNamesState = z.infer<typeof teamNamesStateSchema>;
 
 /** One match: who stands where, plus each slot's note. */
 export const matchSchema = z.object({
@@ -57,6 +74,7 @@ export const matchSchema = z.object({
  */
 export const saveFormationSchema = z.object({
   matches: z.array(matchSchema).min(1).max(2),
+  version: versionSchema,
 });
 
 export type MatchInput = z.infer<typeof matchSchema>;
@@ -92,6 +110,8 @@ export const sessionFormationSchema = z.object({
   locked: z.boolean(),
   /** Matches of the day, in order. Empty means nothing laid out and nothing noted. */
   matches: z.array(matchFormationSchema),
+  /** Bumped by every save and by every server-side release (spec F14 4.3) */
+  version: z.number().int(),
 });
 
 /**
