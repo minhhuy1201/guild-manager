@@ -96,6 +96,7 @@ function makeRecord(
       isPresent,
       markedAt: "2026-08-24T10:00:00.000Z",
       reason: null,
+      source: "answer",
     },
   };
 }

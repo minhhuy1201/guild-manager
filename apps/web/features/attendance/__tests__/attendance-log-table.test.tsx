@@ -59,6 +59,7 @@ function makeRecords(
         ...entry,
         markedAt: "2026-08-24T10:00:00.000Z",
         reason: entry.reason ?? null,
+        source: "answer" as const,
       },
     ])
   );

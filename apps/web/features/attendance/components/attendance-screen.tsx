@@ -5,6 +5,7 @@ import { canManageGuild } from "@guild/shared/lib";
 
 import { PageHeader } from "@/components/shared/page-header";
 import { AttendanceGrid } from "./attendance-grid";
+import { LeaveSection } from "./leave-section";
 import { MemberAttendanceCard } from "./member-attendance-card";
 
 interface AttendanceScreenProps {
@@ -31,6 +32,7 @@ export function AttendanceScreen({ role }: AttendanceScreenProps) {
         title="Điểm danh"
         description="Chọn Có hoặc Không cho từng trận trong tuần, trước hạn chót của trận đó."
       />
+      <LeaveSection isAdmin={isAdmin} />
       <MemberAttendanceCard />
       <AttendanceGrid isAdmin={isAdmin} />
     </>

@@ -48,6 +48,7 @@ function makeRecordMap(reason: string | null): Record<string, AttendanceRecord> 
       isPresent: false,
       markedAt: "2026-08-24T10:00:00.000Z",
       reason,
+      source: "answer",
     },
   };
 }

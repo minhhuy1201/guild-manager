@@ -15,6 +15,7 @@ export const CACHE_TOPICS = [
   "roster",
   "schedule",
   "attendance",
+  "leave",
   "attendance-window",
   "formation",
   "tactic",
@@ -56,6 +57,15 @@ export const CACHE_DEPENDENTS: Record<CacheTopic, () => QueryKey[]> = {
   ],
   /** Marking one cell only changes records; the columns and the character list are untouched. */
   attendance: () => [attendanceKeys.records()],
+  /**
+   * Filing a leave clears answers and line-up slots; cancelling one turns "Không (nghỉ)" cells back
+   * into unanswered ones. Both change what the grid and the formations show.
+   */
+  leave: () => [
+    attendanceKeys.leaves(),
+    attendanceKeys.records(),
+    teamBuilderKeys.all,
+  ],
   /**
    * A day closing must lock the column — its deadline passing, or an admin announcing its line-up in
    * Discord. `isAttendanceClosed` is computed by the server and travels with the session, so both the
