@@ -95,7 +95,8 @@ export function parseLeaveDateInput(
   const distance = (key: string): number =>
     Math.abs(Date.parse(`${key}T00:00:00Z`) - todayMs) / MS_PER_DAY;
 
-  return candidates.reduce((best, key) =>
-    distance(key) < distance(best) ? key : best,
+  return candidates.reduce(
+    (best, key) => (distance(key) < distance(best) ? key : best),
+    candidates[0],
   );
 }

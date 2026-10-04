@@ -78,7 +78,9 @@ export class LeaveService {
   ): Promise<LeaveWindow[]> {
     if (sessions.length === 0) return [];
 
-    const days = sessions.map((session) => vnDateKey(session.dateTime)).sort();
+    const days = sessions
+      .map((session) => vnDateKey(session.dateTime))
+      .sort((a, b) => a.localeCompare(b));
     const rows = await this.prisma.leave.findMany({
       where: {
         startDate: { lte: fromDateKey(days[days.length - 1]) },
