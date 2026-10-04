@@ -365,8 +365,10 @@ describe('ReminderService.run - phạm vi cả tuần', () => {
 });
 
 describe('ReminderService.runScheduled', () => {
-  const adminCalls = (postMessage: jest.Mock) =>
-    postMessage.mock.calls.filter(([channelId]) => channelId === '999');
+  const adminCalls = (postMessage: jest.Mock): unknown[][] =>
+    (postMessage.mock.calls as unknown[][]).filter(
+      ([channelId]) => channelId === '999',
+    );
 
   it('sent: không gửi tin báo', async () => {
     const { service, postMessage } = makeService();
