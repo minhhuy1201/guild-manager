@@ -120,10 +120,11 @@ export class TeamBuilderService {
     if (sessions.length === 0) return [];
 
     const ids = sessions.map((session) => session.id);
-    const [matchesBySession, versions] = await Promise.all([
-      this.loadMatchesBySession(ids),
-      this.loadFormationVersions(ids),
-    ]);
+    // Version FIRST, then the data, one after the other: the two reads share no snapshot, so a save
+    // landing between them must leave the client with an OLD version over NEWER data (its next save
+    // is refused, 412) and never a new version over old data (its next save would overwrite silently).
+    const versions = await this.loadFormationVersions(ids);
+    const matchesBySession = await this.loadMatchesBySession(ids);
 
     return sessions.map((session) => {
       const version = versions.get(session.id);
@@ -333,6 +334,11 @@ export class TeamBuilderService {
     const now = this.clock.now();
     if (isSessionLocked(new Date(session.dateTime), now)) return 0;
 
+    // Lock the day row BEFORE touching its slots. `saveFormation` locks the day row first (its version
+    // bump) and then cascades into the slots; taking the slots first here and the day row last would
+    // be the opposite order, and the two transactions could deadlock.
+    await client.$queryRaw`SELECT 1 FROM "BattleSession" WHERE "id" = ${session.id} FOR NO KEY UPDATE`;
+
     const occupied = { characterId, match: { sessionId: session.id } };
 
     // Delete first: afterwards `occupied` matches only the noted slots. Both statements run on the
@@ -366,12 +372,13 @@ export class TeamBuilderService {
    * @throws Error when the one TeamNameVersion row is missing - a broken database, never recreated
    */
   async getTeamNames(): Promise<TeamNamesState> {
-    const [rows, versionRow] = await Promise.all([
-      this.prisma.teamName.findMany({ orderBy: { team: 'asc' } }),
-      this.prisma.teamNameVersion.findUniqueOrThrow({
-        where: { id: TEAM_NAME_VERSION_ID },
-      }),
-    ]);
+    // Version first, sequentially - same reasoning as `getFormations`.
+    const versionRow = await this.prisma.teamNameVersion.findUniqueOrThrow({
+      where: { id: TEAM_NAME_VERSION_ID },
+    });
+    const rows = await this.prisma.teamName.findMany({
+      orderBy: { team: 'asc' },
+    });
 
     return verifyResponse(teamNamesStateSchema, {
       names: Object.fromEntries(
@@ -398,13 +405,19 @@ export class TeamBuilderService {
     }));
 
     await this.prisma.$transaction(async (tx) => {
-      // Same single-statement check-and-bump as `saveFormation`. A missing version row also lands
-      // here as 412 rather than 500; `getTeamNames` reports it first, before anyone can save.
+      // Same single-statement check-and-bump as `saveFormation`.
       const { count } = await tx.teamNameVersion.updateMany({
         where: { id: TEAM_NAME_VERSION_ID, version: input.version },
         data: { version: { increment: 1 } },
       });
-      if (count === 0) throw new PreconditionFailedException(TEAM_NAMES_STALE);
+      if (count === 0) {
+        // Zero rows is either a stale version or a missing row; only the second is a broken database
+        // that must surface as a 500 rather than send every admin to a conflict dialog.
+        await tx.teamNameVersion.findUniqueOrThrow({
+          where: { id: TEAM_NAME_VERSION_ID },
+        });
+        throw new PreconditionFailedException(TEAM_NAMES_STALE);
+      }
 
       await tx.teamName.deleteMany({});
       if (rows.length > 0) await tx.teamName.createMany({ data: rows });

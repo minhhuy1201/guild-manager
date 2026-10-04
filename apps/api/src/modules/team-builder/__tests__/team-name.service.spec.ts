@@ -11,7 +11,7 @@ const NOW = new Date('2026-07-22T12:00:00+07:00');
 /** The transaction client `saveTeamNames` writes through. */
 interface TeamNameTx {
   teamName: { deleteMany: jest.Mock; createMany: jest.Mock };
-  teamNameVersion: { updateMany: jest.Mock };
+  teamNameVersion: { updateMany: jest.Mock; findUniqueOrThrow: jest.Mock };
 }
 
 describe('TeamBuilderService — tên đội', () => {
@@ -37,6 +37,7 @@ describe('TeamBuilderService — tên đội', () => {
       },
       teamNameVersion: {
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+        findUniqueOrThrow: jest.fn().mockResolvedValue({ id: 1, version: 5 }),
       },
     };
 
@@ -128,6 +129,18 @@ describe('TeamBuilderService — tên đội', () => {
       expect(
         tx.teamNameVersion.updateMany.mock.invocationCallOrder[0],
       ).toBeLessThan(tx.teamName.deleteMany.mock.invocationCallOrder[0]);
+    });
+
+    it('thiếu dòng TeamNameVersion lúc ghi: lỗi hệ thống, không phải 412', async () => {
+      tx.teamNameVersion.updateMany.mockResolvedValue({ count: 0 });
+      tx.teamNameVersion.findUniqueOrThrow.mockRejectedValue(
+        new Error('No record found'),
+      );
+
+      await expect(
+        service.saveTeamNames({ names: {}, version: 5 }),
+      ).rejects.toThrow('No record found');
+      expect(tx.teamName.deleteMany).not.toHaveBeenCalled();
     });
 
     it('sai version: 412, không deleteMany', async () => {

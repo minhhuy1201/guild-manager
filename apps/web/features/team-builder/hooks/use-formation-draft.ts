@@ -304,10 +304,9 @@ export function useFormationDraft(
    */
   const seedFrom = useCallback(
     (proposal: MatchDraft[]) => {
-      if (!activeSessionId) return;
-      if (savedVersion === undefined) {
-        throw new Error(`Không tìm thấy version của ngày ${activeSessionId}.`);
-      }
+      // No version means the open day is not among `sessions` for this render (a week switch in
+      // flight): seeding then would guess a number, and an effect that throws takes the screen down.
+      if (!activeSessionId || savedVersion === undefined) return;
 
       ensureDraft(activeSessionId, proposal, savedVersion);
     },
@@ -429,6 +428,9 @@ export function useFormationDraft(
 
         return;
       }
+      // Any other outcome ends the conflict: a 409 means the day locked meanwhile, and anything else
+      // is an error the toolbar reports. Leaving the flag on would keep a modal over that message.
+      setStaleSessionId(null);
 
       if (error instanceof ApiError && error.statusCode === CONFLICT_STATUS) {
         refetchFormations();

@@ -246,4 +246,19 @@ describe("useTeamNameDraft — xung đột phiên bản", () => {
     expect(result.current.isStale).toBe(true);
     expect(result.current.dirty).toBe(true);
   });
+
+  it("overwriteStale gặp lỗi 500: hết isStale, thông báo hiện ở thanh công cụ", async () => {
+    saveTeamNamesMock.mockRejectedValue(new ApiError("Máy chủ bận.", 500));
+    refetchMock.mockResolvedValue({ names: {}, version: 6 });
+    const { result } = renderNames(SAVED, { "1": "Xung kích" }, 3);
+
+    await act(async () => {
+      await result.current.overwriteStale();
+    });
+
+    expect(result.current.isStale).toBe(false);
+    await waitFor(() =>
+      expect(result.current.saveErrorMessage).toBe("Máy chủ bận.")
+    );
+  });
 });

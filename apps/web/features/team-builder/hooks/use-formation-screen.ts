@@ -99,7 +99,7 @@ export function useFormationScreen(): FormationScreenState {
   const teamNamesQuery = useTeamNames();
   const { refetch: refetchTeamNamesQuery } = teamNamesQuery;
   const refetchTeamNames = useCallback(async () => {
-    const { data } = await refetchTeamNamesQuery();
+    const { data } = await refetchTeamNamesQuery({ throwOnError: true });
     if (!data) throw new Error("Không tải được tên đội, hãy tải lại trang.");
 
     return data;

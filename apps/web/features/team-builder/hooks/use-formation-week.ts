@@ -122,7 +122,9 @@ export function useFormationWeek(): FormationWeekState {
       void formationsGroup.refetch();
     },
     fetchFormationVersion: async (sessionId) => {
-      const { data } = await formationsQuery.refetch();
+      const { data } = await formationsQuery.refetch({
+        throwOnError: true,
+      });
       const version = data?.find(
         (session) => session.sessionId === sessionId
       )?.version;

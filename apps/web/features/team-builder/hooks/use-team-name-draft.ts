@@ -92,9 +92,11 @@ export function useTeamNameDraft(
       clearDraft();
       setIsStale(false);
     } catch (error) {
-      if (error instanceof ApiError && error.statusCode === STALE_STATUS) {
-        setIsStale(true);
-      }
+      const isStaleSave =
+        error instanceof ApiError && error.statusCode === STALE_STATUS;
+      // Any other outcome ends the conflict: leaving the flag on would keep a modal over the
+      // toolbar's error message.
+      setIsStale(isStaleSave);
       // Anything else is swallowed on purpose: the message is read off the mutation below, and
       // rethrowing here would take the formation's save down with it when the
       // screen runs both in one Promise.all.

@@ -119,6 +119,14 @@ describe('TeamBuilderService.getFormations', () => {
     expect(result.map((item) => item.version)).toEqual([0, 0, 7]);
   });
 
+  it('đọc version TRƯỚC dữ liệu, tuần tự - lệch snapshot chỉ ra 412, không ra ghi đè câm', async () => {
+    await service.getFormations();
+
+    expect(
+      prisma.battleSession.findMany.mock.invocationCallOrder[0],
+    ).toBeLessThan(prisma.formationMatch.findMany.mock.invocationCallOrder[0]);
+  });
+
   it('thiếu version của một ngày (bị xoá giữa hai truy vấn) thì ném, không đoán 0', async () => {
     prisma.battleSession.findMany.mockResolvedValue([
       { id: 'session-tue', formationVersion: 0 },
@@ -766,6 +774,7 @@ describe('TeamBuilderService.releaseCharacterFromSession', () => {
   let tx: {
     formationSlot: { deleteMany: jest.Mock; updateMany: jest.Mock };
     battleSession: { update: jest.Mock };
+    $queryRaw: jest.Mock;
   };
   let prisma: { $transaction: jest.Mock };
 
@@ -776,6 +785,7 @@ describe('TeamBuilderService.releaseCharacterFromSession', () => {
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
       battleSession: { update: jest.fn().mockResolvedValue({}) },
+      $queryRaw: jest.fn().mockResolvedValue([]),
     };
     prisma = { $transaction: jest.fn() };
     service = new TeamBuilderService(
@@ -823,6 +833,18 @@ describe('TeamBuilderService.releaseCharacterFromSession', () => {
     });
   });
 
+  it('khoá dòng ngày TRƯỚC khi đụng vào các ô, cùng thứ tự với saveFormation', async () => {
+    await service.releaseCharacterFromSession(
+      THURSDAY_SESSION,
+      'char-1',
+      tx as never,
+    );
+
+    expect(tx.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
+      tx.formationSlot.deleteMany.mock.invocationCallOrder[0],
+    );
+  });
+
   it('không gỡ ô nào: không tăng version', async () => {
     tx.formationSlot.deleteMany.mockResolvedValue({ count: 0 });
     tx.formationSlot.updateMany.mockResolvedValue({ count: 0 });
@@ -852,5 +874,6 @@ describe('TeamBuilderService.releaseCharacterFromSession', () => {
     expect(tx.formationSlot.deleteMany).not.toHaveBeenCalled();
     expect(tx.formationSlot.updateMany).not.toHaveBeenCalled();
     expect(tx.battleSession.update).not.toHaveBeenCalled();
+    expect(tx.$queryRaw).not.toHaveBeenCalled();
   });
 });
