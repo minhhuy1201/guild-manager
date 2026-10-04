@@ -9,6 +9,7 @@ import { FixedClock, TOKEN_TYPE, type JwtPayload } from '../../../common';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { BattleSessionsService } from '../../battle-sessions/battle-sessions.public';
 import { CharactersService } from '../../characters/characters.public';
+import { LeaveService } from '../leave.service';
 import { TeamBuilderService } from '../../team-builder/team-builder.public';
 import { isAttendanceClosed } from '../../battle-sessions/battle-sessions.public';
 import { AttendanceService } from '../attendance.service';
@@ -76,6 +77,27 @@ const SESSIONS = [
   },
 ];
 
+/** The same two sessions, as the coverage rule reads them. */
+const COVERAGE = SESSIONS.map((session) => ({
+  id: session.id,
+  dateTime: new Date(session.dateTime),
+  deadline: new Date(session.deadline),
+  attendanceClosedAt: null,
+}));
+
+/** A leave of CHARACTER_ID covering the whole fake week, filed well before any deadline. */
+const WEEK_LEAVE = {
+  id: 'leave-1',
+  characterId: CHARACTER_ID,
+  startDate: '2026-07-20',
+  endDate: '2026-07-26',
+  reason: 'du lịch',
+  createdAt: vn('2026-07-19T09:00'),
+  createdByAdmin: false,
+  cancelledAt: null,
+  cancelledByAdmin: false,
+};
+
 describe('AttendanceService', () => {
   let service: AttendanceService;
   /** Build the service with a fixed clock — a few tests need a moment other than WEDNESDAY. */
@@ -92,6 +114,7 @@ describe('AttendanceService', () => {
     listByWeek: jest.Mock;
     findById: jest.Mock;
     getActiveWeek: jest.Mock;
+    readCoverageByIds: jest.Mock;
   };
   let characters: {
     listRows: jest.Mock;
@@ -100,6 +123,7 @@ describe('AttendanceService', () => {
     findById: jest.Mock;
   };
   let teamBuilder: { releaseCharacterFromSession: jest.Mock };
+  let leaves: { windowsForSessions: jest.Mock };
 
   /**
    * Make `findById` return the fake schedule with its closing flag built by the real rule.
@@ -140,6 +164,7 @@ describe('AttendanceService', () => {
         battleSessions as unknown as BattleSessionsService,
         characters as unknown as CharactersService,
         teamBuilder as unknown as TeamBuilderService,
+        leaves as unknown as LeaveService,
         new FixedClock(now),
       );
 
@@ -174,7 +199,10 @@ describe('AttendanceService', () => {
       listByWeek: jest.fn().mockResolvedValue(SESSIONS),
       findById: jest.fn(),
       getActiveWeek: jest.fn().mockReturnValue(vn('2026-07-20T00:00')),
+      readCoverageByIds: jest.fn().mockResolvedValue(COVERAGE),
     };
+
+    leaves = { windowsForSessions: jest.fn().mockResolvedValue([]) };
 
     characters = {
       listRows: jest.fn().mockResolvedValue([]),
@@ -210,6 +238,7 @@ describe('AttendanceService', () => {
         isPresent: true,
         markedAt: WEDNESDAY.toISOString(),
         reason: null,
+        source: 'answer',
       });
     });
 
@@ -637,18 +666,24 @@ describe('AttendanceService', () => {
   });
 
   describe('getSummary', () => {
+    const answer = (
+      sessionId: string,
+      characterId: string,
+      isPresent: boolean,
+    ) => ({
+      characterId,
+      sessionId,
+      isPresent,
+      markedAt: vn('2026-07-22T09:00'),
+      reason: null,
+    });
+
     it('đếm Có/Không theo từng trận, không kèm danh tính', async () => {
-      prisma.attendanceRecord.groupBy.mockResolvedValue([
-        {
-          sessionId: 'session-sat',
-          isPresent: true,
-          _count: { _all: 3 },
-        },
-        {
-          sessionId: 'session-sat',
-          isPresent: false,
-          _count: { _all: 1 },
-        },
+      prisma.attendanceRecord.findMany.mockResolvedValue([
+        answer('session-sat', 'a', true),
+        answer('session-sat', 'b', true),
+        answer('session-sat', 'c', true),
+        answer('session-sat', 'd', false),
       ]);
 
       await expect(service.getSummary()).resolves.toEqual([
@@ -657,9 +692,16 @@ describe('AttendanceService', () => {
       ]);
     });
 
-    it('đọc đúng tuần được truyền, không phải tuần đang mở', async () => {
-      prisma.attendanceRecord.groupBy.mockResolvedValue([]);
+    it('đếm lần nghỉ phủ trận vào khongCount', async () => {
+      leaves.windowsForSessions.mockResolvedValue([WEEK_LEAVE]);
 
+      await expect(service.getSummary()).resolves.toEqual([
+        { sessionId: 'session-tue', coCount: 0, khongCount: 1 },
+        { sessionId: 'session-sat', coCount: 0, khongCount: 1 },
+      ]);
+    });
+
+    it('đọc đúng tuần được truyền, không phải tuần đang mở', async () => {
       await service.getSummary('2026-08-31T00:00:00.000Z');
 
       expect(battleSessions.listByWeek).toHaveBeenCalledWith(
@@ -668,11 +710,70 @@ describe('AttendanceService', () => {
     });
 
     it('không truyền gì thì vẫn là tuần đang mở', async () => {
-      prisma.attendanceRecord.groupBy.mockResolvedValue([]);
-
       await service.getSummary();
 
       expect(battleSessions.listByWeek).toHaveBeenCalledWith(undefined);
+    });
+  });
+
+  describe('getRecords - nghỉ phép', () => {
+    it('trả phần tử source "leave" cho ô chưa trả lời trong khoảng nghỉ', async () => {
+      leaves.windowsForSessions.mockResolvedValue([WEEK_LEAVE]);
+
+      const records = await service.getRecords();
+
+      expect(records).toHaveLength(2);
+      expect(records).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            characterId: CHARACTER_ID,
+            sessionId: 'session-sat',
+            isPresent: false,
+            reason: 'du lịch',
+            source: 'leave',
+          }),
+        ]),
+      );
+    });
+
+    it('record "Có" thắng lần nghỉ', async () => {
+      leaves.windowsForSessions.mockResolvedValue([WEEK_LEAVE]);
+      prisma.attendanceRecord.findMany.mockResolvedValue([
+        {
+          characterId: CHARACTER_ID,
+          sessionId: 'session-sat',
+          isPresent: true,
+          markedAt: vn('2026-07-22T10:00'),
+          reason: null,
+        },
+      ]);
+
+      const records = await service.getRecords();
+      const sat = records.find((r) => r.sessionId === 'session-sat');
+
+      expect(sat).toMatchObject({ isPresent: true, source: 'answer' });
+    });
+
+    it('sau khi hủy nghỉ, record "Có" vẫn còn', async () => {
+      leaves.windowsForSessions.mockResolvedValue([
+        { ...WEEK_LEAVE, cancelledAt: vn('2026-07-22T11:00') },
+      ]);
+      prisma.attendanceRecord.findMany.mockResolvedValue([
+        {
+          characterId: CHARACTER_ID,
+          sessionId: 'session-sat',
+          isPresent: true,
+          markedAt: vn('2026-07-22T10:00'),
+          reason: null,
+        },
+      ]);
+
+      const records = await service.getRecords();
+
+      expect(records.find((r) => r.sessionId === 'session-sat')).toMatchObject({
+        isPresent: true,
+        source: 'answer',
+      });
     });
   });
 
@@ -736,6 +837,7 @@ describe('AttendanceService', () => {
           isPresent: true,
           markedAt: WEDNESDAY.toISOString(),
           reason: null,
+          source: 'answer',
         },
       ]);
     });

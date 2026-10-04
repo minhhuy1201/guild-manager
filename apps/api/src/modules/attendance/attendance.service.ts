@@ -27,6 +27,8 @@ import {
 } from '../characters/characters.public';
 import { TeamBuilderService } from '../team-builder/team-builder.public';
 import { toAttendanceRecord } from './attendance.codec';
+import { effectiveRecords } from './leave-coverage';
+import { LeaveService } from './leave.service';
 
 /** Message shown when a non-admin marks attendance for someone else's character. */
 const NOT_YOUR_CHARACTER = 'Bạn chỉ điểm danh được cho nhân vật của mình.';
@@ -65,6 +67,7 @@ export class AttendanceService {
     private readonly battleSessions: BattleSessionsService,
     private readonly characters: CharactersService,
     private readonly teamBuilder: TeamBuilderService,
+    private readonly leaves: LeaveService,
     private readonly clock: Clock,
   ) {}
 
@@ -105,17 +108,21 @@ export class AttendanceService {
    * materialises the Guild War, so deriving the week twice meant a second write on every read.
    *
    * @param sessionIds - Sessions to read entries for
-   * @returns Their records, newest first
+   * @returns Their records - pressed answers plus the "Không" entries leaves imply - newest first
    */
   async getRecordsForSessions(
     sessionIds: string[],
   ): Promise<AttendanceRecord[]> {
-    const records = await this.prisma.attendanceRecord.findMany({
-      where: { sessionId: { in: sessionIds } },
-      orderBy: { markedAt: 'desc' },
-    });
+    const [records, sessions] = await Promise.all([
+      this.prisma.attendanceRecord.findMany({
+        where: { sessionId: { in: sessionIds } },
+        orderBy: { markedAt: 'desc' },
+      }),
+      this.battleSessions.readCoverageByIds(sessionIds),
+    ]);
+    const windows = await this.leaves.windowsForSessions(sessions);
 
-    return records.map(toAttendanceRecord);
+    return effectiveRecords(records.map(toAttendanceRecord), windows, sessions);
   }
 
   /**
@@ -130,26 +137,18 @@ export class AttendanceService {
    */
   async getSummary(weekStart?: string): Promise<AttendanceSummary[]> {
     const sessions = await this.battleSessions.listByWeek(weekStart);
-    const grouped = await this.prisma.attendanceRecord.groupBy({
-      by: ['sessionId', 'isPresent'],
-      where: { sessionId: { in: sessions.map((session) => session.id) } },
-      _count: { _all: true },
-    });
+    const records = await this.getRecordsForSessions(
+      sessions.map((session) => session.id),
+    );
 
     return sessions.map((session) => {
-      const rows = grouped.filter((row) => row.sessionId === session.id);
-      /**
-       * Count of one answer in the session under consideration.
-       * @param isPresent - Answer to count
-       * @returns The count, 0 when nobody gave that answer
-       */
-      const countOf = (isPresent: boolean): number =>
-        rows.find((row) => row.isPresent === isPresent)?._count._all ?? 0;
+      const own = records.filter((record) => record.sessionId === session.id);
+      const coCount = own.filter((record) => record.isPresent).length;
 
       return verifyResponse(attendanceSummarySchema, {
         sessionId: session.id,
-        coCount: countOf(true),
-        khongCount: countOf(false),
+        coCount,
+        khongCount: own.length - coCount,
       } satisfies AttendanceSummary);
     });
   }
