@@ -1,6 +1,8 @@
 import { vnDateKey } from '@guild/shared/lib';
 import type { AttendanceRecord } from '@guild/shared/schemas';
 
+import { closingMoment } from '../battle-sessions/battle-sessions.public';
+
 /** What the coverage rule needs to know about a battle day. */
 export interface CoverageSession {
   id: string;
@@ -23,16 +25,6 @@ export interface LeaveWindow {
 }
 
 /**
- * The moment a day stops accepting member answers.
- * @param session - The battle day
- * @returns When the announcement closed it, else its deadline
- */
-export function closingMoment(session: CoverageSession): Date {
-  // An announcement closes the day before its deadline does - the same two ways in as isAttendanceClosed.
-  return session.attendanceClosedAt ?? session.deadline;
-}
-
-/**
  * Whether a leave turns this day into a "Không" for its character.
  * @param leave - The leave, cancelled or not
  * @param session - The battle day
@@ -45,7 +37,11 @@ export function isLeaveCovering(
   const day = vnDateKey(session.dateTime);
   if (day < leave.startDate || day > leave.endDate) return false;
 
-  const closeAt = closingMoment(session).getTime();
+  // Strict `<`: a leave filed at the very moment the day closes has not beaten the closing.
+  const closeAt = closingMoment(
+    session.deadline,
+    session.attendanceClosedAt,
+  ).getTime();
   // An admin may act on a closed day, exactly as when marking attendance; a member may not.
   const isCreatedInTime =
     leave.createdByAdmin || leave.createdAt.getTime() < closeAt;

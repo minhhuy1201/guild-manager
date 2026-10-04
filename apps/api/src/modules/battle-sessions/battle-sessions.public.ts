@@ -14,6 +14,7 @@ export type {
   ScheduledSession,
 } from './battle-sessions.service';
 export {
+  closingMoment,
   formatDeadlineLabel,
   formatSessionLabel,
   isAttendanceClosed,

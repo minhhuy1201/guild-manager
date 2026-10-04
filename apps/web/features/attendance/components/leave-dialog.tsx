@@ -35,7 +35,7 @@ interface LeaveDialogProps {
 }
 
 /**
- * The file-a-leave dialog: a range calendar, an optional reason and, for an admin, who it is for.
+ * The file-a-leave dialog: two day fields, an optional reason and, for an admin, who it is for.
  * @param open - Whether the dialog is open
  * @param onOpenChange - Called when the dialog closes
  * @param isAdmin - Whether the viewer may file for others and for past days

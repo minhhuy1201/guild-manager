@@ -2,15 +2,11 @@
 
 import { Plane } from "lucide-react";
 
-import { toastError, toastSuccess } from "@/components/shared/toast";
 import { Button } from "@/components/ui/button";
 import { useSession } from "@/features/auth";
-import { ApiError } from "@/lib/api-client";
-import { useCancelLeave, useLeaves } from "../hooks/use-leaves";
+import { useCancelLeaveWithToast } from "../hooks/use-cancel-leave-with-toast";
+import { useLeaves } from "../hooks/use-leaves";
 import { formatLeaveRange } from "../lib/leave-label";
-
-/** Shown when the cancel fails with something other than an `ApiError`. */
-const FALLBACK_ERROR = "Không hủy được lần nghỉ, thử lại giúp mình.";
 
 /**
  * The viewer's own active or upcoming leaves, each with a cancel button. Renders nothing when there
@@ -20,25 +16,11 @@ const FALLBACK_ERROR = "Không hủy được lần nghỉ, thử lại giúp m�
 export function MyLeaveBanner() {
   const { data: session } = useSession();
   const { data: leaves } = useLeaves();
-  const { mutateAsync: cancel, isPending, variables } = useCancelLeave();
+  const { cancel, isCancelling } = useCancelLeaveWithToast();
 
   const characterId = session?.character?.id;
   const mine = (leaves ?? []).filter((leave) => leave.characterId === characterId);
   if (mine.length === 0) return null;
-
-  /**
-   * Cancel one leave and report the outcome in a toast.
-   * @param id - Leave to cancel
-   * @returns A promise settled once the toast is shown
-   */
-  async function handleCancel(id: string): Promise<void> {
-    try {
-      await cancel(id);
-      toastSuccess("Đã hủy lần nghỉ.");
-    } catch (error) {
-      toastError(error instanceof ApiError ? error.message : FALLBACK_ERROR);
-    }
-  }
 
   return (
     <ul className="flex flex-col gap-2">
@@ -59,8 +41,8 @@ export function MyLeaveBanner() {
             variant="ghost"
             size="sm"
             className="ml-auto"
-            disabled={isPending && variables === leave.id}
-            onClick={() => handleCancel(leave.id)}
+            disabled={isCancelling(leave.id)}
+            onClick={() => cancel(leave.id)}
           >
             Hủy nghỉ
           </Button>

@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Plane } from "lucide-react";
 
-import { toastError, toastSuccess } from "@/components/shared/toast";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -15,14 +14,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useSession } from "@/features/auth";
-import { ApiError } from "@/lib/api-client";
 import { useCharacters } from "../hooks/use-attendance";
-import { useCancelLeave, useLeaves } from "../hooks/use-leaves";
+import { useCancelLeaveWithToast } from "../hooks/use-cancel-leave-with-toast";
+import { useLeaves } from "../hooks/use-leaves";
 import { formatLeaveRange } from "../lib/leave-label";
 import { LeaveDialog } from "./leave-dialog";
-
-/** Shown when the cancel fails with something other than an `ApiError`. */
-const FALLBACK_ERROR = "Không hủy được lần nghỉ, thử lại giúp mình.";
 
 /**
  * The admin's view of every active or upcoming leave, with the means to file one on a member's
@@ -34,7 +30,7 @@ export function LeavePanel() {
   const { data: session } = useSession();
   const { data: leaves } = useLeaves();
   const { data: characters } = useCharacters();
-  const { mutateAsync: cancel } = useCancelLeave();
+  const { cancel, isCancelling } = useCancelLeaveWithToast();
 
   const nameOf = new Map((characters ?? []).map((c) => [c.id, c.name]));
 
@@ -47,20 +43,6 @@ export function LeavePanel() {
     if (filerId === null) return "Admin";
 
     return nameOf.get(filerId) ?? "—";
-  }
-
-  /**
-   * Cancel one leave and report the outcome in a toast.
-   * @param id - Leave to cancel
-   * @returns A promise settled once the toast is shown
-   */
-  async function handleCancel(id: string): Promise<void> {
-    try {
-      await cancel(id);
-      toastSuccess("Đã hủy lần nghỉ.");
-    } catch (error) {
-      toastError(error instanceof ApiError ? error.message : FALLBACK_ERROR);
-    }
   }
 
   return (
@@ -108,7 +90,8 @@ export function LeavePanel() {
                     type="button"
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleCancel(leave.id)}
+                    disabled={isCancelling(leave.id)}
+                    onClick={() => cancel(leave.id)}
                   >
                     Hủy
                   </Button>

@@ -306,6 +306,22 @@ function isDeadlinePassed(deadline: Date, now: Date): boolean {
 }
 
 /**
+ * The moment a day stops accepting member answers: when an admin announced the line-up, else the
+ * deadline. The two ways in `isAttendanceClosed` reads, as an instant for callers that compare
+ * against another moment (a leave's filing time) instead of against now.
+ *
+ * The boundary differs by way in: a deadline still accepts an answer at exactly that moment, an
+ * announcement does not. A caller that needs a strict "before" treats the instant as already closed.
+ *
+ * @param deadline - The session's attendance deadline
+ * @param closedAt - When an admin announced the line-up, null when they have not
+ * @returns The moment the day closes
+ */
+export function closingMoment(deadline: Date, closedAt: Date | null): Date {
+  return closedAt ?? deadline;
+}
+
+/**
  * Whether attendance for a day is closed — the one rule every reader of "can this still be
  * answered?" goes through.
  *

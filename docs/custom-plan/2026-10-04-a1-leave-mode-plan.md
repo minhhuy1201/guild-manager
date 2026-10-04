@@ -1,7 +1,7 @@
 # A1 - Chế độ nghỉ phép: Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development hoặc
-> superpowers:executing-plans để chạy plan theo từng task. Bước dùng checkbox (`- [ ]`).
+> superpowers:executing-plans để chạy plan theo từng task. Bước dùng checkbox (`- [x]`).
 
 **Mục tiêu:** Thành viên khai nghỉ một khoảng ngày; mọi trận còn mở trong khoảng hiện "Không (nghỉ)",
 không bị nhắc, bị gỡ khỏi đội hình. Khai được từ web, lệnh bot và nút trên tin `/thong-bao`.
@@ -54,7 +54,7 @@ Năm chỗ dễ sai nhất mà test từng task phải ghim (mỗi dòng đã c�
 - `attendanceSourceSchema`, `type AttendanceSource = 'answer' | 'leave'`, field `source` trong
   `attendanceRecordSchema`.
 
-- [ ] **Bước 1: viết code**
+- [x] **Bước 1: viết code**
 
 ```ts
 // vn-time.ts
@@ -113,10 +113,10 @@ export type AttendanceSource = z.infer<typeof attendanceSourceSchema>;
 // attendanceRecordSchema thêm:  source: attendanceSourceSchema,
 ```
 
-- [ ] **Bước 2:** `pnpm --filter @guild/shared build` rồi `pnpm --filter api typecheck` và
+- [x] **Bước 2:** `pnpm --filter @guild/shared build` rồi `pnpm --filter api typecheck` và
   `pnpm --filter web typecheck`. Chỗ nào dựng `AttendanceRecord` sẽ báo thiếu `source` - sửa ở
   Task 6 (API) và Task 9 (fixture web); ghi lại danh sách lỗi để đối chiếu.
-- [ ] **Bước 3: commit** `feat(core): add shared leave contract`.
+- [x] **Bước 3: commit** `feat(core): add shared leave contract`.
 
 ### Task 2: Model `Leave` và migration
 
@@ -124,7 +124,7 @@ export type AttendanceSource = z.infer<typeof attendanceSourceSchema>;
 - Modify: `apps/api/prisma/schema.prisma`
 - Create: `apps/api/prisma/migrations/<timestamp>_add_leave/migration.sql` (sinh bằng lệnh)
 
-- [ ] **Bước 1:** thêm model theo spec §4.1, comment giải thích `createdAt` (mốc luật phủ),
+- [x] **Bước 1:** thêm model theo spec §4.1, comment giải thích `createdAt` (mốc luật phủ),
   `cancelledAt` (hủy không xoá), hai cột `...ByCharacterId` không phải relation. `Character` thêm
   `leaves Leave[]`.
 
@@ -156,11 +156,11 @@ model Leave {
 }
 ```
 
-- [ ] **Bước 2:** `pnpm --filter api db:up`, `pnpm --filter api prisma:migrate -- --name add_leave`.
-- [ ] **Bước 3:** thêm cuối `migration.sql`, kèm comment như `20260925004158_enable_rls_on_tactics`:
+- [x] **Bước 2:** `pnpm --filter api db:up`, `pnpm --filter api prisma:migrate -- --name add_leave`.
+- [x] **Bước 3:** thêm cuối `migration.sql`, kèm comment như `20260925004158_enable_rls_on_tactics`:
   `ALTER TABLE "Leave" ENABLE ROW LEVEL SECURITY;`
-- [ ] **Bước 4:** `pnpm --filter api test -- migration-rls` → PASS.
-- [ ] **Bước 5: commit** `feat(db): add leave table`.
+- [x] **Bước 4:** `pnpm --filter api test -- migration-rls` → PASS.
+- [x] **Bước 5: commit** `feat(db): add leave table`.
 
 ### Task 3: Luật phủ (hàm thuần)
 
@@ -181,7 +181,7 @@ export function effectiveRecords(records: AttendanceRecord[], leaves: LeaveWindo
   sessions: CoverageSession[]): AttendanceRecord[]
 ```
 
-- [ ] **Bước 1: test đỏ** - bảng `it.each` cho `isLeaveCovering`, mỗi dòng ghi rõ lý do:
+- [x] **Bước 1: test đỏ** - bảng `it.each` cho `isLeaveCovering`, mỗi dòng ghi rõ lý do:
   - trận trong khoảng, khai trước deadline, chưa hủy → `true`
   - trận ngày `endDate + 1` → `false`; trận ngày `startDate` và `endDate` → `true`
   - trận 00:30 VN ngày D (= 17:30 UTC ngày D-1), khoảng chỉ có ngày D → `true` (Review Focus 1)
@@ -191,12 +191,12 @@ export function effectiveRecords(records: AttendanceRecord[], leaves: LeaveWindo
   - `createdByAdmin` + `createdAt` sau `closeAt` → `true` (admin vượt khoá)
   - `cancelledByAdmin` + hủy sau `closeAt` → `false` (admin hủy nhả cả ngày đã khoá)
   - `createdByAdmin`, hủy bởi thành viên sau `closeAt` → `true` (điều 3 xét người hủy)
-- [ ] **Bước 2: test đỏ** cho `effectiveRecords`: record thắng lần nghỉ (giữ `source: 'answer'`);
+- [x] **Bước 2: test đỏ** cho `effectiveRecords`: record thắng lần nghỉ (giữ `source: 'answer'`);
   ô không record + có lần nghỉ phủ → `{ isPresent: false, source: 'leave', reason: leave.reason,
   markedAt: leave.createdAt.toISOString() }`; lần nghỉ của người khác không lẫn; thứ tự trả về
   `markedAt` giảm dần (giữ hợp đồng cũ của `getRecords`).
-- [ ] **Bước 3:** `pnpm --filter api test -- leave-coverage` → FAIL.
-- [ ] **Bước 4: code**
+- [x] **Bước 3:** `pnpm --filter api test -- leave-coverage` → FAIL.
+- [x] **Bước 4: code**
 
 ```ts
 export function closingMoment(session: CoverageSession): Date {
@@ -221,7 +221,7 @@ export function isLeaveCovering(leave: LeaveWindow, session: CoverageSession): b
 
 `effectiveRecords`: tập key `sessionId:characterId` từ records; với mỗi session × lần nghỉ phủ mà key
 chưa có thì thêm phần tử `source: 'leave'`; sort theo `markedAt` giảm dần.
-- [ ] **Bước 5:** chạy lại → PASS. **Commit** `feat(api): add leave coverage rule`.
+- [x] **Bước 5:** chạy lại → PASS. **Commit** `feat(api): add leave coverage rule`.
 
 ### Task 4: Đọc mốc khoá của trận
 
@@ -244,10 +244,10 @@ export type CoverageSessionRow = { id: string; dateTime: Date; deadline: Date; a
 00:00 ngày sau ngày cuối, nửa mở). `isGuildWar` có mặt vì `releaseCharacterFromSession` nhận
 `BattleSession` - kiểm chữ ký hàm đó, nếu chỉ cần `id` + `dateTime` thì truyền đúng các field đó.
 
-- [ ] **Bước 1: test đỏ:** trận 23:59 VN ngày cuối nằm trong; trận 00:00 VN ngày sau ngày cuối nằm
+- [x] **Bước 1: test đỏ:** trận 23:59 VN ngày cuối nằm trong; trận 00:00 VN ngày sau ngày cuối nằm
   ngoài; `attendanceClosedAt` được trả về.
-- [ ] **Bước 2:** code, chạy `pnpm --filter api test -- battle-sessions.service` → PASS.
-- [ ] **Bước 3: commit** `feat(api): read session closing moments`.
+- [x] **Bước 2:** code, chạy `pnpm --filter api test -- battle-sessions.service` → PASS.
+- [x] **Bước 3: commit** `feat(api): read session closing moments`.
 
 ### Task 5: `LeaveService` + endpoint
 
@@ -277,7 +277,7 @@ class LeaveService {
 
 Message lỗi là hằng số đầu file, đúng bảng spec §5.2. Thứ tự kiểm: 404 → 403 → 400 → 409.
 
-- [ ] **Bước 1: test đỏ** (Prisma + `TeamBuilderService` stub, `Clock` cố định):
+- [x] **Bước 1: test đỏ** (Prisma + `TeamBuilderService` stub, `Clock` cố định):
   - member khai cho người khác → 403 `Bạn chỉ khai nghỉ được cho nhân vật của mình.`
   - admin khai hộ → OK, `createdByCharacterId` = id admin (null với rescue admin)
   - member: `endDate` trước hôm nay VN → 400 `Ngày kết thúc đã qua.`; `endDate` = hôm nay → OK;
@@ -291,15 +291,15 @@ Message lỗi là hằng số đầu file, đúng bảng spec §5.2. Thứ tự 
   - `cancel` bởi người khác (member) → 403; gọi hai lần → lần hai trả nguyên, không ghi lại
     `cancelledAt`
   - `listActive` bỏ lần đã hủy và lần có `endDate` trước hôm nay
-- [ ] **Bước 2:** `pnpm --filter api test -- leave.service` → FAIL.
-- [ ] **Bước 3:** code. `create` chạy trong `prisma.$transaction(async (tx) => …)`: tạo `Leave` với
+- [x] **Bước 2:** `pnpm --filter api test -- leave.service` → FAIL.
+- [x] **Bước 3:** code. `create` chạy trong `prisma.$transaction(async (tx) => …)`: tạo `Leave` với
   `createdAt: now`, `createdByAdmin: canManageGuild(actor.role)`, `cancelledByAdmin: false`; lọc
   `readCoverageInRange` bằng chính `isLeaveCovering(created, s)` (một luật cho cả đọc lẫn ghi); `tx.attendanceRecord.deleteMany({ where: { characterId, sessionId: { in } } })`; release từng trận.
   `leave.codec.ts` đổi `@db.Date` sang chuỗi bằng `toISOString().slice(0, 10)` (cột Date về dạng
   00:00 UTC) qua `verifyResponse(leaveSchema, …)`. Controller: `@UseGuards(JwtAuthGuard)`, route
   `leaves`, `@CurrentUser()`.
-- [ ] **Bước 4:** test controller mỏng (route gọi đúng service, guard có mặt). Chạy lại → PASS.
-- [ ] **Bước 5: commit** `feat(api): add leave endpoints`.
+- [x] **Bước 4:** test controller mỏng (route gọi đúng service, guard có mặt). Chạy lại → PASS.
+- [x] **Bước 5: commit** `feat(api): add leave endpoints`.
 
 ### Task 6: Câu trả lời hiệu lực trong điểm danh
 
@@ -308,17 +308,17 @@ Message lỗi là hằng số đầu file, đúng bảng spec §5.2. Thứ tự 
 - Test: `__tests__/attendance.service.spec.ts`,
   `apps/api/src/modules/discord-bot/__tests__/reminder.service.spec.ts`
 
-- [ ] **Bước 1: test đỏ:**
+- [x] **Bước 1: test đỏ:**
   - `getRecords` trả phần tử `source: 'leave'` cho ô chưa trả lời trong khoảng nghỉ
   - record "Có" tạo sau lần nghỉ thắng; sau `cancel` record "Có" vẫn còn (Review Focus 3)
   - `getSummary` đếm phần tử nghỉ vào `khongCount`
   - reminder: người có lần nghỉ phủ trận không nằm trong `missing`; người khác vẫn bị nhắc
-- [ ] **Bước 2:** code. `toAttendanceRecord` thêm `source: 'answer'`. `getRecordsForSessions(ids)`:
+- [x] **Bước 2:** code. `toAttendanceRecord` thêm `source: 'answer'`. `getRecordsForSessions(ids)`:
   đọc song song records, `battleSessions.readCoverageByIds(ids)`, rồi
   `leaves.windowsForSessions(sessions)` → `effectiveRecords(...)`. `getSummary` đếm trên kết quả
   `getRecordsForSessions` thay vì `groupBy`. `ReminderService` không đổi code.
-- [ ] **Bước 3:** `pnpm --filter api test` (cả suite, vì shape record đổi) → PASS.
-- [ ] **Bước 4: commit** `feat(api): merge leave into attendance reads`.
+- [x] **Bước 3:** `pnpm --filter api test` (cả suite, vì shape record đổi) → PASS.
+- [x] **Bước 4: commit** `feat(api): merge leave into attendance reads`.
 
 ### Task 7: Bot - parse ngày và hai lệnh
 
@@ -340,19 +340,19 @@ export function parseLeaveDateInput(text: string, today: Date): string | null
 export async function submitLeave(discordId: string, raw: { from: string; to: string; reason: string | null }, deps: CommandDeps): Promise<CommandReply>
 ```
 
-- [ ] **Bước 1: test đỏ** `parseLeaveDateInput`: `05/10` ngày 2026-10-04 → `2026-10-05`; `5/10` →
+- [x] **Bước 1: test đỏ** `parseLeaveDateInput`: `05/10` ngày 2026-10-04 → `2026-10-05`; `5/10` →
   như trên; `02/01` ngày 2026-12-28 → `2027-01-02`; `27/12` ngày 2027-01-02 → `2026-12-27`;
   `05/10/2027` → `2027-10-05`; `31/02` → `null`; `abc`, `` , `32/01` → `null` (Review Focus 5).
   Regex có nhóm rõ ràng: `/^(\d{1,2})\/(\d{1,2})(\/(\d{4}))?$/`.
-- [ ] **Bước 2: test đỏ** lệnh: `/nghi-phep` hợp lệ → ephemeral `Đã khai nghỉ 05/10 - 12/10.`; sai
+- [x] **Bước 2: test đỏ** lệnh: `/nghi-phep` hợp lệ → ephemeral `Đã khai nghỉ 05/10 - 12/10.`; sai
   định dạng → `Ngày phải có dạng dd/mm, ví dụ 05/10.`; lỗi 409 của service → message của service
   hiện nguyên văn; `/huy-nghi-phep` khi có lần đang diễn ra → hủy lần đó; khi không có →
   `Bạn không có lần nghỉ nào để hủy.`
-- [ ] **Bước 3:** code. Option: `tu-ngay` (string, required), `den-ngay` (string, required),
+- [x] **Bước 3:** code. Option: `tu-ngay` (string, required), `den-ngay` (string, required),
   `ly-do` (string, optional). Danh tính qua `ActorResolver` như `/diem-danh`; actor JWT-like dựng
   theo cách `/diem-danh` đang truyền vào `AttendanceService.mark`.
-- [ ] **Bước 4:** `pnpm --filter api test -- discord-bot` → PASS.
-- [ ] **Bước 5: commit** `feat(api): add leave slash commands`. Ghi chú cho người dùng chạy
+- [x] **Bước 4:** `pnpm --filter api test -- discord-bot` → PASS.
+- [x] **Bước 5: commit** `feat(api): add leave slash commands`. Ghi chú cho người dùng chạy
   `pnpm --filter api discord:register` sau khi deploy.
 
 ### Task 8: Bot - nút "Xin nghỉ" và modal
@@ -367,14 +367,14 @@ export async function submitLeave(discordId: string, raw: { from: string; to: st
 - Test: `__tests__/entry-buttons.spec.ts`, `__tests__/leave-modal.spec.ts`,
   `__tests__/interaction-router.spec.ts`
 
-- [ ] **Bước 1: test đỏ:**
+- [x] **Bước 1: test đỏ:**
   - `buildEntryButtons` có 3 nút, nút giữa `🏖️ Xin nghỉ` với `custom_id: 'ann:nghi-phep'`
   - bấm nút → response `{ type: 9, data: { custom_id: 'modal:nghi-phep', title: 'Xin nghỉ',
     components: [3 Label] } }`, ô `tu-ngay` điền sẵn hôm nay dạng `dd/mm`
   - payload type 5 hợp lệ qua `interactionSchema`; payload type 5 với custom_id lạ → ephemeral báo
     nút cũ, không 500
   - submit → `submitLeave` nhận đúng `from`/`to`/`reason` (ô lý do rỗng → `null`)
-- [ ] **Bước 2:** code. Schema modal submit:
+- [x] **Bước 2:** code. Schema modal submit:
 
 ```ts
 const modalSubmitInteractionSchema = z.object({
@@ -393,8 +393,8 @@ const modalSubmitInteractionSchema = z.object({
   `callerDiscordId` nhận thêm kiểu này. Cập nhật comment ở `interaction.schema.ts:67` (modal submit
   giờ được nhận). Router: nhánh `messageComponent` thêm `ANNOUNCEMENT_LEAVE_ID` → modal; `case
   INTERACTION_TYPE.modalSubmit` → `submitLeave`; `default` → `assertNever`.
-- [ ] **Bước 3:** `pnpm --filter api test -- discord-bot` → PASS.
-- [ ] **Bước 4: commit** `feat(api): open leave modal from announcement`.
+- [x] **Bước 3:** `pnpm --filter api test -- discord-bot` → PASS.
+- [x] **Bước 4: commit** `feat(api): open leave modal from announcement`.
 
 ### Task 9: Web - màn điểm danh
 
@@ -410,15 +410,16 @@ const modalSubmitInteractionSchema = z.object({
   fixture test có `AttendanceRecord` thêm `source: 'answer'`
 - Test: `features/attendance/__tests__/` + `lib/__tests__/leave-label.test.ts`
 
-- [ ] **Bước 1: test đỏ:** `formatLeaveRange`; dialog không cho gửi khi chưa chọn đủ khoảng; admin
+- [x] **Bước 1: test đỏ:** `formatLeaveRange`; dialog không cho gửi khi chưa chọn đủ khoảng; admin
   thấy ô chọn thành viên, member không thấy; banner chỉ hiện lần nghỉ của mình, bấm `Hủy nghỉ` gọi
   `cancelLeave(id)`; icon với `source: 'leave'` có nhãn `Không · Nghỉ phép`.
-- [ ] **Bước 2:** `pnpm --filter web test -- attendance` → FAIL.
-- [ ] **Bước 3:** code. Dialog dùng `Calendar mode="range"` trong `Dialog` (wrapper sẵn có như
-  `session-form-dialog.tsx`), ngày đổi sang `YYYY-MM-DD` bằng `vnDateKey`, `disabled` cho ngày trước
-  hôm nay **chỉ với member** (admin được chọn ngày đã qua). Lỗi API hiện nguyên `ApiError.message` qua toast.
-- [ ] **Bước 4:** chạy lại + `pnpm --filter web typecheck` + `pnpm --filter web lint` → PASS.
-- [ ] **Bước 5: commit** `feat(ui): add leave dialog to attendance`.
+- [x] **Bước 2:** `pnpm --filter web test -- attendance` → FAIL.
+- [x] **Bước 3:** code. Dialog có hai `LeaveDayField` ("Từ ngày", "Đến ngày"; popover + `Calendar
+  mode="single"` như `date-time-field.tsx`) và `MemberPicker` có ô tìm kiếm cho admin; ngày đổi sang
+  `YYYY-MM-DD` bằng phần lịch của máy (`toDayKey`, không qua `vnDateKey` vì DayPicker trả nửa đêm giờ
+  máy), ngày trước hôm nay bị khoá **chỉ với member** (admin được chọn ngày đã qua). Lỗi API hiện nguyên `ApiError.message` qua toast.
+- [x] **Bước 4:** chạy lại + `pnpm --filter web typecheck` + `pnpm --filter web lint` → PASS.
+- [x] **Bước 5: commit** `feat(ui): add leave dialog to attendance`.
 
 ### Task 10: Web - tab "Nghỉ phép" trong Thiết lập
 
@@ -430,22 +431,22 @@ const modalSubmitInteractionSchema = z.object({
 - Test: `features/settings/components/__tests__/settings-tabs.test.tsx`,
   `features/attendance/__tests__/leave-panel.test.tsx`
 
-- [ ] **Bước 1: test đỏ:** `?tab=leaves` mở tab nghỉ phép; giá trị lạ vẫn mở lịch đánh; bảng hiện
+- [x] **Bước 1: test đỏ:** `?tab=leaves` mở tab nghỉ phép; giá trị lạ vẫn mở lịch đánh; bảng hiện
   tên thành viên, khoảng ngày, lý do; nút `Hủy` gọi `cancelLeave`; nút `Khai hộ` mở `LeaveDialog`.
-- [ ] **Bước 2:** code; ba tab trên mobile vẫn vừa một hàng (nhãn ngắn).
-- [ ] **Bước 3:** `pnpm --filter web test` → PASS. **Commit** `feat(ui): add leave tab to settings`.
+- [x] **Bước 2:** code; ba tab trên mobile vẫn vừa một hàng (nhãn ngắn).
+- [x] **Bước 3:** `pnpm --filter web test` → PASS. **Commit** `feat(ui): add leave tab to settings`.
 
 ### Task 11: Tài liệu, kiểm tra cuối, review, PR
 
-- [ ] **Bước 1:** cập nhật `docs/architecture.md` theo spec §10 (module, endpoint, §5 `Leave` +
+- [x] **Bước 1:** cập nhật `docs/architecture.md` theo spec §10 (module, endpoint, §5 `Leave` +
   `source`, §6 luật phủ, sơ đồ bot có modal submit). Đổi trạng thái spec thành "đã triển khai".
-- [ ] **Bước 2:** chạy đủ: `pnpm --filter @guild/shared build`, `pnpm --filter api test`,
+- [x] **Bước 2:** chạy đủ: `pnpm --filter @guild/shared build`, `pnpm --filter api test`,
   `pnpm --filter api lint`, `pnpm --filter api typecheck`, `pnpm --filter web test`,
   `pnpm --filter web lint`, `pnpm --filter web typecheck`, `pnpm --filter web build`. Log dài đi qua
   subagent, chỉ lấy tóm tắt.
 - [ ] **Bước 3:** chạy app (`run` skill): khai nghỉ trên web, xem ô "Nghỉ phép", hủy, xem tab
   Thiết lập.
-- [ ] **Bước 4:** review bằng skill `review-loop` (vòng cuối `pr-review` trong agent `reviewer`
+- [x] **Bước 4:** review bằng skill `review-loop` (vòng cuối `pr-review` trong agent `reviewer`
   riêng); dán danh sách Needs human review.
 - [ ] **Bước 5:** `git diff --shortstat main...HEAD`; vượt 900 thì dừng, chờ người dùng gõ
   `override rule PR size`, rồi `gh pr create` theo `.github/pull_request_template.md`. Sau merge:

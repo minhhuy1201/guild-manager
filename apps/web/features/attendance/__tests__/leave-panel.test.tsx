@@ -9,6 +9,7 @@ const { toastSuccess, toastError } = vi.hoisted(() => ({
   toastError: vi.fn(),
 }));
 const cancel = vi.fn();
+const pending = { isPending: false, variables: undefined as string | undefined };
 
 const CHARACTERS: Character[] = [
   { id: "char-1", name: "Mèo Mập", guildClass: GuildClass.CUU_LINH },
@@ -37,7 +38,11 @@ const LEAVES: Leave[] = [
 
 vi.mock("../hooks/use-leaves", () => ({
   useLeaves: () => ({ data: LEAVES }),
-  useCancelLeave: () => ({ mutateAsync: cancel }),
+  useCancelLeave: () => ({
+    mutateAsync: cancel,
+    isPending: pending.isPending,
+    variables: pending.variables,
+  }),
 }));
 vi.mock("../hooks/use-attendance", () => ({
   useCharacters: () => ({ data: CHARACTERS }),
@@ -56,6 +61,8 @@ import { LeavePanel } from "../components/leave-panel";
 beforeEach(() => {
   cancel.mockReset().mockResolvedValue({});
   toastSuccess.mockReset();
+  pending.isPending = false;
+  pending.variables = undefined;
 });
 afterEach(cleanup);
 
@@ -89,6 +96,23 @@ describe("LeavePanel", () => {
 
     await waitFor(() => expect(cancel).toHaveBeenCalledWith("l2"));
     expect(toastSuccess).toHaveBeenCalledWith("Đã hủy lần nghỉ.");
+  });
+
+  it("khoá nút Hủy của dòng đang hủy, các dòng khác vẫn bấm được", () => {
+    pending.isPending = true;
+    pending.variables = "l2";
+    render(<LeavePanel />);
+
+    const rows = screen.getAllByRole("row");
+
+    expect(
+      (within(rows[2]).getByRole("button", { name: /Hủy/ }) as HTMLButtonElement)
+        .disabled
+    ).toBe(true);
+    expect(
+      (within(rows[1]).getByRole("button", { name: /Hủy/ }) as HTMLButtonElement)
+        .disabled
+    ).toBe(false);
   });
 
   it("Khai hộ mở dialog ở chế độ admin", () => {

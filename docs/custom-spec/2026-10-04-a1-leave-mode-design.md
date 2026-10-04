@@ -224,12 +224,16 @@ Danh tính lấy từ payload đã ký (`callerDiscordId`), không bao giờ t�
 
 ### 7.1 Màn điểm danh
 
-- Nút `Xin nghỉ` trên đầu màn → dialog: chọn khoảng ngày (shadcn `Calendar`, `mode="range"`), lý
-  do (textarea, ≤255). Thành viên không chọn được ngày trước hôm nay; admin có thêm ô chọn thành
-  viên và được chọn ngày đã qua (D8).
+- Nút `Xin nghỉ` trên đầu màn → dialog: hai ô chọn ngày "Từ ngày" / "Đến ngày" (mỗi ô là nút mở
+  `Calendar` `mode="single"`), lý do (textarea, ≤255). Chọn "Từ ngày" thì "Đến ngày" theo luôn (nghỉ
+  một ngày chỉ cần một lần chọn); đổi "Từ ngày" sang sau "Đến ngày" thì kéo "Đến ngày" theo; lịch
+  "Đến ngày" khoá các ngày trước "Từ ngày". Ngày được đổi sang `YYYY-MM-DD` theo lịch của người chọn
+  (DayPicker trả nửa đêm giờ máy, đi qua UTC sẽ lệch một ngày). Thành viên không chọn được ngày
+  trước hôm nay; admin có thêm ô chọn thành viên (nút mở danh sách có tìm kiếm, không dấu cũng khớp)
+  và được chọn ngày đã qua (D8).
 - Lần nghỉ của chính mình (đang diễn ra hoặc sắp tới) hiện thành banner
   `Bạn đang nghỉ 05/10 - 12/10` + nút `Hủy nghỉ`.
-- Ô có `source: 'leave'` hiện icon "Không" kèm nhãn `Nghỉ phép` (tooltip / nhãn cho trình đọc màn
+- Ô có `source: 'leave'` hiện icon máy bay màu "Không" kèm nhãn `Không · Nghỉ phép` (nhãn cho trình đọc màn
   hình), để phân biệt với "Không" tự bấm. Bấm vào ô vẫn ghi được "Có" như bình thường.
 
 ### 7.2 `/thiet-lap`
