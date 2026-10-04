@@ -4,7 +4,7 @@
 > superpowers:executing-plans để chạy plan theo từng task. Bước dùng checkbox (`- [x]`).
 
 **Mục tiêu:** Thành viên khai nghỉ một khoảng ngày; mọi trận còn mở trong khoảng hiện "Không (nghỉ)",
-không bị nhắc, bị gỡ khỏi đội hình. Khai được từ web, lệnh bot và nút trên tin `/thong-bao`.
+không bị nhắc, bị gỡ khỏi đội hình. Khai được từ web và bằng nút trên tin `/thong-bao`.
 
 **Kiến trúc:** Bảng `Leave` riêng; câu trả lời hiệu lực tính lúc đọc trong `AttendanceService` (record
 thắng, rồi tới lần nghỉ phủ trận). Luật phủ là một hàm thuần. Mọi thứ nằm trong module `attendance` để
@@ -323,7 +323,7 @@ Message lỗi là hằng số đầu file, đúng bảng spec §5.2. Thứ tự 
 - [x] **Bước 3:** `pnpm --filter api test` (cả suite, vì shape record đổi) → PASS.
 - [x] **Bước 4: commit** `feat(api): merge leave into attendance reads`.
 
-### Task 7: Bot - parse ngày và hai lệnh
+### Task 7: Bot - parse ngày và câu trả lời của modal
 
 **Files:**
 - Create: `apps/api/src/modules/discord-bot/leave-date-input.ts`,

@@ -15,7 +15,7 @@ sáng bị bot nhắc điểm danh dù đã báo vắng ngoài game. Scrim admin
 - Khai một lần cho một khoảng ngày; mọi trận trong khoảng hiện "Không" kèm lý do, kể cả trận được
   tạo sau.
 - Người đang nghỉ không bị nhắc, không nằm trong pool xếp team, bị gỡ khỏi đội hình đã xếp.
-- Khai được ở web, bằng lệnh bot, và bằng nút trên tin `/thong-bao`.
+- Khai được ở web và bằng nút "Xin nghỉ" trên tin `/thong-bao` (và tin nhắc điểm danh).
 - Admin thấy danh sách đang nghỉ / sắp nghỉ trong `/thiet-lap`.
 
 Ngoài phạm vi: duyệt đơn nghỉ, thống kê số ngày nghỉ, tự coi nghỉ dài là rời bang, DM nhắc khi hết
@@ -30,7 +30,7 @@ nghỉ.
 | D3 | Hủy giữa chừng | Ngày còn mở quay về "chưa phản hồi"; ngày đã khoá giữ "Không". |
 | D4 | Độ dài | Không giới hạn; chỉ cần `endDate >= startDate`. Không tự coi là rời bang - rời bang vẫn là admin xoá thành viên. |
 | D5 | Ngày đã khoá | Lần nghỉ thành viên tự khai chỉ phủ ngày còn mở lúc khai; thành viên hủy chỉ "nhả" ngày còn mở. |
-| D6 | Kênh khai | Web + nút "Xin nghỉ" dưới tin `/thong-bao` (không thêm lệnh slash: tránh rối danh sách lệnh; hủy nghỉ chỉ làm trên web). |
+| D6 | Kênh khai | Web + nút "Xin nghỉ" dưới tin `/thong-bao` và tin nhắc điểm danh, vì hai tin dùng chung hàng nút (không thêm lệnh slash: tránh rối danh sách lệnh; hủy nghỉ chỉ làm trên web). |
 | D7 | Đội hình | Khai nghỉ gỡ người đó khỏi đội hình các ngày được phủ, như trả lời "Không". |
 | D8 | Admin vượt khoá | Có, đúng như admin ghi điểm danh hiện nay. Lần nghỉ **admin tạo** phủ cả ngày đã khoá trong khoảng, kể cả khoảng đã qua; **admin hủy** thì nhả mọi ngày, kể cả ngày đã khoá. Quyền được chụp lúc bấm (`createdByAdmin`, `cancelledByAdmin`), không đọc lại role hiện tại. |
 | D9 | Câu trả lời cũ | Khai nghỉ ghi đè câu trả lời cũ trong khoảng: xoá record của người đó ở mọi ngày lần nghỉ phủ (thành viên: ngày còn mở; admin: mọi ngày trong khoảng). Ví dụ đã "Có" thứ 5, khai nghỉ thứ 4 - thứ 6 thì thứ 5 thành "Không (nghỉ)". Hủy nghỉ không khôi phục câu trả lời đã xoá (khớp D3: về "chưa phản hồi"). |
