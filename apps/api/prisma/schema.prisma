@@ -58,6 +58,7 @@ model Character {
 
   attendanceRecords AttendanceRecord[]
   formationSlots    FormationSlot[]
+  leaves            Leave[]
 
   @@index([guildClass])
 }
@@ -227,4 +228,31 @@ model TacticTokenPreset {
   createdAt DateTime @default(now())
 
   @@unique([label])
+}
+
+/// A stretch of days a member will be away. Read-time only: it never writes AttendanceRecord rows -
+/// see docs/custom-spec/2026-10-04-a1-leave-mode-design.md §4.
+model Leave {
+  id                     String    @id @default(cuid())
+  characterId            String
+  /// Vietnam calendar days, both inclusive.
+  startDate              DateTime  @db.Date
+  endDate                DateTime  @db.Date
+  reason                 String?   @db.VarChar(255)
+  /// Compared with the day's closing moment by the coverage rule; written from Clock, not by the DB.
+  createdAt              DateTime
+  /// Plain ids, not relations: the actor may be a rescue admin with no character, and history must outlive deletions.
+  createdByCharacterId   String?
+  /// Whether an admin created it, captured at that moment: an admin's leave also covers closed days.
+  createdByAdmin         Boolean
+  /// Null = active. Cancelling stamps this instead of deleting, so days closed before it stay "Không".
+  cancelledAt            DateTime?
+  cancelledByCharacterId String?
+  /// Whether an admin cancelled it: an admin's cancel releases closed days too. False until cancelled.
+  cancelledByAdmin       Boolean
+
+  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  @@index([characterId])
+  @@index([endDate])
 }
