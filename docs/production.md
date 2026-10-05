@@ -739,6 +739,9 @@ fires against an unguarded endpoint.
 - Last run: Vercel → the api project → Cron Jobs.
 - After the first deploy, type `/cau-hinh-kenh` in the channel that should receive announcements.
   With none configured the job still runs, writes one `warn` line and stops — that is not a failure.
+- After the first deploy of the admin alert, run `pnpm --filter api discord:register` (the
+  `muc-dich` option), then `/cau-hinh-kenh muc-dich:Cảnh báo admin` once in the admin channel. Until
+  then a failed run only reaches the log and Vercel, as before, with one `warn` line.
 - No need to wait for the next morning to check: `/nhac-diem-danh` calls exactly the same function.
   Its `pham-vi` option defaults to `today`, the cron's own rule; `week` reaches every open deadline
   of the week instead. After changing a command's options, run `pnpm --filter api discord:register`

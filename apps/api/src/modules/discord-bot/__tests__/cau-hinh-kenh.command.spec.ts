@@ -14,6 +14,21 @@ const INTERACTION = {
 };
 
 /**
+ * The invocation with the `muc-dich` option set.
+ * @param value - Raw option value
+ * @returns The interaction
+ */
+function withPurpose(value: string) {
+  return {
+    ...INTERACTION,
+    data: {
+      name: 'cau-hinh-kenh',
+      options: [{ name: 'muc-dich', type: 3, value }],
+    },
+  };
+}
+
+/**
  * A resolved actor carrying the given role.
  * @param role - Guild role the caller signs in with
  * @returns The shape ActorResolver.resolve returns
@@ -52,7 +67,7 @@ describe('/cau-hinh-kenh', () => {
 
     expect(postMessage).toHaveBeenCalledTimes(1);
     expect(postMessage).toHaveBeenCalledWith('424242', expect.anything());
-    expect(set).toHaveBeenCalledWith('424242');
+    expect(set).toHaveBeenCalledWith('ATTENDANCE_REMINDER', '424242');
     expect(reply.data.flags).toBe(MESSAGE_FLAG.ephemeral);
   });
 
@@ -106,4 +121,45 @@ describe('/cau-hinh-kenh', () => {
     expect(set).not.toHaveBeenCalled();
     expect(postMessage).not.toHaveBeenCalled();
   });
+
+  it('muc-dich = ADMIN_ALERT: đặt kênh admin, tin xác nhận của admin', async () => {
+    const postMessage = jest.fn().mockResolvedValue(undefined);
+    const { deps, set } = makeDeps(actor(GuildRole.ADMIN), postMessage);
+
+    await cauHinhKenhCommand.execute(withPurpose('ADMIN_ALERT'), deps);
+
+    expect(set).toHaveBeenCalledWith('ADMIN_ALERT', '424242');
+    const [, message] = postMessage.mock.calls[0] as [
+      string,
+      { content: string },
+    ];
+    expect(message.content).toContain('báo lỗi cho admin');
+  });
+
+  it('giá trị lạ: ném lỗi nhắc discord:register', async () => {
+    const postMessage = jest.fn();
+    const { deps, set } = makeDeps(actor(GuildRole.ADMIN), postMessage);
+
+    await expect(
+      cauHinhKenhCommand.execute(withPurpose('NOPE'), deps),
+    ).rejects.toThrow('discord:register');
+    expect(set).not.toHaveBeenCalled();
+    expect(postMessage).not.toHaveBeenCalled();
+  });
+
+  it.each(['ATTENDANCE_REMINDER', 'ADMIN_ALERT'])(
+    'tin xác nhận bị từ chối: không lưu (%s)',
+    async (purpose) => {
+      const postMessage = jest
+        .fn()
+        .mockRejectedValue(
+          new DiscordApiError(403, '424242', 'Missing Access'),
+        );
+      const { deps, set } = makeDeps(actor(GuildRole.ADMIN), postMessage);
+
+      await cauHinhKenhCommand.execute(withPurpose(purpose), deps);
+
+      expect(set).not.toHaveBeenCalled();
+    },
+  );
 });

@@ -34,6 +34,9 @@ export class ReminderController {
    * was — `no-channel` needs an admin, `nothing-due` is an ordinary morning. Reading the Vercel log
    * to tell those apart was the alternative.
    *
+   * A run that threw or found no reminder channel also posts one line in the admin channel, then
+   * still fails the request so Vercel records it.
+   *
    * Always the `today` scope: the schedule is the daily rule, and only an admin asking by hand may
    * reach further ahead.
    *
@@ -41,6 +44,6 @@ export class ReminderController {
    */
   @Get('attendance-reminder')
   run(): Promise<ReminderOutcome> {
-    return this.reminders.run('today');
+    return this.reminders.runScheduled();
   }
 }
