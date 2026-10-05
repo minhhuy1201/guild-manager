@@ -1,6 +1,7 @@
 "use client";
 
-import type { TeamNames } from "@guild/shared/schemas";
+import { useCallback } from "react";
+import type { TeamNamesState } from "@guild/shared/schemas";
 
 import {
   useFormationCopy,
@@ -30,7 +31,7 @@ import {
 import { useTeamNames } from "./use-team-names";
 
 /** Stable stand-in while the names are still loading, so memos do not rerun. */
-const EMPTY_TEAM_NAMES: TeamNames = {};
+const EMPTY_TEAM_NAMES_STATE: TeamNamesState = { names: {}, version: 0 };
 
 /** The seven branches of the formation screen, kept apart on purpose. */
 export interface FormationScreenState {
@@ -70,7 +71,8 @@ export function useFormationScreen(): FormationScreenState {
     selection.sessions,
     selection.activeSessionId,
     selection.editable,
-    week.refetchFormations
+    week.refetchFormations,
+    week.fetchFormationVersion
   );
   const pool = useFormationPool(
     selection.sessions,
@@ -95,7 +97,23 @@ export function useFormationScreen(): FormationScreenState {
   );
   const dnd = useFormationDnd(draft.applyDrop, pool.charactersById);
   const teamNamesQuery = useTeamNames();
-  const teamNames = useTeamNameDraft(teamNamesQuery.data ?? EMPTY_TEAM_NAMES);
+  const { refetch: refetchTeamNamesQuery } = teamNamesQuery;
+  const refetchTeamNames = useCallback(async () => {
+    const { data } = await refetchTeamNamesQuery({ throwOnError: true });
+    if (!data) throw new Error("Không tải được tên đội, hãy tải lại trang.");
+
+    return data;
+  }, [refetchTeamNamesQuery]);
+  const teamNamesDraft = useTeamNameDraft(
+    teamNamesQuery.data ?? EMPTY_TEAM_NAMES_STATE,
+    refetchTeamNames
+  );
+  // Until the first load the fallback is an empty map at version 0: a draft started from it would
+  // save over - and wipe - every other team's name while passing the version check. So no draft yet.
+  // `data`, not `isSuccess`: a failed background refetch keeps the loaded data, and edits stay open.
+  const teamNames: TeamNameDraftState = teamNamesQuery.data !== undefined
+    ? teamNamesDraft
+    : { ...teamNamesDraft, setName: () => undefined };
 
   return { week, selection, draft, pool, copy, dnd, teamNames };
 }

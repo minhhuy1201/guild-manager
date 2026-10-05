@@ -90,6 +90,24 @@ describe("useFormationWeek", () => {
     expect(fetchFormationsMock).toHaveBeenCalledWith(OPEN_WEEK);
   });
 
+  it("fetchFormationVersion tải lại rồi trả version mới nhất của ngày", async () => {
+    const { result } = renderFormationHook(() => useFormationWeek());
+    await waitFor(() => expect(result.current.isPending).toBe(false));
+    fetchFormationsMock.mockResolvedValue([makeSession("thu-7", { version: 6 })]);
+
+    await expect(result.current.fetchFormationVersion("thu-7")).resolves.toBe(6);
+  });
+
+  it("fetchFormationVersion ném khi ngày không còn, không đoán số", async () => {
+    const { result } = renderFormationHook(() => useFormationWeek());
+    await waitFor(() => expect(result.current.isPending).toBe(false));
+    fetchFormationsMock.mockResolvedValue([]);
+
+    await expect(result.current.fetchFormationVersion("thu-7")).rejects.toThrow(
+      "không còn tồn tại"
+    );
+  });
+
   it("tuần đã qua thì khoá sửa", async () => {
     const { result } = renderFormationHook(() => useFormationWeek(), {
       formation: { selectedWeekStart: PAST_WEEK },

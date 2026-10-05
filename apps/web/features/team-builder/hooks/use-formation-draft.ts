@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { SessionFormation } from "@guild/shared/schemas";
 
 import { useSessionRecovery } from "@/hooks/use-session-recovery";
@@ -23,6 +23,9 @@ import { useSaveFormation } from "./use-save-formation";
 
 /** HTTP status the backend returns when a battle is already locked. */
 const CONFLICT_STATUS = 409;
+
+/** HTTP status the backend returns when the draft's base version is no longer current. */
+const STALE_STATUS = 412;
 
 /** Stable stand-in while no battle day is selected, so memos do not rerun. */
 const EMPTY_MATCHES: MatchDraft[] = [{ assignment: {}, notes: {} }];
@@ -85,6 +88,14 @@ export interface FormationDraftState {
   saving: boolean;
   /** Message of the last failed save, undefined when the last save was fine */
   saveErrorMessage: string | undefined;
+  /** The open day's last save was refused as stale (412); the draft is still there */
+  isStale: boolean;
+  /** Throw the draft away, mark the flag off and reload the saved copy */
+  discardStale: () => void;
+  /** Re-base the draft on the latest saved version and save it again */
+  overwriteStale: () => Promise<void>;
+  /** Close the conflict without choosing: the flag goes off, the draft stays */
+  dismissStale: () => void;
 }
 
 /**
@@ -97,16 +108,19 @@ export interface FormationDraftState {
  * @param activeSessionId - Battle whose tab is open, null when there is none
  * @param editable - Whether the open battle still accepts edits
  * @param refetchFormations - Reload the formations, called when a save hits a lock
+ * @param fetchFormationVersion - Read one day's latest saved version, for overwriting a stale save
  * @returns The open day's draft plus the handlers that edit and save it
  */
 export function useFormationDraft(
   sessions: SessionFormation[],
   activeSessionId: string | null,
   editable: boolean,
-  refetchFormations: () => void
+  refetchFormations: () => void,
+  fetchFormationVersion: (sessionId: string) => Promise<number>
 ): FormationDraftState {
   const drafts = useFormationStore((s) => s.drafts);
   const ensureDraft = useFormationStore((s) => s.ensureDraft);
+  const rebase = useFormationStore((s) => s.rebase);
   const setDraft = useFormationStore((s) => s.setDraft);
   const clearDraft = useFormationStore((s) => s.clearDraft);
   const drop = useFormationStore((s) => s.drop);
@@ -119,6 +133,26 @@ export function useFormationDraft(
 
   const saveMutation = useSaveFormation();
   const recoverSession = useSessionRecovery();
+  const [staleSessionId, setStaleSessionId] = useState<string | null>(null);
+
+  // The open day is always one of `sessions`, so a missing version is a state that cannot happen -
+  // `requireSavedVersion` says so instead of guessing a number.
+  const savedVersion = sessions.find(
+    (session) => session.sessionId === activeSessionId
+  )?.version;
+
+  /**
+   * The open day's saved version, for a draft that is about to be created.
+   * @returns The version the saved copy is at
+   * @throws Error when the open day is not among `sessions`
+   */
+  function requireSavedVersion(): number {
+    if (savedVersion === undefined) {
+      throw new Error(`Không tìm thấy version của ngày ${activeSessionId}.`);
+    }
+
+    return savedVersion;
+  }
 
   const savedBySession = useMemo(() => {
     const map: Record<string, MatchDraft[]> = {};
@@ -209,7 +243,7 @@ export function useFormationDraft(
 
     // Zustand's `set` is synchronous, so the write below already sees the draft
     // this line put in place.
-    ensureDraft(sessionId, matches);
+    ensureDraft(sessionId, matches, requireSavedVersion());
     write(sessionId);
     const after = readDraft();
 
@@ -270,11 +304,13 @@ export function useFormationDraft(
    */
   const seedFrom = useCallback(
     (proposal: MatchDraft[]) => {
-      if (!activeSessionId) return;
+      // No version means the open day is not among `sessions` for this render (a week switch in
+      // flight): seeding then would guess a number, and an effect that throws takes the screen down.
+      if (!activeSessionId || savedVersion === undefined) return;
 
-      ensureDraft(activeSessionId, proposal);
+      ensureDraft(activeSessionId, proposal, savedVersion);
     },
-    [activeSessionId, ensureDraft]
+    [activeSessionId, ensureDraft, savedVersion]
   );
 
   /** Clone match 1 into a new match 2 and open it. */
@@ -367,7 +403,8 @@ export function useFormationDraft(
    * can retry. A 409 means the day just crossed its start time, so refetch to
    * flip the screen into read-only. A 401 is the session having expired under a
    * long edit: only a navigation can renew the cookies, so hand it to
-   * `recoverSession` — retrying the press would fail forever otherwise.
+   * `recoverSession` — retrying the press would fail forever otherwise. A 412 means someone saved
+   * first: the draft stays and `isStale` opens the dialog that offers reload or overwrite.
    */
   async function handleSave() {
     if (!activeSessionId) return;
@@ -376,9 +413,25 @@ export function useFormationDraft(
       await saveMutation.mutateAsync({
         sessionId: activeSessionId,
         matches: toWireMatches(matches),
+        // Read from the store, not a render's closure: `overwriteStale` re-bases and saves in the
+        // same tick, before this hook re-renders. Missing only for a day with no draft, which has
+        // no Save button; the saved version keeps the type honest.
+        version:
+          useFormationStore.getState().baseVersions[activeSessionId] ??
+          requireSavedVersion(),
       });
       clearDraft(activeSessionId);
+      setStaleSessionId(null);
     } catch (error) {
+      if (error instanceof ApiError && error.statusCode === STALE_STATUS) {
+        setStaleSessionId(activeSessionId);
+
+        return;
+      }
+      // Any other outcome ends the conflict: a 409 means the day locked meanwhile, and anything else
+      // is an error the toolbar reports. Leaving the flag on would keep a modal over that message.
+      setStaleSessionId(null);
+
       if (error instanceof ApiError && error.statusCode === CONFLICT_STATUS) {
         refetchFormations();
 
@@ -388,6 +441,23 @@ export function useFormationDraft(
       // The draft stays either way, so the work survives the navigation.
       recoverSession(error);
     }
+  }
+
+  /** Throw the stale draft away and show what the other save wrote. */
+  function discardStale() {
+    if (!activeSessionId) return;
+
+    clearDraft(activeSessionId);
+    setStaleSessionId(null);
+    refetchFormations();
+  }
+
+  /** Save the draft over whatever is stored now; a second 412 reopens the dialog. */
+  async function overwriteStale() {
+    if (!activeSessionId) return;
+
+    rebase(activeSessionId, await fetchFormationVersion(activeSessionId));
+    await handleSave();
   }
 
   return {
@@ -416,11 +486,16 @@ export function useFormationDraft(
     seedFrom,
     applyDrop,
     handleSave,
+    isStale: staleSessionId !== null && staleSessionId === activeSessionId,
+    discardStale,
+    overwriteStale,
+    dismissStale: () => setStaleSessionId(null),
     saving: saveMutation.isPending,
     // An expired session is `recoverSession`'s message to tell, not the toolbar's: showing both
     // leaves "phiên đã hết hạn" next to "phiên vừa được làm mới", which contradict each other.
     saveErrorMessage:
       saveMutation.error instanceof ApiError &&
+      saveMutation.error.statusCode !== STALE_STATUS &&
       !isSessionExpired(saveMutation.error)
         ? saveMutation.error.message
         : undefined,

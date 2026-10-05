@@ -32,7 +32,7 @@ Loạt spec cũ đã dùng `A1-A6` cho việc khác (`2026-08-21-a1-schedule-rea
 | **MB3** | Server Action không làm mới token, nút Có/Không chết cứng | Trung bình | Đã xác minh |
 | **AD3** | Xoá thành viên cuốn theo cả ghi chú của ô đội hình | Trung bình | Đã xác minh |
 | **AD4** | Ghi "Không" và gỡ khỏi đội hình không nằm trong một transaction | Trung bình | Đã xác minh |
-| **AD5** | PUT đội hình và tên đội ghi đè toàn bộ, hai admin ghi đè nhau âm thầm | Trung bình | Đã xác minh |
+| **AD5** | PUT đội hình và tên đội ghi đè toàn bộ, hai admin ghi đè nhau âm thầm | Trung bình | Đã xử lý - xem [spec F14](2026-10-05-f14-roster-optimistic-locking-design.md) |
 | **DC1** | Nhắc điểm danh và thông báo lịch không chặn giới hạn ký tự của Discord | Trung bình | Đã xác minh |
 | **DC2** | `/nhac-diem-danh` không dịch lỗi 403 thành câu tiếng Việt | Trung bình | Đã xác minh |
 | **MB6** | Bị gỡ khỏi bang trông giống hệt hết phiên | Trung bình | Nghi ngờ |

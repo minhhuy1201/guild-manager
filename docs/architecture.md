@@ -299,11 +299,11 @@ Endpoints, all behind the `/api` prefix:
 | `POST` | `/leaves/:id/cancel` | Cancel a leave (stamps `cancelledAt`; a second call returns it unchanged) | Bearer (own leave, or admin) |
 | `POST` | `/attendance` | Mark one character for one match (with a reason when the answer is "Không") | Bearer (own character; admin marks for anyone and bypasses the deadline) |
 | `GET` | `/team-builder/weeks` | Weeks that still have roster data | Admin |
-| `GET` | `/team-builder/formations?weekStart=` | Match rosters of a week | Admin |
-| `PUT` | `/team-builder/formations/:sessionId` | Overwrite one match's roster | Admin |
+| `GET` | `/team-builder/formations?weekStart=` | Match rosters of a week, each day with its `version` | Admin |
+| `PUT` | `/team-builder/formations/:sessionId` | Overwrite one match's roster; the body carries the `version` it was based on, a stale one is refused with 412 | Admin |
 | `POST` | `/team-builder/formations/:sessionId/announce` | Post the day's roster images to Discord with the gathering announcement, then close that day's attendance | Admin |
-| `GET` | `/team-builder/team-names` | Names of the grid's team columns | Admin |
-| `PUT` | `/team-builder/team-names` | Overwrite the whole team name map | Admin |
+| `GET` | `/team-builder/team-names` | Names of the grid's team columns, as `{ names, version }` | Admin |
+| `PUT` | `/team-builder/team-names` | Overwrite the whole team name map; the body carries the `version` it was based on, a stale one is refused with 412 | Admin |
 | `GET` | `/tactics` | Tactics, newest edit first, without their scenes | Bearer |
 | `GET` | `/tactics/token-presets` | The palette's saved tokens, in display order | Bearer |
 | `POST` | `/tactics/token-presets` | Add a palette token | Admin |
@@ -527,12 +527,13 @@ erDiagram
 
     AuthExchange { }
     TeamName { }
+    TeamNameVersion { }
     BotChannel { }
     Tactic { }
     TacticTokenPreset { }
 ```
 
-The last five hang off nothing on purpose. `TeamName`, `BotChannel` and `TacticTokenPreset` are global
+The last six hang off nothing on purpose. `TeamName`, `BotChannel` and `TacticTokenPreset` are global
 configuration, not per week and not per battle day; `Tactic` is deliberately independent of the
 schedule (a tactic is not tied to a week or a battle day); `AuthExchange` holds a `discordId` rather
 than a foreign key, because a rescue admin may match no `Character` at all.
@@ -540,12 +541,13 @@ than a foreign key, because a rescue admin may match no `Character` at all.
 | Model | Notes |
 |---|---|
 | `Character` | Member. Id is a slug of the name plus a random suffix (`meo-beo-k7ma3x`), not a game id. `discordId` is nullable and unique — an admin types it in, and it is what a login resolves against; `role` is `GuildRole` — `ADMIN` or `MEMBER`, the only two roles, defaulting to `MEMBER`; `discordUsername`, `discordAvatar` and `lastLoginAt` are written on each sign-in so an admin can confirm the right person was linked. `discordAvatar` holds Discord's avatar **hash**, not a URL — the CDN URL format belongs to Discord and the web app builds it; it reaches the browser through `/auth/me` only, never through the members list. |
-| `BattleSession` | One match in a week. `weekStart` (Monday 00:00 VN) groups matches into weeks. Guild War uses the deterministic id `gw-<YYYY-MM-DD>` so it can be upserted idempotently; scrims get a `cuid()`. `deadline` is the admin's value for a scrim, capped at 11:00 on the match day and prefilled by the form with that cap; for Guild War it is system-owned (11:00 Saturday). `matchCount` is how many matches the day holds (1 or 2): an admin picks it for a scrim, defaulting to 2, while the system derives it for Guild War from the week's alternating rule. It is an **upper bound** on the number of `FormationMatch` rows, not an instruction — a two-match day may perfectly well be rostered with one formation shared by both. `attendanceClosedAt` is when an admin announced the line-up in Discord, which closes attendance regardless of `deadline`; null means the deadline alone still governs. |
+| `BattleSession` | One match in a week. `weekStart` (Monday 00:00 VN) groups matches into weeks. Guild War uses the deterministic id `gw-<YYYY-MM-DD>` so it can be upserted idempotently; scrims get a `cuid()`. `deadline` is the admin's value for a scrim, capped at 11:00 on the match day and prefilled by the form with that cap; for Guild War it is system-owned (11:00 Saturday). `formationVersion` is the roster's optimistic lock: every roster save and every server-side release of a member bumps it, and only `team-builder` writes it. `matchCount` is how many matches the day holds (1 or 2): an admin picks it for a scrim, defaulting to 2, while the system derives it for Guild War from the week's alternating rule. It is an **upper bound** on the number of `FormationMatch` rows, not an instruction — a two-match day may perfectly well be rostered with one formation shared by both. `attendanceClosedAt` is when an admin announced the line-up in Discord, which closes attendance regardless of `deadline`; null means the deadline alone still governs. |
 | `Leave` | A stretch of Vietnam calendar days (`startDate`..`endDate`, both inclusive, `@db.Date`) a character will be away. It **never writes `AttendanceRecord` rows**: the effective answer is computed on read (§6). `createdAt` is the moment the coverage rule compares with a day's closing moment; `cancelledAt` is stamped instead of deleting, so days that closed before the cancel stay "Không". `createdByAdmin` / `cancelledByAdmin` capture the role at that moment (an admin's leave also covers closed days, an admin's cancel also releases them). `createdByCharacterId` / `cancelledByCharacterId` are plain ids, no relation, for the same reason as `markedByCharacterId`. |
 | `AttendanceRecord` | One `(character, session)` pair, unique. The answer is `isPresent Boolean` — `true` = "Có", `false` = "Không"; not answered at all is the absence of a row. `markedAt` updates whenever the answer flips. `markedByCharacterId` records who pressed the button — no relation on purpose, so deleting that person cannot take someone else's entry with them. `reason` is the explanation (≤255 characters) attached to a "Không" answer; it is always `null` when `isPresent = true`, and the server decides that value itself rather than trusting the body. |
 | `AuthExchange` | A single-use code the web app trades for a JWT pair after the API finishes the OAuth callback. Lives 60 seconds; expired rows are swept during the next exchange. Holds `discordId`, not a foreign key, because a rescue admin may match no `Character`. |
-| `FormationSlot` | One cell of the roster grid: a person, a note, or both. A cell that is empty *and* unannotated has no row — that is how "slot 2 is empty" differs from "there is no slot 2". An answer of "Không" takes that member out of every cell of the day (`TeamBuilderService.releaseCharacterFromSession`): an annotated cell keeps its note and only loses its occupant, and a day already played is left untouched. **Deleting the member does the same thing**, guild-wide: the foreign key is `SetNull`, and `CharactersService.remove` deletes the cells that carried no note in the same transaction. |
-| `TeamName` | Display name of one team column, keyed by team number. Global configuration, not per battle day: the same names apply to every week and every match, which is why it hangs off nothing in the diagram above. A team still showing its plain number has no row. |
+| `FormationSlot` | One cell of the roster grid: a person, a note, or both. A cell that is empty *and* unannotated has no row — that is how "slot 2 is empty" differs from "there is no slot 2". An answer of "Không" - or a leave covering the day - takes that member out of every cell of the day (`TeamBuilderService.releaseCharacterFromSession`): an annotated cell keeps its note and only loses its occupant, and a day already played is left untouched. A release that took someone out also bumps the day's `formationVersion`, so a stale draft cannot put them back unnoticed. **Deleting the member does the same thing**, guild-wide: the foreign key is `SetNull`, and `CharactersService.remove` deletes the cells that carried no note in the same transaction. |
+| `TeamName` | Display name of one team column, keyed by team number. Global configuration, not per battle day: the same names apply to every week and every match, which is why it hangs off nothing in the diagram above. A team still showing its plain number has no row. Its optimistic lock lives in `TeamNameVersion`, not here: an empty map has no row to carry a version. |
+| `TeamNameVersion` | Optimistic lock of the team name map: exactly one row, `id = 1`, inserted by the migration and never created by code. A missing row is a broken database and fails loudly on read. |
 | `FormationMatch` | One match of a battle day's roster, `matchIndex` 1 or 2, assigned by the backend from the array position. The row exists even when nobody is placed yet — that is how "this day has 2 matches" differs from "match 2 is empty". Deleted with its `BattleSession` (cascade). |
 | `BotChannel` | Which Discord channel the bot posts a given kind of message to, keyed by `purpose`. Global configuration like `TeamName`, which is why it hangs off nothing in the diagram above. Two rows at most: `ATTENDANCE_REMINDER` and `ADMIN_ALERT` (where the cron reports a failed or channel-less run), both written by `/cau-hinh-kenh`. `purpose` is a `String` and not an enum on purpose: the value never crosses the network to the web app, so it need not stay in step with `packages/shared/enums`. |
 | `Tactic` | One guild war tactic drawing. `stages` is a `Json` column holding the whole scene document — `{ schemaVersion, stages }` per `tacticSceneSchema` in `@guild/shared` — rather than normalised stage and element tables: a new kind of drawn element is then a branch in the shared union and a branch in the renderer, with no migration, and the editor only ever saves the whole document anyway. The column is **untrusted on read** (an older app or a hand edit may have written it), so `tactics.codec.ts` parses it with Zod and fails loudly, naming the tactic, rather than returning an empty scene. `schemaVersion` is what makes a format change an upgrade step instead of guessed SQL over JSON: `liftTacticScene` in `@guild/shared` runs before the parse on both sides, and today it lifts a v1 document (which could be drawn in white) to v2 (where white became black). A token **keeps its `id` when a stage is duplicated**, so the same unit is recognisable on two neighbouring stages and the viewer can draw the path it takes; an id only has to be unique inside one stage, and every edit works on one stage at a time. Scenes saved before that rule carry a different id per stage and are paired by `label + icon` instead - see [`superpowers/specs/2026-09-23-tactic-stage-animation-design.md`](superpowers/specs/2026-09-23-tactic-stage-animation-design.md). `notes` is plain text (≤ 5000 characters) read beside the map; it is a column rather than part of the scene because it is not drawn, and it stays off `GET /tactics` - `description` is the list's one-line summary. |
@@ -638,15 +640,14 @@ no staging environment, no verified backups, no monitoring or alerting, no appli
 limiting, and no automatic rollback. Details and consequences are in
 [`production.md`](production.md) §6.
 
-**No optimistic locking on the roster or on a tactic.** `PUT /tactics/:id/stages`,
-`PUT /team-builder/formations/:sessionId` and
-`PUT /team-builder/team-names` all overwrite from the payload; none compares
-against what the client read when it opened the page. Two admins editing the same battle day means
-the later save wins and the earlier one's work disappears with no conflict, no warning and no merge.
-This is an accepted risk, not an oversight: the guild runs one or two admins, and a version column
-plus a conflict flow on the UI is a large cost for a situation that has not happened. Revisit it the
-moment three or more admins edit the same day regularly - see
-[`custom-spec/2026-09-07-flow-audit-overview.md`](custom-spec/2026-09-07-flow-audit-overview.md) AD5.
+**Roster saves are optimistically locked; tactics are not.** `PUT /team-builder/formations/:sessionId`
+and `PUT /team-builder/team-names` carry the `version` the client's draft started from and answer 412
+when it is no longer current (`BattleSession.formationVersion`, `TeamNameVersion`; spec
+[`custom-spec/2026-10-05-f14-roster-optimistic-locking-design.md`](custom-spec/2026-10-05-f14-roster-optimistic-locking-design.md)).
+The web app then offers reload or overwrite. `PUT /tactics/:id/stages` still overwrites from the payload:
+two admins editing the same tactic means the later save wins with no conflict and no merge. That is an
+accepted risk - the guild runs one or two admins - to revisit once three or more edit the same tactic
+regularly.
 
 Migrations are **not** in that list: the `migrate` job in `ci.yml` applies them after the tests go
 green and before `deploy-api`, so new code never meets the old schema. They are still authored by

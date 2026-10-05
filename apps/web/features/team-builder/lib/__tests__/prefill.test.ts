@@ -25,6 +25,7 @@ function session(overrides: Partial<SessionFormation>): SessionFormation {
     opponent: null,
     locked: false,
     matches: [],
+    version: 0,
     ...overrides,
   };
 }

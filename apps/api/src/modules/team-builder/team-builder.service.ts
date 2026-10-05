@@ -2,19 +2,21 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  PreconditionFailedException,
 } from '@nestjs/common';
 import {
   formationWeekSchema,
   sessionFormationSchema,
-  teamNamesSchema,
+  teamNamesStateSchema,
 } from '@guild/shared/schemas';
 import type {
   BattleSession,
   FormationWeek,
   MatchFormation,
-  MatchInput,
+  SaveFormationInput,
+  SaveTeamNamesInput,
   SessionFormation,
-  TeamNames,
+  TeamNamesState,
 } from '@guild/shared/schemas';
 
 import { Clock } from '../../common';
@@ -35,6 +37,17 @@ import { decodeMatch, encodeMatch } from './formation-grid';
 
 /** Prisma error code for a foreign key violation (here, a slot pointing at a deleted member). */
 const FOREIGN_KEY_VIOLATION = 'P2003';
+
+/** A save based on a version someone else has already moved past. */
+const FORMATION_STALE =
+  'Đội hình ngày này vừa được lưu ở nơi khác (admin khác, hoặc có người báo vắng). Tải bản mới nhất hoặc ghi đè.';
+
+/** A team name save based on a version someone else has already moved past. */
+const TEAM_NAMES_STALE =
+  'Tên đội vừa được admin khác lưu. Tải bản mới nhất hoặc ghi đè.';
+
+/** Id of the one TeamNameVersion row - see the model's comment. */
+const TEAM_NAME_VERSION_ID = 1;
 
 /** How many days old formations are kept. Past that they are purged. */
 const RETENTION_DAYS = 56;
@@ -106,12 +119,23 @@ export class TeamBuilderService {
     const sessions = await this.battleSessions.readWeekSessions(target);
     if (sessions.length === 0) return [];
 
-    const matchesBySession = await this.loadMatchesBySession(
-      sessions.map((session) => session.id),
-    );
+    const ids = sessions.map((session) => session.id);
+    // Version FIRST, then the data, one after the other: the two reads share no snapshot, so a save
+    // landing between them must leave the client with an OLD version over NEWER data (its next save
+    // is refused, 412) and never a new version over old data (its next save would overwrite silently).
+    const versions = await this.loadFormationVersions(ids);
+    const matchesBySession = await this.loadMatchesBySession(ids);
 
-    return sessions.map((session) =>
-      verifyResponse(sessionFormationSchema, {
+    return sessions.map((session) => {
+      const version = versions.get(session.id);
+      // The ids come from the same rows, so a gap means the day was deleted between the two reads.
+      if (version === undefined) {
+        throw new Error(
+          `Không đọc được version đội hình của ngày ${session.id}.`,
+        );
+      }
+
+      return verifyResponse(sessionFormationSchema, {
         sessionId: session.id,
         label: session.label,
         opponent: session.opponent,
@@ -120,8 +144,26 @@ export class TeamBuilderService {
         matchCount: session.matchCount,
         locked: isSessionLocked(session.dateTime, now),
         matches: matchesBySession.get(session.id) ?? [],
-      } satisfies SessionFormation),
-    );
+        version,
+      } satisfies SessionFormation);
+    });
+  }
+
+  /**
+   * Formation version of each battle day. Read here rather than added to `readWeekSessions` because
+   * team-builder is the column's only reader and writer.
+   * @param sessionIds - Ids of the battle days to read
+   * @returns A map from sessionId to its formation version
+   */
+  private async loadFormationVersions(
+    sessionIds: string[],
+  ): Promise<Map<string, number>> {
+    const rows = await this.prisma.battleSession.findMany({
+      where: { id: { in: sessionIds } },
+      select: { id: true, formationVersion: true },
+    });
+
+    return new Map(rows.map((row) => [row.id, row.formationVersion]));
   }
 
   /**
@@ -155,16 +197,19 @@ export class TeamBuilderService {
    * same result. Delete-then-recreate rather than diffing slot by slot: ~120 rows at most, and it
    * makes "drop match 2" just a one-element array instead of a dedicated endpoint.
    * @param sessionId - Id of the battle day whose formation is saved
-   * @param matches - Each match's formation and notes, in match 1 → match 2 order
+   * @param input - Each match's formation and notes, in match 1 → match 2 order, plus the version the
+   *   save is based on
    * @returns The battle day with the formation just written
    * @throws NotFoundException when no battle day carries that sessionId
+   * @throws PreconditionFailedException when the stored version is no longer `input.version`
    * @throws ConflictException when the battle day is past its battle time, or when a member is deleted
    *   mid-write and the foreign key breaks
    */
   async saveFormation(
     sessionId: string,
-    matches: MatchInput[],
+    input: SaveFormationInput,
   ): Promise<SessionFormation> {
+    const { matches } = input;
     const now = this.clock.now();
     const session = await this.battleSessions.findById(sessionId);
     if (!session) {
@@ -193,6 +238,16 @@ export class TeamBuilderService {
 
     const savedMatches = await this.prisma
       .$transaction(async (tx) => {
+        // The version check and the bump are one statement: a concurrent save holding the same
+        // version waits on this row's lock, then sees the bumped value and matches nothing (READ
+        // COMMITTED re-evaluates the WHERE). Throwing here rolls the transaction back before
+        // anything is deleted.
+        const { count } = await tx.battleSession.updateMany({
+          where: { id: sessionId, formationVersion: input.version },
+          data: { formationVersion: { increment: 1 } },
+        });
+        if (count === 0) throw new PreconditionFailedException(FORMATION_STALE);
+
         // Filter BEFORE writing: a character just removed from the guild but still in the draft would
         // break the whole insert on its foreign key. That slot's note is kept — a note describes the
         // position, not the person.
@@ -246,6 +301,7 @@ export class TeamBuilderService {
       matchCount: session.matchCount,
       locked: isSessionLocked(dateTime, now),
       matches: savedMatches,
+      version: input.version + 1,
     } satisfies SessionFormation);
   }
 
@@ -278,6 +334,11 @@ export class TeamBuilderService {
     const now = this.clock.now();
     if (isSessionLocked(new Date(session.dateTime), now)) return 0;
 
+    // Lock the day row BEFORE touching its slots. `saveFormation` locks the day row first (its version
+    // bump) and then cascades into the slots; taking the slots first here and the day row last would
+    // be the opposite order, and the two transactions could deadlock.
+    await client.$queryRaw`SELECT 1 FROM "BattleSession" WHERE "id" = ${session.id} FOR NO KEY UPDATE`;
+
     const occupied = { characterId, match: { sessionId: session.id } };
 
     // Delete first: afterwards `occupied` matches only the noted slots. Both statements run on the
@@ -292,25 +353,39 @@ export class TeamBuilderService {
       data: { characterId: null },
     });
 
-    return deleted.count + cleared.count;
+    const released = deleted.count + cleared.count;
+    // A stale draft saved after this would put the member back - the bump makes that save a conflict.
+    if (released > 0) {
+      await client.battleSession.update({
+        where: { id: session.id },
+        data: { formationVersion: { increment: 1 } },
+      });
+    }
+
+    return released;
   }
 
   /**
-   * The team names shown on the formation grid's column headers.
+   * The team names shown on the formation grid's column headers, with the version they are at.
    * Global data: one map for the whole app, not one per week or per battle day.
-   * @returns Team number (as a decimal string) → name; teams still on their number are absent
+   * @returns Team number (as a decimal string) → name, teams still on their number are absent
+   * @throws Error when the one TeamNameVersion row is missing - a broken database, never recreated
    */
-  async getTeamNames(): Promise<TeamNames> {
+  async getTeamNames(): Promise<TeamNamesState> {
+    // Version first, sequentially - same reasoning as `getFormations`.
+    const versionRow = await this.prisma.teamNameVersion.findUniqueOrThrow({
+      where: { id: TEAM_NAME_VERSION_ID },
+    });
     const rows = await this.prisma.teamName.findMany({
       orderBy: { team: 'asc' },
     });
 
-    return verifyResponse(
-      teamNamesSchema,
-      Object.fromEntries(
+    return verifyResponse(teamNamesStateSchema, {
+      names: Object.fromEntries(
         rows.map((row) => [String(row.team), row.name]),
-      ) satisfies TeamNames,
-    );
+      ),
+      version: versionRow.version,
+    } satisfies TeamNamesState);
   }
 
   /**
@@ -319,21 +394,39 @@ export class TeamBuilderService {
    * rather than a dedicated endpoint.
    * Not guarded by a session lock — the names are global configuration and belong to no battle day,
    * so a played battle never freezes them.
-   * @param names - Team number (as a decimal string) → name; a team left out loses its name
-   * @returns The map just written
+   * @param input - Team number (as a decimal string) → name, plus the version the save is based on
+   * @returns The map just written, at its new version
+   * @throws PreconditionFailedException when the stored version is no longer `input.version`
    */
-  async saveTeamNames(names: TeamNames): Promise<TeamNames> {
-    const rows = Object.entries(names).map(([team, name]) => ({
+  async saveTeamNames(input: SaveTeamNamesInput): Promise<TeamNamesState> {
+    const rows = Object.entries(input.names).map(([team, name]) => ({
       team: Number(team),
       name,
     }));
 
     await this.prisma.$transaction(async (tx) => {
+      // Same single-statement check-and-bump as `saveFormation`.
+      const { count } = await tx.teamNameVersion.updateMany({
+        where: { id: TEAM_NAME_VERSION_ID, version: input.version },
+        data: { version: { increment: 1 } },
+      });
+      if (count === 0) {
+        // Zero rows is either a stale version or a missing row; only the second is a broken database
+        // that must surface as a 500 rather than send every admin to a conflict dialog.
+        await tx.teamNameVersion.findUniqueOrThrow({
+          where: { id: TEAM_NAME_VERSION_ID },
+        });
+        throw new PreconditionFailedException(TEAM_NAMES_STALE);
+      }
+
       await tx.teamName.deleteMany({});
       if (rows.length > 0) await tx.teamName.createMany({ data: rows });
     });
 
-    return verifyResponse(teamNamesSchema, names satisfies TeamNames);
+    return verifyResponse(teamNamesStateSchema, {
+      names: input.names,
+      version: input.version + 1,
+    } satisfies TeamNamesState);
   }
 }
 

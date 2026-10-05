@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { TeamNames } from "@guild/shared/schemas";
+import type { TeamNames, TeamNamesState } from "@guild/shared/schemas";
 
 import { ApiError } from "@/lib/api-client";
 import { saveTeamNames } from "../../api/team-builder-api";
@@ -16,7 +16,10 @@ vi.mock("../../api/team-builder-api", () => ({
 const saveTeamNamesMock = vi.mocked(saveTeamNames);
 
 /** The saved copy the hook reads, standing in for the query's data. */
-const SAVED: TeamNames = { "1": "Thủ nhà" };
+const SAVED: TeamNamesState = { names: { "1": "Thủ nhà" }, version: 5 };
+
+/** Stand-in for the names query's refetch. */
+const refetchMock = vi.fn<() => Promise<TeamNamesState>>();
 
 /**
  * Render `useTeamNameDraft` over a saved map.
@@ -24,15 +27,21 @@ const SAVED: TeamNames = { "1": "Thủ nhà" };
  * @param draft - Unsaved names to seed the store with
  * @returns The testing-library render result
  */
-function renderNames(saved: TeamNames = SAVED, draft: TeamNames | null = null) {
-  return renderFormationHook(() => useTeamNameDraft(saved), {
+function renderNames(
+  saved: TeamNamesState = SAVED,
+  draft: TeamNames | null = null,
+  baseVersion: number | null = draft ? saved.version : null
+) {
+  return renderFormationHook(() => useTeamNameDraft(saved, refetchMock), {
     teamNameDraft: draft,
+    teamNameBaseVersion: baseVersion,
   });
 }
 
 beforeEach(() => {
   saveTeamNamesMock.mockReset();
-  saveTeamNamesMock.mockResolvedValue({});
+  saveTeamNamesMock.mockResolvedValue({ names: {}, version: 6 });
+  refetchMock.mockReset();
 });
 
 afterEach(() => {
@@ -43,7 +52,7 @@ describe("useTeamNameDraft — đọc", () => {
   it("chưa sửa gì thì đọc bản đã lưu và không dirty", () => {
     const { result } = renderNames();
 
-    expect(result.current.names).toEqual(SAVED);
+    expect(result.current.names).toEqual(SAVED.names);
     expect(result.current.dirty).toBe(false);
   });
 
@@ -86,7 +95,7 @@ describe("useTeamNameDraft — đọc", () => {
 
     act(() => result.current.reset());
 
-    expect(result.current.names).toEqual(SAVED);
+    expect(result.current.names).toEqual(SAVED.names);
     expect(result.current.dirty).toBe(false);
   });
 });
@@ -113,8 +122,8 @@ describe("useTeamNameDraft — lưu", () => {
     // TanStack hands the mutation function a context object as a second
     // argument; only the payload matters here.
     expect(saveTeamNamesMock.mock.calls[0][0]).toEqual({
-      "1": "Thủ nhà",
-      "2": "Hậu cần",
+      names: { "1": "Thủ nhà", "2": "Hậu cần" },
+      version: 5,
     });
   });
 
@@ -145,5 +154,111 @@ describe("useTeamNameDraft — lưu", () => {
     );
     expect(result.current.names["2"]).toBe("Hậu cần");
     expect(result.current.dirty).toBe(true);
+  });
+});
+
+describe("useTeamNameDraft — xung đột phiên bản", () => {
+  const DRAFT = { "1": "Xung kích" };
+
+  it("lưu gửi baseVersion của nháp, không phải version của bản đã lưu", async () => {
+    const { result } = renderNames(SAVED, DRAFT, 3);
+
+    await act(async () => {
+      await result.current.save();
+    });
+
+    expect(saveTeamNamesMock.mock.calls[0][0]).toEqual({
+      names: DRAFT,
+      version: 3,
+    });
+  });
+
+  it("412: isStale = true, nháp còn, không hiện message riêng", async () => {
+    saveTeamNamesMock.mockRejectedValue(new ApiError("Cũ rồi.", 412));
+    const { result } = renderNames(SAVED, DRAFT, 3);
+
+    await act(async () => {
+      await result.current.save();
+    });
+
+    expect(result.current.isStale).toBe(true);
+    expect(result.current.dirty).toBe(true);
+    expect(result.current.saveErrorMessage).toBeUndefined();
+  });
+
+  it("discardStale: xoá nháp, isStale = false, tải lại bản đã lưu", async () => {
+    saveTeamNamesMock.mockRejectedValue(new ApiError("Cũ rồi.", 412));
+    refetchMock.mockResolvedValue({ names: {}, version: 6 });
+    const { result } = renderNames(SAVED, DRAFT, 3);
+    await act(async () => {
+      await result.current.save();
+    });
+
+    act(() => result.current.discardStale());
+
+    expect(result.current.isStale).toBe(false);
+    expect(result.current.dirty).toBe(false);
+    expect(refetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("dismissStale giữ nháp, isStale = false", async () => {
+    saveTeamNamesMock.mockRejectedValue(new ApiError("Cũ rồi.", 412));
+    const { result } = renderNames(SAVED, DRAFT, 3);
+    await act(async () => {
+      await result.current.save();
+    });
+
+    act(() => result.current.dismissStale());
+
+    expect(result.current.isStale).toBe(false);
+    expect(result.current.dirty).toBe(true);
+  });
+
+  it("overwriteStale: rebase lên version mới nhất rồi lưu với nó", async () => {
+    saveTeamNamesMock.mockRejectedValueOnce(new ApiError("Cũ rồi.", 412));
+    saveTeamNamesMock.mockResolvedValueOnce({ names: DRAFT, version: 7 });
+    refetchMock.mockResolvedValue({ names: { "1": "Khác" }, version: 6 });
+    const { result } = renderNames(SAVED, DRAFT, 3);
+    await act(async () => {
+      await result.current.save();
+    });
+
+    await act(async () => {
+      await result.current.overwriteStale();
+    });
+
+    expect(saveTeamNamesMock.mock.calls.at(-1)?.[0]).toEqual({
+      names: DRAFT,
+      version: 6,
+    });
+    expect(result.current.isStale).toBe(false);
+  });
+
+  it("overwriteStale gặp 412 lần nữa: isStale vẫn true, nháp còn", async () => {
+    saveTeamNamesMock.mockRejectedValue(new ApiError("Cũ rồi.", 412));
+    refetchMock.mockResolvedValue({ names: {}, version: 6 });
+    const { result } = renderNames(SAVED, DRAFT, 3);
+
+    await act(async () => {
+      await result.current.overwriteStale();
+    });
+
+    expect(result.current.isStale).toBe(true);
+    expect(result.current.dirty).toBe(true);
+  });
+
+  it("overwriteStale gặp lỗi 500: hết isStale, thông báo hiện ở thanh công cụ", async () => {
+    saveTeamNamesMock.mockRejectedValue(new ApiError("Máy chủ bận.", 500));
+    refetchMock.mockResolvedValue({ names: {}, version: 6 });
+    const { result } = renderNames(SAVED, { "1": "Xung kích" }, 3);
+
+    await act(async () => {
+      await result.current.overwriteStale();
+    });
+
+    expect(result.current.isStale).toBe(false);
+    await waitFor(() =>
+      expect(result.current.saveErrorMessage).toBe("Máy chủ bận.")
+    );
   });
 });

@@ -26,6 +26,7 @@ const SESSION: SessionFormation = {
   opponent: "Moonlight",
   locked: false,
   matches: [],
+  version: 0,
 };
 
 const EMPTY_MATCH: MatchDraft = { assignment: {}, notes: {} };

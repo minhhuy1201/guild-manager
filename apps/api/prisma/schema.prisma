@@ -91,6 +91,12 @@ model BattleSession {
   attendanceClosedAt DateTime?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
+  /// Optimistic lock of this day's formation (spec f14). Bumped by every formation save and by every
+  /// server-side release of a member. Written ONLY by the team-builder module, inside its own
+  /// transactions, although the row belongs to battle-sessions: the formation rows are deleted and
+  /// recreated on each save and a day with no formation has none, so the day row is where the
+  /// version can always live.
+  formationVersion   Int       @default(0)
 
   attendanceRecords AttendanceRecord[]
   /// The matches of this day (1 or 2), one formation each.
@@ -181,6 +187,14 @@ model TeamName {
   team      Int      @id
   name      String
   updatedAt DateTime @updatedAt
+}
+
+/// Optimistic lock of the global team name map (spec f14). Exactly one row, id = 1, inserted by the
+/// migration. A missing row is a broken database and fails loudly - it is never recreated.
+/// Not a column on TeamName: an empty map has no row to carry it.
+model TeamNameVersion {
+  id      Int @id @default(1)
+  version Int @default(0)
 }
 
 /// A Discord channel the bot posts to, keyed by what it posts there.
