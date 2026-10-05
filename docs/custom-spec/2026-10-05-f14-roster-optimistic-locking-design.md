@@ -195,7 +195,7 @@ thêm một dòng: `Người đã báo vắng có thể bị đặt lại vào �
 | Retention xoá `FormationMatch` cũ | Không đụng `formationVersion`. |
 | Dòng `TeamNameVersion` bị mất | GET/PUT tên đội 500 - lỗi cấu hình, phải lộ ra (PUT: `updateMany` ra 0 dòng thì `findUniqueOrThrow` phân biệt mất dòng với sai version). |
 | Lưu từ dialog `Vẫn ghi đè` gặp kết quả khác 412 (409, 500, mạng) | Cờ xung đột tắt, dialog đóng; thông báo lỗi hiện ở thanh công cụ. |
-| Query tên đội chưa tải xong hoặc lỗi | Chưa cho sửa tên đội: nháp bắt đầu từ map rỗng ở version 0 sẽ lưu đè và xoá sạch tên các đội khác. |
+| Query tên đội chưa có dữ liệu lần nào (đang tải hoặc lỗi từ đầu) | Chưa cho sửa tên đội: nháp bắt đầu từ map rỗng ở version 0 sẽ lưu đè và xoá sạch tên các đội khác. |
 
 ## 8. Kiểm thử
 

@@ -108,9 +108,10 @@ export function useFormationScreen(): FormationScreenState {
     teamNamesQuery.data ?? EMPTY_TEAM_NAMES_STATE,
     refetchTeamNames
   );
-  // Until the query lands the fallback is an empty map at version 0: a draft started from it would
+  // Until the first load the fallback is an empty map at version 0: a draft started from it would
   // save over - and wipe - every other team's name while passing the version check. So no draft yet.
-  const teamNames: TeamNameDraftState = teamNamesQuery.isSuccess
+  // `data`, not `isSuccess`: a failed background refetch keeps the loaded data, and edits stay open.
+  const teamNames: TeamNameDraftState = teamNamesQuery.data !== undefined
     ? teamNamesDraft
     : { ...teamNamesDraft, setName: () => undefined };
 
