@@ -104,11 +104,15 @@ export function useFormationScreen(): FormationScreenState {
 
     return data;
   }, [refetchTeamNamesQuery]);
-  // The empty state only stands in until the query lands, when nothing can be edited yet.
-  const teamNames = useTeamNameDraft(
+  const teamNamesDraft = useTeamNameDraft(
     teamNamesQuery.data ?? EMPTY_TEAM_NAMES_STATE,
     refetchTeamNames
   );
+  // Until the query lands the fallback is an empty map at version 0: a draft started from it would
+  // save over - and wipe - every other team's name while passing the version check. So no draft yet.
+  const teamNames: TeamNameDraftState = teamNamesQuery.isSuccess
+    ? teamNamesDraft
+    : { ...teamNamesDraft, setName: () => undefined };
 
   return { week, selection, draft, pool, copy, dnd, teamNames };
 }

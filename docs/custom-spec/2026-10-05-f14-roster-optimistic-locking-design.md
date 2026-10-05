@@ -99,7 +99,19 @@ thì `client.battleSession.update({ where: { id }, data: { formationVersion: { i
 trên cùng client (transaction của caller). Gỡ 0 ô thì không tăng - không có gì thay đổi để admin phải
 biết.
 
-### 4.4 Message
+Thứ tự khoá: trước khi đụng vào các ô, `releaseCharacterFromSession` khoá dòng ngày bằng
+`SELECT 1 FROM "BattleSession" WHERE id = $1 FOR NO KEY UPDATE` (qua `client.$queryRaw`, tham số hoá).
+`saveFormation` khoá dòng ngày trước (câu `UPDATE` tăng version) rồi mới xoá các ô qua cascade; nếu
+nhánh gỡ người khoá ô trước rồi dòng ngày sau thì hai transaction có thể deadlock. Cả hai cùng khoá
+dòng ngày trước, ô sau. Ngày đã đánh thì thoát sớm, không khoá.
+
+### 4.4 Thứ tự đọc ở GET
+
+`getFormations` và `getTeamNames` đọc **version trước, dữ liệu sau**, tuần tự (không `Promise.all`):
+hai lần đọc không chung snapshot, nên một lần lưu chen giữa phải cho ra version CŨ kèm dữ liệu MỚI (lần
+lưu tiếp theo bị 412), không bao giờ version MỚI kèm dữ liệu cũ (lần lưu tiếp theo ghi đè câm).
+
+### 4.5 Message
 
 | Hằng | Nội dung |
 |---|---|
@@ -181,7 +193,9 @@ thêm một dòng: `Người đã báo vắng có thể bị đặt lại vào �
 | Hai PUT đồng thời cùng version | Một thành công, một 412 (mục 4.2). |
 | Đổi tên đội và đội hình cùng lúc, chỉ tên đội xung đột | Đội hình lưu xong; dialog chỉ nói về tên đội. |
 | Retention xoá `FormationMatch` cũ | Không đụng `formationVersion`. |
-| Dòng `TeamNameVersion` bị mất | GET/PUT tên đội 500 - lỗi cấu hình, phải lộ ra. |
+| Dòng `TeamNameVersion` bị mất | GET/PUT tên đội 500 - lỗi cấu hình, phải lộ ra (PUT: `updateMany` ra 0 dòng thì `findUniqueOrThrow` phân biệt mất dòng với sai version). |
+| Lưu từ dialog `Vẫn ghi đè` gặp kết quả khác 412 (409, 500, mạng) | Cờ xung đột tắt, dialog đóng; thông báo lỗi hiện ở thanh công cụ. |
+| Query tên đội chưa tải xong hoặc lỗi | Chưa cho sửa tên đội: nháp bắt đầu từ map rỗng ở version 0 sẽ lưu đè và xoá sạch tên các đội khác. |
 
 ## 8. Kiểm thử
 
@@ -193,7 +207,8 @@ API (Jest, Prisma mock như các test hiện có - repo không có test chạy D
 - `getFormations`: trả `version` của từng ngày.
 - `releaseCharacterFromSession`: gỡ ≥1 ô → tăng version qua client được truyền vào; gỡ 0 ô hoặc ngày
   đã đánh → không tăng.
-- `saveTeamNames` / `getTeamNames`: như trên với `TeamNameVersion`; thiếu dòng → ném.
+- `saveTeamNames` / `getTeamNames`: như trên với `TeamNameVersion`; thiếu dòng → ném (cả GET và PUT).
+- `getFormations` / `getTeamNames` đọc version trước dữ liệu (kiểm bằng thứ tự gọi); `releaseCharacterFromSession` khoá dòng ngày trước khi đụng các ô.
 - Schema shared: thiếu `version` → 400.
 - `migration-rls.spec.ts` bắt bảng mới thiếu RLS (đã có sẵn).
 
@@ -202,6 +217,7 @@ Web (Vitest):
 - Store: `ensureDraft` / `seedFrom` ghi `baseVersion`; refetch không đổi `baseVersion` của nháp đang có.
 - `useFormationDraft.handleSave`: gửi `baseVersion`; 412 → trạng thái xung đột, nháp còn; 409 → hành vi cũ.
 - `useTeamNameDraft.save`: tương tự.
+- Ghi đè gặp 409 / 500: cờ xung đột tắt; chưa tải tên đội thì `setName` không tạo nháp.
 - Dialog: ba nút làm đúng việc; `Vẫn ghi đè` gặp 412 lần nữa → dialog mở lại; chỉ liệt kê phần xung đột.
 
 ## 9. Tài liệu phải cập nhật
