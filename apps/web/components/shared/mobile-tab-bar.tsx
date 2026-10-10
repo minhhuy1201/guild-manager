@@ -3,8 +3,17 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { navItemsFor } from "@/components/shared/nav-items";
+import { navItemsFor, type NavItem } from "@/components/shared/nav-items";
 import { cn } from "@/lib/utils";
+
+/**
+ * The entries that fit a phone.
+ * @param isAdmin - Whether the viewer is an admin
+ * @returns The viewer's entries minus the desktop-only ones
+ */
+function mobileNavItems(isAdmin: boolean): NavItem[] {
+  return navItemsFor(isAdmin).filter((item) => !item.desktopOnly);
+}
 
 interface MobileTabBarProps {
   /** Whether the current user is an admin (determined on the server) */
@@ -25,6 +34,9 @@ interface MobileTabBarProps {
  *
  * Like the header it always wears `.dark`, so the navigation reads as one ink band framing the page
  * in both themes.
+ *
+ * Entries flagged `desktopOnly` (the team builder, the tactic map) are left out: they need a wide
+ * screen. The header nav still lists them from `sm` up, and their pages stay reachable by link.
  * @param props.isAdmin - Whether to show the admin-only entries
  * @returns The tab bar
  */
@@ -38,7 +50,7 @@ export function MobileTabBar({ isAdmin }: MobileTabBarProps) {
       className="dark fixed inset-x-0 bottom-0 z-30 border-t bg-card text-foreground pb-[env(safe-area-inset-bottom)] sm:hidden"
     >
       <ul className="flex h-16">
-        {navItemsFor(isAdmin).map(({ href, shortLabel, icon: Icon }) => {
+        {mobileNavItems(isAdmin).map(({ href, shortLabel, icon: Icon }) => {
           const isActive = pathname === href;
           return (
             <li key={href} className="flex-1">

@@ -126,6 +126,24 @@ describe("SettingsTabs - vừa màn điện thoại", () => {
   );
 });
 
+// Even with short names three tabs overflow a 375px screen when each keeps its icon beside its text
+// and its content width as a minimum. jsdom does no layout, so this pins the classes that stack the
+// icon over the text and let the three triggers share the row equally. They are prefixed with
+// `max-sm:` on purpose: unprefixed, `min-w-0` squeezes the longest full name on desktop.
+describe("SettingsTabs - ba tab chia đều một hàng trên điện thoại", () => {
+  it.each(["Thiết lập lịch đánh", "Quản lý thành viên", "Nghỉ phép của thành viên"])(
+    "tab %s: icon xếp trên chữ, rộng bằng các tab còn lại",
+    (fullLabel) => {
+      render(<SettingsTabs />);
+
+      const { className } = screen.getByRole("tab", { name: fullLabel });
+
+      expect(className).toContain("max-sm:flex-col");
+      expect(className).toContain("max-sm:min-w-0");
+    }
+  );
+});
+
 describe("SettingsTabs - không lặp tên tab", () => {
   it("tab thành viên không còn tiêu đề trùng tên tab, vẫn giữ dòng mô tả", () => {
     params = new URLSearchParams("tab=members");

@@ -31,6 +31,15 @@ type SettingsTab = (typeof TAB)[keyof typeof TAB];
 const TAB_PARAM = "tab";
 
 /**
+ * Phone layout shared by the three triggers: icon stacked over the short name, equal shares of the
+ * row. `flex-1` items keep `min-width: auto`, so they cannot shrink below their text; `min-w-0`
+ * lets the three split the row evenly. Phone-only: from `sm` the list is `w-fit` and the longest
+ * full name needs the room its content asks for.
+ */
+const PHONE_TRIGGER_CLASS =
+  "max-sm:min-w-0 max-sm:flex-col max-sm:gap-0.5 max-sm:px-1 max-sm:py-1.5 max-sm:text-xs";
+
+/**
  * Read the tab out of the address. Anything but "members" or "leaves" - no parameter, an old or
  * mistyped value - opens the schedule, the default.
  * @param value - The `tab` query parameter, null when absent
@@ -96,20 +105,32 @@ function SettingsTabPanels() {
   return (
     <Tabs value={tab} onValueChange={(next) => selectTab(tabFrom(String(next)))}>
       {/* Both full names side by side are wider than a phone: the strip overflowed and widened the
-          whole page. Below `sm` the list spans the row, each tab takes its share of it with a short name,
-          and the accessible name stays the full one. */}
-      <TabsList className="max-sm:w-full">
-        <TabsTrigger value={TAB.battles} aria-label="Thiết lập lịch đánh">
+          whole page. Below `sm` the list spans the row at its natural height, each tab takes an equal
+          share with its icon over a short name, and the accessible name stays the full one. */}
+      <TabsList className="max-sm:w-full max-sm:group-data-horizontal/tabs:h-auto">
+        <TabsTrigger
+          value={TAB.battles}
+          aria-label="Thiết lập lịch đánh"
+          className={PHONE_TRIGGER_CLASS}
+        >
           <Swords />
           <span className="sm:hidden">Lịch đánh</span>
           <span className="max-sm:hidden">Thiết lập lịch đánh</span>
         </TabsTrigger>
-        <TabsTrigger value={TAB.members} aria-label="Quản lý thành viên">
+        <TabsTrigger
+          value={TAB.members}
+          aria-label="Quản lý thành viên"
+          className={PHONE_TRIGGER_CLASS}
+        >
           <Users />
           <span className="sm:hidden">Thành viên</span>
           <span className="max-sm:hidden">Quản lý thành viên</span>
         </TabsTrigger>
-        <TabsTrigger value={TAB.leaves} aria-label="Nghỉ phép của thành viên">
+        <TabsTrigger
+          value={TAB.leaves}
+          aria-label="Nghỉ phép của thành viên"
+          className={PHONE_TRIGGER_CLASS}
+        >
           <Plane />
           <span className="sm:hidden">Nghỉ phép</span>
           <span className="max-sm:hidden">Nghỉ phép của thành viên</span>

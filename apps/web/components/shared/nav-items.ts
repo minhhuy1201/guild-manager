@@ -15,12 +15,14 @@ export interface NavItem {
   href: string;
   /** Full name, shown in the header nav */
   label: string;
-  /** Name that fits a phone's tab bar, a quarter of the screen wide */
+  /** Name that fits one slot of the phone's tab bar */
   shortLabel: string;
   /** Icon shown before the name */
   icon: LucideIcon;
   /** Shown to admins only - display alone; the proxy and the API do the real gating */
   adminOnly: boolean;
+  /** Left out of the phone's tab bar - the page needs a wide screen (drag-and-drop, the map) */
+  desktopOnly: boolean;
 }
 
 /** The main navigation, in display order - shared by the header nav and the phone's tab bar. */
@@ -31,6 +33,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
     shortLabel: "Điểm danh",
     icon: ClipboardCheck,
     adminOnly: false,
+    desktopOnly: false,
   },
   {
     href: ROUTES.attendanceHistory,
@@ -38,6 +41,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
     shortLabel: "Lịch sử",
     icon: History,
     adminOnly: false,
+    desktopOnly: false,
   },
   {
     href: ROUTES.teamBuilder,
@@ -45,6 +49,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
     shortLabel: "Xếp team",
     icon: Users,
     adminOnly: true,
+    desktopOnly: true,
   },
   {
     href: ROUTES.tactics,
@@ -52,6 +57,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
     shortLabel: "Chiến thuật",
     icon: Swords,
     adminOnly: false,
+    desktopOnly: true,
   },
   {
     href: ROUTES.settings,
@@ -59,6 +65,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
     shortLabel: "Thiết lập",
     icon: Settings,
     adminOnly: true,
+    desktopOnly: false,
   },
 ];
 
