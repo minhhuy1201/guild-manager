@@ -11,7 +11,7 @@ Ba workflow có checklist nhiều chỗ, hiện chỉ mô tả bằng văn:
 | Workflow | Chỗ phải chạm | Nguồn |
 |---|---|---|
 | Env var mới cho api | `env.validation.ts`, `.env.example`, `development.md` §3, `production.md` §3 | `CLAUDE.md:50-51` |
-| Route admin mới | `ADMIN_PATH_PREFIXES`, `getSession()` trong page, guard ở API (+ `ROUTES`) | `apps/web/CLAUDE.md:103-104` |
+| Route admin mới | `ADMIN_PATH_PREFIXES`, `getSession()` trong page, guard ở API (+ `ROUTES`) | `apps/web/CLAUDE.md:35-36` |
 | Discord slash command | một file trong `commands/`, một dòng trong `commands/index.ts`, chạy `pnpm discord:register` bằng tay | `apps/api/CLAUDE.md:50-58` |
 
 ## 2. Mục tiêu
@@ -27,7 +27,7 @@ command đầu tiên chứng minh có ích.
 1. Chạy `scripts/new-env-var.mjs NAME type default`.
    - Script thêm một key vào `envSchema`, một dòng vào `.env.example`, và một hàng có placeholder vào
      hai bảng doc.
-   - Idempotent: key đã có thì báo và exit 1.
+   - Từ chối trùng: key đã có thì báo và exit 1, không ghi gì.
    - Script đặt trong `.claude/skills/new-env-var/scripts/`, không đặt ở root.
 2. Agent điền mô tả cho hàng doc và code đọc biến (`AppConfigService`).
 3. Chạy drift spec của AC3 và sửa cho tới khi xanh.

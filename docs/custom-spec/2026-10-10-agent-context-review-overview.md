@@ -20,7 +20,7 @@ path thay vì đọc trọn doc, luật phải luôn đúng thì code giữ (lin
 
 ## 1. Hiện trạng (đo ngày 2026-10-10)
 
-- `CLAUDE.md:20-32` bảo agent đọc trước khi viết code một chuỗi doc 3.807 dòng, khoảng 243 KB. Một
+- `CLAUDE.md:20-32` bảo agent đọc trước khi viết code một chuỗi doc 3.778 dòng, khoảng 243 KB. Một
   task web tối thiểu chạm khoảng 1.910 dòng (`CLAUDE.md`, `architecture.md`, `apps/web/CLAUDE.md`,
   `frontend.md`), một task api khoảng 1.307 dòng.
 - `apps/api/CLAUDE.md` và `apps/web/CLAUDE.md` nạp **khi agent chạm file trong thư mục đó**, không
@@ -73,7 +73,7 @@ Chi tiết nằm ở report HTML, phần "Pilot A/B". Phần chốt lại ở đ
   thêm file qua shadcn CLI và 12 commit sửa file có sẵn (`git log --diff-filter=A|M`).
 - Report gọi `lib/cache-graph.ts:3-7` là vi phạm. Thực ra đó là ngoại lệ đã ghi trong comment của
   chính file đó ("the only place in the app allowed to import another feature's key factory") và
-  trong `frontend.md:1074`. AC2 biến ngoại lệ đó thành cấu hình lint.
+  trong `frontend.md:126`. AC2 biến ngoại lệ đó thành cấu hình lint.
 
 ## 5. Ngoài phạm vi
 

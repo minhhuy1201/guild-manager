@@ -12,7 +12,7 @@ Ba cặp file phải khớp nhau, nhưng chỉ có chữ trong `CLAUDE.md` nhắ
 |---|---|---|
 | `apps/api/src/config/env.validation.ts` (`envSchema`) ↔ `apps/api/.env.example` ↔ bảng ở `development.md` §3 và `production.md` §3 | `CLAUDE.md:50-51` | Schema khớp `.env.example`. `.env.example` có thêm `DIRECT_DATABASE_URL` (chỉ Prisma CLI dùng) và `DISCORD_GUILD_ID` (chỉ script dùng). Bảng doc chưa kiểm. |
 | `prisma/schema.prisma` enum `GuildClass`, `GuildRole` ↔ `@guild/shared/enums` | `apps/api/CLAUDE.md:66-68` | Khớp khi so bằng mắt. Chỉ `permissions.spec.ts` assert phía shared. |
-| `apps/web/tsconfig.json:21-23` paths ↔ `apps/web/vitest.config.ts:43-45` alias | `apps/web/CLAUDE.md:105-108` | Khớp (một alias catch-all). |
+| `apps/web/tsconfig.json:21-23` paths ↔ `apps/web/vitest.config.ts:43-45` alias | `apps/web/CLAUDE.md:37-40` | Khớp (một alias catch-all). |
 
 Ngoài ra, agent chỉ biết mình vi phạm lint hoặc typecheck khi CI đỏ, tức là sau khi đã push.
 Hướng dẫn context (xem tổng quan), mục Hooks: luật phải luôn đúng thì đặt vào hook, không chỉ ghi ra chữ.
@@ -75,7 +75,8 @@ Thêm vào `.claude/settings.json`:
 1. Đọc stdin. Nếu `stop_hook_active` là `true` thì exit 0.
 2. Lấy danh sách file đổi. Nếu không có file nào trong `apps/` hoặc `packages/` thì exit 0.
 3. Map file đổi sang workspace: `apps/api` → `api`, `apps/web` → `web`, `packages/shared` → cả hai
-   (shared đổi thì cả hai app phải typecheck lại).
+   (shared đổi thì cả hai app phải typecheck lại), `packages/ci-triage` → `@guild/ci-triage` (có
+   lint, typecheck và test riêng trong job CI `tooling-check`).
 4. Với mỗi workspace: chạy `lint`, `typecheck` và drift spec của workspace đó. Gom output lỗi lại.
 5. Có lỗi thì in ra stderr dòng `Convention check failed. Fix these before finishing:` kèm output đã
    gom, rồi exit 2. Không lỗi thì exit 0.
@@ -100,7 +101,7 @@ Một PR, branch `chore/convention-checks`. Ước tính: spec ~220, hook script
 
 ## 7. Rủi ro
 
-- Hook chậm có thể làm mỗi lần dừng mất hàng chục giây. Typecheck api có type-aware lint. Nếu quá
+- Hook chậm có thể làm mỗi lần dừng mất hàng chục giây. Lint api là type-aware (`projectService`) nên chậm, cộng thêm `tsc`. Nếu quá
   60 s, đổi `typecheck` sang `tsc --incremental` hoặc bỏ typecheck khỏi hook.
 - Hook chỉ chạy trong Claude Code. Push từ terminal thường vẫn chỉ có CI chặn. Điều này chấp nhận
   được: hook để agent tự sửa, không phải cổng bảo mật.

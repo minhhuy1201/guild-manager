@@ -21,7 +21,7 @@ caveman). Có thể phần lớn không nằm ở repo.
 
 ## 2. Thiết kế
 
-- Thêm `disable-model-invocation: true` cho `design-taste-frontend`, `minimalist-ui`,
+- Đặt `skillOverrides` thành `user-invocable-only` cho `design-taste-frontend`, `minimalist-ui`,
   `redesign-existing-projects` và `web-design-guidelines`. Bốn skill này chỉ chạy khi user gõ
   `/tên`.
 - Xoá symlink `supabase-postgres-best-practices` và thư mục nguồn của nó trong `.agents/skills/`,
@@ -32,8 +32,11 @@ caveman). Có thể phần lớn không nằm ở repo.
 ## 3. Quyết định mở
 
 - Frontmatter nằm trong file vendored ở `.agents/skills/`. Sửa file đó thì lần cập nhật skill sau sẽ
-  ghi đè. Cách khác: tắt bằng `skillOverrides` trong `.claude/settings.json` (project, được commit).
-  Cần kiểm docs xem `skillOverrides` có hỗ trợ chế độ "chỉ user gọi" không [unknown].
+  ghi đè, và làm lệch `computedHash` trong `skills-lock.json`. Chốt: dùng `skillOverrides` trong
+  `.claude/settings.json` (project, được commit) với giá trị `"user-invocable-only"` cho bốn skill,
+  không sửa file vendored. Nguồn: https://code.claude.com/docs/en/skills (giá trị `on`, `name-only`,
+  `user-invocable-only`, `off`). Khi xoá `supabase-postgres-best-practices`, xoá cả entry của nó trong
+  `skills-lock.json`.
 
 ## 4. Tiêu chí xong
 

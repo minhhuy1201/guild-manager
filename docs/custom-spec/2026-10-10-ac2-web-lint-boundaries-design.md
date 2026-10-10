@@ -59,17 +59,23 @@ Elements:
 
 Policy: mặc định `allow`. Disallow khi đích là file của element `feature` mà:
 
-1. đích khác feature với nguồn (dùng capture `featureName`), và
+1. nguồn nằm ngoài feature đó, kể cả nguồn ở element `app` (như `proxy.ts` hay route handler, không
+   có `featureName`). Giống api, bỏ điều kiện `from`: `boundaries` đã bỏ qua phụ thuộc cùng element.
 2. `fileInternalPath` của đích không phải `index.ts`, `server.ts` hay `core/index.ts`.
 
-Dùng hai pattern như api (`apps/api/eslint.config.mjs:38-43`). Pattern extglob một cấp không khớp
-path có dấu `/`, nên file nằm sâu sẽ lọt qua nếu không có pattern thứ hai.
+Cần hai pattern như api (`apps/api/eslint.config.mjs:78-81`), nhưng không copy được pattern thứ hai
+`*/**` của api: nó đánh dấu mọi file lồng nhau là internal, gồm cả `core/index.ts`, nên
+`proxy.ts` (import `@/features/auth/core`) sẽ đỏ, trái D4 và fixture §4.4. Viết lại cho web, ví dụ
+`!(index.ts|server.ts)`, `!(core)/**` và `core/!(index.ts)`. Pattern extglob một cấp không khớp path
+có dấu `/`, nên file nằm sâu sẽ lọt qua nếu thiếu pattern lồng nhau. Spec implement phải nêu pattern
+của element `app` cho file ở root web (web không có `src/`, khác `{ type: 'app', pattern: 'src' }` của
+api tại `eslint.config.mjs:64`).
 
 Ngoại lệ D2: nguồn là `lib/cache-graph.ts`, đích là `features/*/api/*-keys.ts`, thì allow.
 
 Resolver: web dùng alias `@/*` (`tsconfig.json:21-23`), nên resolver phải hiểu alias này. Nếu không,
 mọi import `@/features/...` không resolve được, rule bỏ qua chúng mà không báo gì, và lint vẫn xanh.
-Đây chính là kiểu lỗi đã xảy ra ở api trước 2026-09-01. Fixture "vi phạm phải đỏ" ở §4.4 có mặt để
+Rủi ro resolver này đã được ghi ở `backend.md:224-226`. (Lỗi ngày 2026-09-01 ở api là chuyện khác: nửa luật cho target lồng nhau bị tắt im lặng, xem `apps/api/CLAUDE.md:28`.) Fixture "vi phạm phải đỏ" ở §4.4 có mặt để
 bắt đúng lỗi này. Chọn resolver lúc implement: TypeScript resolver, hoặc `node` kèm map alias.
 
 Message:

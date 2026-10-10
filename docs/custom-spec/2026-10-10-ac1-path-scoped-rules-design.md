@@ -71,8 +71,8 @@ Mỗi PR một vùng, để diff (dòng xoá + dòng thêm) dưới 900.
 
 - `/context` trong một session mới ở root cho thấy không còn rule nào nạp vô điều kiện, ngoài những
   gì D2 giữ lại.
-- Đọc một file `apps/web/features/**/*.tsx` thì log của `InstructionsLoaded` có `data-flow.md` và
-  `display.md`, không có rule api nào.
+- Đọc một file `apps/web/features/**/*.tsx` thì log của `InstructionsLoaded` có `data-flow.md`,
+  `display.md` và `interaction.md`, không có rule api nào.
 - Mỗi luật cũ trong `apps/*/CLAUDE.md` và `frontend.md` §9 có đúng một chỗ ở. Kiểm bằng một bảng đối
   chiếu trong PR.
 - AC2 và AC3 vẫn xanh. Đây là lưới an toàn khi chữ rời khỏi context.
