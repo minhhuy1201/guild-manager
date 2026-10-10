@@ -101,7 +101,7 @@ Một PR, branch `chore/convention-checks`. Ước tính: spec ~220, hook script
 
 ## 7. Rủi ro
 
-- Hook chậm có thể làm mỗi lần dừng mất hàng chục giây. Lint api là type-aware (`projectService`) nên chậm, cộng thêm `tsc`. Nếu quá
-  60 s, đổi `typecheck` sang `tsc --incremental` hoặc bỏ typecheck khỏi hook.
+- Hook chậm có thể làm mỗi lần dừng mất hàng chục giây. Lint api là type-aware (`projectService`) nên chậm,
+  cộng thêm `tsc`. Nếu quá 60 s, đổi `typecheck` sang `tsc --incremental` hoặc bỏ typecheck khỏi hook.
 - Hook chỉ chạy trong Claude Code. Push từ terminal thường vẫn chỉ có CI chặn. Điều này chấp nhận
   được: hook để agent tự sửa, không phải cổng bảo mật.

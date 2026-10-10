@@ -66,7 +66,8 @@ Policy: mặc định `allow`. Disallow khi đích là file của element `featu
 Cần hai pattern như api (`apps/api/eslint.config.mjs:78-81`), nhưng không copy được pattern thứ hai
 `*/**` của api: nó đánh dấu mọi file lồng nhau là internal, gồm cả `core/index.ts`, nên
 `proxy.ts` (import `@/features/auth/core`) sẽ đỏ, trái D4 và fixture §4.4. Viết lại cho web, ví dụ
-`!(index.ts|server.ts)`, `!(core)/**` và `core/!(index.ts)`. Pattern extglob một cấp không khớp path
+`!(index.ts|server.ts)`, `!(core)/**`, `core/!(index.ts)` và `core/*/**` (file lồng sâu hơn trong
+`core/`, như `core/__tests__/sign-token.ts`). Pattern extglob một cấp không khớp path
 có dấu `/`, nên file nằm sâu sẽ lọt qua nếu thiếu pattern lồng nhau. Spec implement phải nêu pattern
 của element `app` cho file ở root web (web không có `src/`, khác `{ type: 'app', pattern: 'src' }` của
 api tại `eslint.config.mjs:64`).
@@ -75,8 +76,9 @@ Ngoại lệ D2: nguồn là `lib/cache-graph.ts`, đích là `features/*/api/*-
 
 Resolver: web dùng alias `@/*` (`tsconfig.json:21-23`), nên resolver phải hiểu alias này. Nếu không,
 mọi import `@/features/...` không resolve được, rule bỏ qua chúng mà không báo gì, và lint vẫn xanh.
-Rủi ro resolver này đã được ghi ở `backend.md:224-226`. (Lỗi ngày 2026-09-01 ở api là chuyện khác: nửa luật cho target lồng nhau bị tắt im lặng, xem `apps/api/CLAUDE.md:28`.) Fixture "vi phạm phải đỏ" ở §4.4 có mặt để
-bắt đúng lỗi này. Chọn resolver lúc implement: TypeScript resolver, hoặc `node` kèm map alias.
+Rủi ro resolver này đã được ghi ở `backend.md:224-226`. (Lỗi ngày 2026-09-01 ở api là chuyện khác:
+nửa luật cho target lồng nhau bị tắt im lặng, xem `apps/api/CLAUDE.md:28`.) Fixture "vi phạm phải
+đỏ" ở §4.4 có mặt để bắt đúng lỗi này. Chọn resolver lúc implement: TypeScript resolver, hoặc `node` kèm map alias.
 
 Message:
 
@@ -124,6 +126,7 @@ trên từng fixture, giống `lintBoundaryErrors` của api. Đặt timeout 60 
 | Feature A import file nội bộ của feature B | 1 lỗi boundaries |
 | `components/` import file nội bộ của một feature | 1 lỗi boundaries |
 | Import file nằm sâu hơn gốc feature (`features/x/lib/sub/y.ts`) | 1 lỗi boundaries |
+| Import file lồng sâu trong `core/` (`features/auth/core/<sub>/x.ts`) | 1 lỗi boundaries |
 | Component gọi `fetch` | 1 lỗi `no-restricted-globals` |
 | Component import `useQuery` | 1 lỗi `no-restricted-imports` |
 | `lib/cache-graph.ts` thật | 0 lỗi (ngoại lệ D2 còn hiệu lực) |

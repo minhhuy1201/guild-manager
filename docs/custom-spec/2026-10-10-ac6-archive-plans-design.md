@@ -19,9 +19,9 @@ Read. Nếu không đạt thì đóng spec này.
 ## 3. Thiết kế
 
 - `git mv` plan/spec đã merge sang `docs/archive/<thư mục cũ>/`. Plan/spec đang mở giữ nguyên chỗ.
-- Tìm mọi tham chiếu bằng `git grep -nE 'docs/(superpowers|custom-plan|custom-spec)'` ngoài các thư mục đó
-  (gồm comment trong code và config, không chỉ markdown), rồi sửa các link trỏ vào chúng. Ví dụ: `apps/api/CLAUDE.md` trỏ
-  `docs/superpowers/specs/2026-09-02-discord-attendance-commands-design.md` §9. Link đó phải trỏ
+- Tìm mọi tham chiếu bằng `git grep -nE 'docs/(superpowers|custom-plan|custom-spec)'` ngoài các thư mục
+  đó (gồm comment trong code và config, không chỉ markdown), rồi sửa các link trỏ vào chúng.
+  Ví dụ: `apps/api/CLAUDE.md` trỏ `docs/superpowers/specs/2026-09-02-discord-attendance-commands-design.md` §9. Link đó phải trỏ
   sang path mới, hoặc chuyển phần nội dung còn sống vào doc sống.
 - Root `CLAUDE.md` thêm một dòng: `docs/archive/` là lịch sử, không phải nguồn sự thật. Code và doc
   sống thắng khi hai bên lệch nhau.
