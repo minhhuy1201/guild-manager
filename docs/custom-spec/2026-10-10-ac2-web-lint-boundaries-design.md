@@ -152,6 +152,7 @@ TDD: viết test trước, chạy và thấy đỏ trên config hiện tại. Sa
 - `pnpm --filter web lint`, `typecheck` và `test` đều xanh trên code hiện tại, không sửa file nguồn
   nào ngoài config, test, fixture và doc.
 - Bỏ một rule khỏi config thì `lint-rules.test.ts` đỏ ít nhất một case.
+- Preview deploy của PR trên Vercel build xanh với plugin mới (chưa xác nhận được từ repo; xem §7).
 - CI không đổi: `quality-web` đã chạy `pnpm --filter web lint`, `frontend-test` chạy vitest.
 
 ## 6. Kích thước và PR
@@ -172,3 +173,8 @@ Một PR, branch `chore/web-lint-boundaries`. Ước tính:
 - Lint chậm hơn: boundaries resolve mọi import. Đo `time pnpm --filter web lint` trước và sau, rồi ghi
   vào PR.
 - Resolver sai alias làm rule tắt mà không báo gì. Fixture đỏ ở §4.4 là chỗ chặn rủi ro này.
+- Build Vercel của web có thể hỏng vì plugin hoặc resolver (chủ repo nhớ là từng gặp một lần, chưa có
+  log để xác nhận [unknown]). `apps/web/package.json:10` cho thấy `build` chỉ là `next build`, không
+  chạy lint, nên rủi ro nằm ở bước cài dependency và peer, không ở rule. Web import bằng alias `@/*`
+  (`tsconfig.json:21-23`), nên resolver phải xử lý alias này mà không thêm dependency nặng. Chặn bằng
+  tiêu chí §5: preview build trên Vercel phải xanh trước khi merge.
