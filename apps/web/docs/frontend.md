@@ -640,6 +640,9 @@ One scale for every control, written in `components/ui/` and nowhere else:
   take `max-sm:size-10`, `TabsList` takes `h-12` (its tabs sit inside a 3px padding). A small size
   is for a dense row on a desk screen; on a phone it would be a target a thumb misses.
 
+One exception: the settings tab strip stacks each trigger's icon over a short name below `sm`, so
+its `TabsList` drops `h-12` for `h-auto` and sizes to its content, still above the 44px floor.
+
 A screen that needs something smaller takes the existing `sm`/`xs` variant — never a hand-written
 `h-*`. Changing the scale means editing `components/ui/`: it is a design token, not a variant to be
 wrapped in `components/shared/`.
@@ -732,8 +735,10 @@ a selected state. The convention:
   drops to screen readers, so the header holds one line on a phone turned sideways or a tablet.
   Below `sm` the header keeps only the seal and the avatar, and the same entries (`nav-items.ts`)
   move to `mobile-tab-bar.tsx`, fixed to the bottom of the screen with a short name under each icon;
-  the jade bar sits on its top edge. Its height is reserved through `--app-bottom-inset`
+  the jade bar sits on its top edge. The bar's height is reserved through `--app-bottom-inset`
   (`globals.css`): the body pads by it and every sticky bottom bar sits above it.
+  Entries flagged `desktopOnly` (team builder, tactics) stay off the bar - they need a wide screen -
+  and show in the header nav from `sm` up.
 
 `--muted` and `--secondary` still carry *text* (`text-muted-foreground`) and badges; neither is a
 surface for signalling state.
