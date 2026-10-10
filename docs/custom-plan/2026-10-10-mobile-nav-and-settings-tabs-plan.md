@@ -71,14 +71,18 @@ Hướng sửa: dưới `sm`, mỗi tab xếp icon **trên** nhãn ngắn (giố
 ba tab chia đều chiều rộng.
 
 - [ ] Test đỏ trong `settings-tabs.test.tsx` (cạnh block test ở dòng ~104 về nhãn ngắn): mỗi
-  `TabsTrigger` mang class cho điện thoại - `max-sm:flex-col`, `min-w-0`, `basis-0`. jsdom không tính
+  `TabsTrigger` mang class cho điện thoại - `max-sm:flex-col`, `max-sm:min-w-0`. jsdom không tính
   layout, nên test chỉ khoá class; comment trên test ghi lý do (tràn ở 375px).
 - [ ] Chạy test, xác nhận đỏ vì thiếu class.
 - [ ] `settings-tabs.tsx`:
-  - `TabsList`: `max-sm:w-full max-sm:h-auto` (bỏ chiều cao cố định `h-12` để tab hai dòng không bị cắt).
-  - Mỗi `TabsTrigger`: `basis-0 min-w-0 max-sm:flex-col max-sm:gap-0.5 max-sm:px-1 max-sm:py-1.5
+  - `TabsList`: `max-sm:w-full max-sm:group-data-horizontal/tabs:h-auto` (bỏ chiều cao cố định `h-12`
+    để tab hai dòng không bị cắt). Phải dùng đúng variant `group-data-horizontal/tabs:` của class gốc:
+    `max-sm:h-auto` trơn không thắng được `h-12` trong tailwind-merge (hai class cùng tồn tại).
+  - Mỗi `TabsTrigger`: `max-sm:min-w-0 max-sm:flex-col max-sm:gap-0.5 max-sm:px-1 max-sm:py-1.5
     max-sm:text-xs`. Gom chuỗi này vào một hằng (ví dụ `PHONE_TRIGGER_CLASS`) để ba tab dùng chung,
-    tránh lặp ba lần.
+    tránh lặp ba lần. `min-w-0` phải có tiền tố `max-sm:`: không tiền tố thì trên desktop nó ép nhãn
+    dài nhất ("Nghỉ phép của thành viên") tràn ra tab bên cạnh. Không cần `basis-0`: `flex-1` của
+    Tailwind 4 đã là `1 1 0%`.
   - Giữ nguyên cặp `<span className="sm:hidden">` / `<span className="max-sm:hidden">` và `aria-label`.
   - Sửa comment trên `TabsList` cho khớp cách làm mới.
 - [ ] Test xanh, lint, typecheck.
