@@ -79,7 +79,7 @@ không, mọi import `@/features/...` không resolve được, rule bỏ qua ch�
 xanh. Rủi ro này đã được ghi ở `backend.md:224-226`. Thực tế: `eslint-config-next` đã khai
 `import/resolver` (node + typescript) và boundaries dùng lại cấu hình đó, nên web **không** cần thêm
 resolver hay setting riêng. Đã kiểm chứng: gỡ hẳn setting riêng và link `eslint-import-resolver-typescript`
-khỏi `apps/web/node_modules` thì 12/12 case vẫn đúng. Fixture "vi phạm phải đỏ" ở §4.4 vẫn là chỗ chặn
+khỏi `apps/web/node_modules` thì cả 12 case lúc đó vẫn đúng (nay suite có 14 case). Fixture "vi phạm phải đỏ" ở §4.4 vẫn là chỗ chặn
 rủi ro này nếu một bản `eslint-config-next` sau đổi cấu hình.
 
 Bốn điều khác với bản nháp đầu, đều tìm ra lúc implement:
@@ -193,13 +193,13 @@ Một PR, branch `chore/web-lint-boundaries`. Ước tính:
 
 | Phần | Dòng |
 |---|---|
-| `eslint.config.mjs` | ~90 |
-| `lint-rules.test.ts` | ~110 |
-| 5 fixture | ~30 |
+| `eslint.config.mjs` | ~220 |
+| `lint-rules.test.ts` | ~190 |
+| 8 fixture | ~45 |
 | Doc | ~30 |
 | `package.json` + `pnpm-lock.yaml` | ~15 dòng dependency; pnpm còn dọn các entry mồ côi sẵn có của lockfile, nên diff lockfile lớn hơn (~220 dòng). Hai phiên bản patch của tooling dev cũng được pnpm dedupe: `lru-cache` 11.5.2 → 11.5.3 và `minimatch` 10.2.5 → 10.2.6 |
 | `vitest.config.ts` + `sonar-project.properties` | ~10 |
-| **Tổng** | **~275** |
+| **Tổng** | **~760** (đo bằng `git diff --numstat`, gồm cả lockfile) |
 
 ## 7. Rủi ro
 
