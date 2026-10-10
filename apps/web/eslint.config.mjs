@@ -12,6 +12,7 @@ const LINT_FIXTURES = [
   "features/attendance/__lint_fixtures__/cross-feature-internal.ts",
   "features/attendance/__lint_fixtures__/nested-target.ts",
   "features/attendance/__lint_fixtures__/auth-core-nested.ts",
+  "features/attendance/__lint_fixtures__/auth-core-file.ts",
   "features/attendance/__lint_fixtures__/component-use-query.tsx",
   "components/__lint_fixtures__/component-feature-internal.ts",
   "components/__lint_fixtures__/component-fetch.ts",
@@ -36,9 +37,9 @@ const TEST_FILES = ["**/__tests__/**", "**/*.test.{ts,tsx}"];
  * and turn proxy.ts red. A trailing `**` is no good either: it matches zero segments, so
  * `!(core)/**` would call a root `index.ts` internal.
  *
- * The `app` element is the rest of the app. It is not redundant: `boundaries` ignores any
- * dependency whose two ends it cannot both classify. A new file at the web root must be added to
- * it, or its imports go unchecked.
+ * The `app` elements are the rest of the app. They are not redundant: `boundaries` ignores any
+ * dependency whose two ends it cannot both classify. A new top-level directory must be added to
+ * them, or its imports go unchecked.
  *
  * `lib/cache-graph.ts` is the one file allowed to import `features/<feature>/api/*-keys.ts`
  * (frontend.md section 4, rule 5). Policies are last-write-wins, so that allow must stay after the
@@ -57,9 +58,7 @@ function featureBoundaryRules() {
           { type: "feature", pattern: "features/*", capture: ["featureName"] },
           // `partialMatch: false` anchors each pattern at the web root. Unanchored, `lib` also matches
           // `features/members/lib/` and `hooks` matches `features/x/hooks/`, so a feature's own
-          // internal files were classified `app` and their imports went unchecked. The `*.ts` globs
-          // cover the root files (proxy.ts); boundaries prints a warning about file-like patterns
-          // on each run, which is harmless.
+          // internal files were classified `app` and their imports went unchecked.
           {
             type: "app",
             pattern: [
@@ -68,11 +67,14 @@ function featureBoundaryRules() {
               "config/**",
               "hooks/**",
               "lib/**",
-              "*.ts",
-              "*.tsx",
             ],
             partialMatch: false,
           },
+          // Root files (proxy.ts, next.config.ts). Element patterns match folders, so only the
+          // deprecated `mode: "full"` classifies a single file in 7.2; when a major release drops
+          // it, the root-file case in __tests__/lint-rules.test.ts goes red instead of passing.
+          // boundaries prints a deprecation warning about `mode` on each run until then.
+          { type: "app", pattern: "*.{ts,tsx}", mode: "full" },
         ],
       },
       rules: {

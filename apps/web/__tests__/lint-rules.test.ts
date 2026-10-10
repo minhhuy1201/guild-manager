@@ -29,16 +29,23 @@ type LintRuleId = (typeof RULE)[keyof typeof RULE];
  *
  * @param relativePath - Path of the file to lint, relative to `apps/web`
  * @param ruleId - The rule whose messages to keep
+ * @param source - Lint this text as if it were the file at `relativePath`, instead of reading the
+ *   file. For a path that must not get a fixture of its own, such as a file at the web root.
  * @returns The messages that rule reported for the file
  */
 function lintErrors(
   relativePath: string,
   ruleId: LintRuleId,
+  source?: string,
 ): Linter.LintMessage[] {
+  const args =
+    source === undefined
+      ? ["--no-ignore", "--format", "json", relativePath]
+      : ["--no-ignore", "--format", "json", "--stdin", "--stdin-filename", relativePath];
   const { stdout, status } = spawnSync(
     join(WEB_ROOT, "node_modules", ".bin", "eslint"),
-    ["--no-ignore", "--format", "json", relativePath],
-    { cwd: WEB_ROOT, encoding: "utf8" },
+    args,
+    { cwd: WEB_ROOT, encoding: "utf8", input: source },
   );
 
   // ESLint exits 0 when clean and 1 on lint errors; any other code means it died before linting.
@@ -96,6 +103,25 @@ describe(
           lintErrors(
             "features/attendance/__lint_fixtures__/auth-core-nested.ts",
             RULE.boundaries,
+          ),
+        ).toHaveLength(1);
+      });
+
+      it("báo lỗi khi file nằm trực tiếp trong core/ ngoài index.ts", () => {
+        expect(
+          lintErrors(
+            "features/attendance/__lint_fixtures__/auth-core-file.ts",
+            RULE.boundaries,
+          ),
+        ).toHaveLength(1);
+      });
+
+      it("báo lỗi khi file ở gốc web (proxy.ts) đụng file nội bộ của feature", () => {
+        expect(
+          lintErrors(
+            "proxy.ts",
+            RULE.boundaries,
+            'import { isLastAdmin } from "@/features/members/lib/last-admin";\nexport const fixture = isLastAdmin;\n',
           ),
         ).toHaveLength(1);
       });

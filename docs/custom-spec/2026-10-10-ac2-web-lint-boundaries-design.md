@@ -82,12 +82,19 @@ resolver hay setting riêng. Đã kiểm chứng: gỡ hẳn setting riêng và 
 khỏi `apps/web/node_modules` thì 12/12 case vẫn đúng. Fixture "vi phạm phải đỏ" ở §4.4 vẫn là chỗ chặn
 rủi ro này nếu một bản `eslint-config-next` sau đổi cấu hình.
 
-Ba điều khác với bản nháp đầu, đều tìm ra lúc implement:
+Bốn điều khác với bản nháp đầu, đều tìm ra lúc implement:
 
 - Element `app` phải neo ở gốc web bằng `partialMatch: false` và pattern `app/**`, `components/**`,
-  `config/**`, `hooks/**`, `lib/**`, `*.ts`, `*.tsx`. Pattern trần `lib` hay `hooks` cũng khớp
+  `config/**`, `hooks/**`, `lib/**`. Pattern trần `lib` hay `hooks` cũng khớp
   `features/<x>/lib/` và `features/<x>/hooks/`, khiến file nội bộ của feature bị xếp vào `app` và
   import vào đó không bị kiểm tra.
+- File ở gốc web (`proxy.ts`, `next.config.ts`) cần một descriptor `app` riêng với pattern
+  `*.{ts,tsx}` và `mode: "full"`. Pattern `*.ts` trong cùng descriptor với thư mục, hay
+  `partialMatch: false` một mình, không phân loại được file lẻ, và khi đó boundaries bỏ qua mọi
+  import của `proxy.ts` mà không báo gì (case xanh "proxy.ts import auth/core" thành xanh giả).
+  `mode` đã deprecated ở 7.2 nên mỗi lần lint in một cảnh báo; đổi lại, khi bản major sau gỡ `mode`
+  thì case "file ở gốc web đụng file nội bộ" đỏ ngay thay vì rule tắt im lặng. Case đó lint một
+  đoạn source qua stdin với tên `proxy.ts`, nên không cần fixture riêng ở gốc web.
 - Pattern `!(core)/**` không dùng được: `**` khớp cả không segment, nên nó khớp luôn `index.ts` ở gốc
   feature và chặn cả entry point. Dùng `!(core)/**/*`.
 - Ngoại lệ D2 chọn nguồn bằng `path: "lib"` + `fileInternalPath: "cache-graph.ts"` (thuộc tính `filePath`
@@ -140,6 +147,8 @@ trên từng fixture, giống `lintBoundaryErrors` của api. Đặt timeout 60 
 | `components/` import file nội bộ của một feature | 1 lỗi boundaries |
 | Import file nằm sâu hơn gốc feature (`features/x/lib/sub/y.ts`) | 1 lỗi boundaries |
 | Import file lồng sâu trong `core/` (`features/auth/core/<sub>/x.ts`) | 1 lỗi boundaries |
+| Import file nằm thẳng trong `core/` ngoài `index.ts` (`features/auth/core/jwt.ts`) | 1 lỗi boundaries |
+| `proxy.ts` (source qua stdin) import file nội bộ của feature | 1 lỗi boundaries (file gốc web được kiểm tra) |
 | Component gọi `fetch` | 1 lỗi `no-restricted-globals` |
 | Component import `useQuery` | 1 lỗi `no-restricted-imports` |
 | `lib/cache-graph.ts` thật | 0 lỗi (ngoại lệ D2 còn hiệu lực) |
@@ -188,7 +197,7 @@ Một PR, branch `chore/web-lint-boundaries`. Ước tính:
 | `lint-rules.test.ts` | ~110 |
 | 5 fixture | ~30 |
 | Doc | ~30 |
-| `package.json` + `pnpm-lock.yaml` | ~15 dòng dependency; pnpm còn dọn các entry mồ côi sẵn có của lockfile, nên diff lockfile lớn hơn (~365 dòng) |
+| `package.json` + `pnpm-lock.yaml` | ~15 dòng dependency; pnpm còn dọn các entry mồ côi sẵn có của lockfile, nên diff lockfile lớn hơn (~220 dòng). Hai phiên bản patch của tooling dev cũng được pnpm dedupe: `lru-cache` 11.5.2 → 11.5.3 và `minimatch` 10.2.5 → 10.2.6 |
 | `vitest.config.ts` + `sonar-project.properties` | ~10 |
 | **Tổng** | **~275** |
 
