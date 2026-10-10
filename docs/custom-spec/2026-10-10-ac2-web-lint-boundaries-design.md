@@ -1,6 +1,6 @@
 # AC2 - Khoá luật web bằng ESLint
 
-Ngày: 2026-10-10 · Trạng thái: **spec, chưa triển khai** · Tổng quan:
+Ngày: 2026-10-10 · Trạng thái: **spec, đã triển khai (PR `chore/web-lint-boundaries`)** · Tổng quan:
 [`2026-10-10-agent-context-review-overview.md`](2026-10-10-agent-context-review-overview.md)
 
 ## 1. Vấn đề
@@ -74,11 +74,24 @@ api tại `eslint.config.mjs:64`).
 
 Ngoại lệ D2: nguồn là `lib/cache-graph.ts`, đích là `features/*/api/*-keys.ts`, thì allow.
 
-Resolver: web dùng alias `@/*` (`apps/web/tsconfig.json:21-23`), nên resolver phải hiểu alias này. Nếu không,
-mọi import `@/features/...` không resolve được, rule bỏ qua chúng mà không báo gì, và lint vẫn xanh.
-Rủi ro resolver này đã được ghi ở `backend.md:224-226`. (Lỗi ngày 2026-09-01 ở api là chuyện khác:
-nửa luật cho target lồng nhau bị tắt im lặng, xem `apps/api/CLAUDE.md:28`.) Fixture "vi phạm phải
-đỏ" ở §4.4 có mặt để bắt đúng lỗi này. Chọn resolver lúc implement: TypeScript resolver, hoặc `node` kèm map alias.
+Resolver: web dùng alias `@/*` (`apps/web/tsconfig.json:21-23`), nên resolver phải hiểu alias này. Nếu
+không, mọi import `@/features/...` không resolve được, rule bỏ qua chúng mà không báo gì, và lint vẫn
+xanh. Rủi ro này đã được ghi ở `backend.md:224-226`. Thực tế: `eslint-config-next` đã khai
+`import/resolver` (node + typescript) và boundaries dùng lại cấu hình đó, nên web **không** cần thêm
+resolver hay setting riêng. Đã kiểm chứng: gỡ hẳn setting riêng và link `eslint-import-resolver-typescript`
+khỏi `apps/web/node_modules` thì 12/12 case vẫn đúng. Fixture "vi phạm phải đỏ" ở §4.4 vẫn là chỗ chặn
+rủi ro này nếu một bản `eslint-config-next` sau đổi cấu hình.
+
+Ba điều khác với bản nháp đầu, đều tìm ra lúc implement:
+
+- Element `app` phải neo ở gốc web bằng `partialMatch: false` và pattern `app/**`, `components/**`,
+  `config/**`, `hooks/**`, `lib/**`, `*.ts`, `*.tsx`. Pattern trần `lib` hay `hooks` cũng khớp
+  `features/<x>/lib/` và `features/<x>/hooks/`, khiến file nội bộ của feature bị xếp vào `app` và
+  import vào đó không bị kiểm tra.
+- Pattern `!(core)/**` không dùng được: `**` khớp cả không segment, nên nó khớp luôn `index.ts` ở gốc
+  feature và chặn cả entry point. Dùng `!(core)/**/*`.
+- Ngoại lệ D2 chọn nguồn bằng `path: "lib"` + `fileInternalPath: "cache-graph.ts"` (thuộc tính `filePath`
+  đã deprecated ở 7.2.0). Policy là last-write-wins, nên allow đứng sau disallow.
 
 Message:
 
@@ -132,10 +145,14 @@ trên từng fixture, giống `lintBoundaryErrors` của api. Đặt timeout 60 
 | `lib/cache-graph.ts` thật | 0 lỗi (ngoại lệ D2 còn hiệu lực) |
 | `proxy.ts` thật (import `auth/core`) | 0 lỗi (entry D4) |
 | Một component thật import qua `index.ts` | 0 lỗi (control: rule không "đúng" nhờ cấm hết) |
+| `window.fetch` và `globalThis.fetch` trong component | 2 lỗi `no-restricted-properties` |
+| `lib/api-client.ts` thật | 0 lỗi `no-restricted-globals` (ngoại lệ `fetch`) |
+| `components/providers.tsx` thật | 0 lỗi react-query (vị trí được phép) |
 
 Fixture được liệt kê từng file trong `eslint.config.mjs` (global ignore), giống `BOUNDARY_FIXTURES`
 của api, để một fixture mới không tự lọt khỏi lint. Fixture phải nằm ở path mà element `feature`
 phân loại được, nhưng không bị miễn theo D5. Ví dụ: `features/attendance/__lint_fixtures__/…`.
+Fixture bị loại khỏi coverage (`vitest.config.ts`) và Sonar (`sonar.exclusions`), vì chúng không bao giờ chạy và sẽ thành code mới 0% coverage.
 
 TDD: viết test trước, chạy và thấy đỏ trên config hiện tại. Sau đó mới thêm rule.
 
@@ -143,9 +160,11 @@ TDD: viết test trước, chạy và thấy đỏ trên config hiện tại. Sa
 
 - `apps/web/CLAUDE.md`: thay dòng `components/ui/` bằng luật D1. Thêm `core/index.ts` vào câu về
   entry point. Ghi rằng ba luật này do `eslint.config.mjs` enforce.
-- `apps/web/docs/frontend.md` §9: đổi hàng "Editing `components/ui/button.tsx`" theo D1. §4 thêm một
-  câu cho biết lint enforce và test nào giữ rule.
-- `docs/architecture.md` §4.2: thêm một câu tương tự, nếu đoạn đó đang mô tả cách enforce.
+- `apps/web/docs/frontend.md`: §2 (cây thư mục), §4 rule 5 (entry point `server.ts`, câu nói lint
+  enforce và test nào giữ rule), §5 (hàng `components/ui/`) và §9 (hàng "Editing
+  `components/ui/button.tsx`") theo D1.
+- `docs/architecture.md` §4.2: cây thư mục, bullet `fetch`, bullet cross-feature và bullet
+  `components/ui/`.
 
 ## 5. Tiêu chí xong
 
@@ -169,7 +188,8 @@ Một PR, branch `chore/web-lint-boundaries`. Ước tính:
 | `lint-rules.test.ts` | ~110 |
 | 5 fixture | ~30 |
 | Doc | ~30 |
-| `package.json` + `pnpm-lock.yaml` | ~15 (plugin đã có trong lockfile cho api) |
+| `package.json` + `pnpm-lock.yaml` | ~15 dòng dependency; pnpm còn dọn các entry mồ côi sẵn có của lockfile, nên diff lockfile lớn hơn (~365 dòng) |
+| `vitest.config.ts` + `sonar-project.properties` | ~10 |
 | **Tổng** | **~275** |
 
 ## 7. Rủi ro
