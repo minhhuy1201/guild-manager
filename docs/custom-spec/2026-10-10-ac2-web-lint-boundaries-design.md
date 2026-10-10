@@ -74,7 +74,7 @@ api tại `eslint.config.mjs:64`).
 
 Ngoại lệ D2: nguồn là `lib/cache-graph.ts`, đích là `features/*/api/*-keys.ts`, thì allow.
 
-Resolver: web dùng alias `@/*` (`tsconfig.json:21-23`), nên resolver phải hiểu alias này. Nếu không,
+Resolver: web dùng alias `@/*` (`apps/web/tsconfig.json:21-23`), nên resolver phải hiểu alias này. Nếu không,
 mọi import `@/features/...` không resolve được, rule bỏ qua chúng mà không báo gì, và lint vẫn xanh.
 Rủi ro resolver này đã được ghi ở `backend.md:224-226`. (Lỗi ngày 2026-09-01 ở api là chuyện khác:
 nửa luật cho target lồng nhau bị tắt im lặng, xem `apps/api/CLAUDE.md:28`.) Fixture "vi phạm phải
@@ -152,7 +152,11 @@ TDD: viết test trước, chạy và thấy đỏ trên config hiện tại. Sa
 - `pnpm --filter web lint`, `typecheck` và `test` đều xanh trên code hiện tại, không sửa file nguồn
   nào ngoài config, test, fixture và doc.
 - Bỏ một rule khỏi config thì `lint-rules.test.ts` đỏ ít nhất một case.
-- Preview deploy của PR trên Vercel build xanh với plugin mới (chưa xác nhận được từ repo; xem §7).
+- CI `build-web` xanh trên PR, và chạy tay đúng `installCommand` của Vercel
+  (`apps/web/vercel.json:3`): `pnpm install --frozen-lockfile --filter web --filter @guild/shared`,
+  rồi `pnpm --filter web build`. Vercel không tạo preview cho PR (`apps/web/vercel.json:4-8`,
+  `docs/production.md:153-154`), và `build-web` cài qua `setup-workspace`, không qua install lọc của
+  Vercel, nên bước chạy tay mới phủ rủi ro §7.
 - CI không đổi: `quality-web` đã chạy `pnpm --filter web lint`, `frontend-test` chạy vitest.
 
 ## 6. Kích thước và PR
@@ -176,5 +180,5 @@ Một PR, branch `chore/web-lint-boundaries`. Ước tính:
 - Build Vercel của web có thể hỏng vì plugin hoặc resolver (chủ repo nhớ là từng gặp một lần, chưa có
   log để xác nhận [unknown]). `apps/web/package.json:10` cho thấy `build` chỉ là `next build`, không
   chạy lint, nên rủi ro nằm ở bước cài dependency và peer, không ở rule. Web import bằng alias `@/*`
-  (`tsconfig.json:21-23`), nên resolver phải xử lý alias này mà không thêm dependency nặng. Chặn bằng
-  tiêu chí §5: preview build trên Vercel phải xanh trước khi merge.
+  (`apps/web/tsconfig.json:21-23`), nên resolver phải xử lý alias này mà không thêm dependency nặng. Chặn bằng
+  tiêu chí §5: `build-web` và lần chạy tay `installCommand` của Vercel phải xanh trước khi merge.
