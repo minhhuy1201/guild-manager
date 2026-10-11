@@ -1,6 +1,175 @@
 "use client";
 
-/** Placeholder until Task 10 builds the screen. */
-export function CatRaceEventScreen({ id }: { id: string }) {
-  return <div data-event-id={id} />;
+import { useState } from "react";
+import { CAT_RACE_MODE_LABEL } from "@guild/shared/enums";
+import type {
+  CatRaceEventDetail,
+  CatRacePrize,
+  CatRaceRound,
+} from "@guild/shared/schemas";
+
+import { ConfirmDeleteDialog } from "@/components/shared/confirm-delete-dialog";
+import { PageHeader } from "@/components/shared/page-header";
+import { QueryBoundary } from "@/components/shared/query-boundary";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useCharacters } from "@/features/attendance";
+import { combineQueries } from "@/lib/query-group";
+import { cn } from "@/lib/utils";
+import { useDeleteCatRacePrize } from "../hooks/use-cat-race-mutations";
+import { useCatRaceEvent } from "../hooks/use-cat-races";
+import { prizeLockReason } from "../lib/prize-lock";
+import { useRaceStore } from "../store/race-store";
+import { AnnounceButton } from "./announce-button";
+import { EndEventButton } from "./end-event-button";
+import { EntrantsDialog } from "./entrants-dialog";
+import { ParticipantsDialog } from "./participants-dialog";
+import { PrizeChips } from "./prize-chips";
+import { PrizeFormDialog } from "./prize-form-dialog";
+import { RaceStage } from "./race-stage";
+import { VoidRoundDialog } from "./void-round-dialog";
+import { WinnersPanel } from "./winners-panel";
+
+interface CatRaceEventScreenProps {
+  id: string;
+}
+
+/**
+ * The draw screen of one event.
+ * @param id - Event id from the route
+ * @returns The event screen
+ */
+export function CatRaceEventScreen({ id }: CatRaceEventScreenProps) {
+  const eventQuery = useCatRaceEvent(id);
+  const state = combineQueries([eventQuery], "Không tải được đợt quay.");
+
+  return (
+    <QueryBoundary
+      state={state}
+      skeleton={<Skeleton className="h-96 w-full" />}
+    >
+      {eventQuery.data ? <EventBody event={eventQuery.data} /> : null}
+    </QueryBoundary>
+  );
+}
+
+/** Which dialog is open; one at a time. */
+type OpenDialog =
+  | { kind: "none" }
+  | { kind: "participants" }
+  | { kind: "entrants" }
+  | { kind: "prize"; prize: CatRacePrize | null }
+  | { kind: "delete-prize"; prize: CatRacePrize };
+
+/**
+ * The loaded event: header, prize chips, race area and winners.
+ * @param event - The event
+ * @returns The screen body
+ */
+function EventBody({ event }: { event: CatRaceEventDetail }) {
+  const { selectedPrizeId, selectPrize, stage } = useRaceStore();
+  const charactersQuery = useCharacters();
+  const deletePrize = useDeleteCatRacePrize();
+  const [dialog, setDialog] = useState<OpenDialog>({ kind: "none" });
+  const [voiding, setVoiding] = useState<CatRaceRound | null>(null);
+
+  const isOpen = event.status === "OPEN";
+  const isBusy = stage !== "idle";
+  const selected =
+    event.prizes.find((prize) => prize.id === selectedPrizeId) ??
+    event.prizes.find((prize) => !prizeLockReason(prize, event.status)) ??
+    event.prizes[0];
+  const close = () => setDialog({ kind: "none" });
+
+  return (
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        banner="teamBuilder"
+        size="compact"
+        title={event.name}
+        description={`Chế độ ${CAT_RACE_MODE_LABEL[event.mode]}`}
+        actions={
+          isOpen ? (
+            <EndEventButton eventId={event.id} />
+          ) : event.discordPostedAt ? (
+            <span className="text-sm">Đã đăng lên Discord.</span>
+          ) : (
+            <AnnounceButton eventId={event.id} />
+          )
+        }
+      />
+
+      <PrizeChips
+        event={event}
+        selectedPrizeId={selected?.id ?? null}
+        canEdit={isOpen && !isBusy}
+        onSelect={(prize) => !isBusy && selectPrize(prize.id)}
+        onEdit={(prize) => setDialog({ kind: "prize", prize })}
+        onDelete={(prize) => setDialog({ kind: "delete-prize", prize })}
+        onAdd={() => setDialog({ kind: "prize", prize: null })}
+      />
+
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <RaceStage
+          event={event}
+          prize={selected}
+          canEdit={isOpen}
+          onEditEntrants={() => setDialog({ kind: "entrants" })}
+          onEditParticipants={() => setDialog({ kind: "participants" })}
+        />
+        {/* Slides out while a round runs; only opacity and translate move, so the layout holds. */}
+        <div
+          className={cn(
+            "transition-[opacity,transform] duration-[var(--duration-slow)]",
+            (stage === "drawing" || stage === "racing") &&
+              "pointer-events-none translate-x-4 opacity-0"
+          )}
+        >
+          <WinnersPanel event={event} canVoid={isOpen && !isBusy} onVoid={setVoiding} />
+        </div>
+      </div>
+
+      <ParticipantsDialog
+        event={event}
+        characters={charactersQuery.data ?? []}
+        open={dialog.kind === "participants"}
+        onOpenChange={(open) => !open && close()}
+      />
+      {selected ? (
+        <EntrantsDialog
+          event={event}
+          prize={selected}
+          open={dialog.kind === "entrants"}
+          onOpenChange={(open) => !open && close()}
+        />
+      ) : null}
+      <PrizeFormDialog
+        eventId={event.id}
+        open={dialog.kind === "prize"}
+        prize={dialog.kind === "prize" ? dialog.prize : null}
+        onOpenChange={(open) => !open && close()}
+      />
+      <ConfirmDeleteDialog
+        open={dialog.kind === "delete-prize"}
+        onOpenChange={(open) => !open && close()}
+        title="Xoá hạng mục?"
+        description={
+          dialog.kind === "delete-prize"
+            ? `Xoá hạng mục ${dialog.prize.name}. Chỉ xoá được hạng mục chưa có vòng nào.`
+            : undefined
+        }
+        submitLabel="Xoá"
+        pendingLabel="Đang xoá..."
+        fallbackError="Không xoá được hạng mục."
+        run={async () => {
+          if (dialog.kind !== "delete-prize") return;
+          await deletePrize.mutateAsync({ id: event.id, prizeId: dialog.prize.id });
+        }}
+      />
+      <VoidRoundDialog
+        eventId={event.id}
+        round={voiding}
+        onOpenChange={(open) => !open && setVoiding(null)}
+      />
+    </div>
+  );
 }
