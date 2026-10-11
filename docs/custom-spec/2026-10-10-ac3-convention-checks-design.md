@@ -87,14 +87,16 @@ Thêm vào `.claude/settings.json`:
    map được → một dòng lỗi, không bỏ qua.
 4. Với mỗi workspace: chạy `lint`, `typecheck` và drift spec của workspace đó. Gom output lỗi lại.
 5. Không lỗi thì ghi dấu vân tay vào marker rồi exit 0. Có lỗi thì không ghi marker, in ra stderr
-   dòng `Convention check failed. Fix these before finishing:` kèm output đã gom, rồi exit 2. Output mỗi lệnh lỗi giữ 60 dòng cuối.
+   dòng `Convention check failed. Fix these before finishing:` kèm output đã gom, rồi exit 2.
+   Output mỗi lệnh lỗi giữ 60 dòng cuối.
 
 ### 4.3 PostToolUse Prettier
 
 Matcher `Edit|Write`. Script đọc `tool_input.file_path`. File khớp `apps/api/src/**/*.ts` thì chạy
 `apps/api/node_modules/.bin/prettier --write <file>`; file khớp `packages/ci-triage/src/**/*.ts` thì
 chạy binary Prettier của ci-triage. Gọi binary trực tiếp, không qua `pnpm --filter … exec`, vì lệnh đó
-chạy lại install và `prisma generate` mỗi lần (chậm, và đua nhau khi nhiều Edit chạy song song). File khác thì exit 0. Không chặn gì,
+chạy lại install và `prisma generate` mỗi lần (chậm, và đua nhau khi nhiều Edit chạy song song). File khác thì exit 0.
+Không chặn gì,
 nên luôn exit 0. Lint của api và ci-triage đã gồm `eslint-plugin-prettier`, nên Stop hook vẫn bắt lỗi
 format khi file đổi qua Bash.
 
@@ -107,8 +109,9 @@ format khi file đổi qua Bash.
 
 ## 6. Kích thước
 
-Một PR, branch `chore/convention-checks`. Thực tế: ba spec ~310, hai hook script ~120, settings ~22, doc ~30, spec AC3 ~15,
-tổng **~500** (không tính file plan). Báo cáo gốc ước tính ~500; bỏ script và command riêng (D1) làm con số giảm.
+Một PR, branch `chore/convention-checks`. Thực tế: ba spec ~310, hai hook script ~120, settings ~22,
+doc ~30, spec AC3 ~15, tổng **~500** (không tính file plan). Bằng ước tính ban đầu của báo cáo gốc
+(~500): bỏ script và command riêng (D1) bù cho hai hook script và các check thêm ở Task 4-5.
 
 ## 7. Rủi ro
 

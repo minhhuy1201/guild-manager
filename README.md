@@ -147,11 +147,12 @@ terminal never reaches it, and branch protection on `main` remains the real enfo
 
 **Checks before Claude stops.** `.claude/settings.json` also registers a Stop hook
 (`.claude/hooks/check-on-stop.sh`): when a Claude Code turn ends with changes under `apps/`,
-`packages/` or the env docs (`docs/development.md`, `docs/production.md`), it runs `lint`, `typecheck` and the drift specs of each touched workspace, and hands any
-failure back to Claude instead of stopping. A turn that changed nothing since the last passing run
-skips the checks (fingerprint in `.claude/.stop-check-passed`, git-ignored). A PostToolUse hook runs
-Prettier on every `apps/api` and `packages/ci-triage` TypeScript file Claude edits. Both are conveniences, not gates: CI runs the same
-checks on every pull request.
+`packages/` or the env docs (`docs/development.md`, `docs/production.md`), it runs `lint`,
+`typecheck` and the drift specs of each touched workspace, and hands any failure back to Claude
+instead of stopping. A turn that changed nothing since the last passing run skips the checks
+(fingerprint in `.claude/.stop-check-passed`, git-ignored). A PostToolUse hook runs Prettier on every
+`apps/api` and `packages/ci-triage` TypeScript file Claude edits. Both are conveniences, not gates:
+CI runs the same checks on every pull request.
 
 ## Documentation
 
