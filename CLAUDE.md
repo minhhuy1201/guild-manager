@@ -48,7 +48,8 @@ before anything else happens.
   `db:seed` all read it by default. Production values live in `apps/api/.env.production`, selected
   per command with `PRISMA_ENV_FILE`; [`docs/production.md`](docs/production.md) owns that policy.
 - A new API variable means **both** `src/config/env.validation.ts` and `.env.example`, then the tables
-  in development.md §3 and production.md §3.
+  in development.md §3 and production.md §3; `src/config/__tests__/env-example.spec.ts` fails when
+  they drift.
 - `seed-data.json` is real guild data and git-ignored; `seed-data-example.json` is the committed
   sample.
 

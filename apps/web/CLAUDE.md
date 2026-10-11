@@ -40,8 +40,7 @@ The rules that get broken first, in the order they get broken:
   (`features/auth/core/access.ts`, applied by `proxy.ts`), a `getSession()` check in the page, and the guard on the API. Hiding the nav link is cosmetic.
 - **`@/*` is the app's only alias**; shared code comes in by real package name
   (`@guild/shared/enums|schemas|lib`), same as `apps/api`. The alias is declared **twice** —
-  `tsconfig.json` and `vitest.config.ts` — so a new one missing from the second type-checks fine and
-  fails in tests.
+  `tsconfig.json` and `vitest.config.ts` — and `__tests__/alias-sync.test.ts` fails when the two drift.
 - **Tests run against `packages/shared/dist`**, not its sources — the `exports` map sends every
   runtime to `dist/*.js`. `pretest` rebuilds the package first, in both apps. It does **not** cover
   `test:watch` or `next dev` — keep `pnpm --filter @guild/shared build --watch` beside those.
