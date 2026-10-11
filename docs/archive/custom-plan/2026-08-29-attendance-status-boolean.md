@@ -8,7 +8,7 @@
 
 **Tech Stack:** pnpm workspace; NestJS 11 + Prisma 7 + PostgreSQL (`apps/api`, Jest); Next.js 16 + React 19 + Tailwind 4 + TanStack Query (`apps/web`, Vitest); Zod 4 (`packages/shared`).
 
-**Spec:** [`docs/custom-spec/2026-08-29-attendance-status-boolean-design.md`](../../custom-spec/2026-08-29-attendance-status-boolean-design.md)
+**Spec:** [`docs/custom-spec/2026-08-29-attendance-status-boolean-design.md`](../custom-spec/2026-08-29-attendance-status-boolean-design.md)
 
 ## Global Constraints
 

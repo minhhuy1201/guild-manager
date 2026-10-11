@@ -8,7 +8,7 @@
 
 **Tech Stack:** Next.js 16, React 19, Tailwind 4 (`@theme inline`), tw-animate-css, TanStack Query 5, shadcn/ui (`components/ui/`, không sửa tay), Vitest 4 + `@testing-library/react` (jsdom qua `// @vitest-environment jsdom` ở dòng đầu file test).
 
-**Spec:** [`docs/custom-spec/2026-08-25-w7-table-state-motion-design.md`](../../custom-spec/2026-08-25-w7-table-state-motion-design.md)
+**Spec:** [`docs/custom-spec/2026-08-25-w7-table-state-motion-design.md`](../custom-spec/2026-08-25-w7-table-state-motion-design.md)
 
 ## Global Constraints
 

@@ -7,9 +7,9 @@ This is the structural reference. It does not cover setup or operations:
 
 - [`development.md`](development.md) — running locally, env vars, commands, troubleshooting
 - [`production.md`](production.md) — build, deploy, the real database, operations
-- `superpowers/specs/` and `superpowers/plans/` — the design spec and plan behind each feature (why a
-  thing is shaped that way)
-- `custom-spec/` and `custom-plan/` — the same pair for the architecture-review work
+- `superpowers/specs/` and `superpowers/plans/` — the design spec and plan behind a feature in
+  progress (why a thing is shaped that way); finished ones move to `archive/`
+- `custom-spec/` and `custom-plan/` — the same pair for architecture-review work in progress
 - `archive/` — finished specs and plans from both pairs above; history, not a source of truth
 - [`../apps/api/docs/backend.md`](../apps/api/docs/backend.md) and
   [`../apps/web/docs/frontend.md`](../apps/web/docs/frontend.md) — the *reasoning* behind each app's

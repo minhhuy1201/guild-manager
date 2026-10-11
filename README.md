@@ -169,6 +169,6 @@ CI runs the same checks on every pull request.
 | [`CLAUDE.md`](CLAUDE.md) | Code conventions for humans and AI agents; [`apps/api/CLAUDE.md`](apps/api/CLAUDE.md) and [`apps/web/CLAUDE.md`](apps/web/CLAUDE.md) add the per-app rules |
 | [`apps/api/docs/backend.md`](apps/api/docs/backend.md) | The reasoning behind the rules in `.claude/rules/api/` |
 | [`apps/web/docs/frontend.md`](apps/web/docs/frontend.md) | The reasoning behind the rules in `.claude/rules/web/` |
-| `docs/superpowers/specs/` and `docs/superpowers/plans/` | The design spec and plan behind each feature |
-| `docs/custom-spec/` and `docs/custom-plan/` | The same pair for the architecture-review work |
+| `docs/superpowers/specs/` and `docs/superpowers/plans/` | The design spec and plan behind a feature in progress (finished ones move to `docs/archive/`) |
+| `docs/custom-spec/` and `docs/custom-plan/` | The same pair for architecture-review work in progress |
 | `docs/archive/` | Finished specs and plans from both pairs above - history, not a source of truth |

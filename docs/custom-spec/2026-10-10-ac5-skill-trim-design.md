@@ -1,6 +1,6 @@
 # AC5 - Thu gọn skill tự trigger
 
-Ngày: 2026-10-10 · Trạng thái: **spec, đã triển khai (PR `chore/agent-context-trim`)** · Tổng quan:
+Ngày: 2026-10-10 · Trạng thái: **spec, đã triển khai (PR `chore/agent-context-trim`), chưa đo `/context`** · Tổng quan:
 [`2026-10-10-agent-context-review-overview.md`](2026-10-10-agent-context-review-overview.md) · Không
 phụ thuộc kết quả pilot
 
