@@ -6,7 +6,8 @@ import { PrismaService } from '../../infrastructure/prisma/prisma.service';
  * What the bot posts in a channel. A union rather than a Prisma enum - see the model's comment in
  * schema.prisma: the value never crosses the network.
  */
-export type BotChannelPurpose = 'ATTENDANCE_REMINDER' | 'ADMIN_ALERT';
+export type BotChannelPurpose =
+  'ATTENDANCE_REMINDER' | 'ADMIN_ALERT' | 'GENERAL_NOTI';
 
 /**
  * Reads and writes the channels the bot posts to, by purpose.

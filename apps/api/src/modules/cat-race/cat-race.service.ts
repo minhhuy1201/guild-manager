@@ -69,6 +69,21 @@ const DUPLICATE_MEMBER = 'Danh sách có người trùng nhau.';
 const STANDARD_TICKETS = 'Chế độ Thường chỉ có 1 vé mỗi người.';
 const NOT_A_PARTICIPANT = 'Có người không thuộc đợt quay này.';
 
+/** What the Discord summary needs of an ended event: prizes in order, each with its winners. */
+export interface CatRaceAnnouncement {
+  readonly eventName: string;
+  readonly prizes: readonly {
+    readonly name: string;
+    readonly winners: readonly {
+      readonly discordId: string | null;
+      readonly name: string;
+    }[];
+  }[];
+}
+
+const NOT_ENDED_YET = 'Kết thúc đợt trước khi đăng tổng kết.';
+const ALREADY_POSTED = 'Đợt này đã đăng lên Discord.';
+
 /** One participant as the roster writers receive it. */
 interface RosterEntry {
   readonly characterId: string;
@@ -546,6 +561,55 @@ export class CatRaceService {
       }
 
       return this.detailOf(tx, id);
+    });
+  }
+
+  /**
+   * The ended event's winners, shaped for the Discord summary.
+   * @param id - Event id
+   * @returns Prize names with each active winner's Discord id (null once unlinked or deleted) and name
+   * @throws ConflictException when the event is still open, or already posted
+   */
+  async announcement(id: string): Promise<CatRaceAnnouncement> {
+    const event = await this.prisma.catRaceEvent.findUnique({
+      where: { id },
+      include: {
+        prizes: {
+          orderBy: { sortOrder: 'asc' },
+          include: {
+            rounds: {
+              where: { voidedAt: null },
+              orderBy: { drawnAt: 'asc' },
+              include: { winner: true },
+            },
+          },
+        },
+      },
+    });
+    if (!event) throw new NotFoundException(EVENT_NOT_FOUND);
+    if (!event.endedAt) throw new ConflictException(NOT_ENDED_YET);
+    if (event.discordPostedAt) throw new ConflictException(ALREADY_POSTED);
+
+    return {
+      eventName: event.name,
+      prizes: event.prizes.map((prize) => ({
+        name: prize.name,
+        winners: prize.rounds.map((round) => ({
+          discordId: round.winner?.discordId ?? null,
+          name: round.winnerName,
+        })),
+      })),
+    };
+  }
+
+  /**
+   * Record that the summary reached Discord.
+   * @param id - Event id
+   */
+  async markAnnounced(id: string): Promise<void> {
+    await this.prisma.catRaceEvent.update({
+      where: { id },
+      data: { discordPostedAt: this.clock.now() },
     });
   }
 
