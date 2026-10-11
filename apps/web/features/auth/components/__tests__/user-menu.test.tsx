@@ -67,10 +67,14 @@ window.matchMedia ??= ((query: string) => ({
 /**
  * Render the menu and open it.
  * @param label - Display label of the signed-in user
+ * @param isAdmin - Whether the signed-in user is an admin
  * @returns The trigger button
  */
-async function openMenu(label: string | null = "Mèo Mập"): Promise<HTMLElement> {
-  render(<UserMenu label={label} discordId="123456789012345678" avatarHash={null} />);
+async function openMenu(
+  label: string | null = "Mèo Mập",
+  isAdmin = false
+): Promise<HTMLElement> {
+  render(<UserMenu label={label} discordId="123456789012345678" avatarHash={null} isAdmin={isAdmin} />);
   const trigger = screen.getByRole("button");
 
   await act(async () => {
@@ -92,7 +96,7 @@ describe("UserMenu", () => {
 
   it("nút avatar tự xưng tên chủ tài khoản cho trình đọc màn hình", () => {
     render(
-      <UserMenu label="Mèo Mập" discordId="123456789012345678" avatarHash={null} />
+      <UserMenu label="Mèo Mập" discordId="123456789012345678" avatarHash={null} isAdmin={false} />
     );
 
     expect(screen.getByRole("button").getAttribute("aria-label")).toBe(
@@ -102,13 +106,28 @@ describe("UserMenu", () => {
 
   it("chưa biết tên thì nhãn chỉ còn Menu tài khoản, và avatar hiện dấu hỏi", () => {
     render(
-      <UserMenu label={null} discordId="123456789012345678" avatarHash={null} />
+      <UserMenu label={null} discordId="123456789012345678" avatarHash={null} isAdmin={false} />
     );
 
     expect(screen.getByRole("button").getAttribute("aria-label")).toBe(
       "Menu tài khoản"
     );
     expect(screen.getByText("?")).toBeTruthy();
+  });
+
+  it("admin thấy mục Đua mèo trước Đăng xuất, thành viên thì không", async () => {
+    await openMenu("Mèo Mập", true);
+
+    const items = [...document.querySelectorAll("[role='menuitem']")].map(
+      (item) => item.textContent
+    );
+    expect(items.indexOf("Đua mèo")).toBeGreaterThanOrEqual(0);
+    expect(items.indexOf("Đua mèo")).toBeLessThan(items.indexOf("Đăng xuất"));
+    cleanup();
+
+    await openMenu("Mèo Mập", false);
+
+    expect(screen.queryByText("Đua mèo")).toBeNull();
   });
 
   it("mở menu thì thấy tên ở trên và Đăng xuất ở dưới", async () => {
@@ -134,7 +153,7 @@ describe("UserMenu", () => {
     document.documentElement.className = "";
     render(
       <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
-        <UserMenu label="Mèo Mập" discordId="123456789012345678" avatarHash={null} />
+        <UserMenu label="Mèo Mập" discordId="123456789012345678" avatarHash={null} isAdmin={false} />
       </ThemeProvider>
     );
     await act(async () => {

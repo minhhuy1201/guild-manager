@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
-import { LogOut } from "lucide-react";
+import { Cat, LogOut } from "lucide-react";
 
 import { ThemeRadioItems } from "@/components/shared/theme-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -28,6 +28,8 @@ interface UserMenuProps {
   discordId: string;
   /** Discord avatar hash from the last login, null on the default picture */
   avatarHash: string | null;
+  /** Whether to show the admin-only entries */
+  isAdmin: boolean;
 }
 
 /**
@@ -43,9 +45,15 @@ interface UserMenuProps {
  * @param props.label - Display label of the signed-in user
  * @param props.discordId - Discord ID used to build the avatar URL
  * @param props.avatarHash - Discord avatar hash
+ * @param props.isAdmin - Whether to show the admin-only cat race entry
  * @returns The account avatar that opens the menu
  */
-export function UserMenu({ label, discordId, avatarHash }: UserMenuProps) {
+export function UserMenu({
+  label,
+  discordId,
+  avatarHash,
+  isAdmin,
+}: UserMenuProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const avatarUrl = discordAvatarUrl(discordId, avatarHash);
@@ -97,6 +105,17 @@ export function UserMenu({ label, discordId, avatarHash }: UserMenuProps) {
         )}
         <ThemeRadioItems />
         <DropdownMenuSeparator />
+        {isAdmin && (
+          <>
+            <DropdownMenuGroup>
+              <DropdownMenuItem onClick={() => router.push(ROUTES.catRace)}>
+                <Cat />
+                Đua mèo
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+          </>
+        )}
         <DropdownMenuGroup>
           <DropdownMenuItem
             variant="destructive"

@@ -1,0 +1,27 @@
+import { canManageGuild } from "@guild/shared/lib";
+import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+
+import { ROUTES } from "@/config/routes";
+import { WEB_AUTH_ERROR } from "@/features/auth";
+import { getSession } from "@/features/auth/server";
+import { CatRaceListScreen } from "@/features/cat-race";
+
+export const metadata: Metadata = {
+  title: "Đua mèo — Mèo Mập Giang Hồ",
+  description: "Quay thưởng trong bang (chỉ quản trị viên)",
+};
+
+/**
+ * Route "/dua-meo" — the cat race events, admins only.
+ * The proxy already blocks it; the session and the role are re-checked here in case it is bypassed.
+ * @returns The event list page
+ */
+export default async function CatRacePage() {
+  const session = await getSession();
+  if (!session || !canManageGuild(session.role)) {
+    redirect(`${ROUTES.attendance}?error=${WEB_AUTH_ERROR.adminOnly}`);
+  }
+
+  return <CatRaceListScreen />;
+}
