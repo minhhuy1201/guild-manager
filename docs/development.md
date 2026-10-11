@@ -296,8 +296,9 @@ pnpm dlx shadcn@latest add <component-name>
 1. Edit `apps/api/prisma/schema.prisma`.
 2. `pnpm --filter api prisma:migrate` → name the migration in unaccented Vietnamese, e.g.
    `character_id_la_game_id`.
-3. Enums in the schema must **keep matching values** with `packages/shared/enums` — `seed.ts` imports
-   the shared enums directly, so a mismatch is a compile error, not a runtime bug.
+3. Enums in the schema must **keep matching values** with `packages/shared/enums` —
+   `src/__tests__/prisma-enum-sync.spec.ts` fails when they drift. Run `prisma:migrate` (which
+   regenerates the client) before the test; it compares against the generated client.
 4. Commit the whole migration directory.
 
 ### Adding new code (backend module, frontend feature, shared type…)

@@ -159,7 +159,7 @@ start of a test run — but nothing rebuilds mid-session, so while `next dev` or
 up, keep `pnpm --filter @guild/shared build --watch` running beside it.
 
 `@/*` is the app's own alias and is unrelated. It is declared twice, in `tsconfig.json` and in
-`vitest.config.ts`; a new alias must be added in both or tests fail on imports that type-check fine.
+`vitest.config.ts`; `__tests__/alias-sync.test.ts` fails when a new alias is missing from either.
 
 ### The API boundary
 

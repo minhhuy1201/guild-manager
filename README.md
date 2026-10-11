@@ -145,6 +145,14 @@ run `/pr-review`, and on an Approve verdict it records `.claude/.pr-review-passe
 per-developer). It is a cooperative guardrail, not a security boundary: a push from a plain
 terminal never reaches it, and branch protection on `main` remains the real enforcement.
 
+**Checks before Claude stops.** `.claude/settings.json` also registers a Stop hook
+(`.claude/hooks/check-on-stop.sh`): when a Claude Code turn ends with changes under `apps/` or
+`packages/`, it runs `lint`, `typecheck` and the drift specs of each touched workspace, and hands any
+failure back to Claude instead of stopping. A turn that changed nothing since the last passing run
+skips the checks (fingerprint in `.claude/.stop-check-passed`, git-ignored). A PostToolUse hook runs Prettier on every `apps/api` and
+`packages/ci-triage` TypeScript file Claude edits. Both are conveniences, not gates: CI runs the same
+checks on every pull request.
+
 ## Documentation
 
 | File | Contents |
