@@ -36,7 +36,13 @@ export default defineConfig({
         "lib/**",
         "proxy.ts",
       ],
-      exclude: ["**/__tests__/**", "**/*.d.ts", "**/*.css"],
+      // Lint fixtures are never executed; counting them would only report dead code as uncovered.
+      exclude: [
+        "**/__tests__/**",
+        "**/__lint_fixtures__/**",
+        "**/*.d.ts",
+        "**/*.css",
+      ],
     },
   },
   resolve: {

@@ -18,14 +18,18 @@ The rules that get broken first, in the order they get broken:
   API response never enters a store.
 - **`lib/api-client.ts` is the only place that calls `fetch` against the backend.** Feature request
   functions wrap `apiFetch` in `features/<feature>/api/`; components call the feature's hook, never
-  `useQuery` directly.
-- **Cross-feature imports go through the feature's `index.ts`**, never an internal file. A feature
+  `useQuery` directly. Both are lint errors (`eslint.config.mjs`).
+- **Cross-feature imports go through the feature's entry point** — `index.ts` (client-safe),
+  `server.ts` (server-only) or `core/index.ts` (Edge) — never an internal file. `eslint-plugin-boundaries`
+  enforces it, and `__tests__/lint-rules.test.ts` keeps the rule from going silent. A feature
   holding server-only code splits that entry in two: `index.ts` stays client-safe and `server.ts`
   (starting with `import "server-only"`) carries everything touching `next/headers` or cookies —
   `features/auth` is the worked example. Re-exporting a `next/headers` module from the client-safe
   barrel breaks the whole app the moment any `"use client"` file imports the barrel, even for an
   unrelated hook, and the error names the Pages Router rather than the real culprit.
-- **`components/ui/` is shadcn CLI output.** Need a variant? Wrap it in `components/shared/`.
+- **`components/ui/` is shadcn CLI output, edited only for app-wide changes** (contrast, size,
+  surface) that every screen should get. A variant only one feature needs is a wrapper in
+  `components/shared/`.
 - **Render `ApiError.message` verbatim** — the backend already writes the Vietnamese text meant for
   the user.
 - **Week and deadline rules belong to the backend.** Mirror the `isAttendanceClosed` the API sends;
