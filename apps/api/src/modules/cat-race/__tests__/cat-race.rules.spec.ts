@@ -62,9 +62,19 @@ describe('drawTicket', () => {
 
 describe('reconcileParticipants', () => {
   const prizes: PrizeStanding[] = [
-    { prizeId: 'P1', quantity: 2, activeWinnerIds: new Set(['y']) },
-    { prizeId: 'P2', quantity: 1, activeWinnerIds: new Set(['w']) },
-    { prizeId: 'P3', quantity: 3, activeWinnerIds: new Set() },
+    {
+      prizeId: 'P1',
+      quantity: 2,
+      awardedCount: 1,
+      activeWinnerIds: new Set(['y']),
+    },
+    {
+      prizeId: 'P2',
+      quantity: 1,
+      awardedCount: 1,
+      activeWinnerIds: new Set(['w']),
+    },
+    { prizeId: 'P3', quantity: 3, awardedCount: 0, activeWinnerIds: new Set() },
   ];
 
   it('adds a newcomer to every prize that is not full', () => {
@@ -81,6 +91,19 @@ describe('reconcileParticipants', () => {
     const change = reconcileParticipants([], ['y'], prizes);
 
     expect(change.entrantsToAdd).toEqual([{ prizeId: 'P3', characterId: 'y' }]);
+  });
+
+  it('counts a win by a deleted member as filling the slot', () => {
+    const full: PrizeStanding[] = [
+      {
+        prizeId: 'P1',
+        quantity: 1,
+        awardedCount: 1,
+        activeWinnerIds: new Set(),
+      },
+    ];
+
+    expect(reconcileParticipants([], ['x'], full).entrantsToAdd).toEqual([]);
   });
 
   it('reports who was removed', () => {

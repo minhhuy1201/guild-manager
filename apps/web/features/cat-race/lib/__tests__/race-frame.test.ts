@@ -72,3 +72,29 @@ describe("frameAt", () => {
     }
   });
 });
+
+describe("leadersAt at the finish", () => {
+  it("keeps the winner first when several cats have reached the line, whatever their keys sort like", () => {
+    for (const seed of [1, 2, 3]) {
+      let state = seed;
+      const random = () => {
+        state = (state * 16807) % 2147483647;
+
+        return state / 2147483647;
+      };
+      const script = buildRaceScript({
+        entrants: Array.from({ length: 30 }, (_, index) => ({
+          characterId: `c${index}`,
+          tickets: 1,
+        })),
+        // "c9" sorts after most other keys, so an alphabetical tie-break would demote it.
+        winner: { characterId: "c9", ticketNo: 1 },
+        speed: "FAST",
+        random,
+      });
+      const plan = planRace(script, AREA, "horizontal");
+
+      expect(leadersAt(script, plan.endSeconds - 0.01)[0]).toBe(script.winnerKey);
+    }
+  });
+});

@@ -700,4 +700,15 @@ reduced motion: drawing --ok--> result
 
 ## Kết quả
 
-(Điền khi thực thi: FPS đo ở Task 9, nguồn sprite, lệch so với plan.)
+- **FPS (Task 9, D21):** chưa đo trên trình duyệt thật (phiên chạy ban đêm, không có GPU/trình duyệt điều khiển được). Canvas 2D thuần được giữ; mở `/dua-meo/<id>?fps=1` rồi chạy đợt 240 mèo tốc độ Nhanh, FPS trung bình in ra console và vẽ ở góc canvas. Dưới 55 thì cân nhắc `konva`.
+- **Sprite:** không tìm sprite CC0; mèo pixel vẽ bằng mảng ký tự trong `race-sprites.ts` (D20 phương án dự phòng).
+- **Lệch so với plan:**
+  - Migration sinh bằng `prisma migrate diff` + RLS viết tay, vì DB local lệch checksum migration cũ (`migrate dev` đòi reset DB); đã áp bằng `migrate deploy`, không reset.
+  - Sửa hạng mục là dialog (`prize-form-dialog.tsx`), không phải popover.
+  - Embed Discord dùng `description` chia đoạn theo hạng mục (kiểu `EmbedPayload` không có `fields`); tag nằm thêm trong `content` để có ping.
+  - `PageHeader` dùng banner `teamBuilder` có sẵn, chưa có ảnh riêng cho trang Đua mèo.
+  - `projectProgress` nhận thêm tham số `across`; thêm `race-frame.ts` (kịch bản → khung hình, thuần, có test) để canvas chỉ còn vẽ.
+  - `useReducedMotion` chuyển sang `apps/web/hooks/`, `discordAvatarUrl` export từ index của `features/auth` (cần cho feature mới, tránh import chéo nội bộ).
+  - Checkbox native trong `roster-checklist.tsx` (chưa có `components/ui/checkbox`).
+  - `cat-race.service.ts` dài hơn ngưỡng ~300 dòng của `module.md`; chưa tách (ghi nhận ở review).
+- **Chưa chạy thật (Task 10 bước 4):** không đăng nhập Discord OAuth được trong phiên tự động nên chưa thao tác qua UI thật, chưa đăng Discord thật; kiểm bằng test + `next build`.

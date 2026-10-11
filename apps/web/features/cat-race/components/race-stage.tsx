@@ -160,6 +160,8 @@ export function RaceStage({
           label="Tốc độ"
           value={speed}
           options={SPEED_OPTIONS}
+          // A new speed would rebuild the script and restart the replay mid-race.
+          disabled={stage !== "idle"}
           onChange={(next) => store().setSpeed(next)}
         />
         {canEdit ? (

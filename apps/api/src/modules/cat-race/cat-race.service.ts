@@ -7,7 +7,6 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { PrizeTier } from '@guild/shared/enums';
 import {
   CAT_RACE_MIN_ENTRANTS,
   catRaceDrawResultSchema,
@@ -35,6 +34,7 @@ import {
   EVENT_SUMMARY_INCLUDE,
   toEventDetail,
   toEventSummary,
+  toPrizeTemplate,
   toRound,
 } from './cat-race.codec';
 import {
@@ -126,10 +126,7 @@ export class CatRaceService {
       },
     });
 
-    return (latest?.prizes ?? []).map((prize) => ({
-      ...prize,
-      tier: prize.tier as PrizeTier,
-    }));
+    return (latest?.prizes ?? []).map((prize) => toPrizeTemplate(prize));
   }
 
   /**
@@ -268,6 +265,7 @@ export class CatRaceService {
         prizes.map((prize) => ({
           prizeId: prize.id,
           quantity: prize.quantity,
+          awardedCount: prize.rounds.length,
           activeWinnerIds: new Set(
             prize.rounds.flatMap((r) =>
               r.winnerCharacterId ? [r.winnerCharacterId] : [],
@@ -463,15 +461,16 @@ export class CatRaceService {
       const winner = await tx.character.findUniqueOrThrow({
         where: { id: ticket.characterId },
       });
-      const winnerTickets =
-        holders.find((h) => h.characterId === winner.id)?.tickets ?? 1;
+      const winnerHolder = holders.find((h) => h.characterId === winner.id);
+      if (!winnerHolder)
+        throw new Error('A drawn winner is always one of the holders');
       const round = await tx.catRaceRound.create({
         data: {
           prizeId: prize.id,
           winnerCharacterId: winner.id,
           winnerName: winner.name,
           winnerGuildClass: winner.guildClass,
-          winnerTickets,
+          winnerTickets: winnerHolder.tickets,
           entrantCount: holders.length,
           totalTickets: holders.reduce((sum, h) => sum + h.tickets, 0),
           drawnById: actorId,

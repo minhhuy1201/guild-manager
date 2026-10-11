@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CAT_RACE_MODE_LABEL } from "@guild/shared/enums";
 import type {
   CatRaceEventDetail,
@@ -13,6 +13,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { QueryBoundary } from "@/components/shared/query-boundary";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCharacters } from "@/features/attendance";
+import { useInvalidate } from "@/hooks/use-invalidate";
 import { combineQueries } from "@/lib/query-group";
 import { cn } from "@/lib/utils";
 import { useDeleteCatRacePrize } from "../hooks/use-cat-race-mutations";
@@ -71,6 +72,22 @@ function EventBody({ event }: { event: CatRaceEventDetail }) {
   const deletePrize = useDeleteCatRacePrize();
   const [dialog, setDialog] = useState<OpenDialog>({ kind: "none" });
   const [voiding, setVoiding] = useState<CatRaceRound | null>(null);
+  const invalidate = useInvalidate("cat-race");
+
+  // The store outlives this screen. Leaving mid-race or on the winner card must not replay that
+  // round on the next event, and a round drawn but never shown to the end still needs the winners
+  // list refreshed.
+  useEffect(() => {
+    return () => {
+      const { pendingResult } = useRaceStore.getState();
+      useRaceStore.setState({
+        stage: "idle",
+        pendingResult: null,
+        selectedPrizeId: null,
+      });
+      if (pendingResult) void invalidate();
+    };
+  }, [event.id, invalidate]);
 
   const isOpen = event.status === "OPEN";
   const isBusy = stage !== "idle";

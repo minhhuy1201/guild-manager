@@ -165,15 +165,27 @@ export function progressAt(motion: CatMotion, seconds: number): number {
  * Cats ranked front to back at one moment.
  * @param script - The race
  * @param seconds - Time since the start
- * @returns Keys, leader first; ties broken by key so the order is stable
+ * @returns Keys, leader first; ties go to the earlier finisher, then to the key
  */
 export function rankAt(script: RaceScript, seconds: number): string[] {
   return script.cats
-    .map((cat) => ({
-      key: cat.key,
-      progress: progressAt(script.motions.get(cat.key)!, seconds),
-    }))
-    .sort((a, b) => b.progress - a.progress || a.key.localeCompare(b.key))
+    .map((cat) => {
+      const motion = script.motions.get(cat.key)!;
+
+      return {
+        key: cat.key,
+        progress: progressAt(motion, seconds),
+        finishAt: motion.finishAt,
+      };
+    })
+    // Cats already on the line tie at 1: the earlier finisher leads, so the board agrees with the
+    // winner. The key only keeps the order stable.
+    .sort(
+      (a, b) =>
+        b.progress - a.progress ||
+        a.finishAt - b.finishAt ||
+        a.key.localeCompare(b.key)
+    )
     .map((entry) => entry.key);
 }
 

@@ -55,6 +55,8 @@ export function drawTicket(
 export interface PrizeStanding {
   readonly prizeId: string;
   readonly quantity: number;
+  /** Active rounds, counted apart from `activeWinnerIds`: a deleted winner still fills a slot. */
+  readonly awardedCount: number;
   readonly activeWinnerIds: ReadonlySet<string>;
 }
 
@@ -83,7 +85,7 @@ export function reconcileParticipants(
   const removed = currentIds.filter((id) => !next.has(id));
   const added = nextIds.filter((id) => !current.has(id));
   const entrantsToAdd = prizes
-    .filter((prize) => prize.activeWinnerIds.size < prize.quantity)
+    .filter((prize) => prize.awardedCount < prize.quantity)
     .flatMap((prize) =>
       added
         .filter((characterId) => !prize.activeWinnerIds.has(characterId))

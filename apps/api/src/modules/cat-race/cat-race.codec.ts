@@ -2,8 +2,10 @@ import { CatRaceMode, GuildClass, PrizeTier } from '@guild/shared/enums';
 import {
   catRaceEventDetailSchema,
   catRaceEventSummarySchema,
+  catRacePrizeTemplateSchema,
   type CatRaceEventDetail,
   type CatRaceEventSummary,
+  type CatRacePrizeTemplate,
   type CatRaceRound,
 } from '@guild/shared/schemas';
 
@@ -123,4 +125,21 @@ export function toEventDetail(row: EventDetailRow): CatRaceEventDetail {
       .sort((a, b) => a.drawnAt.getTime() - b.drawnAt.getTime())
       .map(toRound),
   } satisfies CatRaceEventDetail);
+}
+
+/**
+ * Map a prize row to the line a new event starts from.
+ * @param row - Name, quantity and tier of a stored prize
+ * @returns The template shape
+ */
+export function toPrizeTemplate(row: {
+  name: string;
+  quantity: number;
+  tier: string;
+}): CatRacePrizeTemplate {
+  return verifyResponse(catRacePrizeTemplateSchema, {
+    name: row.name,
+    quantity: row.quantity,
+    tier: row.tier as PrizeTier,
+  } satisfies CatRacePrizeTemplate);
 }

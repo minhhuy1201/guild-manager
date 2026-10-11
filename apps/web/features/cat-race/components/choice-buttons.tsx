@@ -7,6 +7,7 @@ interface ChoiceButtonsProps<T extends string> {
   value: T;
   options: readonly { value: T; label: string }[];
   onChange: (value: T) => void;
+  disabled?: boolean;
 }
 
 /**
@@ -15,6 +16,7 @@ interface ChoiceButtonsProps<T extends string> {
  * @param value - Selected option
  * @param options - The choices
  * @param onChange - Receives the picked value
+ * @param disabled - Locks every option
  * @returns The button group
  */
 export function ChoiceButtons<T extends string>({
@@ -22,6 +24,7 @@ export function ChoiceButtons<T extends string>({
   value,
   options,
   onChange,
+  disabled = false,
 }: ChoiceButtonsProps<T>) {
   return (
     <div className="flex flex-wrap gap-2" role="group" aria-label={label}>
@@ -32,6 +35,7 @@ export function ChoiceButtons<T extends string>({
           size="sm"
           variant={option.value === value ? "default" : "outline"}
           aria-pressed={option.value === value}
+          disabled={disabled}
           onClick={() => onChange(option.value)}
         >
           {option.label}
