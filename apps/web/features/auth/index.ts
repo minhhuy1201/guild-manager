@@ -12,3 +12,4 @@ export { useSession, sessionKeys } from "./hooks/use-session";
 export { loginErrorMessage } from "./lib/login-error";
 // From `core/`, not `lib/`: that is where the codes moved when `proxy.ts` started setting one.
 export { WEB_AUTH_ERROR } from "./core/auth-error";
+export { discordAvatarUrl } from "./lib/discord-avatar";
