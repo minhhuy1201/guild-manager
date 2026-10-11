@@ -34,6 +34,9 @@ file: `web/` (`data-flow`, `routing`, `components`, `display`, `interaction`, `t
 `prisma.md` for `apps/api/prisma`. Per-app stack and naming: [`apps/api/CLAUDE.md`](apps/api/CLAUDE.md),
 [`apps/web/CLAUDE.md`](apps/web/CLAUDE.md).
 
+`docs/archive/` holds finished plans and specs. It is history, not a source of truth: when it
+disagrees with the code or a living doc, the code and the living doc win.
+
 ## Secrets and `.env`
 
 **Never commit credentials.** `.gitignore` catches `.env.*` (except `.env.example`); real values live
@@ -85,7 +88,7 @@ before anything else happens.
 - **Tests describe behavior.** When behavior changes on purpose, its tests change in the same commit
   and the message says why.
 - **Comment, code and file names are English**; the content of `docs/superpowers`,
-  `docs/custom-plan` and `docs/custom-spec` is Vietnamese.
+  `docs/custom-plan`, `docs/custom-spec` and `docs/archive` is Vietnamese.
 - **Never mutate:** return a new object. Nest at most 4 levels, using early returns. Name a
   threshold or limit instead of a magic number.
 - **Prefer a maintained dependency** when it genuinely removes code we would otherwise own and test.

@@ -1,6 +1,6 @@
 # AC6 - Tách plan/spec đã xong khỏi search path
 
-Ngày: 2026-10-10 · Trạng thái: **spec, chưa triển khai, chờ quyết định** · Tổng quan:
+Ngày: 2026-10-10 · Trạng thái: **spec, đã triển khai (PR `chore/agent-context-trim`)** · Tổng quan:
 [`2026-10-10-agent-context-review-overview.md`](2026-10-10-agent-context-review-overview.md)
 
 ## 1. Vấn đề
@@ -23,17 +23,22 @@ mục 1, không phải một số đo.
 - `git mv` plan/spec đã merge sang `docs/archive/<thư mục cũ>/`. Plan/spec đang mở giữ nguyên chỗ.
 - Tìm mọi tham chiếu bằng `git grep -nE 'docs/(superpowers|custom-plan|custom-spec)'` ngoài các thư mục
   đó (gồm comment trong code và config, không chỉ markdown), rồi sửa các link trỏ vào chúng.
-  Ví dụ: `apps/api/CLAUDE.md` trỏ `docs/superpowers/specs/2026-09-02-discord-attendance-commands-design.md` §9. Link đó phải trỏ
+  Ví dụ: `.claude/rules/api/discord.md` trỏ `docs/superpowers/specs/2026-09-02-discord-attendance-commands-design.md` §9. Link đó phải trỏ
   sang path mới, hoặc chuyển phần nội dung còn sống vào doc sống.
 - Root `CLAUDE.md` thêm một dòng: `docs/archive/` là lịch sử, không phải nguồn sự thật. Code và doc
   sống thắng khi hai bên lệch nhau.
 
 ## 4. Quyết định mở
 
-- Tiêu chí "đã xong": PR đã merge, hay spec có trạng thái "đã triển khai"? Nhiều spec không cập nhật
-  dòng trạng thái.
-- Có nên chặn agent đọc `docs/archive/**` bằng `permissions.deny`? Đề xuất không: đôi khi cần đọc lịch
-  sử để hiểu lý do.
+Đã chốt 2026-10-11:
+
+- Tiêu chí "đã xong": chuyển tất cả, trừ danh sách giữ lại. Dòng trạng thái không đáng tin (AC1, AC3
+  ghi "đang triển khai" dù đã merge; f14 ghi "chưa triển khai" dù đã merge ở #177). Giữ lại: tổng quan
+  AC, spec AC4-AC6, plan AC5+AC6 và `2026-10-04-feature-ideas-overview.md` (bản nháp ý tưởng). Lần
+  archive sau chuyển cả loạt AC khi AC4 xong.
+- Không chặn `docs/archive/**` bằng `permissions.deny`, không thêm `.ignore`: đôi khi cần đọc lịch sử
+  để hiểu lý do; đường dẫn `archive` và dòng trong `CLAUDE.md` báo agent đây là lịch sử.
+- Link từ doc sống và code sang spec đã archive: sửa path, không chuyển nội dung.
 
 ## 5. Kích thước
 

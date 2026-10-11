@@ -348,3 +348,4 @@ Never commit: `.env*` (except `.env.example`), `apps/api/src/generated/`, `dist/
 - [`apps/api/README.md`](../apps/api/README.md) — backend details
 - [`apps/web/README.md`](../apps/web/README.md) — frontend details
 - `docs/superpowers/specs/` — design specs per feature
+- `docs/archive/` — finished specs and plans; history, not a source of truth

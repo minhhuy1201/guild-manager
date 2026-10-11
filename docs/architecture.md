@@ -10,6 +10,7 @@ This is the structural reference. It does not cover setup or operations:
 - `superpowers/specs/` and `superpowers/plans/` — the design spec and plan behind each feature (why a
   thing is shaped that way)
 - `custom-spec/` and `custom-plan/` — the same pair for the architecture-review work
+- `archive/` — finished specs and plans from both pairs above; history, not a source of truth
 - [`../apps/api/docs/backend.md`](../apps/api/docs/backend.md) and
   [`../apps/web/docs/frontend.md`](../apps/web/docs/frontend.md) — the *reasoning* behind each app's
   layout. This file is binding; when the two disagree, those need fixing

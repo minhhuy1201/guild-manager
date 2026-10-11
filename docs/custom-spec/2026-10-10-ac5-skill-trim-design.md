@@ -1,6 +1,6 @@
 # AC5 - Thu gọn skill tự trigger
 
-Ngày: 2026-10-10 · Trạng thái: **spec, chưa triển khai** · Tổng quan:
+Ngày: 2026-10-10 · Trạng thái: **spec, đã triển khai (PR `chore/agent-context-trim`)** · Tổng quan:
 [`2026-10-10-agent-context-review-overview.md`](2026-10-10-agent-context-review-overview.md) · Không
 phụ thuộc kết quả pilot
 
@@ -41,6 +41,9 @@ caveman). Có thể phần lớn không nằm ở repo.
 ## 4. Tiêu chí xong
 
 `/context` trước và sau cho thấy token mô tả skill giảm. Ghi cả hai con số vào PR.
+
+Kết quả: chưa đo. `/context` chỉ chạy được trong session của user; PR ghi số khi user dán vào. Đã chốt
+2026-10-11: user không dùng Codex nên `supabase-postgres-best-practices` bị xoá khỏi `.agents/skills/`.
 
 ## 5. Kích thước
 

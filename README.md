@@ -171,3 +171,4 @@ CI runs the same checks on every pull request.
 | [`apps/web/docs/frontend.md`](apps/web/docs/frontend.md) | The reasoning behind the rules in `.claude/rules/web/` |
 | `docs/superpowers/specs/` and `docs/superpowers/plans/` | The design spec and plan behind each feature |
 | `docs/custom-spec/` and `docs/custom-plan/` | The same pair for the architecture-review work |
+| `docs/archive/` | Finished specs and plans from both pairs above - history, not a source of truth |

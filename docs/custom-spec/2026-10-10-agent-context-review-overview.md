@@ -47,8 +47,7 @@ User bỏ giới hạn 900 dòng ngày 2026-10-11.
 | 5 | AC6 - archive | ~40 (rename tính 0 dòng khi git nhận ra rename) | Pilot không đo việc agent đọc plan cũ; quyết định theo lý do riêng (mục 3). |
 | 6 | AC4 - `/new-env-var` | ~200 | Thêm `/new-admin-route`, `/new-discord-command` khi workflow đó lặp lại. |
 
-Tổng: **7 PR**, tính cả PR 0. Hai command thêm của AC4 làm con số lên 9. Bỏ AC6 nếu user
-đóng thì còn 6.
+Tổng: **7 PR**, tính cả PR 0; AC5 và AC6 đi chung một PR (2026-10-11) nên còn **6**. Hai command thêm của AC4 làm con số lên 8.
 
 ## 3. Pilot A/B
 

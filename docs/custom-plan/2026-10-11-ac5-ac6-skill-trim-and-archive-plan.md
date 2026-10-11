@@ -80,6 +80,13 @@ node 24 (script kiểm link).
   `docs/development.md:350`. `docs/architecture.md:633` và `.github/pull_request_template.md:4`
   chỉ chỗ đặt spec **mới**, nên giữ nguyên.
 
+## Ghi chú thực thi (2026-10-11)
+
+- Số link gãy sẵn là **8**, không phải 9: `../../../apps/web/docs/frontend.md` trong plan AC1 trỏ
+  đúng khi plan nằm sâu thêm một cấp. Script cũng báo 7 dòng giả trong chính file plan này (mẫu `sed`
+  nằm trong khối code); khi đếm, loại file plan này (`grep -v ac5-ac6-skill-trim-and-archive-plan`).
+- `/context` trước/sau không đo được từ session agent; PR ghi "chưa đo".
+
 ## Review Focus
 
 1. Một doc sống hoặc comment code vẫn trỏ path cũ: người đọc mở link thì 404. Kỳ vọng: `git grep`
