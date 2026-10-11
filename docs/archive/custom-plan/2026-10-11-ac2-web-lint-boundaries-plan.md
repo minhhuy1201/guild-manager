@@ -16,7 +16,7 @@ và D4.
 3.10.1, `@typescript-eslint/no-restricted-imports`, Vitest 5.
 
 **Spec:** [`docs/custom-spec/2026-10-10-ac2-web-lint-boundaries-design.md`](../custom-spec/2026-10-10-ac2-web-lint-boundaries-design.md)
-(tổng quan: [`2026-10-10-agent-context-review-overview.md`](../../custom-spec/2026-10-10-agent-context-review-overview.md))
+(tổng quan: [`2026-10-10-agent-context-review-overview.md`](../custom-spec/2026-10-10-agent-context-review-overview.md))
 
 ## Global Constraints
 

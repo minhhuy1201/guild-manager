@@ -1,7 +1,7 @@
 # AC2 - Khoá luật web bằng ESLint
 
 Ngày: 2026-10-10 · Trạng thái: **spec, đã triển khai (PR `chore/web-lint-boundaries`)** · Tổng quan:
-[`2026-10-10-agent-context-review-overview.md`](../../custom-spec/2026-10-10-agent-context-review-overview.md)
+[`2026-10-10-agent-context-review-overview.md`](2026-10-10-agent-context-review-overview.md)
 
 ## 1. Vấn đề
 
