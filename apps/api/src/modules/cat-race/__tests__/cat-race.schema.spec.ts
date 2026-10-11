@@ -1,7 +1,4 @@
-import {
-  CatRaceMode,
-  PrizeTier,
-} from '@guild/shared/enums';
+import { CatRaceMode, PrizeTier } from '@guild/shared/enums';
 import {
   createCatRaceEventSchema,
   setCatRaceParticipantsSchema,
