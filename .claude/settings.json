@@ -33,5 +33,11 @@
         ]
       }
     ]
+  },
+  "skillOverrides": {
+    "design-taste-frontend": "user-invocable-only",
+    "minimalist-ui": "user-invocable-only",
+    "redesign-existing-projects": "user-invocable-only",
+    "web-design-guidelines": "user-invocable-only"
   }
 }
