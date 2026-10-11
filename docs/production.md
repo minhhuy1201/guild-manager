@@ -742,6 +742,10 @@ fires against an unguarded endpoint.
 - After the first deploy of the admin alert, run `pnpm --filter api discord:register` (the
   `muc-dich` option), then `/cau-hinh-kenh muc-dich:Cảnh báo admin` once in the admin channel. Until
   then a failed run only reaches the log and Vercel, as before, with one `warn` line.
+- After deploying the cat race (`GENERAL_NOTI`), run `pnpm --filter api discord:register` so Discord
+  shows the new `Thông báo chung` choice, then `/cau-hinh-kenh muc-dich:Thông báo chung` once in the
+  channel that should receive the draw summaries. Without it "Đăng tổng kết lên Discord" answers 409
+  and posts nothing. No migration: `BotChannel.purpose` is a plain string.
 - No need to wait for the next morning to check: `/nhac-diem-danh` calls exactly the same function.
   Its `pham-vi` option defaults to `today`, the cron's own rule; `week` reaches every open deadline
   of the week instead. After changing a command's options, run `pnpm --filter api discord:register`

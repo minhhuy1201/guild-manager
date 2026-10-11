@@ -165,7 +165,7 @@ the sources after compiling — see [`production.md`](production.md) §4.
 | Import | Contents |
 |---|---|
 | `@guild/shared/enums` | `GuildClass`, `GuildRole`, `attendanceLabel(isPresent)` — the Vietnamese "Có"/"Không" label — and the tactic enums (`TACTIC_COLORS`, `TACTIC_STROKE_WIDTHS`, `TACTIC_TOKEN_SIZES`, `TACTIC_TOKEN_ICONS`) |
-| `@guild/shared/schemas` | Zod schemas for attendance, auth, battle sessions, characters, formations, tactics (the scene document, plus `liftTacticScene` for older `schemaVersion`s) |
+| `@guild/shared/schemas` | Zod schemas for attendance, auth, battle sessions, characters, formations, cat races, tactics (the scene document, plus `liftTacticScene` for older `schemaVersion`s) |
 | `@guild/shared/lib` | The Vietnam clock (`vnWeekday`, `vnParts`, `shiftVnDate`, `atVnTime`), the deadline-cap rules both sides share, `canManageGuild(role)`, `safeRedirect` and `assertNever` |
 
 The package is intentionally **not** `"type": "module"`: `apps/api` is CommonJS under `nodenext`,
@@ -256,7 +256,7 @@ Each is `<domain>.module.ts` + `<domain>.controller.ts` + `<domain>.service.ts`,
 `@guild/shared/schemas`, and the object is built through
 `verifyResponse(<shape>Schema, { … } satisfies <Shape>)`: `satisfies` is compile-time only, so an
 `as` cast on a database enum passes it silently. `verifyResponse` parses outside production and is a
-no-op in it. `attendance`, `battle-sessions`, `characters` and `tactics` keep that mapping in a
+no-op in it. `attendance`, `battle-sessions`, `cat-race`, `characters` and `tactics` keep that mapping in a
 `<domain>.codec.ts` beside the service.
 
 | Module | Owns | Access |
@@ -268,7 +268,8 @@ no-op in it. `attendance`, `battle-sessions`, `characters` and `tactics` keep th
 | `attendance` | Marking attendance and reading records; a "Không" answer also releases that member from the day's formation, through `team-builder`. Also **leaves** (`LeaveService`): a member's declared stretch of days away, merged into the records at read time | Bearer required; reads are guild-wide for everyone, admin bypasses the deadline and marks for others |
 | `team-builder` | Per-match formations, and the team names shown on the grid | Admin |
 | `tactics` | Guild war tactic drawings and the shared token palette. The scene is one JSON document per tactic, parsed with Zod on every read (`tactics.codec.ts`) | Reads signed-in, writes admin (`AdminGuard` per handler) |
-| `discord-bot` | The Discord interactions endpoint, the slash command registry, attendance recorded from Discord — by command (`/diem-danh`, `/diem-danh-ho`) **and by button**: the private attendance board answers with a Có/Không button per match, and the two guild-wide messages carry an "Điểm danh ngay" button that opens that board and a "Xin nghỉ" button that opens a leave form (a modal, whose submission reaches the router as a modal-submit interaction), both reaching the router as message-component interactions — the weekly schedule announcement (`/thong-bao`), the channels the bot posts to — reminder and admin alert (`/cau-hinh-kenh`), the daily attendance reminder — run by Vercel Cron, or by hand with `/nhac-diem-danh` — and the welcome for a new member (`/chao-mung`), which links three channels configured in the environment plus the sect channel picked when the command is typed. The last four are admin only | Discord's Ed25519 signature for interactions; `CRON_SECRET` in a bearer header for the scheduled reminder — no JWT, no session; the identity comes from the signed payload and the write rules stay `AttendanceService`'s |
+| `cat-race` | The admin-only prize draw ("Đua mèo"): an event holds prizes, a roster and rounds. The server picks each winner with `crypto.randomInt` inside one transaction that first locks the event row, and stores the round before the web app animates it; the draw rules are pure functions in `cat-race.rules.ts`. The Discord summary post lives in `discord-bot` and reads the winners through `cat-race.public.ts` | Admin (`JwtAuthGuard, AdminGuard` on the controller) |
+| `discord-bot` | The Discord interactions endpoint, the slash command registry, attendance recorded from Discord — by command (`/diem-danh`, `/diem-danh-ho`) **and by button**: the private attendance board answers with a Có/Không button per match, and the two guild-wide messages carry an "Điểm danh ngay" button that opens that board and a "Xin nghỉ" button that opens a leave form (a modal, whose submission reaches the router as a modal-submit interaction), both reaching the router as message-component interactions — the weekly schedule announcement (`/thong-bao`), the channels the bot posts to — reminder, admin alert and general notices (`/cau-hinh-kenh`), and the cat race summary post posted to the general-notice channel, the daily attendance reminder — run by Vercel Cron, or by hand with `/nhac-diem-danh` — and the welcome for a new member (`/chao-mung`), which links three channels configured in the environment plus the sect channel picked when the command is typed. The last four are admin only | Discord's Ed25519 signature for interactions; `CRON_SECRET` in a bearer header for the scheduled reminder — no JWT, no session; the identity comes from the signed payload and the write rules stay `AttendanceService`'s |
 
 Endpoints, all behind the `/api` prefix:
 
@@ -314,6 +315,18 @@ Endpoints, all behind the `/api` prefix:
 | `PATCH` | `/tactics/:id` | Rename a tactic, or rewrite its description or its notes | Admin |
 | `PUT` | `/tactics/:id/stages` | Overwrite the whole scene | Admin |
 | `DELETE` | `/tactics/:id` | Delete a tactic | Admin |
+| `GET` | `/cat-races` | Cat race events, newest first | Admin |
+| `GET` | `/cat-races/prefill` | Prizes of the latest event, to start a new one from | Admin |
+| `POST` | `/cat-races` | Create an event with its roster and prizes | Admin |
+| `GET` | `/cat-races/:id` | One event with roster, prizes, entrants and rounds. Carries `discordId` and `discordAvatar` of the participants - the one place besides `/auth/me` they leave the API, acceptable because only an admin can call it | Admin |
+| `PATCH` / `DELETE` | `/cat-races/:id` | Rename or change mode (before any round) / delete an event with no round | Admin |
+| `PUT` | `/cat-races/:id/participants` | Replace the roster and ticket counts | Admin |
+| `POST` / `PATCH` / `DELETE` | `/cat-races/:id/prizes[/:prizeId]` | Add, edit, or delete a prize | Admin |
+| `PUT` | `/cat-races/:id/prizes/:prizeId/entrants` | Replace who may win a prize | Admin |
+| `POST` | `/cat-races/:id/rounds` | Draw one round; the response carries the winner and the field that ran | Admin |
+| `POST` | `/cat-races/:id/rounds/:roundId/void` | Void a round with a reason | Admin |
+| `POST` | `/cat-races/:id/end` | End the event (idempotent) | Admin |
+| `POST` | `/cat-races/:id/announce` | Post the summary to the `GENERAL_NOTI` channel | Admin |
 | `POST` | `/discord/interactions` | Receive an interaction from Discord — slash command or button press — and answer it | Discord's Ed25519 signature |
 | `GET` | `/cron/attendance-reminder` | Post the reminder for every deadline due for a reminder today (§6). `GET` because Vercel Cron only issues GET | `CRON_SECRET` in `Authorization: Bearer` |
 
@@ -410,7 +423,7 @@ apps/web/
 └── lib/              # api-client.ts (apiFetch + ApiError), format.ts, keyboard-target.ts, motion.ts, page-banners.ts, utils.ts, …
 ```
 
-Features: `attendance`, `auth`, `landing`, `members`, `settings`, `tactics`, `team-builder`.
+Features: `attendance`, `auth`, `cat-race`, `landing`, `members`, `settings`, `tactics`, `team-builder`.
 
 `auth` is the one feature with **three** entry points instead of one, split by runtime rather than by
 public/private, because the split is what the runtimes force:
@@ -528,6 +541,13 @@ erDiagram
     BattleSession ||--o{ FormationMatch : "is played as"
     FormationMatch ||--o{ FormationSlot : "has cells"
     Character ||--o{ FormationSlot : "occupies"
+    CatRaceEvent ||--o{ CatRaceParticipant : "has"
+    CatRaceEvent ||--o{ CatRacePrize : "offers"
+    CatRacePrize ||--o{ CatRaceEntrant : "can be won by"
+    CatRacePrize ||--o{ CatRaceRound : "is drawn in"
+    Character ||--o{ CatRaceParticipant : "joins"
+    Character ||--o{ CatRaceEntrant : "runs for"
+    Character |o--o{ CatRaceRound : "won"
 
     AuthExchange { }
     TeamName { }
@@ -553,9 +573,14 @@ than a foreign key, because a rescue admin may match no `Character` at all.
 | `TeamName` | Display name of one team column, keyed by team number. Global configuration, not per battle day: the same names apply to every week and every match, which is why it hangs off nothing in the diagram above. A team still showing its plain number has no row. Its optimistic lock lives in `TeamNameVersion`, not here: an empty map has no row to carry a version. |
 | `TeamNameVersion` | Optimistic lock of the team name map: exactly one row, `id = 1`, inserted by the migration and never created by code. A missing row is a broken database and fails loudly on read. |
 | `FormationMatch` | One match of a battle day's roster, `matchIndex` 1 or 2, assigned by the backend from the array position. The row exists even when nobody is placed yet — that is how "this day has 2 matches" differs from "match 2 is empty". Deleted with its `BattleSession` (cascade). |
-| `BotChannel` | Which Discord channel the bot posts a given kind of message to, keyed by `purpose`. Global configuration like `TeamName`, which is why it hangs off nothing in the diagram above. Two rows at most: `ATTENDANCE_REMINDER` and `ADMIN_ALERT` (where the cron reports a failed or channel-less run), both written by `/cau-hinh-kenh`. `purpose` is a `String` and not an enum on purpose: the value never crosses the network to the web app, so it need not stay in step with `packages/shared/enums`. |
+| `BotChannel` | Which Discord channel the bot posts a given kind of message to, keyed by `purpose`. Global configuration like `TeamName`, which is why it hangs off nothing in the diagram above. Three rows at most: `ATTENDANCE_REMINDER`, `GENERAL_NOTI` (cat race summaries and later general notices) and `ADMIN_ALERT` (where the cron reports a failed or channel-less run), all written by `/cau-hinh-kenh`. `purpose` is a `String` and not an enum on purpose: the value never crosses the network to the web app, so it need not stay in step with `packages/shared/enums`. |
 | `Tactic` | One guild war tactic drawing. `stages` is a `Json` column holding the whole scene document — `{ schemaVersion, stages }` per `tacticSceneSchema` in `@guild/shared` — rather than normalised stage and element tables: a new kind of drawn element is then a branch in the shared union and a branch in the renderer, with no migration, and the editor only ever saves the whole document anyway. The column is **untrusted on read** (an older app or a hand edit may have written it), so `tactics.codec.ts` parses it with Zod and fails loudly, naming the tactic, rather than returning an empty scene. `schemaVersion` is what makes a format change an upgrade step instead of guessed SQL over JSON: `liftTacticScene` in `@guild/shared` runs before the parse on both sides, and today it lifts a v1 document (which could be drawn in white) to v2 (where white became black). A token **keeps its `id` when a stage is duplicated**, so the same unit is recognisable on two neighbouring stages and the viewer can draw the path it takes; an id only has to be unique inside one stage, and every edit works on one stage at a time. Scenes saved before that rule carry a different id per stage and are paired by `label + icon` instead - see [`superpowers/specs/2026-09-23-tactic-stage-animation-design.md`](archive/superpowers/specs/2026-09-23-tactic-stage-animation-design.md). `notes` is plain text (≤ 5000 characters) read beside the map; it is a column rather than part of the scene because it is not drawn, and it stays off `GET /tactics` - `description` is the list's one-line summary. |
 | `TacticTokenPreset` | A named token in the tactics palette, shared by every tactic. Global configuration like `TeamName`, which is why it hangs off nothing above. A token placed on a map does **not** point here: it captured the label and icon when it was dropped, so renaming or deleting a preset never rewrites a tactic drawn last week. |
+| `CatRaceEvent` | One prize-draw event. `mode` (`CatRaceMode`: `STANDARD` or `TICKET`) is fixed once a round exists. `endedAt` null = open; `discordPostedAt` is set only after Discord accepted the summary. `createdAt` is written from `Clock`; `createdById` is a plain id, not a relation. |
+| `CatRaceParticipant` | A character in an event, with `tickets` 1-3 for the whole event (always 1 in `STANDARD`). Cascades with the event and with the character. |
+| `CatRacePrize` | A prize line: name, `quantity`, `tier` (`PrizeTier`), `sortOrder`. |
+| `CatRaceEntrant` | Who may still win a prize now; the winner leaves it, a voided round puts them back. Always a subset of the event's participants. Tickets are read from `CatRaceParticipant`, never copied. |
+| `CatRaceRound` | One draw. The winner's name, class and tickets are captured at draw time, because `Character` is hard-deleted (`SetNull`). A voided round stays with `voidedAt` and `voidReason`. |
 
 The label of a match ("Thứ 3 · 20:30") is **derived from `dateTime`**, never stored, so changing the
 time changes the label everywhere.
