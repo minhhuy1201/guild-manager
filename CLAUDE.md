@@ -19,22 +19,20 @@ nothing new belongs there: a dependency goes in the app or package that uses it.
 
 ## Read before writing code
 
-- [`docs/architecture.md`](docs/architecture.md) — **binding**, not advisory. Layering, module and
-  feature boundaries, the endpoint table, the data model, the week/deadline rules, and §7 **where new
-  behavior goes**. Read it before adding an endpoint, a page, a feature, a database column, or an env
-  variable.
-- [`docs/development.md`](docs/development.md) — local setup, the env variable tables, commands, the
-  local database, seeding.
-- [`docs/production.md`](docs/production.md) — deploy, Supabase, the Vercel build, operations.
-- [`docs/ci-triage.md`](docs/ci-triage.md) — the Jev triage tool: what it classifies, what it
-  deliberately does **not** do, and why it is not a quality gate.
-- Per-app rules: [`apps/api/CLAUDE.md`](apps/api/CLAUDE.md),
-  [`apps/web/CLAUDE.md`](apps/web/CLAUDE.md).
+| When you… | Read |
+|---|---|
+| add an endpoint, page, feature, column or env variable | [`docs/architecture.md`](docs/architecture.md) §7 (**binding**) |
+| touch the data model | `docs/architecture.md` §5 |
+| touch week or deadline logic | `docs/architecture.md` §6 |
+| set up, seed, or edit the env tables | [`docs/development.md`](docs/development.md) |
+| deploy, or touch Supabase or the Vercel build | [`docs/production.md`](docs/production.md) |
+| touch CI triage | [`docs/ci-triage.md`](docs/ci-triage.md) |
 
-Two rules architecture.md does not repeat:
-
-- Comment and code, file name will be English, but the content in docs/superpowers, docs/custom-plan and docs/custom-spec will be Vietnamese
-- **No `forwardRef()` in NestJS.** A cycle means the logic belongs in a third module.
+Convention by area lives in [`.claude/rules/`](.claude/rules/) and loads when you open a matching
+file: `web/` (`data-flow`, `routing`, `components`, `display`, `interaction`, `tests`) for
+`apps/web`; `api/` (`module`, `discord`, `config`) for `apps/api`; `shared.md` for `packages/shared`;
+`prisma.md` for `apps/api/prisma`. Per-app stack and naming: [`apps/api/CLAUDE.md`](apps/api/CLAUDE.md),
+[`apps/web/CLAUDE.md`](apps/web/CLAUDE.md).
 
 ## Secrets and `.env`
 
@@ -47,9 +45,7 @@ before anything else happens.
 - **`apps/api/.env` is always local; never point it at Supabase** — `pnpm dev`, `prisma:migrate` and
   `db:seed` all read it by default. Production values live in `apps/api/.env.production`, selected
   per command with `PRISMA_ENV_FILE`; [`docs/production.md`](docs/production.md) owns that policy.
-- A new API variable means **both** `src/config/env.validation.ts` and `.env.example`, then the tables
-  in development.md §3 and production.md §3; `src/config/__tests__/env-example.spec.ts` fails when
-  they drift.
+- A new API variable touches several files; see [`.claude/rules/api/config.md`](.claude/rules/api/config.md).
 - `seed-data.json` is real guild data and git-ignored; `seed-data-example.json` is the committed
   sample.
 
@@ -64,17 +60,14 @@ before anything else happens.
   the point, so new code never meets the old schema. Migrations are created locally with
   `prisma:migrate` and committed; CI applies them. Never run `migrate deploy` against production by
   hand.
-- **A destructive migration (drop a column, change a type) needs a data-conversion step written by
-  hand** — Prisma generates `DROP COLUMN` + `ADD COLUMN`, which loses the data.
+- Migration rules (destructive changes, enum sync): [`.claude/rules/prisma.md`](.claude/rules/prisma.md).
 - The PR body follows [`.github/pull_request_template.md`](.github/pull_request_template.md).
 
 ## Conventions
 
 - **`packages/shared` owns every shape that crosses the network** — one Zod schema, wrapped as a DTO
   on the API and used to type fetch functions on the web. Never re-declare a shape, an enum or a
-  validation rule per app. Both apps import it by real package name and run off its `dist`, so after
-  editing it run `pnpm --filter @guild/shared build` before either picks the change up at runtime;
-  types update immediately. Each app's `test` script rebuilds it first.
+  validation rule per app. Build and watch rules: [`.claude/rules/shared.md`](.claude/rules/shared.md).
 - **Validate at boundaries, trust TypeScript inside.** Zod belongs where untrusted data enters — HTTP
   bodies, env variables, JSON out of the database, third-party responses. Inside the process the type
   signature is the guarantee: no defensive re-checks, no `?? fallback` for a value that cannot be
@@ -91,5 +84,9 @@ before anything else happens.
   alike usually means a missed extraction.
 - **Tests describe behavior.** When behavior changes on purpose, its tests change in the same commit
   and the message says why.
+- **Comment, code and file names are English**; the content of `docs/superpowers`,
+  `docs/custom-plan` and `docs/custom-spec` is Vietnamese.
+- **Never mutate:** return a new object. Nest at most 4 levels, using early returns; name a threshold or limit instead of a magic
+  number.
 - **Prefer a maintained dependency** when it genuinely removes code we would otherwise own and test.
 - Ask before a large architectural change. Keep explanations short — do the task, skip the commentary.

@@ -449,8 +449,8 @@ Rules, in the order they get broken:
   package. Route paths come from `config/routes.ts`, never string literals.
 
 Display conventions (icons vs. badges, action buttons, tables) live in
-[`../apps/web/docs/frontend.md`](../apps/web/docs/frontend.md) §6, along with the reasoning behind
-this layout.
+[`display.md`](../.claude/rules/web/display.md) and [`interaction.md`](../.claude/rules/web/interaction.md);
+the reasoning behind them and this layout is in [`../apps/web/docs/frontend.md`](../apps/web/docs/frontend.md) §6.
 
 ### 4.3 The session
 
@@ -624,7 +624,7 @@ one exception is `prisma/fix-deadlines.ts`, a one-off migration of rows written 
 | **A cross-cutting backend concern** (logging, error shape, a header) | `src/common/` — interceptor, filter, guard or decorator. Never business logic. |
 | **A new environment variable** | `env.validation.ts` (+ `.env.example`) on the API; `config/api.ts` on the web side. Then the tables in [`development.md`](development.md) §3 and [`production.md`](production.md) §3. |
 | **A change to the week or deadline rules** | `session-schedule.ts` and its `__tests__` — nowhere else. The frontend must not re-derive a rule the backend owns. |
-| **A display convention** (state icon, action button, table shell) | Follow, and extend, [`frontend.md`](../apps/web/docs/frontend.md) §6 with a wrapper in `components/shared/`. |
+| **A display convention** (state icon, action button, table shell) | Follow, and extend, [`display.md`](../.claude/rules/web/display.md) or [`interaction.md`](../.claude/rules/web/interaction.md) with a wrapper in `components/shared/`. |
 | **A new Discord slash command** | One file in `src/modules/discord-bot/commands/`, holding both its `definition` and its `execute`, plus one line in `commands/index.ts`. Then `pnpm --filter api discord:register`. Nothing else changes. |
 | **A new Discord button** | A `custom_id` in `discord-bot/custom-id.ts` (encode **and** decode, so a stale button from an old build gets a clear message rather than a crash), plus a branch in `interaction-router.ts`. Never register it — buttons are not commands. |
 | **Anything that needs to know the current time** | Inject `Clock` from `common/clock`. **Never `new Date()`** outside that seam: it is what lets the week and deadline rules be tested without freezing the system clock. |

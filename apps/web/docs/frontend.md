@@ -3,6 +3,10 @@
 Why `apps/web` is laid out the way it is, the rules that keep it that way, and the display
 conventions every screen follows. This is the only doc under `apps/web/docs/`.
 
+The rules themselves live in [`.claude/rules/web/`](../../../.claude/rules/web/) and load when an agent
+touches a matching file; each section below opens with a `Rules:` line naming its file. This file keeps
+the reasons, the diagrams and the worked examples. A new convention goes in the rule file, its reason here.
+
 The binding description of what exists today — stack, `app/` vs `features/`, the session model —
 is [`docs/architecture.md`](../../../docs/architecture.md) §4. When the two disagree, architecture.md
 wins and this file needs fixing.
@@ -93,73 +97,57 @@ features/members/
 └── index.ts                        # everything another module may import
 ```
 
+Rules: [`data-flow.md`](../../../.claude/rules/web/data-flow.md).
+
 `store/` and `lib/` appear only when the feature needs them — `members` has neither, `team-builder`
 has both (a formation store, a pool filter store, and a dozen pure `lib/` modules with their own
-tests). **Don't create empty folders to match the template.**
+tests).
 
 A query key factory always lives in its own file (`*-keys.ts`), for two reasons. A `"use server"` API
 module may only export async functions, so a plain `const` object cannot live there at all. And
-`lib/cache-graph.ts` reads every feature's keys (§4 rule 5): a leaf file that imports nothing lets it
+`lib/cache-graph.ts` reads every feature's keys (§4, "Feature entry points"): a leaf file that imports nothing lets it
 do so without dragging `apiFetch` — or a `"server-only"` barrel — along.
 
 ---
 
 ## 4. Data-flow rules
 
-These are the rules that get broken first, in the order they get broken:
+Rules: [`data-flow.md`](../../../.claude/rules/web/data-flow.md) and [`routing.md`](../../../.claude/rules/web/routing.md). Two of them need their reasons written down.
 
-1. **`app/` is routing and composition only.** A page renders one feature component and nothing else.
-   Logic never lives in `app/`.
-2. **Server data → TanStack Query**, in `features/<feature>/hooks/`. **Never** put an API response
-   into Zustand.
-3. **UI state → Zustand**, in `features/<feature>/store/` — filters, dialogs, drag state. Nothing
-   that came from the network.
-4. **`lib/api-client.ts` is the only place that calls `fetch` against the backend.** Feature request
-   functions wrap `apiFetch` in `features/<feature>/api/`. Components never fetch and never call
-   `useQuery` directly — they call the feature's hook.
-5. **Never import another feature's internal file.** Go through its entry point: `index.ts`
-   (client-safe), `server.ts` (server-only) or `core/index.ts` (Edge). Only `features/auth` has all
-   three, because it has three runtimes: `index.ts` for Client Components, `server.ts` for everything
-   touching cookies (`getSession` pulls in `next/headers` and `server-only`), `core/` for everything
-   the Edge runtime can load. `proxy.ts` runs at the Edge, so it imports `@/features/auth/core` and
-   nothing deeper.
+**Feature entry points.** `features/auth` has all three entries, because it has three runtimes:
+`index.ts` for Client Components, `server.ts` for everything touching cookies (`getSession` pulls in
+`next/headers` and `server-only`), `core/` for everything the Edge runtime can load. `proxy.ts` runs at
+the Edge, so it imports `@/features/auth/core` and nothing deeper. Re-exporting a `next/headers`
+module from the client-safe barrel breaks the whole app the moment any `"use client"` file imports
+the barrel, even for an unrelated hook, and the error names the Pages Router rather than the real
+culprit.
 
-   The **only** exception: `lib/cache-graph.ts` imports `features/<feature>/api/*-keys.ts` from all
-   four features. "Writing this data makes that screen stale" is cross-feature knowledge — no single
-   feature owns it, so burying it in the writing feature puts it in the wrong place. Import the key
-   file directly, **not** the barrel: attendance's barrel drags in `"server-only"`, and since all
-   four features import `useInvalidate` back, going through barrels would create import cycles. A
-   `*-keys.ts` file imports nothing, so both problems disappear. A write site never lists keys
-   itself: it calls `useInvalidate("<topic>")` and only names what it just changed. Adding a topic
-   means adding a line to `CACHE_TOPICS` — a missing dependents entry is a compile error.
+The **only** exception to "no internal imports" (formerly §4 rule 5): `lib/cache-graph.ts` imports
+`features/<feature>/api/*-keys.ts` from all four features. "Writing this data makes that screen
+stale" is cross-feature knowledge - no single feature owns it, so burying it in the writing feature
+puts it in the wrong place. Import the key file directly, **not** the barrel: attendance's barrel
+drags in `"server-only"`, and since all four features import `useInvalidate` back, going through
+barrels would create import cycles. A `*-keys.ts` file imports nothing, so both problems disappear. A
+missing dependents entry for a new `CACHE_TOPICS` line is a compile error.
 
-   Rules 4 and 5 are lint errors, not conventions: `eslint.config.mjs` enforces the feature boundary
-   (`eslint-plugin-boundaries`, with the cache-graph exception), `fetch` outside `lib/api-client.ts`,
-   and TanStack Query imports outside `features/*/hooks`, `features/*/api`, `hooks/`,
-   `components/providers.tsx` and `lib/cache-graph.ts`. `__tests__/lint-rules.test.ts` lints one
-   violating fixture per rule, so a rule that stops reporting fails the test suite.
-6. **A write stays pending until its refetch lands.** `useInvalidate` returns a promise and a
-   mutation returns it from `onSuccess`, so `mutateAsync` resolves only once the invalidated queries
-   have new data. A fire-and-forget invalidation ends the write a whole round-trip early: the caller
-   drops its spinner, closes its dialog or clears its draft, and the screen sits on the old rows with
-   nothing saying it is still working — the pause reads as the app freezing, not as it loading. The
-   one caller that may drop the promise is `useDeadlineRefresh`, a timer nobody is waiting on.
-7. **Prefer Server Components.** `"use client"` only where interactivity actually requires it.
-8. **Import with `@/`.** Route paths come from `config/routes.ts` (`ROUTES`), never string literals.
+The feature boundary, `fetch` outside `lib/api-client.ts`, and TanStack Query imports outside
+`features/*/hooks`, `features/*/api`, `hooks/`, `components/providers.tsx` and `lib/cache-graph.ts` are
+lint errors (`eslint.config.mjs`). `__tests__/lint-rules.test.ts` lints one violating fixture per
+rule, so a rule that stops reporting fails the test suite.
 
-Shared code comes in by its real package name — `@guild/shared/enums`, `@guild/shared/schemas`,
-`@guild/shared/lib` — declared as `"@guild/shared": "workspace:*"` in `package.json`, exactly as
-`apps/api` does it (see [`architecture.md`](../../../docs/architecture.md) §3.2). Only the three
-entries in the package's `exports` map are importable; there is no path into its internal files.
+**Pending writes.** `useInvalidate` returns a promise and a mutation returns it from `onSuccess`, so
+`mutateAsync` resolves only once the invalidated queries have new data. A fire-and-forget
+invalidation ends the write a whole round-trip early: the caller drops its spinner, closes its dialog
+or clears its draft, and the screen sits on the old rows with nothing saying it is still working - the
+pause reads as the app freezing, not as it loading. The one caller that may drop the promise is
+`useDeadlineRefresh`, a timer nobody is waiting on.
 
-That means `apps/web` goes through the package's **build** like the API does: the `exports` map
-resolves the runtime condition to `dist/*.js`, so a change in `packages/shared` is invisible until
-`pnpm --filter @guild/shared build` runs. `prepare` covers `pnpm install` and `pretest` covers the
-start of a test run — but nothing rebuilds mid-session, so while `next dev` or `vitest --watch` is
-up, keep `pnpm --filter @guild/shared build --watch` running beside it.
-
-`@/*` is the app's own alias and is unrelated. It is declared twice, in `tsconfig.json` and in
-`vitest.config.ts`; `__tests__/alias-sync.test.ts` fails when a new alias is missing from either.
+Shared code comes in by its real package name, exactly as `apps/api` does it (see
+[`architecture.md`](../../../docs/architecture.md) §3.2). `apps/web` therefore goes through the
+package's **build**: the `exports` map resolves the runtime condition to `dist/*.js`, so a change in
+`packages/shared` is invisible until it is rebuilt (rules: [`shared.md`](../../../.claude/rules/shared.md)).
+`@/*` is the app's own alias and is unrelated; it is declared twice, in `tsconfig.json` and
+`vitest.config.ts`.
 
 ### The API boundary
 
@@ -237,6 +225,8 @@ the error before a round-trip.
 ---
 
 ## 5. Components
+
+Rules: [`components.md`](../../../.claude/rules/web/components.md).
 
 Three layers, with a strict rule between them:
 
@@ -378,7 +368,10 @@ successful write is `await`ed inside `run` itself, in plain order.
 
 ## 6. Display conventions
 
-System-wide, so screens look like one app. **Extend this section when you add a convention.**
+System-wide, so screens look like one app. Rules: [`display.md`](../../../.claude/rules/web/display.md) for the palette, page
+header, state icons, charts, control sizes and phone layout (through "Phone layout"), and
+[`interaction.md`](../../../.claude/rules/web/interaction.md) for everything from "Touch has no hover" on. Headings here and
+there share names. A new convention goes in the rule file; its reason goes here.
 
 ### Palette roles
 
@@ -1015,24 +1008,15 @@ is the worked example.
 
 ## 7. Naming conventions
 
-| Kind | Convention | Example |
-|---|---|---|
-| Folder | `kebab-case` | `features/team-builder/`, `components/shared/` |
-| File | `kebab-case.tsx` / `.ts` | `attendance-row.tsx`, `session-subtitle.ts` |
-| Component | `PascalCase`, matching the file name | `AttendanceRow`, `StatusIcon` |
-| Hook | `camelCase` with a `use` prefix | `useAttendanceBoard` |
-| Type / interface | `PascalCase`, **no** `I` prefix | `SessionUser`, `StatusIconProps` |
-| Constant | `SCREAMING_SNAKE_CASE` | `ROUTES`, `FETCH_API_URL`, `ACCESS_TOKEN_COOKIE` |
-| Boolean | `is` / `has` / `should` / `can` prefix | `isAttendanceClosed` |
-| Query key factory | `<feature>Keys` in `<feature>-keys.ts` | `memberKeys`, `attendanceKeys` |
-| Barrel `index.ts` | one per feature, nothing else | |
-
-Route paths are Vietnamese because they are user-visible (`/xep-team`, `/thiet-lap`); they are
-declared once in `config/routes.ts` and referenced as `ROUTES.*`.
+The table lives in [`apps/web/CLAUDE.md`](../CLAUDE.md), which loads for every file in the app. Route
+paths are Vietnamese because they are user-visible; see
+[`routing.md`](../../../.claude/rules/web/routing.md).
 
 ---
 
 ## 8. Tests
+
+Rules: [`tests.md`](../../../.claude/rules/web/tests.md).
 
 Vitest, `pnpm test`. Tests live in `__tests__/` beside the folder they cover and run in the **node**
 environment by default. Most files here are `.test.ts` on node. Anything needing a DOM — a hook
@@ -1073,20 +1057,15 @@ Zustand stores reset).
 
 ## 9. Anti-patterns
 
-| ❌ Wrong | ✅ Right |
-|---|---|
-| `fetch` inside a component or a hook | The feature's `api/` function, over `apiFetch` |
-| API data in a Zustand store | TanStack Query owns server state; Zustand owns UI state |
-| Two hooks writing the same store slice | One hook owns the slice; the others hand it a value through that hook's handler |
-| A mutation listing another feature's query keys | `useInvalidate("<topic>")`; the graph lives in `lib/cache-graph.ts` |
-| Logic in `app/<route>/page.tsx` | A thin page rendering one feature component |
-| `import { X } from "@/features/other/lib/x"` | Import from the feature's `index.ts` |
-| Editing `components/ui/button.tsx` for one feature's variant | Wrap it in `components/shared/`; edit `components/ui/` only for an app-wide change |
-| Re-writing the backend's error message | Render `ApiError.message` verbatim |
-| Recomputing a deadline on the client | Use the `isAttendanceClosed` the API sent |
-| Hardcoding `"/thiet-lap"` | `ROUTES.settings` |
-| `"use client"` at the top of every file | Server Component by default; opt in where needed |
-| An admin route guarded only by hiding its nav link | `ADMIN_PATH_PREFIXES` + `getSession()` in the page + the API guard |
+Every old row now lives as a rule: `fetch` in a component, API data in a store, two hooks on one
+slice, listing another feature's keys, an internal import from another feature, `"use client"`
+everywhere → [`data-flow.md`](../../../.claude/rules/web/data-flow.md) and
+[`components.md`](../../../.claude/rules/web/components.md); logic in a page, a hard-coded path, an
+unguarded admin route → [`routing.md`](../../../.claude/rules/web/routing.md); editing
+`components/ui/` for one variant → [`components.md`](../../../.claude/rules/web/components.md);
+re-wording the backend's error, recomputing a deadline →
+[`data-flow.md`](../../../.claude/rules/web/data-flow.md).
+
 
 ---
 

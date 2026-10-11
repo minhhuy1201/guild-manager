@@ -1,0 +1,116 @@
+---
+paths:
+  - "apps/web/**/*.tsx"
+  - "apps/web/app/globals.css"
+  - "apps/web/lib/motion.ts"
+---
+
+# Web interaction conventions
+
+A new interaction convention goes here; its reason goes in `frontend.md`.
+
+## Touch has no hover
+
+- Make everything needed to understand or act on a screen visible without hover: warnings, the reason a button is disabled, unsaved state - in words, next to the thing.
+- Open a `Popover` on tap for text cut short (an absence reason).
+- Use a tooltip only to repeat what is findable another way (the guild class icon).
+- Never carry information in `title=""`.
+
+## A clickable element → the pointer cursor, from `globals.css`
+
+- Never write `cursor-pointer` at a call site. One base rule in `globals.css` covers `button`, `summary`, `select` and the roles `button`, `tab`, `option`; disabled controls keep the arrow.
+- Make a clickable `div` a `button` instead.
+
+## A row that opens a page → the whole card is the link
+
+- Make the whole row the link: one `Link` with an `absolute inset-0` span over a `relative` card. Never a clickable `div`. Worked example: `tactic-list-screen.tsx`.
+- Put the feedback on the card: `hover:bg-foreground/5`, `focus-within:ring-3 focus-within:ring-ring/50`.
+- Make row actions `relative` (`RowActions`) so they sit above the overlay.
+
+## The surface behind a hovered or selected control
+
+- Give a bordered control `bg-card`, never a transparent fill.
+- Neutral hover: `hover:bg-foreground/5`; `bg-foreground/10` while a popup is open. Do not use `bg-muted` or `bg-secondary` for hover or selected state.
+- Selected: a solid `primary` surface with `primary-foreground` text (default `TabsTrigger`, team builder session cards).
+- Current page in the header nav: not a primary surface. Keep the ghost button, `text-foreground`, a `jade` icon and a 2px `jade` bar. Render each entry as a plain `Link` styled with `buttonVariants`, never a `Button` rendering a link. The same entries (`nav-items.ts`) feed `mobile-tab-bar.tsx` below `sm`; `desktopOnly` entries stay off it.
+- Reserve the tab bar's height through `--app-bottom-inset`; every sticky bottom bar sits above it.
+- Paint a hovered menu item with `data-highlighted:bg-foreground/5`, never `focus:` and never `bg-accent`.
+- Skip the selected item on hover: write `not-data-active:hover:*`.
+
+## The selected tab → a `primary` surface
+
+- Keep the `default` `tabs.tsx` variant: track `border border-border bg-card` (`dark:bg-foreground/5`), selected tab `bg-primary text-primary-foreground font-semibold`, other tabs `text-foreground`.
+- Override tabs at the call site (as `session-tabs.tsx` does). Never edit the `default` variant.
+
+## Actions
+
+- Create: a labelled button (`CreateButton`).
+- Edit / delete on a row: icon buttons (`EditAction`, `DeleteAction`) inside `RowActions`, each with a tooltip and `sr-only` text.
+- Confirm every destructive action in a dialog.
+- Give a dangerous menu entry `DropdownMenuItem variant="destructive"`, never a hand-rolled `className`. Put "Đăng xuất" last, after a `DropdownMenuSeparator` (`user-menu`).
+
+## Empty state
+
+- Say "loaded fine, holds nothing" only through `EmptyState` (`components/shared/empty-state.tsx`). Inside a table it arrives through `table-body-state`.
+- Use `flex flex-col items-center gap-3 py-8 text-center`. Keep `border-dashed` for drop zones only.
+
+## A missing page or a crash → `app/not-found.tsx`, `app/error.tsx`
+
+- Keep both inside the root layout: guild seal at `lg`, a one-line `font-heading` heading, one short sentence, a way back to attendance.
+- Add "Thử lại" (`reset()`) on the error page. Never print the thrown message; show the `digest` when there is one.
+
+## Unsaved work → a save bar pinned to the bottom
+
+- Put Save and discard in `UnsavedChangesBar` (`components/shared/unsaved-changes-bar.tsx`), rendered only while there is something to save. The save error replaces the count.
+- Make it `sticky`, `--app-bottom-inset` plus a small gap from the bottom. Never `fixed`.
+- Pass `undo` (`{ onUndo, canUndo }`) when the screen has undo; the bar then shows "Hoàn tác" between reset and save.
+- Take every team builder undo step through `editActiveDraft` in `formation-store`. Keep the shown team in `team-view-store`, apart from `formation-store`.
+- Bind Ctrl/Cmd+S and Ctrl/Cmd+Z through `useSaveShortcut` and `useUndoShortcut`. Leave Ctrl+Z to the browser inside a text field; inside a dialog neither shortcut touches the formation.
+- Keep non-save actions (copy a line-up, announce on Discord) in the top toolbar. Disable an action that must not run on dirty work and say why in a tooltip.
+- On a phone (below `md`) show one team at a time via `TeamSwitcher`. Hide the rest with `max-md:hidden`, not by leaving them out of the tree. Drag after 8px (mouse) or a 250ms press (touch). Never `touch-none` a card.
+- Keep `FormationLayout` `screen` to a one-line banner; `capture` keeps five columns, ten teams, the tall banner and no chips.
+
+## Feedback after a write → a toast
+
+- Raise a toast through `components/shared/toast.ts` (`toastSuccess` / `toastError`), never `sonner` directly. One `<Toaster position="top-center" />` lives in `components/providers.tsx`.
+- Use emerald for success and `destructive` for failure, as a 10% tint. The accent is `--color-emerald-600`, not `--color-green-600` (not emitted).
+- Use a toast for a write with no visible result of its own (`member-attendance-card`). Use the inline error line that keeps its slot for a write inside a table or dialog (`members-panel`).
+
+## Motion
+
+- Use only the four tokens in `globals.css`: `--duration-fast` 120ms (colour, hover, press), `--duration-base` 200ms (show/hide in an existing frame), `--duration-slow` 320ms (skeleton ⇄ data), `--ease-out-soft` (every easing). Write a duration as `duration-[var(--duration-base)]`.
+- Never animate layout geometry: no `height`, `width`, `scale` on table content, no `translate` on anything in place. An arriving element may rise a few pixels. A portal popup may slide in (`SelectContent` needs `alignItemWithTrigger={false}`).
+- Keep `ease-linear` only for the login button sheen.
+- Answer `prefers-reduced-motion` once, at the end of `globals.css`, never at a call site.
+- Spinner or skeleton: skeleton for an unknown row count on first load; `Spinner` in the button or cell for a user-triggered wait; nothing for a background refetch.
+- Use the only spinner, `components/shared/spinner.tsx` (`sm` | `md`). Pass `label` only where nothing else names it.
+- Wrap an error line above or below a table in a fixed `min-h-*` so it never pushes the table (`members-panel`).
+
+## Entrance and data reveal
+
+- Reveal data with `REVEAL_CLASS` + `revealStyle(index)` from `lib/motion.ts` (40ms steps, capped at the ninth). A new list of loaded data takes the helper, never a delay of its own. Wrap a component without `className` in a one-cell `grid`.
+- Let `<main>` children run `page-enter` (60ms stagger). Table rows run `fade-in-soft` (opacity only). `Skeleton` uses `animate-shimmer`.
+- Wrap a block far below the fold in `ScrollReveal`; only the wrapper is a Client Component.
+- Fill every entrance `backwards`, never `both`. End every keyframe on `transform: none`.
+- Never reveal the formation grid.
+- Keep the reduced-motion rule zeroing `animation-delay`.
+
+## Tables
+
+- Put loading / failure / empty / data in `table-body-state` inside `<TableBody>`. The call site only supplies `renderRow`.
+- Make `columns` equal the header `<th>` count. Pin a data-driven count in one variable shared by header and body (`attendance-grid`).
+- Remove a viewer-only column from header, row and `columns` together, on one flag.
+- Make a summary row a second header row of `td` cells.
+- Keep the table's look in `DataTable`'s `TABLE_SKIN` (`components/shared/data-table.tsx`), never in `components/ui/table.tsx`.
+- Page with `use-table-pagination` + `table-pagination-bar` / `page-size-select`. Always render the bar, even at one page. Hide page numbers below `lg`, keep the four arrows.
+
+## A shortcut → a key cap (`Kbd`), on the button itself
+
+- Show shortcut keys as `Kbd` caps (`components/ui/kbd.tsx`) beside the label. Worked example: the tactic editor toolbar.
+- Keep one source for keys: `features/tactics/lib/shortcuts.ts` feeds both the handler and the caps. `shortcutLabel` writes the `title`.
+- Mark the caps `aria-hidden`.
+- Step a tablist with left/right arrows, stopping at the ends (`useStageArrows`, `StageArrowHint`). Turn the keys off while focus is in a field (`isTypingTarget`).
+- Follow the ARIA tablist pattern: roving `tabIndex` (`0` selected, `-1` rest), and put the ref from `useStageArrows` on the `role="tablist"` element.
+- Take the modifier from `useModifierKey` ("⌘" on Mac, "Ctrl" elsewhere). Never read `navigator` during render.
+
+Why: [`frontend.md` §6](../../../apps/web/docs/frontend.md#6-display-conventions).

@@ -1,6 +1,6 @@
 # AC1 - Luật nạp theo path
 
-Ngày: 2026-10-10 · Trạng thái: **spec, chưa triển khai** · Tổng quan:
+Ngày: 2026-10-10 · Trạng thái: **đang triển khai** ([plan](../custom-plan/2026-10-11-ac1-path-scoped-rules-plan.md)) · Tổng quan:
 [`2026-10-10-agent-context-review-overview.md`](2026-10-10-agent-context-review-overview.md) · Phụ
 thuộc: AC2 và AC3 merge trước
 
@@ -30,8 +30,8 @@ thuộc: AC2 và AC3 merge trước
 
 | # | Câu hỏi | Quyết định đề xuất | Trạng thái |
 |---|---|---|---|
-| D1 | Ai là bản gốc của convention | Rule file. `frontend.md` §6 và `backend.md` giữ phần "vì sao" và sơ đồ, phần luật đổi thành link. | **mở**: cần user chốt |
-| D2 | `rules/common/*` | Xoá `security.md`, vì nó là checklist chung chung và repo đã có Trivy và CodeQL. Từ `coding-style.md` giữ những gì repo thực sự theo, chuyển vào root `CLAUDE.md` hoặc rule có `paths`. Bỏ phần trùng với `~/.claude/CLAUDE.md`. | **mở** |
+| D1 | Ai là bản gốc của convention | Rule file. `frontend.md` §6 và `backend.md` giữ phần "vì sao" và sơ đồ, phần luật đổi thành link. | **chốt** 2026-10-11 |
+| D2 | `rules/common/*` | Xoá `security.md`, vì nó là checklist chung chung và repo đã có Trivy và CodeQL. Từ `coding-style.md` giữ những gì repo thực sự theo, chuyển vào root `CLAUDE.md` hoặc rule có `paths`. Bỏ phần trùng với `~/.claude/CLAUDE.md`. | **chốt** 2026-10-11: xoá cả hai file |
 | D3 | `apps/*/CLAUDE.md` | Giữ, nhưng rút còn lệnh, stack và trỏ tới rule. Hai file này đã nạp theo yêu cầu, nên tác dụng giống rule có `paths=apps/web/**`. | đề xuất |
 | D4 | Viết lại hay chuyển nguyên văn | Viết gọn, mệnh lệnh, mỗi luật một ý. Bỏ phần lịch sử và lý do dài, để chúng ở doc cho người. | đề xuất |
 | D5 | Ngôn ngữ | Tiếng Anh, theo `CLAUDE.md`: comment, code và tên file bằng tiếng Anh. | đã có luật |
@@ -41,31 +41,26 @@ thuộc: AC2 và AC3 merge trước
 ```
 .claude/rules/
 ├── web/
-│   ├── data-flow.md     paths: apps/web/features/**, apps/web/hooks/**, apps/web/lib/**
-│   ├── display.md       paths: apps/web/**/*.tsx            (frontend.md §6, nửa 1)
-│   ├── interaction.md   paths: apps/web/**/*.tsx            (frontend.md §6, nửa 2)
-│   └── routing.md       paths: apps/web/app/**, apps/web/proxy.ts, apps/web/config/routes.ts
+│   ├── components.md
+│   ├── tests.md
+│   ├── data-flow.md
+│   ├── display.md
+│   ├── interaction.md
+│   └── routing.md
 ├── api/
-│   ├── module.md        paths: apps/api/src/modules/**
-│   ├── discord.md       paths: apps/api/src/modules/discord-bot/**
-│   └── config.md        paths: apps/api/src/config/**, apps/api/.env.example
-├── shared.md            paths: packages/shared/**
-└── prisma.md            paths: apps/api/prisma/**
+│   ├── module.md
+│   ├── discord.md
+│   └── config.md
+├── shared.md
+└── prisma.md
 ```
 
-Nguồn luật cho mỗi file lấy từ `apps/*/CLAUDE.md` (phần "rules that get broken first"),
+Hai bảng đặt tên ở lại `apps/*/CLAUDE.md`. `paths` chính xác và bản đồ nguồn: xem plan. Nguồn luật cho mỗi file lấy từ `apps/*/CLAUDE.md` (phần "rules that get broken first"),
 `frontend.md` §4, §6, §9 và `backend.md`. Khi viết plan, đếm lại từng mục.
 
 ## 5. Chia PR
 
-Mỗi PR một vùng, để diff (dòng xoá + dòng thêm) dưới 900.
-
-| PR | Nội dung | Ước tính |
-|---|---|---|
-| AC1-a | Root `CLAUDE.md` (bảng tra), `rules/common`, `rules/web/data-flow.md`, `routing.md` | ~550 |
-| AC1-b | `rules/web/display.md` từ `frontend.md` §6 dòng 372-~690 | ~500 |
-| AC1-c | `rules/web/interaction.md` từ §6 dòng ~690-1008 | ~500 |
-| AC1-d | `rules/api/*`, `shared.md`, `prisma.md` từ `backend.md` + `apps/api/CLAUDE.md` | ~750 |
+Một PR. User bỏ giới hạn 900 dòng ngày 2026-10-11.
 
 ## 6. Tiêu chí xong
 
@@ -77,9 +72,18 @@ Mỗi PR một vùng, để diff (dòng xoá + dòng thêm) dưới 900.
   chiếu trong PR.
 - AC2 và AC3 vẫn xanh. Đây là lưới an toàn khi chữ rời khỏi context.
 
+### Bằng chứng probe (2026-10-11, hook `InstructionsLoaded`)
+
+| Lượt | Hành động | Rule nạp (`path_glob_match`) |
+|---|---|---|
+| 1 | Read `apps/web/features/members/components/member-row.tsx` | `web/display`, `web/interaction`, `web/data-flow`, `web/components`; `apps/web/CLAUDE.md` (`nested_traversal`) |
+| 2 | Read `apps/api/src/modules/discord-bot/commands/index.ts` | `api/module`, `api/discord`; `apps/api/CLAUDE.md` |
+| 3 | Write `apps/web/features/zz-probe/probe.tsx` (file mới) | `web/display`, `web/interaction`, `web/data-flow` |
+
+Cả ba lượt: chỉ `~/.claude/CLAUDE.md` và `CLAUDE.md` nạp với `session_start`, không rule nào trong `.claude/rules/`.
+
 ## 7. Rủi ro
 
 - Rule chỉ nạp khi đọc hoặc sửa file khớp. Một task bắt đầu bằng việc tạo file mới ở thư mục mới có
-  thể chưa nạp rule nào. Docs Claude Code nói Write cũng kích hoạt path rule, nhưng chưa kiểm thực
-  tế [unknown]. Kiểm bằng log `InstructionsLoaded` trước khi merge AC1-a.
+  thể chưa nạp rule nào. Docs Claude Code: "A path-scoped rule loads when Claude uses the Read, Write, or Edit tool on a matching file." Chưa kiểm thực tế [unknown]. Kiểm bằng log `InstructionsLoaded` trước khi merge AC1-a.
 - Hai bản lệch nhau nếu D1 không chốt "một chủ".
