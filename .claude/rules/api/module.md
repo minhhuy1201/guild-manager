@@ -2,6 +2,7 @@
 paths:
   - "apps/api/src/modules/**"
   - "apps/api/src/common/**"
+  - "apps/api/src/config/**"
   - "apps/api/src/infrastructure/**"
   - "apps/api/src/app.module.ts"
   - "apps/api/vercel.json"
@@ -37,7 +38,7 @@ paths:
 
 ## Behaviour
 
-- **Keep week and deadline rules in `modules/battle-sessions/session-schedule.ts` and its `__tests__`, nowhere else.** That includes `isReminderDay` and `formatDeadlineLabel`. Never re-derive a backend rule on the frontend.
+- **Keep week and deadline rules in `modules/battle-sessions/session-schedule.ts` and its `__tests__`, nowhere else.** That includes `isReminderDay` and `formatDeadlineLabel`.
 - **Register anything that must run on a schedule as a `crons` entry in `vercel.json`** pointing at a `GET` endpoint behind `CronSecretGuard`. Never `@nestjs/schedule`: this app is a Vercel Function. The schedule is UTC and the Hobby plan only guarantees the hour.
 - **Write error `message` values in Vietnamese;** the frontend shows them verbatim.
 

@@ -1066,7 +1066,6 @@ unguarded admin route → [`routing.md`](../../../.claude/rules/web/routing.md);
 re-wording the backend's error, recomputing a deadline →
 [`data-flow.md`](../../../.claude/rules/web/data-flow.md).
 
-
 ---
 
 ## 10. Summary

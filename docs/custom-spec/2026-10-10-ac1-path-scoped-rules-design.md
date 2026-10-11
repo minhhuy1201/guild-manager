@@ -85,5 +85,5 @@ Cả ba lượt: chỉ `~/.claude/CLAUDE.md` và `CLAUDE.md` nạp với `sessio
 ## 7. Rủi ro
 
 - Rule chỉ nạp khi đọc hoặc sửa file khớp. Một task bắt đầu bằng việc tạo file mới ở thư mục mới có
-  thể chưa nạp rule nào. Docs Claude Code: "A path-scoped rule loads when Claude uses the Read, Write, or Edit tool on a matching file." Chưa kiểm thực tế [unknown]. Kiểm bằng log `InstructionsLoaded` trước khi merge AC1-a.
+  thể chưa nạp rule nào. Docs Claude Code: "A path-scoped rule loads when Claude uses the Read, Write, or Edit tool on a matching file." Đã kiểm 2026-10-11 (xem §6, lượt 3): Write file mới nạp rule khớp.
 - Hai bản lệch nhau nếu D1 không chốt "một chủ".

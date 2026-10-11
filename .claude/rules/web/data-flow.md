@@ -24,6 +24,6 @@ paths:
 - **Run admin calls in a `"use server"` module** in `features/<feature>/api/` that attaches `authHeader()` from `features/auth/server`. Client JavaScript cannot read the httpOnly token.
 - **Hand every write failure to `recoverSession` before showing it** (`hooks/use-session-recovery.ts`). When it returns `true`, show no message of your own (`if (recoverSession(error)) return;`). A derived-error hook filters the 401 with `isSessionExpired` and calls `recoverSession` unconditionally (`use-formation-draft`).
 - **Mirror `isAttendanceClosed` from the API; never recompute a week or deadline rule on the client.** The one local check is the deadline cap in `session-form-dialog`, through `isWithinDeadlineCap` and `deadlineCapFor` from `@guild/shared/lib`.
-- **Import shared code by package name:** `@guild/shared/enums|schemas|lib`. Only those three `exports` entries exist.
+- **Import shared code by package name:** `@guild/shared/enums|schemas|lib`. The `exports` list is in [`shared.md`](../shared.md).
 
 Why: [`frontend.md` §3-§4](../../../apps/web/docs/frontend.md#4-data-flow-rules).

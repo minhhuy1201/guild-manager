@@ -219,10 +219,10 @@ Theo luật "Keep spec, plan, and code consistent": quyết định đổi thì 
 - [ ] **Step 3:** Root `CLAUDE.md`: xoá các câu đã chuyển (dòng 50-52 sang `config.md` và chỉ để lại
   một link; dòng 67-68 sang `prisma.md`; câu build trong dòng 75-77 sang `shared.md`).
 - [ ] **Step 4:** Từ `coding-style.md`, thêm vào root "Conventions" những gì repo đang theo:
-  immutability (tạo object mới, không mutate); file 200-400 dòng, tối đa 800; hàm dưới 50 dòng;
+  immutability (tạo object mới, không mutate);
   lồng tối đa 4 cấp, dùng early return; hằng có tên thay cho magic number. Bỏ KISS/DRY/YAGNI, error
   handling, input validation (trùng với "Validate at boundaries" và "empty catch" đã có). Tiền tố
-  boolean đã ở hai bảng đặt tên.
+  boolean đã ở hai bảng đặt tên. Bỏ giới hạn số dòng file/hàm (quyết định 2026-10-11, repo đang vi phạm).
 - [ ] **Step 5:** `git rm .claude/rules/common/coding-style.md .claude/rules/common/security.md`.
   `security.md` còn mâu thuẫn với repo: "Rate limit all endpoints" trái với `backend.md` §10
   ("deliberately absent").
