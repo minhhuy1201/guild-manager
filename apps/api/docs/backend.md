@@ -9,6 +9,10 @@ wins and this file needs fixing.
 
 Running and operating the API: [`README.md`](../README.md).
 
+The rules themselves live in [`.claude/rules/api/`](../../../.claude/rules/api/), [`shared.md`](../../../.claude/rules/shared.md) and
+[`prisma.md`](../../../.claude/rules/prisma.md) and load when an agent touches a matching file. This file keeps the reasons,
+the diagrams and the worked examples. A new convention goes in the rule file, its reason here.
+
 ---
 
 ## 1. The idea
@@ -169,18 +173,10 @@ modules/  ──►  infrastructure/  ──►  config/
     └─────────────────┴──►  common/
 ```
 
-**Hard rules:**
-
-1. `common/` and `config/` must **not** import from `modules/` or `infrastructure/`.
-2. Modules **may** import each other, but only through two files: `<domain>.public.ts` for code, and
-   `<domain>.module.ts` for DI registration (`app.module.ts`, and `imports: [...]` in a sibling
-   module). Never reach into another module's internal files.
-3. If `A` needs `B` and `B` needs `A`, that logic belongs somewhere else — a third module, or a
-   shared service. **`forwardRef()` is not the answer** (also stated in `AGENTS.md`).
-4. A controller **never** touches Prisma. The flow is Controller → Service → (Repository) → Prisma.
-5. A controller **never** returns a raw Prisma model. Map it to the response shape from
-   `@guild/shared/schemas` (with `satisfies`), so `password` and other internals cannot leak by
-   accident.
+**Hard rules:** five of them, now in [`module.md`](../../../.claude/rules/api/module.md): `common/` and `config/` never import
+upward; modules meet only through `<domain>.public.ts` and `<domain>.module.ts`; no `forwardRef()`;
+a controller never touches Prisma; a controller never returns a raw Prisma model. The reason for
+the third: if `A` needs `B` and `B` needs `A`, that logic belongs somewhere else - a third module.
 
 ### Enforced by ESLint
 
@@ -257,7 +253,7 @@ character `!` or `.`", and `[^.]` matches nothing at all.
 Because ESLint flat config **replaces** same-named rules instead of merging them, each
 `no-restricted-imports` block must declare everything that applies to its files.
 
-`prisma/**` and `prisma.config.ts` are exempt — they run outside the app, under the Prisma CLI.
+`prisma/**` and `prisma.config.ts` are exempt — they run outside the app, under the Prisma CLI ([`prisma.md`](../../../.claude/rules/prisma.md)).
 
 `pnpm lint` is what checks this. CI runs it on every push and pull request against `main`
 (`.github/workflows/ci.yml`), so a broken boundary blocks the deploy — run it locally first and find
@@ -344,45 +340,22 @@ ConfigModule.forRoot({
 });
 ```
 
-Consequences worth knowing:
+Rules: [`config.md`](../../../.claude/rules/api/config.md). Consequences worth knowing:
 
 - A missing or malformed variable **crashes the process at startup**, with a Vietnamese message
-  naming the field — far better than a failure halfway through a request.
-- Nothing reads `process.env` directly. Inject `ConfigService<Env, true>` (aliased as
-  `AppConfigService`) and use `config.get('X', { infer: true })` so the value keeps its parsed type.
-  `PrismaService` gets `DATABASE_URL` this way too. The one exception is
-  `config/response-verification.ts`, and it is documented in the file: its consumers are the
-  `<domain>.codec.ts` functions, which are module-level and outside the DI graph.
-- `DIRECT_DATABASE_URL` is intentionally **not** in the schema: it is for the Prisma CLI only, never
-  the runtime.
-- A new variable means: `env.validation.ts` + `.env.example` + the tables in
-  [`development.md`](../../../docs/development.md) §3 and
-  [`production.md`](../../../docs/production.md) §3.
+  naming the field - far better than a failure halfway through a request.
+- The `process.env` exceptions are `config/response-verification.ts` (its consumers are the
+  module-level `<domain>.codec.ts` functions, outside the DI graph) and the hand-run `src/scripts/`.
 
 ---
 
 ## 8. Naming conventions
 
-| Kind | Convention | Example |
-|---|---|---|
-| Folder | `kebab-case`, plural for a collection domain | `characters/`, `battle-sessions/` |
-| File | `kebab-case.type.ts` | `mark-attendance.dto.ts`, `current-user.decorator.ts` |
-| Class | `PascalCase` | `CreateCharacterDto`, `AllExceptionsFilter` |
-| Interface / type | `PascalCase`, **no** `I` prefix | `MemberEntity`, `ErrorResponseBody` |
-| Constant | `SCREAMING_SNAKE_CASE` | `API_PREFIX`, `REQUEST_ID_HEADER` |
-| Barrel `index.ts` | only in `common/` and `config/` | |
-
-> ⚠️ Do not add barrels inside `modules/` — with NestJS DI they are a reliable way to create a
-> circular import.
-
-The one exception is `<domain>.public.ts`, and it is narrow enough to keep the warning true: exactly
-one per module, re-exports only, and it never imports from another module. Two `.public.ts` files
-needing each other is not a barrel problem, it is a real domain cycle — extract a third module
-(rule 3 in §4). What stays banned is an `index.ts` that gathers up a whole module.
-
-Two things the repo-wide conventions add: identifiers, comments and doc blocks are in Vietnamese
-where they already are, but **user-facing strings are always Vietnamese** (they are returned
-verbatim by the frontend), and file names stay English.
+The table lives in [`apps/api/CLAUDE.md`](../CLAUDE.md), which loads for every file in the app. Why no
+barrels inside `modules/`: with NestJS DI they are a reliable way to create a circular import. The one
+exception is `<domain>.public.ts`, narrow enough to keep that true: exactly one per module,
+re-exports only, never importing another module. Two `.public.ts` files needing each other is not a
+barrel problem, it is a real domain cycle - extract a third module.
 
 ---
 
@@ -447,18 +420,11 @@ What a NestJS project should have on day one, and where this one stands:
 
 ## 11. Anti-patterns
 
-| ❌ Wrong | ✅ Right |
-|---|---|
-| An 800-line `utils/index.ts` holding everything | Split by domain, and keep domain helpers in the module (`characters.lib.ts`) |
-| Controller calling Prisma directly | Controller → Service → (Repository) → Prisma |
-| `forwardRef()` everywhere | Restructure: extract a third module, or use an event |
-| Business logic in a DTO | A DTO validates shape only; logic lives in the service |
-| `@Query('x')` as a bare string | A query shape is a request shape: declare it in `packages/shared`, wrap it with `createZodDto`, take it as `@Query() query: XDto` |
-| Returning a Prisma model straight from the API | Map to the shared response shape, so `password`/`deletedAt` cannot leak |
-| `any`, "I'll fix it later" | `unknown` + a type guard (`no-explicit-any` is an error here) |
-| Reading `process.env` inside a service | `ConfigService<Env, true>`, declared in `env.validation.ts` (the single exception lives in `config/response-verification.ts`) |
-| Re-deriving a backend rule on the frontend | The rule stays in one place (`session-schedule.ts`) |
-| One `shared.module.ts` with 30 providers | Split by purpose — or don't create it until it's needed |
+Each row of the old table is now a rule in [`module.md`](../../../.claude/rules/api/module.md) or
+[`config.md`](../../../.claude/rules/api/config.md): no 800-line `utils/index.ts`, no Prisma in a controller, no
+`forwardRef()`, no logic in a DTO, no bare `@Query('x')`, no raw Prisma model in a response, no `any`,
+no `process.env` in a service, no backend rule re-derived on the frontend, no `shared.module.ts` of 30
+providers.
 
 ---
 

@@ -3,47 +3,38 @@
 Guild Manager's frontend: Next.js 16 App Router, Tailwind 4 + shadcn/ui on Base UI, TanStack Query,
 Zustand, Vitest. All user-facing copy is Vietnamese; identifiers and file names are English.
 
-- [`docs/frontend.md`](docs/frontend.md) — the working reference for this app: folder layout, the
-  feature template, the data-flow rules, the API boundary, server actions and the admin token, the
-  session and the proxy, **display conventions (§6)**, naming, anti-patterns. Read it before creating
-  or changing anything under `apps/web`, and extend §6 when you add a convention.
-- [`../../docs/architecture.md`](../../docs/architecture.md) §4 describes the same app and **wins when
-  the two disagree**; §7 says where new behavior goes.
+Convention lives in [`.claude/rules/web/`](../../.claude/rules/web/) and loads when you touch a
+matching file. [`docs/frontend.md`](docs/frontend.md) keeps the reasons and worked examples. A new
+convention goes in the matching rule file; its reason goes in `docs/frontend.md`.
+[`../../docs/architecture.md`](../../docs/architecture.md) §4 says what exists today; the rule files
+win on convention, and §7 says where new behavior goes.
 
-The rules that get broken first, in the order they get broken:
+| When you touch… | Rule file |
+|---|---|
+| `features/`, `hooks/`, `lib/`: queries, stores, `apiFetch`, server actions, sessions | `data-flow.md` |
+| `app/`, `proxy.ts`, `config/`, `features/auth/`: routes, admin guard | `routing.md` |
+| `components/`, `features/*/components/`: shadcn, query groups, filters, dialogs | `components.md` |
+| any `.tsx` or `globals.css`: palette, headers, icons, sizes, phone layout | `display.md` |
+| any `.tsx` or `globals.css`: hover, motion, tables, toasts, save bars, shortcuts | `interaction.md` |
+| `__tests__/`, `vitest.config.ts` | `tests.md` |
 
-- **`app/` is routing and composition only** — a page renders one feature component. Logic lives in
-  `features/<feature>/`.
-- **Server data → TanStack Query** hooks; **UI state → Zustand** (filters, dialogs, drag state). An
-  API response never enters a store.
-- **`lib/api-client.ts` is the only place that calls `fetch` against the backend.** Feature request
-  functions wrap `apiFetch` in `features/<feature>/api/`; components call the feature's hook, never
-  `useQuery` directly. Both are lint errors (`eslint.config.mjs`).
-- **Cross-feature imports go through the feature's entry point** — `index.ts` (client-safe),
-  `server.ts` (server-only) or `core/index.ts` (Edge) — never an internal file. `eslint-plugin-boundaries`
-  enforces it, and `__tests__/lint-rules.test.ts` keeps the rule from going silent. A feature
-  holding server-only code splits that entry in two: `index.ts` stays client-safe and `server.ts`
-  (starting with `import "server-only"`) carries everything touching `next/headers` or cookies —
-  `features/auth` is the worked example. Re-exporting a `next/headers` module from the client-safe
-  barrel breaks the whole app the moment any `"use client"` file imports the barrel, even for an
-  unrelated hook, and the error names the Pages Router rather than the real culprit.
-- **`components/ui/` is shadcn CLI output, edited only for app-wide changes** (contrast, size,
-  surface) that every screen should get. A variant only one feature needs is a wrapper in
-  `components/shared/`.
-- **Render `ApiError.message` verbatim** — the backend already writes the Vietnamese text meant for
-  the user.
-- **Week and deadline rules belong to the backend.** Mirror the `isAttendanceClosed` the API sends;
-  never recompute one on the client.
-- **Server Component by default**; `"use client"` only where interactivity requires it. Route paths
-  come from `ROUTES` in `config/routes.ts`, never string literals.
-- **A new admin route needs all three**: the prefix in `ADMIN_PATH_PREFIXES`
-  (`features/auth/core/access.ts`, applied by `proxy.ts`), a `getSession()` check in the page, and the guard on the API. Hiding the nav link is cosmetic.
 - **`@/*` is the app's only alias**; shared code comes in by real package name
   (`@guild/shared/enums|schemas|lib`), same as `apps/api`. The alias is declared **twice** —
   `tsconfig.json` and `vitest.config.ts` — and `__tests__/alias-sync.test.ts` fails when the two drift.
-- **Tests run against `packages/shared/dist`**, not its sources — the `exports` map sends every
-  runtime to `dist/*.js`. `pretest` rebuilds the package first, in both apps. It does **not** cover
-  `test:watch` or `next dev` — keep `pnpm --filter @guild/shared build --watch` beside those.
+
+## Naming
+
+| Kind | Convention | Example |
+|---|---|---|
+| Folder | `kebab-case` | `features/team-builder/`, `components/shared/` |
+| File | `kebab-case.tsx` / `.ts` | `attendance-row.tsx`, `session-subtitle.ts` |
+| Component | `PascalCase`, matching the file name | `AttendanceRow`, `StatusIcon` |
+| Hook | `camelCase` with a `use` prefix | `useAttendanceBoard` |
+| Type / interface | `PascalCase`, **no** `I` prefix | `SessionUser`, `StatusIconProps` |
+| Constant | `SCREAMING_SNAKE_CASE` | `ROUTES`, `FETCH_API_URL`, `ACCESS_TOKEN_COOKIE` |
+| Boolean | `is` / `has` / `should` / `can` prefix | `isAttendanceClosed` |
+| Query key factory | `<feature>Keys` in `<feature>-keys.ts` | `memberKeys`, `attendanceKeys` |
+| Barrel `index.ts` | one per feature, nothing else | |
 
 <!-- BEGIN:nextjs-agent-rules -->
 

@@ -167,7 +167,7 @@ CI runs the same checks on every pull request.
 | [`apps/api/README.md`](apps/api/README.md) | Backend: running it, commands, the database |
 | [`apps/web/README.md`](apps/web/README.md) | Frontend: running it, commands, env |
 | [`CLAUDE.md`](CLAUDE.md) | Code conventions for humans and AI agents; [`apps/api/CLAUDE.md`](apps/api/CLAUDE.md) and [`apps/web/CLAUDE.md`](apps/web/CLAUDE.md) add the per-app rules |
-| [`apps/api/docs/backend.md`](apps/api/docs/backend.md) | Backend structure: layers, dependency rules, conventions |
-| [`apps/web/docs/frontend.md`](apps/web/docs/frontend.md) | Frontend structure: data-flow rules, components, UI conventions |
+| [`apps/api/docs/backend.md`](apps/api/docs/backend.md) | The reasoning behind the rules in `.claude/rules/api/` |
+| [`apps/web/docs/frontend.md`](apps/web/docs/frontend.md) | The reasoning behind the rules in `.claude/rules/web/` |
 | `docs/superpowers/specs/` and `docs/superpowers/plans/` | The design spec and plan behind each feature |
 | `docs/custom-spec/` and `docs/custom-plan/` | The same pair for the architecture-review work |

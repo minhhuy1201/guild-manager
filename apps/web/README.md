@@ -41,6 +41,6 @@ additionally need the `ADMIN` role — `proxy.ts` decides with the rules in
 ## Documentation
 
 - [`../../docs/architecture.md`](../../docs/architecture.md) — layering, data-flow rules, session model, where new behavior goes
-- [`docs/frontend.md`](./docs/frontend.md) — folder structure, data-flow rules, components, UI conventions
+- [`docs/frontend.md`](./docs/frontend.md) — the reasoning behind the rules in `.claude/rules/web/`
 - [`../../docs/development.md`](../../docs/development.md) — monorepo-wide setup
 - [`../../docs/production.md`](../../docs/production.md) — build and deploy

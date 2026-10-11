@@ -11,7 +11,7 @@ path thay vì đọc trọn doc, luật phải luôn đúng thì code giữ (lin
 
 | # | Spec | Độ mạnh | PR ước tính |
 |---|---|---|---|
-| AC1 | [`2026-10-10-ac1-path-scoped-rules-design.md`](2026-10-10-ac1-path-scoped-rules-design.md) | Strong | 4 |
+| AC1 | [`2026-10-10-ac1-path-scoped-rules-design.md`](2026-10-10-ac1-path-scoped-rules-design.md) | Strong | 1 |
 | AC2 | [`2026-10-10-ac2-web-lint-boundaries-design.md`](2026-10-10-ac2-web-lint-boundaries-design.md) | Strong | 1 |
 | AC3 | [`2026-10-10-ac3-convention-checks-design.md`](2026-10-10-ac3-convention-checks-design.md) | Strong | 1 |
 | AC4 | [`2026-10-10-ac4-workflow-commands-design.md`](2026-10-10-ac4-workflow-commands-design.md) | Worth exploring | 1 (tối đa 3) |
@@ -34,27 +34,27 @@ path thay vì đọc trọn doc, luật phải luôn đúng thì code giữ (lin
 
 ## 2. Thứ tự và số PR
 
-Mỗi PR tối đa 900 dòng thay đổi (insertions + deletions).
+User bỏ giới hạn 900 dòng ngày 2026-10-11.
 
 | Thứ tự | PR | Ước tính dòng | Lý do đứng ở đây |
 |---|---|---|---|
 | 0 | Các spec này | ~570 (chỉ doc) | Nền cho mọi PR sau. |
 | 1 | AC2 - lint web | ~275 | Code giữ luật web trước khi AC1 bỏ doc khỏi context. |
 | 2 | AC3 - drift spec + Stop hook | ~350 | Luật "phải luôn đúng" có check trước khi AC1 cắt chữ. |
-| 3-6 | AC1 - bốn PR chuyển luật sang `.claude/rules/` | ~550 / ~500 / ~500 / ~750 | Tách theo vùng để PR dưới 900 dòng. |
-| - | **Pilot A/B** (mục 3) | 0 PR | Chạy ngoài repo; arm B là commit sau PR 6. |
-| 7 | AC5 - skill | ~30 | Sau pilot, để không lẫn vào kết quả. |
-| 8 | AC6 - archive | ~40 (rename tính 0 dòng khi git nhận ra rename) | Chỉ làm nếu pilot cho thấy agent đọc plan cũ. |
-| 9 | AC4 - `/new-env-var` | ~200 | Thêm `/new-admin-route`, `/new-discord-command` khi workflow đó lặp lại. |
+| 3 | AC1 - chuyển luật sang `.claude/rules/` | ~1.500 | Một PR cho cả AC1. |
+| - | **Pilot A/B** (mục 3) | 0 PR | Chạy ngoài repo; arm B là commit sau PR 3. |
+| 4 | AC5 - skill | ~30 | Sau pilot, để không lẫn vào kết quả. |
+| 5 | AC6 - archive | ~40 (rename tính 0 dòng khi git nhận ra rename) | Chỉ làm nếu pilot cho thấy agent đọc plan cũ. |
+| 6 | AC4 - `/new-env-var` | ~200 | Thêm `/new-admin-route`, `/new-discord-command` khi workflow đó lặp lại. |
 
-Tổng: **10 PR**, tính cả PR 0. Hai command thêm của AC4 làm con số lên 12. Bỏ AC6 nếu pilot không
-cần thì còn 9.
+Tổng: **7 PR**, tính cả PR 0. Hai command thêm của AC4 làm con số lên 9. Bỏ AC6 nếu pilot không
+cần thì còn 6.
 
 ## 3. Pilot A/B
 
 Chi tiết nằm ở report HTML, phần "Pilot A/B". Phần chốt lại ở đây:
 
-- Arm A: `798cd53`. Arm B: commit sau PR 6 (AC1 + AC2 + AC3). Trong pilot không có AC4-AC6.
+- Arm A: `798cd53`. Arm B: commit sau PR 3 (AC1 + AC2 + AC3). Trong pilot không có AC4-AC6.
 - Ba task: T1 thêm env `ATTENDANCE_REMINDER_ENABLED`; T2 trang admin thống kê 4 tuần (full-stack);
   T3 icon "đang nghỉ" trong danh sách thành viên.
 - 3 task × 2 arm × 3 lần = 18 lượt `claude -p --output-format json`, mỗi lượt một worktree mới.

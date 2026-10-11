@@ -4,66 +4,32 @@ Guild Manager's backend: NestJS 11 on Express, Prisma 7 + PostgreSQL through `@p
 Zod for env and DTO validation, Jest. Error `message` values are Vietnamese — the frontend shows them
 verbatim.
 
-- [`docs/backend.md`](docs/backend.md) — the working reference for this app: why the feature-based
-  layout, what lives inside a module, the dependency rules and their ESLint enforcement, the
-  repository question, config, naming, anti-patterns. Read it before adding a module, a guard, a
-  repository, a directory level under `src/`, or an env variable.
-- [`../../docs/architecture.md`](../../docs/architecture.md) §3 describes the same app and **wins when
-  the two disagree**; §5 is the data model, §6 the time rules, §7 where new behavior goes.
+Convention lives in [`.claude/rules/api/`](../../.claude/rules/api/), [`shared.md`](../../.claude/rules/shared.md)
+and [`prisma.md`](../../.claude/rules/prisma.md), and loads when you touch a matching file.
+[`docs/backend.md`](docs/backend.md) keeps the reasons and worked examples.
+[`../../docs/architecture.md`](../../docs/architecture.md) §3 says what exists today (§5 the data
+model, §6 the time rules, §7 where new behavior goes); the rule files win on convention.
 
-The rules that get broken first, in the order they get broken:
+| When you touch… | Rule file |
+|---|---|
+| `src/modules/`, `common/`, `infrastructure/`, `vercel.json`: layering, boundaries, crons | `module.md` |
+| `src/modules/discord-bot/`, the register script | `discord.md` |
+| `src/config/`, `.env.example`: environment variables | `config.md` |
+| `prisma/`: schema, migrations | `prisma.md` |
 
 - **There are no path aliases here.** Internal imports are relative (`../../config`), shared code goes
-  by real package name (`@guild/shared/*`). `@/…` was removed because Vercel compiles with its own
-  `tsc`, leaves the alias in the emitted JavaScript, and the function dies at runtime — do not
-  reintroduce it.
-- **Controller → Service → (Repository) → Prisma.** A controller never touches Prisma, and never
-  returns a Prisma model: map it to the response shape from `@guild/shared/schemas` (with
-  `satisfies`) so a column outside the shape (e.g. `discordAvatar` beyond `/auth/me`) cannot leak.
-- **`common/` and `config/` never import from `modules/` or `infrastructure/`**, and a module reaches
-  another module only through its `<domain>.public.ts` (code) or `*.module.ts` (DI registration).
-  `eslint-plugin-boundaries` enforces the module rule on resolved paths, so it holds at any directory
-  depth — on both sides of the import, the file reaching in and the file reached into.
-  `module-boundary.spec.ts` keeps it from breaking in silence, with one fixture per direction; the
-  nested-target one exists because that half of the rule was silently off until 2026-09-01.
-- **No `forwardRef()`.** If `A` needs `B` and `B` needs `A`, extract a third module or use an event.
-- **Nothing reads `process.env`.** Declare the variable in `config/env.validation.ts` and inject
-  `AppConfigService` (`config.get('X', { infer: true })`) so the value keeps its parsed type.
-  `DIRECT_DATABASE_URL` stays out of the schema on purpose: Prisma CLI only, never the runtime. The
-  exceptions are `config/response-verification.ts` (codecs are module-level, outside DI) and the
-  hand-run `src/scripts/` (no DI there).
-- **Every response object is built through `verifyResponse(<shape>Schema, { … } satisfies <Shape>)`**
-  — `satisfies` alone cannot see through the `as` cast on a database enum.
-- **Add a piece when a second caller appears** — `guards/`, `decorators/`, `<domain>.repository.ts`.
-  Simple CRUD calls `PrismaService` straight from the service.
-- **Barrels live in `common/` and `config/` only.** Inside `modules/` they are a reliable way to
-  create a circular DI import. The one exception is `<domain>.public.ts`: exactly one per module,
-  re-exports only, and it never imports from another module — a cycle between two of them is a real
-  domain cycle, so extract a third module.
-- **Week and deadline rules live in `modules/battle-sessions/session-schedule.ts`** and its
-  `__tests__`, nowhere else. That includes `isReminderDay` (which morning the bot nudges people for
-  a deadline) and `formatDeadlineLabel` — a second copy of the weekday names is exactly the drift
-  this rule exists to prevent.
-- **Anything that must run on a schedule is a `crons` entry in `vercel.json`** pointing at a `GET`
-  endpoint behind `CronSecretGuard`, never `@nestjs/schedule`: this app is a Vercel Function, so no
-  process is alive to tick. The schedule is UTC, and the Hobby plan only guarantees the hour.
-- **A Discord slash command is one file** in `modules/discord-bot/commands/`, holding both its
-  `definition` (what gets sent to Discord) and its `execute`, plus one line in `commands/index.ts`.
-  No business logic lives there — reach other modules through their `*.public.ts` like anything else.
-  After adding or renaming one, run `pnpm discord:register` by hand; it is never run from CI, because
-  Discord rate-limits that route and the list only changes when a command does. Discord requires an
-  answer within **3 seconds**; `/diem-danh` and `/diem-danh-ho` read and write inside that budget and
-  answer directly, so there is deliberately no deferred reply (`type: 5`) — see
-  `docs/superpowers/specs/2026-09-02-discord-attendance-commands-design.md` §9 before adding one.
-- **A command reaches its dependencies through the `deps` argument**, never through Nest DI:
-  `src/scripts/register-discord-commands.ts` imports `commandDefinitions` without booting the app, so
-  a command has to stay a plain object. `InteractionRouter` bundles `deps` and is the only provider.
-  `ephemeral`/`ephemeralText` live in `discord-bot/reply.ts` rather than on the router, because the
-  router imports the command registry and the commands need those helpers.
-  `requireAdmin` in `discord-bot/require-admin.ts` sits there for the same reason and is how an
-  admin-only command checks its caller — the two refusals and their order live in that one function,
-  and the command only passes the sentence a non-admin should read.
-- `src/generated/prisma` is generated by `postinstall` and never committed; a schema change is
-  `prisma/schema.prisma` → `pnpm prisma:migrate` → commit the migration folder, keeping the Prisma
-  enums in step with `@guild/shared/enums` (`src/__tests__/prisma-enum-sync.spec.ts` fails when they
-  drift; it reads the generated client, so regenerate before trusting a local run).
+  by real package name (`@guild/shared/*`). Do not reintroduce `@/…`.
+- **Nothing reads `process.env`.** Declare the variable in `config/env.validation.ts`; details in
+  `config.md`.
+
+## Naming
+
+| Kind | Convention | Example |
+|---|---|---|
+| Folder | `kebab-case`, plural for a collection domain | `characters/`, `battle-sessions/` |
+| File | `kebab-case.type.ts` | `mark-attendance.dto.ts`, `current-user.decorator.ts` |
+| Class | `PascalCase` | `CreateCharacterDto`, `AllExceptionsFilter` |
+| Interface / type | `PascalCase`, **no** `I` prefix | `MemberEntity`, `ErrorResponseBody` |
+| Constant | `SCREAMING_SNAKE_CASE` | `API_PREFIX`, `REQUEST_ID_HEADER` |
+| Boolean | `is` / `has` / `should` / `can` prefix | `isReminderDay` |
+| Barrel `index.ts` | only in `common/` and `config/` | |

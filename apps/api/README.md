@@ -120,6 +120,6 @@ sinks, repeated here:
 ## Documentation
 
 - [`../../docs/architecture.md`](../../docs/architecture.md) — layering, modules, endpoints, where new behavior goes
-- [`docs/backend.md`](docs/backend.md) — the feature-based architecture theory this follows
+- [`docs/backend.md`](docs/backend.md) — the reasoning behind the rules in `.claude/rules/api/`
 - [`../../docs/development.md`](../../docs/development.md) — local setup, environment variables, commands
 - [`../../docs/production.md`](../../docs/production.md) — build, deploy, operations
