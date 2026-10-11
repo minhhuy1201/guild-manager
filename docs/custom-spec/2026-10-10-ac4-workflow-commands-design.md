@@ -44,14 +44,17 @@ User chọn không làm AC4. Lý do:
 - **Workflow hiếm.** Cả lịch sử repo có 11 commit chạm `env.validation.ts`; commit gần nhất là
   `322942d` (2026-09-20). Chưa đếm bao nhiêu commit trong đó thêm biến.
 - **Không có dữ liệu cho thấy cần.** Pilot T1: mỗi arm một lượt, cả hai sửa đủ 4 chỗ (N = 1).
-- **Giá giữ code.** Khoảng 200 dòng script chèn văn bản theo marker, dễ vỡ khi file đổi format.
+- **Giá giữ code.** Khoảng 200 dòng (cả PR: script và skill); script chèn văn bản theo marker, dễ vỡ
+  khi file đổi format.
 
 Câu hỏi chèn văn bản hay AST không còn cần trả lời. `/new-admin-route` và `/new-discord-command` cũng
-không làm. Xem lại AC4 chỉ khi có bằng chứng agent sót một trong 4 chỗ mà AC3 không bắt.
+không làm. Xem lại AC4 chỉ khi có bằng chứng agent hay sót bước 2 ở mục 3 (mô tả hàng doc, code đọc
+biến qua `AppConfigService`); `env-example.spec.ts` đã bắt lệch giữa cả 4 chỗ.
 
-Việc liên quan đáng làm hơn: tổng quan mục 3 ghi rule `.claude/rules/api/config.md` không nạp khi
-agent sửa `env.validation.ts`, dù glob là `apps/api/src/config/**`. Đó là chỗ hở thật của luồng thêm
-env var; cần điều tra trước khi tin AC1 cho task sửa env.
+Việc liên quan đáng làm hơn: tổng quan mục 3 ghi ở một lượt T1 của arm B, rule
+`.claude/rules/api/config.md` không nạp khi agent sửa `env.validation.ts`, dù glob là
+`apps/api/src/config/**`; chưa rõ nguyên nhân. Nếu lặp lại, đó là chỗ hở của luồng thêm env var; cần
+điều tra trước khi tin AC1 cho task sửa env.
 
 ## 5. Kích thước
 
