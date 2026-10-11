@@ -42,30 +42,67 @@ User bỏ giới hạn 900 dòng ngày 2026-10-11.
 | 1 | AC2 - lint web | ~275 | Code giữ luật web trước khi AC1 bỏ doc khỏi context. |
 | 2 | AC3 - drift spec + Stop hook | ~350 | Luật "phải luôn đúng" có check trước khi AC1 cắt chữ. |
 | 3 | AC1 - chuyển luật sang `.claude/rules/` | ~1.500 | Một PR cho cả AC1. |
-| - | **Pilot A/B** (mục 3) | 0 PR | Chạy ngoài repo; arm B là commit sau PR 3. |
+| - | **Pilot A/B** (mục 3) | 0 PR | Đã đo tất định ngày 2026-10-11; trục hành vi agent chưa chạy. |
 | 4 | AC5 - skill | ~30 | Sau pilot, để không lẫn vào kết quả. |
-| 5 | AC6 - archive | ~40 (rename tính 0 dòng khi git nhận ra rename) | Chỉ làm nếu pilot cho thấy agent đọc plan cũ. |
+| 5 | AC6 - archive | ~40 (rename tính 0 dòng khi git nhận ra rename) | Pilot không đo việc agent đọc plan cũ; quyết định theo lý do riêng (mục 3). |
 | 6 | AC4 - `/new-env-var` | ~200 | Thêm `/new-admin-route`, `/new-discord-command` khi workflow đó lặp lại. |
 
-Tổng: **7 PR**, tính cả PR 0. Hai command thêm của AC4 làm con số lên 9. Bỏ AC6 nếu pilot không
-cần thì còn 6.
+Tổng: **7 PR**, tính cả PR 0. Hai command thêm của AC4 làm con số lên 9. Bỏ AC6 nếu user
+đóng thì còn 6.
 
 ## 3. Pilot A/B
 
-Chi tiết nằm ở report HTML, phần "Pilot A/B". Phần chốt lại ở đây:
+Trạng thái: **đã đổi từ 18 lượt agent sang đo tất định, 2026-10-11.** Lý do: 18 lượt `claude -p` ước
+tính $15-25 và đo hành vi với N = 3 không kết luận được. Pilot đã chạy 2 trong 18 lượt (xem "Đã chạy")
+rồi dừng; user chọn đo không tốn tiền. Report: `report.html` (scratchpad của session, không commit).
 
-- Arm A: `798cd53`. Arm B: commit sau PR 3 (AC1 + AC2 + AC3). Trong pilot không có AC4-AC6.
-- Ba task: T1 thêm env `ATTENDANCE_REMINDER_ENABLED`; T2 trang admin thống kê 4 tuần (full-stack);
-  T3 icon "đang nghỉ" trong danh sách thành viên.
-- 3 task × 2 arm × 3 lần = 18 lượt `claude -p --output-format json`, mỗi lượt một worktree mới.
-- Không thêm gì vào repo. Judge script, hidden checklist và hook `InstructionsLoaded` truyền qua
-  `--settings` lúc chạy.
-- Chỉ số chính: số vi phạm convention mỗi lượt. B thắng khi số vi phạm bằng 50% của A hoặc ít hơn.
-  Phụ: test/lint pass, token, byte luật đã nạp, Blocker từ reviewer mù nhãn, phút sửa tay.
-- N = 3 mỗi ô nên kết quả chỉ mang tính mô tả, không kết luận thống kê.
-- Cần xác minh trước khi chạy: `--setting-sources project` có loại plugin và mod user-scope ra khỏi
-  cả hai arm không. Hook của mod vẫn chạy trong `claude -p`. Không dùng `--bare`, vì `--bare` tắt
-  luôn Stop hook của arm B.
+Arm A: `798cd53`. Arm B: `3289f35` (sau AC1 + AC2 + AC3). Không có AC4-AC6 ở cả hai.
+
+### Kết quả đo tất định ($0)
+
+| Trục | Cách đo | A | B |
+|---|---|---|---|
+| Context mỗi task (AC1) | Số dòng nạp theo path của file bị chạm, 9 loại task; glob `paths` đối chiếu blob git ở từng commit | 887-2.032 dòng | 130-444 dòng; giảm trung bình **84%** (78-90%) |
+| Ranh giới web (AC2) | 8 fixture vi phạm, `eslint --no-ignore`, config của từng arm | bắt **0/8** | bắt **8/8** |
+| Drift (AC3) | Sửa một trong hai file của cặp, chạy spec | không có check | env: đỏ ở 3 chỗ (`.env.example`, bảng `development.md`, bảng `production.md`); alias: đỏ; enum: spec có sẵn, 5 test xanh trên cây sạch |
+
+Mô hình context đối chiếu với 2 lần nạp thật (`InstructionsLoaded`): sửa `apps/web/lib/api-client.ts`
+ở B nạp `CLAUDE.md`, `apps/web/CLAUDE.md`, `data-flow.md`; đầu session ở A nạp `CLAUDE.md`,
+`common/security.md`, `common/coding-style.md`. Số dòng của A gồm cả doc mà `CLAUDE.md` bảo agent
+đọc (`architecture.md`, `frontend.md` hoặc `backend.md`), không chỉ file tự nạp.
+
+### Đã chạy
+
+2 lượt T1 (env `ATTENDANCE_REMINDER_ENABLED`), mỗi arm 1 lượt, N = 1: cả hai sửa đủ 4 chỗ env và pass
+test, typecheck; lint của A thoát mã 1, của B mã 0. Không phân biệt được hai arm. Chi phí: khoảng
+$0.29 mỗi lượt, tổng đo được khoảng $1.3 tính cả smoke và probe.
+
+### Chưa đo - quyết định cho PR sau
+
+- **Hành vi agent** (số vi phạm convention mỗi lượt) chưa đo. Chỉ chạy nếu cần; bắt đầu với T2 và T3,
+  3 lượt mỗi arm, và nói trước tổng chi phí. Hidden checklist (T1: 7 mục, T2: 17, T3: 8, chung: 8)
+  đã soạn xong, user duyệt; nằm trong scratchpad, chưa commit.
+- **Drift enum** chưa làm lệch thật: API resolve `@guild/shared` về thư mục chính nên cây tạm không
+  thấy thay đổi. Spec `prisma-enum-sync.spec.ts` có sẵn và xanh.
+- **Một lần nạp chưa giải thích**: ở lượt T1 của B, agent sửa `env.validation.ts` nhưng `api/config.md`
+  không nằm trong danh sách đã nạp (`module.md`, `discord.md` thì có). Rủi ro 4 của plan AC1 dự đoán
+  đúng chuyện này. Cần xem lại trước khi tin AC1 cho task tạo hoặc sửa env.
+- **Rule `paths` có thể không nạp khi chỉ Write file mới** (rủi ro 4 của plan AC1): chưa đo.
+
+### Xác minh phương pháp
+
+- `--setting-sources project` loại plugin `superpowers`, `caveman` và agent `reviewer` khỏi cả hai arm
+  (init event của `claude -p`). `~/.claude/CLAUDE.md` vẫn nạp ở probe đầu; ở lượt thật của A không
+  thấy trong log `InstructionsLoaded`, chưa rõ lý do. Giống nhau ở hai arm nên không lệch so sánh.
+- Không dùng `--bare` vì nó tắt Stop hook của B. Chưa kiểm Stop hook của B có chạy trong `claude -p`.
+- `pnpm install` và `prisma generate` cần `DATABASE_URL`; harness truyền giá trị giả, không có
+  database nào được nối.
+
+### Tác động tới các PR sau
+
+- **AC6** ("chỉ làm nếu pilot cho thấy agent đọc plan cũ"): pilot không đo chuyện này nên không có
+  bằng chứng ủng hộ hay bác bỏ. Quyết định AC6 dựa trên lý do khác, không dựa pilot.
+- **AC5, AC4**: không phụ thuộc kết quả pilot.
 
 ## 4. Đính chính report HTML
 
