@@ -36,9 +36,9 @@ command đầu tiên chứng minh có ích.
 
 User chọn không làm AC4. Lý do:
 
-- **AC3 đã bắt phần script định sinh.** `apps/api/src/config/__tests__/env-example.spec.ts` đỏ ở cả
-  3 chỗ (`.env.example`, bảng `development.md`, bảng `production.md`) khi một trong số đó lệch với
-  `env.validation.ts` (tổng quan, mục 3, "Kết quả đo tất định"). Script chỉ sinh cái test đã ép.
+- **AC3 đã bắt phần script định sinh.** `apps/api/src/config/__tests__/env-example.spec.ts` đỏ khi một
+  trong 3 chỗ (`.env.example`, bảng `development.md`, bảng `production.md`) thiếu key của
+  `env.validation.ts`; riêng `.env.example` được kiểm cả hai chiều (tổng quan, mục 3, "Kết quả đo tất định"). Script chỉ sinh cái test đã ép.
 - **Script không chạm phần agent dễ sót.** Mô tả hàng doc và code đọc biến qua `AppConfigService`
   (bước 2 ở mục 3) vẫn do agent làm tay, và AC3 không bắt bước đó.
 - **Workflow hiếm.** Cả lịch sử repo có 11 commit chạm `env.validation.ts`; commit gần nhất là
