@@ -80,7 +80,7 @@ bullet mới trong `data-flow.md`.
 
 | Rule file | `paths` | Nguồn |
 |---|---|---|
-| `api/module.md` | `apps/api/src/modules/**`, `apps/api/src/common/**`, `apps/api/src/infrastructure/**`, `apps/api/src/app.module.ts`, `apps/api/vercel.json` | `apps/api/CLAUDE.md` bullet 2, 3, 4, 6, 7, 8, 9, 10 · `backend.md` §3 (codec ở module sở hữu bảng, `verifyResponse`, seam `*.public.ts`, mảnh tuỳ chọn khi có caller thứ hai, tách service ~300 dòng), §4 hard rule 1-5, §6 bảng repository, §8 ngoại lệ barrel, §11 toàn bộ · root `CLAUDE.md` dòng 37 (`forwardRef`) |
+| `api/module.md` | `apps/api/src/modules/**`, `apps/api/src/common/**`, `apps/api/src/infrastructure/**`, `apps/api/src/config/**`, `apps/api/src/app.module.ts`, `apps/api/vercel.json` | `apps/api/CLAUDE.md` bullet 2, 3, 4, 6, 7, 8, 9, 10 · `backend.md` §3 (codec ở module sở hữu bảng, `verifyResponse`, seam `*.public.ts`, mảnh tuỳ chọn khi có caller thứ hai, tách service ~300 dòng), §4 hard rule 1-5, §6 bảng repository, §8 ngoại lệ barrel, §11 toàn bộ · root `CLAUDE.md` dòng 37 (`forwardRef`) |
 | `api/discord.md` | `apps/api/src/modules/discord-bot/**`, `apps/api/src/scripts/register-discord-commands.ts` | bullet 11, 12 |
 | `api/config.md` | `apps/api/src/config/**`, `apps/api/.env.example` | bullet 5 (phần chi tiết: `DIRECT_DATABASE_URL`, hai ngoại lệ) · `backend.md` §7 · root `CLAUDE.md` dòng 50-52 (biến API mới) |
 | `shared.md` | `packages/shared/**` | root `CLAUDE.md` dòng 75-77 (build sau khi sửa) · `frontend.md` §4 hai đoạn sau rule 8 (ba entry `exports`, `build --watch` khi `next dev`) |
