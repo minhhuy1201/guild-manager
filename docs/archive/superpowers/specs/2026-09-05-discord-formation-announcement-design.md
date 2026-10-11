@@ -11,7 +11,7 @@ hợp, quên ping. Spec này gom cả bốn vào **một nút** trên thanh côn
 
 ## Bối cảnh
 
-- [architecture.md](../../architecture.md) §3.2 (tầng), §3.3 (module + bảng endpoint), §4.2 (tầng
+- [architecture.md](../../../architecture.md) §3.2 (tầng), §3.3 (module + bảng endpoint), §4.2 (tầng
   frontend), §6 (luật giờ/tuần), §7 (thêm hành vi mới ở đâu).
 - `2026-09-01-discord-bot-design.md` — `DiscordRestClient`, khung module `discord-bot`.
 - `2026-09-02-thong-bao-command-design.md` — tiền lệ gần nhất: một message công khai có ping role,

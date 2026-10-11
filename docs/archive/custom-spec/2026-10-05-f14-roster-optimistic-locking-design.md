@@ -1,7 +1,7 @@
 # F14 - Chống ghi đè đội hình (optimistic locking)
 
 Ngày: 2026-10-05 · Trạng thái: **spec, chưa triển khai** · Nguồn ý tưởng:
-[`2026-10-04-feature-ideas-overview.md`](2026-10-04-feature-ideas-overview.md) ý 14 · Liên quan:
+[`2026-10-04-feature-ideas-overview.md`](../../custom-spec/2026-10-04-feature-ideas-overview.md) ý 14 · Liên quan:
 [`2026-09-07-flow-audit-overview.md`](2026-09-07-flow-audit-overview.md) AD5 · Plan:
 [`../custom-plan/2026-10-05-f14-roster-optimistic-locking-plan.md`](../custom-plan/2026-10-05-f14-roster-optimistic-locking-plan.md)
 

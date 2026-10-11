@@ -10,7 +10,7 @@ command đi được từ ô chat Discord tới `apps/api` và trả lời về.
 
 ## Bối cảnh
 
-- [architecture.md](../../architecture.md) §3.2 (tầng), §3.3 (module + endpoint), §5 (data model),
+- [architecture.md](../../../architecture.md) §3.2 (tầng), §3.3 (module + endpoint), §5 (data model),
   §6 (luật tuần/deadline), §7 (thêm hành vi mới ở đâu). Spec này **không** thêm endpoint nào: cả hai
   lệnh đi qua `POST /discord/interactions` đã có.
 - `2026-09-01-discord-bot-design.md` — khung lệnh, guard chữ ký, `commands/index.ts`.

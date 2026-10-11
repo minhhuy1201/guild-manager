@@ -17,7 +17,7 @@ generator `prisma-client` (`src/generated/prisma/enums.ts`), bash + node (đọc
 Claude Code hooks (`Stop`, `PostToolUse`).
 
 **Spec:** [`docs/custom-spec/2026-10-10-ac3-convention-checks-design.md`](../custom-spec/2026-10-10-ac3-convention-checks-design.md)
-(tổng quan: [`2026-10-10-agent-context-review-overview.md`](../custom-spec/2026-10-10-agent-context-review-overview.md))
+(tổng quan: [`2026-10-10-agent-context-review-overview.md`](../../custom-spec/2026-10-10-agent-context-review-overview.md))
 
 ## Global Constraints
 

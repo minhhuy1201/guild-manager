@@ -24,7 +24,7 @@ không đổi luồng đăng nhập, không thêm dữ liệu động: nội dun
 > Landing page giới thiệu bang hội, cho hai nhóm người đọc: người chơi Nghịch Thuỷ Hàn đang cân nhắc
 > vào bang (đọc lần đầu, trên điện thoại) và thành viên đã có tài khoản (vào để bấm sang điểm danh).
 > Ngôn ngữ thị giác lấy nguyên hệ thống sẵn có của app — wuxia 70/20/10 theo
-> [`docs/design-direction.md`](../../design-direction.md), token jade/gold/navy, Noto Serif cho tiêu
+> [`docs/design-direction.md`](../../../design-direction.md), token jade/gold/navy, Noto Serif cho tiêu
 > đề, shadcn base-nova trên Base UI.
 
 Ba núm điều chỉnh của trang:

@@ -191,7 +191,7 @@ Kiểm chứng sau khi merge:
 
 ## See also
 
-- [`docs/production.md`](../../production.md) — vận hành, mục 4 (deploy) và mục 5 (migration)
+- [`docs/production.md`](../../../production.md) — vận hành, mục 4 (deploy) và mục 5 (migration)
 - [Vercel deployment spec](2026-08-16-vercel-deployment-design.md) — vì sao pipeline có hình dạng
   hiện tại
 - [database hosting spec](2026-08-02-supabase-hosting-design.md) — vì sao chọn session pooler

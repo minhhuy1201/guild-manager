@@ -42,7 +42,7 @@ Yêu cầu gốc (`ba.md`, không commit) cộng với các câu đã chốt qua
 | Quân cờ trên map | Kéo thả + đổi cỡ (ba cỡ), không xoay |
 | Quyền `MEMBER` | Chỉ xem, **không** xuất ảnh |
 
-Ba núm điều chỉnh thị giác, theo [`docs/design-direction.md`](../../design-direction.md):
+Ba núm điều chỉnh thị giác, theo [`docs/design-direction.md`](../../../design-direction.md):
 
 | Núm | Giá trị | Vì sao |
 |---|---|---|
@@ -136,7 +136,7 @@ mãi. Xoá phần tử thì undo trả lại nguyên trạng, và kích thước
 thuật thì người lưu sau thắng.
 
 Giống hệt `PUT /team-builder/formations/:sessionId` và cùng một lý do đã ghi ở
-[`architecture.md`](../../architecture.md) §8: bang có một đến hai admin. Xem lại khi có từ ba admin
+[`architecture.md`](../../../architecture.md) §8: bang có một đến hai admin. Xem lại khi có từ ba admin
 sửa cùng một chiến thuật thường xuyên.
 
 ## Mô hình dữ liệu

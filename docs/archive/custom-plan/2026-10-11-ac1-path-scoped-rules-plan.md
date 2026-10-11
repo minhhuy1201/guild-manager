@@ -14,7 +14,7 @@ Mỗi luật có đúng một chỗ ở.
 **Tech Stack:** Claude Code project rules (`paths` frontmatter), Markdown. Không đổi code chạy.
 
 **Spec:** [`docs/custom-spec/2026-10-10-ac1-path-scoped-rules-design.md`](../custom-spec/2026-10-10-ac1-path-scoped-rules-design.md)
-(tổng quan: [`2026-10-10-agent-context-review-overview.md`](../custom-spec/2026-10-10-agent-context-review-overview.md))
+(tổng quan: [`2026-10-10-agent-context-review-overview.md`](../../custom-spec/2026-10-10-agent-context-review-overview.md))
 
 ## Global Constraints
 

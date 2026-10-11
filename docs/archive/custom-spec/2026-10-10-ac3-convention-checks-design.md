@@ -1,7 +1,7 @@
 # AC3 - Drift check và Stop hook
 
 Ngày: 2026-10-10 · Trạng thái: **spec, đang triển khai (PR `chore/convention-checks`)** · Tổng quan:
-[`2026-10-10-agent-context-review-overview.md`](2026-10-10-agent-context-review-overview.md) · Phụ
+[`2026-10-10-agent-context-review-overview.md`](../../custom-spec/2026-10-10-agent-context-review-overview.md) · Phụ
 thuộc: AC2 merge trước
 
 ## 1. Vấn đề

@@ -11,9 +11,9 @@ path thay vì đọc trọn doc, luật phải luôn đúng thì code giữ (lin
 
 | # | Spec | Độ mạnh | PR ước tính |
 |---|---|---|---|
-| AC1 | [`2026-10-10-ac1-path-scoped-rules-design.md`](2026-10-10-ac1-path-scoped-rules-design.md) | Strong | 1 |
-| AC2 | [`2026-10-10-ac2-web-lint-boundaries-design.md`](2026-10-10-ac2-web-lint-boundaries-design.md) | Strong | 1 |
-| AC3 | [`2026-10-10-ac3-convention-checks-design.md`](2026-10-10-ac3-convention-checks-design.md) | Strong | 1 |
+| AC1 | [`2026-10-10-ac1-path-scoped-rules-design.md`](../archive/custom-spec/2026-10-10-ac1-path-scoped-rules-design.md) | Strong | 1 |
+| AC2 | [`2026-10-10-ac2-web-lint-boundaries-design.md`](../archive/custom-spec/2026-10-10-ac2-web-lint-boundaries-design.md) | Strong | 1 |
+| AC3 | [`2026-10-10-ac3-convention-checks-design.md`](../archive/custom-spec/2026-10-10-ac3-convention-checks-design.md) | Strong | 1 |
 | AC4 | [`2026-10-10-ac4-workflow-commands-design.md`](2026-10-10-ac4-workflow-commands-design.md) | Worth exploring | 1 (tối đa 3) |
 | AC5 | [`2026-10-10-ac5-skill-trim-design.md`](2026-10-10-ac5-skill-trim-design.md) | Worth exploring | 1 |
 | AC6 | [`2026-10-10-ac6-archive-plans-design.md`](2026-10-10-ac6-archive-plans-design.md) | Speculative | 1 |

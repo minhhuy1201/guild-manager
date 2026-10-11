@@ -1,7 +1,7 @@
 # A1 - Chế độ nghỉ phép
 
 Ngày: 2026-10-04 · Trạng thái: **đã triển khai** · Nguồn ý tưởng:
-[`2026-10-04-feature-ideas-overview.md`](2026-10-04-feature-ideas-overview.md) ý 1 · Plan:
+[`2026-10-04-feature-ideas-overview.md`](../../custom-spec/2026-10-04-feature-ideas-overview.md) ý 1 · Plan:
 [`../custom-plan/2026-10-04-a1-leave-mode-plan.md`](../custom-plan/2026-10-04-a1-leave-mode-plan.md)
 
 ## 1. Vấn đề

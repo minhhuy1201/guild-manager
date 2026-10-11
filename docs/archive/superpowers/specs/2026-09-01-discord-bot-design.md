@@ -10,10 +10,10 @@ thật, không phải để hữu ích.
 
 ## Bối cảnh
 
-- [architecture.md](../../architecture.md) §3.2 (tầng), §3.3 (module + endpoint), §3.4 (hình dạng
+- [architecture.md](../../../architecture.md) §3.2 (tầng), §3.3 (module + endpoint), §3.4 (hình dạng
   response, env), §7 (thêm hành vi mới ở đâu) — spec này thêm một dòng vào §3.3 và một dòng vào bảng
   endpoint.
-- [production.md](../../production.md) §4 — Vercel build thẳng `src/main.ts`, nên thay đổi ở
+- [production.md](../../../production.md) §4 — Vercel build thẳng `src/main.ts`, nên thay đổi ở
   `main.ts` có hiệu lực trên production y như local.
 - `apps/bot/README.md` và `apps/bot/CLAUDE.md` (chưa commit) mô tả bot là một app riêng nói chuyện
   với API qua HTTP. **Spec này thay thế cả hai file đó**; xem §8.
@@ -140,8 +140,8 @@ thiếu.
 `DISCORD_CLIENT_ID` đã có sẵn cho OAuth và **chính là Application ID** mà script cần — không thêm
 biến trùng nghĩa.
 
-Cả ba vào `.env.example`, và vào bảng env của [development.md](../../development.md) §3 và
-[production.md](../../production.md) §3.
+Cả ba vào `.env.example`, và vào bảng env của [development.md](../../../development.md) §3 và
+[production.md](../../../production.md) §3.
 
 ## 7. Đăng ký lệnh lên Discord
 

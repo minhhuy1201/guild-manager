@@ -1,7 +1,7 @@
 # AC1 - Luật nạp theo path
 
 Ngày: 2026-10-10 · Trạng thái: **đang triển khai** ([plan](../custom-plan/2026-10-11-ac1-path-scoped-rules-plan.md)) · Tổng quan:
-[`2026-10-10-agent-context-review-overview.md`](2026-10-10-agent-context-review-overview.md) · Phụ
+[`2026-10-10-agent-context-review-overview.md`](../../custom-spec/2026-10-10-agent-context-review-overview.md) · Phụ
 thuộc: AC2 và AC3 merge trước
 
 ## 1. Vấn đề
