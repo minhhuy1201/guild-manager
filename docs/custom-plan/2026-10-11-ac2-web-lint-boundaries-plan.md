@@ -34,8 +34,14 @@ và D4.
 
 > **Ghi chú sau khi implement:** code mẫu trong Task 2 lệch config thật ở bốn chỗ (không dùng resolver
 > riêng; element `app` neo bằng `partialMatch: false`; pattern `!(core)/**/*`; ngoại lệ D2 chọn bằng
-> `path` + `fileInternalPath`), và có 12 case test chứ không phải 13. `apps/web/eslint.config.mjs` và
-> spec §4.1 là bản đúng. Lý do nằm trong spec.
+> `path` + `fileInternalPath`). Bộ test thật có 14 case và 8 fixture, không phải 13 case và 7 fixture
+> như các con số trong Task 1 (`7 đỏ, 6 xanh`) và Task 3 (`13/13`). Hai case thêm là "file nằm trực
+> tiếp trong `core/` ngoài `index.ts`" và "file ở gốc web (`proxy.ts`) đụng file nội bộ của feature";
+> fixture thêm là `auth-core-file.ts`. `apps/web/eslint.config.mjs`,
+> `apps/web/__tests__/lint-rules.test.ts` và spec §4.1 là bản đúng. Lý do nằm trong spec.
+>
+> `eslint-import-resolver-typescript` cũng không được thêm (mục 1 bên dưới). Mọi chỗ trong plan nhắc
+> tới nó là bản dự kiến đã lỗi thời: Tech Stack, Task 2 Step 1, Task 5 Step 4 và Task 6 Step 3.
 
 ## Bổ sung so với spec (đã kiểm chứng lúc viết plan, 2026-10-11)
 
