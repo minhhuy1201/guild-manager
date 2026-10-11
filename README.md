@@ -141,9 +141,10 @@ Merging a PR that touches `apps/api` migrates the production database and then d
 
 **Self-review before pushing.** `.claude/settings.json` registers a hook that blocks `git push`
 made through Claude Code until the `pr-review` skill has approved the exact commit being pushed —
-run `/pr-review`, and on an Approve verdict it records `.claude/.pr-review-passed` (git-ignored,
-per-developer). It is a cooperative guardrail, not a security boundary: a push from a plain
-terminal never reaches it, and branch protection on `main` remains the real enforcement.
+run `pr-review` in a reviewer agent separate from the authoring session; on an Approve verdict the
+session that dispatched it records `.claude/.pr-review-passed` (git-ignored, per-developer). It is
+a cooperative guardrail, not a security boundary: a push from a plain terminal never reaches it, and
+branch protection on `main` remains the real enforcement.
 
 **Checks before Claude stops.** `.claude/settings.json` also registers a Stop hook
 (`.claude/hooks/check-on-stop.sh`): when a Claude Code turn ends with changes under `apps/`,

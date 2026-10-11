@@ -31,9 +31,12 @@ See [references/checklist.md](references/checklist.md) for the full printable ch
 3. For each issue, state its severity — 🔴 Blocker / 🟡 Nit / 💬 Question — with a
    `file:line` reference and a concrete fix suggestion.
 4. End with a summary: number of Blockers, number of Nits, and a verdict
-   (Approve / Request changes).
+   (Approve / Request changes). 💬 Questions go in Findings; the verdict hinges on
+   Blockers alone.
 5. **Record approval (unlocks push).** Only if the verdict is **Approve** and there
-   are zero unresolved 🔴 Blockers, record approval for the exact reviewed commit:
+   are zero unresolved 🔴 Blockers, record approval for the exact reviewed commit.
+   When a reviewer agent separate from the authoring session ran steps 1-4, that
+   agent hands back the verdict and the session that dispatched it writes the marker:
 
    ```bash
    git rev-parse HEAD > "$(git rev-parse --show-toplevel)/.claude/.pr-review-passed"
@@ -46,7 +49,9 @@ See [references/checklist.md](references/checklist.md) for the full printable ch
 6. **Emit the PR self-review block.** Right after step 5, print the block below with
    the same SHA (`git rev-parse HEAD`, full 40 characters) and the real counts, and
    tell the user to paste it under the `## Self-review` heading of the PR description.
-   The HTML comment is machine-read by the `PR Self-review` workflow
+   Tick each checklist group you actually walked. Before the push CI has not run, so
+   `[x] Tests` means the local tests, lint, and typecheck you ran - the PR's own
+   checks cover CI. The HTML comment is machine-read by the `PR Self-review` workflow
    (`.github/workflows/pr-self-review.yml`), which fails the PR when the block is
    missing or the SHA no longer matches the PR head. After any new push, re-run the
    review and replace the block. When opening the PR, fill every section of
@@ -82,7 +87,7 @@ See [references/checklist.md](references/checklist.md) for the full printable ch
 - New code / bug fixes have tests
 - Tests cover important branches and edge cases
 - Tests assert behavior, not just run for coverage
-- CI / pipeline is green
+- CI / pipeline is green (post-push; report `n/a (pre-push)` before the push)
 
 ### 4. Security
 - User input is validated
