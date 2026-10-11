@@ -35,7 +35,8 @@ mục 1, không phải một số đo.
 - Tiêu chí "đã xong": chuyển tất cả, trừ danh sách giữ lại. Dòng trạng thái không đáng tin (AC1, AC3
   ghi "đang triển khai" dù đã merge; f14 ghi "chưa triển khai" dù đã merge ở #177). Giữ lại: tổng quan
   AC, spec AC4-AC6, plan AC5+AC6 và `2026-10-04-feature-ideas-overview.md` (bản nháp ý tưởng). Lần
-  archive sau chuyển cả loạt AC khi AC4 xong.
+  archive sau chuyển cả loạt AC khi AC4 xong. AC4 bị bỏ (2026-10-11), nên cả loạt archive trong PR
+  bỏ AC4.
 - Không chặn `docs/archive/**` bằng `permissions.deny`, không thêm `.ignore`: đôi khi cần đọc lịch sử
   để hiểu lý do; đường dẫn `archive` và dòng trong `CLAUDE.md` báo agent đây là lịch sử.
 - Link từ doc sống và code sang spec đã archive: sửa path, không chuyển nội dung.

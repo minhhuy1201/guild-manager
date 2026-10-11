@@ -49,7 +49,7 @@ User chọn không làm AC4. Lý do:
 
 Câu hỏi chèn văn bản hay AST không còn cần trả lời. `/new-admin-route` và `/new-discord-command` cũng
 không làm. Xem lại AC4 chỉ khi có bằng chứng agent hay sót bước 2 ở mục 3 (mô tả hàng doc, code đọc
-biến qua `AppConfigService`); `env-example.spec.ts` đã bắt lệch giữa cả 4 chỗ.
+biến qua `AppConfigService`); `env-example.spec.ts` đã bắt việc thiếu ở bất kỳ chỗ nào trong 4 chỗ.
 
 Việc liên quan đáng làm hơn: tổng quan mục 3 ghi ở một lượt T1 của arm B, rule
 `.claude/rules/api/config.md` không nạp khi agent sửa `env.validation.ts`, dù glob là

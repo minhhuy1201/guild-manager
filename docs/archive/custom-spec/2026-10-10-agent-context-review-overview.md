@@ -1,6 +1,6 @@
 # Review context cho agent - tổng quan
 
-Ngày: 2026-10-10 · Trạng thái: **spec, chưa triển khai** · Base: `798cd53` · Nguồn: hướng dẫn nội
+Ngày: 2026-10-10 · Trạng thái: **xong** (AC1-AC3, AC5, AC6 đã merge; AC4 không làm, 2026-10-11) · Base: `798cd53` · Nguồn: hướng dẫn nội
 bộ "Organizing Context and Enforcement for AI Coding Agents" (không commit vào repo), dựa trên
 [Claude Code: Memory](https://code.claude.com/docs/en/memory),
 [Hooks guide](https://code.claude.com/docs/en/hooks-guide) và
@@ -11,9 +11,9 @@ path thay vì đọc trọn doc, luật phải luôn đúng thì code giữ (lin
 
 | # | Spec | Độ mạnh | PR ước tính |
 |---|---|---|---|
-| AC1 | [`2026-10-10-ac1-path-scoped-rules-design.md`](../archive/custom-spec/2026-10-10-ac1-path-scoped-rules-design.md) | Strong | 1 |
-| AC2 | [`2026-10-10-ac2-web-lint-boundaries-design.md`](../archive/custom-spec/2026-10-10-ac2-web-lint-boundaries-design.md) | Strong | 1 |
-| AC3 | [`2026-10-10-ac3-convention-checks-design.md`](../archive/custom-spec/2026-10-10-ac3-convention-checks-design.md) | Strong | 1 |
+| AC1 | [`2026-10-10-ac1-path-scoped-rules-design.md`](2026-10-10-ac1-path-scoped-rules-design.md) | Strong | 1 |
+| AC2 | [`2026-10-10-ac2-web-lint-boundaries-design.md`](2026-10-10-ac2-web-lint-boundaries-design.md) | Strong | 1 |
+| AC3 | [`2026-10-10-ac3-convention-checks-design.md`](2026-10-10-ac3-convention-checks-design.md) | Strong | 1 |
 | AC4 | [`2026-10-10-ac4-workflow-commands-design.md`](2026-10-10-ac4-workflow-commands-design.md) | Worth exploring; **không làm** (2026-10-11) | 0 |
 | AC5 | [`2026-10-10-ac5-skill-trim-design.md`](2026-10-10-ac5-skill-trim-design.md) | Worth exploring | 1 |
 | AC6 | [`2026-10-10-ac6-archive-plans-design.md`](2026-10-10-ac6-archive-plans-design.md) | Speculative | 1 |

@@ -48,7 +48,7 @@ node 24 (script kiểm link).
   - `docs/custom-plan/2026-10-11-ac5-ac6-skill-trim-and-archive-plan.md` (file này)
 
   AC5, AC6 giữ lại vì overview vẫn là mục lục sống của loạt AC cho tới khi AC4 xong. Lần archive sau
-  chuyển cả loạt.
+  chuyển cả loạt. AC4 bị bỏ (2026-10-11), nên cả loạt archive trong PR bỏ AC4.
 - **Xoá `supabase-postgres-best-practices`:** repo không có `AGENTS.md`, `.codex/` hay `.cursor/`, và
   ngoài `skills-lock.json` không file nào nhắc tên skill (`git grep`). Máy user có `~/.codex`, và
   Codex đọc `.agents/skills/`, nhưng user xác nhận không dùng Codex: **xoá** (chốt 2026-10-11).
