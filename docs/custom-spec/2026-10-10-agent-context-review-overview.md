@@ -43,7 +43,7 @@ User bỏ giới hạn 900 dòng ngày 2026-10-11.
 | 2 | AC3 - drift spec + Stop hook | ~350 | Luật "phải luôn đúng" có check trước khi AC1 cắt chữ. |
 | 3 | AC1 - chuyển luật sang `.claude/rules/` | ~1.500 | Một PR cho cả AC1. |
 | - | **Pilot A/B** (mục 3) | 0 PR | Đã đo tất định ngày 2026-10-11; trục hành vi agent chưa chạy. |
-| 4 | AC5 - skill | ~30 | Sau pilot, để không lẫn vào kết quả. |
+| 4 | AC5 - skill | ~30 | Không phụ thuộc pilot; arm A/B đã ghim commit nên AC5 không lẫn vào lượt đo sau. |
 | 5 | AC6 - archive | ~40 (rename tính 0 dòng khi git nhận ra rename) | Pilot không đo việc agent đọc plan cũ; quyết định theo lý do riêng (mục 3). |
 | 6 | AC4 - `/new-env-var` | ~200 | Thêm `/new-admin-route`, `/new-discord-command` khi workflow đó lặp lại. |
 
@@ -54,7 +54,8 @@ Tổng: **7 PR**, tính cả PR 0. Hai command thêm của AC4 làm con số lê
 
 Trạng thái: **đã đổi từ 18 lượt agent sang đo tất định, 2026-10-11.** Lý do: 18 lượt `claude -p` ước
 tính $15-25 và đo hành vi với N = 3 không kết luận được. Pilot đã chạy 2 trong 18 lượt (xem "Đã chạy")
-rồi dừng; user chọn đo không tốn tiền. Report: `report.html` (scratchpad của session, không commit).
+rồi dừng; user chọn đo không tốn tiền. Report HTML, hidden checklist và harness nằm trong scratchpad
+session và **không được giữ trong repo**; số liệu cần thiết đã ghi ở mục này.
 
 Arm A: `798cd53`. Arm B: `3289f35` (sau AC1 + AC2 + AC3). Không có AC4-AC6 ở cả hai.
 
@@ -74,26 +75,29 @@ Mô hình context đối chiếu với 2 lần nạp thật (`InstructionsLoaded
 ### Đã chạy
 
 2 lượt T1 (env `ATTENDANCE_REMINDER_ENABLED`), mỗi arm 1 lượt, N = 1: cả hai sửa đủ 4 chỗ env và pass
-test, typecheck; lint của A thoát mã 1, của B mã 0. Không phân biệt được hai arm. Chi phí: khoảng
-$0.29 mỗi lượt, tổng đo được khoảng $1.3 tính cả smoke và probe.
+test, typecheck; lint của A thoát mã 1 (lỗi prettier agent tự gây trong `reminder.service.ts`), của B
+mã 0. Không phân biệt được hai arm. Chi phí: khoảng $0.29 mỗi lượt; tổng ghi được khoảng $1.2 tính cả
+smoke và probe, chưa kể lượt T2-A-1 bị dừng giữa chừng và không ghi chi phí.
 
 ### Chưa đo - quyết định cho PR sau
 
 - **Hành vi agent** (số vi phạm convention mỗi lượt) chưa đo. Chỉ chạy nếu cần; bắt đầu với T2 và T3,
   3 lượt mỗi arm, và nói trước tổng chi phí. Hidden checklist (T1: 7 mục, T2: 17, T3: 8, chung: 8)
-  đã soạn xong, user duyệt; nằm trong scratchpad, chưa commit.
+  đã soạn xong, user duyệt trong chat (2026-10-11); không giữ trong repo.
 - **Drift enum** chưa làm lệch thật: API resolve `@guild/shared` về thư mục chính nên cây tạm không
   thấy thay đổi. Spec `prisma-enum-sync.spec.ts` có sẵn và xanh.
 - **Một lần nạp chưa giải thích**: ở lượt T1 của B, agent sửa `env.validation.ts` nhưng `api/config.md`
-  không nằm trong danh sách đã nạp (`module.md`, `discord.md` thì có). Rủi ro 4 của plan AC1 dự đoán
-  đúng chuyện này. Cần xem lại trước khi tin AC1 cho task tạo hoặc sửa env.
-- **Rule `paths` có thể không nạp khi chỉ Write file mới** (rủi ro 4 của plan AC1): chưa đo.
+  không nằm trong danh sách đã nạp (`module.md`, `discord.md` thì có, cả hai do `reminder.controller.ts`).
+  Không sự kiện `InstructionsLoaded` nào nổ cho `env.validation.ts` dù glob của `config.md` là
+  `apps/api/src/config/**`. Chưa rõ nguyên nhân; cần xem lại trước khi tin AC1 cho task sửa env.
+- **Rule nạp muộn khi tạo file mới** (rủi ro 4 của plan AC1): rule nạp khi Write (đã kiểm, spec AC1 §6
+  lượt 3), nhưng sau khi agent đã nghĩ xong nội dung file. Chưa đo việc đó có đổi hành vi agent không.
 
 ### Xác minh phương pháp
 
 - `--setting-sources project` loại plugin `superpowers`, `caveman` và agent `reviewer` khỏi cả hai arm
-  (init event của `claude -p`). `~/.claude/CLAUDE.md` vẫn nạp ở probe đầu; ở lượt thật của A không
-  thấy trong log `InstructionsLoaded`, chưa rõ lý do. Giống nhau ở hai arm nên không lệch so sánh.
+  (init event của `claude -p`). `~/.claude/CLAUDE.md` vẫn nạp ở probe đầu (cwd là repo chính, dưới `/home`); ở cả hai lượt thật
+  (A và B, worktree dưới `/tmp`) không thấy trong log `InstructionsLoaded`, chưa rõ lý do. Giống nhau ở hai arm nên không lệch so sánh.
 - Không dùng `--bare` vì nó tắt Stop hook của B. Chưa kiểm Stop hook của B có chạy trong `claude -p`.
 - `pnpm install` và `prisma generate` cần `DATABASE_URL`; harness truyền giá trị giả, không có
   database nào được nối.

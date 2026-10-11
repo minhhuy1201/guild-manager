@@ -1,8 +1,8 @@
 # AC5 - Thu gọn skill tự trigger
 
 Ngày: 2026-10-10 · Trạng thái: **spec, chưa triển khai** · Tổng quan:
-[`2026-10-10-agent-context-review-overview.md`](2026-10-10-agent-context-review-overview.md) · Làm
-sau pilot
+[`2026-10-10-agent-context-review-overview.md`](2026-10-10-agent-context-review-overview.md) · Không
+phụ thuộc kết quả pilot
 
 ## 1. Vấn đề
 
