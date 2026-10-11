@@ -92,8 +92,9 @@ Thêm vào `.claude/settings.json`:
 ### 4.3 PostToolUse Prettier
 
 Matcher `Edit|Write`. Script đọc `tool_input.file_path`. File khớp `apps/api/src/**/*.ts` thì chạy
-`pnpm --filter api exec prettier --write <file>`; file khớp `packages/ci-triage/src/**/*.ts` thì chạy
-`pnpm --filter @guild/ci-triage exec prettier --write <file>`. File khác thì exit 0. Không chặn gì,
+`apps/api/node_modules/.bin/prettier --write <file>`; file khớp `packages/ci-triage/src/**/*.ts` thì
+chạy binary Prettier của ci-triage. Gọi binary trực tiếp, không qua `pnpm --filter … exec`, vì lệnh đó
+chạy lại install và `prisma generate` mỗi lần (chậm, và đua nhau khi nhiều Edit chạy song song). File khác thì exit 0. Không chặn gì,
 nên luôn exit 0. Lint của api và ci-triage đã gồm `eslint-plugin-prettier`, nên Stop hook vẫn bắt lỗi
 format khi file đổi qua Bash.
 

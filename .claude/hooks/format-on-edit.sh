@@ -13,12 +13,14 @@ file_path="$(HOOK_INPUT="$input" node -e \
   'process.stdout.write(JSON.parse(process.env.HOOK_INPUT).tool_input?.file_path ?? "")')"
 
 case "$file_path" in
-  "$CLAUDE_PROJECT_DIR"/apps/api/src/*.ts) workspace=api ;;
-  "$CLAUDE_PROJECT_DIR"/packages/ci-triage/src/*.ts) workspace=@guild/ci-triage ;;
+  "$CLAUDE_PROJECT_DIR"/apps/api/src/*.ts) prettier="$CLAUDE_PROJECT_DIR/apps/api/node_modules/.bin/prettier" ;;
+  "$CLAUDE_PROJECT_DIR"/packages/ci-triage/src/*.ts) prettier="$CLAUDE_PROJECT_DIR/packages/ci-triage/node_modules/.bin/prettier" ;;
   *) exit 0 ;;
 esac
 
+# The workspace binary is called directly: `pnpm --filter <ws> exec` re-runs install and
+# `prisma generate` on every call, which is slow and races when edits land in parallel.
 # Prettier fails on a file it cannot parse. That is swallowed on purpose: the lint run in
 # check-on-stop.sh reports the same syntax error with a better message.
-pnpm --filter "$workspace" exec prettier --write "$file_path" >/dev/null 2>&1 || true
+"$prettier" --write "$file_path" >/dev/null 2>&1 || true
 exit 0

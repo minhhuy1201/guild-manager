@@ -27,7 +27,8 @@ cd "$CLAUDE_PROJECT_DIR" || exit 1
 
 # Without origin/main (a fresh clone, another remote name) only uncommitted changes count.
 base="$(git merge-base HEAD origin/main 2>/dev/null || git rev-parse HEAD)"
-changed="$({ git diff --name-only "$base"; git ls-files --others --exclude-standard; } | sort -u)"
+# quotePath=false: otherwise git C-quotes non-ASCII names and they match no case arm below.
+changed="$({ git -c core.quotePath=false diff --name-only "$base"; git -c core.quotePath=false ls-files --others --exclude-standard; } | sort -u)"
 
 # Fingerprint of the code as git sees it: the base, every change against it, and the name and
 # content of every untracked file. A turn that changed nothing (Claude only answered a question)
@@ -83,7 +84,8 @@ if [ "$run_triage" = 1 ]; then
   check pnpm --filter @guild/ci-triage lint
   check pnpm --filter @guild/ci-triage typecheck
 fi
-for path in "${unmapped[@]}"; do
+# The `+` form keeps an empty array legal under `set -u` on bash < 4.4 (macOS /bin/bash 3.2).
+for path in ${unmapped[@]+"${unmapped[@]}"}; do
   failures+=$'\n'"== $path: no workspace mapped; add one to .claude/hooks/check-on-stop.sh =="$'\n'
 done
 
