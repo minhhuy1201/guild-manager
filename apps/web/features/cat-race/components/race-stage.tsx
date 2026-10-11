@@ -87,6 +87,12 @@ export function RaceStage({
     store().startDrawing();
     try {
       const result = await draw.mutateAsync({ id: event.id, prizeId: prize.id });
+      // The screen was left while the server answered: the round is stored, so refresh the winners
+      // and leave the shared store alone for whichever event opens next.
+      if (store().stage !== "drawing") {
+        void invalidate();
+        return;
+      }
       if (reducedMotion) store().showResult(result);
       else store().startRacing(result);
     } catch (error) {

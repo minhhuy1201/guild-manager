@@ -19,6 +19,8 @@ import { SPRITE_COLUMNS, SPRITE_ROWS, catSprite } from "../lib/race-sprites";
 
 /** Countdown before the cats leave, in seconds. */
 const COUNTDOWN_SECONDS = 1.5;
+/** Digits shown during the countdown: 3, 2, 1. */
+const COUNTDOWN_STEPS = 3;
 /** Live board refresh interval; a faster board only flickers. */
 const LEADERS_INTERVAL_MS = 150;
 /** Below this viewport width the track runs top to bottom. */
@@ -253,7 +255,7 @@ export function RaceCanvas({
         context.font = "bold 64px sans-serif";
         context.textAlign = "center";
         context.textBaseline = "middle";
-        context.fillText(String(Math.ceil(COUNTDOWN_SECONDS - elapsed) + 1), plan.area.width / 2, plan.area.height / 2);
+        context.fillText(String(Math.ceil(((COUNTDOWN_SECONDS - elapsed) * COUNTDOWN_STEPS) / COUNTDOWN_SECONDS)), plan.area.width / 2, plan.area.height / 2);
       } else if (now - lastLeaders >= LEADERS_INTERVAL_MS) {
         lastLeaders = now;
         leadersRef.current(leadersAt(script, seconds));
