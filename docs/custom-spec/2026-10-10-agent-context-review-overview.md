@@ -11,9 +11,9 @@ path thay vì đọc trọn doc, luật phải luôn đúng thì code giữ (lin
 
 | # | Spec | Độ mạnh | PR ước tính |
 |---|---|---|---|
-| AC1 | [`2026-10-10-ac1-path-scoped-rules-design.md`](2026-10-10-ac1-path-scoped-rules-design.md) | Strong | 1 |
-| AC2 | [`2026-10-10-ac2-web-lint-boundaries-design.md`](2026-10-10-ac2-web-lint-boundaries-design.md) | Strong | 1 |
-| AC3 | [`2026-10-10-ac3-convention-checks-design.md`](2026-10-10-ac3-convention-checks-design.md) | Strong | 1 |
+| AC1 | [`2026-10-10-ac1-path-scoped-rules-design.md`](../archive/custom-spec/2026-10-10-ac1-path-scoped-rules-design.md) | Strong | 1 |
+| AC2 | [`2026-10-10-ac2-web-lint-boundaries-design.md`](../archive/custom-spec/2026-10-10-ac2-web-lint-boundaries-design.md) | Strong | 1 |
+| AC3 | [`2026-10-10-ac3-convention-checks-design.md`](../archive/custom-spec/2026-10-10-ac3-convention-checks-design.md) | Strong | 1 |
 | AC4 | [`2026-10-10-ac4-workflow-commands-design.md`](2026-10-10-ac4-workflow-commands-design.md) | Worth exploring | 1 (tối đa 3) |
 | AC5 | [`2026-10-10-ac5-skill-trim-design.md`](2026-10-10-ac5-skill-trim-design.md) | Worth exploring | 1 |
 | AC6 | [`2026-10-10-ac6-archive-plans-design.md`](2026-10-10-ac6-archive-plans-design.md) | Speculative | 1 |
@@ -47,8 +47,7 @@ User bỏ giới hạn 900 dòng ngày 2026-10-11.
 | 5 | AC6 - archive | ~40 (rename tính 0 dòng khi git nhận ra rename) | Pilot không đo việc agent đọc plan cũ; quyết định theo lý do riêng (mục 3). |
 | 6 | AC4 - `/new-env-var` | ~200 | Thêm `/new-admin-route`, `/new-discord-command` khi workflow đó lặp lại. |
 
-Tổng: **7 PR**, tính cả PR 0. Hai command thêm của AC4 làm con số lên 9. Bỏ AC6 nếu user
-đóng thì còn 6.
+Tổng: **7 PR**, tính cả PR 0; AC5 và AC6 đi chung một PR (2026-10-11) nên còn **6**. Hai command thêm của AC4 làm con số lên 8.
 
 ## 3. Pilot A/B
 
