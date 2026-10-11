@@ -92,9 +92,9 @@ cat >&2 <<EOF
 
 Run the "pr-review" skill on the current changes first, from a reviewer agent
 separate from the session that wrote the code.
-When the review verdict is Approve, the skill records approval for commit:
+When the review verdict is Approve, record approval for commit:
   ${head_sha:-<unknown>}
-by writing .claude/.pr-review-passed — then the push is allowed.
+by writing .claude/.pr-review-passed (pr-review step 5) — then the push is allowed.
 
 To re-review: just run the skill again after your latest commit.
 EOF
