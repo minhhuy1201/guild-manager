@@ -55,7 +55,10 @@ describe('CatRaceService.draw', () => {
 
     const result = await service.draw('e1', { prizeId: 'p1' }, 'admin');
 
-    expect(prisma.catRaceRound.create.mock.calls[0][0].data).toMatchObject({
+    const [[created]] = prisma.catRaceRound.create.mock.calls as [
+      [{ data: unknown }],
+    ];
+    expect(created.data).toMatchObject({
       winnerCharacterId: 'b',
       winnerName: 'Bình',
       winnerGuildClass: 'TO_VAN',

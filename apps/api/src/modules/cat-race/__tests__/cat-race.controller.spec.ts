@@ -17,7 +17,7 @@ describe('CatRaceController', () => {
     const user = { sub: 'admin-discord', role: 'ADMIN', type: 'access' };
 
     await controller.create({ name: 'x' } as never, user as never);
-    await controller.draw('e1', { prizeId: 'p1' } as never, user as never);
+    await controller.draw('e1', { prizeId: 'p1' }, user as never);
 
     expect(service.create).toHaveBeenCalledWith({ name: 'x' }, 'admin-discord');
     expect(service.draw).toHaveBeenCalledWith(

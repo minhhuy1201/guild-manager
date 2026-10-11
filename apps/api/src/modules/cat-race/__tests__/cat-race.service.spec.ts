@@ -32,7 +32,10 @@ describe('CatRaceService events and rosters', () => {
       'admin',
     );
 
-    const data = prisma.catRaceEvent.create.mock.calls[0][0].data;
+    const [call] = prisma.catRaceEvent.create.mock.calls as [
+      [{ data: { name: string; createdAt: Date } }],
+    ];
+    const { data } = call[0];
     expect(data.name).toBe('Đợt quay 12/10/2026');
     expect(data.createdAt).toBe(NOW);
     expect(prisma.catRaceEntrant.createMany).toHaveBeenCalledWith({
