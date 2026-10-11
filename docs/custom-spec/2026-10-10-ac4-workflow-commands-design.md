@@ -36,8 +36,10 @@ command đầu tiên chứng minh có ích.
 
 - Script sửa `env.validation.ts` bằng chèn văn bản hay bằng AST (ts-morph)? Chèn văn bản đơn giản
   hơn nhưng dễ vỡ khi file đổi format. Đề xuất: chèn văn bản kèm marker comment.
-- Bỏ AC4 nếu pilot cho thấy AC3 đã đủ. Agent quên chỗ nào thì drift spec bắt, có thể không cần
-  scaffold.
+- Giữ hay bỏ AC4. Pilot không đo việc agent quên chỗ nào khi thêm biến môi trường (tổng quan, mục 3).
+  Một mẩu dữ liệu: hai lượt T1, mỗi arm một lượt, cả hai sửa đủ 4 chỗ; N = 1 nên không kết luận.
+  AC3 bắt lệch giữa `env.validation.ts`, `.env.example` và hai bảng doc, nhưng không bắt việc agent
+  bỏ sót bước 2 ở mục 3 (mô tả và code đọc biến). Quyết định thuộc user.
 
 ## 5. Kích thước
 

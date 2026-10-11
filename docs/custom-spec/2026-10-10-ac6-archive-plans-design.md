@@ -1,6 +1,6 @@
 # AC6 - Tách plan/spec đã xong khỏi search path
 
-Ngày: 2026-10-10 · Trạng thái: **spec, chưa triển khai, có điều kiện** · Tổng quan:
+Ngày: 2026-10-10 · Trạng thái: **spec, chưa triển khai, chờ quyết định** · Tổng quan:
 [`2026-10-10-agent-context-review-overview.md`](2026-10-10-agent-context-review-overview.md)
 
 ## 1. Vấn đề
@@ -13,8 +13,10 @@ Chưa có bằng chứng việc này đã xảy ra [unknown].
 
 ## 2. Điều kiện để làm
 
-Chỉ làm khi pilot A/B cho thấy agent mở file plan/spec cũ trong ít nhất 2 trên 18 lượt, đo bằng log
-Read. Nếu không đạt thì đóng spec này.
+Điều kiện cũ (agent mở plan/spec cũ trong ít nhất 2 trên 18 lượt pilot, đo bằng log Read) **đã bỏ**:
+pilot đổi sang đo tất định ngày 2026-10-11 và không đo log Read (tổng quan, mục 3). Không có bằng
+chứng ủng hộ hay bác bỏ [unknown]. Làm hay đóng AC6 là quyết định của user. Nếu làm, lý do là rủi ro ở
+mục 1, không phải một số đo.
 
 ## 3. Thiết kế
 
