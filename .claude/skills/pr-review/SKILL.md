@@ -87,7 +87,7 @@ See [references/checklist.md](references/checklist.md) for the full printable ch
 - New code / bug fixes have tests
 - Tests cover important branches and edge cases
 - Tests assert behavior, not just run for coverage
-- CI / pipeline is green
+- CI / pipeline is green (post-push; report `n/a (pre-push)` before the push)
 
 ### 4. Security
 - User input is validated

@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# PreToolUse gate: block `git push` until the pr-review skill has recorded an
-# approval marker matching the current HEAD commit.
+# PreToolUse gate: block `git push` until a pr-review approval marker matching
+# the current HEAD commit has been recorded.
 #
 # Wiring: registered as a PreToolUse hook (matcher "Bash") in .claude/settings.json.
 # Approval marker: .claude/.pr-review-passed (one line: the reviewed HEAD SHA),
-# written by the pr-review skill when the verdict is Approve.
+# written per pr-review step 5 when the verdict is Approve - by the session that
+# dispatched the reviewer agent, not by the reviewer itself.
 #
 # SCOPE — this is a *cooperative* guardrail, NOT a security boundary:
 #   - It only intercepts pushes made through Claude Code's Bash tool. A manual
@@ -94,7 +95,7 @@ Run the "pr-review" skill on the current changes first, from a reviewer agent
 separate from the session that wrote the code.
 When the review verdict is Approve, record approval for commit:
   ${head_sha:-<unknown>}
-by writing .claude/.pr-review-passed (pr-review step 5) — then the push is allowed.
+by writing .claude/.pr-review-passed (pr-review step 5) - then the push is allowed.
 
 To re-review: just run the skill again after your latest commit.
 EOF
