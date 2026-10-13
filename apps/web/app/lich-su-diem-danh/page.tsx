@@ -32,7 +32,7 @@ export default async function AttendanceHistoryPage() {
     <>
       <PageHeader
         banner="history"
-        size="compact"
+        isPlainOnPhone
         title="Lịch sử điểm danh"
         description="Câu trả lời của cả bang theo từng trận và từng lưu phái."
       />

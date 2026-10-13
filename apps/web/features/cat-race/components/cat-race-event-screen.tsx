@@ -101,7 +101,6 @@ function EventBody({ event }: { event: CatRaceEventDetail }) {
     <div className="flex flex-col gap-4">
       <PageHeader
         banner="teamBuilder"
-        size="compact"
         title={event.name}
         description={`Chế độ ${CAT_RACE_MODE_LABEL[event.mode]}`}
         actions={

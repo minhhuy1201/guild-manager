@@ -65,7 +65,6 @@ export function SettingsTabs() {
     <>
       <PageHeader
         banner="settings"
-        size="compact"
         title="Thiết lập"
         description="Lịch đánh trong tuần và danh sách thành viên của bang."
       />
