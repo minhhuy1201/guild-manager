@@ -48,4 +48,27 @@ describe('CatRaceController', () => {
 
     expect(service[method]).toHaveBeenCalledWith(...args);
   });
+
+  it.each([
+    ['update', ['e1', { name: 'x' }], 'update'],
+    ['setParticipants', ['e1', { participants: [] }], 'setParticipants'],
+    ['addPrize', ['e1', { name: 'p' }], 'addPrize'],
+    ['updatePrize', ['e1', 'p1', { name: 'p' }], 'updatePrize'],
+    ['removePrize', ['e1', 'p1'], 'removePrize'],
+    ['setEntrants', ['e1', 'p1', { characterIds: [] }], 'setEntrants'],
+    ['voidRound', ['e1', 'r1', { reason: 'x' }], 'voidRound'],
+  ] as const)(
+    '%s forwards ids and body to the service',
+    async (name, args, method) => {
+      const service = { [method]: jest.fn().mockResolvedValue('done') };
+      const controller = new CatRaceController(service as never);
+
+      const result = await (controller[name] as (...a: unknown[]) => unknown)(
+        ...args,
+      );
+
+      expect(service[method]).toHaveBeenCalledWith(...args);
+      expect(result).toBe('done');
+    },
+  );
 });

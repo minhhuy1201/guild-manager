@@ -8,7 +8,8 @@ vi.mock("@/features/auth/server", () => ({
     Promise.resolve({ Authorization: `Bearer ${ACCESS_TOKEN}` }),
 }));
 
-const { drawCatRaceRound, voidCatRaceRound } = await import("../cat-race-api");
+const api = await import("../cat-race-api");
+const { drawCatRaceRound, voidCatRaceRound } = api;
 
 const ACCESS_TOKEN = "access-token-gia";
 
@@ -62,5 +63,132 @@ describe("cat race API", () => {
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toContain("/cat-races/e1/rounds/r1/void");
     expect(JSON.parse(String(init.body))).toEqual({ reason: "nhầm" });
+  });
+});
+
+interface Route {
+  name: string;
+  call: () => Promise<unknown>;
+  method: string | undefined;
+  path: string;
+  body: unknown;
+}
+
+const ROUTES: Route[] = [
+  {
+    name: "fetchCatRaces",
+    call: () => api.fetchCatRaces(),
+    method: undefined,
+    path: "/cat-races",
+    body: undefined,
+  },
+  {
+    name: "fetchCatRacePrefill",
+    call: () => api.fetchCatRacePrefill(),
+    method: undefined,
+    path: "/cat-races/prefill",
+    body: undefined,
+  },
+  {
+    name: "fetchCatRaceEvent",
+    call: () => api.fetchCatRaceEvent("e 1"),
+    method: undefined,
+    path: "/cat-races/e%201",
+    body: undefined,
+  },
+  {
+    name: "createCatRace",
+    call: () => api.createCatRace({ name: "n" } as never),
+    method: "POST",
+    path: "/cat-races",
+    body: { name: "n" },
+  },
+  {
+    name: "updateCatRace",
+    call: () => api.updateCatRace({ id: "e1", name: "n" } as never),
+    method: "PATCH",
+    path: "/cat-races/e1",
+    body: { name: "n" },
+  },
+  {
+    name: "deleteCatRace",
+    call: () => api.deleteCatRace("e1"),
+    method: "DELETE",
+    path: "/cat-races/e1",
+    body: undefined,
+  },
+  {
+    name: "setCatRaceParticipants",
+    call: () =>
+      api.setCatRaceParticipants({ id: "e1", participants: [] } as never),
+    method: "PUT",
+    path: "/cat-races/e1/participants",
+    body: { participants: [] },
+  },
+  {
+    name: "addCatRacePrize",
+    call: () => api.addCatRacePrize({ id: "e1", name: "p" } as never),
+    method: "POST",
+    path: "/cat-races/e1/prizes",
+    body: { name: "p" },
+  },
+  {
+    name: "updateCatRacePrize",
+    call: () =>
+      api.updateCatRacePrize({ id: "e1", prizeId: "p 1", name: "p" } as never),
+    method: "PATCH",
+    path: "/cat-races/e1/prizes/p%201",
+    body: { name: "p" },
+  },
+  {
+    name: "deleteCatRacePrize",
+    call: () => api.deleteCatRacePrize({ id: "e1", prizeId: "p1" }),
+    method: "DELETE",
+    path: "/cat-races/e1/prizes/p1",
+    body: undefined,
+  },
+  {
+    name: "setCatRaceEntrants",
+    call: () =>
+      api.setCatRaceEntrants({
+        id: "e1",
+        prizeId: "p1",
+        characterIds: ["a"],
+      } as never),
+    method: "PUT",
+    path: "/cat-races/e1/prizes/p1/entrants",
+    body: { characterIds: ["a"] },
+  },
+  {
+    name: "endCatRace",
+    call: () => api.endCatRace("e1"),
+    method: "POST",
+    path: "/cat-races/e1/end",
+    body: undefined,
+  },
+  {
+    name: "announceCatRace",
+    call: () => api.announceCatRace("e1"),
+    method: "POST",
+    path: "/cat-races/e1/announce",
+    body: undefined,
+  },
+];
+
+describe.each(ROUTES)("$name", ({ call, method, path, body }) => {
+  it("hits the right route with the session token", async () => {
+    const fetchMock = mockFetch({});
+
+    await call();
+
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toContain(path);
+    expect(init.method).toBe(method);
+    expect((init.headers as Record<string, string>).Authorization).toBe(
+      `Bearer ${ACCESS_TOKEN}`
+    );
+    expect(init.body === undefined ? undefined : JSON.parse(String(init.body))).toEqual(
+      body
+    );
   });
 });

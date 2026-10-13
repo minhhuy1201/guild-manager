@@ -4,8 +4,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CatRaceMode, GuildClass, PrizeTier } from "@guild/shared/enums";
 import type { CatRaceDrawResult, CatRaceEventDetail } from "@guild/shared/schemas";
 
-const { mutateAsync, toastError, reducedMotion } = vi.hoisted(() => ({
+const { mutateAsync, invalidate, recover, toastError, reducedMotion } = vi.hoisted(() => ({
   mutateAsync: vi.fn(),
+  invalidate: vi.fn(),
+  recover: vi.fn(() => false),
   toastError: vi.fn(),
   reducedMotion: { current: false },
 }));
@@ -13,17 +15,44 @@ const { mutateAsync, toastError, reducedMotion } = vi.hoisted(() => ({
 vi.mock("../../hooks/use-cat-race-mutations", () => ({
   useDrawCatRaceRound: () => ({ mutateAsync }),
 }));
-vi.mock("@/hooks/use-invalidate", () => ({ useInvalidate: () => vi.fn() }));
+vi.mock("@/hooks/use-invalidate", () => ({ useInvalidate: () => invalidate }));
 vi.mock("@/hooks/use-session-recovery", () => ({
-  useSessionRecovery: () => () => false,
+  useSessionRecovery: () => recover,
 }));
 vi.mock("@/hooks/use-reduced-motion", () => ({
   useReducedMotion: () => reducedMotion.current,
 }));
 vi.mock("@/components/shared/toast", () => ({ toastError }));
-vi.mock("../race-canvas", () => ({ RaceCanvas: () => <div>CANVAS</div> }));
+vi.mock("../race-canvas", () => ({
+  RaceCanvas: ({
+    onFinish,
+    onLeaders,
+    skipSignal,
+  }: {
+    onFinish: () => void;
+    onLeaders: (keys: string[]) => void;
+    skipSignal: number;
+  }) => (
+    <div>
+      CANVAS {skipSignal}
+      <button onClick={onFinish}>finish</button>
+      <button onClick={() => onLeaders(["b#1", "a#1"])}>leaders</button>
+    </div>
+  ),
+}));
 vi.mock("../race-result-overlay", () => ({
-  RaceResultOverlay: () => <div>RESULT</div>,
+  RaceResultOverlay: ({
+    onContinue,
+    isContinuing,
+  }: {
+    onContinue: () => void;
+    isContinuing: boolean;
+  }) => (
+    <div>
+      RESULT {String(isContinuing)}
+      <button onClick={onContinue}>continue</button>
+    </div>
+  ),
 }));
 
 import { useRaceStore } from "../../store/race-store";
@@ -114,8 +143,8 @@ describe("RaceStage", () => {
 
     expect(mutateAsync).toHaveBeenCalledWith({ id: "e1", prizeId: "p1" });
     expect(useRaceStore.getState().stage).toBe("result");
-    expect(screen.getByText("RESULT")).toBeTruthy();
-    expect(screen.queryByText("CANVAS")).toBeNull();
+    expect(screen.getByText(/RESULT/)).toBeTruthy();
+    expect(screen.queryByText(/CANVAS/)).toBeNull();
   });
 
   it("starts the replay when motion is allowed", async () => {
@@ -127,7 +156,7 @@ describe("RaceStage", () => {
     });
 
     expect(useRaceStore.getState().stage).toBe("racing");
-    expect(screen.getByText("CANVAS")).toBeTruthy();
+    expect(screen.getByText(/CANVAS/)).toBeTruthy();
   });
 
   it("goes back to idle and toasts the server's sentence when the draw fails", async () => {
@@ -140,5 +169,136 @@ describe("RaceStage", () => {
 
     expect(useRaceStore.getState().stage).toBe("idle");
     expect(toastError).toHaveBeenCalledWith("Hạng mục đã đủ giải.");
+  });
+
+  it("stays silent when the session recovery took over a failed draw", async () => {
+    mutateAsync.mockRejectedValue(new Error("401"));
+    recover.mockReturnValueOnce(true);
+    renderStage();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /ĐUA/ }));
+    });
+
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it("refreshes the winners and leaves the store alone when the screen was left mid-draw", async () => {
+    let answer: (value: CatRaceDrawResult) => void = () => {};
+    mutateAsync.mockReturnValue(new Promise((resolve) => (answer = resolve)));
+    renderStage();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /ĐUA/ }));
+    });
+    act(() => useRaceStore.getState().reset());
+    await act(async () => answer(RESULT));
+
+    expect(invalidate).toHaveBeenCalled();
+    expect(useRaceStore.getState().stage).toBe("idle");
+  });
+
+  it("ignores a second press while a round is running", async () => {
+    mutateAsync.mockResolvedValue(RESULT);
+    renderStage();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /ĐUA/ }));
+    });
+
+    expect(screen.queryByRole("button", { name: /ĐUA/ })).toBeNull();
+    expect(mutateAsync).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows the live board while racing, and skips on request", async () => {
+    mutateAsync.mockResolvedValue(RESULT);
+    renderStage();
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /ĐUA/ }));
+    });
+
+    fireEvent.click(screen.getByText("leaders"));
+    expect(screen.getByText(/1\.\s*b/)).toBeTruthy();
+    expect(screen.getByText(/2\.\s*a/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Bỏ qua" }));
+
+    expect(screen.getByText(/CANVAS 1/)).toBeTruthy();
+  });
+
+  it("shows the winner card when the replay ends, then refreshes and resets on continue", async () => {
+    mutateAsync.mockResolvedValue(RESULT);
+    invalidate.mockResolvedValue(undefined);
+    renderStage();
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /ĐUA/ }));
+    });
+
+    fireEvent.click(screen.getByText("finish"));
+    expect(useRaceStore.getState().stage).toBe("result");
+    await act(async () => {
+      fireEvent.click(screen.getByText("continue"));
+    });
+
+    expect(invalidate).toHaveBeenCalled();
+    expect(useRaceStore.getState().stage).toBe("idle");
+  });
+
+  it("counts tickets in TICKET mode", () => {
+    const event = { ...EVENT, mode: CatRaceMode.TICKET };
+    event.participants = event.participants.map((p) => ({ ...p, tickets: 3 }));
+    renderStage(event);
+
+    expect(screen.getByText("2 người · 6 vé")).toBeTruthy();
+  });
+
+  it("says there is no prize and offers a bare ĐUA", () => {
+    render(
+      <RaceStage
+        event={EVENT}
+        prize={undefined}
+        canEdit
+        onEditEntrants={vi.fn()}
+        onEditParticipants={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText("Chưa có hạng mục.")).toBeTruthy();
+    expect((screen.getByRole("button", { name: "ĐUA" }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("changes the speed and opens the edit dialogs", () => {
+    const onEditEntrants = vi.fn();
+    const onEditParticipants = vi.fn();
+    render(
+      <RaceStage
+        event={EVENT}
+        prize={PRIZE}
+        canEdit
+        onEditEntrants={onEditEntrants}
+        onEditParticipants={onEditParticipants}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Nhanh" }));
+    fireEvent.click(screen.getByRole("button", { name: /Danh sách đua/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Người tham gia/ }));
+
+    expect(useRaceStore.getState().speed).toBe("FAST");
+    expect(onEditEntrants).toHaveBeenCalled();
+    expect(onEditParticipants).toHaveBeenCalled();
+  });
+
+  it("hides the edit buttons for a read-only event", () => {
+    render(
+      <RaceStage
+        event={EVENT}
+        prize={PRIZE}
+        canEdit={false}
+        onEditEntrants={vi.fn()}
+        onEditParticipants={vi.fn()}
+      />
+    );
+
+    expect(screen.queryByRole("button", { name: /Danh sách đua/ })).toBeNull();
   });
 });
