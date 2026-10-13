@@ -2,9 +2,12 @@ import { Module } from '@nestjs/common';
 
 import { AttendanceModule } from '../attendance/attendance.module';
 import { BattleSessionsModule } from '../battle-sessions/battle-sessions.module';
+import { CatRaceModule } from '../cat-race/cat-race.module';
 import { CharactersModule } from '../characters/characters.module';
 import { ActorResolver } from './actor-resolver';
 import { BotChannelService } from './bot-channel.service';
+import { CatRaceAnnounceController } from './cat-race-announce.controller';
+import { CatRaceAnnouncerService } from './cat-race-announcer.service';
 import { CronSecretGuard } from './cron.guard';
 import { DiscordBotController } from './discord-bot.controller';
 import { DiscordSignatureGuard } from './discord-bot.guard';
@@ -27,11 +30,17 @@ import { ReminderService } from './reminder.service';
  * class-level guard cannot be all three.
  */
 @Module({
-  imports: [AttendanceModule, BattleSessionsModule, CharactersModule],
+  imports: [
+    AttendanceModule,
+    BattleSessionsModule,
+    CatRaceModule,
+    CharactersModule,
+  ],
   controllers: [
     DiscordBotController,
     ReminderController,
     FormationAnnounceController,
+    CatRaceAnnounceController,
   ],
   providers: [
     DiscordSignatureGuard,
@@ -41,6 +50,7 @@ import { ReminderService } from './reminder.service';
     DiscordRestClient,
     ReminderService,
     FormationAnnouncerService,
+    CatRaceAnnouncerService,
     CronSecretGuard,
   ],
 })

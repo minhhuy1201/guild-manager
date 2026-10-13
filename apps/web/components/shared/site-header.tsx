@@ -105,6 +105,7 @@ export async function SiteHeader() {
                 label={me?.character?.name ?? me?.discordUsername ?? null}
                 discordId={session.discordId}
                 avatarHash={me?.discordAvatar ?? null}
+                isAdmin={isAdmin}
               />
             </div>
           )}

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { TacticStage } from "@guild/shared/schemas";
 
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import {
   TRANSITION_MS,
   easeOutCubic,
@@ -11,7 +12,6 @@ import {
   transitionFrame,
   type StageFrame,
 } from "../lib/stage-transition";
-import { useReducedMotion } from "./use-reduced-motion";
 
 /** How the caller wants the canvas driven. */
 export interface StageTransitionOptions {

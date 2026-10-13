@@ -112,7 +112,7 @@ process: Discord `POST`s each interaction — a slash command or a button press 
 | `/diem-danh` | Mark your own attendance |
 | `/diem-danh-ho @someone` | Mark attendance for someone else (admin) |
 | `/thong-bao` | Post the week's schedule (admin) |
-| `/cau-hinh-kenh` | Make the current channel the one the bot posts reminders in (admin) |
+| `/cau-hinh-kenh` | Make the current channel the one the bot posts in - reminders, admin alerts, or general notices such as cat race results (admin) |
 | `/nhac-diem-danh` | Run the attendance reminder by hand (admin) |
 | `/chao-mung @someone #sect-channel` | Welcome a new member, linking the channels they need (admin) |
 

@@ -1,6 +1,7 @@
 export * from "./attendance.schema";
 export * from "./auth.schema";
 export * from "./battle-session.schema";
+export * from "./cat-race.schema";
 export * from "./character.schema";
 export * from "./formation.schema";
 export * from "./leave.schema";

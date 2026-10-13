@@ -10,7 +10,11 @@ import { ROUTES } from "@/config/routes";
 const PUBLIC_PATH_PREFIXES = [ROUTES.login, ROUTES.landing];
 
 /** Admin-only routes. Matched loosely on purpose - see `isUnder`. */
-const ADMIN_PATH_PREFIXES = [ROUTES.teamBuilder, ROUTES.settings];
+const ADMIN_PATH_PREFIXES = [
+  ROUTES.teamBuilder,
+  ROUTES.settings,
+  ROUTES.catRace,
+];
 
 /**
  * Whether a path is the given route or sits under it, matching whole segments only.

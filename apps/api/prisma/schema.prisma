@@ -60,6 +60,10 @@ model Character {
   formationSlots    FormationSlot[]
   leaves            Leave[]
 
+  catRaceParticipants CatRaceParticipant[]
+  catRaceEntrants     CatRaceEntrant[]
+  catRaceWins         CatRaceRound[]
+
   @@index([guildClass])
 }
 
@@ -200,8 +204,8 @@ model TeamNameVersion {
 /// A Discord channel the bot posts to, keyed by what it posts there.
 ///
 /// Global configuration like TeamName, hanging off nothing: it is not a property of a week, a
-/// member or a session. It holds up to two rows: `ATTENDANCE_REMINDER`, and `ADMIN_ALERT` for the
-/// cron's failure alerts.
+/// member or a session. It holds up to three rows: `ATTENDANCE_REMINDER`, `ADMIN_ALERT` for the
+/// cron's failure alerts, and `GENERAL_NOTI` for general announcements such as cat race results.
 ///
 /// `purpose` is a String and NOT a Prisma enum on purpose: every enum in this schema has to stay in
 /// step with `packages/shared/enums`, and this value never crosses the network to the web app — so
@@ -270,4 +274,95 @@ model Leave {
 
   @@index([characterId])
   @@index([endDate])
+}
+
+/// How a cat race event weighs its entrants. Values must match the CatRaceMode enum in packages/shared/enums.
+enum CatRaceMode {
+  STANDARD
+  TICKET
+}
+
+/// How valuable a cat race prize is. Values must match the PrizeTier enum in packages/shared/enums.
+enum PrizeTier {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+/// One batch of cat race draws ("đợt quay"): several prizes, drawn round by round.
+model CatRaceEvent {
+  id              String      @id @default(cuid())
+  name            String      @db.VarChar(80)
+  mode            CatRaceMode
+  /// Plain id, not a relation: the actor may be a rescue admin with no character, and history must outlive deletions.
+  createdById     String
+  /// Written from Clock, not by the DB.
+  createdAt       DateTime
+  /// Null = still open.
+  endedAt         DateTime?
+  /// Set only after Discord accepted the summary post.
+  discordPostedAt DateTime?
+
+  participants CatRaceParticipant[]
+  prizes       CatRacePrize[]
+}
+
+/// A character taking part in an event, with their ticket count for the whole event.
+model CatRaceParticipant {
+  eventId     String
+  characterId String
+  /// 1-3; always 1 in STANDARD mode.
+  tickets     Int          @default(1)
+  event       CatRaceEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  character   Character    @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  @@id([eventId, characterId])
+}
+
+/// A prize line of an event: a name and how many of it are given away.
+model CatRacePrize {
+  id        String       @id @default(cuid())
+  eventId   String
+  name      String       @db.VarChar(60)
+  quantity  Int
+  tier      PrizeTier
+  sortOrder Int
+  event     CatRaceEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  entrants CatRaceEntrant[]
+  rounds   CatRaceRound[]
+
+  @@index([eventId])
+}
+
+/// Who may still win a prize now. Tickets are read from CatRaceParticipant, never copied here.
+model CatRaceEntrant {
+  prizeId     String
+  characterId String
+  prize       CatRacePrize @relation(fields: [prizeId], references: [id], onDelete: Cascade)
+  character   Character    @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  @@id([prizeId, characterId])
+}
+
+/// One draw. The winner's name and class are captured at draw time because a Character can be hard-deleted.
+model CatRaceRound {
+  id                String       @id @default(cuid())
+  prizeId           String
+  winnerCharacterId String?
+  winnerName        String
+  winnerGuildClass  GuildClass
+  winnerTickets     Int
+  /// People who ran, and their tickets in total (equal in STANDARD mode).
+  entrantCount      Int
+  totalTickets      Int
+  /// Plain id, same reason as CatRaceEvent.createdById.
+  drawnById         String
+  drawnAt           DateTime
+  voidedAt          DateTime?
+  voidReason        String?      @db.VarChar(255)
+  prize             CatRacePrize @relation(fields: [prizeId], references: [id], onDelete: Cascade)
+  winner            Character?   @relation(fields: [winnerCharacterId], references: [id], onDelete: SetNull)
+
+  @@index([prizeId])
 }

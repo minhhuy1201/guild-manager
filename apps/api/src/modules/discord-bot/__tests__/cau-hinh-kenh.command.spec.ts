@@ -136,6 +136,18 @@ describe('/cau-hinh-kenh', () => {
     expect(message.content).toContain('báo lỗi cho admin');
   });
 
+  it('muc-dich = GENERAL_NOTI: đặt kênh thông báo chung, tin xác nhận đúng câu', async () => {
+    const postMessage = jest.fn().mockResolvedValue(undefined);
+    const { deps, set } = makeDeps(actor(GuildRole.ADMIN), postMessage);
+
+    await cauHinhKenhCommand.execute(withPurpose('GENERAL_NOTI'), deps);
+
+    expect(set).toHaveBeenCalledWith('GENERAL_NOTI', '424242');
+    expect(postMessage).toHaveBeenCalledWith('424242', {
+      content: '✅ Channel này đã được đặt làm nơi bot gửi thông báo chung.',
+    });
+  });
+
   it('giá trị lạ: ném lỗi nhắc discord:register', async () => {
     const postMessage = jest.fn();
     const { deps, set } = makeDeps(actor(GuildRole.ADMIN), postMessage);

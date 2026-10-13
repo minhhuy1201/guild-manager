@@ -21,6 +21,7 @@ const PURPOSE_OPTION = 'muc-dich';
 const PURPOSE_CHOICES = [
   { name: 'Nhắc điểm danh', value: 'ATTENDANCE_REMINDER' },
   { name: 'Cảnh báo admin', value: 'ADMIN_ALERT' },
+  { name: 'Thông báo chung', value: 'GENERAL_NOTI' },
 ] as const satisfies readonly { name: string; value: BotChannelPurpose }[];
 
 /** Left empty, the command sets the reminder channel - what it did before the option existed. */
@@ -42,6 +43,10 @@ const PURPOSE_COPY: Record<
   ADMIN_ALERT: {
     confirmation: '✅ Channel này đã được đặt làm nơi bot báo lỗi cho admin.',
     saved: 'Đã lưu. Từ giờ bot sẽ báo lỗi nhắc điểm danh trong channel này.',
+  },
+  GENERAL_NOTI: {
+    confirmation: '✅ Channel này đã được đặt làm nơi bot gửi thông báo chung.',
+    saved: 'Đã lưu. Từ giờ bot sẽ gửi thông báo chung trong channel này.',
   },
 };
 
@@ -109,7 +114,7 @@ export const cauHinhKenhCommand: SlashCommand = {
       {
         name: PURPOSE_OPTION,
         description:
-          'Kênh nhắc điểm danh (mặc định) hay kênh báo lỗi cho admin',
+          'Kênh nhắc điểm danh (mặc định), báo lỗi cho admin hay thông báo chung',
         type: COMMAND_OPTION_TYPE.string,
         required: false,
         choices: [...PURPOSE_CHOICES],

@@ -6,6 +6,7 @@ export const ROUTES = {
   teamBuilder: "/xep-team",
   tactics: "/chien-thuat",
   settings: "/thiet-lap",
+  catRace: "/dua-meo",
   login: "/dang-nhap",
   loginCallback: "/dang-nhap/discord",
 } as const;
@@ -17,4 +18,13 @@ export const ROUTES = {
  */
 export function tacticEditorPath(id: string): string {
   return `${ROUTES.tactics}/${encodeURIComponent(id)}`;
+}
+
+/**
+ * Path of one cat race event's screen.
+ * @param id - Event id
+ * @returns The event route
+ */
+export function catRaceEventPath(id: string): string {
+  return `${ROUTES.catRace}/${encodeURIComponent(id)}`;
 }

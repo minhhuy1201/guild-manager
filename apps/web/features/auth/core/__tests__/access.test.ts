@@ -69,4 +69,11 @@ describe("decideAccess", () => {
       decideAccess({ pathname: "/thiet-lap", role: GuildRole.ADMIN })
     ).toBe("allow");
   });
+
+  it("/dua-meo và các trang con chỉ dành cho admin", () => {
+    for (const pathname of ["/dua-meo", "/dua-meo/abc"]) {
+      expect(decideAccess({ pathname, role: GuildRole.MEMBER })).toBe("home");
+      expect(decideAccess({ pathname, role: GuildRole.ADMIN })).toBe("allow");
+    }
+  });
 });

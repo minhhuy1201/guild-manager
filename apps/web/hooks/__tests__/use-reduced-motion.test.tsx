@@ -2,7 +2,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { useReducedMotion } from "../hooks/use-reduced-motion";
+import { useReducedMotion } from "../use-reduced-motion";
 
 afterEach(() => {
   cleanup();
