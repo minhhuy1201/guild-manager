@@ -34,7 +34,7 @@ Screens must look like one app. A new display convention goes here; its reason g
 ## Page header → `PageHeader` on its banner
 
 - Open every page with `PageHeader` (`components/shared/page-header.tsx`), except the tactic page (`TacticHeader`). A new tool page asks first.
-- Pass `size` (`tall` | `compact`) and `banner` (a `PAGE_BANNERS` entry in `lib/page-banners.ts`). A new page adds its scene there; pictures live in `public/img/bg/`.
+- Pass `banner` (a `PAGE_BANNERS` entry in `lib/page-banners.ts`). A new page adds its scene there; pictures live in `public/img/bg/`. Only the attendance page and its history set `isPlainOnPhone` (below `sm` it shows text only); a new page asks first.
 - Keep the two scrims between a picture and its text. Never put text on a picture without them.
 - Keep one `<h1>` per page, in `font-heading`. A section title inside a card is an `<h2>` in the sans face.
 - Use `font-heading` for headings only: `PageHeader`, the guild name, the formation banner, `DialogTitle`.

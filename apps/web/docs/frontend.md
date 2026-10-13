@@ -426,17 +426,19 @@ Never give a `<label>` to a field with no control: it announces a control that i
 
 ### Page header → `PageHeader` on its banner
 
-Every page but the tactic page (below) opens with `components/shared/page-header.tsx` (`<PageHeader banner title description?
-actions? />`): a `rounded-2xl` strip holding the page's scene, the page's one `<h1>` in white
-`font-heading` (Noto Serif), an optional one-sentence description, page-wide controls at the bottom
-right (the team builder's week picker), and the `OrnamentDivider` (a hairline with a small jade
-diamond, `surface="image"`) closing the block. A section title inside a card is an `<h2>`, in the
-sans face.
+Every page but the tactic page (below) opens with `components/shared/page-header.tsx`
+(`<PageHeader banner title description? actions? isPlainOnPhone? />`): a `rounded-2xl` strip holding
+the page's scene, the page's one `<h1>` in `font-heading` (Noto Serif), white on the scene, an
+optional one-sentence description, page-wide controls at the bottom right (the team builder's week
+picker), and the `OrnamentDivider` (a hairline with a small jade diamond, `surface="image"`) closing
+the block. A section title inside a card is an `<h2>`, in the sans face.
 
-- **`size` is required** (`tall` | `compact`), so no page inherits a height by accident. `tall` is
-  the attendance page's, where members land from a Discord link; `compact` is the daily tools'
-  (history, team builder, settings), where the tall strip left almost a third of a phone's screen
-  to decoration. Same scene, same scrims, same title size - only the strip and its padding shrink.
+- **One strip height** (`min-h-24`, `sm:min-h-28`) for every page, so no page spends almost a
+  third of a phone's screen on decoration.
+- **`isPlainOnPhone`** goes further: below `sm` the scene, scrims and divider are hidden and the
+  title and description read as plain text on the page. Only the attendance page and its history
+  set it; a new page asks first. The picture is still requested on a phone (`preload`), because CSS
+  cannot stop a download.
 - **`banner` is required** and names an entry of `PAGE_BANNERS` (`lib/page-banners.ts`): the
   picture, the `objectPosition` that crops the game's logo out of the strip on a wide screen, and
   the `tint` shown while it loads. A new page adds its scene there; the pictures live in

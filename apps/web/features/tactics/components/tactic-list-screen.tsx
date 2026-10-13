@@ -53,7 +53,6 @@ export function TacticListScreen({ isAdmin }: TacticListScreenProps) {
     <div className="flex flex-col gap-4">
       <PageHeader
         banner="tactics"
-        size="compact"
         title="Chiến thuật"
         description="Bản vẽ chiến thuật cho bang chiến."
         actions={

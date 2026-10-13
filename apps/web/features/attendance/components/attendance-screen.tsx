@@ -28,7 +28,7 @@ export function AttendanceScreen({ role }: AttendanceScreenProps) {
     <>
       <PageHeader
         banner="attendance"
-        size="tall"
+        isPlainOnPhone
         title="Điểm danh"
         description="Chọn Có hoặc Không cho từng trận trong tuần, trước hạn chót của trận đó."
       />

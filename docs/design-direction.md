@@ -60,9 +60,9 @@ saturation.
 - **One scene per page, in the page's banner** - the strip behind the page title. A dark scrim
   keeps the white title readable whatever the scene's light. Data (tables, the formation grid)
   never sits on a picture.
-- The banner comes in two heights: tall on the attendance page, where members arrive, and compact
-  on the tools used every day (history, team builder, tactics, settings), so their data starts
-  higher. Still one scene per page.
+- The banner has one low height on every page, so data starts high. On the attendance page and its
+  history a phone drops the scene and shows the title and description as plain text. Still one
+  scene per page.
 - **The login page** is the one full-screen scene, behind a translucent card.
 - **The landing page** (`/trang-chu`) opens on its own scene, `landing.jpg`, in a tall hero rather
   than a banner strip. It starts as a copy of `login.jpg` so the guild can swap one without

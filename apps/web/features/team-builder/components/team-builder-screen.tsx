@@ -170,7 +170,6 @@ export function TeamBuilderScreen() {
       <div className="flex flex-col gap-4">
         <PageHeader
           banner="teamBuilder"
-          size="compact"
           title="Xếp đội hình bang chiến"
           actions={
             <WeekPicker
