@@ -147,7 +147,7 @@ describe("RaceResultOverlay", () => {
     expect(screen.getByText("Thắng với 2/5 vé")).toBeTruthy();
   });
 
-  // Radix mounts the <img> only once the browser has loaded it, so jsdom keeps the fallback.
+  // Base UI mounts the <img> only once the browser has loaded it, so jsdom keeps the fallback.
   it("keeps the initial as the fallback while the Discord avatar loads", () => {
     const event = makeEvent();
     event.participants[0] = { ...event.participants[0], discordId: "111", discordAvatar: "hash" };

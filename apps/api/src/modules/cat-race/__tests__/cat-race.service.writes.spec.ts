@@ -91,6 +91,11 @@ describe('CatRaceService event writes', () => {
 
     await buildService(prisma).update('e1', { mode: 'TICKET' as never });
 
+    expect(prisma.catRaceRound.count).toHaveBeenCalled();
+    expect(prisma.catRaceEvent.update).toHaveBeenCalledWith({
+      where: { id: 'e1' },
+      data: { name: undefined, mode: 'TICKET' },
+    });
     expect(prisma.catRaceParticipant.updateMany).not.toHaveBeenCalled();
   });
 

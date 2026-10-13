@@ -14,14 +14,26 @@ import { RaceCanvas } from "../race-canvas";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-/** A 2D context that accepts every call; `fillText` is recorded to read what got painted. */
+/** A 2D context that accepts every call; text, colours and line points are recorded to read what got painted. */
 const fillText = vi.fn();
+const fills: unknown[] = [];
+const moves: [number, number][] = [];
+const lines: [number, number][] = [];
 const fakeContext = new Proxy(
   {},
   {
-    get: (_target, property) =>
-      property === "fillText" ? fillText : () => undefined,
-    set: () => true,
+    get: (_target, property) => {
+      if (property === "fillText") return fillText;
+      if (property === "moveTo") return (x: number, y: number) => moves.push([x, y]);
+      if (property === "lineTo") return (x: number, y: number) => lines.push([x, y]);
+
+      return () => undefined;
+    },
+    set: (_target, property, value) => {
+      if (property === "fillStyle") fills.push(value);
+
+      return true;
+    },
   }
 );
 
@@ -81,6 +93,9 @@ const SCRIPT = buildRaceScript({
 });
 
 beforeEach(() => {
+  fills.length = 0;
+  moves.length = 0;
+  lines.length = 0;
   frames.length = 0;
   resizeObservers.length = 0;
   vi.stubGlobal(
@@ -157,23 +172,33 @@ describe("RaceCanvas", () => {
     expect(labels).toContain("Bob");
   });
 
-  it("paints on a vertical track under the narrow breakpoint", () => {
-    window.matchMedia = vi.fn().mockReturnValue({ matches: true }) as never;
-    const onFinish = vi.fn();
-    render(
-      <RaceCanvas
-        script={SCRIPT}
-        participants={participants(false)}
-        onFinish={onFinish}
-        skipSignal={0}
-        onLeaders={vi.fn()}
-      />
-    );
+  it.each([
+    [true, "y"],
+    [false, "x"],
+  ] as const)(
+    "draws the start line across the track (narrow viewport: %s, constant %s)",
+    (narrow, constantAxis) => {
+      window.matchMedia = vi.fn().mockReturnValue({ matches: narrow }) as never;
+      render(
+        <RaceCanvas
+          script={SCRIPT}
+          participants={participants(false)}
+          onFinish={vi.fn()}
+          skipSignal={0}
+          onLeaders={vi.fn()}
+        />
+      );
 
-    runToEnd(onFinish);
+      runFrame(0);
 
-    expect(onFinish).toHaveBeenCalledTimes(1);
-  });
+      // The first stroke is the start line. A vertical track runs top to bottom, so its start
+      // line is horizontal (same y); a horizontal track has a vertical one (same x).
+      const index = constantAxis === "y" ? 1 : 0;
+      const other = index === 0 ? 1 : 0;
+      expect(moves[0][index]).toBe(lines[0][index]);
+      expect(moves[0][other]).not.toBe(lines[0][other]);
+    }
+  );
 
   it("shows the fps counter and logs the average with ?fps", () => {
     window.history.replaceState(null, "", "/?fps");
@@ -244,6 +269,17 @@ describe("RaceCanvas", () => {
   });
 
   it("re-reads the palette when the theme class changes", async () => {
+    vi.spyOn(window, "getComputedStyle").mockImplementation(
+      () =>
+        ({
+          getPropertyValue: (name: string) =>
+            name === "--foreground"
+              ? document.documentElement.classList.contains("dark")
+                ? "dark-fg"
+                : "light-fg"
+              : "",
+        }) as CSSStyleDeclaration
+    );
     render(
       <RaceCanvas
         script={SCRIPT}
@@ -253,12 +289,17 @@ describe("RaceCanvas", () => {
         onLeaders={vi.fn()}
       />
     );
+    runFrame(0);
+    expect(fills).toContain("light-fg");
 
+    fills.length = 0;
     document.documentElement.classList.add("dark");
     await Promise.resolve();
-    runFrame(0);
+    runFrame(500);
 
+    expect(fills).toContain("dark-fg");
+    expect(fills).not.toContain("light-fg");
     document.documentElement.classList.remove("dark");
-    expect(fillText).toHaveBeenCalled();
+    vi.restoreAllMocks();
   });
 });

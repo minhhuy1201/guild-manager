@@ -198,15 +198,17 @@ describe("RaceStage", () => {
     expect(useRaceStore.getState().stage).toBe("idle");
   });
 
-  it("ignores a second press while a round is running", async () => {
-    mutateAsync.mockResolvedValue(RESULT);
+  it("locks ĐUA while the server is answering, so a second press draws nothing", async () => {
+    mutateAsync.mockReturnValue(new Promise(() => {}));
     renderStage();
 
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: /ĐUA/ }));
     });
+    const button = screen.getByRole("button", { name: /ĐUA/ }) as HTMLButtonElement;
+    fireEvent.click(button);
 
-    expect(screen.queryByRole("button", { name: /ĐUA/ })).toBeNull();
+    expect(button.disabled).toBe(true);
     expect(mutateAsync).toHaveBeenCalledTimes(1);
   });
 

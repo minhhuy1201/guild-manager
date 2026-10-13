@@ -182,7 +182,8 @@ describe.each(ROUTES)("$name", ({ call, method, path, body }) => {
     await call();
 
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toContain(path);
+    // `endsWith` on the pathname: `toContain("/cat-races")` also matches `/cat-races/prefill`.
+    expect(new URL(url).pathname.endsWith(path)).toBe(true);
     expect(init.method).toBe(method);
     expect((init.headers as Record<string, string>).Authorization).toBe(
       `Bearer ${ACCESS_TOKEN}`

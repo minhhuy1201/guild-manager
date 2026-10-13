@@ -121,7 +121,7 @@ import { PRIZE, makeEvent } from "./fixtures";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const SECOND_PRIZE = { ...PRIZE, id: "p2", name: "Vé", awardedCount: 2 };
+const SECOND_PRIZE = { ...PRIZE, id: "p2", name: "Vé", awardedCount: 0 };
 
 /**
  * Make the event query answer.
@@ -156,17 +156,30 @@ describe("CatRaceEventScreen", () => {
     expect(screen.queryByRole("heading")).toBeNull();
   });
 
-  it("shows the title, the mode and the end button on an open event, with the first drawable prize chosen", () => {
+  it("shows the title, the mode and the end button on an open event", () => {
     render(<CatRaceEventScreen id="e1" />);
 
     expect(screen.getByText("Đợt 1")).toBeTruthy();
     expect(screen.getByText("Chế độ Thường")).toBeTruthy();
     expect(screen.getByText("END")).toBeTruthy();
-    expect(screen.getByText(/STAGE Tiền mặt/)).toBeTruthy();
+  });
+
+  it("chooses the first drawable prize, skipping a full one before it", () => {
+    loaded(makeEvent({ prizes: [{ ...PRIZE, awardedCount: 2 }, SECOND_PRIZE] }));
+    render(<CatRaceEventScreen id="e1" />);
+
+    expect(screen.getByText(/STAGE Vé/)).toBeTruthy();
   });
 
   it("falls back to the first prize when every prize is locked", () => {
-    loaded(makeEvent({ prizes: [{ ...PRIZE, awardedCount: 2 }, SECOND_PRIZE] }));
+    loaded(
+      makeEvent({
+        prizes: [
+          { ...PRIZE, awardedCount: 2 },
+          { ...SECOND_PRIZE, awardedCount: 2 },
+        ],
+      })
+    );
     render(<CatRaceEventScreen id="e1" />);
 
     expect(screen.getByText(/STAGE Tiền mặt/)).toBeTruthy();

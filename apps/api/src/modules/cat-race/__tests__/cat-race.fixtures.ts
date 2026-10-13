@@ -55,7 +55,7 @@ export function createPrisma() {
 
 export type PrismaDouble = ReturnType<typeof createPrisma>;
 
-/** An open STANDARD event row, and the detail include the service re-reads at the end of a write. */
+/** An open TICKET event row (pass `mode` to change it), and the detail include the service re-reads at the end of a write. */
 export function openEvent(overrides: Record<string, unknown> = {}) {
   return {
     id: 'e1',
