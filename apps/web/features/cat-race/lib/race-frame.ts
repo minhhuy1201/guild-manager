@@ -33,7 +33,7 @@ export function planRace(
     .map((cat) => cat.key)
     .sort(
       (a, b) =>
-        (labels.get(a) ?? a).localeCompare(labels.get(b) ?? b, "vi", { numeric: true }) ||
+        labels.get(a)!.localeCompare(labels.get(b)!, "vi", { numeric: true }) ||
         a.localeCompare(b)
     );
 

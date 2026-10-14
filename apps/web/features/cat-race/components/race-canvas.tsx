@@ -169,7 +169,7 @@ export function RaceCanvas({
       context.font = nameFont();
       const room = plan.layout.nameColumn - NAME_PADDING * 2 - CLASS_MARK_SIZE;
       fitted = new Map(
-        plan.laneOrder.map((key) => [key, fitText(context, labels.get(key) ?? "", room)])
+        plan.laneOrder.map((key) => [key, fitText(context, labels.get(key)!, room)])
       );
     };
 
@@ -202,7 +202,7 @@ export function RaceCanvas({
         context.fillStyle = colorOf.get(key)!;
         context.fillRect(NAME_PADDING, centre - CLASS_MARK_SIZE / 2, CLASS_MARK_SIZE, CLASS_MARK_SIZE);
         context.fillStyle = palette.foreground;
-        context.fillText(fitted.get(key) ?? "", NAME_PADDING * 2 + CLASS_MARK_SIZE, centre);
+        context.fillText(fitted.get(key)!, NAME_PADDING * 2 + CLASS_MARK_SIZE, centre);
       }
       context.fillStyle = palette.foreground;
       context.fillRect(layout.startX - START_LINE_WIDTH / 2, 0, START_LINE_WIDTH, viewHeight);
