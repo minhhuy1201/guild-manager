@@ -1,66 +1,53 @@
 import { describe, expect, it } from "vitest";
 
-import { MAX_PACK_ROWS, laneSlots, packSlots, projectProgress } from "../race-layout";
+import { LANE_MAX_HEIGHT, LANE_MIN_HEIGHT, laneCenterY, laneLayout, progressX } from "../race-layout";
 
-const AREA = { width: 900, height: 420 };
-const PHONE = { width: 360, height: 640 };
+const VIEWPORT = { width: 900, height: 600 };
 
-/**
- * @param count - How many keys
- * @returns `count` distinct keys
- */
-function keys(count: number): string[] {
-  return Array.from({ length: count }, (_, index) => `k${index}`);
-}
+describe("laneLayout", () => {
+  it("keeps every lane at least the minimum even for 240 cats, and lets the track scroll", () => {
+    const layout = laneLayout(240, VIEWPORT);
 
-describe("packSlots", () => {
-  it("uses at most 24 rows for 240 cats and keeps every slot inside the area", () => {
-    const slots = packSlots(keys(240), AREA);
-    const rows = new Set([...slots.values()].map((slot) => slot.y));
-
-    expect(slots.size).toBe(240);
-    expect(rows.size).toBeLessThanOrEqual(MAX_PACK_ROWS);
-    for (const { x, y } of slots.values()) {
-      expect(x).toBeGreaterThanOrEqual(0);
-      expect(x).toBeLessThanOrEqual(AREA.width);
-      expect(y).toBeGreaterThanOrEqual(0);
-      expect(y).toBeLessThanOrEqual(AREA.height);
-    }
+    expect(layout.laneHeight).toBe(LANE_MIN_HEIGHT);
+    expect(layout.contentHeight).toBe(240 * LANE_MIN_HEIGHT);
+    expect(layout.contentHeight).toBeGreaterThan(VIEWPORT.height);
   });
 
-  it("keeps every slot inside a 360px wide vertical track", () => {
-    for (const { x, y } of packSlots(keys(240), PHONE, "vertical").values()) {
-      expect(x).toBeGreaterThanOrEqual(0);
-      expect(x).toBeLessThanOrEqual(PHONE.width);
-      expect(y).toBeGreaterThanOrEqual(0);
-      expect(y).toBeLessThanOrEqual(PHONE.height);
-    }
+  it("fits a small field in the viewport and caps the lane height", () => {
+    expect(laneLayout(20, VIEWPORT).laneHeight).toBe(30);
+    expect(laneLayout(2, VIEWPORT).laneHeight).toBe(LANE_MAX_HEIGHT);
+  });
+
+  it("leaves room for the name column on a 360px phone", () => {
+    const layout = laneLayout(30, { width: 360, height: 600 });
+
+    expect(layout.nameColumn).toBeGreaterThanOrEqual(96);
+    expect(layout.travel).toBeGreaterThan(100);
+    expect(layout.finishX).toBeLessThanOrEqual(360);
+  });
+
+  it("makes the nose touch the finish line at progress 1", () => {
+    const layout = laneLayout(30, VIEWPORT);
+
+    expect(progressX(1, layout) + layout.catWidth).toBe(layout.finishX);
   });
 });
 
-describe("laneSlots", () => {
-  it("spreads 8 cats evenly across the lanes", () => {
-    const ys = [...laneSlots(keys(8), AREA).values()].map((slot) => slot.y);
-    const gaps = ys.slice(1).map((y, index) => y - ys[index]);
+describe("progressX", () => {
+  it("is the start line at 0 and grows with progress", () => {
+    const layout = laneLayout(30, VIEWPORT);
 
-    expect(new Set(gaps.map((gap) => gap.toFixed(6))).size).toBe(1);
+    expect(progressX(0, layout)).toBe(layout.startX);
+    expect(progressX(0.5, layout)).toBeGreaterThan(progressX(0.25, layout));
   });
 });
 
-describe("projectProgress", () => {
-  const view = { from: 0, to: 1 };
+describe("laneCenterY", () => {
+  it("centres each lane and never repeats a line", () => {
+    const layout = laneLayout(30, VIEWPORT);
+    const centres = Array.from({ length: 30 }, (_, index) => laneCenterY(index, layout));
 
-  it("runs top to bottom on a vertical track", () => {
-    const start = projectProgress(0, 100, view, PHONE, "vertical");
-    const end = projectProgress(1, 100, view, PHONE, "vertical");
-
-    expect(start.y).toBeLessThan(end.y);
-    expect(start.x).toBe(100);
-  });
-
-  it("runs left to right on a horizontal track", () => {
-    expect(projectProgress(0, 50, view, AREA, "horizontal").x).toBeLessThan(
-      projectProgress(1, 50, view, AREA, "horizontal").x
-    );
+    expect(centres[0]).toBe(layout.laneHeight / 2);
+    expect(new Set(centres).size).toBe(30);
   });
 });

@@ -5,8 +5,8 @@ afterEach(() => {
   vi.resetModules();
 });
 
-describe("race store speed", () => {
-  it("falls back to NORMAL when localStorage throws", async () => {
+describe("race store duration", () => {
+  it("falls back to the default when localStorage throws", async () => {
     vi.stubGlobal("localStorage", {
       getItem: () => {
         throw new Error("blocked");
@@ -17,20 +17,32 @@ describe("race store speed", () => {
     });
     const { useRaceStore } = await import("../race-store");
 
-    expect(useRaceStore.getState().speed).toBe("NORMAL");
-    expect(() => useRaceStore.getState().setSpeed("FAST")).not.toThrow();
-    expect(useRaceStore.getState().speed).toBe("FAST");
+    expect(useRaceStore.getState().durationSeconds).toBe(12);
+    expect(() => useRaceStore.getState().setDurationSeconds(30)).not.toThrow();
+    expect(useRaceStore.getState().durationSeconds).toBe(30);
   });
 
-  it("reads a saved speed and ignores junk", async () => {
-    vi.stubGlobal("localStorage", { getItem: () => "SLOW", setItem: () => {} });
+  it("reads a saved duration and ignores junk, out-of-range numbers and the old speed", async () => {
+    vi.stubGlobal("localStorage", { getItem: () => "25", setItem: () => {} });
     const saved = await import("../race-store");
-    expect(saved.useRaceStore.getState().speed).toBe("SLOW");
+    expect(saved.useRaceStore.getState().durationSeconds).toBe(25);
 
-    vi.resetModules();
-    vi.stubGlobal("localStorage", { getItem: () => "TURBO", setItem: () => {} });
-    const junk = await import("../race-store");
-    expect(junk.useRaceStore.getState().speed).toBe("NORMAL");
+    for (const stored of ["TURBO", "FAST", "9", "41", "12.5", null]) {
+      vi.resetModules();
+      vi.stubGlobal("localStorage", { getItem: () => stored, setItem: () => {} });
+      const other = await import("../race-store");
+      expect(other.useRaceStore.getState().durationSeconds).toBe(12);
+    }
+  });
+
+  it("saves the chosen duration under its own key", async () => {
+    const setItem = vi.fn();
+    vi.stubGlobal("localStorage", { getItem: () => null, setItem });
+    const { useRaceStore } = await import("../race-store");
+
+    useRaceStore.getState().setDurationSeconds(18);
+
+    expect(setItem).toHaveBeenCalledWith("cat-race-duration-seconds", "18");
   });
 
   it("walks a round through its stages and back", async () => {

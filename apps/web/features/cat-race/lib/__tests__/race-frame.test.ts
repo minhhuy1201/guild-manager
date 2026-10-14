@@ -1,19 +1,18 @@
 import { describe, expect, it } from "vitest";
 
-import { FADE_SECONDS, frameAt, leadersAt, planRace } from "../race-frame";
-import {
-  FIRST_CHECKPOINT,
-  SECOND_CHECKPOINT,
-  buildRaceScript,
-} from "../race-script";
+import { catLabels } from "../cat-label";
+import { frameAt, planRace } from "../race-frame";
+import { buildRaceScript, rankAt } from "../race-script";
 
-const AREA = { width: 900, height: 420 };
+const VIEWPORT = { width: 900, height: 420 };
 
 /**
- * A 240-cat race won by `c0`'s third ticket.
- * @returns The race plan
+ * A race of `people` entrants with `tickets` each, won by `c0`'s last ticket.
+ * @param people - Entrants
+ * @param tickets - Tickets each
+ * @returns The plan
  */
-function bigRace() {
+function raceOf(people: number, tickets: number) {
   let state = 5;
   const random = () => {
     state = (state * 16807) % 2147483647;
@@ -21,80 +20,113 @@ function bigRace() {
     return state / 2147483647;
   };
   const script = buildRaceScript({
-    entrants: Array.from({ length: 80 }, (_, index) => ({
+    entrants: Array.from({ length: people }, (_, index) => ({
       characterId: `c${index}`,
-      tickets: 3,
+      tickets,
     })),
-    winner: { characterId: "c0", ticketNo: 3 },
-    speed: "NORMAL",
+    winner: { characterId: "c0", ticketNo: tickets },
+    durationSeconds: 12,
     random,
   });
+  const participants = Array.from({ length: people }, (_, index) => ({
+    characterId: `c${index}`,
+    name: `Người ${index}`,
+  })) as never;
 
-  return planRace(script, AREA, "horizontal");
+  return planRace(script, VIEWPORT, catLabels(script.cats, participants));
 }
 
 describe("frameAt", () => {
-  const plan = bigRace();
+  const plan = raceOf(80, 3);
   const duration = plan.script.durationSeconds;
 
-  it("shows the whole field at the start", () => {
-    expect(frameAt(plan, 0)).toHaveLength(240);
+  it("puts every one of the 240 cats on the same start line, one per lane", () => {
+    const frame = frameAt(plan, 0);
+
+    expect(frame).toHaveLength(240);
+    expect(new Set(frame.map((cat) => cat.x)).size).toBe(1);
+    expect(frame[0].x).toBe(plan.layout.startX);
+    expect(new Set(frame.map((cat) => cat.y)).size).toBe(240);
   });
 
-  it("fades the cut cats out after the first checkpoint", () => {
-    const after = frameAt(plan, FIRST_CHECKPOINT * duration + FADE_SECONDS + 0.01);
-    const keys = new Set(after.map((cat) => cat.key));
+  it("puts cats at the same progress at the same x, so the track agrees with the ranking", () => {
+    const frame = frameAt(plan, duration * 0.6);
+    const ranking = rankAt(plan.script, duration * 0.6);
+    const xOf = new Map(frame.map((cat) => [cat.key, cat.x]));
 
-    for (const key of plan.cut) expect(keys.has(key)).toBe(false);
-    expect(after.length).toBeLessThan(240);
+    for (let index = 1; index < ranking.length; index += 1) {
+      expect(xOf.get(ranking[index - 1])!).toBeGreaterThanOrEqual(xOf.get(ranking[index])!);
+    }
   });
 
-  it("leaves only the 8 finalists once the sprint begins, all labelled", () => {
-    const sprint = frameAt(plan, SECOND_CHECKPOINT * duration + 2);
+  it("ends with the winner on the finish line and everyone else short of it", () => {
+    const frame = frameAt(plan, duration);
+    const noseOf = (x: number) => x + plan.layout.catWidth;
+    const winner = frame.find((cat) => cat.key === plan.script.winnerKey)!;
 
-    expect(sprint).toHaveLength(8);
-    expect(sprint.every((cat) => plan.script.finalistKeys.has(cat.key))).toBe(true);
-    expect(sprint.every((cat) => cat.labelled)).toBe(true);
+    expect(noseOf(winner.x)).toBeCloseTo(plan.layout.finishX);
+    for (const cat of frame) {
+      if (cat.key !== winner.key) expect(noseOf(cat.x)).toBeLessThan(plan.layout.finishX);
+    }
   });
 
-  it("puts the winning cat in front at the end of the race", () => {
-    expect(leadersAt(plan.script, duration)[0]).toBe(plan.script.winnerKey);
+  it("holds still after the winner crossed", () => {
+    expect(frameAt(plan, duration + 0.5)).toEqual(frameAt(plan, duration));
   });
 
-  it("keeps every cat inside the canvas", () => {
-    for (const seconds of [0, duration * 0.5, duration * 0.8, duration]) {
-      for (const { point } of frameAt(plan, seconds)) {
-        expect(point.x).toBeGreaterThanOrEqual(-1);
-        expect(point.x).toBeLessThanOrEqual(AREA.width + 1);
-        expect(point.y).toBeGreaterThanOrEqual(0);
-        expect(point.y).toBeLessThanOrEqual(AREA.height);
+  it("never moves a cat backwards", () => {
+    const last = new Map(frameAt(plan, 0).map((cat) => [cat.key, cat.x]));
+    for (let t = 0.1; t <= duration; t += 0.1) {
+      for (const cat of frameAt(plan, t)) {
+        expect(cat.x).toBeGreaterThanOrEqual(last.get(cat.key)! - 1e-9);
+        last.set(cat.key, cat.x);
       }
     }
   });
 });
 
-describe("leadersAt at the finish", () => {
-  it("keeps the winner first when several cats have reached the line, whatever their keys sort like", () => {
-    for (const seed of [1, 2, 3]) {
-      let state = seed;
-      const random = () => {
-        state = (state * 16807) % 2147483647;
+describe("planRace lanes", () => {
+  it("orders lanes by label with numbers read as numbers, so a name is easy to find", () => {
+    const plan = raceOf(12, 1);
 
-        return state / 2147483647;
-      };
-      const script = buildRaceScript({
-        entrants: Array.from({ length: 30 }, (_, index) => ({
-          characterId: `c${index}`,
-          tickets: 1,
-        })),
-        // "c9" sorts after most other keys, so an alphabetical tie-break would demote it.
-        winner: { characterId: "c9", ticketNo: 1 },
-        speed: "FAST",
-        random,
-      });
-      const plan = planRace(script, AREA, "horizontal");
+    expect(plan.laneOrder).toEqual(Array.from({ length: 12 }, (_, index) => `c${index}#1`));
+  });
 
-      expect(leadersAt(script, plan.endSeconds - 0.01)[0]).toBe(script.winnerKey);
-    }
+  it("keeps lane heights at the minimum for 240 cats", () => {
+    expect(raceOf(80, 3).layout.laneHeight).toBeGreaterThanOrEqual(22);
+  });
+});
+
+describe("catLabels", () => {
+  it("adds #n only when one person runs several cats", () => {
+    const script = buildRaceScript({
+      entrants: [
+        { characterId: "a", tickets: 2 },
+        { characterId: "b", tickets: 1 },
+      ],
+      winner: { characterId: "a", ticketNo: 1 },
+      durationSeconds: 10,
+      random: () => 0.5,
+    });
+    const labels = catLabels(script.cats, [
+      { characterId: "a", name: "An" },
+      { characterId: "b", name: "Bình" },
+    ] as never);
+
+    expect([...labels.values()].sort()).toEqual(["An #1", "An #2", "Bình"]);
+  });
+
+  it("falls back to a question mark for a missing participant", () => {
+    const script = buildRaceScript({
+      entrants: [
+        { characterId: "a", tickets: 1 },
+        { characterId: "x", tickets: 1 },
+      ],
+      winner: { characterId: "a", ticketNo: 1 },
+      durationSeconds: 10,
+      random: () => 0.5,
+    });
+
+    expect(catLabels(script.cats, [{ characterId: "a", name: "An" }] as never).get("x#1")).toBe("?");
   });
 });

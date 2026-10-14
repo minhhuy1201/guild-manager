@@ -15,7 +15,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useCharacters } from "@/features/attendance";
 import { useInvalidate } from "@/hooks/use-invalidate";
 import { combineQueries } from "@/lib/query-group";
-import { cn } from "@/lib/utils";
 import { useDeleteCatRacePrize } from "../hooks/use-cat-race-mutations";
 import { useCatRaceEvent } from "../hooks/use-cat-races";
 import { prizeLockReason } from "../lib/prize-lock";
@@ -124,25 +123,14 @@ function EventBody({ event }: { event: CatRaceEventDetail }) {
         onAdd={() => setDialog({ kind: "prize", prize: null })}
       />
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <RaceStage
-          event={event}
-          prize={selected}
-          canEdit={isOpen}
-          onEditEntrants={() => setDialog({ kind: "entrants" })}
-          onEditParticipants={() => setDialog({ kind: "participants" })}
-        />
-        {/* Slides out while a round runs; only opacity and translate move, so the layout holds. */}
-        <div
-          className={cn(
-            "transition-[opacity,transform] duration-[var(--duration-slow)]",
-            (stage === "drawing" || stage === "racing") &&
-              "pointer-events-none translate-x-4 opacity-0"
-          )}
-        >
-          <WinnersPanel event={event} canVoid={isOpen && !isBusy} onVoid={setVoiding} />
-        </div>
-      </div>
+      <RaceStage
+        event={event}
+        prize={selected}
+        canEdit={isOpen}
+        onEditEntrants={() => setDialog({ kind: "entrants" })}
+        onEditParticipants={() => setDialog({ kind: "participants" })}
+      />
+      <WinnersPanel event={event} canVoid={isOpen && !isBusy} onVoid={setVoiding} />
 
       <ParticipantsDialog
         event={event}

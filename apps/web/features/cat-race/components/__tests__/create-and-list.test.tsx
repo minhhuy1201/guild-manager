@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CatRaceMode, GuildClass, PrizeTier } from "@guild/shared/enums";
 import type { Character } from "@guild/shared/schemas";
@@ -93,7 +93,9 @@ describe("CreateCatRaceDialog", () => {
     fireEvent.click(screen.getAllByRole("button", { name: "3" })[0]);
     fireEvent.change(screen.getByLabelText("Tên hạng mục 1"), { target: { value: "Xe" } });
     fireEvent.change(screen.getByLabelText("Số lượng hạng mục 1"), { target: { value: "5" } });
-    fireEvent.click(screen.getAllByRole("button", { name: "Thấp" })[0]);
+    fireEvent.click(
+      within(screen.getByRole("group", { name: "Độ quý của giải 1" })).getByRole("button", { name: "Thường" })
+    );
     fireEvent.click(screen.getByRole("button", { name: "Tạo đợt" }));
 
     await waitFor(() => expect(m.create).toHaveBeenCalled());

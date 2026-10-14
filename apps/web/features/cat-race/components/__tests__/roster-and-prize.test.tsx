@@ -124,6 +124,12 @@ describe("PrizeChips", () => {
     onAdd: vi.fn(),
   });
 
+  it("names each prize's tier on its chip for screen readers", () => {
+    render(<PrizeChips event={makeEvent()} selectedPrizeId="p1" canEdit {...handlers()} />);
+
+    expect(screen.getByText("Đặc biệt")).toBeTruthy();
+  });
+
   it("selects, edits, deletes and adds", () => {
     const h = handlers();
     render(<PrizeChips event={makeEvent()} selectedPrizeId="p1" canEdit {...h} />);
@@ -176,7 +182,8 @@ describe("PrizeFormDialog", () => {
 
     fireEvent.change(screen.getByLabelText("Tên hạng mục"), { target: { value: "Vé" } });
     fireEvent.change(screen.getByLabelText("Số lượng"), { target: { value: "3" } });
-    fireEvent.click(screen.getByRole("button", { name: "Thấp" }));
+    expect(screen.getByText(/Chỉ đổi màu và icon hiển thị/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Thường" }));
     fireEvent.click(screen.getByRole("button", { name: "Lưu" }));
 
     await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));

@@ -6,7 +6,6 @@ import { Plus, Save, Trash2, Type } from "lucide-react";
 import {
   CAT_RACE_MODE_LABEL,
   CatRaceMode,
-  PRIZE_TIER_LABEL,
   PrizeTier,
 } from "@guild/shared/enums";
 import {
@@ -24,16 +23,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { catRaceEventPath } from "@/config/routes";
 import { useCreateCatRace } from "../hooks/use-cat-race-mutations";
+import {
+  PRIZE_TIER_FIELD_LABEL,
+  PRIZE_TIER_HINT,
+  PRIZE_TIER_OPTIONS,
+} from "../lib/prize-tier-style";
 import { ChoiceButtons } from "./choice-buttons";
 import { RosterChecklist, type RosterSelection } from "./roster-checklist";
 
 const MODE_OPTIONS = Object.values(CatRaceMode).map((value) => ({
   value,
   label: CAT_RACE_MODE_LABEL[value],
-}));
-const TIER_OPTIONS = Object.values(PrizeTier).map((value) => ({
-  value,
-  label: PRIZE_TIER_LABEL[value],
 }));
 const EMPTY_PRIZE: CatRacePrizeTemplate = {
   name: "",
@@ -187,13 +187,16 @@ function CreateCatRaceBody({
               </Button>
             </div>
             <ChoiceButtons
-              label={`Bậc hạng mục ${index + 1}`}
+              label={`${PRIZE_TIER_FIELD_LABEL} ${index + 1}`}
               value={prize.tier}
-              options={TIER_OPTIONS}
+              options={PRIZE_TIER_OPTIONS}
               onChange={(tier) => editPrize(index, { tier })}
             />
           </div>
         ))}
+        <p className="text-sm text-muted-foreground">
+          {PRIZE_TIER_FIELD_LABEL}: {PRIZE_TIER_HINT}
+        </p>
         <Button type="button" variant="outline" onClick={() => setPrizes([...prizes, EMPTY_PRIZE])}>
           <Plus />
           Thêm hạng mục

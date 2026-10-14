@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { CatRaceMode } from "@guild/shared/enums";
+import { CatRaceMode, PrizeTier } from "@guild/shared/enums";
 import type { CatRaceDrawResult } from "@guild/shared/schemas";
 
 const m = vi.hoisted(() => ({
@@ -42,6 +42,22 @@ describe("WinnersPanel", () => {
     render(<WinnersPanel event={makeEvent()} canVoid onVoid={vi.fn()} />);
 
     expect(screen.getByText("Chưa có người thắng.")).toBeTruthy();
+  });
+
+  it("gives each prize its own block with the tier named and how many went out", () => {
+    const event = makeEvent({
+      prizes: [
+        { ...PRIZE, awardedCount: 1, tier: PrizeTier.HIGH },
+        { ...PRIZE, id: "p2", name: "Thẻ tháng", quantity: 5, tier: PrizeTier.LOW },
+      ],
+      rounds: [ROUND],
+    });
+    render(<WinnersPanel event={event} canVoid onVoid={vi.fn()} />);
+
+    expect(screen.getByRole("heading", { name: "Tiền mặt" })).toBeTruthy();
+    expect(screen.getByText("Đặc biệt · đã trao 1/2")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Thẻ tháng" })).toBeTruthy();
+    expect(screen.getByText("Thường · đã trao 0/5")).toBeTruthy();
   });
 
   it("lists the pool size in STANDARD mode and offers to void a live round", () => {
