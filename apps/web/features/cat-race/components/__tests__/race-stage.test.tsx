@@ -246,6 +246,19 @@ describe("RaceStage", () => {
     expect(useRaceStore.getState().stage).toBe("idle");
   });
 
+  it("clears the idle counts behind the winner card", async () => {
+    mutateAsync.mockResolvedValue(RESULT);
+    renderStage();
+    expect(screen.getByText("2 người")).toBeTruthy();
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /ĐUA/ }));
+    });
+    fireEvent.click(screen.getByText("finish"));
+
+    expect(screen.queryByText("2 người")).toBeNull();
+    expect(screen.queryByText(/Hạng mục: /)).toBeNull();
+  });
+
   it("counts tickets in TICKET mode", () => {
     const event = { ...EVENT, mode: CatRaceMode.TICKET };
     event.participants = event.participants.map((p) => ({ ...p, tickets: 3 }));

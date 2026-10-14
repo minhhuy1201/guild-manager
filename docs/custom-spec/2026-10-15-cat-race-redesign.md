@@ -1,6 +1,6 @@
 # Đua mèo - Làm lại màn đua cho rõ và minh bạch
 
-Ngày: 2026-10-15 · Trạng thái: **đã chốt, chưa triển khai** · Nối tiếp:
+Ngày: 2026-10-15 · Trạng thái: **đã triển khai** · Nối tiếp:
 [`2026-10-12-cat-race-design.md`](2026-10-12-cat-race-design.md) (spec gốc, giữ nguyên làm lịch sử).
 Spec này **thay** các quyết định D18, D19, D22 (phần loại dần), mục 8.3, 8.4, 8.5 của spec gốc; mọi
 phần khác (dữ liệu, API, quy tắc quay, Discord) giữ nguyên. Chỉ sửa web và nhãn enum dùng chung,

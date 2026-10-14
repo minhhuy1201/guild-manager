@@ -141,14 +141,19 @@ export function RaceStage({
             />
           ) : (
             <div className="flex h-full flex-col items-center justify-center gap-2 rounded-lg border border-border bg-background text-center">
-              <Cat className="size-12 text-muted-foreground" />
-              <p className="text-lg font-medium">
-                {entrantCount} người
-                {event.mode === "TICKET" ? ` · ${ticketCount} vé` : ""}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {prize ? `Hạng mục: ${prize.name}` : "Chưa có hạng mục."}
-              </p>
+              {/* The winner card sits on this frame, so the counts must not bleed through it. */}
+              {stage === "result" ? null : (
+                <>
+                  <Cat className="size-12 text-muted-foreground" />
+                  <p className="text-lg font-medium">
+                    {entrantCount} người
+                    {event.mode === "TICKET" ? ` · ${ticketCount} vé` : ""}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {prize ? `Hạng mục: ${prize.name}` : "Chưa có hạng mục."}
+                  </p>
+                </>
+              )}
             </div>
           )}
           {stage === "result" && pendingResult ? (
