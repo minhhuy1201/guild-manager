@@ -1,29 +1,31 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Cat, FastForward, Play } from "lucide-react";
+import { Cat, FastForward, Play, Timer } from "lucide-react";
 import type { CatRaceEventDetail, CatRacePrize } from "@guild/shared/schemas";
 
+import { FieldLabel } from "@/components/shared/field-label";
 import { Spinner } from "@/components/shared/spinner";
 import { toastError } from "@/components/shared/toast";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useInvalidate } from "@/hooks/use-invalidate";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { useSessionRecovery } from "@/hooks/use-session-recovery";
 import { errorMessageOf } from "@/lib/error-message";
 import { useDrawCatRaceRound } from "../hooks/use-cat-race-mutations";
 import { PRIZE_LOCK_LABEL, prizeLockReason } from "../lib/prize-lock";
-import { buildRaceScript, type RaceSpeed } from "../lib/race-script";
+import {
+  RACE_DURATION_ERROR,
+  RACE_DURATION_MAX_SECONDS,
+  RACE_DURATION_MIN_SECONDS,
+  parseRaceDuration,
+} from "../lib/race-duration";
+import { buildRaceScript } from "../lib/race-script";
 import { useRaceStore } from "../store/race-store";
-import { ChoiceButtons } from "./choice-buttons";
 import { RaceCanvas } from "./race-canvas";
 import { RaceResultOverlay } from "./race-result-overlay";
-
-const SPEED_OPTIONS: readonly { value: RaceSpeed; label: string }[] = [
-  { value: "FAST", label: "Nhanh" },
-  { value: "NORMAL", label: "Vừa" },
-  { value: "SLOW", label: "Chậm" },
-];
+import { RaceStandings } from "./race-standings";
 
 interface RaceStageProps {
   event: CatRaceEventDetail;
@@ -54,14 +56,15 @@ export function RaceStage({
   onEditParticipants,
   canEdit,
 }: RaceStageProps) {
-  const { stage, speed, pendingResult } = useRaceStore();
+  const { stage, durationSeconds, pendingResult } = useRaceStore();
   const store = useRaceStore.getState;
   const draw = useDrawCatRaceRound();
   const invalidate = useInvalidate("cat-race");
   const recoverSession = useSessionRecovery();
   const reducedMotion = useReducedMotion();
   const [skipSignal, setSkipSignal] = useState(0);
-  const [leaders, setLeaders] = useState<string[]>([]);
+  const [standings, setStandings] = useState<string[]>([]);
+  const [durationText, setDurationText] = useState(String(durationSeconds));
   const [isContinuing, setIsContinuing] = useState(false);
 
   const lock = prize ? prizeLockReason(prize, event.status) : null;
@@ -77,13 +80,21 @@ export function RaceStage({
     return buildRaceScript({
       entrants: pendingResult.entrants,
       winner: { characterId: winnerId, ticketNo: pendingResult.winningTicket },
-      speed,
+      durationSeconds,
       random: Math.random,
     });
-  }, [pendingResult, speed]);
+  }, [pendingResult, durationSeconds]);
+
+  const typedDuration = parseRaceDuration(durationText);
+  const changeDuration = (text: string) => {
+    setDurationText(text);
+    const seconds = parseRaceDuration(text);
+    if (seconds !== null) store().setDurationSeconds(seconds);
+  };
 
   const startRound = async () => {
-    if (!prize || lock || stage !== "idle") return;
+    if (!prize || lock || stage !== "idle" || typedDuration === null) return;
+    setStandings([]);
     store().startDrawing();
     try {
       const result = await draw.mutateAsync({ id: event.id, prizeId: prize.id });
@@ -117,59 +128,70 @@ export function RaceStage({
   };
 
   return (
-    <section className="relative flex flex-col gap-3 rounded-xl border border-border bg-card p-4">
-      <div className="relative h-[28rem] sm:h-[26rem]">
-        {stage === "racing" && script ? (
-          <RaceCanvas
-            script={script}
-            participants={event.participants}
-            skipSignal={skipSignal}
-            onFinish={finishRace}
-            onLeaders={setLeaders}
-          />
-        ) : (
-          <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
-            <Cat className="size-12 text-muted-foreground" />
-            <p className="text-lg font-medium">
-              {entrantCount} người
-              {event.mode === "TICKET" ? ` · ${ticketCount} vé` : ""}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              {prize ? `Hạng mục: ${prize.name}` : "Chưa có hạng mục."}
-            </p>
-          </div>
-        )}
-        {stage === "result" && pendingResult ? (
-          <RaceResultOverlay
-            event={event}
-            prize={event.prizes.find((p) => p.id === pendingResult.round.prizeId)}
-            result={pendingResult}
-            isContinuing={isContinuing}
-            onContinue={() => void continueRacing()}
-          />
-        ) : null}
+    <section className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_17rem]">
+        <div className="relative h-[70dvh] min-h-96">
+          {stage === "racing" && script ? (
+            <RaceCanvas
+              script={script}
+              participants={event.participants}
+              skipSignal={skipSignal}
+              onFinish={finishRace}
+              onStandings={setStandings}
+            />
+          ) : (
+            <div className="flex h-full flex-col items-center justify-center gap-2 rounded-lg border border-border bg-background text-center">
+              <Cat className="size-12 text-muted-foreground" />
+              <p className="text-lg font-medium">
+                {entrantCount} người
+                {event.mode === "TICKET" ? ` · ${ticketCount} vé` : ""}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {prize ? `Hạng mục: ${prize.name}` : "Chưa có hạng mục."}
+              </p>
+            </div>
+          )}
+          {stage === "result" && pendingResult ? (
+            <RaceResultOverlay
+              event={event}
+              prize={event.prizes.find((p) => p.id === pendingResult.round.prizeId)}
+              result={pendingResult}
+              isContinuing={isContinuing}
+              onContinue={() => void continueRacing()}
+            />
+          ) : null}
+        </div>
+        <RaceStandings
+          script={stage === "racing" || stage === "result" ? script : null}
+          participants={event.participants}
+          keys={standings}
+          className="max-h-80 lg:h-[70dvh] lg:max-h-none lg:min-h-96"
+        />
       </div>
 
-      {stage === "racing" && leaders.length > 0 ? (
-        <ol className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-          {leaders.map((key, index) => (
-            <li key={key}>
-              {index + 1}.{" "}
-              {event.participants.find((p) => key.startsWith(`${p.characterId}#`))?.name}
-            </li>
-          ))}
-        </ol>
-      ) : null}
-
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <ChoiceButtons
-          label="Tốc độ"
-          value={speed}
-          options={SPEED_OPTIONS}
-          // A new speed would rebuild the script and restart the replay mid-race.
-          disabled={stage !== "idle"}
-          onChange={(next) => store().setSpeed(next)}
-        />
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="grid gap-1">
+          <FieldLabel htmlFor="cat-race-duration" icon={<Timer />}>
+            Thời gian đua (giây)
+          </FieldLabel>
+          <Input
+            id="cat-race-duration"
+            type="number"
+            inputMode="numeric"
+            min={RACE_DURATION_MIN_SECONDS}
+            max={RACE_DURATION_MAX_SECONDS}
+            step={1}
+            className="w-28"
+            value={durationText}
+            // A new duration would rebuild the script and restart the replay mid-race.
+            disabled={stage !== "idle"}
+            aria-invalid={typedDuration === null}
+            onChange={(event) => changeDuration(event.target.value)}
+          />
+          <p className="min-h-5 text-sm text-destructive">
+            {typedDuration === null ? RACE_DURATION_ERROR : ""}
+          </p>
+        </div>
         {canEdit ? (
           <div className="flex flex-wrap gap-2">
             <Button type="button" variant="outline" size="sm" disabled={!prize || stage !== "idle"} onClick={onEditEntrants}>
@@ -192,7 +214,7 @@ export function RaceStage({
           <Button
             type="button"
             size="lg"
-            disabled={!prize || lock !== null || stage !== "idle"}
+            disabled={!prize || lock !== null || stage !== "idle" || typedDuration === null}
             onClick={() => void startRound()}
           >
             {stage === "drawing" ? <Spinner size="sm" /> : <Play />}

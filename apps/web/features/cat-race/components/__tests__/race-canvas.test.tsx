@@ -9,23 +9,28 @@ vi.mock("@/features/auth", () => ({
     hash ? `https://cdn.test/${id}/${hash}.png` : null,
 }));
 
-import { buildRaceScript } from "../../lib/race-script";
+import { buildRaceScript, rankAt } from "../../lib/race-script";
 import { RaceCanvas } from "../race-canvas";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-/** A 2D context that accepts every call; text, colours and line points are recorded to read what got painted. */
+/** A 2D context that accepts every call; text, colours, rectangles and sprites are recorded to read what got painted. */
 const fillText = vi.fn();
 const fills: unknown[] = [];
-const moves: [number, number][] = [];
-const lines: [number, number][] = [];
+const rects: [number, number, number, number][] = [];
+const sprites: { x: number; y: number }[] = [];
 const fakeContext = new Proxy(
   {},
   {
     get: (_target, property) => {
       if (property === "fillText") return fillText;
-      if (property === "moveTo") return (x: number, y: number) => moves.push([x, y]);
-      if (property === "lineTo") return (x: number, y: number) => lines.push([x, y]);
+      if (property === "measureText") return (text: string) => ({ width: text.length * 7 });
+      if (property === "fillRect") {
+        return (x: number, y: number, w: number, h: number) => rects.push([x, y, w, h]);
+      }
+      if (property === "drawImage") {
+        return (_image: unknown, x: number, y: number) => sprites.push({ x, y });
+      }
 
       return () => undefined;
     },
@@ -88,14 +93,14 @@ const SCRIPT = buildRaceScript({
     { characterId: "b", tickets: 1 },
   ],
   winner: { characterId: "a", ticketNo: 2 },
-  speed: "FAST",
+  durationSeconds: 10,
   random: () => 0.5,
 });
 
 beforeEach(() => {
   fills.length = 0;
-  moves.length = 0;
-  lines.length = 0;
+  rects.length = 0;
+  sprites.length = 0;
   frames.length = 0;
   resizeObservers.length = 0;
   vi.stubGlobal(
@@ -121,17 +126,43 @@ beforeEach(() => {
       src = "";
     }
   );
-  window.matchMedia = vi.fn().mockReturnValue({ matches: false }) as never;
   HTMLCanvasElement.prototype.getContext = vi.fn(() => fakeContext) as never;
-  HTMLCanvasElement.prototype.getBoundingClientRect = () =>
-    ({ width: 800, height: 400 }) as DOMRect;
+  Object.defineProperty(HTMLElement.prototype, "clientWidth", { configurable: true, value: 800 });
+  Object.defineProperty(HTMLElement.prototype, "clientHeight", { configurable: true, value: 400 });
 });
 
 afterEach(() => {
   cleanup();
+  delete (HTMLElement.prototype as { clientWidth?: number }).clientWidth;
+  delete (HTMLElement.prototype as { clientHeight?: number }).clientHeight;
+  fillText.mockClear();
   vi.unstubAllGlobals();
   window.history.replaceState(null, "", "/");
 });
+
+/**
+ * A race of `people` single-ticket entrants, won by `c0`.
+ * @param people - Entrants
+ * @returns The script and who ran
+ */
+function bigField(people: number) {
+  const script = buildRaceScript({
+    entrants: Array.from({ length: people }, (_, index) => ({ characterId: `c${index}`, tickets: 1 })),
+    winner: { characterId: "c0", ticketNo: 1 },
+    durationSeconds: 10,
+    random: () => 0.5,
+  });
+  const racers = Array.from({ length: people }, (_, index) => ({
+    characterId: `c${index}`,
+    name: `Người ${index}`,
+    guildClass: GuildClass.TO_VAN,
+    discordId: null,
+    discordAvatar: null,
+    tickets: 1,
+  }));
+
+  return { script, racers };
+}
 
 describe("RaceCanvas", () => {
   it("counts down before the cats leave", () => {
@@ -141,7 +172,7 @@ describe("RaceCanvas", () => {
         participants={participants(false)}
         onFinish={vi.fn()}
         skipSignal={0}
-        onLeaders={vi.fn()}
+        onStandings={vi.fn()}
       />
     );
 
@@ -150,55 +181,84 @@ describe("RaceCanvas", () => {
     expect(fillText).toHaveBeenCalledWith("3", 400, 200);
   });
 
-  it("reports leaders and finishes once, labelling a multi-ticket cat with its number", () => {
-    const onFinish = vi.fn();
-    const onLeaders = vi.fn();
+  it("writes every name in its lane, a multi-ticket cat with its number", () => {
     render(
       <RaceCanvas
         script={SCRIPT}
         participants={participants(true)}
-        onFinish={onFinish}
+        onFinish={vi.fn()}
         skipSignal={0}
-        onLeaders={onLeaders}
+        onStandings={vi.fn()}
       />
+    );
+
+    runFrame(0);
+
+    const labels = fillText.mock.calls.map((call) => String(call[0]));
+    expect(labels).toEqual(expect.arrayContaining(["Alice #1", "Alice #2", "Alice #3", "Bob"]));
+  });
+
+  it("puts every cat on the same start line at the start", () => {
+    const { script, racers } = bigField(12);
+    render(
+      <RaceCanvas script={script} participants={racers} onFinish={vi.fn()} skipSignal={0} onStandings={vi.fn()} />
+    );
+
+    runFrame(0);
+
+    const cats = sprites.filter((sprite) => sprite.x > 0);
+    expect(cats).toHaveLength(12);
+    expect(new Set(cats.map((sprite) => sprite.x)).size).toBe(1);
+    expect(new Set(cats.map((sprite) => sprite.y)).size).toBe(12);
+  });
+
+  it("draws the start line the full height of the track", () => {
+    render(
+      <RaceCanvas
+        script={SCRIPT}
+        participants={participants(false)}
+        onFinish={vi.fn()}
+        skipSignal={0}
+        onStandings={vi.fn()}
+      />
+    );
+
+    runFrame(0);
+
+    // 800px wide: the name column is 22% = 176px, and the line is centred on it.
+    expect(rects).toContainEqual([174.5, 0, 3, 400]);
+  });
+
+  it("paints only the lanes in view for 240 cats, so the bitmap stays small", () => {
+    const { script, racers } = bigField(240);
+    render(
+      <RaceCanvas script={script} participants={racers} onFinish={vi.fn()} skipSignal={0} onStandings={vi.fn()} />
+    );
+
+    runFrame(0);
+
+    const names = fillText.mock.calls.map((call) => String(call[0])).filter((text) => text.startsWith("Ngư"));
+    // 400px of 22px lanes.
+    expect(names.length).toBeGreaterThanOrEqual(18);
+    expect(names.length).toBeLessThanOrEqual(20);
+  });
+
+  it("reports every cat in order and ends on the winner first", () => {
+    const { script, racers } = bigField(30);
+    const onFinish = vi.fn();
+    const onStandings = vi.fn();
+    render(
+      <RaceCanvas script={script} participants={racers} onFinish={onFinish} skipSignal={0} onStandings={onStandings} />
     );
 
     runToEnd(onFinish);
 
     expect(onFinish).toHaveBeenCalledTimes(1);
-    expect(onLeaders).toHaveBeenCalled();
-    const labels = fillText.mock.calls.map((call) => call[0]);
-    expect(labels.some((label) => /^Alice #\d$/.test(String(label)))).toBe(true);
-    expect(labels).toContain("Bob");
+    const last = onStandings.mock.calls.at(-1)![0] as string[];
+    expect(last).toHaveLength(30);
+    expect(last[0]).toBe(script.winnerKey);
+    expect(last).toEqual(rankAt(script, script.durationSeconds));
   });
-
-  it.each([
-    [true, "y"],
-    [false, "x"],
-  ] as const)(
-    "draws the start line across the track (narrow viewport: %s, constant %s)",
-    (narrow, constantAxis) => {
-      window.matchMedia = vi.fn().mockReturnValue({ matches: narrow }) as never;
-      render(
-        <RaceCanvas
-          script={SCRIPT}
-          participants={participants(false)}
-          onFinish={vi.fn()}
-          skipSignal={0}
-          onLeaders={vi.fn()}
-        />
-      );
-
-      runFrame(0);
-
-      // The first stroke is the start line. A vertical track runs top to bottom, so its start
-      // line is horizontal (same y); a horizontal track has a vertical one (same x).
-      const index = constantAxis === "y" ? 1 : 0;
-      const other = index === 0 ? 1 : 0;
-      expect(moves[0][index]).toBe(lines[0][index]);
-      expect(moves[0][other]).not.toBe(lines[0][other]);
-    }
-  );
 
   it("shows the fps counter and logs the average with ?fps", () => {
     window.history.replaceState(null, "", "/?fps");
@@ -210,7 +270,7 @@ describe("RaceCanvas", () => {
         participants={participants(false)}
         onFinish={onFinish}
         skipSignal={0}
-        onLeaders={vi.fn()}
+        onStandings={vi.fn()}
       />
     );
 
@@ -220,13 +280,14 @@ describe("RaceCanvas", () => {
     info.mockRestore();
   });
 
-  it("finishes once when skipped, and not again at the end", () => {
+  it("finishes once when skipped, with the final order, and not again at the end", () => {
     const onFinish = vi.fn();
+    const onStandings = vi.fn();
     const props = {
       script: SCRIPT,
       participants: participants(false),
       onFinish,
-      onLeaders: vi.fn(),
+      onStandings,
     };
     const { rerender } = render(<RaceCanvas {...props} skipSignal={0} />);
 
@@ -234,6 +295,7 @@ describe("RaceCanvas", () => {
     rerender(<RaceCanvas {...props} skipSignal={2} />);
 
     expect(onFinish).toHaveBeenCalledTimes(1);
+    expect(onStandings).toHaveBeenCalledWith(rankAt(SCRIPT, SCRIPT.durationSeconds));
   });
 
   it("does nothing when the canvas has no 2D context", () => {
@@ -244,7 +306,7 @@ describe("RaceCanvas", () => {
         participants={participants(false)}
         onFinish={vi.fn()}
         skipSignal={0}
-        onLeaders={vi.fn()}
+        onStandings={vi.fn()}
       />
     );
 
@@ -258,7 +320,7 @@ describe("RaceCanvas", () => {
         participants={participants(false)}
         onFinish={vi.fn()}
         skipSignal={0}
-        onLeaders={vi.fn()}
+        onStandings={vi.fn()}
       />
     );
 
@@ -272,6 +334,7 @@ describe("RaceCanvas", () => {
     vi.spyOn(window, "getComputedStyle").mockImplementation(
       () =>
         ({
+          fontFamily: "sans-serif",
           getPropertyValue: (name: string) =>
             name === "--foreground"
               ? document.documentElement.classList.contains("dark")
@@ -286,7 +349,7 @@ describe("RaceCanvas", () => {
         participants={participants(false)}
         onFinish={vi.fn()}
         skipSignal={0}
-        onLeaders={vi.fn()}
+        onStandings={vi.fn()}
       />
     );
     runFrame(0);

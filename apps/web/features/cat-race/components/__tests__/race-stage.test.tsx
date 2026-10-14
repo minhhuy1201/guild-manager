@@ -26,17 +26,17 @@ vi.mock("@/components/shared/toast", () => ({ toastError }));
 vi.mock("../race-canvas", () => ({
   RaceCanvas: ({
     onFinish,
-    onLeaders,
+    onStandings,
     skipSignal,
   }: {
     onFinish: () => void;
-    onLeaders: (keys: string[]) => void;
+    onStandings: (keys: string[]) => void;
     skipSignal: number;
   }) => (
     <div>
       CANVAS {skipSignal}
       <button onClick={onFinish}>finish</button>
-      <button onClick={() => onLeaders(["b#1", "a#1"])}>leaders</button>
+      <button onClick={() => onStandings(["b#1", "a#1"])}>standings</button>
     </div>
   ),
 }));
@@ -212,16 +212,17 @@ describe("RaceStage", () => {
     expect(mutateAsync).toHaveBeenCalledTimes(1);
   });
 
-  it("shows the live board while racing, and skips on request", async () => {
+  it("shows every cat on the live board while racing, and skips on request", async () => {
     mutateAsync.mockResolvedValue(RESULT);
     renderStage();
+    expect(screen.getByText("Bảng xếp hạng hiện khi bắt đầu đua.")).toBeTruthy();
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: /ĐUA/ }));
     });
 
-    fireEvent.click(screen.getByText("leaders"));
-    expect(screen.getByText(/1\.\s*b/)).toBeTruthy();
-    expect(screen.getByText(/2\.\s*a/)).toBeTruthy();
+    fireEvent.click(screen.getByText("standings"));
+    const rows = screen.getAllByRole("listitem").map((row) => row.textContent);
+    expect(rows).toEqual(["1b", "2a"]);
     fireEvent.click(screen.getByRole("button", { name: "Bỏ qua" }));
 
     expect(screen.getByText(/CANVAS 1/)).toBeTruthy();
@@ -268,7 +269,7 @@ describe("RaceStage", () => {
     expect((screen.getByRole("button", { name: "ĐUA" }) as HTMLButtonElement).disabled).toBe(true);
   });
 
-  it("changes the speed and opens the edit dialogs", () => {
+  it("opens the edit dialogs", () => {
     const onEditEntrants = vi.fn();
     const onEditParticipants = vi.fn();
     render(
@@ -281,13 +282,65 @@ describe("RaceStage", () => {
       />
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Nhanh" }));
     fireEvent.click(screen.getByRole("button", { name: /Danh sách đua/ }));
     fireEvent.click(screen.getByRole("button", { name: /Người tham gia/ }));
 
-    expect(useRaceStore.getState().speed).toBe("FAST");
     expect(onEditEntrants).toHaveBeenCalled();
     expect(onEditParticipants).toHaveBeenCalled();
+  });
+
+  it("starts from the saved duration and stores a valid change", () => {
+    useRaceStore.setState({ durationSeconds: 20 });
+    renderStage();
+    const field = screen.getByLabelText("Thời gian đua (giây)") as HTMLInputElement;
+    expect(field.value).toBe("20");
+
+    fireEvent.change(field, { target: { value: "35" } });
+
+    expect(useRaceStore.getState().durationSeconds).toBe(35);
+    expect(screen.queryByText(/Nhập số giây nguyên/)).toBeNull();
+  });
+
+  it.each(["9", "41", "12.5", ""])(
+    "rejects %j: says why, keeps the stored duration and locks ĐUA",
+    (typed) => {
+      useRaceStore.setState({ durationSeconds: 20 });
+      renderStage();
+
+      fireEvent.change(screen.getByLabelText("Thời gian đua (giây)"), { target: { value: typed } });
+
+      expect(screen.getByText("Nhập số giây nguyên từ 10 đến 40.")).toBeTruthy();
+      expect(useRaceStore.getState().durationSeconds).toBe(20);
+      expect((screen.getByRole("button", { name: /ĐUA/ }) as HTMLButtonElement).disabled).toBe(true);
+    }
+  );
+
+  it("locks the duration field while a round runs", async () => {
+    mutateAsync.mockResolvedValue(RESULT);
+    renderStage();
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /ĐUA/ }));
+    });
+
+    expect((screen.getByLabelText("Thời gian đua (giây)") as HTMLInputElement).disabled).toBe(true);
+  });
+
+  it("keeps the final order on the board after the replay, and clears it for the next round", async () => {
+    mutateAsync.mockResolvedValue(RESULT);
+    invalidate.mockResolvedValue(undefined);
+    renderStage();
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /ĐUA/ }));
+    });
+    fireEvent.click(screen.getByText("standings"));
+    fireEvent.click(screen.getByText("finish"));
+
+    expect(screen.getAllByRole("listitem")).toHaveLength(2);
+    await act(async () => {
+      fireEvent.click(screen.getByText("continue"));
+    });
+
+    expect(screen.getByText("Bảng xếp hạng hiện khi bắt đầu đua.")).toBeTruthy();
   });
 
   it("hides the edit buttons for a read-only event", () => {
