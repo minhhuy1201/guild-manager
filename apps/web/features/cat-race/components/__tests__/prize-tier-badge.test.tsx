@@ -9,18 +9,29 @@ import { PrizeTierBadge } from "../prize-tier-badge";
 afterEach(cleanup);
 
 describe("PrizeTierBadge", () => {
-  it("draws a different icon and tint for every tier, hidden from screen readers", () => {
+  it("draws a different icon and tint for every tier, the icon hidden from screen readers", () => {
     const markup = Object.values(PrizeTier).map((tier) => {
       const { container, unmount } = render(<PrizeTierBadge tier={tier} />);
       const badge = container.firstElementChild!;
       const html = badge.innerHTML;
-      expect(badge.getAttribute("aria-hidden")).toBe("true");
+      expect(badge.querySelector("svg")!.getAttribute("aria-hidden")).toBe("true");
       unmount();
 
       return `${badge.className}|${html}`;
     });
 
     expect(new Set(markup).size).toBe(3);
+  });
+});
+
+describe("PrizeTierBadge naming", () => {
+  it("adds the tier name for screen readers only when asked", () => {
+    const named = render(<PrizeTierBadge tier={PrizeTier.HIGH} isNamed />);
+    expect(named.container.textContent).toBe("Đặc biệt");
+    named.unmount();
+
+    const silent = render(<PrizeTierBadge tier={PrizeTier.HIGH} />);
+    expect(silent.container.textContent).toBe("");
   });
 });
 

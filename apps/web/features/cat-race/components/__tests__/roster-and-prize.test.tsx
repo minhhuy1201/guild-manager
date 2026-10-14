@@ -124,6 +124,12 @@ describe("PrizeChips", () => {
     onAdd: vi.fn(),
   });
 
+  it("names each prize's tier on its chip for screen readers", () => {
+    render(<PrizeChips event={makeEvent()} selectedPrizeId="p1" canEdit {...handlers()} />);
+
+    expect(screen.getByText("Đặc biệt")).toBeTruthy();
+  });
+
   it("selects, edits, deletes and adds", () => {
     const h = handlers();
     render(<PrizeChips event={makeEvent()} selectedPrizeId="p1" canEdit {...h} />);

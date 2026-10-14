@@ -338,6 +338,19 @@ describe("RaceStage", () => {
     expect((screen.getByLabelText("Thời gian đua (giây)") as HTMLInputElement).disabled).toBe(true);
   });
 
+  it("ranks the finished race on the board when reduced motion skipped the replay", async () => {
+    reducedMotion.current = true;
+    mutateAsync.mockResolvedValue(RESULT);
+    renderStage();
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /ĐUA/ }));
+    });
+
+    const rows = screen.getAllByRole("listitem").map((row) => row.textContent);
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toBe("1a");
+  });
+
   it("keeps the final order on the board after the replay, and clears it for the next round", async () => {
     mutateAsync.mockResolvedValue(RESULT);
     invalidate.mockResolvedValue(undefined);

@@ -227,7 +227,8 @@ export function RaceCanvas({
       for (const cat of frameAt(current, seconds)) {
         const y = cat.y - top;
         if (y < -layout.laneHeight || y > viewHeight + layout.laneHeight) continue;
-        const step = (Math.floor(seconds * STEP_RATE) + cat.key.length) % 2 === 0 ? 0 : 1;
+        // Positions freeze when the winner crosses, so the legs stop with them.
+        const step = (Math.floor(Math.min(seconds, current.script.durationSeconds) * STEP_RATE) + cat.key.length) % 2 === 0 ? 0 : 1;
         const sprite = catSprite(colorOf.get(cat.key)!, layout.catWidth, step);
         context.drawImage(sprite, cat.x, y - height / 2, layout.catWidth, height);
       }

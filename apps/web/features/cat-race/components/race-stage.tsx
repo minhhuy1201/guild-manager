@@ -21,7 +21,7 @@ import {
   RACE_DURATION_MIN_SECONDS,
   parseRaceDuration,
 } from "../lib/race-duration";
-import { buildRaceScript } from "../lib/race-script";
+import { buildRaceScript, rankAt } from "../lib/race-script";
 import { useRaceStore } from "../store/race-store";
 import { RaceCanvas } from "./race-canvas";
 import { RaceResultOverlay } from "./race-result-overlay";
@@ -84,6 +84,12 @@ export function RaceStage({
       random: Math.random,
     });
   }, [pendingResult, durationSeconds]);
+
+  // Reduced motion skips the replay, so no board update ever came: rank the finished race instead.
+  const board =
+    standings.length === 0 && stage === "result" && script
+      ? rankAt(script, script.durationSeconds)
+      : standings;
 
   const typedDuration = parseRaceDuration(durationText);
   const changeDuration = (text: string) => {
@@ -169,7 +175,7 @@ export function RaceStage({
         <RaceStandings
           script={stage === "racing" || stage === "result" ? script : null}
           participants={event.participants}
-          keys={standings}
+          keys={board}
           className="max-h-80 lg:h-[70dvh] lg:max-h-none lg:min-h-96"
         />
       </div>

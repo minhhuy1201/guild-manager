@@ -76,7 +76,7 @@ export function RaceResultOverlay({
         </Avatar>
         <p className="font-heading text-2xl">{round.winnerName}</p>
         <p className="flex items-center gap-2 text-sm text-muted-foreground">
-          {prize ? <PrizeTierBadge tier={prize.tier} className="size-6" /> : null}
+          {prize ? <PrizeTierBadge tier={prize.tier} isNamed className="size-6" /> : null}
           <span>
             {GUILD_CLASS_LABEL[round.winnerGuildClass]}
             {prize ? ` · ${prize.name}` : ""}

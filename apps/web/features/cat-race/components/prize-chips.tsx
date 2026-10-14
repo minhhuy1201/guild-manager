@@ -62,7 +62,7 @@ export function PrizeChips({
               className="flex min-h-10 items-center gap-2 px-3 py-1.5 text-left"
               onClick={() => onSelect(prize)}
             >
-              <PrizeTierBadge tier={prize.tier} />
+              <PrizeTierBadge tier={prize.tier} isNamed />
               <span className="flex flex-col items-start">
                 <span className="font-medium">
                   {prize.name} {prize.awardedCount}/{prize.quantity}
