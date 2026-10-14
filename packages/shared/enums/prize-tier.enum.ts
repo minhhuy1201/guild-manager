@@ -7,7 +7,7 @@ export enum PrizeTier {
 
 /** Vietnamese display label per tier. */
 export const PRIZE_TIER_LABEL: Record<PrizeTier, string> = {
-  [PrizeTier.HIGH]: "Cao",
-  [PrizeTier.MEDIUM]: "Vừa",
-  [PrizeTier.LOW]: "Thấp",
+  [PrizeTier.HIGH]: "Đặc biệt",
+  [PrizeTier.MEDIUM]: "Lớn",
+  [PrizeTier.LOW]: "Thường",
 };

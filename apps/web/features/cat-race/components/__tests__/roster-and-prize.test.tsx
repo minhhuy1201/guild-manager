@@ -176,7 +176,8 @@ describe("PrizeFormDialog", () => {
 
     fireEvent.change(screen.getByLabelText("Tên hạng mục"), { target: { value: "Vé" } });
     fireEvent.change(screen.getByLabelText("Số lượng"), { target: { value: "3" } });
-    fireEvent.click(screen.getByRole("button", { name: "Thấp" }));
+    expect(screen.getByText(/Chỉ đổi màu và icon hiển thị/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Thường" }));
     fireEvent.click(screen.getByRole("button", { name: "Lưu" }));
 
     await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));

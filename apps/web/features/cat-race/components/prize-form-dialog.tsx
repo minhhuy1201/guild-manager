@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Save } from "lucide-react";
-import { PRIZE_TIER_LABEL, PrizeTier } from "@guild/shared/enums";
+import { PrizeTier } from "@guild/shared/enums";
 import {
   CAT_RACE_PRIZE_NAME_MAX,
   CAT_RACE_PRIZE_QUANTITY_MAX,
@@ -17,12 +17,12 @@ import {
   useAddCatRacePrize,
   useUpdateCatRacePrize,
 } from "../hooks/use-cat-race-mutations";
+import {
+  PRIZE_TIER_FIELD_LABEL,
+  PRIZE_TIER_HINT,
+  PRIZE_TIER_OPTIONS,
+} from "../lib/prize-tier-style";
 import { ChoiceButtons } from "./choice-buttons";
-
-const TIER_OPTIONS = Object.values(PrizeTier).map((value) => ({
-  value,
-  label: PRIZE_TIER_LABEL[value],
-}));
 
 interface PrizeFormDialogProps {
   eventId: string;
@@ -122,8 +122,14 @@ function PrizeFormBody({ eventId, prize, onDone }: PrizeFormBodyProps) {
         />
       </div>
       <div className="grid gap-2">
-        <span className="text-sm font-medium">Bậc</span>
-        <ChoiceButtons label="Bậc" value={tier} options={TIER_OPTIONS} onChange={setTier} />
+        <span className="text-sm font-medium">{PRIZE_TIER_FIELD_LABEL}</span>
+        <ChoiceButtons
+          label={PRIZE_TIER_FIELD_LABEL}
+          value={tier}
+          options={PRIZE_TIER_OPTIONS}
+          onChange={setTier}
+        />
+        <p className="text-sm text-muted-foreground">{PRIZE_TIER_HINT}</p>
       </div>
     </MutationForm>
   );

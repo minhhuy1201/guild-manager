@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { PRIZE_LOCK_LABEL, prizeLockReason } from "../lib/prize-lock";
 import { PRIZE_TIER_CLASS } from "../lib/prize-tier-style";
+import { PrizeTierBadge } from "./prize-tier-badge";
 
 interface PrizeChipsProps {
   event: CatRaceEventDetail;
@@ -58,18 +59,21 @@ export function PrizeChips({
             <button
               type="button"
               aria-pressed={prize.id === selectedPrizeId}
-              className="flex min-h-10 flex-col items-start px-3 py-1.5 text-left"
+              className="flex min-h-10 items-center gap-2 px-3 py-1.5 text-left"
               onClick={() => onSelect(prize)}
             >
-              <span className="font-medium">
-                {prize.name} {prize.awardedCount}/{prize.quantity}
-              </span>
-              {lock ? (
-                <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Lock className="size-3" />
-                  {PRIZE_LOCK_LABEL[lock]}
+              <PrizeTierBadge tier={prize.tier} />
+              <span className="flex flex-col items-start">
+                <span className="font-medium">
+                  {prize.name} {prize.awardedCount}/{prize.quantity}
                 </span>
-              ) : null}
+                {lock ? (
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Lock className="size-3" />
+                    {PRIZE_LOCK_LABEL[lock]}
+                  </span>
+                ) : null}
+              </span>
             </button>
             {canEdit ? (
               <>

@@ -1,11 +1,13 @@
 "use client";
 
+import type { LucideIcon } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 
 interface ChoiceButtonsProps<T extends string> {
   label: string;
   value: T;
-  options: readonly { value: T; label: string }[];
+  options: readonly { value: T; label: string; icon?: LucideIcon }[];
   onChange: (value: T) => void;
   disabled?: boolean;
 }
@@ -28,7 +30,7 @@ export function ChoiceButtons<T extends string>({
 }: ChoiceButtonsProps<T>) {
   return (
     <div className="flex flex-wrap gap-2" role="group" aria-label={label}>
-      {options.map((option) => (
+      {options.map(({ icon: Icon, ...option }) => (
         <Button
           key={option.value}
           type="button"
@@ -38,6 +40,7 @@ export function ChoiceButtons<T extends string>({
           disabled={disabled}
           onClick={() => onChange(option.value)}
         >
+          {Icon ? <Icon /> : null}
           {option.label}
         </Button>
       ))}

@@ -15,6 +15,7 @@ import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { REVEAL_CLASS } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { PRIZE_TIER_CLASS } from "../lib/prize-tier-style";
+import { PrizeTierBadge } from "./prize-tier-badge";
 import { Spinner } from "@/components/shared/spinner";
 
 interface RaceResultOverlayProps {
@@ -74,9 +75,12 @@ export function RaceResultOverlay({
           <AvatarFallback>{round.winnerName.slice(0, 1).toUpperCase()}</AvatarFallback>
         </Avatar>
         <p className="font-heading text-2xl">{round.winnerName}</p>
-        <p className="text-sm text-muted-foreground">
-          {GUILD_CLASS_LABEL[round.winnerGuildClass]}
-          {prize ? ` · ${prize.name}` : ""}
+        <p className="flex items-center gap-2 text-sm text-muted-foreground">
+          {prize ? <PrizeTierBadge tier={prize.tier} className="size-6" /> : null}
+          <span>
+            {GUILD_CLASS_LABEL[round.winnerGuildClass]}
+            {prize ? ` · ${prize.name}` : ""}
+          </span>
         </p>
         <p className="text-sm text-muted-foreground">
           {event.mode === CatRaceMode.TICKET
