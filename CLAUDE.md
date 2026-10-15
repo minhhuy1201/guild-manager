@@ -92,4 +92,4 @@ before anything else happens.
 - **Never mutate:** return a new object. Nest at most 4 levels, using early returns. Name a
   threshold or limit instead of a magic number.
 - **Prefer a maintained dependency** when it genuinely removes code we would otherwise own and test.
-- Ask before a large architectural change. Keep explanations short — do the task, skip the commentary.
+- Ask before a large architectural change. Keep explanations short, and end a task with a summary of what changed.
