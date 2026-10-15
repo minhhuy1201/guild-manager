@@ -11,6 +11,8 @@ interface MutationDialogShellProps {
   open: boolean;
   /** Called when the dialog wants to open or close */
   onOpenChange: (open: boolean) => void;
+  /** Extra classes for the dialog panel, e.g. a wider `sm:max-w-*` */
+  className?: string;
   /** Body — mounted only while open */
   children: ReactNode;
 }
@@ -25,12 +27,14 @@ interface MutationDialogShellProps {
  * still get a clean form every time.
  * @param open - Whether the dialog is open
  * @param onOpenChange - Called when the dialog wants to open or close
+ * @param className - Extra classes for the dialog panel
  * @param children - Body, mounted only while open
  * @returns Dialog shell holding the two dialog-level rules
  */
 export function MutationDialogShell({
   open,
   onOpenChange,
+  className,
   children,
 }: MutationDialogShellProps) {
   const [isPending, setIsPending] = useState(false);
@@ -44,7 +48,7 @@ export function MutationDialogShell({
           onOpenChange(next);
         }}
       >
-        <DialogContent>{open && children}</DialogContent>
+        <DialogContent className={className}>{open && children}</DialogContent>
       </Dialog>
     </MutationPendingContext.Provider>
   );

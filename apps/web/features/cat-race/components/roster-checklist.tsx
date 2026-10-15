@@ -70,18 +70,28 @@ export function RosterChecklist({
   };
   const setTickets = (characterId: string, tickets: number) =>
     onChange(new Map(selection).set(characterId, tickets));
-  const setAll = (ticked: boolean) =>
+  const visibleTicked = visible.filter((member) => selection.has(member.characterId));
+  const isAllTicked = visible.length > 0 && visibleTicked.length === visible.length;
+  const isSomeTicked = visibleTicked.length > 0 && !isAllTicked;
+  // Ticking keeps the tickets already set and everyone the search hides; unticking drops only the
+  // people the search shows.
+  const toggleAll = () =>
     onChange(
-      new Map(
-        ticked
-          ? visible.map((member) => [
-              member.characterId,
-              selection.get(member.characterId) ?? CAT_RACE_TICKETS_MIN,
-            ])
-          : [...selection].filter(
+      isAllTicked
+        ? new Map(
+            [...selection].filter(
               ([id]) => !visible.some((member) => member.characterId === id)
             )
-      )
+          )
+        : new Map([
+            ...selection,
+            ...visible.map(
+              (member): [string, number] => [
+                member.characterId,
+                selection.get(member.characterId) ?? CAT_RACE_TICKETS_MIN,
+              ]
+            ),
+          ])
     );
 
   return (
@@ -97,63 +107,70 @@ export function RosterChecklist({
           onChange={(event) => setSearch(event.target.value)}
         />
       </div>
-      <div className="flex items-center justify-between gap-2 text-sm">
-        <span className="text-muted-foreground">
-          Đã chọn {selection.size}/{members.length}
-        </span>
-        <span className="flex gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={() => setAll(true)}>
+      <div className="rounded-lg border border-border">
+        <div className="flex items-center justify-between gap-3 border-b border-border rounded-t-lg bg-foreground/5 px-3 py-2">
+          <label className="flex items-center gap-3 font-medium">
+            <input
+              type="checkbox"
+              className="size-5 shrink-0 accent-primary"
+              checked={isAllTicked}
+              disabled={visible.length === 0}
+              ref={(input) => {
+                if (input) input.indeterminate = isSomeTicked;
+              }}
+              onChange={toggleAll}
+            />
             Chọn tất cả
-          </Button>
-          <Button type="button" variant="outline" size="sm" onClick={() => setAll(false)}>
-            Bỏ chọn
-          </Button>
-        </span>
-      </div>
-      <ul className="max-h-64 overflow-y-auto rounded-lg border border-border">
-        {visible.map((member) => {
-          const tickets = selection.get(member.characterId);
+          </label>
+          <span className="text-sm text-muted-foreground">
+            Đã chọn {selection.size}/{members.length}
+          </span>
+        </div>
+        <ul className="max-h-64 overflow-y-auto">
+          {visible.map((member) => {
+            const tickets = selection.get(member.characterId);
 
-          return (
-            <li
-              key={member.characterId}
-              className="flex items-center gap-3 border-b border-border px-3 py-2 last:border-b-0"
-            >
-              <label className="flex min-w-0 flex-1 items-center gap-3">
-                <input
-                  type="checkbox"
-                  className="size-5 shrink-0 accent-primary"
-                  checked={tickets !== undefined}
-                  onChange={() => toggle(member.characterId)}
-                />
-                <GuildClassIcon guildClass={member.guildClass} />
-                <span className="truncate">{member.name}</span>
-                {member.note ? (
-                  <span className="shrink-0 text-xs text-muted-foreground">
-                    {member.note}
+            return (
+              <li
+                key={member.characterId}
+                className="flex items-center gap-3 border-b border-border px-3 py-2 last:border-b-0"
+              >
+                <label className="flex min-w-0 flex-1 items-center gap-3">
+                  <input
+                    type="checkbox"
+                    className="size-5 shrink-0 accent-primary"
+                    checked={tickets !== undefined}
+                    onChange={() => toggle(member.characterId)}
+                  />
+                  <GuildClassIcon guildClass={member.guildClass} />
+                  <span className="truncate">{member.name}</span>
+                  {member.note ? (
+                    <span className="shrink-0 text-xs text-muted-foreground">
+                      {member.note}
+                    </span>
+                  ) : null}
+                </label>
+                {showTickets && tickets !== undefined ? (
+                  <span className="flex shrink-0 gap-1" role="group" aria-label={`Số vé của ${member.name}`}>
+                    {TICKET_CHOICES.map((choice) => (
+                      <Button
+                        key={choice}
+                        type="button"
+                        size="icon-sm"
+                        variant={choice === tickets ? "default" : "outline"}
+                        aria-pressed={choice === tickets}
+                        onClick={() => setTickets(member.characterId, choice)}
+                      >
+                        {choice}
+                      </Button>
+                    ))}
                   </span>
                 ) : null}
-              </label>
-              {showTickets && tickets !== undefined ? (
-                <span className="flex shrink-0 gap-1" role="group" aria-label={`Số vé của ${member.name}`}>
-                  {TICKET_CHOICES.map((choice) => (
-                    <Button
-                      key={choice}
-                      type="button"
-                      size="icon-sm"
-                      variant={choice === tickets ? "default" : "outline"}
-                      aria-pressed={choice === tickets}
-                      onClick={() => setTickets(member.characterId, choice)}
-                    >
-                      {choice}
-                    </Button>
-                  ))}
-                </span>
-              ) : null}
-            </li>
-          );
-        })}
-      </ul>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
     </div>
   );
 }

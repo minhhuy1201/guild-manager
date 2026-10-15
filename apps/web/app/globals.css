@@ -18,6 +18,9 @@
        of every `position: fixed` descendant - the team builder's drag overlay among them. */
     --animate-reveal: reveal var(--duration-slow) var(--ease-out-soft) backwards;
     --animate-shimmer: shimmer 1.6s linear infinite;
+    /* A multi-step dialog's next step arrives from the right, a step back from the left. */
+    --animate-step-forward: step-forward var(--duration-base) var(--ease-out-soft) backwards;
+    --animate-step-back: step-back var(--duration-base) var(--ease-out-soft) backwards;
     /* Serif for page titles and the guild name only; every other line of UI text stays sans. */
     --font-heading: var(--font-noto-serif), ui-serif, Georgia, serif;
     --font-sans: var(--font-be-vietnam-pro), ui-sans-serif, system-ui, sans-serif;
@@ -361,6 +364,16 @@
 
 @keyframes reveal {
   from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes step-forward {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes step-back {
+  from { opacity: 0; transform: translateX(-24px); }
   to { opacity: 1; transform: none; }
 }
 

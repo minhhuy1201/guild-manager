@@ -890,7 +890,12 @@ Tailwind 4 has an `--ease-*` namespace, so `--ease-out-soft` gives the `ease-out
 **Motion never changes the geometry of the layout**: no `height`, no `width`, no `scale` on table
 content, and no `translate` on anything already in place. A transition that moves something is
 exactly what makes the layout jump. An element *arriving* may rise a few pixels as it fades in (see
-"Entrance and data reveal" below), because a transform does not reflow its neighbours. Beyond that,
+"Entrance and data reveal" below), because a transform does not reflow its neighbours. The same holds
+for the next step of a multi-step dialog (`StepSlide`, `--animate-step-forward` / `--animate-step-back`): it
+slides 24px in from the right going forward and from the left going back, over `--duration-base`, and ends on
+`transform: none`. Only the arriving step moves; the step it replaces unmounts at once. The wrapper clips
+sideways (`-mx-6 overflow-x-clip px-6`, the dialog's own padding) so the slide adds no scrollbar and the
+footer still bleeds to the panel edge. Beyond that,
 one exception: a popup in a portal (`SelectContent`, `DropdownMenuContent`, `DialogContent`) sits
 outside the layout flow, so it may slide in. `SelectContent` rises from below
 (`data-open:slide-in-from-bottom-8`) over `--duration-slow`, and needs

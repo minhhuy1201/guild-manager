@@ -2,39 +2,39 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Save, Trash2, Type } from "lucide-react";
+import { ArrowLeft, Save } from "lucide-react";
 import {
   CAT_RACE_MODE_LABEL,
   CatRaceMode,
   PrizeTier,
 } from "@guild/shared/enums";
 import {
-  CAT_RACE_NAME_MAX,
-  CAT_RACE_PRIZE_NAME_MAX,
-  CAT_RACE_PRIZE_QUANTITY_MAX,
+  CAT_RACE_TICKETS_MAX,
   type Character,
   type CatRacePrizeTemplate,
 } from "@guild/shared/schemas";
 
-import { FieldLabel } from "@/components/shared/field-label";
 import { MutationDialogShell } from "@/components/shared/mutation-dialog";
 import { MutationForm } from "@/components/shared/mutation-form";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { catRaceEventPath } from "@/config/routes";
 import { useCreateCatRace } from "../hooks/use-cat-race-mutations";
-import {
-  PRIZE_TIER_FIELD_LABEL,
-  PRIZE_TIER_HINT,
-  PRIZE_TIER_OPTIONS,
-} from "../lib/prize-tier-style";
 import { ChoiceButtons } from "./choice-buttons";
+import {
+  CreateRaceStepIndicator,
+  type CreateRaceStep,
+} from "./create-race-step-indicator";
+import { CreateRacePrizesStep } from "./create-race-prizes-step";
+import { StepSlide, type StepDirection } from "./step-slide";
 import { RosterChecklist, type RosterSelection } from "./roster-checklist";
 
 const MODE_OPTIONS = Object.values(CatRaceMode).map((value) => ({
   value,
   label: CAT_RACE_MODE_LABEL[value],
 }));
+const MODE_HINT: Record<CatRaceMode, string> = {
+  [CatRaceMode.STANDARD]: "Mỗi người 1 con mèo, cơ hội như nhau.",
+  [CatRaceMode.TICKET]: `Mỗi vé là 1 con mèo, mỗi người tối đa ${CAT_RACE_TICKETS_MAX} vé.`,
+};
 const EMPTY_PRIZE: CatRacePrizeTemplate = {
   name: "",
   quantity: 1,
@@ -66,7 +66,7 @@ export function CreateCatRaceDialog({
   prefill,
 }: CreateCatRaceDialogProps) {
   return (
-    <MutationDialogShell open={open} onOpenChange={onOpenChange}>
+    <MutationDialogShell open={open} onOpenChange={onOpenChange} className="sm:max-w-xl">
       <CreateCatRaceBody
         characters={characters}
         prefill={prefill}
@@ -104,6 +104,13 @@ function CreateCatRaceBody({
   const [selection, setSelection] = useState<RosterSelection>(
     new Map(characters.map((character) => [character.id, 1]))
   );
+  const [step, setStep] = useState<CreateRaceStep>("prizes");
+  // Null until the first move, so opening the dialog does not slide the first step in.
+  const [direction, setDirection] = useState<StepDirection | null>(null);
+  const goTo = (next: CreateRaceStep) => {
+    setDirection(next === "roster" ? "forward" : "back");
+    setStep(next);
+  };
   const members = characters.map((character) => ({
     characterId: character.id,
     name: character.name,
@@ -113,106 +120,67 @@ function CreateCatRaceBody({
   const editPrize = (index: number, patch: Partial<CatRacePrizeTemplate>) =>
     setPrizes(prizes.map((prize, i) => (i === index ? { ...prize, ...patch } : prize)));
 
+  if (step === "prizes") {
+    return (
+      <StepSlide key={step} direction={direction}>
+        <CreateRacePrizesStep
+          name={name}
+          prizes={prizes}
+          onNameChange={setName}
+          onEditPrize={editPrize}
+          onAddPrize={() => setPrizes([...prizes, EMPTY_PRIZE])}
+          onRemovePrize={(index) => setPrizes(prizes.filter((_, i) => i !== index))}
+          onCancel={onDone}
+          onNext={() => goTo("roster")}
+        />
+      </StepSlide>
+    );
+  }
+
   return (
-    <MutationForm
-      title="Tạo đợt quay"
-      submitLabel="Tạo đợt"
-      pendingLabel="Đang tạo..."
-      submitIcon={<Save />}
-      fallbackError="Không tạo được đợt quay."
-      onCancel={onDone}
-      onDone={onDone}
-      run={async () => {
-        const created = await createRace.mutateAsync({
-          name: name.trim() === "" ? undefined : name,
-          mode,
-          participants: [...selection].map(([characterId, tickets]) => ({
-            characterId,
-            // STANDARD has no tickets; the API rejects anything but 1.
-            tickets: mode === CatRaceMode.TICKET ? tickets : 1,
-          })),
-          prizes,
-        });
-        router.push(catRaceEventPath(created.id));
-      }}
-    >
-      <div className="grid gap-2">
-        <FieldLabel htmlFor="cat-race-name" icon={<Type />}>
-          Tên đợt (không bắt buộc)
-        </FieldLabel>
-        <Input
-          id="cat-race-name"
-          value={name}
-          maxLength={CAT_RACE_NAME_MAX}
-          placeholder="Để trống: Đợt quay theo ngày"
-          onChange={(event) => setName(event.target.value)}
-        />
-      </div>
+    <StepSlide key={step} direction={direction}>
+      <MutationForm
+        title="Tạo đợt quay"
+        description={<CreateRaceStepIndicator current="roster" />}
+        submitLabel="Tạo đợt"
+        pendingLabel="Đang tạo..."
+        submitIcon={<Save />}
+        fallbackError="Không tạo được đợt quay."
+        cancelLabel="Quay lại"
+        cancelIcon={<ArrowLeft />}
+        onCancel={() => goTo("prizes")}
+        onDone={onDone}
+        run={async () => {
+          const created = await createRace.mutateAsync({
+            name: name.trim() === "" ? undefined : name,
+            mode,
+            participants: [...selection].map(([characterId, tickets]) => ({
+              characterId,
+              // STANDARD has no tickets; the API rejects anything but 1.
+              tickets: mode === CatRaceMode.TICKET ? tickets : 1,
+            })),
+            prizes,
+          });
+          router.push(catRaceEventPath(created.id));
+        }}
+      >
+        <div className="grid gap-2">
+          <span className="text-sm font-medium">Chế độ</span>
+          <ChoiceButtons label="Chế độ" value={mode} options={MODE_OPTIONS} onChange={setMode} />
+          <p className="text-sm text-muted-foreground">{MODE_HINT[mode]}</p>
+        </div>
 
-      <div className="grid gap-2">
-        <span className="text-sm font-medium">Chế độ</span>
-        <ChoiceButtons label="Chế độ" value={mode} options={MODE_OPTIONS} onChange={setMode} />
-      </div>
-
-      <div className="grid gap-2">
-        <span className="text-sm font-medium">Hạng mục</span>
-        {prizes.map((prize, index) => (
-          <div key={index} className="grid gap-2 rounded-lg border border-border p-3">
-            <div className="flex gap-2">
-              <Input
-                aria-label={`Tên hạng mục ${index + 1}`}
-                value={prize.name}
-                maxLength={CAT_RACE_PRIZE_NAME_MAX}
-                onChange={(event) => editPrize(index, { name: event.target.value })}
-                required
-              />
-              <Input
-                aria-label={`Số lượng hạng mục ${index + 1}`}
-                type="number"
-                min={1}
-                max={CAT_RACE_PRIZE_QUANTITY_MAX}
-                className="w-24"
-                value={prize.quantity}
-                onChange={(event) => editPrize(index, { quantity: Number(event.target.value) })}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                aria-label={`Xoá hạng mục ${index + 1}`}
-                disabled={prizes.length === 1}
-                onClick={() => setPrizes(prizes.filter((_, i) => i !== index))}
-              >
-                <Trash2 />
-              </Button>
-            </div>
-            <ChoiceButtons
-              label={`${PRIZE_TIER_FIELD_LABEL} ${index + 1}`}
-              value={prize.tier}
-              options={PRIZE_TIER_OPTIONS}
-              onChange={(tier) => editPrize(index, { tier })}
-            />
-          </div>
-        ))}
-        <p className="text-sm text-muted-foreground">
-          {PRIZE_TIER_FIELD_LABEL}: {PRIZE_TIER_HINT}
-        </p>
-        <Button type="button" variant="outline" onClick={() => setPrizes([...prizes, EMPTY_PRIZE])}>
-          <Plus />
-          Thêm hạng mục
-        </Button>
-      </div>
-
-      <div className="grid gap-2">
-        <span className="text-sm font-medium">Người tham gia</span>
-        <RosterChecklist
-          idPrefix="create-cat-race"
-          members={members}
-          selection={selection}
-          showTickets={mode === CatRaceMode.TICKET}
-          onChange={setSelection}
-        />
-      </div>
-    </MutationForm>
+        <div className="grid gap-2">
+          <span className="text-sm font-medium">Người tham gia</span>
+          <RosterChecklist
+            idPrefix="create-cat-race"
+            members={members}
+            selection={selection}
+            showTickets={mode === CatRaceMode.TICKET}
+            onChange={setSelection}
+          />
+        </div>
+      </MutationForm>
+    </StepSlide>
   );
 }
