@@ -485,9 +485,9 @@ button then use one vocabulary: swords means "đi đánh" everywhere on the scre
 holding the same status icon, so its answer reads without a hover (a touch screen has none).
 Pressing it moves the answer on - unanswered → "Có" → "Không" → "Có"; there is no way back to
 unanswered, since the API has one write per cell and no delete. The moves collect in one draft over
-the whole grid (`clickCell`, `lib/grid-draft.ts`); a changed cell shows the draft's answer inside a
-`primary` ring, and the grid's `UnsavedChangesBar` ("N ô đã đổi · Huỷ · Lưu") writes them all at
-once. A partial failure keeps only the failed cells in the draft.
+the whole grid (`clickCell`, `features/attendance/lib/grid-draft.ts`); a changed cell shows the
+draft's answer inside a `primary` ring, and the grid's `UnsavedChangesBar` ("N ô đã đổi · Huỷ · Lưu")
+writes them all at once. A partial failure keeps only the failed cells in the draft.
 
 The member card (`member-attendance-card`) answers the same two questions with the same two marks,
 as full `Button`s: a member sees their own day tiles and has room for the words, where the admin grid
