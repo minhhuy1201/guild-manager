@@ -79,7 +79,7 @@ A new interaction convention goes here; its reason goes in `frontend.md`.
 ## Motion
 
 - Use only the four tokens in `globals.css`: `--duration-fast` 120ms (colour, hover, press), `--duration-base` 200ms (show/hide in an existing frame), `--duration-slow` 320ms (skeleton ⇄ data), `--ease-out-soft` (every easing). Write a duration as `duration-[var(--duration-base)]`.
-- Never animate layout geometry: no `height`, `width`, `scale` on table content, no `translate` on anything in place. An arriving element may rise a few pixels. A portal popup may slide in (`SelectContent` needs `alignItemWithTrigger={false}`).
+- Never animate layout geometry: no `height`, `width`, `scale` on table content, no `translate` on anything in place. An arriving element may rise a few pixels. The next step of a multi-step dialog may slide 24px in from the side it came from (`StepSlide`). A portal popup may slide in (`SelectContent` needs `alignItemWithTrigger={false}`).
 - Keep `ease-linear` only for the login button sheen.
 - Answer `prefers-reduced-motion` once, at the end of `globals.css`, never at a call site.
 - Spinner or skeleton: skeleton for an unknown row count on first load; `Spinner` in the button or cell for a user-triggered wait; nothing for a background refetch.
