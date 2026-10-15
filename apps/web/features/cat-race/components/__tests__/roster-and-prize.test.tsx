@@ -69,7 +69,7 @@ describe("RosterChecklist", () => {
 
   it("ticks an unticked person with one ticket and unticks a ticked one", () => {
     const onChange = renderChecklist(new Map([["a", 2]]));
-    const boxes = screen.getAllByRole("checkbox");
+    const boxes = screen.getAllByRole("checkbox").slice(1);
 
     fireEvent.click(boxes[1]);
     fireEvent.click(boxes[0]);
@@ -90,7 +90,7 @@ describe("RosterChecklist", () => {
   it("ticks all visible people, keeping the tickets already set", () => {
     const onChange = renderChecklist(new Map([["a", 3]]));
 
-    fireEvent.click(screen.getByRole("button", { name: "Chọn tất cả" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Chọn tất cả" }));
 
     expect(onChange.mock.calls[0][0]).toEqual(
       new Map([["a", 3], ["b", 1], ["c", 1]])
@@ -101,9 +101,27 @@ describe("RosterChecklist", () => {
     const onChange = renderChecklist(new Map([["a", 1], ["b", 1]]));
     fireEvent.change(screen.getByLabelText("Tìm theo tên"), { target: { value: "bo" } });
 
-    fireEvent.click(screen.getByRole("button", { name: "Bỏ chọn" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Chọn tất cả" }));
 
     expect(onChange.mock.calls[0][0]).toEqual(new Map([["a", 1]]));
+  });
+
+  it("keeps ticked people the search hides when ticking the visible ones", () => {
+    const onChange = renderChecklist(new Map([["a", 2]]));
+    fireEvent.change(screen.getByLabelText("Tìm theo tên"), { target: { value: "bo" } });
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "Chọn tất cả" }));
+
+    expect(onChange.mock.calls[0][0]).toEqual(new Map([["a", 2], ["b", 1]]));
+  });
+
+  it("marks the select-all box indeterminate on a partial selection", () => {
+    renderChecklist(new Map([["a", 1]]));
+
+    const box = screen.getByRole("checkbox", { name: "Chọn tất cả" }) as HTMLInputElement;
+
+    expect(box.indeterminate).toBe(true);
+    expect(box.checked).toBe(false);
   });
 
   it("shows a ticket picker only for ticked rows in TICKET mode", () => {
@@ -240,7 +258,7 @@ describe("ParticipantsDialog", () => {
       />
     );
 
-    fireEvent.click(screen.getAllByRole("checkbox")[1]);
+    fireEvent.click(screen.getAllByRole("checkbox")[2]);
     fireEvent.click(screen.getByRole("button", { name: "Lưu" }));
 
     await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
@@ -285,7 +303,7 @@ describe("EntrantsDialog", () => {
     );
 
     expect(screen.getByText("đã trúng")).toBeTruthy();
-    fireEvent.click(screen.getAllByRole("checkbox")[1]);
+    fireEvent.click(screen.getAllByRole("checkbox")[2]);
     fireEvent.click(screen.getByRole("button", { name: "Lưu" }));
 
     await waitFor(() =>

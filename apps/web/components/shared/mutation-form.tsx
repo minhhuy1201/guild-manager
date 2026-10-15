@@ -31,6 +31,10 @@ export interface MutationFormProps {
   variant?: "default" | "destructive";
   /** Cancel handler. Omit for no cancel button — the corner X is still there. */
   onCancel?: () => void;
+  /** Cancel button label, for a form whose cancel steps back instead of closing */
+  cancelLabel?: string;
+  /** Cancel button icon */
+  cancelIcon?: ReactNode;
   /** The write. Throwing keeps the form up and shows the error. */
   run: () => Promise<unknown>;
   /** Called once, after the write resolved */
@@ -63,6 +67,8 @@ export interface MutationFormProps {
  * @param fallbackError - Sentence shown when the thrown value has no message
  * @param variant - Confirm button style
  * @param onCancel - Cancel handler; omit for no cancel button
+ * @param cancelLabel - Cancel button label
+ * @param cancelIcon - Cancel button icon
  * @param run - The write; throwing keeps the form up
  * @param onDone - Called once the write resolved
  * @param children - Body of the dialog
@@ -77,6 +83,8 @@ export function MutationForm({
   fallbackError,
   variant = "default",
   onCancel,
+  cancelLabel = "Huỷ",
+  cancelIcon = <X />,
   run,
   onDone,
   children,
@@ -143,8 +151,8 @@ export function MutationForm({
             disabled={isPending}
             onClick={onCancel}
           >
-            <X />
-            Huỷ
+            {cancelIcon}
+            {cancelLabel}
           </Button>
         )}
         <Button type="submit" variant={variant} disabled={isPending}>

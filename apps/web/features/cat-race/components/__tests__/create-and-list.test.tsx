@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CatRaceMode, GuildClass, PrizeTier } from "@guild/shared/enums";
 import type { Character } from "@guild/shared/schemas";
@@ -51,6 +51,9 @@ function ready(data: unknown) {
 describe("CreateCatRaceDialog", () => {
   const prefill = [{ name: "Tiền mặt", quantity: 2, tier: PrizeTier.HIGH }];
 
+  /** Go from the prizes step to the roster step. */
+  const next = () => fireEvent.click(screen.getByRole("button", { name: /^Tiếp/ }));
+
   /** Render the dialog with the two characters. */
   function renderDialog(withPrefill = prefill) {
     const onOpenChange = vi.fn();
@@ -70,6 +73,7 @@ describe("CreateCatRaceDialog", () => {
     m.create.mockResolvedValue({ id: "e 9" });
     renderDialog();
 
+    next();
     fireEvent.click(screen.getByRole("button", { name: "Tạo đợt" }));
 
     await waitFor(() => expect(m.push).toHaveBeenCalledWith("/dua-meo/e%209"));
@@ -89,13 +93,16 @@ describe("CreateCatRaceDialog", () => {
     renderDialog();
 
     fireEvent.change(screen.getByLabelText("Tên đợt (không bắt buộc)"), { target: { value: "Tết" } });
-    fireEvent.click(screen.getByRole("button", { name: "Vé" }));
-    fireEvent.click(screen.getAllByRole("button", { name: "3" })[0]);
     fireEvent.change(screen.getByLabelText("Tên hạng mục 1"), { target: { value: "Xe" } });
     fireEvent.change(screen.getByLabelText("Số lượng hạng mục 1"), { target: { value: "5" } });
-    fireEvent.click(
-      within(screen.getByRole("group", { name: "Độ quý của giải 1" })).getByRole("button", { name: "Thường" })
-    );
+    fireEvent.mouseDown(screen.getByRole("combobox", { name: "Độ quý của giải 1" }));
+    const option = await screen.findByRole("option", { name: "Thường" });
+    // Base UI commits an option on a click that follows a pointer press on it.
+    fireEvent.pointerDown(option);
+    fireEvent.click(option);
+    next();
+    fireEvent.click(screen.getByRole("button", { name: "Vé" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "3" })[0]);
     fireEvent.click(screen.getByRole("button", { name: "Tạo đợt" }));
 
     await waitFor(() => expect(m.create).toHaveBeenCalled());
@@ -125,6 +132,35 @@ describe("CreateCatRaceDialog", () => {
     fireEvent.click(screen.getByLabelText("Xoá hạng mục 1"));
 
     expect(screen.queryByLabelText("Tên hạng mục 2")).toBeNull();
+  });
+
+  it("keeps the prizes and name after stepping back from the roster", () => {
+    renderDialog();
+
+    fireEvent.change(screen.getByLabelText("Tên đợt (không bắt buộc)"), { target: { value: "Tết" } });
+    next();
+    fireEvent.click(screen.getByRole("button", { name: "Quay lại" }));
+
+    expect((screen.getByLabelText("Tên đợt (không bắt buộc)") as HTMLInputElement).value).toBe("Tết");
+    expect((screen.getByLabelText("Tên hạng mục 1") as HTMLInputElement).value).toBe("Tiền mặt");
+  });
+
+  it("stays on the prizes step while a prize has no name", () => {
+    renderDialog([]);
+
+    next();
+
+    expect(screen.getByLabelText("Tên hạng mục 1")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Tạo đợt" })).toBeNull();
+  });
+
+  it("explains the ticket mode on the roster step", () => {
+    renderDialog();
+
+    next();
+    fireEvent.click(screen.getByRole("button", { name: "Vé" }));
+
+    expect(screen.getByText(/Mỗi vé là 1 con mèo/)).toBeTruthy();
   });
 
   it("cancels without creating", () => {
@@ -192,6 +228,6 @@ describe("CatRaceListScreen", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Tạo đợt quay/ }));
 
-    expect(screen.getByRole("button", { name: "Tạo đợt" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /^Tiếp/ })).toBeTruthy();
   });
 });

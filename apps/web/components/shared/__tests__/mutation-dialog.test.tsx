@@ -60,6 +60,13 @@ function clickSubmit() {
 }
 
 describe("MutationDialog", () => {
+  it("cancelLabel đổi chữ nút huỷ", () => {
+    renderDialog({ cancelLabel: "Quay lại" });
+
+    expect(screen.getByRole("button", { name: "Quay lại" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Huỷ" })).toBeNull();
+  });
+
   it("run xong êm thì dialog đóng", async () => {
     const { onOpenChange } = renderDialog({ run: async () => {} });
 
