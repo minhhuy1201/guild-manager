@@ -1,60 +1,50 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Cat, FastForward, Play, Timer } from "lucide-react";
+import { Cat, FastForward, Play } from "lucide-react";
+import { CatRaceMode } from "@guild/shared/enums";
 import type { CatRaceEventDetail, CatRacePrize } from "@guild/shared/schemas";
 
-import { FieldLabel } from "@/components/shared/field-label";
 import { Spinner } from "@/components/shared/spinner";
 import { toastError } from "@/components/shared/toast";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useInvalidate } from "@/hooks/use-invalidate";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { useSessionRecovery } from "@/hooks/use-session-recovery";
 import { errorMessageOf } from "@/lib/error-message";
 import { useDrawCatRaceRound } from "../hooks/use-cat-race-mutations";
 import { PRIZE_LOCK_LABEL, prizeLockReason } from "../lib/prize-lock";
-import {
-  RACE_DURATION_ERROR,
-  RACE_DURATION_MAX_SECONDS,
-  RACE_DURATION_MIN_SECONDS,
-  parseRaceDuration,
-} from "../lib/race-duration";
 import { buildRaceScript, rankAt } from "../lib/race-script";
 import { useRaceStore } from "../store/race-store";
 import { RaceCanvas } from "./race-canvas";
 import { RaceResultOverlay } from "./race-result-overlay";
 import { RaceStandings } from "./race-standings";
 
+/** Any positive number: a preview paints the start line only. */
+const RACE_PREVIEW_SECONDS = 1;
+
 interface RaceStageProps {
   event: CatRaceEventDetail;
   /** Prize the next round is for */
   prize: CatRacePrize | undefined;
-  /** Opens the entrants dialog */
-  onEditEntrants: () => void;
-  /** Opens the participants dialog */
-  onEditParticipants: () => void;
-  canEdit: boolean;
+  /** False while the duration field holds something out of range; locks ĐUA */
+  isDurationValid: boolean;
 }
 
 /**
- * The race area: counts and controls while idle, the canvas while racing, the winner card after.
+ * The race area: the track with the cats on the start line while idle, the replay while racing, the
+ * winner card after.
  * The server answers first and the canvas replays that answer; "Bỏ qua" and reduced motion just
  * jump to the card.
  * @param event - The event
  * @param prize - Prize the next round is for
- * @param onEditEntrants - Opens the entrants dialog
- * @param onEditParticipants - Opens the participants dialog
- * @param canEdit - Whether the edit buttons show
+ * @param isDurationValid - Whether the typed duration is in range
  * @returns The race area
  */
 export function RaceStage({
   event,
   prize,
-  onEditEntrants,
-  onEditParticipants,
-  canEdit,
+  isDurationValid,
 }: RaceStageProps) {
   const { stage, durationSeconds, pendingResult } = useRaceStore();
   const store = useRaceStore.getState;
@@ -64,14 +54,33 @@ export function RaceStage({
   const reducedMotion = useReducedMotion();
   const [skipSignal, setSkipSignal] = useState(0);
   const [standings, setStandings] = useState<string[]>([]);
-  const [durationText, setDurationText] = useState(String(durationSeconds));
   const [isContinuing, setIsContinuing] = useState(false);
 
   const lock = prize ? prizeLockReason(prize, event.status) : null;
-  const entrantCount = prize?.entrantIds.length ?? 0;
-  const ticketCount = event.participants
-    .filter((p) => prize?.entrantIds.includes(p.characterId))
-    .reduce((sum, p) => sum + p.tickets, 0);
+  const entrants = useMemo(
+    () =>
+      event.participants
+        .filter((p) => prize?.entrantIds.includes(p.characterId))
+        .map((p) => ({ characterId: p.characterId, tickets: p.tickets })),
+    [event.participants, prize]
+  );
+
+  const entrantCount = entrants.length;
+  const ticketCount = entrants.reduce((sum, p) => sum + p.tickets, 0);
+
+  // The cats stand on the start line before the first round. The winner and the duration are
+  // placeholders: a preview never moves, so neither shows.
+  const previewScript = useMemo(() => {
+    const first = entrants[0];
+    if (!first) return null;
+
+    return buildRaceScript({
+      entrants,
+      winner: { characterId: first.characterId, ticketNo: 1 },
+      durationSeconds: RACE_PREVIEW_SECONDS,
+      random: Math.random,
+    });
+  }, [entrants]);
 
   const script = useMemo(() => {
     const winnerId = pendingResult?.round.winnerCharacterId;
@@ -91,15 +100,8 @@ export function RaceStage({
       ? rankAt(script, script.durationSeconds)
       : standings;
 
-  const typedDuration = parseRaceDuration(durationText);
-  const changeDuration = (text: string) => {
-    setDurationText(text);
-    const seconds = parseRaceDuration(text);
-    if (seconds !== null) store().setDurationSeconds(seconds);
-  };
-
   const startRound = async () => {
-    if (!prize || lock || stage !== "idle" || typedDuration === null) return;
+    if (!prize || lock || stage !== "idle" || !isDurationValid) return;
     setStandings([]);
     store().startDrawing();
     try {
@@ -135,11 +137,26 @@ export function RaceStage({
 
   return (
     <section className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4">
+      {prize ? (
+        <p className="text-sm text-muted-foreground">
+          Hạng mục: {prize.name} · {entrantCount} người
+          {event.mode === CatRaceMode.TICKET ? ` · ${ticketCount} vé` : ""}
+        </p>
+      ) : null}
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_17rem]">
         <div className="relative h-[70dvh] min-h-96">
           {stage === "racing" && script ? (
             <RaceCanvas
               script={script}
+              participants={event.participants}
+              skipSignal={skipSignal}
+              onFinish={finishRace}
+              onStandings={setStandings}
+            />
+          ) : stage !== "result" && previewScript ? (
+            <RaceCanvas
+              isPreview
+              script={previewScript}
               participants={event.participants}
               skipSignal={skipSignal}
               onFinish={finishRace}
@@ -152,11 +169,7 @@ export function RaceStage({
                 <>
                   <Cat className="size-12 text-muted-foreground" />
                   <p className="text-lg font-medium">
-                    {entrantCount} người
-                    {event.mode === "TICKET" ? ` · ${ticketCount} vé` : ""}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {prize ? `Hạng mục: ${prize.name}` : "Chưa có hạng mục."}
+                    {prize ? "Chưa có ai trong danh sách đua." : "Chưa có hạng mục."}
                   </p>
                 </>
               )}
@@ -180,41 +193,6 @@ export function RaceStage({
         />
       </div>
 
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div className="grid gap-1">
-          <FieldLabel htmlFor="cat-race-duration" icon={<Timer />}>
-            Thời gian đua (giây)
-          </FieldLabel>
-          <Input
-            id="cat-race-duration"
-            type="number"
-            inputMode="numeric"
-            min={RACE_DURATION_MIN_SECONDS}
-            max={RACE_DURATION_MAX_SECONDS}
-            step={1}
-            className="w-28"
-            value={durationText}
-            // A new duration would rebuild the script and restart the replay mid-race.
-            disabled={stage !== "idle"}
-            aria-invalid={typedDuration === null}
-            onChange={(event) => changeDuration(event.target.value)}
-          />
-          <p className="min-h-5 text-sm text-destructive">
-            {typedDuration === null ? RACE_DURATION_ERROR : ""}
-          </p>
-        </div>
-        {canEdit ? (
-          <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="outline" size="sm" disabled={!prize || stage !== "idle"} onClick={onEditEntrants}>
-              Danh sách đua {entrantCount}
-            </Button>
-            <Button type="button" variant="outline" size="sm" disabled={stage !== "idle"} onClick={onEditParticipants}>
-              Người tham gia {event.participants.length}
-            </Button>
-          </div>
-        ) : null}
-      </div>
-
       <div className="flex flex-col items-center gap-2">
         {stage === "racing" ? (
           <Button type="button" variant="outline" onClick={() => setSkipSignal((n) => n + 1)}>
@@ -225,7 +203,7 @@ export function RaceStage({
           <Button
             type="button"
             size="lg"
-            disabled={!prize || lock !== null || stage !== "idle" || typedDuration === null}
+            disabled={!prize || lock !== null || stage !== "idle" || !isDurationValid}
             onClick={() => void startRound()}
           >
             {stage === "drawing" ? <Spinner size="sm" /> : <Play />}

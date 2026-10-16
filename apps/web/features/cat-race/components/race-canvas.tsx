@@ -40,6 +40,8 @@ interface RaceCanvasProps {
   skipSignal: number;
   /** Every cat key, leader first, at most every `STANDINGS_INTERVAL_MS` and once more at the end */
   onStandings: (keys: string[]) => void;
+  /** Paint the cats on the start line and stop: no countdown, no replay, no callbacks */
+  isPreview?: boolean;
 }
 
 /** Theme colours the canvas paints with, read from the CSS tokens. */
@@ -93,6 +95,7 @@ function fitText(context: CanvasRenderingContext2D, text: string, maxWidth: numb
  * @param props.onFinish - Called once at the end or on skip
  * @param props.skipSignal - Change it to skip to the end
  * @param props.onStandings - Receives the live order of every cat
+ * @param props.isPreview - Paint the start line once instead of replaying
  * @returns The scrolling track
  */
 export function RaceCanvas({
@@ -101,6 +104,7 @@ export function RaceCanvas({
   onFinish,
   skipSignal,
   onStandings,
+  isPreview = false,
 }: RaceCanvasProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const spacerRef = useRef<HTMLDivElement>(null);
@@ -240,6 +244,13 @@ export function RaceCanvas({
      */
     const tick = (now: number) => {
       if (!plan || doneRef.current) return;
+      if (isPreview) {
+        const top = scroller.scrollTop;
+        drawTrack(plan, top);
+        drawCats(plan, 0, top);
+
+        return;
+      }
       if (startedAt === 0) startedAt = now;
       const elapsed = (now - startedAt) / 1000;
       const seconds = Math.max(0, elapsed - COUNTDOWN_SECONDS);
@@ -281,11 +292,23 @@ export function RaceCanvas({
       frameId = requestAnimationFrame(tick);
     };
 
+    /** A preview repaints on demand; a replay already repaints every frame. */
+    const repaint = () => {
+      if (!isPreview) return;
+      cancelAnimationFrame(frameId);
+      frameId = requestAnimationFrame(tick);
+    };
+
     resize();
-    const observer = new ResizeObserver(resize);
+    const observer = new ResizeObserver(() => {
+      resize();
+      repaint();
+    });
     observer.observe(scroller);
+    scroller.addEventListener("scroll", repaint, { passive: true });
     const themeObserver = new MutationObserver(() => {
       palette = readPalette();
+      repaint();
     });
     themeObserver.observe(document.documentElement, {
       attributes: true,
@@ -295,10 +318,11 @@ export function RaceCanvas({
 
     return () => {
       cancelAnimationFrame(frameId);
+      scroller.removeEventListener("scroll", repaint);
       observer.disconnect();
       themeObserver.disconnect();
     };
-  }, [script, participants]);
+  }, [script, participants, isPreview]);
 
   return (
     <div

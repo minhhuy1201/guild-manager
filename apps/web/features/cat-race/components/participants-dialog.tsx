@@ -33,7 +33,7 @@ export function ParticipantsDialog({
   onOpenChange,
 }: ParticipantsDialogProps) {
   return (
-    <MutationDialogShell open={open} onOpenChange={onOpenChange}>
+    <MutationDialogShell open={open} onOpenChange={onOpenChange} className="sm:max-w-2xl">
       <ParticipantsBody event={event} characters={characters} onDone={() => onOpenChange(false)} />
     </MutationDialogShell>
   );

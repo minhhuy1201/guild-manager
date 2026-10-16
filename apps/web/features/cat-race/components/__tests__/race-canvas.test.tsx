@@ -212,6 +212,32 @@ describe("RaceCanvas", () => {
     expect(new Set(cats.map((sprite) => sprite.y)).size).toBe(12);
   });
 
+  it("paints the cats on the start line as a preview, with no countdown and no callbacks", () => {
+    const { script, racers } = bigField(12);
+    const onFinish = vi.fn();
+    const onStandings = vi.fn();
+    render(
+      <RaceCanvas
+        isPreview
+        script={script}
+        participants={racers}
+        onFinish={onFinish}
+        skipSignal={0}
+        onStandings={onStandings}
+      />
+    );
+
+    runFrame(0);
+
+    const cats = sprites.filter((sprite) => sprite.x > 0);
+    expect(cats).toHaveLength(12);
+    expect(new Set(cats.map((sprite) => sprite.x)).size).toBe(1);
+    expect(frames).toHaveLength(0);
+    expect(fillText).not.toHaveBeenCalledWith("3", expect.anything(), expect.anything());
+    expect(onFinish).not.toHaveBeenCalled();
+    expect(onStandings).not.toHaveBeenCalled();
+  });
+
   it("draws the start line the full height of the track", () => {
     render(
       <RaceCanvas

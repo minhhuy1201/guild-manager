@@ -28,13 +28,15 @@ vi.mock("../race-canvas", () => ({
     onFinish,
     onStandings,
     skipSignal,
+    isPreview,
   }: {
     onFinish: () => void;
     onStandings: (keys: string[]) => void;
     skipSignal: number;
+    isPreview?: boolean;
   }) => (
     <div>
-      CANVAS {skipSignal}
+      {isPreview ? "PREVIEW" : `CANVAS ${skipSignal}`}
       <button onClick={onFinish}>finish</button>
       <button onClick={() => onStandings(["b#1", "a#1"])}>standings</button>
     </div>
@@ -102,16 +104,8 @@ const RESULT = {
  * @param event - Event shown
  * @param prize - Prize for the next round
  */
-function renderStage(event = EVENT, prize = PRIZE) {
-  render(
-    <RaceStage
-      event={event}
-      prize={prize}
-      canEdit
-      onEditEntrants={() => {}}
-      onEditParticipants={() => {}}
-    />
-  );
+function renderStage(event = EVENT, prize = PRIZE, isDurationValid = true) {
+  render(<RaceStage event={event} prize={prize} isDurationValid={isDurationValid} />);
 }
 
 beforeEach(() => {
@@ -246,96 +240,52 @@ describe("RaceStage", () => {
     expect(useRaceStore.getState().stage).toBe("idle");
   });
 
-  it("clears the idle counts behind the winner card", async () => {
+  it("shows the track with the cats before the first round, and not behind the winner card", async () => {
     mutateAsync.mockResolvedValue(RESULT);
     renderStage();
-    expect(screen.getByText("2 người")).toBeTruthy();
+    expect(screen.getByText("PREVIEW")).toBeTruthy();
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: /ĐUA/ }));
     });
     fireEvent.click(screen.getByText("finish"));
 
-    expect(screen.queryByText("2 người")).toBeNull();
-    expect(screen.queryByText(/Hạng mục: /)).toBeNull();
+    expect(screen.queryByText("PREVIEW")).toBeNull();
   });
 
-  it("counts tickets in TICKET mode", () => {
+  it("states the prize and the number of people above the track", () => {
+    renderStage();
+
+    expect(screen.getByText("Hạng mục: Tiền mặt · 2 người")).toBeTruthy();
+  });
+
+  it("adds the ticket total in TICKET mode", () => {
     const event = { ...EVENT, mode: CatRaceMode.TICKET };
     event.participants = event.participants.map((p) => ({ ...p, tickets: 3 }));
     renderStage(event);
 
-    expect(screen.getByText("2 người · 6 vé")).toBeTruthy();
+    expect(screen.getByText("Hạng mục: Tiền mặt · 2 người · 6 vé")).toBeTruthy();
+  });
+
+  it("says nobody is in the list instead of showing an empty track", () => {
+    renderStage(EVENT, { ...PRIZE, entrantIds: [] });
+
+    expect(screen.queryByText("PREVIEW")).toBeNull();
+    expect(screen.getByText("Chưa có ai trong danh sách đua.")).toBeTruthy();
+  });
+
+  it("locks ĐUA while the typed duration is out of range", () => {
+    renderStage(EVENT, PRIZE, false);
+
+    expect((screen.getByRole("button", { name: /ĐUA/ }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   it("says there is no prize and offers a bare ĐUA", () => {
-    render(
-      <RaceStage
-        event={EVENT}
-        prize={undefined}
-        canEdit
-        onEditEntrants={vi.fn()}
-        onEditParticipants={vi.fn()}
-      />
-    );
+    render(<RaceStage event={EVENT} prize={undefined} isDurationValid />);
 
     expect(screen.getByText("Chưa có hạng mục.")).toBeTruthy();
+    expect(screen.queryByText("Chưa có ai trong danh sách đua.")).toBeNull();
+    expect(screen.queryByText(/người/)).toBeNull();
     expect((screen.getByRole("button", { name: "ĐUA" }) as HTMLButtonElement).disabled).toBe(true);
-  });
-
-  it("opens the edit dialogs", () => {
-    const onEditEntrants = vi.fn();
-    const onEditParticipants = vi.fn();
-    render(
-      <RaceStage
-        event={EVENT}
-        prize={PRIZE}
-        canEdit
-        onEditEntrants={onEditEntrants}
-        onEditParticipants={onEditParticipants}
-      />
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: /Danh sách đua/ }));
-    fireEvent.click(screen.getByRole("button", { name: /Người tham gia/ }));
-
-    expect(onEditEntrants).toHaveBeenCalled();
-    expect(onEditParticipants).toHaveBeenCalled();
-  });
-
-  it("starts from the saved duration and stores a valid change", () => {
-    useRaceStore.setState({ durationSeconds: 20 });
-    renderStage();
-    const field = screen.getByLabelText("Thời gian đua (giây)") as HTMLInputElement;
-    expect(field.value).toBe("20");
-
-    fireEvent.change(field, { target: { value: "35" } });
-
-    expect(useRaceStore.getState().durationSeconds).toBe(35);
-    expect(screen.queryByText(/Nhập số giây nguyên/)).toBeNull();
-  });
-
-  it.each(["9", "41", "12.5", ""])(
-    "rejects %j: says why, keeps the stored duration and locks ĐUA",
-    (typed) => {
-      useRaceStore.setState({ durationSeconds: 20 });
-      renderStage();
-
-      fireEvent.change(screen.getByLabelText("Thời gian đua (giây)"), { target: { value: typed } });
-
-      expect(screen.getByText("Nhập số giây nguyên từ 10 đến 40.")).toBeTruthy();
-      expect(useRaceStore.getState().durationSeconds).toBe(20);
-      expect((screen.getByRole("button", { name: /ĐUA/ }) as HTMLButtonElement).disabled).toBe(true);
-    }
-  );
-
-  it("locks the duration field while a round runs", async () => {
-    mutateAsync.mockResolvedValue(RESULT);
-    renderStage();
-    await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: /ĐUA/ }));
-    });
-
-    expect((screen.getByLabelText("Thời gian đua (giây)") as HTMLInputElement).disabled).toBe(true);
   });
 
   it("ranks the finished race on the board when reduced motion skipped the replay", async () => {
@@ -367,19 +317,5 @@ describe("RaceStage", () => {
     });
 
     expect(screen.getByText("Bảng xếp hạng hiện khi bắt đầu đua.")).toBeTruthy();
-  });
-
-  it("hides the edit buttons for a read-only event", () => {
-    render(
-      <RaceStage
-        event={EVENT}
-        prize={PRIZE}
-        canEdit={false}
-        onEditEntrants={vi.fn()}
-        onEditParticipants={vi.fn()}
-      />
-    );
-
-    expect(screen.queryByRole("button", { name: /Danh sách đua/ })).toBeNull();
   });
 });
