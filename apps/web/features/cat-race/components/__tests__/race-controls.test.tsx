@@ -18,6 +18,7 @@ function renderControls(props: Partial<React.ComponentProps<typeof RaceControls>
     <RaceControls
       durationText="20"
       onDurationTextChange={() => {}}
+      isDurationValid
       isLocked={false}
       canEdit
       hasPrize
@@ -71,7 +72,7 @@ describe("RaceControls", () => {
   });
 
   it.each(["9", "41", "12.5", ""])("says why %j is rejected", (typed) => {
-    renderControls({ durationText: typed });
+    renderControls({ durationText: typed, isDurationValid: false });
 
     expect(screen.getByText("Nhập số giây nguyên từ 10 đến 40.")).toBeTruthy();
   });

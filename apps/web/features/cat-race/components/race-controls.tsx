@@ -9,13 +9,14 @@ import {
   RACE_DURATION_ERROR,
   RACE_DURATION_MAX_SECONDS,
   RACE_DURATION_MIN_SECONDS,
-  parseRaceDuration,
 } from "../lib/race-duration";
 
 interface RaceControlsProps {
   /** What the duration field holds, valid or not */
   durationText: string;
   onDurationTextChange: (text: string) => void;
+  /** Whether `durationText` is a whole number inside the limits */
+  isDurationValid: boolean;
   /** The field and the buttons lock while a round runs */
   isLocked: boolean;
   /** Whether the two list buttons show */
@@ -32,6 +33,7 @@ interface RaceControlsProps {
  * Duration field and the entrants and participants buttons, laid out to sit beside the prize chips.
  * @param durationText - What the duration field holds
  * @param onDurationTextChange - Receives the typed text
+ * @param isDurationValid - Whether the typed text is in range
  * @param isLocked - Whether a round is running
  * @param canEdit - Whether the list buttons show
  * @param hasPrize - Whether a prize is selected
@@ -44,6 +46,7 @@ interface RaceControlsProps {
 export function RaceControls({
   durationText,
   onDurationTextChange,
+  isDurationValid,
   isLocked,
   canEdit,
   hasPrize,
@@ -52,8 +55,6 @@ export function RaceControls({
   onEditEntrants,
   onEditParticipants,
 }: RaceControlsProps) {
-  const isValid = parseRaceDuration(durationText) !== null;
-
   return (
     <div className="flex flex-wrap items-start gap-3">
       <div className="grid gap-1">
@@ -72,11 +73,11 @@ export function RaceControls({
             value={durationText}
             // A new duration would rebuild the script and restart the replay mid-race.
             disabled={isLocked}
-            aria-invalid={!isValid}
+            aria-invalid={!isDurationValid}
             onChange={(event) => onDurationTextChange(event.target.value)}
           />
         </div>
-        {isValid ? null : <p className="text-sm text-destructive">{RACE_DURATION_ERROR}</p>}
+        {isDurationValid ? null : <p className="text-sm text-destructive">{RACE_DURATION_ERROR}</p>}
       </div>
       {canEdit ? (
         <>

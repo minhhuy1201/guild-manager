@@ -99,6 +99,7 @@ function EventBody({ event }: { event: CatRaceEventDetail }) {
     event.prizes.find((prize) => !prizeLockReason(prize, event.status)) ??
     event.prizes[0];
   const close = () => setDialog({ kind: "none" });
+  const isDurationValid = parseRaceDuration(durationText) !== null;
   const changeDuration = (text: string) => {
     setDurationText(text);
     const seconds = parseRaceDuration(text);
@@ -135,6 +136,7 @@ function EventBody({ event }: { event: CatRaceEventDetail }) {
         <RaceControls
           durationText={durationText}
           onDurationTextChange={changeDuration}
+          isDurationValid={isDurationValid}
           isLocked={isBusy}
           canEdit={isOpen}
           hasPrize={selected !== undefined}
@@ -148,7 +150,7 @@ function EventBody({ event }: { event: CatRaceEventDetail }) {
       <RaceStage
         event={event}
         prize={selected}
-        isDurationValid={parseRaceDuration(durationText) !== null}
+        isDurationValid={isDurationValid}
       />
       <WinnersPanel event={event} canVoid={isOpen && !isBusy} onVoid={setVoiding} />
 
