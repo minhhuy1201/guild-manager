@@ -26,7 +26,7 @@ interface EntrantsDialogProps {
  */
 export function EntrantsDialog({ event, prize, open, onOpenChange }: EntrantsDialogProps) {
   return (
-    <MutationDialogShell open={open} onOpenChange={onOpenChange}>
+    <MutationDialogShell open={open} onOpenChange={onOpenChange} className="sm:max-w-2xl">
       <EntrantsBody event={event} prize={prize} onDone={() => onOpenChange(false)} />
     </MutationDialogShell>
   );

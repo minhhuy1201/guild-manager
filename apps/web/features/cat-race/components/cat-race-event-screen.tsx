@@ -17,6 +17,7 @@ import { useInvalidate } from "@/hooks/use-invalidate";
 import { combineQueries } from "@/lib/query-group";
 import { useDeleteCatRacePrize } from "../hooks/use-cat-race-mutations";
 import { useCatRaceEvent } from "../hooks/use-cat-races";
+import { parseRaceDuration } from "../lib/race-duration";
 import { prizeLockReason } from "../lib/prize-lock";
 import { useRaceStore } from "../store/race-store";
 import { AnnounceButton } from "./announce-button";
@@ -25,6 +26,7 @@ import { EntrantsDialog } from "./entrants-dialog";
 import { ParticipantsDialog } from "./participants-dialog";
 import { PrizeChips } from "./prize-chips";
 import { PrizeFormDialog } from "./prize-form-dialog";
+import { RaceControls } from "./race-controls";
 import { RaceStage } from "./race-stage";
 import { VoidRoundDialog } from "./void-round-dialog";
 import { WinnersPanel } from "./winners-panel";
@@ -66,11 +68,13 @@ type OpenDialog =
  * @returns The screen body
  */
 function EventBody({ event }: { event: CatRaceEventDetail }) {
-  const { selectedPrizeId, selectPrize, stage } = useRaceStore();
+  const { selectedPrizeId, selectPrize, stage, durationSeconds, setDurationSeconds } =
+    useRaceStore();
   const charactersQuery = useCharacters();
   const deletePrize = useDeleteCatRacePrize();
   const [dialog, setDialog] = useState<OpenDialog>({ kind: "none" });
   const [voiding, setVoiding] = useState<CatRaceRound | null>(null);
+  const [durationText, setDurationText] = useState(String(durationSeconds));
   const invalidate = useInvalidate("cat-race");
 
   // The store outlives this screen. Leaving mid-race or on the winner card must not replay that
@@ -95,6 +99,12 @@ function EventBody({ event }: { event: CatRaceEventDetail }) {
     event.prizes.find((prize) => !prizeLockReason(prize, event.status)) ??
     event.prizes[0];
   const close = () => setDialog({ kind: "none" });
+  const isDurationValid = parseRaceDuration(durationText) !== null;
+  const changeDuration = (text: string) => {
+    setDurationText(text);
+    const seconds = parseRaceDuration(text);
+    if (seconds !== null) setDurationSeconds(seconds);
+  };
 
   return (
     <div className="flex flex-col gap-4">
@@ -113,22 +123,34 @@ function EventBody({ event }: { event: CatRaceEventDetail }) {
         }
       />
 
-      <PrizeChips
-        event={event}
-        selectedPrizeId={selected?.id ?? null}
-        canEdit={isOpen && !isBusy}
-        onSelect={(prize) => !isBusy && selectPrize(prize.id)}
-        onEdit={(prize) => setDialog({ kind: "prize", prize })}
-        onDelete={(prize) => setDialog({ kind: "delete-prize", prize })}
-        onAdd={() => setDialog({ kind: "prize", prize: null })}
-      />
+      <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+        <PrizeChips
+          event={event}
+          selectedPrizeId={selected?.id ?? null}
+          canEdit={isOpen && !isBusy}
+          onSelect={(prize) => !isBusy && selectPrize(prize.id)}
+          onEdit={(prize) => setDialog({ kind: "prize", prize })}
+          onDelete={(prize) => setDialog({ kind: "delete-prize", prize })}
+          onAdd={() => setDialog({ kind: "prize", prize: null })}
+        />
+        <RaceControls
+          durationText={durationText}
+          onDurationTextChange={changeDuration}
+          isDurationValid={isDurationValid}
+          isLocked={isBusy}
+          canEdit={isOpen}
+          hasPrize={selected !== undefined}
+          entrantCount={selected?.entrantIds.length ?? 0}
+          participantCount={event.participants.length}
+          onEditEntrants={() => setDialog({ kind: "entrants" })}
+          onEditParticipants={() => setDialog({ kind: "participants" })}
+        />
+      </div>
 
       <RaceStage
         event={event}
         prize={selected}
-        canEdit={isOpen}
-        onEditEntrants={() => setDialog({ kind: "entrants" })}
-        onEditParticipants={() => setDialog({ kind: "participants" })}
+        isDurationValid={isDurationValid}
       />
       <WinnersPanel event={event} canVoid={isOpen && !isBusy} onVoid={setVoiding} />
 

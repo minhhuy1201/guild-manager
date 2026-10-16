@@ -42,9 +42,18 @@ vi.mock("@/components/shared/confirm-delete-dialog", () => ({
 vi.mock("../end-event-button", () => ({ EndEventButton: () => <button>END</button> }));
 vi.mock("../announce-button", () => ({ AnnounceButton: () => <button>ANNOUNCE</button> }));
 vi.mock("../race-stage", () => ({
-  RaceStage: ({ prize, onEditEntrants, onEditParticipants }: { prize?: { name: string }; onEditEntrants: () => void; onEditParticipants: () => void }) => (
+  RaceStage: ({ prize, isDurationValid }: { prize?: { name: string }; isDurationValid: boolean }) => (
     <div>
-      STAGE {prize?.name}
+      STAGE {prize?.name} valid:{String(isDurationValid)}
+    </div>
+  ),
+}));
+vi.mock("../race-controls", () => ({
+  RaceControls: ({ durationText, onDurationTextChange, onEditEntrants, onEditParticipants }: { durationText: string; onDurationTextChange: (text: string) => void; onEditEntrants: () => void; onEditParticipants: () => void }) => (
+    <div>
+      DURATION {durationText}
+      <button onClick={() => onDurationTextChange("35")}>type-valid</button>
+      <button onClick={() => onDurationTextChange("9")}>type-invalid</button>
       <button onClick={onEditEntrants}>edit-entrants</button>
       <button onClick={onEditParticipants}>edit-participants</button>
     </div>
@@ -162,6 +171,28 @@ describe("CatRaceEventScreen", () => {
     expect(screen.getByText("Đợt 1")).toBeTruthy();
     expect(screen.getByText("Chế độ Thường")).toBeTruthy();
     expect(screen.getByText("END")).toBeTruthy();
+  });
+
+  it("stores a valid typed duration and tells the stage it can race", () => {
+    useRaceStore.setState({ durationSeconds: 20 });
+    render(<CatRaceEventScreen id="e1" />);
+    expect(screen.getByText(/DURATION 20/)).toBeTruthy();
+
+    fireEvent.click(screen.getByText("type-valid"));
+
+    expect(useRaceStore.getState().durationSeconds).toBe(35);
+    expect(screen.getByText(/valid:true/)).toBeTruthy();
+  });
+
+  it("keeps the stored duration for an invalid one and tells the stage to lock", () => {
+    useRaceStore.setState({ durationSeconds: 20 });
+    render(<CatRaceEventScreen id="e1" />);
+
+    fireEvent.click(screen.getByText("type-invalid"));
+
+    expect(useRaceStore.getState().durationSeconds).toBe(20);
+    expect(screen.getByText(/DURATION 9/)).toBeTruthy();
+    expect(screen.getByText(/valid:false/)).toBeTruthy();
   });
 
   it("chooses the first drawable prize, skipping a full one before it", () => {
