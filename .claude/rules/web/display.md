@@ -48,7 +48,7 @@ Screens must look like one app. A new display convention goes here; its reason g
 - Use `StatusIcon` (`components/shared/status-icon.tsx`). `label` is required: it is the only thing a screen reader gets.
 - Pass `icon` when a domain has its own mark and keep the tone. Attendance uses `AttendanceStatusIcon` (`Swords` for "Có"). Reading a row and pressing a button share one vocabulary.
 - Keep `status-badge.tsx` for descriptive labels with words ("Đã khoá", "Còn hạn"), never for binary state.
-- In the admin grid the cell is a round button holding the status icon. A press moves unanswered → "Có" → "Không" → "Có". Collect the moves in one draft (`clickCell`, `lib/grid-draft.ts`) and write them from `UnsavedChangesBar`.
+- In the admin grid the cell is a round button holding the status icon. A press moves unanswered → "Có" → "Không" → "Có". Collect the moves in one draft (`clickCell`, `features/attendance/lib/grid-draft.ts`) and write them from `UnsavedChangesBar`.
 - A member answers in `member-attendance-card` with full `Button`s, then sees the guild-wide grid read-only (`AttendanceGrid isAdmin={false}`).
 - A member tile carries its answer in its surface: emerald "Có", `destructive` "Không", amber unanswered. Border at full strength, background at `/5`. An answering tile never calls `sessionTintClass`.
 - Save an absence reason (`absence-reason-input`) by Enter or its own "Lưu", never by blur. Show "Lưu" and "chưa lưu" while it differs from the stored value.
