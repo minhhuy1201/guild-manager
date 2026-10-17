@@ -1,7 +1,7 @@
 # D — `/thiet-lap` không xếp hàng hai request
 
 Ngày: 2026-09-06 · Phạm vi: `apps/web/features/settings`.
-Tổng quan: [đợt 3](2026-09-06-architecture-review-3-overview.md) · Mức: **Worth exploring**
+Tổng quan: [đợt 3](./2026-09-06-architecture-review-3-overview.md) · Mức: **Worth exploring**
 
 Yêu cầu gốc: cải thiện hiệu năng, không đổi behaviour business.
 
@@ -63,7 +63,7 @@ biết mặc định.
 ### Rủi ro trùng cache, và vì sao vẫn chấp nhận
 
 Sau khi `weeks` về, nếu màn hình chuyển `weekStart` từ `undefined` sang `weeks[0].weekStart` thì nó
-sẽ rơi đúng vào lỗi của mục [C](2026-09-06-c-formation-double-fetch-design.md): hai khoá cache cho
+sẽ rơi đúng vào lỗi của mục [C](./2026-09-06-c-formation-double-fetch-design.md): hai khoá cache cho
 một tuần, và fetch lần hai.
 
 Nên quyết định là: **giữ khoá `"current"` cho tới khi admin chọn tuần khác.** Không tự chuyển sang

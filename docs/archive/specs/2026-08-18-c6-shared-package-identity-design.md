@@ -1,9 +1,9 @@
 # C6 — Một danh tính duy nhất cho `@guild/shared`
 
 Ngày: 2026-08-18 · Phạm vi: `apps/web` + `packages/shared`.
-Bối cảnh chung: [tổng quan C1–C7](2026-08-18-architecture-review-overview.md).
-Nên làm **sau** [C1](2026-08-18-c1-response-contract-design.md) và
-[C3](2026-08-18-c3-vn-clock-design.md): cả hai làm `apps/web` phụ thuộc package này nặng hơn, và C3
+Bối cảnh chung: [tổng quan C1–C7](./2026-08-18-architecture-review-overview.md).
+Nên làm **sau** [C1](./2026-08-18-c1-response-contract-design.md) và
+[C3](./2026-08-18-c3-vn-clock-design.md): cả hai làm `apps/web` phụ thuộc package này nặng hơn, và C3
 buộc phải sửa `exports` map — sửa một lần cho cả hai.
 
 `apps/web` đang import package dùng chung bằng một alias trỏ thẳng vào file nguồn, đi vòng qua
@@ -45,7 +45,7 @@ Hệ quả cụ thể, không phải chuyện thẩm mỹ:
    package sai) sẽ làm hỏng API mà web không hề biết.
 2. **`exports` map không có tác dụng ràng buộc.** Thêm file thứ hai vào `lib/` thì `apps/api` phải
    sửa `exports`, còn `apps/web` cứ import sâu là xong — nên interface của package âm thầm mất nghĩa.
-   [C3](2026-08-18-c3-vn-clock-design.md) thêm `vn-time.ts` chính là tình huống này.
+   [C3](./2026-08-18-c3-vn-clock-design.md) thêm `vn-time.ts` chính là tình huống này.
 3. **`pnpm` không biết quan hệ phụ thuộc.** Nó không được ghi ở đâu ngoài `vercel.json`, nên thứ tự
    build, cache và `--filter` đều dựa vào một quan hệ không khai báo.
 

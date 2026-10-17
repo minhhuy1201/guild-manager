@@ -1,8 +1,8 @@
 # C5 — Seam của module khai báo tường minh
 
 Ngày: 2026-08-18 · Phạm vi: `apps/api`.
-Bối cảnh chung: [tổng quan C1–C7](2026-08-18-architecture-review-overview.md).
-Độc lập, nhưng nhẹ đi đáng kể nếu làm **sau** [C1](2026-08-18-c1-response-contract-design.md) (C1
+Bối cảnh chung: [tổng quan C1–C7](./2026-08-18-architecture-review-overview.md).
+Độc lập, nhưng nhẹ đi đáng kể nếu làm **sau** [C1](./2026-08-18-c1-response-contract-design.md) (C1
 đã xoá phần `export type` khỏi hai file `*.module.ts`).
 
 Tách phần "public API" ra khỏi file `@Module`, và đổi luật ESLint từ đếm `../` sang một luật không
@@ -170,4 +170,4 @@ phải hàng rào.
   đang ở ranh giới, nhưng đó là việc khác.
 - `health` module không có service (xem Edge case).
 - Đưa `.public.ts` sang `apps/web` — bên đó đã có `index.ts` mỗi feature và luật đang được tuân thủ,
-  trừ `proxy.ts` ([C7](2026-08-18-c7-session-module-design.md)).
+  trừ `proxy.ts` ([C7](./2026-08-18-c7-session-module-design.md)).

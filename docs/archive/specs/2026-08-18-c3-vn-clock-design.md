@@ -1,9 +1,9 @@
 # C3 — Một module đồng hồ giờ Việt Nam
 
 Ngày: 2026-08-18 · Phạm vi: `packages/shared` + `apps/api`.
-Bối cảnh chung: [tổng quan C1–C7](2026-08-18-architecture-review-overview.md).
-Nên làm **trước** [C1](2026-08-18-c1-response-contract-design.md): nó dọn chỗ đặt luật thời gian
-dùng chung, và [deadline-cap](2026-08-18-deadline-cap-design.md) cũng thêm hàm vào đúng chỗ này.
+Bối cảnh chung: [tổng quan C1–C7](./2026-08-18-architecture-review-overview.md).
+Nên làm **trước** [C1](./2026-08-18-c1-response-contract-design.md): nó dọn chỗ đặt luật thời gian
+dùng chung, và [deadline-cap](./2026-08-18-deadline-cap-design.md) cũng thêm hàm vào đúng chỗ này.
 
 Gom mọi nguyên thủy "giờ Việt Nam" vào một module có interface nhỏ, thay vì để chúng nửa nằm trong
 `packages/shared`, nửa dựng lại bằng tay ở backend với một quy ước đánh số thứ khác.
@@ -67,7 +67,7 @@ trong bốn hàm trên. Đây là điểm chính của spec — module sâu ngh�
 tồn tại.
 
 `atVnTime(base, h, m)` là `shiftVnDate(base, 0, h, m)`; tách ra vì "10:00 của chính ngày đánh" là câu
-xuất hiện nhiều lần trong domain (xem [deadline-cap](2026-08-18-deadline-cap-design.md)) và
+xuất hiện nhiều lần trong domain (xem [deadline-cap](./2026-08-18-deadline-cap-design.md)) và
 `shiftVnDate(x, 0, 10, 0)` đọc kém hơn `atVnTime(x, 10, 0)`.
 
 ### 2. Chọn ISO 1–7 làm quy ước duy nhất
@@ -108,7 +108,7 @@ packages/shared/lib/
 
 `exports` map trỏ `./lib` vào `index.ts` / `dist/lib/index.js`. Đây là thay đổi bắt buộc, vì thêm file
 thứ hai mà giữ nguyên map thì không ai import được nó bằng tên package — chính xác là cái bẫy
-[C6](2026-08-18-c6-shared-package-identity-design.md) mô tả (`apps/web` hiện lách bằng
+[C6](./2026-08-18-c6-shared-package-identity-design.md) mô tả (`apps/web` hiện lách bằng
 `@shared/lib/battle-session`).
 
 ### 4. `session-schedule.ts` vẫn ở lại `apps/api`
@@ -130,7 +130,7 @@ Chuyển `VN_OFFSET_MS` và `shiftVnDate` từ `battle-session.ts` sang; `vnIsoW
 ### `packages/shared/lib/battle-session.ts`
 
 Bỏ `VN_OFFSET_MS`, `vnIsoWeekday`, `shiftVnDate`; import từ `./vn-time`. Còn lại đúng phần luật
-deadline gợi ý (sẽ được [deadline-cap](2026-08-18-deadline-cap-design.md) viết lại).
+deadline gợi ý (sẽ được [deadline-cap](./2026-08-18-deadline-cap-design.md) viết lại).
 
 ### `packages/shared/lib/index.ts` (mới) + `package.json`
 

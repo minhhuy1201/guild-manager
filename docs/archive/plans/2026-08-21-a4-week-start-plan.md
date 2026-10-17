@@ -15,7 +15,7 @@ một tuần". Nó phơi ra một branded type `WeekAnchor` (`Date` có nhãn l�
 **Tech stack:** NestJS 11, Zod 4 (`z.iso.datetime`), `nestjs-zod` `createZodDto`, Jest.
 
 **Spec:** [`docs/custom-spec/2026-08-21-a4-week-start-design.md`](../specs/2026-08-21-a4-week-start-design.md)
-· nối tiếp [A2](2026-08-21-a3-response-codec-plan.md) (đồng hồ đã là `Clock`, codec đã tách) và đi
+· nối tiếp [A2](./2026-08-21-a3-response-codec-plan.md) (đồng hồ đã là `Clock`, codec đã tách) và đi
 **trước** A1.
 
 **Phạm vi:** `apps/api` + một schema mới ở `packages/shared`. `apps/web` **không đổi một dòng nào** —

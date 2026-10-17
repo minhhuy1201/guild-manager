@@ -1,7 +1,7 @@
 # C7 — Seam phiên đăng nhập: một interface, có test
 
 Ngày: 2026-08-18 · Phạm vi: `apps/web/features/auth` + `apps/web/proxy.ts` + `apps/api/src/modules/auth`.
-Bối cảnh chung: [tổng quan C1–C7](2026-08-18-architecture-review-overview.md).
+Bối cảnh chung: [tổng quan C1–C7](./2026-08-18-architecture-review-overview.md).
 Độc lập với các spec khác.
 
 Ba file quyết định "ai được vào trang quản trị" không có test nào, và `proxy.ts` — chỗ thực thi thật
@@ -143,7 +143,7 @@ Ký token trong test bằng `crypto.subtle` để không thêm dependency.
   `core/index.ts`.
 - `proxy.ts` — ba import thành một: `import { … } from "@/features/auth/core"`.
 - `api/session.ts` import từ `../core`.
-- Nếu [C1](2026-08-18-c1-response-contract-design.md) đã làm: `AuthTokens` đến từ
+- Nếu [C1](./2026-08-18-c1-response-contract-design.md) đã làm: `AuthTokens` đến từ
   `@guild/shared/schemas`, `core/cookie-names.ts` chỉ còn tên cookie và options.
 
 ### Giai đoạn 3 — test cho `proxy.ts`
@@ -175,7 +175,7 @@ Ba nhánh, dựng `NextRequest` trực tiếp:
 ## Kiểm thử
 
 Xem Giai đoạn 1 và 3. Ghi chú hạ tầng: cả hai bộ test chạy ở môi trường **node** hiện có, không cần
-jsdom (khác [C4](2026-08-18-c4-formation-screen-design.md)). `apps/web/docs/frontend.md` §8 cần bổ
+jsdom (khác [C4](./2026-08-18-c4-formation-screen-design.md)). `apps/web/docs/frontend.md` §8 cần bổ
 sung mục "auth và proxy có test" khi xong.
 
 ## Rủi ro

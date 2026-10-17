@@ -1,7 +1,7 @@
 # W3 — Gộp query thành một module, thay vì bốn bản dựng tay
 
 Ngày: 2026-08-21 · Phạm vi: `apps/web`.
-Bối cảnh chung: [tổng quan đợt 2](2026-08-21-architecture-review-2-overview.md).
+Bối cảnh chung: [tổng quan đợt 2](./2026-08-21-architecture-review-2-overview.md).
 **Nên làm trước** các spec web khác: nó vá một lỗi đang thấy được trên màn hình, và diff nhỏ nhất.
 
 ## Bối cảnh
@@ -57,7 +57,7 @@ Hai lỗi thật, cạnh nhau:
   gì**.
 
 Đây là lỗi nằm ở phần *wiring*, trong khi 13/13 module `lib/` của team-builder đều có test — đúng
-nghịch lý mà [C4](2026-08-18-c4-formation-screen-design.md) đã chỉ ra ở một chỗ khác.
+nghịch lý mà [C4](./2026-08-18-c4-formation-screen-design.md) đã chỉ ra ở một chỗ khác.
 
 Hai màn còn lại branch thẳng trong component:
 

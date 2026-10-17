@@ -15,11 +15,11 @@
 > qua `CharactersService.listIds(tx)` từ khi hiện thực; **§4, bảng thay đổi và §Rủi ro bổ sung
 > 2026-08-23** phần spec chưa nói: ai sở hữu chữ ký đó (A3, không phải A6) và cạnh module mà nó tạo ra.
 > Chi tiết:
-> [§ Rà soát lại A1–A6](2026-08-21-architecture-review-2-overview.md#rà-soát-lại-a1a6-2026-08-23).
+> [§ Rà soát lại A1–A6](./2026-08-21-architecture-review-2-overview.md#rà-soát-lại-a1a6-2026-08-23).
 
 Ngày: 2026-08-21 · Phạm vi: `apps/api/src/modules/team-builder`.
-Bối cảnh chung: [tổng quan đợt 2](2026-08-21-architecture-review-2-overview.md).
-Nên làm **sau** [A1](2026-08-21-a1-schedule-read-seam-design.md) — A1 dọn phần đọc lịch ra khỏi
+Bối cảnh chung: [tổng quan đợt 2](./2026-08-21-architecture-review-2-overview.md).
+Nên làm **sau** [A1](./2026-08-21-a1-schedule-read-seam-design.md) — A1 dọn phần đọc lịch ra khỏi
 service này, nên phần còn lại (đội hình) mới đủ nhỏ để tách rõ ba việc.
 
 ## Bối cảnh
@@ -197,7 +197,7 @@ Chốt: **bắt lỗi**, vì đây là ca hiếm và người dùng có thao tá
   như vậy.
 - Hàm `listIds` **không thuộc spec này**: chữ ký `CharactersService.listIds(client): Promise<Set<string>>`,
   lý do `client` bắt buộc chứ không tuỳ chọn, và việc `loadCharacterIds` biến mất đều do
-  [A3](2026-08-21-a3-response-codec-design.md) §2 sở hữu — A3 là spec dựng luật "một bảng, một chủ".
+  [A3](./2026-08-21-a3-response-codec-design.md) §2 sở hữu — A3 là spec dựng luật "một bảng, một chủ".
   A6 chỉ là **người gọi**: nó truyền `tx` của mình vào và bắt lỗi còn lại. Ghi ở đây để hai spec
   không cùng nửa-sở-hữu một chữ ký.
 - Hệ quả về module: `TeamBuilderModule` phải `imports: [CharactersModule]` và `TeamBuilderService`
@@ -223,7 +223,7 @@ Chốt: **bắt lỗi**, vì đây là ca hiếm và người dùng có thao tá
 | `team-builder.service.ts` `saveFormation` | gọi `purgeExpiredFormations(now)` sau hai guard, trước `$transaction` |
 | `team-builder.controller.ts` | `getWeeks` còn một dòng; bỏ `Clock` khỏi constructor |
 | `team-builder.service.ts:190-212` | `loadCharacterIds` → `characters.listIds(tx)` trong `$transaction`; `.catch()` đổi `P2003` thành 409 |
-| `team-builder.module.ts` | `imports: [CharactersModule]` — hệ quả của dòng trên (`listIds` do [A3](2026-08-21-a3-response-codec-design.md) §2 thêm vào `CharactersService`, không phải spec này) |
+| `team-builder.module.ts` | `imports: [CharactersModule]` — hệ quả của dòng trên (`listIds` do [A3](./2026-08-21-a3-response-codec-design.md) §2 thêm vào `CharactersService`, không phải spec này) |
 | `__tests__/formation-grid.spec.ts` (mới) | round-trip |
 
 ## Edge case

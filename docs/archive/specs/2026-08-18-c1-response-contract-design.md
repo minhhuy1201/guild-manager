@@ -1,7 +1,7 @@
 # C1 — Đưa chiều response vào contract
 
 Ngày: 2026-08-18 · Phạm vi: `packages/shared` + `apps/api` + `apps/web`.
-Bối cảnh chung: [tổng quan C1–C7](2026-08-18-architecture-review-overview.md).
+Bối cảnh chung: [tổng quan C1–C7](./2026-08-18-architecture-review-overview.md).
 
 `packages/shared` hiện chỉ định nghĩa **body request**. Mọi shape **trả về** được khai báo tay hai
 lần — một bản `*.entity.ts` ở API, một bản `types/*.ts` ở web — và không có gì buộc chúng khớp nhau.
@@ -148,7 +148,7 @@ từ shared; `auth-cookies.ts` import nó thay vì tự khai.
   `import type { X } from '@guild/shared/schemas'`, và `toEntity()` thêm `satisfies X`.
 - `battle-sessions.module.ts:12-15` và `characters.module.ts:10` bỏ phần `export type {…}` — type
   giờ đến từ package, module khác không cần xin qua đây nữa. (Đây cũng là một nửa động lực của
-  [C5](2026-08-18-c5-module-seam-design.md).)
+  [C5](./2026-08-18-c5-module-seam-design.md).)
 
 ### `apps/web`
 
@@ -194,13 +194,13 @@ Không có test hành vi mới: đây là refactor giữ nguyên hành vi. Cái 
 - **Diff lớn, chạm gần như mọi feature.** Nên làm thành một nhánh riêng, một commit cho
   `packages/shared`, một commit cho mỗi app, để review được từng phần.
 - **Quên `pnpm --filter @guild/shared build`** → API chạy bằng `dist` cũ. Type vẫn xanh nên lỗi chỉ
-  hiện lúc chạy. Đây chính là lý do [C6](2026-08-18-c6-shared-package-identity-design.md) đáng làm
+  hiện lúc chạy. Đây chính là lý do [C6](./2026-08-18-c6-shared-package-identity-design.md) đáng làm
   ngay sau.
 
 ## Ngoài phạm vi
 
 - Thêm field mới vào response (`isDeadlinePassed`, `weekEnd`) —
-  [C2b](2026-08-18-c2-schedule-flags-design.md).
+  [C2b](./2026-08-18-c2-schedule-flags-design.md).
 - Parse response lúc chạy ở web — đã loại ở §2.
 - Sinh client TypeScript từ OpenAPI thay cho schema viết tay — phương án lớn hơn nhiều, chỉ đáng bàn
   nếu số endpoint tăng gấp mấy lần.

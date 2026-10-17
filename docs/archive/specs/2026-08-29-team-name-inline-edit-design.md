@@ -10,9 +10,9 @@ Escape thì huỷ; tên lưu xuống database và hiện lại cho mọi admin.
 
 ## Bối cảnh
 
-- [per-session-formation](2026-08-02-per-session-formation-design.md) — bố cục lưới (10 đội × 6 ô)
+- [per-session-formation](./2026-08-02-per-session-formation-design.md) — bố cục lưới (10 đội × 6 ô)
   là dữ liệu tĩnh ở frontend, backend chỉ biết `slotId` là một chuỗi.
-- [formation-slot-notes](2026-08-08-formation-slot-notes-design.md) — ghi chú từng ô: nhập vào
+- [formation-slot-notes](./2026-08-08-formation-slot-notes-design.md) — ghi chú từng ô: nhập vào
   **nháp** trong Zustand, chỉ chạm API khi bấm nút "Lưu đội hình cả ngày".
 
 Màn hình đang chạy theo một mô hình duy nhất: *server state ở TanStack Query, mọi chỉnh sửa vào nháp

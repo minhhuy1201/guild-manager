@@ -1,8 +1,8 @@
 # W4 — Hạ `base` xuống dưới seam của draft đội hình
 
 Ngày: 2026-08-21 · Phạm vi: `apps/web/features/team-builder`.
-Bối cảnh chung: [tổng quan đợt 2](2026-08-21-architecture-review-2-overview.md).
-Tiếp nối [C4](2026-08-18-c4-formation-screen-design.md): C4 tách `useFormationScreen` thành năm
+Bối cảnh chung: [tổng quan đợt 2](./2026-08-21-architecture-review-2-overview.md).
+Tiếp nối [C4](./2026-08-18-c4-formation-screen-design.md): C4 tách `useFormationScreen` thành năm
 hook; spec này dọn nốt chỗ rò giữa hai trong số đó và store.
 
 ## Bối cảnh

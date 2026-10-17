@@ -1,7 +1,7 @@
 # A — Một lượt đọc cho một danh tính
 
 Ngày: 2026-09-06 · Phạm vi: `apps/api/src/modules/characters`, `auth`, `discord-bot`.
-Tổng quan: [đợt 3](2026-09-06-architecture-review-3-overview.md) · Mức: **Strong**
+Tổng quan: [đợt 3](./2026-09-06-architecture-review-3-overview.md) · Mức: **Strong**
 
 Yêu cầu gốc: cải thiện hiệu năng, không đổi behaviour business.
 

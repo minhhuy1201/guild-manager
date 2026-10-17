@@ -12,9 +12,9 @@ thành badge ngay sau nhãn ngày đánh ở mọi màn hình.
 
 ## Bối cảnh
 
-- [two-matches-per-day](2026-08-07-two-matches-per-day-design.md) — một ngày đánh có thể mang 1 hoặc
+- [two-matches-per-day](./2026-08-07-two-matches-per-day-design.md) — một ngày đánh có thể mang 1 hoặc
   2 `FormationMatch`, người xếp team bấm "Tạo trận 2" để nhân bản đội hình trận 1.
-- [admin-schedule-settings](2026-08-05-admin-schedule-settings-design.md) — lịch do admin nhập ở
+- [admin-schedule-settings](./2026-08-05-admin-schedule-settings-design.md) — lịch do admin nhập ở
   `/thiet-lap`, giới hạn tuần này và tuần sau; hạn chót của Bang Chiến là ví dụ mẫu cho một trường
   **hệ thống sở hữu**: gửi lên là 400, và `ensureGuildWar` ghi đè lại ở mỗi lần đọc.
 

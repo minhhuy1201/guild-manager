@@ -1,7 +1,7 @@
 # W5 — Đồ thị phụ thuộc cache thành dữ liệu, không phải ba danh sách chép tay
 
 Ngày: 2026-08-21 · Phạm vi: `apps/web`.
-Bối cảnh chung: [tổng quan đợt 2](2026-08-21-architecture-review-2-overview.md).
+Bối cảnh chung: [tổng quan đợt 2](./2026-08-21-architecture-review-2-overview.md).
 Độc lập với các spec web khác.
 
 ## Bối cảnh

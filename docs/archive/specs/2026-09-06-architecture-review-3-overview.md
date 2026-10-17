@@ -8,8 +8,8 @@ do người đặt hàng giới hạn: *cải thiện hiệu năng, không over-
 Không mục nào thêm module, thêm lớp trừu tượng hay thêm dependency; mọi thay đổi nằm gọn trong
 interface đang có.
 
-Hai đợt trước: [C1–C7](2026-08-18-architecture-review-overview.md) và
-[A1–A6, W1–W6](2026-08-21-architecture-review-2-overview.md). Đợt này đánh nhãn **A–F** theo thứ tự
+Hai đợt trước: [C1–C7](./2026-08-18-architecture-review-overview.md) và
+[A1–A6, W1–W6](./2026-08-21-architecture-review-2-overview.md). Đợt này đánh nhãn **A–F** theo thứ tự
 trình bày trong báo cáo rà soát, và không mục nào đảo lại quyết định của hai đợt trước.
 
 Từ vựng dùng xuyên suốt (giống hai đợt trước): *module* (thứ có interface và implementation, ở mọi
@@ -23,17 +23,17 @@ bảo trì được lợi).
 
 | | Vấn đề | Mức | Spec |
 |---|---|---|---|
-| **A** | `findByDiscordId` chỉ trả `{ id, role }`, nên 4 call site phải đọc lại chính hàng đó bằng `findById` | Strong | [a](2026-09-06-a-identity-read-design.md) |
-| **B** | `listByWeek` phát một lệnh **ghi** trước mỗi lần đọc tuần, ở cả 6 call site, kể cả khi không có gì lệch | Strong | [b](2026-09-06-b-week-read-write-design.md) |
-| **F** | `reminder.service.ts` suy ra tuần hai lần trong một lượt chạy, rồi dò người vắng bằng quét lồng | Worth exploring | [f](2026-09-06-f-reminder-lookup-design.md) |
+| **A** | `findByDiscordId` chỉ trả `{ id, role }`, nên 4 call site phải đọc lại chính hàng đó bằng `findById` | Strong | [a](./2026-09-06-a-identity-read-design.md) |
+| **B** | `listByWeek` phát một lệnh **ghi** trước mỗi lần đọc tuần, ở cả 6 call site, kể cả khi không có gì lệch | Strong | [b](./2026-09-06-b-week-read-write-design.md) |
+| **F** | `reminder.service.ts` suy ra tuần hai lần trong một lượt chạy, rồi dò người vắng bằng quét lồng | Worth exploring | [f](./2026-09-06-f-reminder-lookup-design.md) |
 
 ### `apps/web`
 
 | | Vấn đề | Mức | Spec |
 |---|---|---|---|
-| **C** | `/xep-team` fetch formations hai lần mỗi lần mở: key `"current"` rồi key `"<ngày>"` | Strong | [c](2026-09-06-c-formation-double-fetch-design.md) |
-| **D** | `/thiet-lap` chạy hai request nối đuôi nhau (`weeks` → `sessions`) | Worth exploring | [d](2026-09-06-d-settings-waterfall-design.md) |
-| **E** | `verifyJwt` import lại `CryptoKey` mỗi lần gọi, và nó chạy ở `proxy.ts` trên mọi page request | Worth exploring | [e](2026-09-06-e-jwt-key-cache-design.md) |
+| **C** | `/xep-team` fetch formations hai lần mỗi lần mở: key `"current"` rồi key `"<ngày>"` | Strong | [c](./2026-09-06-c-formation-double-fetch-design.md) |
+| **D** | `/thiet-lap` chạy hai request nối đuôi nhau (`weeks` → `sessions`) | Worth exploring | [d](./2026-09-06-d-settings-waterfall-design.md) |
+| **E** | `verifyJwt` import lại `CryptoKey` mỗi lần gọi, và nó chạy ở `proxy.ts` trên mọi page request | Worth exploring | [e](./2026-09-06-e-jwt-key-cache-design.md) |
 
 **Ba mục bỏ đi một lệnh ghi hoặc một round trip trên đường đông người đi**: B (6 call site), A (4 call
 site), F (đường cron + `/nhac-diem-danh`). Ba mục còn lại là việc lặp phía web.

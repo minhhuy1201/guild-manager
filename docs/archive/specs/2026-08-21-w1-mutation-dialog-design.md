@@ -1,8 +1,8 @@
 # W1 — Giao thức "dialog gọi mutation" thành một module sâu
 
 Ngày: 2026-08-21 · Phạm vi: `apps/web`.
-Bối cảnh chung: [tổng quan đợt 2](2026-08-21-architecture-review-2-overview.md).
-Nên làm **sau** [W3](2026-08-21-w3-query-group-design.md) — cả hai đụng cùng bốn màn, và W3 rẻ hơn.
+Bối cảnh chung: [tổng quan đợt 2](./2026-08-21-architecture-review-2-overview.md).
+Nên làm **sau** [W3](./2026-08-21-w3-query-group-design.md) — cả hai đụng cùng bốn màn, và W3 rẻ hơn.
 
 ## Bối cảnh
 

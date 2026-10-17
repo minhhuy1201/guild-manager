@@ -25,7 +25,7 @@ lưới đội hình và luật khoá theo giờ đánh. Đây **không** phải
 
 **Spec:** [`docs/custom-spec/2026-08-21-a6-formation-grid-codec-design.md`](../specs/2026-08-21-a6-formation-grid-codec-design.md)
 · đi **sau** [A1](../specs/2026-08-21-a1-schedule-read-seam-design.md) và
-[A4](2026-08-21-a4-week-start-plan.md), cả hai đã xong.
+[A4](./2026-08-21-a4-week-start-plan.md), cả hai đã xong.
 
 **Phạm vi:** `apps/api` — `modules/team-builder`, một method mới ở `modules/characters`, một dòng
 comment ở `prisma/schema.prisma`. `packages/shared` **không đổi**. `apps/web` **không đổi** — shape

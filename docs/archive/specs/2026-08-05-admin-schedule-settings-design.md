@@ -20,9 +20,9 @@ Lịch đánh hiện **nằm trong code**, không phải trong database:
 Thực tế scrim thì mỗi tuần một đối thủ, có tuần đánh 2 trận có tuần 4. Vì vậy spec này **chuyển
 lịch đánh từ code sang database**, và `SESSION_TEMPLATES` biến mất.
 
-Ba spec trước ([guild-war-formation-builder](2026-08-02-guild-war-formation-builder-design.md),
-[per-session-formation](2026-08-02-per-session-formation-design.md),
-[attendance-ux-hardening](2026-08-02-attendance-ux-hardening-design.md)) đều giả định lịch đánh là
+Ba spec trước ([guild-war-formation-builder](./2026-08-02-guild-war-formation-builder-design.md),
+[per-session-formation](./2026-08-02-per-session-formation-design.md),
+[attendance-ux-hardening](./2026-08-02-attendance-ux-hardening-design.md)) đều giả định lịch đánh là
 hằng số. Câu "bang đổi lịch đánh thì chỉ sửa `SESSION_TEMPLATES`" trong spec per-session-formation
 **bị spec này thay thế**.
 

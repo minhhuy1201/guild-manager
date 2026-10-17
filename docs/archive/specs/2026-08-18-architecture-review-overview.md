@@ -29,14 +29,14 @@ người gọi được lợi), *locality* (cái người bảo trì được l�
 
 | | Vấn đề | Mức | Spec |
 |---|---|---|---|
-| **C1** | `packages/shared` chỉ định nghĩa chiều request; 8 shape response khai báo tay hai lần | Strong | [c1](2026-08-18-c1-response-contract-design.md) |
-| **C2a** | Deadline không có trần; Guild War sửa được | Strong | [deadline-cap](2026-08-18-deadline-cap-design.md) |
-| **C2b** | `isDeadlinePassed` và `weekEnd` bị tính lại trên client, một chỗ tính **sai ngày** | Strong | [c2](2026-08-18-c2-schedule-flags-design.md) |
-| **C3** | Nguyên thủy giờ VN tách nửa vời, hai quy ước đánh số thứ cùng tồn tại | Strong | [c3](2026-08-18-c3-vn-clock-design.md) |
-| **C4** | `useFormationScreen` 340 dòng, interface 48 khoá, không test được | Strong | [c4](2026-08-18-c4-formation-screen-design.md) |
-| **C5** | `*.module.ts` kiêm barrel public; luật ESLint khoá cứng theo độ sâu thư mục | Worth exploring | [c5](2026-08-18-c5-module-seam-design.md) |
-| **C6** | `apps/web` không khai báo `@guild/shared`, import vòng qua `exports` map | Worth exploring | [c6](2026-08-18-c6-shared-package-identity-design.md) |
-| **C7** | `jwt.ts`, `proxy.ts`, `auth.service.ts` không có test; `proxy.ts` import xuyên seam | Worth exploring | [c7](2026-08-18-c7-session-module-design.md) |
+| **C1** | `packages/shared` chỉ định nghĩa chiều request; 8 shape response khai báo tay hai lần | Strong | [c1](./2026-08-18-c1-response-contract-design.md) |
+| **C2a** | Deadline không có trần; Guild War sửa được | Strong | [deadline-cap](./2026-08-18-deadline-cap-design.md) |
+| **C2b** | `isDeadlinePassed` và `weekEnd` bị tính lại trên client, một chỗ tính **sai ngày** | Strong | [c2](./2026-08-18-c2-schedule-flags-design.md) |
+| **C3** | Nguyên thủy giờ VN tách nửa vời, hai quy ước đánh số thứ cùng tồn tại | Strong | [c3](./2026-08-18-c3-vn-clock-design.md) |
+| **C4** | `useFormationScreen` 340 dòng, interface 48 khoá, không test được | Strong | [c4](./2026-08-18-c4-formation-screen-design.md) |
+| **C5** | `*.module.ts` kiêm barrel public; luật ESLint khoá cứng theo độ sâu thư mục | Worth exploring | [c5](./2026-08-18-c5-module-seam-design.md) |
+| **C6** | `apps/web` không khai báo `@guild/shared`, import vòng qua `exports` map | Worth exploring | [c6](./2026-08-18-c6-shared-package-identity-design.md) |
+| **C7** | `jwt.ts`, `proxy.ts`, `auth.service.ts` không có test; `proxy.ts` import xuyên seam | Worth exploring | [c7](./2026-08-18-c7-session-module-design.md) |
 
 ## Thứ tự thực hiện đề nghị
 

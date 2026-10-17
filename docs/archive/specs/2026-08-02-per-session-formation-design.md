@@ -2,7 +2,7 @@
 
 Ngày: 2026-08-02 · Phạm vi: `apps/web` + `apps/api` + `packages/shared` + `prisma/schema.prisma`.
 
-Tiếp nối [2026-08-02-guild-war-formation-builder-design.md](2026-08-02-guild-war-formation-builder-design.md),
+Tiếp nối [2026-08-02-guild-war-formation-builder-design.md](./2026-08-02-guild-war-formation-builder-design.md),
 vốn chỉ dựng được **một** đội hình duy nhất và cố tình để việc lưu ngoài phạm vi.
 
 Spec này **thay thế** mục "Ngoài phạm vi → Lưu đội hình" của spec đó: nút "Lưu đội hình" thôi bị vô
@@ -282,7 +282,7 @@ testing-library. Thêm hạ tầng đó là việc riêng, ngoài phạm vi spec
 Tính năng này chạy trên Postgres local đang có, không phụ thuộc nơi host database.
 
 Việc chuyển sang Supabase đã tách sang spec riêng:
-[2026-08-02-supabase-hosting-design.md](2026-08-02-supabase-hosting-design.md). Điều duy nhất
+[2026-08-02-supabase-hosting-design.md](./2026-08-02-supabase-hosting-design.md). Điều duy nhất
 liên quan tới đây: việc dọn dữ liệu quá 28 ngày cố tình **không** dùng cron của nhà cung cấp — nó
 nằm trong `GET /team-builder/weeks` (luật 2 ở mục vòng đời), nên đổi nơi host không ảnh hưởng.
 

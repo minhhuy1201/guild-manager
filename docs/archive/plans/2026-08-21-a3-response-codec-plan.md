@@ -7,7 +7,7 @@
 tồn tại trong codec. Không module nào tự truy vấn bảng của module khác.
 
 **Spec:** [`docs/custom-spec/2026-08-21-a3-response-codec-design.md`](../specs/2026-08-21-a3-response-codec-design.md)
-· tiếp nối [C1](2026-08-18-c1-response-contract-plan.md).
+· tiếp nối [C1](./2026-08-18-c1-response-contract-plan.md).
 
 **Phạm vi:** chỉ `apps/api`. `packages/shared` và `apps/web` **không đổi một dòng nào** — shape trên
 dây giữ nguyên tuyệt đối. Task 1→5 là refactor thuần; Task 6 thêm đúng một hành vi mới, và chỉ ở

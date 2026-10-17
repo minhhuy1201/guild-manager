@@ -14,11 +14,11 @@ tuần cũ.
 
 ## Bối cảnh
 
-- [per-session-formation](2026-08-02-per-session-formation-design.md) — mỗi ngày đánh có đội hình
+- [per-session-formation](./2026-08-02-per-session-formation-design.md) — mỗi ngày đánh có đội hình
   riêng; bố cục lưới (10 đội × 6 ô) là dữ liệu tĩnh ở frontend.
-- [two-matches-per-day](2026-08-07-two-matches-per-day-design.md) — một ngày giữ 1 hoặc 2 trận;
+- [two-matches-per-day](./2026-08-07-two-matches-per-day-design.md) — một ngày giữ 1 hoặc 2 trận;
   "Tạo trận 2" clone nguyên trận 1.
-- [formation-slot-notes](2026-08-08-formation-slot-notes-design.md) — ghi chú từng ô đi vào nháp
+- [formation-slot-notes](./2026-08-08-formation-slot-notes-design.md) — ghi chú từng ô đi vào nháp
   Zustand, chỉ chạm API khi bấm "Lưu".
 
 Mô hình của màn hình này: *server state ở TanStack Query, mọi chỉnh sửa vào nháp Zustand, một nút Lưu
@@ -60,7 +60,7 @@ Trong một ngày nguồn thì lấy **trận cuối** của ngày đó — đú
 đội hình gần với hiện tại nhất.
 
 "Có đội hình" xét theo **vị trí người** của đúng trận sẽ được chép, không xét ghi chú và không xét
-các trận khác trong ngày — xem [drop-empty-second-match](2026-09-01-drop-empty-second-match-design.md)
+các trận khác trong ngày — xem [drop-empty-second-match](./2026-09-01-drop-empty-second-match-design.md)
 §3.
 
 ### 3. Nguồn là bản **đang hiển thị**, không phải bản đã lưu

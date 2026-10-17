@@ -1,7 +1,7 @@
 # C4 — Cắt `useFormationScreen` thành năm module có tên
 
 Ngày: 2026-08-18 · Phạm vi: `apps/web/features/team-builder`.
-Bối cảnh chung: [tổng quan C1–C7](2026-08-18-architecture-review-overview.md).
+Bối cảnh chung: [tổng quan C1–C7](./2026-08-18-architecture-review-overview.md).
 Độc lập với C1/C2/C3, làm lúc nào cũng được.
 
 Một hook 340 dòng trả về object **48 khoá** cho đúng một component. Spec này cắt nó theo mối quan

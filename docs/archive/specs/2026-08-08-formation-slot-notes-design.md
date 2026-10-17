@@ -12,10 +12,10 @@ Spec này thêm một **ô nhập text cho mỗi ô của đội hình**, nằm 
 
 Trạng thái hiện tại, sau các spec trước:
 
-- [per-session-formation](2026-08-02-per-session-formation-design.md) — mỗi ngày đánh một đội hình,
+- [per-session-formation](./2026-08-02-per-session-formation-design.md) — mỗi ngày đánh một đội hình,
   bố cục lưới là dữ liệu tĩnh ở frontend (`lib/mock-formation.ts`), user chỉ sửa `Assignment`
   (`slotId → characterId`).
-- [two-matches-per-day](2026-08-07-two-matches-per-day-design.md) — mỗi ngày 1 hoặc 2 trận, lưu
+- [two-matches-per-day](./2026-08-07-two-matches-per-day-design.md) — mỗi ngày 1 hoặc 2 trận, lưu
   chuẩn hoá xuống từng ô qua hai bảng `FormationMatch` → `FormationSlot`, ghi bằng cách xoá rồi tạo
   lại cả ngày trong một transaction.
 

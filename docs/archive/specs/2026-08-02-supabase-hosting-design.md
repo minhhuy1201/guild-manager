@@ -18,7 +18,7 @@ Việc này **không** ảnh hưởng tới thiết kế bảng hay code nghiệ
 Postgres qua Prisma bằng connection string tiêu chuẩn, nên đổi nơi host chỉ là đổi biến môi trường.
 Những gì spec này ghi lại đều là bẫy vận hành, không phải quyết định kiến trúc.
 
-Tách khỏi [2026-08-02-per-session-formation-design.md](2026-08-02-per-session-formation-design.md)
+Tách khỏi [2026-08-02-per-session-formation-design.md](./2026-08-02-per-session-formation-design.md)
 vì hai việc độc lập nhau: đội hình theo trận làm được ngay trên Postgres local, còn việc chuyển host
 xảy ra lúc nào cũng được.
 

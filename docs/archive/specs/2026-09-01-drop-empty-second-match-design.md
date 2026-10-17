@@ -12,11 +12,11 @@ Hai thay đổi của cùng một luật: **một trận chỉ tồn tại khi c
 
 ## Bối cảnh
 
-- [two-matches-per-day](2026-08-07-two-matches-per-day-design.md) §3 tuyên bố ngược lại: *"một
+- [two-matches-per-day](./2026-08-07-two-matches-per-day-design.md) §3 tuyên bố ngược lại: *"một
   trận 2 rỗng là trạng thái hợp lệ… nó vẫn phải còn đó sau khi tải lại trang"*. **Spec này thay thế
   câu đó.** Phần còn lại của spec kia (hai bảng, lưu cả ngày, gửi mảng một phần tử là xoá) vẫn đúng
   nguyên vẹn — chính cơ chế "gửi mảng một phần tử là xoá" là thứ luật mới dùng để xoá.
-- [copy-formation-between-sessions](2026-09-01-copy-formation-between-sessions-design.md) §2 — nút
+- [copy-formation-between-sessions](./2026-09-01-copy-formation-between-sessions-design.md) §2 — nút
   copy lấy nguồn là ngày liền trước.
 
 ## Quyết định thiết kế

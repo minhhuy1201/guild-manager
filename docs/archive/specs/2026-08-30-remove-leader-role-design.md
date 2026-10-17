@@ -11,7 +11,7 @@ Spec này gỡ LEADER hoàn toàn. Sau thay đổi chỉ còn hai vai trò và m
 
 ## Bối cảnh
 
-- [discord-oauth-diem-danh](2026-08-24-discord-oauth-diem-danh-design.md) — nơi `GuildRole` ra đời,
+- [discord-oauth-diem-danh](./2026-08-24-discord-oauth-diem-danh-design.md) — nơi `GuildRole` ra đời,
   cùng hai hàm quyền `canViewAllAttendance` và `canManageGuild`. Spec đó vẫn là bản ghi lịch sử đúng
   của quyết định tại thời điểm ấy và **không bị sửa lại**.
 

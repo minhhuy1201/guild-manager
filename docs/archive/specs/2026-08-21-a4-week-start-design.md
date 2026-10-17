@@ -14,12 +14,12 @@
 > ở `packages/shared` và chốt rằng hằng đó chỉ có một người đọc.
 > Thêm một điểm nhỏ: §3 đặt tên `getActiveWeek` đụng hàm thuần cùng tên trong `session-schedule.ts`.
 > Chi tiết:
-> [§ Rà soát lại A1–A6](2026-08-21-architecture-review-2-overview.md#rà-soát-lại-a1a6-2026-08-23).
+> [§ Rà soát lại A1–A6](./2026-08-21-architecture-review-2-overview.md#rà-soát-lại-a1a6-2026-08-23).
 
 Ngày: 2026-08-21 · Phạm vi: `apps/api`.
-Bối cảnh chung: [tổng quan đợt 2](2026-08-21-architecture-review-2-overview.md).
-Nên làm **sau** [A2](2026-08-21-a2-clock-module-design.md) (chữ ký service đã sạch `now`) và
-**trước** [A1](2026-08-21-a1-schedule-read-seam-design.md) (hai hàm public mới của A1 nhận mốc
+Bối cảnh chung: [tổng quan đợt 2](./2026-08-21-architecture-review-2-overview.md).
+Nên làm **sau** [A2](./2026-08-21-a2-clock-module-design.md) (chữ ký service đã sạch `now`) và
+**trước** [A1](./2026-08-21-a1-schedule-read-seam-design.md) (hai hàm public mới của A1 nhận mốc
 tuần — nên biết kiểu của nó trước khi đặt chữ ký).
 
 Gói bốn thứ người gọi đang phải tự nhớ về `weekStart` vào một module trong `session-schedule.ts`.
@@ -197,7 +197,7 @@ chỗ lặp: shape vẫn khai báo **đúng một lần** ở `packages/shared`,
 | `attendance.service.ts:102-103` | `isSameWeek(session.weekStartAnchor, activeWeek)` |
 
 `attendance.service.ts` là chỗ cần chú ý: `session` ở đó là **entity đã dựng** (`weekStart` là ISO
-string), không phải hàng Prisma. Sau [A1](2026-08-21-a1-schedule-read-seam-design.md) thì
+string), không phải hàng Prisma. Sau [A1](./2026-08-21-a1-schedule-read-seam-design.md) thì
 `findById` trả về entity — nên hoặc so bằng chuỗi ở đúng một chỗ có comment, hoặc `findById` trả
 kèm mốc tuần. Chọn cách thứ hai khi làm A1; trước đó giữ nguyên phép so chuỗi và ghi `// TODO(A1)`.
 
@@ -207,7 +207,7 @@ kèm mốc tuần. Chọn cách thứ hai khi làm A1; trước đó giữ nguy�
   `.min(1)` hoặc `z.preprocess` đổi `''` thành `undefined`; chọn cái sau để `?weekStart=` cư xử
   giống bỏ trống, không thành 400 cho một thứ vô hại.
 - **Mốc rơi vào Chủ nhật.** `weekStartOf` theo ISO đã xử lý (xem
-  [C3](2026-08-18-c3-vn-clock-design.md) §2); `parseWeekStart` chỉ gọi lại, không tự tính.
+  [C3](./2026-08-18-c3-vn-clock-design.md) §2); `parseWeekStart` chỉ gọi lại, không tự tính.
 - **Tuần rất xa quá khứ/tương lai** vẫn hợp lệ và trả `[]`. Không chặn — `getEditableWeeks` mới là
   nơi chặn ghi, còn đọc thì tuần cũ đọc được là đúng ý (`team-builder.getWeeks` liệt kê tuần cũ).
 - **`WeekAnchor` đi qua JSON.** Nhãn chỉ tồn tại lúc biên dịch; `toISOString()` vẫn cho đúng chuỗi

@@ -11,7 +11,7 @@ và ở lưới điểm danh của admin.
 
 ## Bối cảnh
 
-- [discord-oauth-diem-danh](2026-08-24-discord-oauth-diem-danh-design.md) — mỗi tài khoản gắn với
+- [discord-oauth-diem-danh](./2026-08-24-discord-oauth-diem-danh-design.md) — mỗi tài khoản gắn với
   một `Character`; màn `/` chia hai nhánh theo vai: admin thấy `AttendanceGrid` (lưới cả bang), member
   thấy `MemberAttendanceCard` (tile theo ngày, chỉ nhân vật của mình).
 - PR #26 (`37d8abb`) — `GET /attendance/characters` và `GET /attendance/records` **không còn lọc theo

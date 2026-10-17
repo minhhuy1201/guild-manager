@@ -7,9 +7,9 @@ Bảy cơ hội **làm sâu module** (deepening) cộng một fix behaviour. Ph�
 hạn: *refactor nhưng giữ nguyên business logic, không over-engineer, kiểm tra kĩ*. Không mục nào
 thêm module, thêm lớp trừu tượng hay thêm dependency; mọi thay đổi nằm gọn trong interface đang có.
 
-Ba đợt trước — [C1–C7](2026-08-18-architecture-review-overview.md),
-[A1–A6, W1–W6](2026-08-21-architecture-review-2-overview.md) và
-[A–F](2026-09-06-architecture-review-3-overview.md) — **đã triển khai xong toàn bộ**. Đợt này chỉ
+Ba đợt trước — [C1–C7](./2026-08-18-architecture-review-overview.md),
+[A1–A6, W1–W6](./2026-08-21-architecture-review-2-overview.md) và
+[A–F](./2026-09-06-architecture-review-3-overview.md) — **đã triển khai xong toàn bộ**. Đợt này chỉ
 liệt kê friction **còn lại** và code thêm sau `809c518`, và không mục nào đảo lại quyết định của ba
 đợt trước.
 

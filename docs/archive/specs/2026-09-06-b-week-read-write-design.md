@@ -1,7 +1,7 @@
 # B — Đọc tuần không phát lệnh ghi khi không có gì lệch
 
 Ngày: 2026-09-06 · Phạm vi: `apps/api/src/modules/battle-sessions`.
-Tổng quan: [đợt 3](2026-09-06-architecture-review-3-overview.md) · Mức: **Strong**
+Tổng quan: [đợt 3](./2026-09-06-architecture-review-3-overview.md) · Mức: **Strong**
 
 Yêu cầu gốc: cải thiện hiệu năng, không đổi behaviour business.
 

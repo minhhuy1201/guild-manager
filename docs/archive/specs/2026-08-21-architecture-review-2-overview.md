@@ -6,7 +6,7 @@ Ngày: 2026-08-21 · Phạm vi: toàn repo · Nguồn: rà soát `apps/api/src` 
 Mười hai cơ hội **làm sâu module** (deepening), kèm bằng chứng `file:line`. Mỗi mục có một spec
 riêng trong cùng thư mục này.
 
-Đợt trước: [C1–C7](2026-08-18-architecture-review-overview.md) — **đã triển khai xong toàn bộ**.
+Đợt trước: [C1–C7](./2026-08-18-architecture-review-overview.md) — **đã triển khai xong toàn bộ**.
 Đợt này chỉ liệt kê friction **còn lại**, và không mục nào đảo lại quyết định của C1–C7.
 
 **Trạng thái (2026-08-23):** A1–A6 **đã hiện thực xong** (`54372f9` → `f557e3a`), theo thứ tự thực tế
@@ -32,23 +32,23 @@ cụ thể ngồi ở seam), *depth* (lượng hành vi trên một đơn vị i
 
 | | Vấn đề | Mức | Spec |
 |---|---|---|---|
-| **A1** | `team-builder` gọi `listByWeek` chỉ để lấy side effect, rồi tự truy vấn bảng lịch 3 lần | Strong | [a1](2026-08-21-a1-schedule-read-seam-design.md) |
-| **A2** | `now: Date = new Date()` ở 15 chữ ký; một `POST /attendance` đánh giá luật quá hạn bằng hai đồng hồ | Strong | [a2](2026-08-21-a2-clock-module-design.md) |
-| **A3** | Codec response viết tay ở 5 chỗ; `Character` dựng ở 2 module với comment trùng từng chữ | Strong | [a3](2026-08-21-a3-response-codec-design.md) |
-| **A4** | `weekStart` là string trần: input hỏng → 500, lệch ngày → `[]` im lặng, so tuần bằng chuỗi | Strong | [a4](2026-08-21-a4-week-start-design.md) |
-| **A5** | Hai guard chép cùng một luật access-token; `common/` không có test nào | Worth exploring | [a5](2026-08-21-a5-bearer-token-design.md) |
-| **A6** | `GET /team-builder/weeks` chạy `deleteMany`; luật ô đội hình viết 3 lần theo 3 hình | Worth exploring | [a6](2026-08-21-a6-formation-grid-codec-design.md) |
+| **A1** | `team-builder` gọi `listByWeek` chỉ để lấy side effect, rồi tự truy vấn bảng lịch 3 lần | Strong | [a1](./2026-08-21-a1-schedule-read-seam-design.md) |
+| **A2** | `now: Date = new Date()` ở 15 chữ ký; một `POST /attendance` đánh giá luật quá hạn bằng hai đồng hồ | Strong | [a2](./2026-08-21-a2-clock-module-design.md) |
+| **A3** | Codec response viết tay ở 5 chỗ; `Character` dựng ở 2 module với comment trùng từng chữ | Strong | [a3](./2026-08-21-a3-response-codec-design.md) |
+| **A4** | `weekStart` là string trần: input hỏng → 500, lệch ngày → `[]` im lặng, so tuần bằng chuỗi | Strong | [a4](./2026-08-21-a4-week-start-design.md) |
+| **A5** | Hai guard chép cùng một luật access-token; `common/` không có test nào | Worth exploring | [a5](./2026-08-21-a5-bearer-token-design.md) |
+| **A6** | `GET /team-builder/weeks` chạy `deleteMany`; luật ô đội hình viết 3 lần theo 3 hình | Worth exploring | [a6](./2026-08-21-a6-formation-grid-codec-design.md) |
 
 ### `apps/web`
 
 | | Vấn đề | Mức | Spec |
 |---|---|---|---|
-| **W1** | Giao thức "dialog gọi mutation" chép tay ở 4 dialog (20 mẩu lặp); 0 file `.test.tsx` | Strong | [w1](2026-08-21-w1-mutation-dialog-design.md) |
-| **W2** | Luật lọc roster 3 bản, bản ở màn Quản lý thành viên **đã lệch** (mất vế tìm theo ID) — vế `id` sau đó bị bỏ hẳn, xem addendum 2026-08-23 trong spec | Strong | [w2](2026-08-21-w2-roster-filter-design.md) |
-| **W3** | Gộp query dựng lại 4 lần; `use-formation-week` vứt message backend của 2/3 query và refetch thiếu | Strong | [w3](2026-08-21-w3-query-group-design.md) |
-| **W4** | Store bắt caller truyền `base`; ba người cùng ghi vào `drafts` | Worth exploring | [w4](2026-08-21-w4-formation-draft-seam-design.md) |
-| **W5** | Đồ thị invalidate cache nêu 3 lần; key factory lọt ra khỏi feature sở hữu | Worth exploring | [w5](2026-08-21-w5-cache-graph-design.md) |
-| **W6** | Nhận diện Guild War vẽ lại ở 4 màn, đã lệch cỡ icon một chỗ | Worth exploring | [w6](2026-08-21-w6-session-label-design.md) |
+| **W1** | Giao thức "dialog gọi mutation" chép tay ở 4 dialog (20 mẩu lặp); 0 file `.test.tsx` | Strong | [w1](./2026-08-21-w1-mutation-dialog-design.md) |
+| **W2** | Luật lọc roster 3 bản, bản ở màn Quản lý thành viên **đã lệch** (mất vế tìm theo ID) — vế `id` sau đó bị bỏ hẳn, xem addendum 2026-08-23 trong spec | Strong | [w2](./2026-08-21-w2-roster-filter-design.md) |
+| **W3** | Gộp query dựng lại 4 lần; `use-formation-week` vứt message backend của 2/3 query và refetch thiếu | Strong | [w3](./2026-08-21-w3-query-group-design.md) |
+| **W4** | Store bắt caller truyền `base`; ba người cùng ghi vào `drafts` | Worth exploring | [w4](./2026-08-21-w4-formation-draft-seam-design.md) |
+| **W5** | Đồ thị invalidate cache nêu 3 lần; key factory lọt ra khỏi feature sở hữu | Worth exploring | [w5](./2026-08-21-w5-cache-graph-design.md) |
+| **W6** | Nhận diện Guild War vẽ lại ở 4 màn, đã lệch cỡ icon một chỗ | Worth exploring | [w6](./2026-08-21-w6-session-label-design.md) |
 
 **Ba mục vá lỗi thật, không chỉ dọn kiến trúc**: W3 (mất message tiếng Việt + nút thử lại không chạy),
 W2 (không tìm được theo ID ở màn Quản lý thành viên), A4 (input hỏng thành 500).
@@ -135,7 +135,7 @@ Ghi lại để khỏi rà lại.
 - `prisma/fix-deadlines.ts` import thẳng `../src/modules/battle-sessions/session-schedule` — hợp lệ
   vì `prisma/**` được miễn lint và đây là script một lần; nhưng đổi tên file kia thì script gãy im
   lặng.
-- `attendanceKeys.weeks()` không có call site nào (xem [W5](2026-08-21-w5-cache-graph-design.md)).
+- `attendanceKeys.weeks()` không có call site nào (xem [W5](./2026-08-21-w5-cache-graph-design.md)).
 
 ## Rà soát lại A1–A6 (2026-08-23)
 

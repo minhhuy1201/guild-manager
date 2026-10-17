@@ -4,12 +4,12 @@
 > spec này phải cẩn thận: (1) spec thêm **ba** hàm public chứ không phải hai như tổng quan ghi;
 > (2) §Edge case gọi "bỏ nhánh `if` ở `:119`" là no-op — chỉ đúng với tuần quá khứ, tuần **kế tiếp**
 > cũng editable nên bị sinh Guild War qua đường `GET`. Chi tiết:
-> [§ Rà soát lại A1–A6](2026-08-21-architecture-review-2-overview.md#rà-soát-lại-a1a6-2026-08-23).
+> [§ Rà soát lại A1–A6](./2026-08-21-architecture-review-2-overview.md#rà-soát-lại-a1a6-2026-08-23).
 
 Ngày: 2026-08-21 · Phạm vi: `apps/api`.
-Bối cảnh chung: [tổng quan đợt 2](2026-08-21-architecture-review-2-overview.md).
-Nên làm **sau** [A2](2026-08-21-a2-clock-module-design.md) và
-[A4](2026-08-21-a4-week-start-design.md) — hai hàm public mới sinh ra với chữ ký đã sạch `now` và
+Bối cảnh chung: [tổng quan đợt 2](./2026-08-21-architecture-review-2-overview.md).
+Nên làm **sau** [A2](./2026-08-21-a2-clock-module-design.md) và
+[A4](./2026-08-21-a4-week-start-design.md) — hai hàm public mới sinh ra với chữ ký đã sạch `now` và
 đã có kiểu cho mốc tuần, thay vì đặt xong rồi sửa lại hai lần.
 
 Thay một lời gọi lấy side effect và ba truy vấn xuyên bảng bằng hai hàm nói đúng việc chúng làm.
@@ -141,7 +141,7 @@ async listWeekAnchors(): Promise<WeekAnchor[]>;
 ### 4. Không gộp hai module
 
 `team-builder` vẫn là module riêng: nó sở hữu `formationMatch`, `formationSlot`, luật retention và
-luật ô đội hình ([A6](2026-08-21-a6-formation-grid-codec-design.md)). Spec này chỉ bịt chỗ rò —
+luật ô đội hình ([A6](./2026-08-21-a6-formation-grid-codec-design.md)). Spec này chỉ bịt chỗ rò —
 đưa phần "đọc lịch" về đúng chủ, không kéo phần "đội hình" đi theo.
 
 ## Thay đổi cụ thể

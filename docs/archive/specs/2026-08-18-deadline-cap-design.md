@@ -1,9 +1,9 @@
 # Trần hạn chót điểm danh — Design
 
 Ngày: 2026-08-18 · Phạm vi: `packages/shared` + `apps/api` + `apps/web`.
-Bối cảnh chung: [tổng quan C1–C7](2026-08-18-architecture-review-overview.md) (spec này là nửa đầu
-của C2; nửa sau — cờ lịch do server tính — ở [c2](2026-08-18-c2-schedule-flags-design.md)).
-Chồng lấn: [C3](2026-08-18-c3-vn-clock-design.md) viết lại chính
+Bối cảnh chung: [tổng quan C1–C7](./2026-08-18-architecture-review-overview.md) (spec này là nửa đầu
+của C2; nửa sau — cờ lịch do server tính — ở [c2](./2026-08-18-c2-schedule-flags-design.md)).
+Chồng lấn: [C3](./2026-08-18-c3-vn-clock-design.md) viết lại chính
 `packages/shared/lib/battle-session.ts`. Làm C3 trước thì `deadlineCapFor` ở đây dùng được
 `atVnTime`/`vnWeekday` thay vì tự cộng offset; làm spec này trước thì C3 phải chuyển thêm hai hàm.
 

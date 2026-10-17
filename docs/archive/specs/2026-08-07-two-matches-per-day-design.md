@@ -10,10 +10,10 @@ sang làm điểm khởi đầu, sửa gì tuỳ ý, rồi **lưu đội hình c
 
 Trạng thái hiện tại, sau ba spec trước:
 
-- [per-session-formation](2026-08-02-per-session-formation-design.md) dựng bảng `Formation` khoá
+- [per-session-formation](./2026-08-02-per-session-formation-design.md) dựng bảng `Formation` khoá
   1-1 theo `sessionId`, `assignment` là JSON `{slotId: characterId}`, cùng các luật vòng đời: khoá
   trận đã đánh, dọn dữ liệu quá 28 ngày, bỏ id mồ côi lúc đọc.
-- [admin-schedule-settings](2026-08-05-admin-schedule-settings-design.md) chuyển lịch đánh từ code
+- [admin-schedule-settings](./2026-08-05-admin-schedule-settings-design.md) chuyển lịch đánh từ code
   sang database: `BattleSession` do admin tự thêm/sửa/xoá, nhãn suy ra từ `dateTime`.
 
 **Một `BattleSession` là một ngày đánh** — một lần điểm danh, một hạn chót, một đối thủ. Hai trận
@@ -60,7 +60,7 @@ hệt mô hình JSON.
 
 > **Cập nhật 2026-09-01:** câu dưới đây không còn đúng. Trận 2 không có ai giờ bị bỏ ở cả hai
 > chiều của wire, nên "trận 2 rỗng" không còn là trạng thái lưu được — xem
-> [drop-empty-second-match](2026-09-01-drop-empty-second-match-design.md). Việc tách bảng vẫn giữ
+> [drop-empty-second-match](./2026-09-01-drop-empty-second-match-design.md). Việc tách bảng vẫn giữ
 > nguyên: nó là chỗ gắn dữ liệu riêng theo trận (đoạn ngay dưới).
 
 `FormationMatch` tồn tại tách khỏi `FormationSlot` vì **một trận 2 rỗng là trạng thái hợp lệ**:

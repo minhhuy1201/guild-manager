@@ -5,13 +5,13 @@
 > của spec — thiếu `health.controller.ts:36` (phải thêm commit `31e1632`) và file spec của
 > `characters`; (2) §4 ghi sai kiểu trả về `getActiveWeek` (`ScheduledWeek`, không phải `Week`);
 > (3) "hai đồng hồ khác nhau" là nói quá — vấn đề thật là luật quá hạn được đánh giá hai lần. Chi tiết:
-> [§ Rà soát lại A1–A6](2026-08-21-architecture-review-2-overview.md#rà-soát-lại-a1a6-2026-08-23).
+> [§ Rà soát lại A1–A6](./2026-08-21-architecture-review-2-overview.md#rà-soát-lại-a1a6-2026-08-23).
 
 Ngày: 2026-08-21 · Phạm vi: `apps/api`.
-Bối cảnh chung: [tổng quan đợt 2](2026-08-21-architecture-review-2-overview.md).
-Nên làm **trước** [A1](2026-08-21-a1-schedule-read-seam-design.md),
-[A3](2026-08-21-a3-response-codec-design.md), [A4](2026-08-21-a4-week-start-design.md),
-[A6](2026-08-21-a6-formation-grid-codec-design.md): cả bốn đều thêm hoặc sửa chữ ký đang mang `now`.
+Bối cảnh chung: [tổng quan đợt 2](./2026-08-21-architecture-review-2-overview.md).
+Nên làm **trước** [A1](./2026-08-21-a1-schedule-read-seam-design.md),
+[A3](./2026-08-21-a3-response-codec-design.md), [A4](./2026-08-21-a4-week-start-design.md),
+[A6](./2026-08-21-a6-formation-grid-codec-design.md): cả bốn đều thêm hoặc sửa chữ ký đang mang `now`.
 
 Đưa "bây giờ là lúc nào" xuống sau một seam có hai adapter thật, và bỏ tham số `now` khỏi interface
 của mọi service.

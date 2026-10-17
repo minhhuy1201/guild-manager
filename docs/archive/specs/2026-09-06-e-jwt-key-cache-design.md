@@ -1,7 +1,7 @@
 # E — Khoá HMAC dựng một lần, không dựng lại mỗi request
 
 Ngày: 2026-09-06 · Phạm vi: `apps/web/features/auth/core/jwt.ts`.
-Tổng quan: [đợt 3](2026-09-06-architecture-review-3-overview.md) · Mức: **Worth exploring**
+Tổng quan: [đợt 3](./2026-09-06-architecture-review-3-overview.md) · Mức: **Worth exploring**
 
 Yêu cầu gốc: cải thiện hiệu năng, không đổi behaviour business.
 

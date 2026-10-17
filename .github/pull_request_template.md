@@ -1,7 +1,7 @@
 ## What & Why
 
 <!-- The problem this solves, and why now. Link the spec or plan if there is one:
-     docs/specs/<date>-<name>-design.md, docs/plans/<date>-<name>-plan.md -->
+     docs/specs/<date>-<name>-design.md, docs/plans/<date>-<name>.md -->
 
 ## Tests
 

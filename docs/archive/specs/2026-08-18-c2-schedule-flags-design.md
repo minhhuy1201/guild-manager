@@ -1,10 +1,10 @@
 # C2b — Cờ lịch do server tính, client chỉ đọc
 
 Ngày: 2026-08-18 · Phạm vi: `packages/shared` + `apps/api` + `apps/web`.
-Bối cảnh chung: [tổng quan C1–C7](2026-08-18-architecture-review-overview.md).
-Phụ thuộc: nên làm **sau** [C1](2026-08-18-c1-response-contract-design.md) (cần chỗ để thêm field
+Bối cảnh chung: [tổng quan C1–C7](./2026-08-18-architecture-review-overview.md).
+Phụ thuộc: nên làm **sau** [C1](./2026-08-18-c1-response-contract-design.md) (cần chỗ để thêm field
 vào contract). Nửa đầu của C2 — luật trần deadline — nằm ở
-[deadline-cap](2026-08-18-deadline-cap-design.md), độc lập với spec này.
+[deadline-cap](./2026-08-18-deadline-cap-design.md), độc lập với spec này.
 
 Response bổ sung hai field do backend tính: `isDeadlinePassed` trên mỗi trận, `weekEnd` trên mỗi
 tuần đội hình. Frontend xoá ba phép tính tự chế, trong đó có **một phép tính sai ngày**.
@@ -170,7 +170,7 @@ Ba chỗ đang mô tả một cờ chưa tồn tại; sau spec này chúng thàn
 ## Ngoài phạm vi
 
 - Luật trần deadline và deadline cố định của Guild War —
-  [deadline-cap](2026-08-18-deadline-cap-design.md).
+  [deadline-cap](./2026-08-18-deadline-cap-design.md).
 - Gộp `Week` và `FormationWeek` — đã cân nhắc và loại ở §4.
 - Đẩy cờ qua realtime/websocket thay vì hẹn giờ refetch — không có hạ tầng realtime, và một lần
   refetch mỗi deadline là quá rẻ để đánh đổi.

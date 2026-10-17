@@ -1,8 +1,8 @@
 # W2 — Một vị từ lọc roster, thay cho ba bản đã phân kỳ
 
 Ngày: 2026-08-21 · Phạm vi: `apps/web`.
-Bối cảnh chung: [tổng quan đợt 2](2026-08-21-architecture-review-2-overview.md).
-Độc lập với [W3](2026-08-21-w3-query-group-design.md); làm sau W3 vì W3 rẻ hơn và chạm cùng ba màn.
+Bối cảnh chung: [tổng quan đợt 2](./2026-08-21-architecture-review-2-overview.md).
+Độc lập với [W3](./2026-08-21-w3-query-group-design.md); làm sau W3 vì W3 rẻ hơn và chạm cùng ba màn.
 
 Spec này **sửa một lỗi người dùng gặp được**, không chỉ dọn kiến trúc.
 

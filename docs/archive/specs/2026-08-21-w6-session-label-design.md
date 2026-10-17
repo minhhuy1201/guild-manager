@@ -1,8 +1,8 @@
 # W6 — Quy ước "trận Guild War trông thế nào" thành một module
 
 Ngày: 2026-08-21 · Phạm vi: `apps/web`.
-Bối cảnh chung: [tổng quan đợt 2](2026-08-21-architecture-review-2-overview.md).
-Nên làm **sau** [W1](2026-08-21-w1-mutation-dialog-design.md) — W1 dựng hạ tầng test render, và
+Bối cảnh chung: [tổng quan đợt 2](./2026-08-21-architecture-review-2-overview.md).
+Nên làm **sau** [W1](./2026-08-21-w1-mutation-dialog-design.md) — W1 dựng hạ tầng test render, và
 module này là ứng viên đầu tiên đáng render-test.
 
 ## Bối cảnh
@@ -129,7 +129,7 @@ phải nhận diện trận.
 
 ## Kiểm thử
 
-Hạ tầng render từ [W1](2026-08-21-w1-mutation-dialog-design.md) **đã có**: `include` của Vitest là
+Hạ tầng render từ [W1](./2026-08-21-w1-mutation-dialog-design.md) **đã có**: `include` của Vitest là
 `**/__tests__/**/*.test.ts?(x)` và `@testing-library/react` + `jsdom` đã nằm trong `devDependencies`.
 
 - `sessionTintClass(true/false)` là hàm thuần → test được ngay, không cần render

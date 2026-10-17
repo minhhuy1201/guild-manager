@@ -10,10 +10,10 @@
 > **§1 sửa 2026-08-23**, nay chép đúng chữ ký `Promise<JwtPayload>` đang chạy kèm lý do và câu `grep`
 > khoá bất biến. Và một **chỗ thiếu**: §Kiểm thử đòi test `describeException` nhưng không nói hàm đó
 > đang `private` nên phải `export` trước — **§Kiểm thử và bảng thay đổi bổ sung 2026-08-23**. Chi tiết:
-> [§ Rà soát lại A1–A6](2026-08-21-architecture-review-2-overview.md#rà-soát-lại-a1a6-2026-08-23).
+> [§ Rà soát lại A1–A6](./2026-08-21-architecture-review-2-overview.md#rà-soát-lại-a1a6-2026-08-23).
 
 Ngày: 2026-08-21 · Phạm vi: `apps/api/src/common`, `apps/api/src/modules/auth`.
-Bối cảnh chung: [tổng quan đợt 2](2026-08-21-architecture-review-2-overview.md).
+Bối cảnh chung: [tổng quan đợt 2](./2026-08-21-architecture-review-2-overview.md).
 Độc lập với các spec khác — làm lúc nào cũng được.
 
 ## Bối cảnh

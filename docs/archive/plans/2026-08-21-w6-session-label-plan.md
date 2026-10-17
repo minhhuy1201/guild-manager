@@ -259,7 +259,7 @@ Thay nguyên mục bằng:
 ```markdown
 ## Kiểm thử
 
-Hạ tầng render từ [W1](../specs/2026-08-21-w1-mutation-dialog-design.md) **đã có**: `include` của Vitest là
+Hạ tầng render từ [W1](./2026-08-21-w1-mutation-dialog-design.md) **đã có**: `include` của Vitest là
 `**/__tests__/**/*.test.ts?(x)` và `@testing-library/react` + `jsdom` đã nằm trong `devDependencies`.
 
 - `sessionTintClass(true/false)` là hàm thuần → test được ngay, không cần render

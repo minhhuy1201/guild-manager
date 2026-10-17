@@ -1,7 +1,7 @@
 # F — Nhắc điểm danh: suy ra tuần một lần, dò người vắng bằng tra khoá
 
 Ngày: 2026-09-06 · Phạm vi: `apps/api/src/modules/discord-bot/reminder.service.ts`.
-Tổng quan: [đợt 3](2026-09-06-architecture-review-3-overview.md) · Mức: **Worth exploring**
+Tổng quan: [đợt 3](./2026-09-06-architecture-review-3-overview.md) · Mức: **Worth exploring**
 
 Yêu cầu gốc: cải thiện hiệu năng, không đổi behaviour business.
 

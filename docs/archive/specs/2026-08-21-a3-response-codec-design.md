@@ -4,7 +4,7 @@
 > chứng chính xác, trừ hai điểm nhỏ — (1) `characters.service.ts` lệch 1 dòng: `toEntity` ở
 > `:118-126`, `satisfies` ở `:125`; (2) §Edge case về thứ tự sắp xếp là thừa,
 > `CharactersService.list()` đã dùng đúng `orderBy: { name: 'asc' }`. Chi tiết:
-> [§ Rà soát lại A1–A6](2026-08-21-architecture-review-2-overview.md#rà-soát-lại-a1a6-2026-08-23).
+> [§ Rà soát lại A1–A6](./2026-08-21-architecture-review-2-overview.md#rà-soát-lại-a1a6-2026-08-23).
 >
 > §4 từng bị bỏ khi lập kế hoạch, nên chẩn đoán *"schema chiều ra là type chết"* ở §Bối cảnh còn mở
 > thêm một thời gian. **Đã đóng**: §4 dưới đây mô tả đúng bản đang chạy.
@@ -14,8 +14,8 @@
 > chép đúng chữ ký `CharactersService.listIds(client)` đang chạy.
 
 Ngày: 2026-08-21 · Phạm vi: `apps/api` + `packages/shared`.
-Bối cảnh chung: [tổng quan đợt 2](2026-08-21-architecture-review-2-overview.md).
-Tiếp nối [C1](2026-08-18-c1-response-contract-design.md): C1 đưa **shape** chiều ra vào
+Bối cảnh chung: [tổng quan đợt 2](./2026-08-21-architecture-review-2-overview.md).
+Tiếp nối [C1](./2026-08-18-c1-response-contract-design.md): C1 đưa **shape** chiều ra vào
 `packages/shared`; spec này đưa **phép dựng** shape đó vào một chỗ.
 
 ## Bối cảnh
@@ -53,7 +53,7 @@ return characters.map(
 
 Hai comment giống nhau từng ký tự là bằng chứng copy-paste không cần suy luận. Kèm theo,
 `attendance.service.ts:32-35` truy vấn thẳng `prisma.character` — bảng do module `characters` sở
-hữu, đúng lớp vi phạm mà [A1](2026-08-21-a1-schedule-read-seam-design.md) xử lý cho bảng lịch.
+hữu, đúng lớp vi phạm mà [A1](./2026-08-21-a1-schedule-read-seam-design.md) xử lý cho bảng lịch.
 
 **Và không chỉ `attendance`:** `team-builder.service.ts:229-235` (`loadCharacterIds`, gọi ở `:190`)
 cũng `prisma.character.findMany({ select: { id: true } })`. Hai module đọc bảng của người thứ ba là
@@ -120,7 +120,7 @@ bị xoá. Nó cần đúng tập id, không cần shape `Character`, nên seam 
 Chữ ký nhận `client` là bắt buộc chứ không tuỳ chọn, vì call site duy nhất nằm trong `$transaction`
 của `saveFormation` và phải đọc bằng chính `tx` đó — một tham số tuỳ chọn sẽ mở đường đọc ngoài
 transaction để lỡ tay chọn nhầm. Đây không phải bảo đảm tuyệt đối (Postgres chạy READ COMMITTED nên
-`DELETE` commit sau lúc đọc vẫn làm vỡ khoá ngoại — [A6](2026-08-21-a6-formation-grid-codec-design.md)
+`DELETE` commit sau lúc đọc vẫn làm vỡ khoá ngoại — [A6](./2026-08-21-a6-formation-grid-codec-design.md)
 §4 đóng phần còn lại bằng `P2003` → 409), nhưng nó thu hẹp khoảng hở từ cả request xuống một
 transaction.
 

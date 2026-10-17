@@ -5,7 +5,7 @@ Ngày: 2026-09-22 · Phạm vi: feature tactics (`apps/api/src/modules/tactics`,
 `packages/shared/schemas/lift-tactic-scene.ts`) ở commit `4bf58a8`, cộng luồng phân quyền admin /
 member đi qua route đó.
 
-Bốn đợt rà soát trước ([đợt 4](2026-09-20-architecture-review-4-overview.md) là gần nhất) không
+Bốn đợt rà soát trước ([đợt 4](./2026-09-20-architecture-review-4-overview.md) là gần nhất) không
 chạm tới tactics vì feature vào sau (#145-#151). Đợt này đóng vai lần lượt admin và member, liệt kê
 bug đã kiểm chứng tại source, chỗ spec lệch code, và các cơ hội **làm sâu module** (deepening).
 
