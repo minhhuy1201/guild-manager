@@ -87,8 +87,8 @@ before anything else happens.
   alike usually means a missed extraction.
 - **Tests describe behavior.** When behavior changes on purpose, its tests change in the same commit
   and the message says why.
-- **Comment, code and file names are English**; the content of `docs/superpowers`,
-  `docs/custom-plan`, `docs/custom-spec` and `docs/archive` is Vietnamese.
+- **Comment, code and file names are English**; the content of `docs/specs`, `docs/plans` and
+  `docs/archive` is Vietnamese.
 - **Never mutate:** return a new object. Nest at most 4 levels, using early returns. Name a
   threshold or limit instead of a magic number.
 - **Prefer a maintained dependency** when it genuinely removes code we would otherwise own and test.

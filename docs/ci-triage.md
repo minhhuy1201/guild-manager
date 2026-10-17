@@ -172,4 +172,4 @@ $0.0004. It runs only when CI is already red, and at most once per run id.
 
 - [`architecture.md`](architecture.md) — where new code goes
 - [`development.md`](development.md) — commands and environment variables
-- [`custom-spec/2026-09-20-jev-ci-triage-design.md`](archive/custom-spec/2026-09-20-jev-ci-triage-design.md) — why it is built this way
+- [`archive/specs/2026-09-20-jev-ci-triage-design.md`](archive/specs/2026-09-20-jev-ci-triage-design.md) — why it is built this way

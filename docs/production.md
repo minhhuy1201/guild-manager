@@ -134,7 +134,7 @@ so the web container can reach the API container.
 
 Both apps run on **Vercel**, as two separate projects on the same repo, distinguished by their Root
 Directory. The full reasoning is in the
-[Vercel deployment spec](archive/superpowers/specs/2026-08-16-vercel-deployment-design.md).
+[Vercel deployment spec](archive/specs/2026-08-16-vercel-deployment-design.md).
 
 | Project | Root Directory | Domain |
 |---|---|---|
@@ -384,7 +384,7 @@ not use our webpack `dist/main.js`, and a `"main"` field in `package.json` is ig
 
 Supabase here is just **a hosted Postgres**: no `@supabase/supabase-js`, no PostgREST, no Supabase
 Auth/Storage/Realtime. The full reasoning, including the wrong turns taken during design, is in the
-[database hosting spec](archive/superpowers/specs/2026-08-02-supabase-hosting-design.md).
+[database hosting spec](archive/specs/2026-08-02-supabase-hosting-design.md).
 
 ### Choosing the connection type
 
@@ -802,5 +802,5 @@ What is still missing there is a rehearsal — nothing applies a migration anywh
 - [`architecture.md`](architecture.md) — system architecture
 - [`development.md`](development.md) — running locally
 - [`apps/api/README.md`](../apps/api/README.md) — backend details
-- [database hosting spec](archive/superpowers/specs/2026-08-02-supabase-hosting-design.md) — why the database is set up this way
-- [Vercel deployment spec](archive/superpowers/specs/2026-08-16-vercel-deployment-design.md) — why both apps run on Vercel
+- [database hosting spec](archive/specs/2026-08-02-supabase-hosting-design.md) — why the database is set up this way
+- [Vercel deployment spec](archive/specs/2026-08-16-vercel-deployment-design.md) — why both apps run on Vercel

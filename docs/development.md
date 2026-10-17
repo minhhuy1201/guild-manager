@@ -347,5 +347,5 @@ Never commit: `.env*` (except `.env.example`), `apps/api/src/generated/`, `dist/
 - [`ci-triage.md`](ci-triage.md) — what to do when CI goes red
 - [`apps/api/README.md`](../apps/api/README.md) — backend details
 - [`apps/web/README.md`](../apps/web/README.md) — frontend details
-- `docs/superpowers/specs/` — design specs for features in progress
+- `docs/specs/` and `docs/plans/` — design specs and plans for work in progress
 - `docs/archive/` — finished specs and plans; history, not a source of truth

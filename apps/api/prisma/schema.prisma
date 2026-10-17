@@ -250,7 +250,7 @@ model TacticTokenPreset {
 }
 
 /// A stretch of days a member will be away. Read-time only: it never writes AttendanceRecord rows -
-/// see docs/archive/custom-spec/2026-10-04-a1-leave-mode-design.md §4.
+/// see docs/archive/specs/2026-10-04-a1-leave-mode-design.md §4.
 model Leave {
   id                     String    @id @default(cuid())
   characterId            String
