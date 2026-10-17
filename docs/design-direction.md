@@ -101,5 +101,5 @@ Motion says "the data is arriving", nothing more:
 - Infinite animations other than the skeleton's shimmer
 - Sacrificing usability for immersion
 
-This file is the binding design brief; the plans in `docs/archive/custom-plan/2026-09-13-*` record how it
+This file is the binding design brief; the plans in `docs/archive/plans/2026-09-13-*` record how it
 was reached.

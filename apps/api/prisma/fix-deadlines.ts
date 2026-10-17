@@ -8,7 +8,7 @@ import { loadPrismaEnv } from './load-env';
 
 /**
  * ONE-OFF manual script bringing legacy deadlines back within the cap rule
- * (see docs/archive/custom-spec/2026-08-18-deadline-cap-design.md):
+ * (see docs/archive/specs/2026-08-18-deadline-cap-design.md):
  *
  *   PRISMA_ENV_FILE=.env.production pnpm --filter api db:fix-deadlines
  *
