@@ -78,13 +78,24 @@ export function AnnounceFormationDialog({
   onOpenChange,
   onConfirm,
 }: AnnounceFormationDialogProps) {
+  /**
+   * Refuse a close while anything is in flight. The capture sheet unmounts with the dialog, and a
+   * report that arrives after a close and reopen would replace the fresh form.
+   * @param next - Whether the dialog is being opened
+   */
+  function handleOpenChange(next: boolean): void {
+    if (!next && sending) return;
+
+    onOpenChange(next);
+  }
+
   if (outcome) {
     const canRetry = Boolean(outcome.error) || (outcome.report?.unsent.length ?? 0) > 0;
     const retryLabel = outcome.error ? "Thử lại" : "Nhắn lại người lỗi";
 
     return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogContent showCloseButton={!sending}>
           <div className="grid gap-3">
             <DialogHeader>
               <DialogTitle>Đã gửi thông báo đội hình</DialogTitle>
@@ -130,8 +141,8 @@ export function AnnounceFormationDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent showCloseButton={!sending}>
         <div className="grid gap-3">
           <DialogHeader>
             <DialogTitle>Gửi thông báo đội hình?</DialogTitle>
@@ -168,7 +179,11 @@ export function AnnounceFormationDialog({
             </p>
           ) : null}
           <DialogFooter>
-            <Button variant="ghost" onClick={() => onOpenChange(false)}>
+            <Button
+              variant="ghost"
+              onClick={() => handleOpenChange(false)}
+              disabled={sending}
+            >
               <X />
               Huỷ
             </Button>

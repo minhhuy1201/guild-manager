@@ -2,6 +2,7 @@ import { BadRequestException, Logger, NotFoundException } from '@nestjs/common';
 import type { BattleSession, MatchFormation } from '@guild/shared/schemas';
 
 import { DiscordApiError } from '../discord-rest';
+import { Clock } from '../../../common';
 import { TeamNoticeService } from '../team-notice.service';
 
 /** A 20:30 scrim over two matches whose attendance is already closed by the announcement. */
@@ -21,6 +22,23 @@ function session(overrides: Partial<BattleSession> = {}): BattleSession {
     formationMatchCount: 2,
     ...overrides,
   };
+}
+
+/** A clock a test moves by hand, to make sending take as long as the test says. */
+class SteppingClock extends Clock {
+  private ms = Date.parse('2026-08-19T02:00:00.000Z');
+
+  now(): Date {
+    return new Date(this.ms);
+  }
+
+  /**
+   * Let time pass.
+   * @param ms - Milliseconds to move forward
+   */
+  advance(ms: number): void {
+    this.ms += ms;
+  }
 }
 
 /** The members the line-ups below place. `discordId` null = nobody entered it yet. */
@@ -88,6 +106,7 @@ function build(options: BuildOptions = {}) {
     openDm: jest.fn((userId: string) => Promise.resolve(`dm-${userId}`)),
     postMessage: jest.fn().mockResolvedValue(undefined),
   };
+  const clock = new SteppingClock();
 
   const service = new TeamNoticeService(
     battleSessions as never,
@@ -95,9 +114,10 @@ function build(options: BuildOptions = {}) {
     attendance as never,
     characters as never,
     rest as never,
+    clock,
   );
 
-  return { service, battleSessions, rest };
+  return { service, battleSessions, rest, clock };
 }
 
 /** The text of every message sent, in send order, with the DM channel it went to. */
@@ -368,6 +388,15 @@ describe('TeamNoticeService.notifyMembers - lỗi từ Discord', () => {
     expect(rest.openDm).toHaveBeenCalledTimes(2);
   });
 
+  it('40003 để lại một dòng log', async () => {
+    const { service, rest } = build();
+    failFor(rest, 'd-asuna', TOO_FAST);
+
+    await run(service);
+
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('40003'));
+  });
+
   it('sau 40003 người chưa có ID hay chưa điểm danh vẫn được xếp đúng nhóm của họ', async () => {
     const { service, rest } = build();
     failFor(rest, 'd-asuna', TOO_FAST);
@@ -462,5 +491,64 @@ describe('TeamNoticeService.notifyMembers - nhắn lại theo danh sách', () =>
 
     expect(rest.openDm).not.toHaveBeenCalled();
     expect(report.totalCount).toBe(0);
+  });
+});
+
+describe('TeamNoticeService.notifyMembers - hết thời gian', () => {
+  let warn: jest.SpyInstance;
+
+  beforeEach(() => {
+    warn = jest
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => undefined);
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  /**
+   * Make every DM take a fixed time by moving the clock forward on each `openDm`.
+   * @param built - The built service and mocks
+   * @param secondsPerDm - How long one DM takes
+   */
+  function slowDms(built: ReturnType<typeof build>, secondsPerDm: number) {
+    built.rest.openDm.mockImplementation((id: string) => {
+      built.clock.advance(secondsPerDm * 1000);
+
+      return Promise.resolve(`dm-${id}`);
+    });
+  }
+
+  it('quá ngân sách thời gian thì dừng gửi, phần còn lại vào unsent để nhắn lại', async () => {
+    const built = build();
+    slowDms(built, 150);
+
+    const report = await built.service.notifyMembers('session-1');
+
+    expect(report.sentCount).toBe(2);
+    expect(report.unsent).toEqual([
+      { characterId: 'kirito', name: 'Kirito', matchIndex: 2 },
+    ]);
+    expect(built.rest.openDm).toHaveBeenCalledTimes(2);
+  });
+
+  it('ghi log khi hết thời gian', async () => {
+    const built = build();
+    slowDms(built, 150);
+
+    await built.service.notifyMembers('session-1');
+
+    expect(warn).toHaveBeenCalledTimes(1);
+  });
+
+  it('chạy nhanh thì không bị cắt', async () => {
+    const built = build();
+    slowDms(built, 1);
+
+    const report = await built.service.notifyMembers('session-1');
+
+    expect(report.unsent).toEqual([]);
+    expect(report.sentCount).toBe(3);
   });
 });

@@ -57,7 +57,7 @@ những người lỗi tạm thời. Lỗi DM không bao giờ làm hỏng Forma
 - Lý do tách: endpoint announce đang chạy ổn không bị đụng; lỗi Team notice cô lập khỏi Formation announcement; body announce đã sát giới hạn 4MB (ảnh), lát ảnh team sau gắn vào endpoint mới mà không cộng dồn kích thước.
 - Endpoint mới có guard giống announce: `JwtAuthGuard` + `AdminGuard`.
 - Body: `{ notices?: { characterId, matchIndex }[] }`. Thiếu `notices` nghĩa là gửi cho mọi người đủ điều kiện. Có `notices` thì chỉ gửi đúng những Team notice đó (dùng cho "Nhắn lại người lỗi"), vẫn lọc qua cùng điều kiện.
-- Từ chối khi ngày đó chưa đóng điểm danh (`attendanceClosedAt` là null), bằng câu tiếng Việt. Formation announcement tự đóng điểm danh, nên đây là dấu hiệu "đã thông báo" mà không cần thêm cột. Trường hợp admin tự đóng tay rồi gửi DM vẫn lọt, chấp nhận vì DM vẫn đúng với đội hình đã lưu.
+- Từ chối khi ngày đó chưa đóng điểm danh (`isAttendanceClosed` của ngày), bằng câu tiếng Việt. Formation announcement tự đóng điểm danh, nên đây là dấu hiệu "đã thông báo" mà không cần thêm cột. Hai trường hợp lọt: admin tự đóng tay, và hạn điểm danh đã qua mà chưa ai đăng thông báo (cờ đóng cũng bật khi quá hạn). Cả hai chấp nhận vì endpoint chỉ admin gọi, có chủ đích, và DM vẫn đúng với đội hình đã lưu.
 - Không gửi khi ngày không tồn tại (404 như announce).
 
 ### Ai nhận
@@ -109,7 +109,7 @@ Online trước HH:mm.
   - `40003` "You are opening direct messages too fast": dừng hẳn; Team notice này và mọi Team notice còn lại vào nhóm **chưa nhắn**.
   - Lỗi khác (5xx, mạng): nhóm **chưa nhắn**, gửi tiếp người sau, ghi log kèm thân lỗi của Discord.
 - `DiscordApiError` cần mang được mã lỗi JSON của Discord (`code`) và `retry_after` để phân biệt các trường hợp trên.
-- Thời gian: khoảng 60 thành viên × 2 lệnh gọi, tuần tự, ước tính dưới 1 phút; giới hạn mặc định của Vercel Function là 300 giây. Không đổi `maxDuration`.
+- Thời gian: một ngày có tối đa 10 team × 6 ô × 2 trận = 120 Team notice, tức 240 lệnh gọi tuần tự (mỗi thành viên nhận một tin cho mỗi trận). Giới hạn mặc định của Vercel Function là 300 giây, nên service có ngân sách 240 giây: quá mức đó thì thôi bắt đầu tin mới và đưa phần còn lại vào `unsent` để nhắn lại, thay vì để function bị tắt giữa chừng (mất báo cáo, "Thử lại" sẽ gửi trùng). Mỗi lệnh gọi JSON tới Discord có timeout 15 giây. Không đổi `maxDuration`.
 
 ### Báo cáo trả về
 

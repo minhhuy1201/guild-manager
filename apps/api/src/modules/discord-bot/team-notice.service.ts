@@ -4,20 +4,15 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import {
-  SLOTS_PER_TEAM,
-  assertNever,
-  buildSlotId,
-  parseSlotId,
-} from '@guild/shared/lib';
+import { assertNever } from '@guild/shared/lib';
 import { teamNoticeReportSchema } from '@guild/shared/schemas';
 import type {
-  MatchFormation,
   NotifyMembersInput,
   TeamNoticeReport,
   TeamNoticeTarget,
 } from '@guild/shared/schemas';
 
+import { Clock } from '../../common';
 import { verifyResponse } from '../../config';
 import { AttendanceService } from '../attendance/attendance.public';
 import { BattleSessionsService } from '../battle-sessions/battle-sessions.public';
@@ -31,7 +26,8 @@ import {
   DiscordRestClient,
 } from './discord-rest';
 import { buildTeamNotice } from './team-notice';
-import type { TeamNoticeSlot } from './team-notice';
+import { isWanted, placementsOf, slotsOfTeam } from './team-notice-plan';
+import type { MemberRow } from './team-notice-plan';
 
 /** Shown when the battle the notices point at no longer exists. */
 const SESSION_NOT_FOUND = 'Không tìm thấy trận đánh này.';
@@ -46,110 +42,18 @@ const MAX_RETRY_WAIT_SECONDS = 10;
 /** How long to wait after a 429 that did not say. */
 const DEFAULT_RETRY_WAIT_SECONDS = 1;
 
+/**
+ * How long a send may run before it stops starting new deliveries. A Vercel Function is killed at
+ * 300 seconds, and a kill mid-run loses the report and invites a duplicate send on retry; stopping
+ * here leaves time to answer, and the rest is reported as unsent.
+ */
+const NOTIFY_BUDGET_MS = 240_000;
+
 /** Milliseconds in a second, for turning Discord's `retry_after` into a timer. */
 const SECOND_MS = 1000;
 
 /** How one member's delivery ended. */
 type DeliveryResult = 'sent' | 'blocked' | 'unsent' | 'too-fast';
-
-/** The columns of a guild member this service reads. */
-interface MemberRow {
-  id: string;
-  name: string;
-  discordId: string | null;
-}
-
-/** A member the formation places, and where. */
-interface Placement {
-  member: MemberRow;
-  /** Stored match number, 1 or 2 */
-  matchIndex: number;
-  team: number;
-  position: number;
-}
-
-/**
- * Every placement of a formation, in the order notices are sent: match, then team, then position.
- *
- * A member who stands in two cells of one match gets one notice for it, from the first cell.
- *
- * @param matches - The day's saved matches, match 1 first
- * @param members - Guild members by id; a placed id missing from it is dropped
- * @returns One placement per member per match
- */
-function placementsOf(
-  matches: MatchFormation[],
-  members: Map<string, MemberRow>,
-): Placement[] {
-  return matches.flatMap((match, index) => {
-    const seen = new Set<string>();
-    const placements: Placement[] = [];
-
-    for (const [slotId, characterId] of Object.entries(match.slots)) {
-      const coordinates = parseSlotId(slotId);
-      const member = members.get(characterId);
-
-      // A member deleted between reading the formation and reading the roster has nobody left to
-      // message. An unreadable slot id is a row from outside the grid; neither can be notified.
-      if (!coordinates || !member) continue;
-
-      placements.push({ member, matchIndex: index + 1, ...coordinates });
-    }
-
-    return placements
-      .sort((a, b) => a.team - b.team || a.position - b.position)
-      .filter((placement) => {
-        if (seen.has(placement.member.id)) return false;
-
-        seen.add(placement.member.id);
-
-        return true;
-      });
-  });
-}
-
-/**
- * Whether a placement is one the caller asked to be notified.
- * @param placement - A member in a match
- * @param only - The requested pairs, undefined for no restriction
- * @returns true when there is no restriction or the pair is listed
- */
-function isWanted(
-  placement: Placement,
-  only: NotifyMembersInput['notices'],
-): boolean {
-  if (only === undefined) return true;
-
-  return only.some(
-    (notice) =>
-      notice.characterId === placement.member.id &&
-      notice.matchIndex === placement.matchIndex,
-  );
-}
-
-/**
- * Every position of one team in one match, with names resolved.
- * @param match - The match's saved formation
- * @param team - Team number
- * @param members - Guild members by id
- * @returns Exactly `SLOTS_PER_TEAM` slots in position order
- */
-function slotsOfTeam(
-  match: MatchFormation,
-  team: number,
-  members: Map<string, MemberRow>,
-): TeamNoticeSlot[] {
-  return Array.from({ length: SLOTS_PER_TEAM }, (_, index) => {
-    const slotId = buildSlotId(team, index + 1);
-    const characterId = match.slots[slotId] ?? null;
-
-    return {
-      characterId,
-      name: characterId ? (members.get(characterId)?.name ?? null) : null,
-      note: match.notes[slotId] ?? null,
-    };
-  });
-}
 
 /**
  * Sends each placed member a direct message saying which team they are in.
@@ -168,6 +72,7 @@ export class TeamNoticeService {
     private readonly attendance: AttendanceService,
     private readonly characters: CharactersService,
     private readonly rest: DiscordRestClient,
+    private readonly clock: Clock,
   ) {}
 
   /**
@@ -213,9 +118,10 @@ export class TeamNoticeService {
     const notPresent: TeamNoticeTarget[] = [];
     const missingDiscordId: TeamNoticeTarget[] = [];
     const unsent: TeamNoticeTarget[] = [];
-    // Once Discord says we are opening DMs too fast, going on risks the bot being blocked from
-    // opening any: everything still waiting is reported as unsent instead.
+    // Set once Discord says we are opening DMs too fast (going on risks the bot being blocked from
+    // opening any) or the time budget is spent: everything still waiting is reported as unsent.
     let stopped = false;
+    const startedAt = this.clock.now().getTime();
 
     for (const placement of placementsOf(saved.matches, members).filter(
       (candidate) => isWanted(candidate, only),
@@ -231,7 +137,14 @@ export class TeamNoticeService {
         notPresent.push(target);
       } else if (member.discordId === null) {
         missingDiscordId.push(target);
-      } else if (stopped) {
+      } else if (stopped || this.isOutOfTime(startedAt)) {
+        if (!stopped) {
+          this.logger.warn(
+            'Hết thời gian nhắn riêng, phần còn lại được báo là chưa nhắn.',
+          );
+        }
+
+        stopped = true;
         unsent.push(target);
       } else {
         const result = await this.deliver(
@@ -288,6 +201,15 @@ export class TeamNoticeService {
   }
 
   /**
+   * Whether the send has used up its time budget.
+   * @param startedAt - When the send began, in epoch milliseconds
+   * @returns true once no new delivery should start
+   */
+  private isOutOfTime(startedAt: number): boolean {
+    return this.clock.now().getTime() - startedAt > NOTIFY_BUDGET_MS;
+  }
+
+  /**
    * Open the member's DM and post their notice into it, sorting a refusal into what it means.
    *
    * A 429 is waited out and tried once more; a second one is given up on. Every other failure is
@@ -316,6 +238,10 @@ export class TeamNoticeService {
         }
 
         if (error.code === DISCORD_ERROR_CODE.openingDmsTooFast) {
+          this.logger.warn(
+            `Discord báo mở DM quá nhanh (${error.code}), dừng nhắn riêng: ${error.message}`,
+          );
+
           return 'too-fast';
         }
 

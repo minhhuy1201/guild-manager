@@ -4,6 +4,7 @@ import type {
   AnnouncementResult,
   FormationWeek,
   MatchFormation,
+  NotifyMembersInput,
   SaveTeamNamesInput,
   SessionFormation,
   TeamNamesState,
@@ -134,7 +135,7 @@ export interface NotifyTeamMembersArgs {
   /** Id of the battle day whose line-up was announced */
   sessionId: string;
   /** Limit the send to these members and matches (a retry); left out, everyone is messaged */
-  notices?: { characterId: string; matchIndex: number }[];
+  notices?: NotifyMembersInput["notices"];
 }
 
 /**

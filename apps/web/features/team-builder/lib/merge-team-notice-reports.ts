@@ -8,6 +8,9 @@ import type { TeamNoticeReport } from "@guild/shared/schemas";
  * instead the sent counts add up, the permanent groups carry over, and `unsent` becomes whoever the
  * retry could not reach either.
  *
+ * A pair the server skips on the retry (no longer in the saved formation) is in no group of the
+ * result, so `totalCount` can drop by that much; the day's line-up changed under the report.
+ *
  * @param previous - The report on screen
  * @param retry - What the server answered to the retry
  * @returns One report for the whole day

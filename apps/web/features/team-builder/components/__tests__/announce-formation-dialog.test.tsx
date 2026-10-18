@@ -230,4 +230,43 @@ describe("AnnounceFormationDialog", () => {
       expect(onOpenChange).toHaveBeenCalledWith(false);
     });
   });
+
+  describe("đóng dialog khi đang gửi", () => {
+    it("Esc không đóng được lúc đang chụp và đăng, vì ảnh chụp nằm ngoài dialog", () => {
+      const onOpenChange = vi.fn();
+      renderDialog({ sending: true, onOpenChange });
+
+      fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
+
+      expect(onOpenChange).not.toHaveBeenCalled();
+    });
+
+    it("Esc không đóng được lúc đang nhắn riêng, nếu không báo cáo sẽ lạc", () => {
+      const onOpenChange = vi.fn();
+      renderDialog({
+        outcome: { report: null, error: null },
+        sending: true,
+        onOpenChange,
+      });
+
+      fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
+
+      expect(onOpenChange).not.toHaveBeenCalled();
+    });
+
+    it("không có nút X ở góc khi đang gửi", () => {
+      renderDialog({ sending: true });
+
+      expect(screen.queryByRole("button", { name: /^Close$|^Đóng$/ })).toBeNull();
+    });
+
+    it("hết gửi thì Esc đóng được", () => {
+      const onOpenChange = vi.fn();
+      renderDialog({ sending: false, onOpenChange });
+
+      fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
+
+      expect(onOpenChange.mock.calls[0][0]).toBe(false);
+    });
+  });
 });

@@ -194,3 +194,17 @@ describe('DiscordApiError', () => {
     expect(error.retryAfter).toBeNull();
   });
 });
+
+describe('DiscordRestClient - giới hạn thời gian chờ', () => {
+  it('openDm và postMessage mang AbortSignal để một request treo không giữ cả function', async () => {
+    const fetchMock = stubFetch({ ok: true, text: '{"id":"dm-1"}' });
+    const client = new DiscordRestClient(CONFIG);
+
+    await client.openDm('1234');
+    await client.postMessage('dm-1', { content: 'x' });
+
+    for (const [, init] of fetchMock.mock.calls as [string, RequestInit][]) {
+      expect(init.signal).toBeInstanceOf(AbortSignal);
+    }
+  });
+});

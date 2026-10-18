@@ -5,6 +5,12 @@ import { z } from 'zod';
 import type { Env } from '../../config';
 import type { MessagePayload } from './commands/command.types';
 
+/**
+ * How long one JSON call may take before it is abandoned. Without it a hung connection holds the
+ * whole Vercel Function until the platform kills it, which for the Team notices loses the report.
+ */
+const REQUEST_TIMEOUT_MS = 15_000;
+
 /** Base of Discord's REST API, pinned to the version the payload shapes were written against. */
 const DISCORD_API_BASE = 'https://discord.com/api/v10';
 
@@ -186,6 +192,7 @@ export class DiscordRestClient {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ recipient_id: userId }),
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
 
     await this.ensureAccepted(`user:${userId}`, response);
@@ -208,6 +215,7 @@ export class DiscordRestClient {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
 
     await this.ensureAccepted(channelId, response);
