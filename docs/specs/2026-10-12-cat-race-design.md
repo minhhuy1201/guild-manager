@@ -80,7 +80,7 @@ erDiagram
 | `CatRaceParticipant` | `eventId`, `characterId`, `tickets` | Khoá chính ghép. `tickets` 1-3, mặc định 1; ở `STANDARD` luôn 1. Cascade theo event **và** theo character. |
 | `CatRacePrize` | `id`, `eventId`, `name`, `quantity`, `tier`, `sortOrder` | `tier` là enum `PrizeTier` (`HIGH`/`MEDIUM`/`LOW`). `quantity ≥ 1`. |
 | `CatRaceEntrant` | `prizeId`, `characterId` | Danh sách đua hiện tại của hạng mục. Khoá chính ghép. Cascade theo prize và character. Số vé đọc từ `CatRaceParticipant`, không lưu lặp ở đây. |
-| `CatRaceRound` | `id`, `prizeId`, `winnerCharacterId?`, `winnerName`, `winnerGuildClass`, `winnerTickets`, `entrantCount`, `totalTickets`, `drawnById`, `drawnAt`, `voidedAt?`, `voidReason?` | Người thắng chụp tên và phái lúc quay; FK `SetNull` vì `Character` bị hard delete. `entrantCount` (số người) và `totalTickets` (số vé, = `entrantCount` ở `STANDARD`) để lịch sử ghi "thắng giữa N người" / "thắng với 3/25 vé". `drawnById` id thường. |
+| `CatRaceRound` | `id`, `prizeId`, `winnerCharacterId?`, `winnerName`, `winnerGuildClass`, `winnerTickets`, `entrantCount`, `totalTickets`, `drawnById`, `drawnAt`, `voidedAt?`, `voidReason?` | Người thắng chụp tên và phái lúc quay; FK `SetNull` vì `Character` bị hard delete. `entrantCount` (số người) và `totalTickets` (số vé, = `entrantCount` ở `STANDARD`) để màn kết quả sau mỗi vòng ghi "thắng giữa N người" / "thắng với 3/25 vé". `drawnById` id thường. |
 
 `CatRaceMode` và `PrizeTier` là enum Prisma, đồng bộ với `packages/shared/enums` (`prisma.md`).
 
@@ -216,7 +216,7 @@ mở thêm `discordId` + `discordAvatar` của người tham gia; chấp nhận 
   nhãn "đã trúng".
 - **Người tham gia ✎**: dialog tick / bỏ tick người tham gia đợt; ở chế độ Vé kèm ô số vé 1-3.
 - **Người thắng**: gom theo hạng mục; mỗi dòng có menu "Huỷ vòng" (dialog nhập lý do). Vòng huỷ gạch
-  ngang, hover / bấm xem lý do. Ở chế độ Vé hiện "3/160 vé".
+  ngang, hover / bấm xem lý do. Mỗi dòng hiện icon phái rồi tên người thắng; không kèm số vé hay số người.
 - **Đợt đã kết thúc**: ẩn mọi nút sửa, nút Đua và Huỷ vòng; hiện nút "Đăng tổng kết lên Discord" (ẩn
   sau khi post).
 
