@@ -132,7 +132,7 @@ type TeamNoticeReport = {
 
 - Dialog "Gửi Discord" thêm checkbox "Nhắn riêng từng người", mặc định bật mỗi lần mở dialog.
 - Hook gửi chạy: chụp ảnh → announce → (nếu bật) notify-members. Toast thành công của announce giữ nguyên.
-- Khi có báo cáo, dialog không tự đóng mà chuyển sang màn kết quả: dòng "Đã nhắn X/Y", rồi các nhóm không rỗng, mỗi người một dòng "tên - trận i". Nhóm "chưa nhắn" có nút "Nhắn lại người lỗi", gửi lại đúng các cặp đó và thay báo cáo bằng kết quả mới.
+- Khi có báo cáo, dialog không tự đóng mà chuyển sang màn kết quả: dòng "Đã nhắn X/Y", rồi các nhóm không rỗng, mỗi người một dòng "tên - trận i". Nhóm "chưa nhắn" có nút "Nhắn lại người lỗi", gửi lại đúng các cặp đó và gộp kết quả vào báo cáo đang hiện: số đã nhắn cộng dồn, các nhóm khác giữ nguyên, nhóm "chưa nhắn" chỉ còn người vẫn lỗi. Thay hẳn báo cáo sẽ làm mất những người đã nhận được ở lần đầu.
 - Request notify-members lỗi toàn bộ (mạng, 5xx, 400 vì chưa đóng điểm danh): dialog hiện câu lỗi, Formation announcement được coi là đã gửi (toast thành công vẫn hiện), có nút thử lại gọi lại notify-members cho tất cả.
 - Theo quy ước `MutationForm` / `recoverSession` của web cho lỗi phiên.
 

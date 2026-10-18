@@ -129,19 +129,28 @@ export async function announceFormation(
   );
 }
 
+/** Arguments of `notifyTeamMembers`. `sessionId` travels on the URL; only `notices` is sent. */
+export interface NotifyTeamMembersArgs {
+  /** Id of the battle day whose line-up was announced */
+  sessionId: string;
+  /** Limit the send to these members and matches (a retry); left out, everyone is messaged */
+  notices?: { characterId: string; matchIndex: number }[];
+}
+
 /**
  * Message each placed member which team they are in, one direct message per match.
- * @param sessionId - Id of the battle day whose line-up was announced
+ * @param input - sessionId and, for a retry, which members and matches to message
  * @returns How many messages were sent and who did not get one
  * @throws ApiError when signed out, the day is gone (404), or its attendance is still open (400)
  */
 export async function notifyTeamMembers(
-  sessionId: string
+  input: NotifyTeamMembersArgs
 ): Promise<TeamNoticeReport> {
   return apiFetch<TeamNoticeReport>(
-    `/team-builder/formations/${encodeURIComponent(sessionId)}/notify-members`,
+    `/team-builder/formations/${encodeURIComponent(input.sessionId)}/notify-members`,
     {
       method: "POST",
+      body: JSON.stringify({ notices: input.notices }),
       headers: await authHeader(),
     }
   );

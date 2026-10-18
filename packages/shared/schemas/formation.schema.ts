@@ -210,3 +210,21 @@ export const teamNoticeReportSchema = z.object({
 export type TeamNoticeTarget = z.infer<typeof teamNoticeTargetSchema>;
 
 export type TeamNoticeReport = z.infer<typeof teamNoticeReportSchema>;
+
+/**
+ * Body of POST /team-builder/formations/:sessionId/notify-members. `notices` narrows the send to
+ * those members and matches, the retry of whoever did not get theirs. Left out, everyone the day
+ * calls for is messaged.
+ */
+export const notifyMembersSchema = z.object({
+  notices: z
+    .array(
+      z.object({
+        characterId: z.string().min(1),
+        matchIndex: z.number().int().min(1).max(2),
+      }),
+    )
+    .optional(),
+});
+
+export type NotifyMembersInput = z.infer<typeof notifyMembersSchema>;

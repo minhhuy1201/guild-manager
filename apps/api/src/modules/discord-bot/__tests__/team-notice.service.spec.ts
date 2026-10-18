@@ -418,3 +418,49 @@ describe('TeamNoticeService.notifyMembers - lỗi từ Discord', () => {
     expect(report.sentCount + groups).toBe(report.totalCount);
   });
 });
+
+describe('TeamNoticeService.notifyMembers - nhắn lại theo danh sách', () => {
+  it('chỉ nhắn đúng những cặp người và trận được chỉ định', async () => {
+    const { service, rest } = build();
+
+    const report = await service.notifyMembers('session-1', [
+      { characterId: 'kirito', matchIndex: 2 },
+    ]);
+
+    expect(rest.openDm.mock.calls.map(([id]) => id)).toEqual(['d-kirito']);
+    expect(sent(rest)[0].content).toContain('Trận 2/2');
+    expect(report.sentCount).toBe(1);
+    expect(report.totalCount).toBe(1);
+  });
+
+  it('người được chỉ định vẫn phải qua điều kiện: chưa điểm danh Có thì không nhắn', async () => {
+    const { service, rest } = build();
+
+    const report = await service.notifyMembers('session-1', [
+      { characterId: 'sinon', matchIndex: 1 },
+    ]);
+
+    expect(rest.openDm).not.toHaveBeenCalled();
+    expect(report.notPresent).toHaveLength(1);
+  });
+
+  it('cặp không có trong đội hình thì bỏ qua', async () => {
+    const { service, rest } = build();
+
+    const report = await service.notifyMembers('session-1', [
+      { characterId: 'asuna', matchIndex: 2 },
+    ]);
+
+    expect(rest.openDm).not.toHaveBeenCalled();
+    expect(report.totalCount).toBe(0);
+  });
+
+  it('danh sách rỗng thì không nhắn ai', async () => {
+    const { service, rest } = build();
+
+    const report = await service.notifyMembers('session-1', []);
+
+    expect(rest.openDm).not.toHaveBeenCalled();
+    expect(report.totalCount).toBe(0);
+  });
+});

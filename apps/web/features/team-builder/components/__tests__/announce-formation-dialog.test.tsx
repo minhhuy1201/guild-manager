@@ -24,6 +24,7 @@ function renderDialog(
       notifyMembers
       outcome={null}
       onNotifyMembersChange={vi.fn()}
+      onRetry={vi.fn()}
       onOpenChange={vi.fn()}
       onConfirm={vi.fn()}
       {...props}
@@ -161,6 +162,63 @@ describe("AnnounceFormationDialog", () => {
 
       expect(screen.getByText("Không nhắn riêng được.")).toBeTruthy();
       expect(screen.getByText(/đã đăng vào channel/)).toBeTruthy();
+    });
+
+    it("có người chưa nhắn được thì có nút nhắn lại người lỗi", () => {
+      const onRetry = vi.fn();
+      renderDialog({
+        outcome: {
+          report: {
+            ...report,
+            unsent: [{ characterId: "r", name: "Rika", matchIndex: 2 }],
+          },
+          error: null,
+        },
+        onRetry,
+      });
+
+      fireEvent.click(
+        screen.getByRole("button", { name: /Nhắn lại người lỗi/ })
+      );
+
+      expect(onRetry).toHaveBeenCalledOnce();
+    });
+
+    it("không ai chưa nhắn được thì không có nút nhắn lại", () => {
+      renderDialog({ outcome: { report, error: null } });
+
+      expect(screen.queryByRole("button", { name: /Nhắn lại/ })).toBeNull();
+    });
+
+    it("cả request lỗi thì có nút thử lại", () => {
+      const onRetry = vi.fn();
+      renderDialog({
+        outcome: { report: null, error: "Mất kết nối." },
+        onRetry,
+      });
+
+      fireEvent.click(screen.getByRole("button", { name: /Thử lại/ }));
+
+      expect(onRetry).toHaveBeenCalledOnce();
+    });
+
+    it("đang nhắn lại thì khoá nút nhắn lại", () => {
+      renderDialog({
+        outcome: {
+          report: {
+            ...report,
+            unsent: [{ characterId: "r", name: "Rika", matchIndex: 2 }],
+          },
+          error: null,
+        },
+        sending: true,
+      });
+
+      const button = screen.getByRole("button", {
+        name: /Nhắn lại người lỗi|Đang nhắn/,
+      }) as HTMLButtonElement;
+
+      expect(button.disabled).toBe(true);
     });
 
     it("có nút Đóng", () => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { MessageCircle, Send, X } from "lucide-react";
+import { MessageCircle, RefreshCw, Send, X } from "lucide-react";
 
 import { FieldLabel } from "@/components/shared/field-label";
 import { Spinner } from "@/components/shared/spinner";
@@ -35,6 +35,8 @@ interface AnnounceFormationDialogProps {
   outcome: TeamNoticeOutcome | null;
   /** Called when the user toggles the direct messages */
   onNotifyMembersChange: (notify: boolean) => void;
+  /** Message again: the members who were unsent, or everyone after a failed request */
+  onRetry: () => void;
   /** Called when the user closes the dialog */
   onOpenChange: (open: boolean) => void;
   /** Capture the line-ups and send the announcement */
@@ -58,6 +60,7 @@ interface AnnounceFormationDialogProps {
  * @param notifyMembers - Whether each placed member gets a direct message too
  * @param outcome - How the direct messages ended, null before the announcement went out
  * @param onNotifyMembersChange - Called with the new value of the switch
+ * @param onRetry - Message the members who were left out, or everyone after a failed request
  * @param onOpenChange - Called when the user closes the dialog
  * @param onConfirm - Capture and send
  * @returns The confirmation dialog
@@ -71,10 +74,14 @@ export function AnnounceFormationDialog({
   notifyMembers,
   outcome,
   onNotifyMembersChange,
+  onRetry,
   onOpenChange,
   onConfirm,
 }: AnnounceFormationDialogProps) {
   if (outcome) {
+    const canRetry = Boolean(outcome.error) || (outcome.report?.unsent.length ?? 0) > 0;
+    const retryLabel = outcome.error ? "Thử lại" : "Nhắn lại người lỗi";
+
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent>
@@ -109,6 +116,12 @@ export function AnnounceFormationDialog({
                 <X />
                 Đóng
               </Button>
+              {canRetry ? (
+                <Button onClick={onRetry} disabled={sending}>
+                  {sending ? <Spinner /> : <RefreshCw />}
+                  {sending ? "Đang nhắn..." : retryLabel}
+                </Button>
+              ) : null}
             </DialogFooter>
           </div>
         </DialogContent>

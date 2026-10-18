@@ -90,10 +90,10 @@ Khi cả request nhắn riêng lỗi, admin thử lại được mà không ph�
 
 **Blocked by:** 04.
 
-**Status:** todo
+**Status:** done
 
-- [ ] Endpoint lọc theo `notices` (cặp `characterId`, `matchIndex`) khi body có trường này, vẫn qua cùng điều kiện ở 03.
-- [ ] Nút "Nhắn lại người lỗi" ở nhóm "Chưa nhắn" gửi đúng các cặp đó và thay báo cáo bằng kết quả mới.
-- [ ] Request `notify-members` lỗi toàn bộ (mạng, 5xx, 400): dialog hiện câu lỗi, toast thành công của Formation announcement vẫn giữ, có nút thử lại cho tất cả.
-- [ ] Lỗi phiên đi qua `recoverSession` như các write khác.
-- [ ] Test web: nút nhắn lại gửi đúng các cặp; lỗi toàn bộ hiện câu lỗi và nút thử lại.
+- [x] Endpoint lọc theo `notices` (cặp `characterId`, `matchIndex`) khi body có trường này, vẫn qua cùng điều kiện ở 03.
+- [x] Nút "Nhắn lại người lỗi" ở nhóm "Chưa nhắn" gửi đúng các cặp đó và gộp kết quả vào báo cáo đang hiện (số đã nhắn cộng dồn, nhóm "chưa nhắn" chỉ còn người vẫn lỗi).
+- [x] Request `notify-members` lỗi toàn bộ (mạng, 5xx, 400): dialog hiện câu lỗi, toast thành công của Formation announcement vẫn giữ, có nút thử lại cho tất cả.
+- [x] Lỗi phiên đi qua `recoverSession` như các write khác.
+- [x] Test web: nút nhắn lại gửi đúng các cặp; lỗi toàn bộ hiện câu lỗi và nút thử lại.

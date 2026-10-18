@@ -71,7 +71,10 @@ describe("useFormationAnnounce - nhắn riêng", () => {
     await act(() => result.current.confirm());
 
     expect(announceMock).toHaveBeenCalledOnce();
-    expect(notifyMock).toHaveBeenCalledWith("session-1");
+    expect(notifyMock).toHaveBeenCalledWith({
+      sessionId: "session-1",
+      notices: undefined,
+    });
     expect(result.current.open).toBe(true);
     expect(result.current.outcome).toEqual({ report: REPORT, error: null });
     expect(toastSuccess).toHaveBeenCalledOnce();
@@ -124,5 +127,89 @@ describe("useFormationAnnounce - nhắn riêng", () => {
     act(() => result.current.setOpen(true));
 
     expect(result.current.outcome).toBeNull();
+  });
+});
+
+describe("useFormationAnnounce - nhắn lại", () => {
+  const ASUNA = { characterId: "asuna", name: "Asuna", matchIndex: 1 };
+  const KLEIN = { characterId: "klein", name: "Klein", matchIndex: 2 };
+
+  it("nhắn lại chỉ gửi cho người chưa nhắn được rồi gộp vào báo cáo cũ", async () => {
+    notifyMock.mockResolvedValueOnce({
+      ...REPORT,
+      sentCount: 1,
+      totalCount: 3,
+      unsent: [ASUNA, KLEIN],
+    });
+    notifyMock.mockResolvedValueOnce({
+      ...REPORT,
+      sentCount: 1,
+      totalCount: 2,
+      unsent: [KLEIN],
+    });
+    const { result } = renderAnnounce();
+
+    act(() => result.current.setOpen(true));
+    await act(() => result.current.confirm());
+    await act(() => result.current.retry());
+
+    expect(notifyMock).toHaveBeenLastCalledWith({
+      sessionId: "session-1",
+      notices: [
+        { characterId: "asuna", matchIndex: 1 },
+        { characterId: "klein", matchIndex: 2 },
+      ],
+    });
+    expect(result.current.outcome?.report).toMatchObject({
+      sentCount: 2,
+      totalCount: 3,
+      unsent: [KLEIN],
+    });
+  });
+
+  it("request lỗi cả lượt thì thử lại gửi cho tất cả", async () => {
+    notifyMock.mockRejectedValueOnce(new Error("Mất kết nối."));
+    const { result } = renderAnnounce();
+
+    act(() => result.current.setOpen(true));
+    await act(() => result.current.confirm());
+    await act(() => result.current.retry());
+
+    expect(notifyMock).toHaveBeenLastCalledWith({
+      sessionId: "session-1",
+      notices: undefined,
+    });
+    expect(result.current.outcome).toEqual({ report: REPORT, error: null });
+  });
+
+  it("thử lại cả lượt không đăng lại tin channel", async () => {
+    notifyMock.mockRejectedValueOnce(new Error("Mất kết nối."));
+    const { result } = renderAnnounce();
+
+    act(() => result.current.setOpen(true));
+    await act(() => result.current.confirm());
+    await act(() => result.current.retry());
+
+    expect(announceMock).toHaveBeenCalledOnce();
+  });
+
+  it("lần nhắn lại lỗi thì giữ danh sách cũ để còn thử tiếp", async () => {
+    notifyMock.mockResolvedValueOnce({
+      ...REPORT,
+      sentCount: 1,
+      totalCount: 2,
+      unsent: [ASUNA],
+    });
+    notifyMock.mockRejectedValueOnce(new Error("Mất kết nối."));
+    const { result } = renderAnnounce();
+
+    act(() => result.current.setOpen(true));
+    await act(() => result.current.confirm());
+    await act(() => result.current.retry());
+
+    expect(result.current.outcome).toMatchObject({
+      report: { unsent: [ASUNA] },
+      error: "Mất kết nối.",
+    });
   });
 });

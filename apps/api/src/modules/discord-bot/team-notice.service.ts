@@ -13,6 +13,7 @@ import {
 import { teamNoticeReportSchema } from '@guild/shared/schemas';
 import type {
   MatchFormation,
+  NotifyMembersInput,
   TeamNoticeReport,
   TeamNoticeTarget,
 } from '@guild/shared/schemas';
@@ -108,6 +109,25 @@ function placementsOf(
 }
 
 /**
+ * Whether a placement is one the caller asked to be notified.
+ * @param placement - A member in a match
+ * @param only - The requested pairs, undefined for no restriction
+ * @returns true when there is no restriction or the pair is listed
+ */
+function isWanted(
+  placement: Placement,
+  only: NotifyMembersInput['notices'],
+): boolean {
+  if (only === undefined) return true;
+
+  return only.some(
+    (notice) =>
+      notice.characterId === placement.member.id &&
+      notice.matchIndex === placement.matchIndex,
+  );
+}
+
+/**
  * Every position of one team in one match, with names resolved.
  * @param match - The match's saved formation
  * @param team - Team number
@@ -157,11 +177,16 @@ export class TeamNoticeService {
    * announcement showed the guild, and the browser could hold a draft that was never saved.
    *
    * @param sessionId - Battle day whose line-up is notified
+   * @param only - Narrow the send to these members and matches (a retry); omitted means everyone.
+   *   A pair the formation does not hold is ignored, and the rest of the rules still apply to it.
    * @returns Who was messaged and, for everyone else, why not
    * @throws NotFoundException when the battle day does not exist
    * @throws BadRequestException when the day's attendance is still open (nothing announced yet)
    */
-  async notifyMembers(sessionId: string): Promise<TeamNoticeReport> {
+  async notifyMembers(
+    sessionId: string,
+    only?: NotifyMembersInput['notices'],
+  ): Promise<TeamNoticeReport> {
     const session = await this.battleSessions.findById(sessionId);
 
     if (!session) throw new NotFoundException(SESSION_NOT_FOUND);
@@ -192,7 +217,9 @@ export class TeamNoticeService {
     // opening any: everything still waiting is reported as unsent instead.
     let stopped = false;
 
-    for (const placement of placementsOf(saved.matches, members)) {
+    for (const placement of placementsOf(saved.matches, members).filter(
+      (candidate) => isWanted(candidate, only),
+    )) {
       const { member } = placement;
       const target: TeamNoticeTarget = {
         characterId: member.id,

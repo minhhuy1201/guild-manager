@@ -7,6 +7,7 @@ import type {
 
 import { AdminGuard, JwtAuthGuard } from '../../common';
 import { AnnounceFormationDto } from './dto/announce-formation.dto';
+import { NotifyMembersDto } from './dto/notify-members.dto';
 import { FormationAnnouncerService } from './formation-announcer.service';
 import { TeamNoticeService } from './team-notice.service';
 
@@ -51,13 +52,15 @@ export class FormationAnnounceController {
   /**
    * Message each placed member which team they are in, one direct message per match.
    * @param sessionId - Id of the battle day whose line-up is notified
+   * @param body - notices: limits the send to those members and matches, for a retry
    * @returns How many messages were sent and who did not get one
    */
   @Post('formations/:sessionId/notify-members')
   @ApiOperation({ summary: 'Nhắn riêng từng thành viên đội hình của ngày này' })
   notifyMembers(
     @Param('sessionId') sessionId: string,
+    @Body() body: NotifyMembersDto,
   ): Promise<TeamNoticeReport> {
-    return this.notices.notifyMembers(sessionId);
+    return this.notices.notifyMembers(sessionId, body.notices);
   }
 }

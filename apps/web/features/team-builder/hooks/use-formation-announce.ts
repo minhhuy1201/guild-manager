@@ -11,7 +11,9 @@ import {
   announceFormation,
   notifyTeamMembers,
   type AnnounceFormationArgs,
+  type NotifyTeamMembersArgs,
 } from "../api/team-builder-api";
+import { mergeTeamNoticeReports } from "../lib/merge-team-notice-reports";
 import {
   CaptureCountError,
   captureFormations,
@@ -46,9 +48,9 @@ const NOTIFY_FAILED = "Không nhắn riêng được cho thành viên.";
  * they are still being sent.
  */
 export interface TeamNoticeOutcome {
-  /** What the server answered, null while sending or after a failure */
+  /** What the server answered. Kept across a failed retry; null before the first answer. */
   report: TeamNoticeReport | null;
-  /** Why the request failed as a whole, null otherwise */
+  /** Why the last request failed as a whole, null otherwise */
   error: string | null;
 }
 
@@ -68,6 +70,8 @@ export interface FormationAnnounceState {
   setOpen: (open: boolean) => void;
   /** Capture the line-ups and send them */
   confirm: () => Promise<void>;
+  /** Message again: the members who were unsent, or everyone when the whole request failed */
+  retry: () => Promise<void>;
 }
 
 /**
@@ -102,7 +106,7 @@ export function useFormationAnnounce(
   });
   // Wrapped: a bare Server Action would also receive the mutation context TanStack passes second.
   const notifyMutation = useMutation({
-    mutationFn: (id: string) => notifyTeamMembers(id),
+    mutationFn: (input: NotifyTeamMembersArgs) => notifyTeamMembers(input),
   });
 
   /**
@@ -158,10 +162,30 @@ export function useFormationAnnounce(
 
     // The announcement is already in the channel, so a failure from here on must not read as one
     // that undoes it: it stays in the dialog, beside the success the admin just saw.
-    setOutcome({ report: null, error: null });
+    await notify(sessionId, undefined, null);
+  }
+
+  /**
+   * Ask the server to message the members, and show what came back.
+   * @param id - Battle day being notified
+   * @param notices - Members and matches to limit the send to; undefined for everyone
+   * @param previous - The report on screen when this is a retry, folded into the new answer
+   * @returns A promise resolving once the outcome is in the dialog
+   */
+  async function notify(
+    id: string,
+    notices: NotifyTeamMembersArgs["notices"],
+    previous: TeamNoticeReport | null
+  ): Promise<void> {
+    setOutcome({ report: previous, error: null });
     try {
+      const report = await notifyMutation.mutateAsync({
+        sessionId: id,
+        notices,
+      });
+
       setOutcome({
-        report: await notifyMutation.mutateAsync(sessionId),
+        report: previous ? mergeTeamNoticeReports(previous, report) : report,
         error: null,
       });
     } catch (error) {
@@ -170,7 +194,7 @@ export function useFormationAnnounce(
       const recovered = recoverSession(error);
 
       setOutcome({
-        report: null,
+        report: previous,
         error: recovered
           ? NOTIFY_INTERRUPTED
           : error instanceof Error
@@ -178,6 +202,32 @@ export function useFormationAnnounce(
             : NOTIFY_FAILED,
       });
     }
+  }
+
+  /**
+   * Message again without announcing again.
+   * @returns A promise resolving once the outcome is in the dialog
+   */
+  async function retry(): Promise<void> {
+    if (!sessionId || !outcome) return;
+
+    const { report } = outcome;
+
+    if (!report) {
+      await notify(sessionId, undefined, null);
+      return;
+    }
+
+    if (report.unsent.length === 0) return;
+
+    await notify(
+      sessionId,
+      report.unsent.map(({ characterId, matchIndex }) => ({
+        characterId,
+        matchIndex,
+      })),
+      report
+    );
   }
 
   return {
@@ -188,5 +238,6 @@ export function useFormationAnnounce(
     outcome,
     setOpen: changeOpen,
     confirm,
+    retry,
   };
 }

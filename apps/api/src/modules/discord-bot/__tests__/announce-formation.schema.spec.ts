@@ -1,4 +1,7 @@
-import { announceFormationSchema } from '@guild/shared/schemas';
+import {
+  announceFormationSchema,
+  notifyMembersSchema,
+} from '@guild/shared/schemas';
 
 import { AdminGuard, JwtAuthGuard } from '../../../common';
 import { guardsOf } from '../../../__tests__/guards-of';
@@ -74,7 +77,7 @@ describe('FormationAnnounceController', () => {
     expect(announcer.announce).toHaveBeenCalledWith('session-1', images);
   });
 
-  it('nhắn riêng chuyển sessionId xuống TeamNoticeService và trả nguyên báo cáo', async () => {
+  it('nhắn riêng chuyển sessionId và danh sách nhắn lại xuống TeamNoticeService, trả nguyên báo cáo', async () => {
     const report = {
       sentCount: 1,
       totalCount: 1,
@@ -89,9 +92,36 @@ describe('FormationAnnounceController', () => {
       notices as unknown as TeamNoticeService,
     );
 
-    await expect(controller.notifyMembers('session-1')).resolves.toEqual(
+    await expect(controller.notifyMembers('session-1', {})).resolves.toEqual(
       report,
     );
-    expect(notices.notifyMembers).toHaveBeenCalledWith('session-1');
+    expect(notices.notifyMembers).toHaveBeenCalledWith('session-1', undefined);
+  });
+});
+
+describe('notifyMembersSchema', () => {
+  it('nhận body rỗng: nhắn cho tất cả', () => {
+    expect(notifyMembersSchema.safeParse({}).success).toBe(true);
+  });
+
+  it('nhận danh sách người và trận để nhắn lại', () => {
+    expect(
+      notifyMembersSchema.safeParse({
+        notices: [{ characterId: 'kirito', matchIndex: 2 }],
+      }).success,
+    ).toBe(true);
+  });
+
+  it('từ chối trận ngoài 1 và 2, và id rỗng', () => {
+    expect(
+      notifyMembersSchema.safeParse({
+        notices: [{ characterId: 'kirito', matchIndex: 3 }],
+      }).success,
+    ).toBe(false);
+    expect(
+      notifyMembersSchema.safeParse({
+        notices: [{ characterId: '', matchIndex: 1 }],
+      }).success,
+    ).toBe(false);
   });
 });
