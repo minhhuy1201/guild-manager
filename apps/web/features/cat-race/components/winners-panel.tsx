@@ -1,9 +1,10 @@
 "use client";
 
 import { Ban } from "lucide-react";
-import { CatRaceMode, PRIZE_TIER_LABEL } from "@guild/shared/enums";
+import { PRIZE_TIER_LABEL } from "@guild/shared/enums";
 import type { CatRaceEventDetail, CatRaceRound } from "@guild/shared/schemas";
 
+import { GuildClassIcon } from "@/components/shared/guild-class-icon";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { PRIZE_TIER_CLASS } from "../lib/prize-tier-style";
@@ -25,8 +26,6 @@ interface WinnersPanelProps {
  * @returns The panel
  */
 export function WinnersPanel({ event, canVoid, onVoid }: WinnersPanelProps) {
-  const isTicketMode = event.mode === CatRaceMode.TICKET;
-
   return (
     <section className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4">
       <h2 className="text-lg font-semibold">Người thắng đợt này</h2>
@@ -58,19 +57,14 @@ export function WinnersPanel({ event, canVoid, onVoid }: WinnersPanelProps) {
                       className="flex items-start justify-between gap-2 rounded-lg bg-card px-2 py-1"
                     >
                       <div className="min-w-0">
-                        <p className={cn("truncate", round.voidedAt && "line-through text-muted-foreground")}>
-                          {round.winnerName}
-                          {isTicketMode ? (
-                            <span className="text-sm text-muted-foreground">
-                              {" "}
-                              · {round.winnerTickets}/{round.totalTickets} vé
-                            </span>
-                          ) : (
-                            <span className="text-sm text-muted-foreground">
-                              {" "}
-                              · giữa {round.entrantCount} người
-                            </span>
+                        <p
+                          className={cn(
+                            "flex items-center gap-2",
+                            round.voidedAt && "line-through text-muted-foreground"
                           )}
+                        >
+                          <GuildClassIcon guildClass={round.winnerGuildClass} />
+                          <span className="truncate">{round.winnerName}</span>
                         </p>
                         {round.voidedAt ? (
                           <p className="text-xs text-muted-foreground">
