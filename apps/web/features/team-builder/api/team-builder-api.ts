@@ -7,6 +7,7 @@ import type {
   SaveTeamNamesInput,
   SessionFormation,
   TeamNamesState,
+  TeamNoticeReport,
 } from "@guild/shared/schemas";
 
 import { authHeader } from "@/features/auth/server";
@@ -123,6 +124,24 @@ export async function announceFormation(
     {
       method: "POST",
       body: JSON.stringify({ images: input.images }),
+      headers: await authHeader(),
+    }
+  );
+}
+
+/**
+ * Message each placed member which team they are in, one direct message per match.
+ * @param sessionId - Id of the battle day whose line-up was announced
+ * @returns How many messages were sent and who did not get one
+ * @throws ApiError when signed out, the day is gone (404), or its attendance is still open (400)
+ */
+export async function notifyTeamMembers(
+  sessionId: string
+): Promise<TeamNoticeReport> {
+  return apiFetch<TeamNoticeReport>(
+    `/team-builder/formations/${encodeURIComponent(sessionId)}/notify-members`,
+    {
+      method: "POST",
       headers: await authHeader(),
     }
   );

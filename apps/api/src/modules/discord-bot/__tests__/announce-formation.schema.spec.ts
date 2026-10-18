@@ -4,6 +4,7 @@ import { AdminGuard, JwtAuthGuard } from '../../../common';
 import { guardsOf } from '../../../__tests__/guards-of';
 import { FormationAnnounceController } from '../formation-announce.controller';
 import { FormationAnnouncerService } from '../formation-announcer.service';
+import { TeamNoticeService } from '../team-notice.service';
 
 const IMAGE = 'data:image/webp;base64,AQID';
 
@@ -62,6 +63,7 @@ describe('FormationAnnounceController', () => {
     };
     const controller = new FormationAnnounceController(
       announcer as unknown as FormationAnnouncerService,
+      {} as TeamNoticeService,
     );
     const images = [IMAGE, 'data:image/webp;base64,BAUG'];
 
@@ -70,5 +72,26 @@ describe('FormationAnnounceController', () => {
     ).resolves.toEqual({ imageCount: 2 });
 
     expect(announcer.announce).toHaveBeenCalledWith('session-1', images);
+  });
+
+  it('nhắn riêng chuyển sessionId xuống TeamNoticeService và trả nguyên báo cáo', async () => {
+    const report = {
+      sentCount: 1,
+      totalCount: 1,
+      blocked: [],
+      missingDiscordId: [],
+      notPresent: [],
+      unsent: [],
+    };
+    const notices = { notifyMembers: jest.fn().mockResolvedValue(report) };
+    const controller = new FormationAnnounceController(
+      {} as FormationAnnouncerService,
+      notices as unknown as TeamNoticeService,
+    );
+
+    await expect(controller.notifyMembers('session-1')).resolves.toEqual(
+      report,
+    );
+    expect(notices.notifyMembers).toHaveBeenCalledWith('session-1');
   });
 });

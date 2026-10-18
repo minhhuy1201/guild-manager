@@ -877,3 +877,64 @@ describe('TeamBuilderService.releaseCharacterFromSession', () => {
     expect(tx.$queryRaw).not.toHaveBeenCalled();
   });
 });
+
+describe('TeamBuilderService.getSavedFormation', () => {
+  let service: TeamBuilderService;
+  let prisma: {
+    formationMatch: { findMany: jest.Mock };
+    teamName: { findMany: jest.Mock };
+    teamNameVersion: { findUniqueOrThrow: jest.Mock };
+  };
+
+  beforeEach(() => {
+    prisma = {
+      formationMatch: {
+        findMany: jest.fn().mockResolvedValue(FORMATION_MATCH_ROWS),
+      },
+      teamName: {
+        findMany: jest.fn().mockResolvedValue([{ team: 1, name: 'Hổ Báo' }]),
+      },
+      teamNameVersion: {
+        findUniqueOrThrow: jest.fn().mockResolvedValue({ id: 1, version: 3 }),
+      },
+    };
+
+    service = new TeamBuilderService(
+      prisma as unknown as PrismaService,
+      {} as BattleSessionsService,
+      {} as CharactersService,
+      new FixedClock(WEDNESDAY),
+    );
+  });
+
+  it('trả đội hình đã lưu của đúng ngày, mỗi trận theo thứ tự', async () => {
+    const saved = await service.getSavedFormation('session-sat');
+
+    expect(prisma.formationMatch.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { sessionId: { in: ['session-sat'] } },
+      }),
+    );
+    expect(saved.matches).toEqual([
+      {
+        slots: { 'team-1-pos-1': 'char-1' },
+        notes: { 'team-1-pos-1': 'giữ buồng', 'team-1-pos-4': 'chừa cho X' },
+      },
+      { slots: { 'team-1-pos-1': 'char-2' }, notes: {} },
+    ]);
+  });
+
+  it('kèm tên team, team chưa đặt tên không có khoá', async () => {
+    const saved = await service.getSavedFormation('session-sat');
+
+    expect(saved.teamNames).toEqual({ '1': 'Hổ Báo' });
+  });
+
+  it('ngày chưa xếp thì không có trận nào', async () => {
+    prisma.formationMatch.findMany.mockResolvedValue([]);
+
+    const saved = await service.getSavedFormation('session-tue');
+
+    expect(saved.matches).toEqual([]);
+  });
+});

@@ -16,6 +16,7 @@ import type {
   SaveFormationInput,
   SaveTeamNamesInput,
   SessionFormation,
+  TeamNames,
   TeamNamesState,
 } from '@guild/shared/schemas';
 
@@ -54,6 +55,14 @@ const RETENTION_DAYS = 56;
 
 /** Milliseconds in a day. */
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** A battle day's saved formation with the team names, as another module reads it. */
+export interface SavedFormation {
+  /** Matches in match 1 → match 2 order; empty when nothing was laid out */
+  matches: MatchFormation[];
+  /** Team number (as a decimal string) → name; teams still on their number are absent */
+  teamNames: TeamNames;
+}
 
 @Injectable()
 export class TeamBuilderService {
@@ -147,6 +156,23 @@ export class TeamBuilderService {
         version,
       } satisfies SessionFormation);
     });
+  }
+
+  /**
+   * The saved formation of one battle day with the team names, for a reader that sends it somewhere
+   * (the Team notices) rather than showing it for editing.
+   *
+   * No version and no week lookup: the caller already holds the day and only needs what was saved.
+   *
+   * @param sessionId - Id of the battle day
+   * @returns The day's matches in match 1 → match 2 order, empty when nothing was laid out, and the
+   *   team names (team number as a decimal string → name)
+   */
+  async getSavedFormation(sessionId: string): Promise<SavedFormation> {
+    const matchesBySession = await this.loadMatchesBySession([sessionId]);
+    const { names } = await this.getTeamNames();
+
+    return { matches: matchesBySession.get(sessionId) ?? [], teamNames: names };
   }
 
   /**

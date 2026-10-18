@@ -17,7 +17,7 @@ const refusalBodySchema = z.object({
   retry_after: z.number().nullable().catch(null),
 });
 
-/** What Discord answers to "open a DM" — only the channel id is used. */
+/** Discord's answer to "open a DM". Only the channel id is read. */
 const dmChannelSchema = z.object({ id: z.string() });
 
 /**

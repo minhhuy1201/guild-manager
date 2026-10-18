@@ -50,17 +50,17 @@ mỗi trận họ có tên. Dialog hiện báo cáo "Đã nhắn X/Y" cùng hai 
 
 **Blocked by:** 01, 02.
 
-**Status:** todo
+**Status:** done (còn bước thử tay)
 
-- [ ] Schema shared cho body (`notices` tuỳ chọn, chưa dùng tới ở ticket này) và báo cáo (`sentCount`, `totalCount`, bốn nhóm).
-- [ ] Hàm thuần dựng Team notice đúng mẫu ở spec: tiêu đề trận, tên team hoặc "Team N", giờ online dùng chung quy tắc với Formation announcement, 6 vị trí kèm note, ô trống ghi "(trống)", người nhận in đậm và đánh dấu, `allowed_mentions` đóng hết, luôn dưới 2000 ký tự.
-- [ ] `TeamBuilderService` có hàm đọc đội hình đã lưu của một ngày kèm tên team; `discord-bot` import `TeamBuilderModule`, test đồ thị module cập nhật và xanh.
-- [ ] Endpoint `POST team-builder/formations/:sessionId/notify-members`, admin JWT; 404 khi không có ngày; từ chối ngày chưa đóng điểm danh bằng câu tiếng Việt.
-- [ ] Bỏ qua người không có điểm danh "Có" (nhóm `notPresent`) và người chưa có Discord ID (nhóm `missingDiscordId`).
-- [ ] Gửi tuần tự; lỗi nào cũng chưa phân loại ở ticket này (ném lên như hiện tại).
-- [ ] Dialog có checkbox mặc định bật mỗi lần mở; tắt thì không gọi `notify-members`.
-- [ ] Có báo cáo thì dialog không tự đóng, hiện "Đã nhắn X/Y" và các nhóm không rỗng, mỗi người một dòng "tên - trận i".
-- [ ] Thử thật trên server thử với 2-3 tài khoản.
+- [x] Schema shared cho báo cáo (`sentCount`, `totalCount`, bốn nhóm). Endpoint chưa có body; trường `notices` vào cùng ticket 05, nơi nó được dùng.
+- [x] Hàm thuần dựng Team notice đúng mẫu ở spec: tiêu đề trận, tên team hoặc "Team N", giờ online dùng chung quy tắc với Formation announcement, 6 vị trí kèm note, ô trống ghi "(trống)", người nhận in đậm và đánh dấu, `allowed_mentions` đóng hết, luôn dưới 2000 ký tự.
+- [x] `TeamBuilderService` có hàm đọc đội hình đã lưu của một ngày kèm tên team; `discord-bot` import `TeamBuilderModule`, test đồ thị module cập nhật và xanh.
+- [x] Endpoint `POST team-builder/formations/:sessionId/notify-members`, admin JWT; 404 khi không có ngày; từ chối ngày chưa đóng điểm danh bằng câu tiếng Việt.
+- [x] Bỏ qua người không có điểm danh "Có" (nhóm `notPresent`) và người chưa có Discord ID (nhóm `missingDiscordId`).
+- [x] Gửi tuần tự; lỗi nào cũng chưa phân loại ở ticket này (ném lên như hiện tại).
+- [x] Dialog có checkbox mặc định bật mỗi lần mở; tắt thì không gọi `notify-members`.
+- [x] Có báo cáo thì dialog không tự đóng, hiện "Đã nhắn X/Y" và các nhóm không rỗng, mỗi người một dòng "tên - trận i".
+- [ ] Thử thật trên server thử với 2-3 tài khoản. (Chưa làm: cần tài khoản Discord thật, người duyệt PR chạy.)
 
 ---
 

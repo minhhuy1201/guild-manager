@@ -226,6 +226,9 @@ export function TeamBuilderScreen() {
           slotCount={screen.draft.slotCount}
           blocked={dirty}
           sending={announce.sending}
+          notifyMembers={announce.notifyMembers}
+          outcome={announce.outcome}
+          onNotifyMembersChange={announce.setNotifyMembers}
           onOpenChange={announce.setOpen}
           onConfirm={announce.confirm}
         />

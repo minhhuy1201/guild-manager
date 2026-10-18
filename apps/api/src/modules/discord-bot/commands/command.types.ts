@@ -105,7 +105,12 @@ export interface MessagePayload {
    * carry an `@everyone` nobody intended. Each list is declared only by the message that pings that
    * kind — the announcement names roles, the reminder names users.
    */
-  allowed_mentions?: { roles?: string[]; users?: string[] };
+  allowed_mentions?: {
+    /** Mention kinds to parse out of `content`; `[]` pings nobody at all */
+    parse?: ('roles' | 'users' | 'everyone')[];
+    roles?: string[];
+    users?: string[];
+  };
 }
 
 /** A reply that sends a new message. */

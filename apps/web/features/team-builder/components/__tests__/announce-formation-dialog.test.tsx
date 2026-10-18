@@ -21,6 +21,9 @@ function renderDialog(
       slotCount={60}
       blocked={false}
       sending={false}
+      notifyMembers
+      outcome={null}
+      onNotifyMembersChange={vi.fn()}
       onOpenChange={vi.fn()}
       onConfirm={vi.fn()}
       {...props}
@@ -74,5 +77,81 @@ describe("AnnounceFormationDialog", () => {
     renderDialog({ sending: true });
 
     expect(confirmButton().disabled).toBe(true);
+  });
+
+  it("có ô nhắn riêng từng người, đang bật theo mặc định của hook", () => {
+    renderDialog({ notifyMembers: true });
+
+    const box = screen.getByRole("checkbox", { name: /Nhắn riêng từng người/ });
+
+    expect(box.getAttribute("aria-checked")).toBe("true");
+  });
+
+  it("bấm ô nhắn riêng thì báo giá trị mới", () => {
+    const onNotifyMembersChange = vi.fn();
+    renderDialog({ onNotifyMembersChange });
+
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: /Nhắn riêng từng người/ })
+    );
+
+    expect(onNotifyMembersChange).toHaveBeenCalledWith(false);
+  });
+
+  describe("sau khi đã đăng vào channel", () => {
+    const report = {
+      sentCount: 1,
+      totalCount: 3,
+      blocked: [],
+      missingDiscordId: [{ characterId: "k", name: "Klein", matchIndex: 1 }],
+      notPresent: [{ characterId: "s", name: "Sinon", matchIndex: 2 }],
+      unsent: [],
+    };
+
+    it("đang nhắn thì nói đang nhắn và không còn nút gửi", () => {
+      renderDialog({ outcome: { report: null, error: null }, sending: true });
+
+      expect(screen.getByText(/Đang nhắn riêng/)).toBeTruthy();
+      expect(screen.queryByRole("button", { name: /Gửi thông báo/ })).toBeNull();
+    });
+
+    it("hiện đã nhắn bao nhiêu trên tổng", () => {
+      renderDialog({ outcome: { report, error: null } });
+
+      expect(screen.getByText("Đã nhắn riêng 1/3")).toBeTruthy();
+    });
+
+    it("liệt kê tên và trận của người không nhận được, theo từng lý do", () => {
+      renderDialog({ outcome: { report, error: null } });
+
+      expect(screen.getByText(/Chưa có Discord ID \(1\)/)).toBeTruthy();
+      expect(screen.getByText("Klein - trận 1")).toBeTruthy();
+      expect(screen.getByText(/Chưa điểm danh Có \(1\)/)).toBeTruthy();
+      expect(screen.getByText("Sinon - trận 2")).toBeTruthy();
+    });
+
+    it("không hiện nhóm rỗng", () => {
+      renderDialog({ outcome: { report, error: null } });
+
+      expect(screen.queryByText(/Chặn tin nhắn từ bot/)).toBeNull();
+    });
+
+    it("cả request lỗi thì hiện câu lỗi và nói tin channel đã đăng", () => {
+      renderDialog({
+        outcome: { report: null, error: "Không nhắn riêng được." },
+      });
+
+      expect(screen.getByText("Không nhắn riêng được.")).toBeTruthy();
+      expect(screen.getByText(/đã đăng vào channel/)).toBeTruthy();
+    });
+
+    it("có nút Đóng", () => {
+      const onOpenChange = vi.fn();
+      renderDialog({ outcome: { report, error: null }, onOpenChange });
+
+      fireEvent.click(screen.getByRole("button", { name: "Đóng" }));
+
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+    });
   });
 });
