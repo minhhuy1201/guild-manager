@@ -2,11 +2,12 @@
 
 import { useMemo } from "react";
 
+import { SLOTS_PER_TEAM } from "@guild/shared/lib";
 import type { Character, TeamNames } from "@guild/shared/schemas";
 
 import { Spinner } from "@/components/shared/spinner";
 import { cn } from "@/lib/utils";
-import { createMockFormation, SLOTS_PER_TEAM } from "../lib/mock-formation";
+import { createMockFormation } from "../lib/mock-formation";
 import { teamLabel } from "../lib/team-label";
 import { useTeamViewStore } from "../store/team-view-store";
 import type {

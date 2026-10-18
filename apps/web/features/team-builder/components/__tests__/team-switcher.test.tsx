@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { SLOTS_PER_TEAM, TEAM_COUNT } from "@guild/shared/lib";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { SLOTS_PER_TEAM, TEAM_COUNT } from "../../lib/mock-formation";
 import { TeamSwitcher } from "../team-switcher";
 
 afterEach(cleanup);

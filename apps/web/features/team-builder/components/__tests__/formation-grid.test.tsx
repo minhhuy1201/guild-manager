@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import { DndContext } from "@dnd-kit/core";
+import { TEAM_COUNT } from "@guild/shared/lib";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { TEAM_COUNT } from "../../lib/mock-formation";
 import { useTeamViewStore } from "../../store/team-view-store";
 
 // The banner title reads the attendance barrel, which carries `server-only`; no action runs here.

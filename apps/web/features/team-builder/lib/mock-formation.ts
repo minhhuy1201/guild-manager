@@ -1,12 +1,7 @@
 import { GuildClass } from "@guild/shared/enums";
+import { SLOTS_PER_TEAM, TEAM_COUNT, buildSlotId } from "@guild/shared/lib";
 
 import type { Formation, Slot } from "../types/formation";
-
-/** Number of teams in the war formation. */
-export const TEAM_COUNT = 10;
-
-/** Number of slots inside a single team. */
-export const SLOTS_PER_TEAM = 6;
 
 /**
  * Suggested guild class per position inside a team, applied to all ten teams.
@@ -23,16 +18,6 @@ export const SUGGESTED_CLASS_TEMPLATE: readonly (GuildClass | undefined)[] = [
   undefined,
   undefined,
 ];
-
-/**
- * Build the stable id of a slot from its coordinates.
- * @param team - Team number, 1..TEAM_COUNT
- * @param position - Row inside the team, 1..SLOTS_PER_TEAM
- * @returns Slot id, e.g. "team-3-pos-2"
- */
-function buildSlotId(team: number, position: number): string {
-  return `team-${team}-pos-${position}`;
-}
 
 /**
  * Build the demo formation: TEAM_COUNT teams of SLOTS_PER_TEAM slots each,
