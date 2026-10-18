@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { CatRaceMode, PrizeTier } from "@guild/shared/enums";
+import { CatRaceMode, GUILD_CLASS_LABEL, PrizeTier } from "@guild/shared/enums";
 import type { CatRaceDrawResult } from "@guild/shared/schemas";
 
 const m = vi.hoisted(() => ({
@@ -60,17 +60,19 @@ describe("WinnersPanel", () => {
     expect(screen.getByText("Thường · đã trao 0/5")).toBeTruthy();
   });
 
-  it("lists the pool size in STANDARD mode and offers to void a live round", () => {
+  it("shows the winner's class icon and name, and offers to void a live round", () => {
     const onVoid = vi.fn();
     render(<WinnersPanel event={makeEvent({ rounds: [ROUND] })} canVoid onVoid={onVoid} />);
 
-    expect(screen.getByText(/giữa 2 người/)).toBeTruthy();
+    expect(screen.getByText("Alice")).toBeTruthy();
+    expect(screen.getByText(GUILD_CLASS_LABEL[ROUND.winnerGuildClass][0])).toBeTruthy();
+    expect(screen.queryByText(/giữa/)).toBeNull();
     fireEvent.click(screen.getByLabelText("Huỷ vòng của Alice"));
 
     expect(onVoid).toHaveBeenCalledWith(ROUND);
   });
 
-  it("lists the tickets in TICKET mode", () => {
+  it("leaves tickets out of the winner line in TICKET mode", () => {
     render(
       <WinnersPanel
         event={makeEvent({ mode: CatRaceMode.TICKET, rounds: [{ ...ROUND, winnerTickets: 2, totalTickets: 5 }] })}
@@ -79,7 +81,7 @@ describe("WinnersPanel", () => {
       />
     );
 
-    expect(screen.getByText(/2\/5 vé/)).toBeTruthy();
+    expect(screen.queryByText(/vé/)).toBeNull();
   });
 
   it("keeps a voided round with its reason and no void button", () => {
