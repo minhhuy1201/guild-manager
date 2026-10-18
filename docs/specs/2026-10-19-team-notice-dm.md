@@ -109,7 +109,7 @@ Online trước HH:mm.
   - `40003` "You are opening direct messages too fast": dừng hẳn; Team notice này và mọi Team notice còn lại vào nhóm **chưa nhắn**.
   - Lỗi khác (5xx, mạng): nhóm **chưa nhắn**, gửi tiếp người sau, ghi log kèm thân lỗi của Discord.
 - `DiscordApiError` cần mang được mã lỗi JSON của Discord (`code`) và `retry_after` để phân biệt các trường hợp trên.
-- Thời gian: một ngày có tối đa 10 team × 6 ô × 2 trận = 120 Team notice, tức 240 lệnh gọi tuần tự (mỗi thành viên nhận một tin cho mỗi trận). Giới hạn mặc định của Vercel Function là 300 giây, nên service có ngân sách 240 giây: quá mức đó thì thôi bắt đầu tin mới và đưa phần còn lại vào `unsent` để nhắn lại, thay vì để function bị tắt giữa chừng (mất báo cáo, "Thử lại" sẽ gửi trùng). Mỗi lệnh gọi JSON tới Discord có timeout 15 giây. Không đổi `maxDuration`.
+- Thời gian: một ngày có tối đa 10 team × 6 ô × 2 trận = 120 Team notice, tức 240 lệnh gọi tuần tự (mỗi thành viên nhận một tin cho mỗi trận). Giới hạn mặc định của Vercel Function là 300 giây, nên service có ngân sách 220 giây (chừa chỗ cho một lượt gửi chậm nhất, khoảng 70 giây, bắt đầu ngay trước mốc đó): quá mức đó thì thôi bắt đầu tin mới và đưa phần còn lại vào `unsent` để nhắn lại, thay vì để function bị tắt giữa chừng (mất báo cáo, "Thử lại" sẽ gửi trùng). Mỗi lệnh gọi JSON tới Discord có timeout 15 giây. Không đổi `maxDuration`.
 
 ### Báo cáo trả về
 

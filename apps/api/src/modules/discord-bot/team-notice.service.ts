@@ -47,7 +47,7 @@ const DEFAULT_RETRY_WAIT_SECONDS = 1;
  * 300 seconds, and a kill mid-run loses the report and invites a duplicate send on retry; stopping
  * here leaves time to answer, and the rest is reported as unsent.
  */
-const NOTIFY_BUDGET_MS = 240_000;
+const NOTIFY_BUDGET_MS = 220_000;
 
 /** Milliseconds in a second, for turning Discord's `retry_after` into a timer. */
 const SECOND_MS = 1000;
