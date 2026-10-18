@@ -83,6 +83,9 @@ export class DiscordApiError extends Error {
 /** Status Discord answers with when the bot lacks a permission in the channel. */
 export const DISCORD_FORBIDDEN = 403;
 
+/** Status Discord answers with when the bot is sending faster than a route allows. */
+export const DISCORD_RATE_LIMITED = 429;
+
 /**
  * Whether this error is Discord refusing a post for lack of permission.
  *

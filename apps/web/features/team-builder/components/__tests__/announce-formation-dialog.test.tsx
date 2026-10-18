@@ -130,6 +130,24 @@ describe("AnnounceFormationDialog", () => {
       expect(screen.getByText("Sinon - trận 2")).toBeTruthy();
     });
 
+    it("người chặn tin nhắn từ bot và người chưa nhắn được có nhóm riêng", () => {
+      renderDialog({
+        outcome: {
+          report: {
+            ...report,
+            blocked: [{ characterId: "a", name: "Asuna", matchIndex: 1 }],
+            unsent: [{ characterId: "r", name: "Rika", matchIndex: 2 }],
+          },
+          error: null,
+        },
+      });
+
+      expect(screen.getByText(/Chặn tin nhắn từ bot \(1\)/)).toBeTruthy();
+      expect(screen.getByText("Asuna - trận 1")).toBeTruthy();
+      expect(screen.getByText(/Chưa nhắn được \(1\)/)).toBeTruthy();
+      expect(screen.getByText("Rika - trận 2")).toBeTruthy();
+    });
+
     it("không hiện nhóm rỗng", () => {
       renderDialog({ outcome: { report, error: null } });
 

@@ -1,9 +1,15 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { SLOTS_PER_TEAM, buildSlotId, parseSlotId } from '@guild/shared/lib';
+import {
+  SLOTS_PER_TEAM,
+  assertNever,
+  buildSlotId,
+  parseSlotId,
+} from '@guild/shared/lib';
 import { teamNoticeReportSchema } from '@guild/shared/schemas';
 import type {
   MatchFormation,
@@ -17,7 +23,12 @@ import { BattleSessionsService } from '../battle-sessions/battle-sessions.public
 import { CharactersService } from '../characters/characters.public';
 import { TeamBuilderService } from '../team-builder/team-builder.public';
 import type { MessagePayload } from './commands/command.types';
-import { DiscordRestClient } from './discord-rest';
+import { DISCORD_ERROR_CODE } from './discord.constants';
+import {
+  DISCORD_RATE_LIMITED,
+  DiscordApiError,
+  DiscordRestClient,
+} from './discord-rest';
 import { buildTeamNotice } from './team-notice';
 import type { TeamNoticeSlot } from './team-notice';
 
@@ -27,6 +38,18 @@ const SESSION_NOT_FOUND = 'Không tìm thấy trận đánh này.';
 /** Shown when notices are requested before the line-up was announced. */
 const NOT_ANNOUNCED_YET =
   'Ngày này chưa đóng điểm danh. Hãy gửi thông báo đội hình vào Discord trước khi nhắn riêng từng người.';
+
+/** Longest a 429 may ask us to wait before we give up on that member instead. */
+const MAX_RETRY_WAIT_SECONDS = 10;
+
+/** How long to wait after a 429 that did not say. */
+const DEFAULT_RETRY_WAIT_SECONDS = 1;
+
+/** Milliseconds in a second, for turning Discord's `retry_after` into a timer. */
+const SECOND_MS = 1000;
+
+/** How one member's delivery ended. */
+type DeliveryResult = 'sent' | 'blocked' | 'unsent' | 'too-fast';
 
 /** The columns of a guild member this service reads. */
 interface MemberRow {
@@ -117,6 +140,8 @@ function slotsOfTeam(
  */
 @Injectable()
 export class TeamNoticeService {
+  private readonly logger = new Logger(TeamNoticeService.name);
+
   constructor(
     private readonly battleSessions: BattleSessionsService,
     private readonly teamBuilder: TeamBuilderService,
@@ -159,8 +184,13 @@ export class TeamNoticeService {
     );
 
     const sent: TeamNoticeTarget[] = [];
+    const blocked: TeamNoticeTarget[] = [];
     const notPresent: TeamNoticeTarget[] = [];
     const missingDiscordId: TeamNoticeTarget[] = [];
+    const unsent: TeamNoticeTarget[] = [];
+    // Once Discord says we are opening DMs too fast, going on risks the bot being blocked from
+    // opening any: everything still waiting is reported as unsent instead.
+    let stopped = false;
 
     for (const placement of placementsOf(saved.matches, members)) {
       const { member } = placement;
@@ -174,8 +204,10 @@ export class TeamNoticeService {
         notPresent.push(target);
       } else if (member.discordId === null) {
         missingDiscordId.push(target);
+      } else if (stopped) {
+        unsent.push(target);
       } else {
-        await this.deliver(
+        const result = await this.deliver(
           member.discordId,
           buildTeamNotice({
             isGuildWar: session.isGuildWar,
@@ -192,32 +224,92 @@ export class TeamNoticeService {
             ),
           }),
         );
-        sent.push(target);
+
+        switch (result) {
+          case 'sent':
+            sent.push(target);
+            break;
+          case 'blocked':
+            blocked.push(target);
+            break;
+          case 'too-fast':
+            stopped = true;
+            unsent.push(target);
+            break;
+          case 'unsent':
+            unsent.push(target);
+            break;
+          default:
+            assertNever(result);
+        }
       }
     }
 
     return verifyResponse(teamNoticeReportSchema, {
       sentCount: sent.length,
-      totalCount: sent.length + notPresent.length + missingDiscordId.length,
-      blocked: [],
+      totalCount:
+        sent.length +
+        blocked.length +
+        missingDiscordId.length +
+        notPresent.length +
+        unsent.length,
+      blocked,
       missingDiscordId,
       notPresent,
-      unsent: [],
+      unsent,
     } satisfies TeamNoticeReport);
   }
 
   /**
-   * Open the member's DM and post their notice into it.
+   * Open the member's DM and post their notice into it, sorting a refusal into what it means.
+   *
+   * A 429 is waited out and tried once more; a second one is given up on. Every other failure is
+   * logged with Discord's own body, because the report only says "unsent".
+   *
    * @param discordId - Discord user id of the recipient
    * @param payload - The notice
-   * @returns A promise resolving once Discord accepted the message
+   * @param canRetry - Whether a 429 may still be waited out
+   * @returns How the delivery ended
    */
   private async deliver(
     discordId: string,
     payload: MessagePayload,
-  ): Promise<void> {
-    const dmChannelId = await this.rest.openDm(discordId);
+    canRetry = true,
+  ): Promise<DeliveryResult> {
+    try {
+      const dmChannelId = await this.rest.openDm(discordId);
 
-    await this.rest.postMessage(dmChannelId, payload);
+      await this.rest.postMessage(dmChannelId, payload);
+
+      return 'sent';
+    } catch (error) {
+      if (error instanceof DiscordApiError) {
+        if (error.code === DISCORD_ERROR_CODE.cannotMessageUser) {
+          return 'blocked';
+        }
+
+        if (error.code === DISCORD_ERROR_CODE.openingDmsTooFast) {
+          return 'too-fast';
+        }
+
+        const wait = error.retryAfter ?? DEFAULT_RETRY_WAIT_SECONDS;
+
+        if (
+          canRetry &&
+          error.status === DISCORD_RATE_LIMITED &&
+          wait <= MAX_RETRY_WAIT_SECONDS
+        ) {
+          await new Promise((resolve) => setTimeout(resolve, wait * SECOND_MS));
+
+          return this.deliver(discordId, payload, false);
+        }
+      }
+
+      this.logger.warn(
+        `Không nhắn riêng được cho ${discordId}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+
+      return 'unsent';
+    }
   }
 }

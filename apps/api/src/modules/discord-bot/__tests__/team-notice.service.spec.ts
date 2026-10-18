@@ -1,6 +1,7 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Logger, NotFoundException } from '@nestjs/common';
 import type { BattleSession, MatchFormation } from '@guild/shared/schemas';
 
+import { DiscordApiError } from '../discord-rest';
 import { TeamNoticeService } from '../team-notice.service';
 
 /** A 20:30 scrim over two matches whose attendance is already closed by the announcement. */
@@ -220,5 +221,200 @@ describe('TeamNoticeService.notifyMembers', () => {
 
     expect(report.totalCount).toBe(0);
     expect(rest.openDm).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * Make `openDm` fail for one Discord user and succeed for everyone else.
+ * @param rest - The mocked REST client
+ * @param userId - Discord id whose DM fails
+ * @param failures - What to throw on each successive attempt for that user; later attempts succeed
+ */
+function failFor(
+  rest: ReturnType<typeof build>['rest'],
+  userId: string,
+  ...failures: Error[]
+): void {
+  let attempt = 0;
+
+  rest.openDm.mockImplementation((id: string) => {
+    if (id !== userId || attempt >= failures.length) {
+      return Promise.resolve(`dm-${id}`);
+    }
+
+    return Promise.reject(failures[attempt++]);
+  });
+}
+
+const BLOCKED = new DiscordApiError(
+  403,
+  'user:d-asuna',
+  '{"code":50007,"message":"Cannot send messages to this user"}',
+);
+const TOO_FAST = new DiscordApiError(
+  400,
+  'user:d-asuna',
+  '{"code":40003,"message":"You are opening direct messages too fast"}',
+);
+
+/**
+ * A 429 asking the caller to wait.
+ * @param seconds - The `retry_after` Discord answers with
+ * @returns The error
+ */
+function rateLimited(seconds: number): DiscordApiError {
+  return new DiscordApiError(
+    429,
+    'user:d-asuna',
+    `{"message":"You are being rate limited.","retry_after":${seconds}}`,
+  );
+}
+
+describe('TeamNoticeService.notifyMembers - lỗi từ Discord', () => {
+  let warn: jest.SpyInstance;
+
+  beforeEach(() => {
+    jest.useFakeTimers();
+    warn = jest
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => undefined);
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+    jest.restoreAllMocks();
+  });
+
+  /** Run a send to its end, moving fake time forward through any wait. */
+  async function run(service: ReturnType<typeof build>['service']) {
+    const pending = service.notifyMembers('session-1');
+
+    await jest.runAllTimersAsync();
+
+    return pending;
+  }
+
+  it('người chặn DM (50007) vào nhóm blocked, những người sau vẫn được nhắn', async () => {
+    const { service, rest } = build();
+    failFor(rest, 'd-asuna', BLOCKED);
+
+    const report = await run(service);
+
+    expect(report.blocked).toEqual([
+      { characterId: 'asuna', name: 'Asuna', matchIndex: 1 },
+    ]);
+    expect(report.sentCount).toBe(2);
+    expect(rest.postMessage).toHaveBeenCalledTimes(2);
+  });
+
+  it('bị giới hạn tốc độ (429) thì chờ đúng retry_after rồi thử lại một lần', async () => {
+    const { service, rest } = build();
+    failFor(rest, 'd-asuna', rateLimited(0.5));
+
+    const pending = service.notifyMembers('session-1');
+    await jest.advanceTimersByTimeAsync(499);
+
+    expect(
+      rest.openDm.mock.calls.filter(([id]) => id === 'd-asuna'),
+    ).toHaveLength(1);
+
+    await jest.advanceTimersByTimeAsync(1);
+    const report = await pending;
+
+    expect(
+      rest.openDm.mock.calls.filter(([id]) => id === 'd-asuna'),
+    ).toHaveLength(2);
+    expect(report.sentCount).toBe(3);
+    expect(report.unsent).toEqual([]);
+  });
+
+  it('429 hai lần liên tiếp thì vào nhóm unsent, không thử lần ba', async () => {
+    const { service, rest } = build();
+    failFor(rest, 'd-asuna', rateLimited(0.1), rateLimited(0.1));
+
+    const report = await run(service);
+
+    expect(report.unsent).toEqual([
+      { characterId: 'asuna', name: 'Asuna', matchIndex: 1 },
+    ]);
+    expect(
+      rest.openDm.mock.calls.filter(([id]) => id === 'd-asuna'),
+    ).toHaveLength(2);
+  });
+
+  it('retry_after quá dài thì không chờ, vào nhóm unsent ngay', async () => {
+    const { service, rest } = build();
+    failFor(rest, 'd-asuna', rateLimited(600));
+
+    const report = await run(service);
+
+    expect(report.unsent).toHaveLength(1);
+    expect(
+      rest.openDm.mock.calls.filter(([id]) => id === 'd-asuna'),
+    ).toHaveLength(1);
+  });
+
+  it('mở DM quá nhanh (40003) thì dừng hẳn: tin này và mọi tin còn lại vào unsent', async () => {
+    const { service, rest } = build();
+    failFor(rest, 'd-asuna', TOO_FAST);
+
+    const report = await run(service);
+
+    expect(report.sentCount).toBe(1);
+    expect(report.unsent).toEqual([
+      { characterId: 'asuna', name: 'Asuna', matchIndex: 1 },
+      { characterId: 'kirito', name: 'Kirito', matchIndex: 2 },
+    ]);
+    expect(rest.openDm).toHaveBeenCalledTimes(2);
+  });
+
+  it('sau 40003 người chưa có ID hay chưa điểm danh vẫn được xếp đúng nhóm của họ', async () => {
+    const { service, rest } = build();
+    failFor(rest, 'd-asuna', TOO_FAST);
+
+    const report = await run(service);
+
+    expect(report.missingDiscordId).toHaveLength(1);
+    expect(report.notPresent).toHaveLength(1);
+    expect(report.totalCount).toBe(5);
+  });
+
+  it('lỗi 5xx vào nhóm unsent, ghi log kèm thân lỗi, những người sau vẫn được nhắn', async () => {
+    const { service, rest } = build();
+    failFor(
+      rest,
+      'd-asuna',
+      new DiscordApiError(502, 'user:d-asuna', 'Bad Gateway'),
+    );
+
+    const report = await run(service);
+
+    expect(report.unsent).toHaveLength(1);
+    expect(report.sentCount).toBe(2);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('Bad Gateway'));
+  });
+
+  it('lỗi mạng (không phải DiscordApiError) cũng vào nhóm unsent', async () => {
+    const { service, rest } = build();
+    failFor(rest, 'd-asuna', new TypeError('fetch failed'));
+
+    const report = await run(service);
+
+    expect(report.unsent).toHaveLength(1);
+    expect(report.sentCount).toBe(2);
+  });
+
+  it('mỗi tin nằm đúng một chỗ: tổng các nhóm cộng đã nhắn bằng totalCount', async () => {
+    const { service, rest } = build();
+    failFor(rest, 'd-asuna', BLOCKED);
+
+    const report = await run(service);
+    const groups =
+      report.blocked.length +
+      report.missingDiscordId.length +
+      report.notPresent.length +
+      report.unsent.length;
+
+    expect(report.sentCount + groups).toBe(report.totalCount);
   });
 });

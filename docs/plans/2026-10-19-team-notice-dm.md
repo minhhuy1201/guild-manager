@@ -71,15 +71,15 @@ Team notice lỗi được xếp vào đúng nhóm trong báo cáo, và dialog h
 
 **Blocked by:** 03.
 
-**Status:** todo
+**Status:** done (còn bước thử tay)
 
-- [ ] `50007` vào nhóm `blocked`, gửi tiếp người sau.
-- [ ] `429`: chờ đúng `retryAfter` rồi thử lại Team notice đó một lần; vẫn lỗi thì vào `unsent`.
-- [ ] `40003`: dừng hẳn; Team notice đó và mọi Team notice còn lại vào `unsent`.
-- [ ] Lỗi khác (5xx, mạng): vào `unsent`, ghi log kèm thân lỗi của Discord, gửi tiếp người sau.
-- [ ] Dialog hiện nhóm "Chặn DM" và "Chưa nhắn".
-- [ ] Test service cho từng trường hợp trên, gồm thứ tự gửi và số lần gọi Discord.
-- [ ] Thử thật với một tài khoản tắt DM từ thành viên server để thấy `50007`.
+- [x] `50007` vào nhóm `blocked`, gửi tiếp người sau.
+- [x] `429`: chờ đúng `retryAfter` rồi thử lại Team notice đó một lần; vẫn lỗi thì vào `unsent`.
+- [x] `40003`: dừng hẳn; Team notice đó và mọi Team notice còn lại vào `unsent`.
+- [x] Lỗi khác (5xx, mạng): vào `unsent`, ghi log kèm thân lỗi của Discord, gửi tiếp người sau.
+- [x] Dialog hiện nhóm "Chặn tin nhắn từ bot" và "Chưa nhắn được" (component báo cáo dựng sẵn từ ticket 03).
+- [x] Test service cho từng trường hợp trên, gồm thứ tự gửi và số lần gọi Discord.
+- [ ] Thử thật với một tài khoản tắt DM từ thành viên server để thấy `50007`. (Chưa làm: cần tài khoản Discord thật, người duyệt PR chạy.)
 
 ---
 
