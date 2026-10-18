@@ -33,12 +33,12 @@ biệt chặn DM, gửi quá nhanh và lỗi khác.
 
 **Blocked by:** None (can start immediately).
 
-**Status:** todo
+**Status:** done
 
-- [ ] `openDm(userId)` gọi `POST /users/@me/channels` với `recipient_id` và trả về id channel.
-- [ ] `DiscordApiError` có `code` (mã JSON của Discord, null khi thân lỗi không phải JSON) và `retryAfter` (giây, null khi không có).
-- [ ] `isDiscordForbidden` và mọi nơi đang dùng nó chạy như cũ.
-- [ ] Test với `fetch` giả: mở DM thành công, lỗi `50007`, lỗi `429` có `retry_after`, thân lỗi không phải JSON.
+- [x] `openDm(userId)` gọi `POST /users/@me/channels` với `recipient_id` và trả về id channel.
+- [x] `DiscordApiError` có `code` (mã JSON của Discord, null khi thân lỗi không phải JSON) và `retryAfter` (giây, null khi không có).
+- [x] `isDiscordForbidden` và mọi nơi đang dùng nó chạy như cũ.
+- [x] Test với `fetch` giả: mở DM thành công, lỗi `50007`, lỗi `429` có `retry_after`, thân lỗi không phải JSON.
 
 ---
 

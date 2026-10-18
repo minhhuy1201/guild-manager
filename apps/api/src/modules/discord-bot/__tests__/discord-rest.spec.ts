@@ -1,4 +1,4 @@
-import { DiscordRestClient } from '../discord-rest';
+import { DiscordApiError, DiscordRestClient } from '../discord-rest';
 
 const CONFIG = { get: () => 'bot-token-value' } as never;
 
@@ -12,6 +12,7 @@ function stubFetch(response: { ok: boolean; status?: number; text?: string }) {
     ok: response.ok,
     status: response.status ?? 200,
     text: () => Promise.resolve(response.text ?? ''),
+    json: () => Promise.resolve(JSON.parse(response.text ?? 'null')),
   });
 
   global.fetch = mock as never;
@@ -126,5 +127,70 @@ describe('DiscordRestClient.postMessageWithFiles', () => {
         },
       ]),
     ).rejects.toThrow(/413.*Payload too large/s);
+  });
+});
+
+describe('DiscordRestClient.openDm', () => {
+  it('mở DM với đúng người và trả về id channel', async () => {
+    const fetchMock = stubFetch({ ok: true, text: '{"id":"dm-777"}' });
+    const client = new DiscordRestClient(CONFIG);
+
+    await expect(client.openDm('1234')).resolves.toBe('dm-777');
+
+    const [url, init] = fetchMock.mock.calls[0] as [
+      string,
+      { method: string; headers: Record<string, string>; body: string },
+    ];
+
+    expect(url).toBe('https://discord.com/api/v10/users/@me/channels');
+    expect(init.method).toBe('POST');
+    expect(init.headers.Authorization).toBe('Bot bot-token-value');
+    expect(JSON.parse(init.body)).toEqual({ recipient_id: '1234' });
+  });
+
+  it('ném lỗi mang mã Discord khi người đó chặn DM', async () => {
+    stubFetch({
+      ok: false,
+      status: 403,
+      text: '{"code":50007,"message":"Cannot send messages to this user"}',
+    });
+    const client = new DiscordRestClient(CONFIG);
+
+    await expect(client.openDm('1234')).rejects.toMatchObject({
+      status: 403,
+      code: 50007,
+      retryAfter: null,
+    });
+  });
+});
+
+describe('DiscordApiError', () => {
+  it('đọc mã lỗi và thời gian chờ từ thân JSON', () => {
+    const error = new DiscordApiError(
+      429,
+      '1',
+      '{"message":"You are being rate limited.","retry_after":1.5,"global":false}',
+    );
+
+    expect(error.code).toBeNull();
+    expect(error.retryAfter).toBe(1.5);
+  });
+
+  it('để null khi thân lỗi không phải JSON', () => {
+    const error = new DiscordApiError(502, '1', '<html>Bad Gateway</html>');
+
+    expect(error.code).toBeNull();
+    expect(error.retryAfter).toBeNull();
+  });
+
+  it('bỏ qua trường sai kiểu thay vì tin nó', () => {
+    const error = new DiscordApiError(
+      400,
+      '1',
+      '{"code":"50007","retry_after":"soon"}',
+    );
+
+    expect(error.code).toBeNull();
+    expect(error.retryAfter).toBeNull();
   });
 });
