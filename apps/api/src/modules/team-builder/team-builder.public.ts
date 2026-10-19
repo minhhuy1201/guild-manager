@@ -9,3 +9,4 @@
  * other that is a real domain cycle, and the answer is a third module, not `forwardRef()`.
  */
 export { TeamBuilderService } from './team-builder.service';
+export type { SavedFormation } from './team-builder.service';

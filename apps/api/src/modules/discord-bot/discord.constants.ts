@@ -106,3 +106,15 @@ export const DISCORD_SIGNATURE_HEADER = 'x-signature-ed25519';
 
 /** Header carrying the timestamp that is signed together with the body. */
 export const DISCORD_TIMESTAMP_HEADER = 'x-signature-timestamp';
+
+/**
+ * Discord's JSON error codes the bot acts on. Only the ones read somewhere are listed.
+ *
+ * https://docs.discord.com/developers/topics/opcodes-and-status-codes
+ */
+export const DISCORD_ERROR_CODE = {
+  /** The user does not accept direct messages from the bot */
+  cannotMessageUser: 50007,
+  /** The bot opened too many direct messages too quickly and risks being blocked from more */
+  openingDmsTooFast: 40003,
+} as const;

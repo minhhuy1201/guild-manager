@@ -1,9 +1,8 @@
+import { SLOTS_PER_TEAM, TEAM_COUNT } from "@guild/shared/lib";
 import { describe, expect, it } from "vitest";
 
 import {
-  SLOTS_PER_TEAM,
   SUGGESTED_CLASS_TEMPLATE,
-  TEAM_COUNT,
   createMockFormation,
 } from "../mock-formation";
 

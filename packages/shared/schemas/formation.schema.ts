@@ -177,3 +177,54 @@ export const announcementResultSchema = z.object({
 export type AnnounceFormationInput = z.infer<typeof announceFormationSchema>;
 
 export type AnnouncementResult = z.infer<typeof announcementResultSchema>;
+
+/**
+ * One Team notice: a member and the match it is about. `matchIndex` is the stored one (1 or 2),
+ * the same number `FormationMatch.matchIndex` carries, so "match 2" reads the same everywhere.
+ */
+export const teamNoticeTargetSchema = z.object({
+  characterId: z.string(),
+  /** Character name, so the admin can read the report without a lookup */
+  name: z.string(),
+  matchIndex: z.number().int(),
+});
+
+/**
+ * What POST /team-builder/formations/:sessionId/notify-members answers. Every Team notice the day
+ * calls for lands in exactly one place: `sentCount`, or one of the four groups that explain why not.
+ */
+export const teamNoticeReportSchema = z.object({
+  sentCount: z.number().int(),
+  /** Sent plus every group below: the denominator of "đã nhắn X/Y" */
+  totalCount: z.number().int(),
+  /** The member does not accept DMs from the bot (Discord error 50007) */
+  blocked: z.array(teamNoticeTargetSchema),
+  /** The member has no Discord ID yet */
+  missingDiscordId: z.array(teamNoticeTargetSchema),
+  /** Placed in the line-up but no "Có" answer for the day */
+  notPresent: z.array(teamNoticeTargetSchema),
+  /** Discord did not take it for a temporary reason; worth sending again */
+  unsent: z.array(teamNoticeTargetSchema),
+});
+
+export type TeamNoticeTarget = z.infer<typeof teamNoticeTargetSchema>;
+
+export type TeamNoticeReport = z.infer<typeof teamNoticeReportSchema>;
+
+/**
+ * Body of POST /team-builder/formations/:sessionId/notify-members. `notices` narrows the send to
+ * those members and matches, the retry of whoever did not get theirs. Left out, everyone the day
+ * calls for is messaged.
+ */
+export const notifyMembersSchema = z.object({
+  notices: z
+    .array(
+      z.object({
+        characterId: z.string().min(1),
+        matchIndex: z.number().int().min(1).max(2),
+      }),
+    )
+    .optional(),
+});
+
+export type NotifyMembersInput = z.infer<typeof notifyMembersSchema>;

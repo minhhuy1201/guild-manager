@@ -50,7 +50,7 @@ export interface FormationAnnouncementLinks {
 }
 
 /** The three times one announcement quotes, already formatted as `HH:mm`. */
-interface GatheringTimes {
+export interface GatheringTimes {
   /** When everyone on the list should already be online */
   gather: string;
   /** After this, an empty slot goes to somebody else */
@@ -61,10 +61,15 @@ interface GatheringTimes {
 
 /**
  * The three times of one battle, already formatted.
+ *
+ * Shared with the Team notice, so a member's DM and the channel message quote the same hour.
+ *
  * @param input - The battle being announced
  * @returns Gather time, replacement time and the "arriving late" time
  */
-function timesOf(input: FormationAnnouncementInput): GatheringTimes {
+export function timesOf(
+  input: Pick<FormationAnnouncementInput, 'isGuildWar' | 'dateTime'>,
+): GatheringTimes {
   if (input.isGuildWar) return GUILD_WAR_TIMES;
 
   const before = (minutes: number) =>
@@ -75,6 +80,19 @@ function timesOf(input: FormationAnnouncementInput): GatheringTimes {
     replace: before(SCRIM_REPLACE_MINUTES),
     late: before(SCRIM_GATHER_MINUTES),
   };
+}
+
+/**
+ * The battle's kind, time and date as the headline of a message, e.g. `SCRIM 20:30 19/08`.
+ * @param input - The battle
+ * @returns The headline without any markdown
+ */
+export function battleHeading(
+  input: Pick<FormationAnnouncementInput, 'isGuildWar' | 'dateTime'>,
+): string {
+  const kind = input.isGuildWar ? 'BANG CHIẾN' : 'SCRIM';
+
+  return `${kind} ${formatVnTime(input.dateTime)} ${formatVnDayMonth(input.dateTime)}`;
 }
 
 /**
@@ -124,12 +142,9 @@ export function buildFormationAnnouncement(
   links: FormationAnnouncementLinks,
 ): MessagePayload {
   const times = timesOf(input);
-  const kind = input.isGuildWar ? 'BANG CHIẾN' : 'SCRIM';
-  const when = `${formatVnTime(input.dateTime)} ${formatVnDayMonth(input.dateTime)}`;
-
   return {
     content: [
-      `# ${kind} ${when}${dayPhrase(input.dateTime, input.now)} - ${input.matchCount} TRẬN`,
+      `# ${battleHeading(input)}${dayPhrase(input.dateTime, input.now)} - ${input.matchCount} TRẬN`,
       `## - Các thành viên có tên trong danh sách vui lòng online *sớm trước ${times.gather}* !`,
       `## - Sau ${times.replace} chưa online, slot được thay thế cho thành viên khác.`,
       `## - Nếu không thể tham gia hoặc vào trễ *sau ${times.late}*, báo gấp vào <#${links.baoBanChannelId}> .`,

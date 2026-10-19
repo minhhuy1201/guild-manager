@@ -1,11 +1,30 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { z } from 'zod';
 
 import type { Env } from '../../config';
 import type { MessagePayload } from './commands/command.types';
 
+/**
+ * How long one JSON call may take before it is abandoned. Without it a hung connection holds the
+ * whole Vercel Function until the platform kills it, which for the Team notices loses the report.
+ */
+const REQUEST_TIMEOUT_MS = 15_000;
+
 /** Base of Discord's REST API, pinned to the version the payload shapes were written against. */
 const DISCORD_API_BASE = 'https://discord.com/api/v10';
+
+/**
+ * The two fields of a refusal's JSON body a caller acts on. Each falls back to null on its own, so
+ * one field of the wrong type does not hide the other.
+ */
+const refusalBodySchema = z.object({
+  code: z.number().nullable().catch(null),
+  retry_after: z.number().nullable().catch(null),
+});
+
+/** Discord's answer to "open a DM". Only the channel id is read. */
+const dmChannelSchema = z.object({ id: z.string() });
 
 /**
  * A call Discord refused.
@@ -16,6 +35,12 @@ const DISCORD_API_BASE = 'https://discord.com/api/v10';
  * message never arrived" is otherwise unanswerable from a log.
  */
 export class DiscordApiError extends Error {
+  /** Discord's JSON error code (e.g. 50007), null when the body carries none */
+  readonly code: number | null;
+
+  /** Seconds Discord asks the caller to wait after a 429, null when the body carries none */
+  readonly retryAfter: number | null;
+
   constructor(
     /** HTTP status Discord answered with */
     readonly status: number,
@@ -28,11 +53,44 @@ export class DiscordApiError extends Error {
       `Discord từ chối gửi tin vào channel ${channelId} (${status}): ${body}`,
     );
     this.name = 'DiscordApiError';
+
+    const refusal = DiscordApiError.readRefusal(body);
+
+    this.code = refusal.code;
+    this.retryAfter = refusal.retry_after;
+  }
+
+  /**
+   * Read `code` and `retry_after` out of a response body.
+   * @param body - Discord's response body, JSON or not
+   * @returns Both fields, null where absent or unreadable
+   */
+  private static readRefusal(body: string): {
+    code: number | null;
+    retry_after: number | null;
+  } {
+    const none = { code: null, retry_after: null };
+    let json: unknown;
+
+    try {
+      json = JSON.parse(body);
+    } catch {
+      // A 502 from Discord's edge is HTML; there is nothing to read and the raw body is already in
+      // the message.
+      return none;
+    }
+
+    const parsed = refusalBodySchema.safeParse(json);
+
+    return parsed.success ? parsed.data : none;
   }
 }
 
 /** Status Discord answers with when the bot lacks a permission in the channel. */
 export const DISCORD_FORBIDDEN = 403;
+
+/** Status Discord answers with when the bot is sending faster than a route allows. */
+export const DISCORD_RATE_LIMITED = 429;
 
 /**
  * Whether this error is Discord refusing a post for lack of permission.
@@ -116,6 +174,33 @@ export class DiscordRestClient {
   }
 
   /**
+   * Open (or fetch the existing) DM channel with a user.
+   *
+   * Discord returns the existing channel when one is already open, so nothing needs storing between
+   * calls. Opening many of these quickly can get the bot blocked from opening new ones (error
+   * 40003), which is why the caller sends one at a time.
+   *
+   * @param userId - Discord user id of the recipient
+   * @returns The DM channel id to post into
+   * @throws DiscordApiError when Discord rejects the call
+   */
+  async openDm(userId: string): Promise<string> {
+    const response = await fetch(`${DISCORD_API_BASE}/users/@me/channels`, {
+      method: 'POST',
+      headers: {
+        ...this.authHeader(),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ recipient_id: userId }),
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
+
+    await this.ensureAccepted(`user:${userId}`, response);
+
+    return dmChannelSchema.parse(await response.json()).id;
+  }
+
+  /**
    * Post a message into a channel.
    * @param channelId - Discord channel id
    * @param payload - The message body, the same shape an interaction reply carries
@@ -130,6 +215,7 @@ export class DiscordRestClient {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
 
     await this.ensureAccepted(channelId, response);

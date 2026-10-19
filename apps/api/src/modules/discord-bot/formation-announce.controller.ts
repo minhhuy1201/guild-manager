@@ -1,13 +1,18 @@
 import { Body, Controller, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import type { AnnouncementResult } from '@guild/shared/schemas';
+import type {
+  AnnouncementResult,
+  TeamNoticeReport,
+} from '@guild/shared/schemas';
 
 import { AdminGuard, JwtAuthGuard } from '../../common';
 import { AnnounceFormationDto } from './dto/announce-formation.dto';
+import { NotifyMembersDto } from './dto/notify-members.dto';
 import { FormationAnnouncerService } from './formation-announcer.service';
+import { TeamNoticeService } from './team-notice.service';
 
 /**
- * The team builder screen's "Gửi Discord" button.
+ * The team builder screen's "Gửi Discord" button, and the direct messages that follow it.
  *
  * Route path and Swagger tag say `team-builder` because that is the screen calling it and the
  * resource it names, but the module is this one: everything the request needs — the message
@@ -24,7 +29,10 @@ import { FormationAnnouncerService } from './formation-announcer.service';
 @Controller('team-builder')
 @UseGuards(JwtAuthGuard, AdminGuard)
 export class FormationAnnounceController {
-  constructor(private readonly announcer: FormationAnnouncerService) {}
+  constructor(
+    private readonly announcer: FormationAnnouncerService,
+    private readonly notices: TeamNoticeService,
+  ) {}
 
   /**
    * Announce the day's line-up in Discord, with one image per match.
@@ -39,5 +47,20 @@ export class FormationAnnounceController {
     @Body() body: AnnounceFormationDto,
   ): Promise<AnnouncementResult> {
     return this.announcer.announce(sessionId, body.images);
+  }
+
+  /**
+   * Message each placed member which team they are in, one direct message per match.
+   * @param sessionId - Id of the battle day whose line-up is notified
+   * @param body - notices: limits the send to those members and matches, for a retry
+   * @returns How many messages were sent and who did not get one
+   */
+  @Post('formations/:sessionId/notify-members')
+  @ApiOperation({ summary: 'Nhắn riêng từng thành viên đội hình của ngày này' })
+  notifyMembers(
+    @Param('sessionId') sessionId: string,
+    @Body() body: NotifyMembersDto,
+  ): Promise<TeamNoticeReport> {
+    return this.notices.notifyMembers(sessionId, body.notices);
   }
 }

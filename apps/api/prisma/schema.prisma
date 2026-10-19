@@ -165,7 +165,8 @@ model FormationMatch {
 /// That rule is code in `src/modules/team-builder/formation-grid.ts` — both read and write.
 model FormationSlot {
   matchId     String
-  /// "team-1-pos-1" — the grid layout itself stays entirely in the frontend.
+  /// "team-1-pos-1". The format and the grid size (`buildSlotId`, `parseSlotId`, `TEAM_COUNT`,
+  /// `SLOTS_PER_TEAM`) live in `@guild/shared/lib`, which both apps read; the column stays a free string.
   slotId      String
   /// Null when the slot only carries a note and nobody is placed yet ("reserved for X").
   characterId String?
@@ -186,8 +187,8 @@ model FormationSlot {
 /// apply to every week, every battle day and every match — unlike FormationSlot, which is per
 /// match. A team still showing its plain number has NO row.
 model TeamName {
-  /// Team number as the frontend numbers its columns (1..10 today). The backend never interprets
-  /// it: the grid layout lives entirely in the frontend, exactly like `FormationSlot.slotId`.
+  /// Team number, 1..`TEAM_COUNT` from `@guild/shared/lib`, the same number `FormationSlot.slotId`
+  /// carries between "team-" and "-pos-". The column itself is not constrained.
   team      Int      @id
   name      String
   updatedAt DateTime @updatedAt
