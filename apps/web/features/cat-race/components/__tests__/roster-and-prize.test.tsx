@@ -121,6 +121,10 @@ describe("RosterChecklist", () => {
 
     await waitFor(() => expect(screen.queryByText("Alice")).toBeNull());
     expect(screen.getByText("Bob")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Xoá bộ lọc" }));
+
+    expect(screen.getByText("Alice")).toBeTruthy();
   });
 
   it("clears the name filter with Xoá bộ lọc", () => {
