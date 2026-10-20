@@ -25,7 +25,7 @@ paths:
 
 - Match through `matchesRosterFilter` (`lib/roster-filter.ts`): name only, both sides lowercased, diacritics kept, empty `guildClasses` means every class. Never search the in-game id.
 - Keep that filter in `lib/`, out of `packages/shared`.
-- Render the widget with `RosterFilterBar`. It is controlled (`value` / `onChange` / `idPrefix`) and knows nothing of where state lives. Do not merge the three screens' filter stores. `layout` varies arrangement only (`stacked` | `inline`).
+- Render the widget with `RosterFilterBar`. It is controlled (`value` / `onChange` / `idPrefix`) and knows nothing of where state lives. Do not merge the screens' filter stores. `layout` varies arrangement only (`stacked` | `inline`).
 - Put a table's filters in the header of the table's own card. A page-wide filter stands above, in its own card.
 - End a multi-filter bar with one "Xoá bộ lọc" button that clears all in a single store write. Always render it, `disabled` while nothing is set. Use `isRosterFilterActive` (trims the keyword). A filter value that no longer resolves does not count as set.
 - Use `FilterClearButton` (`components/shared/filter-clear-button.tsx`) as the per-control X, shown only while the control holds a value. Nothing on screen may move when it appears. The caller moves focus back to the control after clearing.

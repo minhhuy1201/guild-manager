@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CatRaceMode, GuildClass, PrizeTier } from "@guild/shared/enums";
 import type { Character } from "@guild/shared/schemas";
@@ -29,6 +29,13 @@ import { RosterChecklist, type RosterSelection } from "../roster-checklist";
 import { PRIZE, ROUND, makeEvent } from "./fixtures";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+
+// Base UI positions the class picker's popup through floating-ui, which watches the anchor.
+(globalThis as { ResizeObserver?: unknown }).ResizeObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
 
 afterEach(cleanup);
 
@@ -81,10 +88,55 @@ describe("RosterChecklist", () => {
   it("filters by the search text", () => {
     renderChecklist(new Map());
 
-    fireEvent.change(screen.getByLabelText("Tìm theo tên"), { target: { value: "bo" } });
+    fireEvent.change(screen.getByLabelText("Tìm kiếm"), { target: { value: "bo" } });
 
     expect(screen.queryByText("Alice")).toBeNull();
     expect(screen.getByText("Bob")).toBeTruthy();
+  });
+
+  it("filters by guild class", async () => {
+    render(
+      <RosterChecklist
+        idPrefix="t"
+        members={[
+          { characterId: "a", name: "Alice", guildClass: GuildClass.TO_VAN },
+          { characterId: "b", name: "Bob", guildClass: GuildClass.HUYET_HA },
+        ]}
+        selection={new Map()}
+        showTickets={false}
+        onChange={vi.fn()}
+      />
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText("Lưu phái"));
+    });
+    const option = await screen.findByRole("option", { name: /Huyết Hà/ });
+    await act(async () => {
+      fireEvent.pointerDown(option);
+      fireEvent.pointerUp(option);
+      fireEvent.mouseUp(option);
+      fireEvent.click(option);
+    });
+
+    await waitFor(() => expect(screen.queryByText("Alice")).toBeNull());
+    expect(screen.getByText("Bob")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Xoá bộ lọc" }));
+
+    expect(screen.getByText("Alice")).toBeTruthy();
+  });
+
+  it("clears the name filter with Xoá bộ lọc", () => {
+    renderChecklist(new Map());
+    const clear = screen.getByRole("button", { name: "Xoá bộ lọc" }) as HTMLButtonElement;
+    expect(clear.disabled).toBe(true);
+
+    fireEvent.change(screen.getByLabelText("Tìm kiếm"), { target: { value: "bo" } });
+    fireEvent.click(clear);
+
+    expect(screen.getByText("Alice")).toBeTruthy();
+    expect(clear.disabled).toBe(true);
   });
 
   it("ticks all visible people, keeping the tickets already set", () => {
@@ -99,7 +151,7 @@ describe("RosterChecklist", () => {
 
   it("unticks only the visible people", () => {
     const onChange = renderChecklist(new Map([["a", 1], ["b", 1]]));
-    fireEvent.change(screen.getByLabelText("Tìm theo tên"), { target: { value: "bo" } });
+    fireEvent.change(screen.getByLabelText("Tìm kiếm"), { target: { value: "bo" } });
 
     fireEvent.click(screen.getByRole("checkbox", { name: "Chọn tất cả" }));
 
@@ -108,7 +160,7 @@ describe("RosterChecklist", () => {
 
   it("keeps ticked people the search hides when ticking the visible ones", () => {
     const onChange = renderChecklist(new Map([["a", 2]]));
-    fireEvent.change(screen.getByLabelText("Tìm theo tên"), { target: { value: "bo" } });
+    fireEvent.change(screen.getByLabelText("Tìm kiếm"), { target: { value: "bo" } });
 
     fireEvent.click(screen.getByRole("checkbox", { name: "Chọn tất cả" }));
 
