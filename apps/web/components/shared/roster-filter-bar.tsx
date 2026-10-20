@@ -41,7 +41,7 @@ interface RosterFilterBarProps {
  *
  * Controlled and storage-agnostic on purpose: a scoped Zustand store, an
  * unscoped one and a plain useState are all just adapters at the call site,
- * because the three screens hold this filter for different lifetimes.
+ * because the screens hold this filter for different lifetimes.
  * @param value - Filter values currently applied
  * @param onChange - Receives the whole next filter
  * @param idPrefix - Prefix making the input ids unique on the page
