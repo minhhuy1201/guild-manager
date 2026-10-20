@@ -123,6 +123,18 @@ describe("RosterChecklist", () => {
     expect(screen.getByText("Bob")).toBeTruthy();
   });
 
+  it("clears the name filter with Xoá bộ lọc", () => {
+    renderChecklist(new Map());
+    const clear = screen.getByRole("button", { name: "Xoá bộ lọc" }) as HTMLButtonElement;
+    expect(clear.disabled).toBe(true);
+
+    fireEvent.change(screen.getByLabelText("Tìm kiếm"), { target: { value: "bo" } });
+    fireEvent.click(clear);
+
+    expect(screen.getByText("Alice")).toBeTruthy();
+    expect(clear.disabled).toBe(true);
+  });
+
   it("ticks all visible people, keeping the tickets already set", () => {
     const onChange = renderChecklist(new Map([["a", 3]]));
 

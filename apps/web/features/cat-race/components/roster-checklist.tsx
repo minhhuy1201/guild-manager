@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { FilterX } from "lucide-react";
 import type { GuildClass } from "@guild/shared/enums";
 import {
   CAT_RACE_TICKETS_MAX,
@@ -10,7 +11,11 @@ import {
 import { GuildClassIcon } from "@/components/shared/guild-class-icon";
 import { RosterFilterBar } from "@/components/shared/roster-filter-bar";
 import { Button } from "@/components/ui/button";
-import { matchesRosterFilter, type RosterFilter } from "@/lib/roster-filter";
+import {
+  isRosterFilterActive,
+  matchesRosterFilter,
+  type RosterFilter,
+} from "@/lib/roster-filter";
 
 const EMPTY_FILTER: RosterFilter = { search: "", guildClasses: [] };
 
@@ -96,7 +101,18 @@ export function RosterChecklist({
 
   return (
     <div className="grid gap-2">
-      <RosterFilterBar layout="inline" idPrefix={idPrefix} value={filter} onChange={setFilter} />
+      <RosterFilterBar idPrefix={idPrefix} value={filter} onChange={setFilter} />
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="justify-self-end"
+        disabled={!isRosterFilterActive(filter)}
+        onClick={() => setFilter(EMPTY_FILTER)}
+      >
+        <FilterX />
+        Xoá bộ lọc
+      </Button>
       <div className="rounded-lg border border-border">
         <div className="flex items-center justify-between gap-3 border-b border-border rounded-t-lg bg-foreground/5 px-3 py-2">
           <label className="flex items-center gap-3 font-medium">
