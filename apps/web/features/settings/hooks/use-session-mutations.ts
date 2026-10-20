@@ -31,7 +31,8 @@ export function useCreateSession() {
   const invalidate = useInvalidate("schedule");
 
   return useMutation({
-    mutationFn: (input: CreateBattleSessionInput) => createBattleSession(input).then(unwrapAction),
+    mutationFn: (input: CreateBattleSessionInput) =>
+      createBattleSession(input).then(unwrapAction),
     onSuccess: invalidate,
   });
 }
@@ -45,7 +46,7 @@ export function useUpdateSession() {
 
   return useMutation({
     mutationFn: ({ id, input }: UpdateSessionVariables) =>
-      updateBattleSession(id, input),
+      updateBattleSession(id, input).then(unwrapAction),
     onSuccess: invalidate,
   });
 }

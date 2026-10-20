@@ -62,8 +62,7 @@ function eventPath(id: string): string {
 
 /**
  * Get every event, newest first. Runs on the server because the token lives in an httpOnly cookie.
- * @returns Event summaries
- * @returns A failure value (`ok: false`) when signed out, not an admin (403), or the backend rejects it
+ * @returns Event summaries; a failure value (`ok: false`) when signed out, not an admin (403), or the backend rejects it
  */
 export async function fetchCatRaces(): Promise<ActionResult<CatRaceEventSummary[]>> {
   return toActionResult(async () =>
@@ -88,8 +87,7 @@ export async function fetchCatRacePrefill(): Promise<ActionResult<CatRacePrizeTe
 /**
  * Get one event with roster, prizes and rounds.
  * @param id - Event id
- * @returns The event
- * @returns A failure value (`ok: false`) when the event is gone (404)
+ * @returns The event; a failure value (`ok: false`) when the event is gone (404)
  */
 export async function fetchCatRaceEvent(id: string): Promise<ActionResult<CatRaceEventDetail>> {
   return toActionResult(async () =>
@@ -141,9 +139,9 @@ export async function updateCatRace({
 export async function deleteCatRace(id: string): Promise<ActionResult<void>> {
   return toActionResult(async () =>
     apiFetch<void>(eventPath(id), {
-        method: "DELETE",
-        headers: await authHeader(),
-      })
+      method: "DELETE",
+      headers: await authHeader(),
+    })
   );
 }
 

@@ -26,7 +26,8 @@ export function useCreateMember() {
   const invalidate = useInvalidate("roster");
 
   return useMutation({
-    mutationFn: (input: CreateCharacterInput) => createMember(input).then(unwrapAction),
+    mutationFn: (input: CreateCharacterInput) =>
+      createMember(input).then(unwrapAction),
     onSuccess: invalidate,
   });
 }
@@ -40,7 +41,7 @@ export function useUpdateMember() {
 
   return useMutation({
     mutationFn: ({ id, input }: UpdateMemberVariables) =>
-      updateMember(id, input),
+      updateMember(id, input).then(unwrapAction),
     onSuccess: invalidate,
   });
 }

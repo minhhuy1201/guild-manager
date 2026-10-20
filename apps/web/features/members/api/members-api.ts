@@ -23,8 +23,7 @@ export async function fetchMembers(): Promise<ActionResult<GuildMember[]>> {
 /**
  * Add a member.
  * @param input - Name, class and optionally the Discord ID
- * @returns The created member
- * @returns A failure value (`ok: false`) carrying the backend's Vietnamese message when rejected — 409 when the Discord
+ * @returns The created member; a failure value (`ok: false`) carrying the backend's Vietnamese message when rejected — 409 when the Discord
  * ID already belongs to another member
  */
 export async function createMember(
@@ -43,8 +42,7 @@ export async function createMember(
  * Edit a member's name, class, Discord ID or role.
  * @param id - Member id
  * @param input - Fields to change
- * @returns The updated member
- * @returns A failure value (`ok: false`) when the member was deleted (404) or the Discord ID belongs to someone else (409)
+ * @returns The updated member; a failure value (`ok: false`) when the member was deleted (404) or the Discord ID belongs to someone else (409)
  */
 export async function updateMember(
   id: string,
@@ -63,8 +61,7 @@ export async function updateMember(
 /**
  * Delete a member along with their attendance history and formation slots.
  * @param id - Member id
- * @returns A promise resolving once deleted
- * @returns A failure value (`ok: false`) when the member was already deleted (404)
+ * @returns A promise resolving once deleted; a failure value (`ok: false`) when the member was already deleted (404)
  */
 export async function deleteMember(id: string): Promise<ActionResult<void>> {
   return toActionResult(async () =>

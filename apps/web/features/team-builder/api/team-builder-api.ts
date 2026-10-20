@@ -32,8 +32,7 @@ export interface SaveFormationArgs {
  * Get the weeks that still hold formation data.
  * Runs on the server because the endpoint is admin-only and the token lives in an httpOnly cookie the
  * client cannot attach itself.
- * @returns The weeks, newest first
- * @returns A failure value (`ok: false`) when signed out or the backend rejects it
+ * @returns The weeks, newest first; a failure value (`ok: false`) when signed out or the backend rejects it
  */
 export async function fetchFormationWeeks(): Promise<ActionResult<FormationWeek[]>> {
   return toActionResult(async () =>
@@ -46,8 +45,7 @@ export async function fetchFormationWeeks(): Promise<ActionResult<FormationWeek[
 /**
  * Get the formations of a week's sessions.
  * @param weekStart - Monday marker of the week (ISO string); omitted = the open week
- * @returns Sessions ordered by battle time
- * @returns A failure value (`ok: false`) when signed out or the backend rejects it
+ * @returns Sessions ordered by battle time; a failure value (`ok: false`) when signed out or the backend rejects it
  */
 export async function fetchFormations(
   weekStart?: string
@@ -64,8 +62,7 @@ export async function fetchFormations(
 /**
  * Overwrite the whole day's formation (1 or 2 matches), notes included.
  * @param input - sessionId and each match's formation to save
- * @returns The battle day with the formation just written
- * @returns A failure value (`ok: false`) when signed out, the day is locked (409), the version is stale (412), or the backend rejects it
+ * @returns The battle day with the formation just written; a failure value (`ok: false`) when signed out, the day is locked (409), the version is stale (412), or the backend rejects it
  */
 export async function saveFormation(
   input: SaveFormationArgs
@@ -85,8 +82,7 @@ export async function saveFormation(
 /**
  * Get the team names shown on the grid's column headers.
  * Global data — one map for the whole app, not one per week or per battle day.
- * @returns Team number (as a decimal string) → name, teams still on their number are absent, plus the version
- * @returns A failure value (`ok: false`) when signed out or the backend rejects it
+ * @returns Team number (as a decimal string) → name, teams still on their number are absent, plus the version; a failure value (`ok: false`) when signed out or the backend rejects it
  */
 export async function fetchTeamNames(): Promise<ActionResult<TeamNamesState>> {
   return toActionResult(async () =>
@@ -99,8 +95,7 @@ export async function fetchTeamNames(): Promise<ActionResult<TeamNamesState>> {
 /**
  * Overwrite the whole team name map.
  * @param input - Team number (as a decimal string) → name, a team left out loses its name, plus the version the draft started from
- * @returns The map just written, at its new version
- * @returns A failure value (`ok: false`) when signed out, the version is stale (412), or the backend rejects it
+ * @returns The map just written, at its new version; a failure value (`ok: false`) when signed out, the version is stale (412), or the backend rejects it
  */
 export async function saveTeamNames(
   input: SaveTeamNamesInput
@@ -125,8 +120,7 @@ export interface AnnounceFormationArgs {
 /**
  * Post the day's line-up to Discord, with one image per match.
  * @param input - sessionId and the captured images
- * @returns How many images reached Discord
- * @returns A failure value (`ok: false`) when signed out, the day is gone (404), or Discord refuses the message
+ * @returns How many images reached Discord; a failure value (`ok: false`) when signed out, the day is gone (404), or Discord refuses the message
  */
 export async function announceFormation(
   input: AnnounceFormationArgs
@@ -154,8 +148,7 @@ export interface NotifyTeamMembersArgs {
 /**
  * Message each placed member which team they are in, one direct message per match.
  * @param input - sessionId and, for a retry, which members and matches to message
- * @returns How many messages were sent and who did not get one
- * @returns A failure value (`ok: false`) when signed out, the day is gone (404), or its attendance is still open (400)
+ * @returns How many messages were sent and who did not get one; a failure value (`ok: false`) when signed out, the day is gone (404), or its attendance is still open (400)
  */
 export async function notifyTeamMembers(
   input: NotifyTeamMembersArgs

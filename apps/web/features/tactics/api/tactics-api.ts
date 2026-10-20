@@ -31,8 +31,7 @@ export interface SaveTacticStagesArgs {
 /**
  * Get every tactic, newest edit first.
  * Runs on the server because the token lives in an httpOnly cookie the client cannot attach itself.
- * @returns Tactic summaries, without their scenes
- * @returns A failure value (`ok: false`) when signed out or the backend rejects it
+ * @returns Tactic summaries, without their scenes; a failure value (`ok: false`) when signed out or the backend rejects it
  */
 export async function fetchTactics(): Promise<ActionResult<TacticSummary[]>> {
   return toActionResult(async () =>
@@ -43,8 +42,7 @@ export async function fetchTactics(): Promise<ActionResult<TacticSummary[]>> {
 /**
  * Get one tactic with its whole scene.
  * @param id - Tactic id
- * @returns The tactic
- * @returns A failure value (`ok: false`) when signed out, the tactic is gone (404), or its scene is corrupt (500)
+ * @returns The tactic; a failure value (`ok: false`) when signed out, the tactic is gone (404), or its scene is corrupt (500)
  */
 export async function fetchTactic(id: string): Promise<ActionResult<TacticDetail>> {
   return toActionResult(async () =>
@@ -57,8 +55,7 @@ export async function fetchTactic(id: string): Promise<ActionResult<TacticDetail
 /**
  * Create a tactic holding one empty stage.
  * @param input - name, and an optional description
- * @returns The tactic just created
- * @returns A failure value (`ok: false`) when signed out, not an admin (403), or the name is rejected (400)
+ * @returns The tactic just created; a failure value (`ok: false`) when signed out, not an admin (403), or the name is rejected (400)
  */
 export async function createTactic(
   input: CreateTacticInput
@@ -75,8 +72,7 @@ export async function createTactic(
 /**
  * Rename a tactic or rewrite its description.
  * @param input - id plus the fields to change
- * @returns The updated summary
- * @returns A failure value (`ok: false`) when signed out, not an admin (403), or the tactic is gone (404)
+ * @returns The updated summary; a failure value (`ok: false`) when signed out, not an admin (403), or the tactic is gone (404)
  */
 export async function updateTactic(
   input: UpdateTacticArgs
@@ -95,8 +91,7 @@ export async function updateTactic(
 /**
  * Overwrite a tactic's whole scene.
  * @param input - id and the scene to write
- * @returns The tactic with the scene just written
- * @returns A failure value (`ok: false`) when signed out, not an admin (403), or a limit is exceeded (400)
+ * @returns The tactic with the scene just written; a failure value (`ok: false`) when signed out, not an admin (403), or a limit is exceeded (400)
  */
 export async function saveTacticStages(
   input: SaveTacticStagesArgs
@@ -116,7 +111,7 @@ export async function saveTacticStages(
 /**
  * Delete a tactic.
  * @param id - Tactic id
- * @returns A failure value (`ok: false`) when signed out, not an admin (403), or the tactic is gone (404)
+ * @returns Nothing on success; a failure value (`ok: false`) when signed out, not an admin (403), or the tactic is gone (404)
  */
 export async function deleteTactic(id: string): Promise<ActionResult<void>> {
   return toActionResult(async () =>
@@ -129,8 +124,7 @@ export async function deleteTactic(id: string): Promise<ActionResult<void>> {
 
 /**
  * Get the palette's saved presets.
- * @returns Presets in display order
- * @returns A failure value (`ok: false`) when signed out or the backend rejects it
+ * @returns Presets in display order; a failure value (`ok: false`) when signed out or the backend rejects it
  */
 export async function fetchTokenPresets(): Promise<ActionResult<TacticTokenPreset[]>> {
   return toActionResult(async () =>
@@ -143,8 +137,7 @@ export async function fetchTokenPresets(): Promise<ActionResult<TacticTokenPrese
 /**
  * Add a preset to the palette.
  * @param input - label and icon key
- * @returns The preset just created
- * @returns A failure value (`ok: false`) when signed out, not an admin (403), or the label is taken (409)
+ * @returns The preset just created; a failure value (`ok: false`) when signed out, not an admin (403), or the label is taken (409)
  */
 export async function createTokenPreset(
   input: CreateTokenPresetInput
@@ -161,7 +154,7 @@ export async function createTokenPreset(
 /**
  * Delete a preset. Tactics already drawn keep the tokens they captured.
  * @param id - Preset id
- * @returns A failure value (`ok: false`) when signed out, not an admin (403), or the preset is gone (404)
+ * @returns Nothing on success; a failure value (`ok: false`) when signed out, not an admin (403), or the preset is gone (404)
  */
 export async function deleteTokenPreset(id: string): Promise<ActionResult<void>> {
   return toActionResult(async () =>
