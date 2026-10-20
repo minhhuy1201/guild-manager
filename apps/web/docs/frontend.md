@@ -278,17 +278,16 @@ attendance components) — the alternative is `?? []` scattered through the comp
 (`lib/roster-filter.ts`). The keyword matches on the **name only** — both sides lowercased,
 Vietnamese diacritics left alone — and an empty `guildClasses` array means every class. The in-game
 id is deliberately not searched: no list displays it, so a match on it looks random to the person
-typing. Several
-screens use it and none of them owns it, which is why it sits in `lib/` and not in a feature. It
-stays out of `packages/shared`: that package holds shapes that cross the network, and this filter
-never leaves the client.
+typing. Several screens use it and none of them owns it, which is why it sits in `lib/` and not in
+a feature. It stays out of `packages/shared`: that package holds shapes that cross the network, and
+this filter never leaves the client.
 
 A screen that also needs the *widget* uses `RosterFilterBar`
 (`components/shared/roster-filter-bar.tsx`) — every one of them does. It is controlled — `value` /
 `onChange` / `idPrefix` — and deliberately knows nothing about where the state lives: a scoped
-Zustand store (attendance), an unscoped one (team builder) and a plain `useState` (members, the cat race
-roster checklist) are all adapters at the call site, because the filters have different lifetimes. Do **not** merge them
-into one store.
+Zustand store (attendance), an unscoped one (team builder) and a plain `useState` (members, the cat
+race roster checklist) are all adapters at the call site, because the filters have different
+lifetimes. Do **not** merge them into one store.
 
 `layout` is the one prop that varies the rendering, and it varies *only* the arrangement: `stacked`
 (default) is the two-column row with visible labels, `inline` is the compact row members puts beside
