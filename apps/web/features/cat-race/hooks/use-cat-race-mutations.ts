@@ -3,6 +3,7 @@
 import { useMutation } from "@tanstack/react-query";
 
 import { useInvalidate } from "@/hooks/use-invalidate";
+import { fromAction } from "@/lib/action-result";
 import {
   createCatRace,
   updateCatRace,
@@ -25,7 +26,7 @@ import {
 export function useCreateCatRace() {
   const invalidate = useInvalidate("cat-race");
 
-  return useMutation({ mutationFn: createCatRace, onSuccess: invalidate });
+  return useMutation({ mutationFn: fromAction(createCatRace), onSuccess: invalidate });
 }
 
 /**
@@ -35,7 +36,7 @@ export function useCreateCatRace() {
 export function useUpdateCatRace() {
   const invalidate = useInvalidate("cat-race");
 
-  return useMutation({ mutationFn: updateCatRace, onSuccess: invalidate });
+  return useMutation({ mutationFn: fromAction(updateCatRace), onSuccess: invalidate });
 }
 
 /**
@@ -45,7 +46,7 @@ export function useUpdateCatRace() {
 export function useDeleteCatRace() {
   const invalidate = useInvalidate("cat-race");
 
-  return useMutation({ mutationFn: deleteCatRace, onSuccess: invalidate });
+  return useMutation({ mutationFn: fromAction(deleteCatRace), onSuccess: invalidate });
 }
 
 /**
@@ -55,7 +56,7 @@ export function useDeleteCatRace() {
 export function useSetCatRaceParticipants() {
   const invalidate = useInvalidate("cat-race");
 
-  return useMutation({ mutationFn: setCatRaceParticipants, onSuccess: invalidate });
+  return useMutation({ mutationFn: fromAction(setCatRaceParticipants), onSuccess: invalidate });
 }
 
 /**
@@ -65,7 +66,7 @@ export function useSetCatRaceParticipants() {
 export function useAddCatRacePrize() {
   const invalidate = useInvalidate("cat-race");
 
-  return useMutation({ mutationFn: addCatRacePrize, onSuccess: invalidate });
+  return useMutation({ mutationFn: fromAction(addCatRacePrize), onSuccess: invalidate });
 }
 
 /**
@@ -75,7 +76,7 @@ export function useAddCatRacePrize() {
 export function useUpdateCatRacePrize() {
   const invalidate = useInvalidate("cat-race");
 
-  return useMutation({ mutationFn: updateCatRacePrize, onSuccess: invalidate });
+  return useMutation({ mutationFn: fromAction(updateCatRacePrize), onSuccess: invalidate });
 }
 
 /**
@@ -85,7 +86,7 @@ export function useUpdateCatRacePrize() {
 export function useDeleteCatRacePrize() {
   const invalidate = useInvalidate("cat-race");
 
-  return useMutation({ mutationFn: deleteCatRacePrize, onSuccess: invalidate });
+  return useMutation({ mutationFn: fromAction(deleteCatRacePrize), onSuccess: invalidate });
 }
 
 /**
@@ -95,7 +96,7 @@ export function useDeleteCatRacePrize() {
 export function useSetCatRaceEntrants() {
   const invalidate = useInvalidate("cat-race");
 
-  return useMutation({ mutationFn: setCatRaceEntrants, onSuccess: invalidate });
+  return useMutation({ mutationFn: fromAction(setCatRaceEntrants), onSuccess: invalidate });
 }
 
 /**
@@ -105,7 +106,7 @@ export function useSetCatRaceEntrants() {
 export function useVoidCatRaceRound() {
   const invalidate = useInvalidate("cat-race");
 
-  return useMutation({ mutationFn: voidCatRaceRound, onSuccess: invalidate });
+  return useMutation({ mutationFn: fromAction(voidCatRaceRound), onSuccess: invalidate });
 }
 
 /**
@@ -115,7 +116,7 @@ export function useVoidCatRaceRound() {
 export function useEndCatRace() {
   const invalidate = useInvalidate("cat-race");
 
-  return useMutation({ mutationFn: endCatRace, onSuccess: invalidate });
+  return useMutation({ mutationFn: fromAction(endCatRace), onSuccess: invalidate });
 }
 
 /**
@@ -125,7 +126,7 @@ export function useEndCatRace() {
 export function useAnnounceCatRace() {
   const invalidate = useInvalidate("cat-race");
 
-  return useMutation({ mutationFn: announceCatRace, onSuccess: invalidate });
+  return useMutation({ mutationFn: fromAction(announceCatRace), onSuccess: invalidate });
 }
 
 /**
@@ -134,5 +135,5 @@ export function useAnnounceCatRace() {
  * @returns TanStack mutation; use mutateAsync to catch backend errors
  */
 export function useDrawCatRaceRound() {
-  return useMutation({ mutationFn: drawCatRaceRound });
+  return useMutation({ mutationFn: fromAction(drawCatRaceRound) });
 }

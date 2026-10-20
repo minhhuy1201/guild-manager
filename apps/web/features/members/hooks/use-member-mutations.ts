@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
+import { unwrapAction } from "@/lib/action-result";
 import type {
   CreateCharacterInput,
   UpdateCharacterInput,
@@ -25,7 +26,7 @@ export function useCreateMember() {
   const invalidate = useInvalidate("roster");
 
   return useMutation({
-    mutationFn: (input: CreateCharacterInput) => createMember(input),
+    mutationFn: (input: CreateCharacterInput) => createMember(input).then(unwrapAction),
     onSuccess: invalidate,
   });
 }
@@ -53,7 +54,7 @@ export function useDeleteMember() {
   const invalidate = useInvalidate("roster");
 
   return useMutation({
-    mutationFn: (id: string) => deleteMember(id),
+    mutationFn: (id: string) => deleteMember(id).then(unwrapAction),
     onSuccess: invalidate,
   });
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { fromAction } from "@/lib/action-result";
 
 import { fetchTeamNames } from "../api/team-builder-api";
 import { teamBuilderKeys } from "../api/team-builder-keys";
@@ -13,6 +14,6 @@ import { teamBuilderKeys } from "../api/team-builder-keys";
 export function useTeamNames() {
   return useQuery({
     queryKey: teamBuilderKeys.teamNames(),
-    queryFn: fetchTeamNames,
+    queryFn: fromAction(fetchTeamNames),
   });
 }

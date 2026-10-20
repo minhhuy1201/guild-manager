@@ -50,8 +50,8 @@ function renderAnnounce() {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  announceMock.mockResolvedValue({ imageCount: 1 });
-  notifyMock.mockResolvedValue(REPORT);
+  announceMock.mockResolvedValue({ ok: true, data: { imageCount: 1 } });
+  notifyMock.mockResolvedValue({ ok: true, data: REPORT });
 });
 
 describe("useFormationAnnounce - nhắn riêng", () => {
@@ -93,7 +93,7 @@ describe("useFormationAnnounce - nhắn riêng", () => {
   });
 
   it("đăng channel lỗi thì không nhắn riêng", async () => {
-    announceMock.mockRejectedValue(new Error("Bot chưa có quyền."));
+    announceMock.mockResolvedValue({ ok: false, message: "Bot chưa có quyền.", statusCode: 400 });
     const { result } = renderAnnounce();
 
     act(() => result.current.setOpen(true));
@@ -105,7 +105,7 @@ describe("useFormationAnnounce - nhắn riêng", () => {
   });
 
   it("nhắn riêng lỗi thì tin channel vẫn tính là đã đăng, lỗi nằm trong dialog", async () => {
-    notifyMock.mockRejectedValue(new Error("Ngày này chưa đóng điểm danh."));
+    notifyMock.mockResolvedValue({ ok: false, message: "Ngày này chưa đóng điểm danh.", statusCode: 400 });
     const { result } = renderAnnounce();
 
     act(() => result.current.setOpen(true));
@@ -135,18 +135,18 @@ describe("useFormationAnnounce - nhắn lại", () => {
   const KLEIN = { characterId: "klein", name: "Klein", matchIndex: 2 };
 
   it("nhắn lại chỉ gửi cho người chưa nhắn được rồi gộp vào báo cáo cũ", async () => {
-    notifyMock.mockResolvedValueOnce({
+    notifyMock.mockResolvedValueOnce({ ok: true, data: {
       ...REPORT,
       sentCount: 1,
       totalCount: 3,
       unsent: [ASUNA, KLEIN],
-    });
-    notifyMock.mockResolvedValueOnce({
+    } });
+    notifyMock.mockResolvedValueOnce({ ok: true, data: {
       ...REPORT,
       sentCount: 1,
       totalCount: 2,
       unsent: [KLEIN],
-    });
+    } });
     const { result } = renderAnnounce();
 
     act(() => result.current.setOpen(true));
@@ -168,7 +168,7 @@ describe("useFormationAnnounce - nhắn lại", () => {
   });
 
   it("request lỗi cả lượt thì thử lại gửi cho tất cả", async () => {
-    notifyMock.mockRejectedValueOnce(new Error("Mất kết nối."));
+    notifyMock.mockResolvedValueOnce({ ok: false, message: "Mất kết nối.", statusCode: 400 });
     const { result } = renderAnnounce();
 
     act(() => result.current.setOpen(true));
@@ -183,7 +183,7 @@ describe("useFormationAnnounce - nhắn lại", () => {
   });
 
   it("thử lại cả lượt không đăng lại tin channel", async () => {
-    notifyMock.mockRejectedValueOnce(new Error("Mất kết nối."));
+    notifyMock.mockResolvedValueOnce({ ok: false, message: "Mất kết nối.", statusCode: 400 });
     const { result } = renderAnnounce();
 
     act(() => result.current.setOpen(true));
@@ -194,13 +194,13 @@ describe("useFormationAnnounce - nhắn lại", () => {
   });
 
   it("lần nhắn lại lỗi thì giữ danh sách cũ để còn thử tiếp", async () => {
-    notifyMock.mockResolvedValueOnce({
+    notifyMock.mockResolvedValueOnce({ ok: true, data: {
       ...REPORT,
       sentCount: 1,
       totalCount: 2,
       unsent: [ASUNA],
-    });
-    notifyMock.mockRejectedValueOnce(new Error("Mất kết nối."));
+    } });
+    notifyMock.mockResolvedValueOnce({ ok: false, message: "Mất kết nối.", statusCode: 400 });
     const { result } = renderAnnounce();
 
     act(() => result.current.setOpen(true));

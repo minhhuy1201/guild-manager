@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { fromAction } from "@/lib/action-result";
 
 import { fetchMe } from "../api/me";
 
@@ -12,5 +13,5 @@ export const sessionKeys = { me: () => ["auth", "me"] as const };
  * @returns The TanStack query result (data is a SessionUser)
  */
 export function useSession() {
-  return useQuery({ queryKey: sessionKeys.me(), queryFn: fetchMe });
+  return useQuery({ queryKey: sessionKeys.me(), queryFn: fromAction(fetchMe) });
 }

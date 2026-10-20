@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
+import { fromAction } from "@/lib/action-result";
 
 import { useInvalidate } from "@/hooks/use-invalidate";
 import { saveTacticStages } from "../api/tactics-api";
@@ -14,5 +15,5 @@ import { saveTacticStages } from "../api/tactics-api";
 export function useSaveTactic() {
   const invalidate = useInvalidate("tactic");
 
-  return useMutation({ mutationFn: saveTacticStages, onSuccess: invalidate });
+  return useMutation({ mutationFn: fromAction(saveTacticStages), onSuccess: invalidate });
 }

@@ -3,7 +3,6 @@ import { act, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { TeamNames, TeamNamesState } from "@guild/shared/schemas";
 
-import { ApiError } from "@/lib/api-client";
 import { saveTeamNames } from "../../api/team-builder-api";
 import { useTeamNameDraft } from "../use-team-name-draft";
 import { renderFormationHook } from "./render-formation-hook";
@@ -40,7 +39,7 @@ function renderNames(
 
 beforeEach(() => {
   saveTeamNamesMock.mockReset();
-  saveTeamNamesMock.mockResolvedValue({ names: {}, version: 6 });
+  saveTeamNamesMock.mockResolvedValue({ ok: true, data: { names: {}, version: 6 } });
   refetchMock.mockReset();
 });
 
@@ -139,9 +138,7 @@ describe("useTeamNameDraft — lưu", () => {
   });
 
   it("lưu lỗi thì giữ nguyên nháp và hiện message của backend", async () => {
-    saveTeamNamesMock.mockRejectedValue(
-      new ApiError("Tên đội quá dài.", 400)
-    );
+    saveTeamNamesMock.mockResolvedValue({ ok: false, message: "Tên đội quá dài.", statusCode: 400 });
     const { result } = renderNames();
 
     act(() => result.current.setName(2, "Hậu cần"));
@@ -174,7 +171,7 @@ describe("useTeamNameDraft — xung đột phiên bản", () => {
   });
 
   it("412: isStale = true, nháp còn, không hiện message riêng", async () => {
-    saveTeamNamesMock.mockRejectedValue(new ApiError("Cũ rồi.", 412));
+    saveTeamNamesMock.mockResolvedValue({ ok: false, message: "Cũ rồi.", statusCode: 412 });
     const { result } = renderNames(SAVED, DRAFT, 3);
 
     await act(async () => {
@@ -187,7 +184,7 @@ describe("useTeamNameDraft — xung đột phiên bản", () => {
   });
 
   it("discardStale: xoá nháp, isStale = false, tải lại bản đã lưu", async () => {
-    saveTeamNamesMock.mockRejectedValue(new ApiError("Cũ rồi.", 412));
+    saveTeamNamesMock.mockResolvedValue({ ok: false, message: "Cũ rồi.", statusCode: 412 });
     refetchMock.mockResolvedValue({ names: {}, version: 6 });
     const { result } = renderNames(SAVED, DRAFT, 3);
     await act(async () => {
@@ -202,7 +199,7 @@ describe("useTeamNameDraft — xung đột phiên bản", () => {
   });
 
   it("dismissStale giữ nháp, isStale = false", async () => {
-    saveTeamNamesMock.mockRejectedValue(new ApiError("Cũ rồi.", 412));
+    saveTeamNamesMock.mockResolvedValue({ ok: false, message: "Cũ rồi.", statusCode: 412 });
     const { result } = renderNames(SAVED, DRAFT, 3);
     await act(async () => {
       await result.current.save();
@@ -215,8 +212,8 @@ describe("useTeamNameDraft — xung đột phiên bản", () => {
   });
 
   it("overwriteStale: rebase lên version mới nhất rồi lưu với nó", async () => {
-    saveTeamNamesMock.mockRejectedValueOnce(new ApiError("Cũ rồi.", 412));
-    saveTeamNamesMock.mockResolvedValueOnce({ names: DRAFT, version: 7 });
+    saveTeamNamesMock.mockResolvedValueOnce({ ok: false, message: "Cũ rồi.", statusCode: 412 });
+    saveTeamNamesMock.mockResolvedValueOnce({ ok: true, data: { names: DRAFT, version: 7 } });
     refetchMock.mockResolvedValue({ names: { "1": "Khác" }, version: 6 });
     const { result } = renderNames(SAVED, DRAFT, 3);
     await act(async () => {
@@ -235,7 +232,7 @@ describe("useTeamNameDraft — xung đột phiên bản", () => {
   });
 
   it("overwriteStale gặp 412 lần nữa: isStale vẫn true, nháp còn", async () => {
-    saveTeamNamesMock.mockRejectedValue(new ApiError("Cũ rồi.", 412));
+    saveTeamNamesMock.mockResolvedValue({ ok: false, message: "Cũ rồi.", statusCode: 412 });
     refetchMock.mockResolvedValue({ names: {}, version: 6 });
     const { result } = renderNames(SAVED, DRAFT, 3);
 
@@ -248,7 +245,7 @@ describe("useTeamNameDraft — xung đột phiên bản", () => {
   });
 
   it("overwriteStale gặp lỗi 500: hết isStale, thông báo hiện ở thanh công cụ", async () => {
-    saveTeamNamesMock.mockRejectedValue(new ApiError("Máy chủ bận.", 500));
+    saveTeamNamesMock.mockResolvedValue({ ok: false, message: "Máy chủ bận.", statusCode: 500 });
     refetchMock.mockResolvedValue({ names: {}, version: 6 });
     const { result } = renderNames(SAVED, { "1": "Xung kích" }, 3);
 

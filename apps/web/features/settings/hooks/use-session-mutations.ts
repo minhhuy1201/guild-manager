@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
+import { unwrapAction } from "@/lib/action-result";
 import type {
   CreateBattleSessionInput,
   UpdateBattleSessionInput,
@@ -30,7 +31,7 @@ export function useCreateSession() {
   const invalidate = useInvalidate("schedule");
 
   return useMutation({
-    mutationFn: (input: CreateBattleSessionInput) => createBattleSession(input),
+    mutationFn: (input: CreateBattleSessionInput) => createBattleSession(input).then(unwrapAction),
     onSuccess: invalidate,
   });
 }
@@ -57,7 +58,7 @@ export function useDeleteSession() {
   const invalidate = useInvalidate("schedule");
 
   return useMutation({
-    mutationFn: (id: string) => deleteBattleSession(id),
+    mutationFn: (id: string) => deleteBattleSession(id).then(unwrapAction),
     onSuccess: invalidate,
   });
 }
@@ -73,7 +74,7 @@ export function useReopenAttendance() {
   const invalidate = useInvalidate("attendance-window");
 
   return useMutation({
-    mutationFn: (id: string) => reopenAttendance(id),
+    mutationFn: (id: string) => reopenAttendance(id).then(unwrapAction),
     onSuccess: invalidate,
   });
 }

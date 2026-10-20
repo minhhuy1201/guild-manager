@@ -3,6 +3,9 @@ import { FETCH_API_URL } from "@/config/api";
 /** HTTP status of a successful response with no body. */
 const NO_CONTENT_STATUS = 204;
 
+/** Status given to a request that never got an answer (the backend is down or unreachable). */
+const UNREACHABLE_STATUS = 503;
+
 /** Message used when the server's error body cannot be read. */
 const FALLBACK_ERROR_MESSAGE = "Không kết nối được máy chủ.";
 
@@ -37,6 +40,9 @@ export async function apiFetch<T>(
       "Content-Type": "application/json",
       ...init?.headers,
     },
+  }).catch((): never => {
+    // The backend never answered. fetch rejects with a TypeError that carries no text for the UI.
+    throw new ApiError(FALLBACK_ERROR_MESSAGE, UNREACHABLE_STATUS);
   });
 
   const body: unknown = await response.json().catch(() => null);

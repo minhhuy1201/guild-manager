@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 
+import { fromAction } from "@/lib/action-result";
 import {
   fetchCatRaceEvent,
   fetchCatRacePrefill,
@@ -14,7 +15,7 @@ import { catRaceKeys } from "../api/cat-race-keys";
  * @returns TanStack query holding the event summaries
  */
 export function useCatRaces() {
-  return useQuery({ queryKey: catRaceKeys.list(), queryFn: fetchCatRaces });
+  return useQuery({ queryKey: catRaceKeys.list(), queryFn: fromAction(fetchCatRaces) });
 }
 
 /**
@@ -24,7 +25,7 @@ export function useCatRaces() {
 export function useCatRacePrefill() {
   return useQuery({
     queryKey: catRaceKeys.prefill(),
-    queryFn: fetchCatRacePrefill,
+    queryFn: fromAction(fetchCatRacePrefill),
   });
 }
 
@@ -36,6 +37,6 @@ export function useCatRacePrefill() {
 export function useCatRaceEvent(id: string) {
   return useQuery({
     queryKey: catRaceKeys.detail(id),
-    queryFn: () => fetchCatRaceEvent(id),
+    queryFn: () => fromAction(fetchCatRaceEvent)(id),
   });
 }

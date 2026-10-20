@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { unwrapAction } from "@/lib/action-result";
 
 import { fetchFormationWeeks } from "../api/team-builder-api";
 import { teamBuilderKeys } from "../api/team-builder-keys";
@@ -12,6 +13,6 @@ import { teamBuilderKeys } from "../api/team-builder-keys";
 export function useFormationWeeks() {
   return useQuery({
     queryKey: teamBuilderKeys.weeks(),
-    queryFn: () => fetchFormationWeeks(),
+    queryFn: () => fetchFormationWeeks().then(unwrapAction),
   });
 }

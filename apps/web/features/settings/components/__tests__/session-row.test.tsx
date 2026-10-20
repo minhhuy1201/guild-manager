@@ -139,7 +139,7 @@ describe("SessionRow", () => {
   });
 
   it("xác nhận thì gọi API và báo thành công", async () => {
-    reopenAttendance.mockResolvedValue(session());
+    reopenAttendance.mockResolvedValue({ ok: true, data: session() });
     renderRow(session({ isAttendanceClosed: true, canReopenAttendance: true }));
 
     fireEvent.click(screen.getAllByText("Mở lại điểm danh")[0]);
@@ -152,7 +152,11 @@ describe("SessionRow", () => {
   });
 
   it("API từ chối thì giữ nguyên câu tiếng Việt của backend", async () => {
-    reopenAttendance.mockRejectedValue(new Error("Hạn điểm danh đã qua."));
+    reopenAttendance.mockResolvedValue({
+      ok: false,
+      message: "Hạn điểm danh đã qua.",
+      statusCode: 409,
+    });
     renderRow(session({ isAttendanceClosed: true, canReopenAttendance: true }));
 
     fireEvent.click(screen.getAllByText("Mở lại điểm danh")[0]);

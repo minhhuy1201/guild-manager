@@ -177,6 +177,19 @@ not on what it may import: `session.ts` carries `import "server-only"` and no `"
 is how `getAccessToken` always travelled. The 401 it throws is the sentence the UI shows verbatim,
 and `features/auth/api/__tests__/auth-header.test.ts` pins that wording and the status.
 
+**A Server Action returns a rejection; it never throws one.** In a production build React sends the
+client only a digest for an error thrown by a Server Action, and the client rebuilds a bare
+`Error` carrying React's minified code 441: the backend's Vietnamese sentence and its status code are both gone. A thrown 401 is then no longer a 401 to
+`isSessionExpired`, and the 409/412 branches of the formation drafts never run - all of which pass in
+development, where the message does survive. Next's own advice is to "model expected errors as return
+values" (`node_modules/next/dist/docs/01-app/01-getting-started/10-error-handling.md`).
+
+So every action wraps its API call in `toActionResult` (`lib/action-result.ts`), which turns an
+`ApiError` into `{ ok: false, message, statusCode }`; the hook adapts it back with `fromAction`
+(`mutationFn` / `queryFn`) or `unwrapAction`, which rethrows a real `ApiError`. Nothing past the hook
+changes. Only `ApiError` is caught: any other error is a bug and must still reach Next's server log.
+`apiFetch` turns a dropped connection into an `ApiError` 503 for the same reason.
+
 **Every write path hands a failure to `recoverSession` before showing it.** `useSessionRecovery`
 (`hooks/use-session-recovery.ts`) turns a 401 into `router.refresh()`, which is the only way the
 cookies get renewed - a Server Action cannot write them, so a press that failed on an expired token

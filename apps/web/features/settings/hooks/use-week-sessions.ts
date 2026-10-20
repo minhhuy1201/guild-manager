@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { fromAction, unwrapAction } from "@/lib/action-result";
 
 import {
   fetchSettingsWeeks,
@@ -15,7 +16,7 @@ import { settingsKeys } from "../api/battle-sessions-keys";
 export function useSettingsWeeks() {
   return useQuery({
     queryKey: settingsKeys.weeks(),
-    queryFn: fetchSettingsWeeks,
+    queryFn: fromAction(fetchSettingsWeeks),
   });
 }
 
@@ -29,6 +30,6 @@ export function useSettingsWeeks() {
 export function useWeekSessions(weekStart?: string) {
   return useQuery({
     queryKey: settingsKeys.sessions(weekStart),
-    queryFn: () => fetchWeekSessions(weekStart),
+    queryFn: () => fetchWeekSessions(weekStart).then(unwrapAction),
   });
 }

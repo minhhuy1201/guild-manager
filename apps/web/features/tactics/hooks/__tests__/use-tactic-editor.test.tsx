@@ -53,8 +53,8 @@ async function renderEditor(isAdmin = true) {
 
 beforeEach(() => {
   toastError.mockReset();
-  vi.mocked(fetchTactic).mockResolvedValue(makeTactic({ scene: makeScene(2) }));
-  vi.mocked(saveTacticStages).mockResolvedValue(makeTactic());
+  vi.mocked(fetchTactic).mockResolvedValue({ ok: true, data: makeTactic({ scene: makeScene(2) }) });
+  vi.mocked(saveTacticStages).mockResolvedValue({ ok: true, data: makeTactic() });
 });
 
 describe("useTacticEditor", () => {
@@ -285,7 +285,7 @@ describe("useTacticEditor", () => {
         color: "red" as const,
       })
     );
-    vi.mocked(fetchTactic).mockResolvedValue(makeTactic({ scene: full }));
+    vi.mocked(fetchTactic).mockResolvedValue({ ok: true, data: makeTactic({ scene: full }) });
 
     const { result } = await renderEditor();
     act(() =>
@@ -314,7 +314,7 @@ describe("useTacticEditor", () => {
         color: "red" as const,
       })
     );
-    vi.mocked(fetchTactic).mockResolvedValue(makeTactic({ scene: full }));
+    vi.mocked(fetchTactic).mockResolvedValue({ ok: true, data: makeTactic({ scene: full }) });
 
     const { result } = await renderEditor();
     act(() => useTacticEditorStore.getState().setTool("eraser"));
@@ -359,9 +359,7 @@ describe("useTacticEditor", () => {
   });
 
   it("keeps the draft and toasts the backend's sentence when a save fails", async () => {
-    vi.mocked(saveTacticStages).mockRejectedValue(
-      new Error("Một chiến thuật tối đa 20 giai đoạn.")
-    );
+    vi.mocked(saveTacticStages).mockResolvedValue({ ok: false, message: "Một chiến thuật tối đa 20 giai đoạn.", statusCode: 400 });
     const { result } = await renderEditor();
 
     act(() => useTacticEditorStore.getState().setTool("arrow"));
@@ -381,7 +379,10 @@ describe("useTacticEditor", () => {
   });
 
   it("keeps a stroke drawn while the save was out as unsaved", async () => {
-    let finish: (value: ReturnType<typeof makeTactic>) => void = () => {};
+    let finish: (value: {
+      ok: true;
+      data: ReturnType<typeof makeTactic>;
+    }) => void = () => {};
     vi.mocked(saveTacticStages).mockImplementation(
       () => new Promise((resolve) => (finish = resolve))
     );
@@ -400,7 +401,7 @@ describe("useTacticEditor", () => {
     act(() => result.current.onPointerUp());
 
     await act(async () => {
-      finish(makeTactic());
+      finish({ ok: true, data: makeTactic() });
       await pending;
     });
 
@@ -409,7 +410,10 @@ describe("useTacticEditor", () => {
   });
 
   it("sends one save at a time, refusing a second press while the first is out", async () => {
-    let finish: (value: ReturnType<typeof makeTactic>) => void = () => {};
+    let finish: (value: {
+      ok: true;
+      data: ReturnType<typeof makeTactic>;
+    }) => void = () => {};
     vi.mocked(saveTacticStages).mockImplementation(
       () => new Promise((resolve) => (finish = resolve))
     );
@@ -427,7 +431,7 @@ describe("useTacticEditor", () => {
     await expect(second).resolves.toBe(false);
     await waitFor(() => expect(saveTacticStages).toHaveBeenCalled());
     await act(async () => {
-      finish(makeTactic());
+      finish({ ok: true, data: makeTactic() });
       await expect(first).resolves.toBe(true);
     });
     expect(saveTacticStages).toHaveBeenCalledTimes(1);
@@ -439,7 +443,7 @@ describe("useTacticEditor", () => {
       tacticKeys.detail("t1"),
       makeTactic({ scene: makeScene(1) })
     );
-    vi.mocked(fetchTactic).mockResolvedValue(makeTactic({ scene: makeScene(3) }));
+    vi.mocked(fetchTactic).mockResolvedValue({ ok: true, data: makeTactic({ scene: makeScene(3) }) });
 
     renderTacticHook(() => useTacticEditor("t1", true), queryClient);
 
@@ -455,7 +459,7 @@ describe("useTacticEditor", () => {
       tacticKeys.detail("t1"),
       makeTactic({ scene: makeScene(1) })
     );
-    vi.mocked(fetchTactic).mockRejectedValue(new Error("mất mạng"));
+    vi.mocked(fetchTactic).mockResolvedValue({ ok: false, message: "mất mạng", statusCode: 400 });
 
     const { result } = renderTacticHook(
       () => useTacticEditor("t1", true),
@@ -471,10 +475,10 @@ describe("useTacticEditor", () => {
   });
 
   it("shows a scene from a newer app as the page's error instead of crashing the route", async () => {
-    vi.mocked(fetchTactic).mockResolvedValue({
+    vi.mocked(fetchTactic).mockResolvedValue({ ok: true, data: {
       ...makeTactic(),
       scene: { ...makeScene(), schemaVersion: TACTIC_SCHEMA_VERSION + 1 },
-    } as never);
+    } as never });
 
     const { result } = renderTacticHook(() => useTacticEditor("t1", true));
 
@@ -513,7 +517,7 @@ describe("useTacticEditor", () => {
 function openWith(stageElements: TacticElement[]): void {
   const scene = makeScene(1);
   scene.stages[0].elements = stageElements;
-  vi.mocked(fetchTactic).mockResolvedValue(makeTactic({ scene }));
+  vi.mocked(fetchTactic).mockResolvedValue({ ok: true, data: makeTactic({ scene }) });
 }
 
 /**
@@ -704,8 +708,7 @@ describe("useTacticEditor - marquee and group moves", () => {
   });
 
   it("drops a drag when the stage is switched mid-drag", async () => {
-    vi.mocked(fetchTactic).mockResolvedValue(
-      makeTactic({
+    vi.mocked(fetchTactic).mockResolvedValue({ ok: true, data: makeTactic({
         scene: {
           ...makeScene(2),
           stages: [
@@ -713,8 +716,7 @@ describe("useTacticEditor - marquee and group moves", () => {
             { id: "s2", name: "Giai đoạn 2", elements: [] },
           ],
         },
-      })
-    );
+      }) });
     const { result } = await renderSelecting();
 
     act(() => result.current.onPointerDown({ x: 100, y: 100 }));
@@ -729,8 +731,7 @@ describe("useTacticEditor - marquee and group moves", () => {
   it("drops a marquee when the stage is switched mid-drag, selecting nothing on the new one", async () => {
     // Tokens keep their id across a duplicated stage, so ids picked on the old stage would select
     // pieces the marquee never covered on the new one.
-    vi.mocked(fetchTactic).mockResolvedValue(
-      makeTactic({
+    vi.mocked(fetchTactic).mockResolvedValue({ ok: true, data: makeTactic({
         scene: {
           ...makeScene(2),
           stages: [
@@ -738,8 +739,7 @@ describe("useTacticEditor - marquee and group moves", () => {
             { id: "s2", name: "Giai đoạn 2", elements: [tokenAt("a", 900, 900)] },
           ],
         },
-      })
-    );
+      }) });
     const { result } = await renderSelecting();
 
     act(() => result.current.onPointerDown({ x: 40, y: 40 }));

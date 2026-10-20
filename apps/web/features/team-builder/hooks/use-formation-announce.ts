@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
+import { unwrapAction } from "@/lib/action-result";
 import type { TeamNoticeReport } from "@guild/shared/schemas";
 
 import { toastError, toastSuccess } from "@/components/shared/toast";
@@ -101,12 +102,12 @@ export function useFormationAnnounce(
   // a day the server has just closed, until something else happens to refetch.
   const invalidate = useInvalidate("attendance-window");
   const mutation = useMutation({
-    mutationFn: (input: AnnounceFormationArgs) => announceFormation(input),
+    mutationFn: (input: AnnounceFormationArgs) => announceFormation(input).then(unwrapAction),
     onSuccess: invalidate,
   });
   // Wrapped: a bare Server Action would also receive the mutation context TanStack passes second.
   const notifyMutation = useMutation({
-    mutationFn: (input: NotifyTeamMembersArgs) => notifyTeamMembers(input),
+    mutationFn: (input: NotifyTeamMembersArgs) => notifyTeamMembers(input).then(unwrapAction),
   });
 
   /**

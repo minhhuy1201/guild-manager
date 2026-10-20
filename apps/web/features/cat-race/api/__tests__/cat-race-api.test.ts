@@ -66,6 +66,35 @@ describe("cat race API", () => {
   });
 });
 
+describe("cat race API errors", () => {
+  it("returns the backend's rejection as a value instead of throwing", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 409,
+        json: () =>
+          Promise.resolve({ message: "Chưa đặt kênh thông báo chung." }),
+      })
+    );
+
+    await expect(api.announceCatRace("e1")).resolves.toEqual({
+      ok: false,
+      message: "Chưa đặt kênh thông báo chung.",
+      statusCode: 409,
+    });
+  });
+
+  it("returns the data of a success under ok: true", async () => {
+    mockFetch({ id: "e1" });
+
+    await expect(api.endCatRace("e1")).resolves.toEqual({
+      ok: true,
+      data: { id: "e1" },
+    });
+  });
+});
+
 interface Route {
   name: string;
   call: () => Promise<unknown>;

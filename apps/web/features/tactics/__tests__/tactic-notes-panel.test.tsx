@@ -10,7 +10,6 @@ import {
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { ApiError } from "@/lib/api-client";
 
 const updateTactic = vi.fn();
 
@@ -25,7 +24,7 @@ afterEach(cleanup);
 
 beforeEach(() => {
   updateTactic.mockReset();
-  updateTactic.mockResolvedValue({});
+  updateTactic.mockResolvedValue({ ok: true, data: {} });
 });
 
 interface HarnessProps {
@@ -135,9 +134,11 @@ describe("TacticNotesPanel", () => {
   });
 
   it("keeps the draft and says why when the save is refused", async () => {
-    updateTactic.mockRejectedValue(
-      new ApiError("Ghi chú chiến thuật tối đa 5000 ký tự.", 400)
-    );
+    updateTactic.mockResolvedValue({
+      ok: false,
+      message: "Ghi chú chiến thuật tối đa 5000 ký tự.",
+      statusCode: 400,
+    });
     renderPanel({ notes: null });
 
     fireEvent.click(

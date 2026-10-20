@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { fromAction } from "@/lib/action-result";
 
 import { useInvalidate } from "@/hooks/use-invalidate";
 import {
@@ -17,7 +18,7 @@ import { tacticKeys } from "../api/tactics-keys";
 export function useTokenPresets() {
   return useQuery({
     queryKey: tacticKeys.tokenPresets(),
-    queryFn: fetchTokenPresets,
+    queryFn: fromAction(fetchTokenPresets),
   });
 }
 
@@ -28,7 +29,7 @@ export function useTokenPresets() {
 export function useCreateTokenPreset() {
   const invalidate = useInvalidate("tactic");
 
-  return useMutation({ mutationFn: createTokenPreset, onSuccess: invalidate });
+  return useMutation({ mutationFn: fromAction(createTokenPreset), onSuccess: invalidate });
 }
 
 /**
@@ -38,5 +39,5 @@ export function useCreateTokenPreset() {
 export function useDeleteTokenPreset() {
   const invalidate = useInvalidate("tactic");
 
-  return useMutation({ mutationFn: deleteTokenPreset, onSuccess: invalidate });
+  return useMutation({ mutationFn: fromAction(deleteTokenPreset), onSuccess: invalidate });
 }

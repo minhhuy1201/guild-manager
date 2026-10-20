@@ -9,6 +9,7 @@ import type {
 } from "@guild/shared/schemas";
 
 import { authHeader } from "@/features/auth/server";
+import { type ActionResult, toActionResult } from "@/lib/action-result";
 import { apiFetch } from "@/lib/api-client";
 import { recordKey } from "../lib/record-key";
 
@@ -16,10 +17,12 @@ import { recordKey } from "../lib/record-key";
  * Get the characters for the attendance screen — the whole guild, whoever is signed in.
  * @returns The character list
  */
-export async function fetchCharacters(): Promise<Character[]> {
-  return apiFetch<Character[]>("/attendance/characters", {
-    headers: await authHeader(),
-  });
+export async function fetchCharacters(): Promise<ActionResult<Character[]>> {
+  return toActionResult(async () =>
+    apiFetch<Character[]>("/attendance/characters", {
+      headers: await authHeader(),
+    })
+  );
 }
 
 /**
@@ -38,10 +41,12 @@ function weekQuery(weekStart?: string | null): string {
  */
 export async function fetchBattleSessions(
   weekStart?: string | null
-): Promise<BattleSession[]> {
-  return apiFetch<BattleSession[]>(`/battle-sessions${weekQuery(weekStart)}`, {
-    headers: await authHeader(),
-  });
+): Promise<ActionResult<BattleSession[]>> {
+  return toActionResult(async () =>
+    apiFetch<BattleSession[]>(`/battle-sessions${weekQuery(weekStart)}`, {
+      headers: await authHeader(),
+    })
+  );
 }
 
 /**
@@ -50,10 +55,12 @@ export async function fetchBattleSessions(
  * this screen is the one every member sees.
  * @returns The open week
  */
-export async function fetchCurrentWeek(): Promise<Week> {
-  return apiFetch<Week>("/battle-sessions/current-week", {
-    headers: await authHeader(),
-  });
+export async function fetchCurrentWeek(): Promise<ActionResult<Week>> {
+  return toActionResult(async () =>
+    apiFetch<Week>("/battle-sessions/current-week", {
+      headers: await authHeader(),
+    })
+  );
 }
 
 /**
@@ -64,33 +71,37 @@ export async function fetchCurrentWeek(): Promise<Week> {
  */
 export async function fetchAttendanceRecords(
   weekStart?: string | null
-): Promise<Record<string, AttendanceRecord>> {
-  const records = await apiFetch<AttendanceRecord[]>(
-    `/attendance/records${weekQuery(weekStart)}`,
-    { headers: await authHeader() }
-  );
+): Promise<ActionResult<Record<string, AttendanceRecord>>> {
+  return toActionResult(async () => {
+    const records = await apiFetch<AttendanceRecord[]>(
+      `/attendance/records${weekQuery(weekStart)}`,
+      { headers: await authHeader() }
+    );
 
-  return Object.fromEntries(
-    records.map((record) => [
-      recordKey(record.characterId, record.sessionId),
-      record,
-    ])
-  );
+    return Object.fromEntries(
+      records.map((record) => [
+        recordKey(record.characterId, record.sessionId),
+        record,
+      ])
+    );
+  });
 }
 
 /**
  * Record attendance for a character in a session.
- * The deadline and the right to mark on someone's behalf are checked by the server; failures surface
- * as an `ApiError` carrying a Vietnamese message to display.
+ * The deadline and the right to mark on someone's behalf are checked by the server; a refusal comes
+ * back as a failure value carrying a Vietnamese message to display.
  * @param input - The attendance entry
  * @returns The written record
  */
 export async function markAttendance(
   input: MarkAttendanceInput
-): Promise<AttendanceRecord> {
-  return apiFetch<AttendanceRecord>("/attendance", {
-    method: "POST",
-    body: JSON.stringify(input),
-    headers: await authHeader(),
-  });
+): Promise<ActionResult<AttendanceRecord>> {
+  return toActionResult(async () =>
+    apiFetch<AttendanceRecord>("/attendance", {
+      method: "POST",
+      body: JSON.stringify(input),
+      headers: await authHeader(),
+    })
+  );
 }

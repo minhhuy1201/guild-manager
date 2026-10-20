@@ -59,7 +59,7 @@ const WRITES = [
 
 describe.each(WRITES)("%s", (hookName, apiName) => {
   it("calls the API and invalidates the cat-race cache", async () => {
-    api[apiName].mockResolvedValue({ ok: true });
+    api[apiName].mockResolvedValue({ ok: true, data: {} });
     const { result } = renderHook(() => mutations[hookName](), { wrapper });
 
     await act(async () => {
@@ -71,9 +71,36 @@ describe.each(WRITES)("%s", (hookName, apiName) => {
   });
 });
 
+describe("a rejected write", () => {
+  it("rejects with an ApiError carrying the backend's message and status", async () => {
+    api.announceCatRace.mockResolvedValue({
+      ok: false,
+      message: "Chưa đặt kênh thông báo chung.",
+      statusCode: 409,
+    });
+    const { result } = renderHook(() => mutations.useAnnounceCatRace(), { wrapper });
+
+    await act(async () => {
+      await expect(result.current.mutateAsync("e1")).rejects.toMatchObject({
+        name: "ApiError",
+        message: "Chưa đặt kênh thông báo chung.",
+        statusCode: 409,
+      });
+    });
+    expect(invalidate).not.toHaveBeenCalled();
+  });
+
+  it("surfaces a failed query as an ApiError too", async () => {
+    api.fetchCatRaces.mockResolvedValue({ ok: false, message: "Hết quyền.", statusCode: 403 });
+    const { result } = renderHook(() => useCatRaces(), { wrapper });
+
+    await waitFor(() => expect(result.current.error).toMatchObject({ statusCode: 403 }));
+  });
+});
+
 describe("useDrawCatRaceRound", () => {
   it("draws without invalidating, so the winners list never spoils the race", async () => {
-    api.drawCatRaceRound.mockResolvedValue({ winningTicket: 1 });
+    api.drawCatRaceRound.mockResolvedValue({ ok: true, data: { winningTicket: 1 } });
     const { result } = renderHook(() => mutations.useDrawCatRaceRound(), { wrapper });
 
     await act(async () => {
@@ -87,21 +114,21 @@ describe("useDrawCatRaceRound", () => {
 
 describe("cat race queries", () => {
   it("loads the event list", async () => {
-    api.fetchCatRaces.mockResolvedValue([{ id: "e1" }]);
+    api.fetchCatRaces.mockResolvedValue({ ok: true, data: [{ id: "e1" }] });
     const { result } = renderHook(() => useCatRaces(), { wrapper });
 
     await waitFor(() => expect(result.current.data).toEqual([{ id: "e1" }]));
   });
 
   it("loads the prefill", async () => {
-    api.fetchCatRacePrefill.mockResolvedValue([{ name: "p" }]);
+    api.fetchCatRacePrefill.mockResolvedValue({ ok: true, data: [{ name: "p" }] });
     const { result } = renderHook(() => useCatRacePrefill(), { wrapper });
 
     await waitFor(() => expect(result.current.data).toEqual([{ name: "p" }]));
   });
 
   it("loads one event by id", async () => {
-    api.fetchCatRaceEvent.mockResolvedValue({ id: "e9" });
+    api.fetchCatRaceEvent.mockResolvedValue({ ok: true, data: { id: "e9" } });
     const { result } = renderHook(() => useCatRaceEvent("e9"), { wrapper });
 
     await waitFor(() => expect(result.current.data).toEqual({ id: "e9" }));

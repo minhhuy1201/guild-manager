@@ -117,12 +117,12 @@ describe("useFormationCopy", () => {
   });
 
   it("trận đầu tuần lấy nguồn từ trận cuối tuần trước", async () => {
-    fetchFormationsMock.mockResolvedValue([
+    fetchFormationsMock.mockResolvedValue({ ok: true, data: [
       makeSession("prev-sat", {
         label: "Thứ 7 · Bang Chiến",
         matches: [{ slots: { [SLOT]: "char-2" }, notes: {} }],
       }),
-    ]);
+    ] });
 
     const { result } = renderFormationHook(() =>
       useFormationCopy(
