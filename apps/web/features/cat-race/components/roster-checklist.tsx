@@ -132,7 +132,7 @@ export function RosterChecklist({
             Đã chọn {selection.size}/{members.length}
           </span>
         </div>
-        <ul className="max-h-64 overflow-y-auto">
+        <ul className="max-h-[50dvh] overflow-y-auto">
           {visible.map((member) => {
             const tickets = selection.get(member.characterId);
 

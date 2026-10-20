@@ -66,7 +66,7 @@ export function CreateCatRaceDialog({
   prefill,
 }: CreateCatRaceDialogProps) {
   return (
-    <MutationDialogShell open={open} onOpenChange={onOpenChange} className="sm:max-w-xl">
+    <MutationDialogShell open={open} onOpenChange={onOpenChange} className="sm:max-w-3xl">
       <CreateCatRaceBody
         characters={characters}
         prefill={prefill}
