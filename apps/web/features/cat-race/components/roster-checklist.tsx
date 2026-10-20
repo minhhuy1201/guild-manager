@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Search } from "lucide-react";
 import type { GuildClass } from "@guild/shared/enums";
 import {
   CAT_RACE_TICKETS_MAX,
@@ -9,9 +8,11 @@ import {
 } from "@guild/shared/schemas";
 
 import { GuildClassIcon } from "@/components/shared/guild-class-icon";
+import { RosterFilterBar } from "@/components/shared/roster-filter-bar";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { matchesRosterFilter } from "@/lib/roster-filter";
+import { matchesRosterFilter, type RosterFilter } from "@/lib/roster-filter";
+
+const EMPTY_FILTER: RosterFilter = { search: "", guildClasses: [] };
 
 /** One person the checklist can tick. */
 export interface RosterMember {
@@ -31,7 +32,7 @@ interface RosterChecklistProps {
   /** Show a 1-3 ticket picker on every ticked row */
   showTickets: boolean;
   onChange: (next: RosterSelection) => void;
-  /** Prefix of the search input id, unique per dialog */
+  /** Prefix of the filter input ids, unique per dialog */
   idPrefix: string;
 }
 
@@ -41,13 +42,14 @@ const TICKET_CHOICES = Array.from(
 );
 
 /**
- * A searchable list of people to tick, with a ticket picker on ticked rows in TICKET mode. One
- * piece for the create form, the participants dialog and the entrants dialog.
+ * A list of people to tick, filterable by name and guild class, with a ticket picker on ticked
+ * rows in TICKET mode. One piece for the create form, the participants dialog and the entrants
+ * dialog.
  * @param members - Everyone that can be ticked
  * @param selection - Ticked ids with their tickets
  * @param showTickets - Whether to show the ticket picker
  * @param onChange - Receives the new selection
- * @param idPrefix - Prefix of the search input id
+ * @param idPrefix - Prefix of the filter input ids
  * @returns The checklist
  */
 export function RosterChecklist({
@@ -57,10 +59,8 @@ export function RosterChecklist({
   onChange,
   idPrefix,
 }: RosterChecklistProps) {
-  const [search, setSearch] = useState("");
-  const visible = members.filter((member) =>
-    matchesRosterFilter(member, { search, guildClasses: [] })
-  );
+  const [filter, setFilter] = useState<RosterFilter>(EMPTY_FILTER);
+  const visible = members.filter((member) => matchesRosterFilter(member, filter));
 
   const toggle = (characterId: string) => {
     const next = new Map(selection);
@@ -73,8 +73,8 @@ export function RosterChecklist({
   const visibleTicked = visible.filter((member) => selection.has(member.characterId));
   const isAllTicked = visible.length > 0 && visibleTicked.length === visible.length;
   const isSomeTicked = visibleTicked.length > 0 && !isAllTicked;
-  // Ticking keeps the tickets already set and everyone the search hides; unticking drops only the
-  // people the search shows.
+  // Ticking keeps the tickets already set and everyone the filter hides; unticking drops only the
+  // people the filter shows.
   const toggleAll = () =>
     onChange(
       isAllTicked
@@ -96,17 +96,7 @@ export function RosterChecklist({
 
   return (
     <div className="grid gap-2">
-      <div className="relative">
-        <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          id={`${idPrefix}-search`}
-          aria-label="Tìm theo tên"
-          placeholder="Tìm theo tên"
-          className="pl-9"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-        />
-      </div>
+      <RosterFilterBar layout="inline" idPrefix={idPrefix} value={filter} onChange={setFilter} />
       <div className="rounded-lg border border-border">
         <div className="flex items-center justify-between gap-3 border-b border-border rounded-t-lg bg-foreground/5 px-3 py-2">
           <label className="flex items-center gap-3 font-medium">
