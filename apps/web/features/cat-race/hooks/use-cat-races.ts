@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 
-import { fromAction } from "@/lib/action-result";
+import { fromAction, unwrapAction } from "@/lib/action-result";
 import {
   fetchCatRaceEvent,
   fetchCatRacePrefill,
@@ -37,6 +37,6 @@ export function useCatRacePrefill() {
 export function useCatRaceEvent(id: string) {
   return useQuery({
     queryKey: catRaceKeys.detail(id),
-    queryFn: () => fromAction(fetchCatRaceEvent)(id),
+    queryFn: () => fetchCatRaceEvent(id).then(unwrapAction),
   });
 }
