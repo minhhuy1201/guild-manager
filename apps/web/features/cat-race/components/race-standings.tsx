@@ -12,9 +12,6 @@ import type { RaceScript } from "../lib/race-script";
 
 /** Medal of each podium place, first to third; the CSS paints gold, silver and bronze. */
 const MEDALS = ["gold", "silver", "bronze"] as const;
-/** How long a row takes to slide to its new place. */
-const SLIDE_MS = 280;
-const SLIDE_EASING = "cubic-bezier(.2,.8,.2,1)";
 
 interface RaceStandingsProps {
   /** The race being replayed; null before the first round */
@@ -63,7 +60,7 @@ export function RaceStandings({ script, participants, board, className }: RaceSt
     // A cancelled frame would strand the rows at their old place, so the frame is never cancelled.
     requestAnimationFrame(() => {
       for (const row of moved) {
-        row.style.transition = `transform ${SLIDE_MS}ms ${SLIDE_EASING}`;
+        row.style.transition = "";
         row.style.transform = "";
       }
     });

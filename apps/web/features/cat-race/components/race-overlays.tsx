@@ -5,6 +5,7 @@ import { catLabels } from "../lib/cat-label";
 import type { PhotoRow } from "../lib/draw-photo-finish";
 import type { OverlayState } from "../lib/race-overlay";
 import { rankAt, type RaceScript } from "../lib/race-script";
+import { COUNTDOWN_STEPS } from "../lib/race-timeline";
 import { FALLBACK_SPRITE_CLASS } from "../lib/sprite-rows";
 import { PhotoFinishPanel } from "./photo-finish-panel";
 import { RaceCountdown } from "./race-countdown";
@@ -45,15 +46,26 @@ export function RaceOverlays({ state, script, participants }: RaceOverlaysProps)
         };
       });
   }, [state.photo, script, participants, labels]);
+  const announcement = state.leadToast
+    ? `Đổi ngôi: ${labels.get(state.leadToast.catKey)} vượt lên dẫn đầu`
+    : state.banner
+      ? state.banner.text
+      : state.isCountingDown && state.countdownStep >= 0
+        ? String(COUNTDOWN_STEPS - state.countdownStep)
+        : "";
 
   return (
     <>
+      {/* Mounted once: a live region inserted together with its text is often not read out. */}
+      <p className="sr-only" role="status">
+        {announcement}
+      </p>
       <div className="race-ov race-vignette" data-on={state.isSlow} />
       <div className="race-ov race-display race-slowmo" data-on={state.isSlow}>
         CHẬM ×3
       </div>
       {state.leadToast ? (
-        <div key={state.leadToast.id} className="race-ov race-lead-bar" role="status">
+        <div key={state.leadToast.id} className="race-ov race-lead-bar" aria-hidden>
           <b className="race-display">ĐỔI NGÔI</b>
           <span>
             <em>{labels.get(state.leadToast.catKey)}</em> vượt lên dẫn đầu
@@ -61,7 +73,7 @@ export function RaceOverlays({ state, script, participants }: RaceOverlaysProps)
         </div>
       ) : null}
       {state.banner ? (
-        <div key={state.banner.id} className="race-ov race-banner" role="status">
+        <div key={state.banner.id} className="race-ov race-banner" aria-hidden>
           <span className="race-display">{state.banner.text}</span>
         </div>
       ) : null}

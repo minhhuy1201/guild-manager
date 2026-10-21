@@ -128,8 +128,8 @@ export function RaceResultOverlay({
           disabled={isContinuing}
           onClick={onContinue}
           className={cn(
-            "race-display h-auto rounded-sm border-[#e2584c] bg-(--stage-lacquer) px-5 pt-2.5 pb-2 text-lg",
-            "text-(--stage-paper) shadow-[0_4px_0_#7d1f19] hover:bg-[#d8463b]"
+            "race-display h-auto rounded-sm border-(--stage-lacquer-light) bg-(--stage-lacquer) px-5 pt-2.5 pb-2 text-lg",
+            "text-(--stage-paper) shadow-[0_4px_0_var(--stage-lacquer-deep)] hover:bg-(--stage-lacquer-hover)"
           )}
         >
           {isContinuing ? <Spinner size="sm" /> : null}

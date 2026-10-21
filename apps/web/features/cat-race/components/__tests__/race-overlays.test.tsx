@@ -42,8 +42,12 @@ const SCRIPT = buildRaceScript({
 });
 
 /** Render the overlays for a state patched over the idle one. */
+function overlaysFor(patch: Partial<OverlayState> = {}) {
+  return <RaceOverlays state={{ ...INITIAL_OVERLAY, ...patch }} script={SCRIPT} participants={PARTICIPANTS} />;
+}
+
 function renderOverlays(patch: Partial<OverlayState> = {}) {
-  return render(<RaceOverlays state={{ ...INITIAL_OVERLAY, ...patch }} script={SCRIPT} participants={PARTICIPANTS} />);
+  return render(overlaysFor(patch));
 }
 
 beforeEach(() => {
@@ -59,7 +63,7 @@ describe("RaceOverlays", () => {
 
     const lit = [...container.querySelectorAll(".race-lantern")].map((el) => el.getAttribute("data-lit"));
     expect(lit).toEqual(["true", "true", "false"]);
-    expect(screen.getByText("2")).toBeTruthy();
+    expect(container.querySelector(".race-digit")?.textContent).toBe("2");
     expect(container.querySelector(".race-countdown")?.getAttribute("data-on")).toBe("true");
   });
 
@@ -83,7 +87,8 @@ describe("RaceOverlays", () => {
       />
     );
 
-    expect(screen.getByText("NƯỚC RÚT")).toBeTruthy();
+    expect(document.querySelector(".race-banner")?.textContent).toBe("NƯỚC RÚT");
+    expect(screen.getByRole("status").textContent).toBe("NƯỚC RÚT");
   });
 
   it("names the new leader in the lead-change bar", () => {
@@ -93,6 +98,17 @@ describe("RaceOverlays", () => {
     expect(screen.getByText("ĐỔI NGÔI")).toBeTruthy();
     expect(screen.getByText("Cara")).toBeTruthy();
     expect(screen.getByRole("status").textContent).toContain("vượt lên dẫn đầu");
+  });
+
+  it("reads each countdown number out through one live region that stays mounted", () => {
+    const { rerender } = renderOverlays({ isCountingDown: true, countdownStep: 0 });
+    const region = screen.getByRole("status");
+    expect(region.textContent).toBe("3");
+
+    rerender(overlaysFor({ isCountingDown: true, countdownStep: 1 }));
+
+    expect(screen.getByRole("status")).toBe(region);
+    expect(region.textContent).toBe("2");
   });
 
   it("turns the vignette and CHẬM ×3 on only in slow motion", () => {

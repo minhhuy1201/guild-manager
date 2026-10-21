@@ -485,10 +485,10 @@ describe("RaceStage", () => {
       await startRace();
 
       fireEvent.click(screen.getByText("cue countdown"));
-      expect(screen.getByText("3")).toBeTruthy();
+      expect(document.querySelector(".race-digit")?.textContent).toBe("3");
       fireEvent.click(screen.getByText("cue go"));
 
-      expect(screen.getByText("CHẠY!")).toBeTruthy();
+      expect(document.querySelector(".race-banner")?.textContent).toBe("CHẠY!");
       expect(document.querySelector(".race-countdown")?.getAttribute("data-on")).toBe("false");
     });
 

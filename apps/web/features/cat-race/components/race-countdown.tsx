@@ -26,7 +26,7 @@ export function RaceCountdown({ step, isOn }: RaceCountdownProps) {
         ))}
       </div>
       {/* Keyed by the step so each number pops in again. */}
-      <div key={step} className="race-display race-digit" aria-live="polite">
+      <div key={step} className="race-display race-digit" aria-hidden>
         {step < 0 ? "" : COUNTDOWN_STEPS - step}
       </div>
     </div>

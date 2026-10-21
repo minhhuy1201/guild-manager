@@ -924,8 +924,9 @@ travel in its first 40ms - the band is off the far edge before the eye finds it.
 
 **The cat race stage is the one place that keeps its own motion.** Its overlays (countdown lanterns
 and the popping digit, the CHẠY! / NƯỚC RÚT banners, the ĐỔI NGÔI bar, the finish flash, the photo
-finish and the result card) have their own keyframes and durations in `globals.css`, under the
-`[data-slot="cat-race-stage"]` block, and use `scale`. The stage is a staged broadcast for a whole guild
+finish and the result card), plus the race board's row slide and the blinking TRỰC TIẾP dot beside it,
+have their own keyframes and durations in `globals.css`, as `--stage-*` variables of the
+`[data-slot="cat-race-stage"], [data-slot="cat-race-hud"]` block, and use `scale`. The stage is a staged broadcast for a whole guild
 to watch, not an interface responding to input: a 1.5s banner that slides in and out, or a number that
 lands at 1.9x and settles, is the content itself, and four 120-320ms tokens cannot express it. The
 exception stays inside that block, so nothing else in the app can borrow it by accident; its colours are
