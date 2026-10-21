@@ -92,6 +92,18 @@ describe("planRace lanes", () => {
     expect(plan.laneOrder).toEqual(Array.from({ length: 12 }, (_, index) => `c${index}#1`));
   });
 
+  it("follows a chosen order, drops keys that left the race and puts new keys last", () => {
+    const { script } = raceOf(4, 1);
+    const labels = catLabels(
+      script.cats,
+      script.cats.map((cat, index) => ({ characterId: cat.characterId, name: `Người ${index}` })) as never
+    );
+    const plan = planRace(script, VIEWPORT, labels, ["c2#1", "gone#1", "c0#1"]);
+
+    expect(plan.laneOrder).toEqual(["c2#1", "c0#1", "c1#1", "c3#1"]);
+    expect(plan.laneOf.get("c0#1")).toBe(1);
+  });
+
   it("keeps lane heights at the minimum for 240 cats", () => {
     expect(raceOf(80, 3).layout.laneHeight).toBeGreaterThanOrEqual(22);
   });

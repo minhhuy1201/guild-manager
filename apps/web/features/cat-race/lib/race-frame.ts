@@ -22,20 +22,27 @@ export interface RacePlan {
  * @param script - The race
  * @param viewport - Visible size of the track area
  * @param labels - Display label by cat key; lanes follow it A to Z so a name is easy to find
+ * @param preferredOrder - A chosen lane order (the shuffle); keys no longer in the race are
+ * dropped and keys it lacks go after it, A to Z
  * @returns The plan the frames read
  */
 export function planRace(
   script: RaceScript,
   viewport: Area,
-  labels: ReadonlyMap<string, string>
+  labels: ReadonlyMap<string, string>,
+  preferredOrder: readonly string[] | null = null
 ): RacePlan {
-  const laneOrder = script.cats
+  const alphabetical = script.cats
     .map((cat) => cat.key)
     .sort(
       (a, b) =>
         labels.get(a)!.localeCompare(labels.get(b)!, "vi", { numeric: true }) ||
         a.localeCompare(b)
     );
+  const present = new Set(alphabetical);
+  const chosen = (preferredOrder ?? []).filter((key) => present.has(key));
+  const chosenSet = new Set(chosen);
+  const laneOrder = [...chosen, ...alphabetical.filter((key) => !chosenSet.has(key))];
 
   return {
     script,

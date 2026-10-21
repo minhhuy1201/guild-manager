@@ -42,6 +42,8 @@ interface RaceCanvasProps {
   onStandings: (keys: string[]) => void;
   /** Paint the cats on the start line and stop: no countdown, no replay, no callbacks */
   isPreview?: boolean;
+  /** Cat keys from the top lane down, when the lanes were shuffled; null keeps them A to Z */
+  laneOrder?: readonly string[] | null;
 }
 
 /** Theme colours the canvas paints with, read from the CSS tokens. */
@@ -96,6 +98,7 @@ function fitText(context: CanvasRenderingContext2D, text: string, maxWidth: numb
  * @param props.skipSignal - Change it to skip to the end
  * @param props.onStandings - Receives the live order of every cat
  * @param props.isPreview - Paint the start line once instead of replaying
+ * @param props.laneOrder - Shuffled lane order, or null for A to Z
  * @returns The scrolling track
  */
 export function RaceCanvas({
@@ -105,6 +108,7 @@ export function RaceCanvas({
   skipSignal,
   onStandings,
   isPreview = false,
+  laneOrder: shuffledOrder = null,
 }: RaceCanvasProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const spacerRef = useRef<HTMLDivElement>(null);
@@ -168,7 +172,7 @@ export function RaceCanvas({
       canvas.width = Math.round(width * ratio);
       canvas.height = Math.round(viewHeight * ratio);
       context.setTransform(ratio, 0, 0, ratio, 0, 0);
-      plan = planRace(script, { width, height: viewHeight }, labels);
+      plan = planRace(script, { width, height: viewHeight }, labels, shuffledOrder);
       spacer.style.height = `${Math.max(plan.layout.contentHeight, viewHeight)}px`;
       context.font = nameFont();
       const room = plan.layout.nameColumn - NAME_PADDING * 2 - CLASS_MARK_SIZE;
@@ -322,7 +326,7 @@ export function RaceCanvas({
       observer.disconnect();
       themeObserver.disconnect();
     };
-  }, [script, participants, isPreview]);
+  }, [script, participants, isPreview, shuffledOrder]);
 
   return (
     <div

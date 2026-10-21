@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Cat, FastForward, Play } from "lucide-react";
+import { Cat, FastForward, Play, Shuffle } from "lucide-react";
 import { CatRaceMode } from "@guild/shared/enums";
 import type { CatRaceEventDetail, CatRacePrize } from "@guild/shared/schemas";
 
@@ -14,7 +14,7 @@ import { useSessionRecovery } from "@/hooks/use-session-recovery";
 import { errorMessageOf } from "@/lib/error-message";
 import { useDrawCatRaceRound } from "../hooks/use-cat-race-mutations";
 import { PRIZE_LOCK_LABEL, prizeLockReason } from "../lib/prize-lock";
-import { buildRaceScript, rankAt } from "../lib/race-script";
+import { buildRaceScript, rankAt, shuffled } from "../lib/race-script";
 import { useRaceStore } from "../store/race-store";
 import { RaceCanvas } from "./race-canvas";
 import { RaceResultOverlay } from "./race-result-overlay";
@@ -46,7 +46,7 @@ export function RaceStage({
   prize,
   isDurationValid,
 }: RaceStageProps) {
-  const { stage, durationSeconds, pendingResult } = useRaceStore();
+  const { stage, durationSeconds, pendingResult, laneOrder } = useRaceStore();
   const store = useRaceStore.getState;
   const draw = useDrawCatRaceRound();
   const invalidate = useInvalidate("cat-race");
@@ -121,6 +121,11 @@ export function RaceStage({
     }
   };
 
+  const shuffleLanes = () => {
+    if (!previewScript || stage !== "idle") return;
+    store().shuffleLanes(shuffled(previewScript.cats.map((cat) => cat.key), Math.random));
+  };
+
   const finishRace = () => {
     if (pendingResult) store().showResult(pendingResult);
   };
@@ -150,6 +155,7 @@ export function RaceStage({
               script={script}
               participants={event.participants}
               skipSignal={skipSignal}
+              laneOrder={laneOrder}
               onFinish={finishRace}
               onStandings={setStandings}
             />
@@ -159,6 +165,7 @@ export function RaceStage({
               script={previewScript}
               participants={event.participants}
               skipSignal={skipSignal}
+              laneOrder={laneOrder}
               onFinish={finishRace}
               onStandings={setStandings}
             />
@@ -200,15 +207,27 @@ export function RaceStage({
             Bỏ qua
           </Button>
         ) : (
-          <Button
-            type="button"
-            size="lg"
-            disabled={!prize || lock !== null || stage !== "idle" || !isDurationValid}
-            onClick={() => void startRound()}
-          >
-            {stage === "drawing" ? <Spinner size="sm" /> : <Play />}
-            {prize ? `ĐUA: ${prize.name} #${prize.awardedCount + 1}` : "ĐUA"}
-          </Button>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              disabled={stage !== "idle" || (previewScript?.cats.length ?? 0) < 2}
+              onClick={shuffleLanes}
+            >
+              <Shuffle />
+              Xáo trộn
+            </Button>
+            <Button
+              type="button"
+              size="lg"
+              disabled={!prize || lock !== null || stage !== "idle" || !isDurationValid}
+              onClick={() => void startRound()}
+            >
+              {stage === "drawing" ? <Spinner size="sm" /> : <Play />}
+              {prize ? `ĐUA: ${prize.name} #${prize.awardedCount + 1}` : "ĐUA"}
+            </Button>
+          </div>
         )}
         {lock ? (
           <p className="text-sm text-muted-foreground">{PRIZE_LOCK_LABEL[lock]}</p>

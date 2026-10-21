@@ -61,3 +61,19 @@ describe("race store duration", () => {
     expect(useRaceStore.getState().pendingResult).toBeNull();
   });
 });
+
+describe("race store lane order", () => {
+  it("keeps a shuffle through a round and forgets it when another prize is chosen", async () => {
+    vi.stubGlobal("localStorage", { getItem: () => null, setItem: () => {} });
+    const { useRaceStore } = await import("../race-store");
+    const store = useRaceStore.getState();
+
+    store.shuffleLanes(["b#1", "a#1"]);
+    store.startDrawing();
+    store.reset();
+    expect(useRaceStore.getState().laneOrder).toEqual(["b#1", "a#1"]);
+
+    store.selectPrize("p2");
+    expect(useRaceStore.getState().laneOrder).toBeNull();
+  });
+});
