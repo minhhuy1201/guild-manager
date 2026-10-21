@@ -18,24 +18,47 @@ export interface RacePlan {
 }
 
 /**
- * Work out everything fixed about a race for one canvas width.
+ * The lane of every cat, top to bottom.
  * @param script - The race
- * @param viewport - Visible size of the track area
  * @param labels - Display label by cat key; lanes follow it A to Z so a name is easy to find
- * @returns The plan the frames read
+ * @param preferredOrder - A chosen lane order (the shuffle); keys no longer in the race are
+ * dropped and keys it lacks go after it, A to Z
+ * @returns Cat keys from the top lane down
  */
-export function planRace(
+export function laneOrderOf(
   script: RaceScript,
-  viewport: Area,
-  labels: ReadonlyMap<string, string>
-): RacePlan {
-  const laneOrder = script.cats
+  labels: ReadonlyMap<string, string>,
+  preferredOrder: readonly string[] | null = null
+): string[] {
+  const alphabetical = script.cats
     .map((cat) => cat.key)
     .sort(
       (a, b) =>
         labels.get(a)!.localeCompare(labels.get(b)!, "vi", { numeric: true }) ||
         a.localeCompare(b)
     );
+  const present = new Set(alphabetical);
+  const chosen = (preferredOrder ?? []).filter((key) => present.has(key));
+  const chosenSet = new Set(chosen);
+
+  return [...chosen, ...alphabetical.filter((key) => !chosenSet.has(key))];
+}
+
+/**
+ * Work out everything fixed about a race for one canvas width.
+ * @param script - The race
+ * @param viewport - Visible size of the track area
+ * @param labels - Display label by cat key
+ * @param preferredOrder - A chosen lane order, see `laneOrderOf`
+ * @returns The plan the frames read
+ */
+export function planRace(
+  script: RaceScript,
+  viewport: Area,
+  labels: ReadonlyMap<string, string>,
+  preferredOrder: readonly string[] | null = null
+): RacePlan {
+  const laneOrder = laneOrderOf(script, labels, preferredOrder);
 
   return {
     script,

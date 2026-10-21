@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Cat, FastForward, Play } from "lucide-react";
+import { Cat, FastForward, Play, Shuffle } from "lucide-react";
 import { CatRaceMode } from "@guild/shared/enums";
 import type { CatRaceEventDetail, CatRacePrize } from "@guild/shared/schemas";
 
@@ -13,8 +13,10 @@ import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { useSessionRecovery } from "@/hooks/use-session-recovery";
 import { errorMessageOf } from "@/lib/error-message";
 import { useDrawCatRaceRound } from "../hooks/use-cat-race-mutations";
+import { catLabels } from "../lib/cat-label";
 import { PRIZE_LOCK_LABEL, prizeLockReason } from "../lib/prize-lock";
-import { buildRaceScript, rankAt } from "../lib/race-script";
+import { laneOrderOf } from "../lib/race-frame";
+import { buildRaceScript, rankAt, shuffled } from "../lib/race-script";
 import { useRaceStore } from "../store/race-store";
 import { RaceCanvas } from "./race-canvas";
 import { RaceResultOverlay } from "./race-result-overlay";
@@ -46,7 +48,7 @@ export function RaceStage({
   prize,
   isDurationValid,
 }: RaceStageProps) {
-  const { stage, durationSeconds, pendingResult } = useRaceStore();
+  const { stage, durationSeconds, pendingResult, laneOrder } = useRaceStore();
   const store = useRaceStore.getState;
   const draw = useDrawCatRaceRound();
   const invalidate = useInvalidate("cat-race");
@@ -121,6 +123,27 @@ export function RaceStage({
     }
   };
 
+  // Another prize has another field, so a shuffle made for a different prize means nothing here.
+  const laneKeys = prize && laneOrder?.prizeId === prize.id ? laneOrder.keys : null;
+
+  const canShuffle = stage === "idle" && (previewScript?.cats.length ?? 0) >= 2;
+
+  const shuffleLanes = () => {
+    if (!prize || !previewScript || !canShuffle) return;
+    const keys = previewScript.cats.map((cat) => cat.key);
+    const shown = laneOrderOf(
+      previewScript,
+      catLabels(previewScript.cats, event.participants),
+      laneKeys
+    );
+    let next = shuffled(keys, Math.random);
+    // A click that lands on the lanes already shown looks like a dead button.
+    while (next.every((key, index) => key === shown[index])) {
+      next = shuffled(keys, Math.random);
+    }
+    store().shuffleLanes(prize.id, next);
+  };
+
   const finishRace = () => {
     if (pendingResult) store().showResult(pendingResult);
   };
@@ -150,6 +173,7 @@ export function RaceStage({
               script={script}
               participants={event.participants}
               skipSignal={skipSignal}
+              laneOrder={laneKeys}
               onFinish={finishRace}
               onStandings={setStandings}
             />
@@ -159,6 +183,7 @@ export function RaceStage({
               script={previewScript}
               participants={event.participants}
               skipSignal={skipSignal}
+              laneOrder={laneKeys}
               onFinish={finishRace}
               onStandings={setStandings}
             />
@@ -200,15 +225,27 @@ export function RaceStage({
             Bỏ qua
           </Button>
         ) : (
-          <Button
-            type="button"
-            size="lg"
-            disabled={!prize || lock !== null || stage !== "idle" || !isDurationValid}
-            onClick={() => void startRound()}
-          >
-            {stage === "drawing" ? <Spinner size="sm" /> : <Play />}
-            {prize ? `ĐUA: ${prize.name} #${prize.awardedCount + 1}` : "ĐUA"}
-          </Button>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              disabled={!canShuffle}
+              onClick={shuffleLanes}
+            >
+              <Shuffle />
+              Xáo trộn
+            </Button>
+            <Button
+              type="button"
+              size="lg"
+              disabled={!prize || lock !== null || stage !== "idle" || !isDurationValid}
+              onClick={() => void startRound()}
+            >
+              {stage === "drawing" ? <Spinner size="sm" /> : <Play />}
+              {prize ? `ĐUA: ${prize.name} #${prize.awardedCount + 1}` : "ĐUA"}
+            </Button>
+          </div>
         )}
         {lock ? (
           <p className="text-sm text-muted-foreground">{PRIZE_LOCK_LABEL[lock]}</p>

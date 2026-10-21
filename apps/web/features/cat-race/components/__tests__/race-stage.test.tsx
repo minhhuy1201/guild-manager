@@ -29,14 +29,17 @@ vi.mock("../race-canvas", () => ({
     onStandings,
     skipSignal,
     isPreview,
+    laneOrder,
   }: {
     onFinish: () => void;
     onStandings: (keys: string[]) => void;
     skipSignal: number;
     isPreview?: boolean;
+    laneOrder: string[] | null;
   }) => (
     <div>
       {isPreview ? "PREVIEW" : `CANVAS ${skipSignal}`}
+      <span>{`LANES ${laneOrder?.join(",") ?? "none"}`}</span>
       <button onClick={onFinish}>finish</button>
       <button onClick={() => onStandings(["b#1", "a#1"])}>standings</button>
     </div>
@@ -111,6 +114,7 @@ function renderStage(event = EVENT, prize = PRIZE, isDurationValid = true) {
 beforeEach(() => {
   reducedMotion.current = false;
   useRaceStore.getState().reset();
+  useRaceStore.setState({ laneOrder: null });
 });
 afterEach(cleanup);
 
@@ -151,6 +155,61 @@ describe("RaceStage", () => {
 
     expect(useRaceStore.getState().stage).toBe("racing");
     expect(screen.getByText(/CANVAS/)).toBeTruthy();
+  });
+
+  it("shuffles the lanes of the start line into the store and passes them to the canvas", () => {
+    renderStage();
+    expect(screen.getByText("LANES none")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: /Xáo trộn/ }));
+
+    const order = useRaceStore.getState().laneOrder;
+    expect(order?.prizeId).toBe("p1");
+    expect([...(order?.keys ?? [])].sort()).toEqual(["a#1", "b#1"]);
+    expect(screen.getByText(`LANES ${order!.keys.join(",")}`)).toBeTruthy();
+  });
+
+  it("never lands on the A-Z lanes already shown, even with two cats", () => {
+    for (let run = 0; run < 20; run += 1) {
+      cleanup();
+      useRaceStore.setState({ laneOrder: null });
+      renderStage();
+      fireEvent.click(screen.getByRole("button", { name: /Xáo trộn/ }));
+
+      expect(useRaceStore.getState().laneOrder!.keys).toEqual(["b#1", "a#1"]);
+    }
+  });
+
+  it("changes the lanes on every click", () => {
+    renderStage();
+    const button = screen.getByRole("button", { name: /Xáo trộn/ });
+
+    fireEvent.click(button);
+    const first = useRaceStore.getState().laneOrder!.keys;
+    fireEvent.click(button);
+
+    expect(useRaceStore.getState().laneOrder!.keys).not.toEqual(first);
+  });
+
+  it("ignores a shuffle made for another prize", () => {
+    useRaceStore.getState().shuffleLanes("other", ["b#1", "a#1"]);
+    renderStage();
+
+    expect(screen.getByText("LANES none")).toBeTruthy();
+  });
+
+  it("locks the shuffle for a single cat and while a round runs", async () => {
+    renderStage(EVENT, { ...PRIZE, entrantIds: ["a"] });
+    expect((screen.getByRole("button", { name: /Xáo trộn/ }) as HTMLButtonElement).disabled).toBe(true);
+    cleanup();
+
+    mutateAsync.mockReturnValue(new Promise(() => {}));
+    renderStage();
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /ĐUA/ }));
+    });
+
+    expect((screen.getByRole("button", { name: /Xáo trộn/ }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   it("goes back to idle and toasts the server's sentence when the draw fails", async () => {

@@ -70,7 +70,7 @@ function between(range: readonly [number, number], random: () => number): number
  * @param random - Source in `[0, 1)`
  * @returns A shuffled copy
  */
-function shuffled<T>(items: readonly T[], random: () => number): T[] {
+export function shuffled<T>(items: readonly T[], random: () => number): T[] {
   const copy = [...items];
   for (let index = copy.length - 1; index > 0; index -= 1) {
     const other = Math.floor(random() * (index + 1));

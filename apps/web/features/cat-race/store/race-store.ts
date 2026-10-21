@@ -31,7 +31,10 @@ interface RaceState {
   stage: RaceStage;
   /** The server's answer, held until the replay ends */
   pendingResult: CatRaceDrawResult | null;
+  /** Cat keys from the top lane down after a shuffle, with the prize it was made for; null keeps A to Z */
+  laneOrder: { prizeId: string; keys: string[] } | null;
   selectPrize: (prizeId: string) => void;
+  shuffleLanes: (prizeId: string, keys: string[]) => void;
   setDurationSeconds: (seconds: number) => void;
   startDrawing: () => void;
   startRacing: (result: CatRaceDrawResult) => void;
@@ -45,7 +48,14 @@ export const useRaceStore = create<RaceState>((set) => ({
   durationSeconds: readDuration(),
   stage: "idle",
   pendingResult: null,
-  selectPrize: (prizeId) => set({ selectedPrizeId: prizeId }),
+  laneOrder: null,
+  // Another prize has another field, so a shuffle made for a different prize is dropped.
+  selectPrize: (prizeId) =>
+    set((state) => ({
+      selectedPrizeId: prizeId,
+      laneOrder: state.laneOrder?.prizeId === prizeId ? state.laneOrder : null,
+    })),
+  shuffleLanes: (prizeId, keys) => set({ laneOrder: { prizeId, keys } }),
   setDurationSeconds: (durationSeconds) => {
     try {
       localStorage.setItem(DURATION_STORAGE_KEY, String(durationSeconds));

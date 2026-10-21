@@ -72,7 +72,7 @@ Quy tắc kịch bản (thuần hàm trong `lib/`, test được):
 │  ...  (cuộn dọc khi nhiều làn)                │  (toàn bộ, cuộn)  │
 ├───────────────────────────────────────────────┴──────────────────┤
 │ Thời gian đua [12] giây · Danh sách đua 78 · Người tham gia 80   │
-│                     [ ĐUA: Thẻ tháng #9 ]                         │
+│              [ Xáo trộn ]  [ ĐUA: Thẻ tháng #9 ]                  │
 ├───────────────────────────────────────────────────────────────────┤
 │ Người thắng đợt này                                               │
 │ ┌ 👑 Thiên thưởng 1/2 ┐ ┌ 💎 Tiền mặt 3/5 ┐ ┌ 🎁 Thẻ tháng 8/15 ┐  │
@@ -92,6 +92,9 @@ Quy tắc kịch bản (thuần hàm trong `lib/`, test được):
 
 - Mỗi mèo một làn. Chiều cao làn co theo số làn trong khung, **tối thiểu 22px**; vượt khung thì
   đường đua cuộn dọc bên trong khung, không cuộn cả trang.
+- Thứ tự làn mặc định xếp A-Z theo tên. Nút "Xáo trộn" (chỉ khi chưa đua, từ 2 mèo) xáo ngẫu nhiên
+  thứ tự làn trên vạch xuất phát; chỉ là hiển thị phía client, người thắng vẫn do server quyết. Thứ
+  tự xáo giữ qua các vòng của cùng hạng mục, mất khi chọn hạng mục khác, rời màn hình hoặc tải lại.
 - Làn xen kẽ hai sắc nền để mắt dò theo hàng được. Nền đường đua khác hẳn nền card (dùng mặt phẳng
   `--background` hoặc tương đương), vạch xuất phát liền nét màu chữ, vạch đích ca-rô.
 - Tên trong cột trái của mỗi làn, cỡ chữ không nhỏ hơn cỡ `text-sm` của app, font Be Vietnam Pro
