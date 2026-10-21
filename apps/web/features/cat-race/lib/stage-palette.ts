@@ -12,7 +12,8 @@ export const STAGE_PALETTE = {
   wood: "#2b1f1a",
   earth: "#6a4a35",
   earthAlt: "#5e4130",
-  plate: "#120c18cc",
+  /** `--stage-plate` at 80%: the photo labels sit on the track, so they let it show through. */
+  plateScrim: "#120c18cc",
   /** Scene colours below are canvas-only: no overlay needs them. */
   skyTop: "#2a1c3e",
   skyMid: "#6b3a52",

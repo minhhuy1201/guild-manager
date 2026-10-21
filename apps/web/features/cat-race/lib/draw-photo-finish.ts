@@ -61,7 +61,7 @@ export function drawPhotoFinish(
       CAT_WIDTH,
       spriteHeight
     );
-    context.fillStyle = STAGE_PALETTE.plate;
+    context.fillStyle = STAGE_PALETTE.plateScrim;
     context.fillRect(0, top, LABEL_BAR_WIDTH, LABEL_BAR_HEIGHT);
     context.fillStyle = index === 0 ? STAGE_PALETTE.gold : STAGE_PALETTE.paper;
     context.font = `700 ${LABEL_FONT_PX}px ${fontFamily}`;

@@ -407,6 +407,8 @@
   --stage-wood: #2b1f1a;
   --stage-line: #3d2f45;
   --stage-plate: #120c18;
+  --stage-bar-end: #261c31;
+  --stage-flash: #fff;
   --stage-board: #150f1c;
   --stage-board-line: #2a2033;
   --stage-board-lead: #2a1f14;
@@ -461,7 +463,7 @@
 
 .race-flash {
   inset: 0;
-  background: #fff;
+  background: var(--stage-flash);
   opacity: 0;
   animation: race-flash var(--stage-flash-duration) ease-out;
 }
@@ -622,7 +624,7 @@
   padding: 8px 12px;
   border: 1px solid var(--stage-line);
   border-radius: 8px;
-  background: linear-gradient(90deg, var(--stage-wood), #261c31);
+  background: linear-gradient(90deg, var(--stage-wood), var(--stage-bar-end));
   color: var(--stage-paper);
 }
 
