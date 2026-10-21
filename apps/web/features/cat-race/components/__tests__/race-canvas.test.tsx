@@ -57,6 +57,14 @@ const START_MS = 1000;
 const frames: FrameRequestCallback[] = [];
 const resizeObservers: { disconnect: ReturnType<typeof vi.fn> }[] = [];
 
+/** jsdom has no matchMedia; this answers the reduced-motion query only. */
+function stubReducedMotion(matches: boolean) {
+  vi.stubGlobal(
+    "matchMedia",
+    vi.fn(() => ({ matches, addEventListener: vi.fn(), removeEventListener: vi.fn() }))
+  );
+}
+
 /** Run the next queued animation frame at `now` ms. */
 function runFrame(now: number) {
   const callback = frames.shift();
@@ -121,6 +129,7 @@ beforeEach(() => {
     vi.fn((callback: FrameRequestCallback) => frames.push(callback))
   );
   vi.stubGlobal("cancelAnimationFrame", vi.fn());
+  stubReducedMotion(false);
   vi.stubGlobal(
     "ResizeObserver",
     class {
@@ -428,6 +437,7 @@ describe("RaceCanvas", () => {
     const { script, racers } = bigField(12);
     const onFinish = vi.fn();
     const onStandings = vi.fn();
+    const onCue = vi.fn();
     render(
       <RaceCanvas
         isPreview
@@ -436,7 +446,7 @@ describe("RaceCanvas", () => {
         onFinish={onFinish}
         skipSignal={0}
         onStandings={onStandings}
-        onCue={vi.fn()}
+        onCue={onCue}
       />
     );
 
@@ -445,10 +455,53 @@ describe("RaceCanvas", () => {
     const cats = sprites.filter((sprite) => sprite.x > 0);
     expect(cats).toHaveLength(12);
     expect(new Set(cats.map((sprite) => sprite.x)).size).toBe(1);
-    expect(frames).toHaveLength(0);
     expect(fillText).not.toHaveBeenCalledWith("3", expect.anything(), expect.anything());
     expect(onFinish).not.toHaveBeenCalled();
     expect(onStandings).not.toHaveBeenCalled();
+    expect(onCue).not.toHaveBeenCalled();
+  });
+
+  it("keeps animating the idle stage until unmounted, still with no callbacks", () => {
+    const onFinish = vi.fn();
+    const onCue = vi.fn();
+    const { unmount } = render(
+      <RaceCanvas
+        isPreview
+        script={SCRIPT}
+        participants={participants(false)}
+        onFinish={onFinish}
+        skipSignal={0}
+        onStandings={vi.fn()}
+        onCue={onCue}
+      />
+    );
+
+    for (let now = 0; now < 5000; now += 16) runFrame(now);
+
+    expect(frames).toHaveLength(1);
+    unmount();
+    expect(cancelAnimationFrame).toHaveBeenCalled();
+    expect(onFinish).not.toHaveBeenCalled();
+    expect(onCue).not.toHaveBeenCalled();
+  });
+
+  it("paints the idle stage once under reduced motion", () => {
+    stubReducedMotion(true);
+    render(
+      <RaceCanvas
+        isPreview
+        script={SCRIPT}
+        participants={participants(false)}
+        onFinish={vi.fn()}
+        skipSignal={0}
+        onStandings={vi.fn()}
+        onCue={vi.fn()}
+      />
+    );
+
+    runFrame(0);
+
+    expect(frames).toHaveLength(0);
   });
 
   it("draws the start line from the sky band down to the bottom of the track", () => {
@@ -620,6 +673,36 @@ describe("RaceCanvas", () => {
     expect(placesPainted().sort((a, b) => Number(a) - Number(b))).toEqual(
       Array.from({ length: 12 }, (_, index) => String(index + 1)).sort((a, b) => Number(a) - Number(b))
     );
+  });
+
+  it("crowns only the leader, and only once the cats are running", () => {
+    const { script, racers } = bigField(12);
+    const crownPixels = () => fills.filter((fill) => fill === "#f2c14e").length;
+    const onFinish = vi.fn();
+    render(
+      <RaceCanvas script={script} participants={racers} onFinish={onFinish} skipSignal={0} onStandings={vi.fn()} onCue={vi.fn()} />
+    );
+
+    runFrame(START_MS);
+    runFrame(START_MS + 1000);
+    expect(crownPixels()).toBe(0);
+
+    fills.length = 0;
+    runFrame(START_MS + 3000);
+    expect(crownPixels()).toBe(1);
+  });
+
+  it("kicks up no dust and no crown in the preview", () => {
+    const { script, racers } = bigField(12);
+    render(
+      <RaceCanvas isPreview script={script} participants={racers} onFinish={vi.fn()} skipSignal={0} onStandings={vi.fn()} onCue={vi.fn()} />
+    );
+
+    runFrame(0);
+    runFrame(16);
+
+    expect(fills).not.toContain("#c9a27a");
+    expect(fills).not.toContain("#f2c14e");
   });
 
   it("shows no place number in the preview", () => {

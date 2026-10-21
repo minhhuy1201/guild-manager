@@ -1,5 +1,8 @@
+import type { GuildClass } from "@guild/shared/enums";
+
 import { STAGE_PALETTE } from "./stage-palette";
-import { SPRITE_COLUMNS, SPRITE_ROWS, catSprite } from "./race-sprites";
+import { catSprite } from "./race-sprites";
+import { SPRITE_COLUMNS, SPRITE_ROWS } from "./sprite-rows";
 
 /** The photo's bitmap size in px; the panel scales it to its width. */
 export const PHOTO_WIDTH = 420;
@@ -8,7 +11,7 @@ export const PHOTO_HEIGHT = 200;
 /** One cat in the photo. */
 export interface PhotoRow {
   readonly label: string;
-  readonly color: string;
+  readonly guildClass: GuildClass;
   /** Cat bodies short of the line; 0 for the winner */
   readonly lengthsBehind: number;
 }
@@ -52,7 +55,7 @@ export function drawPhotoFinish(
     }
     const nose = FINISH_X - row.lengthsBehind * CAT_WIDTH;
     context.drawImage(
-      catSprite(row.color, CAT_WIDTH, 0),
+      catSprite(row.guildClass, CAT_WIDTH, 0),
       nose - CAT_WIDTH,
       top + rowHeight / 2 - spriteHeight / 2 + CAT_DROP,
       CAT_WIDTH,

@@ -1,17 +1,16 @@
 import { useMemo } from "react";
 import type { CatRaceParticipant } from "@guild/shared/schemas";
 
-import { GUILD_CLASS_COLOR } from "@/lib/guild-class";
 import { catLabels } from "../lib/cat-label";
 import type { PhotoRow } from "../lib/draw-photo-finish";
 import type { OverlayState } from "../lib/race-overlay";
 import { rankAt, type RaceScript } from "../lib/race-script";
+import { FALLBACK_SPRITE_CLASS } from "../lib/sprite-rows";
 import { PhotoFinishPanel } from "./photo-finish-panel";
 import { RaceCountdown } from "./race-countdown";
 
 /** Cats in the finish photo. */
 const PHOTO_CATS = 2;
-const FALLBACK_CAT_COLOR = "#999999";
 
 interface RaceOverlaysProps {
   state: OverlayState;
@@ -41,7 +40,7 @@ export function RaceOverlays({ state, script, participants }: RaceOverlaysProps)
 
         return {
           label: labels.get(key)!,
-          color: guildClass ? GUILD_CLASS_COLOR[guildClass] : FALLBACK_CAT_COLOR,
+          guildClass: guildClass ?? FALLBACK_SPRITE_CLASS,
           lengthsBehind: index === 0 ? 0 : state.photo!.lengthsBehind,
         };
       });

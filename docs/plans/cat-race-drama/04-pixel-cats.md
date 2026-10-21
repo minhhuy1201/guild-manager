@@ -12,11 +12,11 @@ tối đa 420 hạt, tỉ lệ sinh giảm theo số mèo. Ảnh đích dùng c�
 
 **Blocked by:** 03
 
-**Status:** todo
+**Status:** done
 
-- [ ] Sprite mới thay sprite cũ; mỗi phái có phụ kiện riêng; bộ nhớ đệm theo (phái, chiều rộng,
+- [x] Sprite mới thay sprite cũ; mỗi phái có phụ kiện riêng; bộ nhớ đệm theo (phái, chiều rộng,
       frame). Có test trên lớp `lib/`.
-- [ ] Vương miện chỉ trên con dẫn đầu khi đang đua. Có test.
-- [ ] Vệt gió và bụi chỉ khi đang chạy; số hạt không vượt 420. Có test.
-- [ ] 240 mèo khoảng 60fps trên laptop phổ thông (đo bằng `?fps`, ghi kết quả vào commit hoặc PR).
-- [ ] `pnpm --filter web test`, `typecheck`, `lint` xanh.
+- [x] Vương miện chỉ trên con dẫn đầu khi đang đua. Có test.
+- [x] Vệt gió và bụi chỉ khi đang chạy; số hạt không vượt 420. Có test.
+- [ ] 240 mèo khoảng 60fps trên laptop phổ thông (đo bằng `?fps`, ghi kết quả vào commit hoặc PR). Chưa đo: không đo được trên trình duyệt (not measured in a browser).
+- [x] `pnpm --filter web test`, `typecheck`, `lint` xanh.

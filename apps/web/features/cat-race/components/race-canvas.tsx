@@ -3,9 +3,14 @@
 import { useEffect, useRef } from "react";
 import type { CatRaceParticipant } from "@guild/shared/schemas";
 
+import type { GuildClass } from "@guild/shared/enums";
+
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { GUILD_CLASS_COLOR } from "@/lib/guild-class";
+import { bobOffset, legClock, legFrame, speedAt } from "../lib/cat-motion";
 import { catLabels } from "../lib/cat-label";
 import { INITIAL_CUE_CURSOR, nextCues, type FinishCue, type RaceCue } from "../lib/race-cue";
+import { paintCrown, paintDust, paintSpeedLines } from "../lib/paint-cat-effects";
 import { paintStageBand, type BandScene } from "../lib/paint-stage-band";
 import { nameFontPx, nameRoom, paintStageNames } from "../lib/paint-stage-names";
 import { paintStageTrack } from "../lib/paint-stage-track";
@@ -14,7 +19,9 @@ import { lengthsBehind } from "../lib/race-lengths";
 import { visibleLanes, type LaneRange } from "../lib/race-layout";
 import type { RaceScript } from "../lib/race-script";
 import { leaderAt, rankAt } from "../lib/race-script";
-import { SPRITE_COLUMNS, SPRITE_ROWS, catSprite } from "../lib/race-sprites";
+import { spawnDust, stepDust, type DustParticle } from "../lib/race-dust";
+import { catSprite } from "../lib/race-sprites";
+import { FALLBACK_SPRITE_CLASS, SPRITE_COLUMNS, SPRITE_ROWS } from "../lib/sprite-rows";
 import { RACE_END_U, isPhotoFinish, momentAt } from "../lib/race-timeline";
 import { buildCrowd } from "../lib/stage-crowd";
 import { renderBackdrop } from "../lib/stage-backdrop";
@@ -25,10 +32,9 @@ import { GATE_TEXT, TITLE_TEXT, bodyFont, displayFont, type StageFonts } from ".
 
 /** Live board refresh interval; a faster board only flickers. */
 const STANDINGS_INTERVAL_MS = 250;
-/** Running frames per second. */
-const STEP_RATE = 8;
+/** Longest step the dust moves in one frame, so a stalled tab does not fling it. */
+const MAX_DT_SECONDS = 0.05;
 const LABEL_ELLIPSIS = "…";
-const FALLBACK_CAT_COLOR = "#999999";
 const NAME_WEIGHT = 600;
 const FONT_PROBE_PX = 16;
 const FPS_FONT = "12px monospace";
@@ -47,7 +53,7 @@ interface RaceCanvasProps {
   onStandings: (keys: string[]) => void;
   /** Called for each moment of the round, once and in order; a skip sends none */
   onCue: (cue: RaceCue) => void;
-  /** Paint the cats on the start line and stop: no countdown, no replay, no callbacks */
+  /** Paint the stage with the cats standing on the start line: no countdown, no replay, no callbacks */
   isPreview?: boolean;
   /** Cat keys from the top lane down, when the lanes were shuffled; null keeps them A to Z */
   laneOrder?: readonly string[] | null;
@@ -81,7 +87,7 @@ function fitText(context: CanvasRenderingContext2D, text: string, maxWidth: numb
  * @param props.skipSignal - Change it to skip to the end
  * @param props.onStandings - Receives the live order of every cat
  * @param props.onCue - Receives the countdown, lead changes, sprint, slow motion and the finish
- * @param props.isPreview - Paint the start line once instead of replaying
+ * @param props.isPreview - Animate the idle stage (static under reduced motion) instead of replaying
  * @param props.laneOrder - Shuffled lane order, or null for A to Z
  * @returns The scrolling track
  */
@@ -95,6 +101,7 @@ export function RaceCanvas({
   isPreview = false,
   laneOrder: shuffledOrder = null,
 }: RaceCanvasProps) {
+  const isStill = useReducedMotion();
   const scrollRef = useRef<HTMLDivElement>(null);
   const spacerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -127,12 +134,15 @@ export function RaceCanvas({
     if (!scroller || !spacer || !canvas || !context) return;
 
     const labels = catLabels(script.cats, participants);
-    const colorOf = new Map(
+    const classOf = new Map<string, GuildClass>(
       script.cats.map((cat) => {
         const owner = participants.find((p) => p.characterId === cat.characterId);
 
-        return [cat.key, owner ? GUILD_CLASS_COLOR[owner.guildClass] : FALLBACK_CAT_COLOR];
+        return [cat.key, owner?.guildClass ?? FALLBACK_SPRITE_CLASS];
       })
+    );
+    const colorOf = new Map(
+      [...classOf].map(([key, guildClass]) => [key, GUILD_CLASS_COLOR[guildClass]])
     );
     const peopleCount = new Set(script.cats.map((cat) => cat.characterId)).size;
     const showFps = new URLSearchParams(window.location.search).has("fps");
@@ -147,6 +157,8 @@ export function RaceCanvas({
     let lastStandings = 0;
     let cursor = INITIAL_CUE_CURSOR;
     let frames = 0;
+    let lastTime = 0;
+    let dust: readonly DustParticle[] = [];
     let isDisposed = false;
     doneRef.current = false;
 
@@ -183,24 +195,46 @@ export function RaceCanvas({
     };
 
     /**
-     * Paint every cat that is in view.
+     * Paint every cat that is in view, with its crown, speed lines and the dust it kicks up.
      * @param current - The plan being painted
-     * @param u - Race time, 0..1
+     * @param motion - Race time, whether the cats run, the leader's key and seconds since the last frame
      * @param lanes - The lanes in view
      * @param top - How far the lanes are scrolled, in px
+     * @returns The dust the cats kicked up this frame
      */
-    const drawCats = (current: RacePlan, u: number, lanes: LaneRange, top: number) => {
-      const { layout } = current;
+    const drawCats = (
+      current: RacePlan,
+      motion: { u: number; isRunning: boolean; leaderKey: string | null; dt: number },
+      lanes: LaneRange,
+      top: number
+    ): DustParticle[] => {
+      const { layout, script: raced } = current;
       const height = (layout.catWidth * SPRITE_ROWS) / SPRITE_COLUMNS;
-      const legTick = Math.floor(u * current.script.durationSeconds * STEP_RATE);
-      const cats = frameAt(current, u);
+      const clock = legClock(motion.u, raced.durationSeconds);
+      const cats = frameAt(current, motion.u);
+      const kicked: DustParticle[] = [];
       for (let lane = lanes.first; lane <= lanes.last; lane += 1) {
         const cat = cats[lane];
-        // The legs follow race time, so they stop with the cats when the winner crosses.
-        const step = (legTick + cat.key.length) % 2 === 0 ? 0 : 1;
-        const sprite = catSprite(colorOf.get(cat.key)!, layout.catWidth, step);
-        context.drawImage(sprite, cat.x, cat.y - top - height / 2, layout.catWidth, height);
+        const frame = legFrame(clock, lane, motion.isRunning);
+        const bob = bobOffset(frame, layout.catHeight, motion.isRunning);
+        const box = { x: cat.x, y: cat.y, width: layout.catWidth, height };
+        if (motion.isRunning) {
+          paintSpeedLines(context, { ...box, y: cat.y - top }, speedAt(raced.curves.get(cat.key)!, motion.u), clock);
+          const puff = spawnDust(
+            { ...box, catHeight: layout.catHeight },
+            { alive: dust.length + kicked.length, dt: motion.dt, catCount: raced.cats.length },
+            Math.random
+          );
+          if (puff) kicked.push(puff);
+        }
+        const spriteTop = cat.y - top - height / 2 + bob;
+        context.drawImage(catSprite(classOf.get(cat.key)!, layout.catWidth, frame), cat.x, spriteTop, layout.catWidth, height);
+        if (cat.key === motion.leaderKey) {
+          paintCrown(context, { x: cat.x, top: spriteTop, width: layout.catWidth, catHeight: layout.catHeight });
+        }
       }
+
+      return kicked;
     };
 
     /**
@@ -212,7 +246,7 @@ export function RaceCanvas({
      */
     const paintStage = (
       current: RacePlan,
-      frame: { phase: StagePhase; isSprint: boolean; u: number; time: number },
+      frame: { phase: StagePhase; isSprint: boolean; u: number; time: number; dt: number },
       ranks: readonly string[] | null
     ) => {
       if (!scene) return;
@@ -231,7 +265,15 @@ export function RaceCanvas({
         ...view,
         leaderLane: leaderKey === null ? null : current.laneOf.get(leaderKey)!,
       });
-      drawCats(current, frame.u, lanes, top);
+      dust = stepDust(dust, frame.dt);
+      paintDust(context, dust, top);
+      const kicked = drawCats(
+        current,
+        { u: frame.u, isRunning: frame.phase === "running", leaderKey, dt: frame.dt },
+        lanes,
+        top
+      );
+      dust = [...dust, ...kicked];
       paintStageNames(context, {
         ...view,
         laneOrder: current.laneOrder,
@@ -252,8 +294,11 @@ export function RaceCanvas({
     const tick = (now: number) => {
       if (!plan || doneRef.current) return;
       const time = now / MS_PER_SECOND;
+      const dt = Math.min(MAX_DT_SECONDS, Math.max(0, time - lastTime));
+      lastTime = time;
       if (isPreview) {
-        paintStage(plan, { phase: "idle", isSprint: false, u: 0, time }, null);
+        paintStage(plan, { phase: "idle", isSprint: false, u: 0, time, dt }, null);
+        if (!isStill) frameId = requestAnimationFrame(tick);
 
         return;
       }
@@ -261,7 +306,7 @@ export function RaceCanvas({
       const elapsed = (now - startedAt) / MS_PER_SECOND;
       const moment = momentAt(elapsed, script.durationSeconds, script.runnerUpGap);
       const ranks = isRacing(moment.phase) ? rankAt(script, moment.u) : null;
-      paintStage(plan, { phase: moment.phase, isSprint: moment.isSprint, u: moment.u, time }, ranks);
+      paintStage(plan, { phase: moment.phase, isSprint: moment.isSprint, u: moment.u, time, dt }, ranks);
       if (ranks && now - lastStandings >= STANDINGS_INTERVAL_MS) {
         lastStandings = now;
         standingsRef.current(ranks);
@@ -294,7 +339,7 @@ export function RaceCanvas({
       frameId = requestAnimationFrame(tick);
     };
 
-    /** A preview repaints on demand; a replay already repaints every frame. */
+    /** A still preview repaints on demand; an animated preview and a replay repaint every frame. */
     const repaint = () => {
       if (!isPreview || isDisposed) return;
       cancelAnimationFrame(frameId);
@@ -318,7 +363,7 @@ export function RaceCanvas({
       scroller.removeEventListener("scroll", repaint);
       observer.disconnect();
     };
-  }, [script, participants, isPreview, shuffledOrder]);
+  }, [script, participants, isPreview, shuffledOrder, isStill]);
 
   return (
     <div

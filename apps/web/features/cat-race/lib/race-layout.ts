@@ -1,4 +1,4 @@
-import { SPRITE_COLUMNS, SPRITE_ROWS } from "./race-sprites";
+import { SPRITE_COLUMNS, SPRITE_ROWS } from "./sprite-rows";
 
 export interface Area {
   readonly width: number;
