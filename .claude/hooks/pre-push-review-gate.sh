@@ -69,7 +69,8 @@ if "push" not in subcommands:
     sys.exit(0)
 # The marker is compared with HEAD before the whole command runs, so a commit chained
 # ahead of the push would be pushed under the old marker.
-before_push = subcommands[:subcommands.index("push")]
+last_push = len(subcommands) - 1 - subcommands[::-1].index("push")
+before_push = subcommands[:last_push]
 print("MOVED" if any(s in HEAD_MOVING for s in before_push) else "PUSH")
 PY
 )"
@@ -92,7 +93,7 @@ Run the commit as its own Bash call, run the pr-review gate on the new HEAD, upd
 sha block in the PR body, then push with a standalone \`git push\`.
 EOF
     exit 2 ;;
-  PUSH) ;;                                 # confidently a push -> gate it
+  PUSH) ;;                                   # confidently a push -> gate it
   ERR)  [ "$looks_pushy" = "1" ] || exit 0 ;; # parser failed -> gate iff push-like
   *)    exit 0 ;;                            # confidently not a push -> allow
 esac
