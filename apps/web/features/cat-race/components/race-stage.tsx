@@ -121,9 +121,18 @@ export function RaceStage({
     }
   };
 
+  // Another prize has another field, so a shuffle made for a different prize means nothing here.
+  const laneKeys = prize && laneOrder?.prizeId === prize.id ? laneOrder.keys : null;
+
   const shuffleLanes = () => {
-    if (!previewScript || stage !== "idle") return;
-    store().shuffleLanes(shuffled(previewScript.cats.map((cat) => cat.key), Math.random));
+    if (!prize || !previewScript || stage !== "idle") return;
+    const keys = previewScript.cats.map((cat) => cat.key);
+    let next = shuffled(keys, Math.random);
+    // A click that lands on the lanes already shown looks like a dead button.
+    while (laneKeys && next.every((key, index) => key === laneKeys[index])) {
+      next = shuffled(keys, Math.random);
+    }
+    store().shuffleLanes(prize.id, next);
   };
 
   const finishRace = () => {
@@ -155,7 +164,7 @@ export function RaceStage({
               script={script}
               participants={event.participants}
               skipSignal={skipSignal}
-              laneOrder={laneOrder}
+              laneOrder={laneKeys}
               onFinish={finishRace}
               onStandings={setStandings}
             />
@@ -165,7 +174,7 @@ export function RaceStage({
               script={previewScript}
               participants={event.participants}
               skipSignal={skipSignal}
-              laneOrder={laneOrder}
+              laneOrder={laneKeys}
               onFinish={finishRace}
               onStandings={setStandings}
             />

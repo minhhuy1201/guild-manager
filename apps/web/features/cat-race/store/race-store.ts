@@ -31,10 +31,10 @@ interface RaceState {
   stage: RaceStage;
   /** The server's answer, held until the replay ends */
   pendingResult: CatRaceDrawResult | null;
-  /** Cat keys from the top lane down after a shuffle; null keeps the lanes A to Z */
-  laneOrder: string[] | null;
+  /** Cat keys from the top lane down after a shuffle, with the prize it was made for; null keeps A to Z */
+  laneOrder: { prizeId: string; keys: string[] } | null;
   selectPrize: (prizeId: string) => void;
-  shuffleLanes: (keys: string[]) => void;
+  shuffleLanes: (prizeId: string, keys: string[]) => void;
   setDurationSeconds: (seconds: number) => void;
   startDrawing: () => void;
   startRacing: (result: CatRaceDrawResult) => void;
@@ -49,9 +49,8 @@ export const useRaceStore = create<RaceState>((set) => ({
   stage: "idle",
   pendingResult: null,
   laneOrder: null,
-  // Another prize has another field, so a shuffle of the old one means nothing.
-  selectPrize: (prizeId) => set({ selectedPrizeId: prizeId, laneOrder: null }),
-  shuffleLanes: (keys) => set({ laneOrder: keys }),
+  selectPrize: (prizeId) => set({ selectedPrizeId: prizeId }),
+  shuffleLanes: (prizeId, keys) => set({ laneOrder: { prizeId, keys } }),
   setDurationSeconds: (durationSeconds) => {
     try {
       localStorage.setItem(DURATION_STORAGE_KEY, String(durationSeconds));

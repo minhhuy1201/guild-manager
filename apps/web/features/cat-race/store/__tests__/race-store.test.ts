@@ -63,17 +63,15 @@ describe("race store duration", () => {
 });
 
 describe("race store lane order", () => {
-  it("keeps a shuffle through a round and forgets it when another prize is chosen", async () => {
+  it("keeps a shuffle, with its prize, through a round", async () => {
     vi.stubGlobal("localStorage", { getItem: () => null, setItem: () => {} });
     const { useRaceStore } = await import("../race-store");
     const store = useRaceStore.getState();
 
-    store.shuffleLanes(["b#1", "a#1"]);
+    store.shuffleLanes("p1", ["b#1", "a#1"]);
     store.startDrawing();
     store.reset();
-    expect(useRaceStore.getState().laneOrder).toEqual(["b#1", "a#1"]);
 
-    store.selectPrize("p2");
-    expect(useRaceStore.getState().laneOrder).toBeNull();
+    expect(useRaceStore.getState().laneOrder).toEqual({ prizeId: "p1", keys: ["b#1", "a#1"] });
   });
 });

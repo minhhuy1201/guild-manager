@@ -114,6 +114,7 @@ function renderStage(event = EVENT, prize = PRIZE, isDurationValid = true) {
 beforeEach(() => {
   reducedMotion.current = false;
   useRaceStore.getState().reset();
+  useRaceStore.setState({ laneOrder: null });
 });
 afterEach(cleanup);
 
@@ -163,8 +164,27 @@ describe("RaceStage", () => {
     fireEvent.click(screen.getByRole("button", { name: /Xáo trộn/ }));
 
     const order = useRaceStore.getState().laneOrder;
-    expect([...(order ?? [])].sort()).toEqual(["a#1", "b#1"]);
-    expect(screen.getByText(`LANES ${order!.join(",")}`)).toBeTruthy();
+    expect(order?.prizeId).toBe("p1");
+    expect([...(order?.keys ?? [])].sort()).toEqual(["a#1", "b#1"]);
+    expect(screen.getByText(`LANES ${order!.keys.join(",")}`)).toBeTruthy();
+  });
+
+  it("changes the lanes on every click", () => {
+    renderStage();
+    const button = screen.getByRole("button", { name: /Xáo trộn/ });
+
+    fireEvent.click(button);
+    const first = useRaceStore.getState().laneOrder!.keys;
+    fireEvent.click(button);
+
+    expect(useRaceStore.getState().laneOrder!.keys).not.toEqual(first);
+  });
+
+  it("ignores a shuffle made for another prize", () => {
+    useRaceStore.getState().shuffleLanes("other", ["b#1", "a#1"]);
+    renderStage();
+
+    expect(screen.getByText("LANES none")).toBeTruthy();
   });
 
   it("locks the shuffle for a single cat and while a round runs", async () => {
