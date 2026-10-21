@@ -441,7 +441,7 @@ describe("RaceCanvas", () => {
     const onCue = vi.fn();
     render(
       <RaceCanvas
-        isPreview
+        mode="start"
         script={script}
         participants={racers}
         onFinish={onFinish}
@@ -462,12 +462,39 @@ describe("RaceCanvas", () => {
     expect(onCue).not.toHaveBeenCalled();
   });
 
+  it("paints the finished race behind the winner card, cats spread out and no callbacks", () => {
+    const { script, racers } = bigField(12);
+    const onFinish = vi.fn();
+    const onStandings = vi.fn();
+    const onCue = vi.fn();
+    render(
+      <RaceCanvas
+        mode="finish"
+        script={script}
+        participants={racers}
+        onFinish={onFinish}
+        skipSignal={0}
+        onStandings={onStandings}
+        onCue={onCue}
+      />
+    );
+
+    runFrame(0);
+
+    const cats = sprites.filter((sprite) => sprite.x > 0);
+    expect(cats).toHaveLength(12);
+    expect(new Set(cats.map((sprite) => sprite.x)).size).toBeGreaterThan(1);
+    expect(onFinish).not.toHaveBeenCalled();
+    expect(onStandings).not.toHaveBeenCalled();
+    expect(onCue).not.toHaveBeenCalled();
+  });
+
   it("keeps animating the idle stage until unmounted, still with no callbacks", () => {
     const onFinish = vi.fn();
     const onCue = vi.fn();
     const { unmount } = render(
       <RaceCanvas
-        isPreview
+        mode="start"
         script={SCRIPT}
         participants={participants(false)}
         onFinish={onFinish}
@@ -490,7 +517,7 @@ describe("RaceCanvas", () => {
     stubReducedMotion(true);
     render(
       <RaceCanvas
-        isPreview
+        mode="start"
         script={SCRIPT}
         participants={participants(false)}
         onFinish={vi.fn()}
@@ -699,7 +726,7 @@ describe("RaceCanvas", () => {
   it("kicks up no dust and no crown in the preview", () => {
     const { script, racers } = bigField(12);
     render(
-      <RaceCanvas isPreview script={script} participants={racers} onFinish={vi.fn()} skipSignal={0} onStandings={vi.fn()} onCue={vi.fn()} />
+      <RaceCanvas mode="start" script={script} participants={racers} onFinish={vi.fn()} skipSignal={0} onStandings={vi.fn()} onCue={vi.fn()} />
     );
 
     runFrame(0);
@@ -712,7 +739,7 @@ describe("RaceCanvas", () => {
   it("shows no place number in the preview", () => {
     const { script, racers } = bigField(12);
     render(
-      <RaceCanvas isPreview script={script} participants={racers} onFinish={vi.fn()} skipSignal={0} onStandings={vi.fn()} onCue={vi.fn()} />
+      <RaceCanvas mode="start" script={script} participants={racers} onFinish={vi.fn()} skipSignal={0} onStandings={vi.fn()} onCue={vi.fn()} />
     );
 
     runFrame(0);

@@ -43,6 +43,12 @@ const FPS_X = 8;
 const FPS_BOTTOM_GAP = 8;
 const MS_PER_SECOND = 1000;
 
+/**
+ * What the canvas shows: the round being replayed, the cats waiting on the start line, or the
+ * finished race standing still behind the winner card.
+ */
+export type CanvasMode = "replay" | "start" | "finish";
+
 interface RaceCanvasProps {
   script: RaceScript;
   participants: readonly CatRaceParticipant[];
@@ -54,8 +60,8 @@ interface RaceCanvasProps {
   onStandings: (rows: readonly RaceStanding[]) => void;
   /** Called for each moment of the round, once and in order; a skip sends none */
   onCue: (cue: RaceCue) => void;
-  /** Paint the stage with the cats standing on the start line: no countdown, no replay, no callbacks */
-  isPreview?: boolean;
+  /** Anything but `replay` paints a still race on a live stage: no countdown, no callbacks */
+  mode?: CanvasMode;
   /** Cat keys from the top lane down, when the lanes were shuffled; null keeps them A to Z */
   laneOrder?: readonly string[] | null;
 }
@@ -88,7 +94,7 @@ function fitText(context: CanvasRenderingContext2D, text: string, maxWidth: numb
  * @param props.skipSignal - Change it to skip to the end
  * @param props.onStandings - Receives the live order of every cat
  * @param props.onCue - Receives the countdown, lead changes, sprint, slow motion and the finish
- * @param props.isPreview - Animate the idle stage (static under reduced motion) instead of replaying
+ * @param props.mode - Replay, or animate the stage around a still race (static under reduced motion)
  * @param props.laneOrder - Shuffled lane order, or null for A to Z
  * @returns The scrolling track
  */
@@ -99,10 +105,11 @@ export function RaceCanvas({
   skipSignal,
   onStandings,
   onCue,
-  isPreview = false,
+  mode = "replay",
   laneOrder: shuffledOrder = null,
 }: RaceCanvasProps) {
   const isStill = useReducedMotion();
+  const isPreview = mode !== "replay";
   const scrollRef = useRef<HTMLDivElement>(null);
   const spacerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -301,7 +308,12 @@ export function RaceCanvas({
       const dt = Math.min(MAX_DT_SECONDS, Math.max(0, time - lastTime));
       lastTime = time;
       if (isPreview) {
-        paintStage(plan, { phase: "idle", isSprint: false, u: 0, time, dt }, null);
+        const isFinishLine = mode === "finish";
+        paintStage(
+          plan,
+          { phase: isFinishLine ? "done" : "idle", isSprint: false, u: isFinishLine ? RACE_END_U : 0, time, dt },
+          isFinishLine ? rankAt(script, RACE_END_U) : null
+        );
         if (!isStill) frameId = requestAnimationFrame(tick);
 
         return;
@@ -352,7 +364,12 @@ export function RaceCanvas({
 
     resize();
     // The first paint may land before the lettering has downloaded; paint again when it has.
-    void document.fonts?.load(displayFont(FONT_PROBE_PX, fonts), `${GATE_TEXT} ${TITLE_TEXT}`).then(repaint);
+    document.fonts
+      ?.load(displayFont(FONT_PROBE_PX, fonts), `${GATE_TEXT} ${TITLE_TEXT}`)
+      .then(repaint)
+      .catch(() => {
+        // The lettering failed to download: the fallback face already painted, nothing to redo.
+      });
     const observer = new ResizeObserver(() => {
       resize();
       repaint();
@@ -367,7 +384,7 @@ export function RaceCanvas({
       scroller.removeEventListener("scroll", repaint);
       observer.disconnect();
     };
-  }, [script, participants, isPreview, shuffledOrder, isStill]);
+  }, [script, participants, mode, isPreview, shuffledOrder, isStill]);
 
   return (
     <div

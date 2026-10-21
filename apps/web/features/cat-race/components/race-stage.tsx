@@ -195,9 +195,20 @@ export function RaceStage({
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_17rem]">
         <div
           data-slot="cat-race-stage"
-          className={cn("relative h-[70dvh] min-h-96", stageFont.variable)}
+          className={cn("relative h-[70dvh] min-h-96 overflow-hidden rounded-lg", stageFont.variable)}
         >
-          {stage === "racing" && script ? (
+          {stage === "result" && script ? (
+            <RaceCanvas
+              mode="finish"
+              script={script}
+              participants={event.participants}
+              skipSignal={skipSignal}
+              laneOrder={laneKeys}
+              onFinish={finishRace}
+              onStandings={(rows) => setStandings((current) => advanceBoard(current, rows))}
+              onCue={showCue}
+            />
+          ) : stage === "racing" && script ? (
             <RaceCanvas
               script={script}
               participants={event.participants}
@@ -209,7 +220,7 @@ export function RaceStage({
             />
           ) : stage !== "result" && previewScript ? (
             <RaceCanvas
-              isPreview
+              mode="start"
               script={previewScript}
               participants={event.participants}
               skipSignal={skipSignal}

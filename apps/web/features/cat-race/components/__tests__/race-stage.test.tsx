@@ -33,18 +33,18 @@ vi.mock("../race-canvas", () => ({
     onStandings,
     onCue,
     skipSignal,
-    isPreview,
+    mode,
     laneOrder,
   }: {
     onFinish: () => void;
     onStandings: (rows: readonly RaceStanding[]) => void;
     onCue: (cue: RaceCue) => void;
     skipSignal: number;
-    isPreview?: boolean;
+    mode?: string;
     laneOrder: string[] | null;
   }) => (
     <div>
-      {isPreview ? "PREVIEW" : `CANVAS ${skipSignal}`}
+      {mode === "start" ? "PREVIEW" : mode === "finish" ? "FINISH LINE" : `CANVAS ${skipSignal}`}
       <span>{`LANES ${laneOrder?.join(",") ?? "none"}`}</span>
       <button onClick={onFinish}>finish</button>
       <button
@@ -337,7 +337,7 @@ describe("RaceStage", () => {
     expect(useRaceStore.getState().stage).toBe("idle");
   });
 
-  it("shows the track with the cats before the first round, and not behind the winner card", async () => {
+  it("shows the cats on the start line before the first round, and the finished race behind the winner card", async () => {
     mutateAsync.mockResolvedValue(RESULT);
     renderStage();
     expect(screen.getByText("PREVIEW")).toBeTruthy();
@@ -347,6 +347,7 @@ describe("RaceStage", () => {
     fireEvent.click(screen.getByText("finish"));
 
     expect(screen.queryByText("PREVIEW")).toBeNull();
+    expect(screen.getByText("FINISH LINE")).toBeTruthy();
   });
 
   describe("broadcast bar", () => {
