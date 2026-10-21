@@ -82,7 +82,7 @@ describe("tactics API", () => {
   it("lists tactics with the session's token", async () => {
     const fetchMock = mockFetch({ status: 200, body: { data: [] } });
 
-    await expect(fetchTactics()).resolves.toEqual([]);
+    await expect(fetchTactics()).resolves.toEqual({ ok: true, data: [] });
 
     const { url, init } = requestOf(fetchMock);
     expect(url).toContain("/tactics");
@@ -140,13 +140,19 @@ describe("tactics API", () => {
   it("deletes a tactic and expects no body back", async () => {
     const fetchMock = mockFetch({ status: 204, body: null });
 
-    await expect(deleteTactic("t1")).resolves.toBeUndefined();
+    await expect(deleteTactic("t1")).resolves.toEqual({
+      ok: true,
+      data: undefined,
+    });
     expect(requestOf(fetchMock).init.method).toBe("DELETE");
   });
 
   it("reads and writes the token presets", async () => {
     const listMock = mockFetch({ status: 200, body: { data: [] } });
-    await expect(fetchTokenPresets()).resolves.toEqual([]);
+    await expect(fetchTokenPresets()).resolves.toEqual({
+      ok: true,
+      data: [],
+    });
     expect(requestOf(listMock).url).toContain("/tactics/token-presets");
 
     vi.unstubAllGlobals();
@@ -164,14 +170,18 @@ describe("tactics API", () => {
     expect(requestOf(deleteMock).init.method).toBe("DELETE");
   });
 
-  it("throws the backend's Vietnamese message on a failure", async () => {
+  it("returns the backend's Vietnamese message and status on a failure", async () => {
     mockFetch({
       status: 400,
       body: { message: "Một chiến thuật tối đa 20 giai đoạn." },
     });
 
-    await expect(saveTacticStages({ id: "t1", scene: SCENE })).rejects.toThrow(
-      "Một chiến thuật tối đa 20 giai đoạn."
-    );
+    await expect(
+      saveTacticStages({ id: "t1", scene: SCENE })
+    ).resolves.toEqual({
+      ok: false,
+      message: "Một chiến thuật tối đa 20 giai đoạn.",
+      statusCode: 400,
+    });
   });
 });

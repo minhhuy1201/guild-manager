@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { unwrapAction } from "@/lib/action-result";
 
 import { fetchFormations } from "../api/team-builder-api";
 import { teamBuilderKeys } from "../api/team-builder-keys";
@@ -15,7 +16,7 @@ import { teamBuilderKeys } from "../api/team-builder-keys";
 export function useFormations(weekStart?: string, enabled = true) {
   return useQuery({
     queryKey: teamBuilderKeys.formations(weekStart),
-    queryFn: () => fetchFormations(weekStart),
+    queryFn: () => fetchFormations(weekStart).then(unwrapAction),
     enabled,
   });
 }

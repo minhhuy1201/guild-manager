@@ -14,6 +14,7 @@ vi.mock("@/features/auth/server", () => ({
 
 const {
   fetchAttendanceRecords,
+  fetchCharacters,
   fetchBattleSessions,
   fetchCurrentWeek,
   markAttendance,
@@ -61,7 +62,9 @@ describe("attendance-api", () => {
       },
     });
 
-    const records = await fetchAttendanceRecords();
+    const result = await fetchAttendanceRecords();
+    if (!result.ok) throw new Error("expected a success");
+    const records = result.data;
 
     expect(Object.keys(records)).toEqual([
       recordKey("c1", "s1"),
@@ -93,7 +96,7 @@ describe("attendance-api", () => {
     };
     const fetchMock = mockFetch({ status: 200, body: { data: week } });
 
-    await expect(fetchCurrentWeek()).resolves.toEqual(week);
+    await expect(fetchCurrentWeek()).resolves.toEqual({ ok: true, data: week });
     expect(fetchMock).toHaveBeenCalledWith(
       "http://localhost:3001/api/battle-sessions/current-week",
       expect.anything()
@@ -108,7 +111,10 @@ describe("attendance-api", () => {
       isPresent: true,
     };
 
-    await expect(markAttendance(input)).resolves.toEqual(RECORD);
+    await expect(markAttendance(input)).resolves.toEqual({
+      ok: true,
+      data: RECORD,
+    });
     expect(fetchMock).toHaveBeenCalledWith(
       "http://localhost:3001/api/attendance",
       expect.objectContaining({
@@ -133,7 +139,11 @@ describe("attendance-api", () => {
         sessionId: "s1",
         isPresent: true,
       })
-    ).rejects.toThrowError("Đã quá hạn điểm danh ngày này.");
+    ).resolves.toEqual({
+      ok: false,
+      message: "Đã quá hạn điểm danh ngày này.",
+      statusCode: 409,
+    });
   });
 
   describe("đọc theo tuần", () => {
@@ -164,5 +174,19 @@ describe("attendance-api", () => {
         `/battle-sessions?weekStart=${encodeURIComponent(weekStart)}`
       );
     });
+  });
+});
+
+describe("attendance-api characters", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("lists the characters through the attendance endpoint", async () => {
+    const fetchMock = mockFetch({ status: 200, body: { data: [] } });
+
+    await expect(fetchCharacters()).resolves.toEqual({ ok: true, data: [] });
+
+    expect(fetchMock.mock.calls[0][0]).toContain("/attendance/characters");
   });
 });

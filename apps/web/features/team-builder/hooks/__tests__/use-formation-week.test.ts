@@ -7,7 +7,6 @@ import {
   fetchAttendanceRecords,
   fetchCharacters,
 } from "@/features/attendance/api/attendance-api";
-import { ApiError } from "@/lib/api-client";
 import {
   fetchFormations,
   fetchFormationWeeks,
@@ -65,10 +64,10 @@ const RECORD: AttendanceRecord = {
 };
 
 beforeEach(() => {
-  fetchWeeksMock.mockResolvedValue(WEEKS);
-  fetchFormationsMock.mockResolvedValue([makeSession("thu-7")]);
-  fetchCharactersMock.mockResolvedValue([]);
-  fetchRecordsMock.mockResolvedValue({ "char-1__thu-7": RECORD });
+  fetchWeeksMock.mockResolvedValue({ ok: true, data: WEEKS });
+  fetchFormationsMock.mockResolvedValue({ ok: true, data: [makeSession("thu-7")] });
+  fetchCharactersMock.mockResolvedValue({ ok: true, data: [] });
+  fetchRecordsMock.mockResolvedValue({ ok: true, data: { "char-1__thu-7": RECORD } });
 });
 
 describe("useFormationWeek", () => {
@@ -93,7 +92,7 @@ describe("useFormationWeek", () => {
   it("fetchFormationVersion tải lại rồi trả version mới nhất của ngày", async () => {
     const { result } = renderFormationHook(() => useFormationWeek());
     await waitFor(() => expect(result.current.isPending).toBe(false));
-    fetchFormationsMock.mockResolvedValue([makeSession("thu-7", { version: 6 })]);
+    fetchFormationsMock.mockResolvedValue({ ok: true, data: [makeSession("thu-7", { version: 6 })] });
 
     await expect(result.current.fetchFormationVersion("thu-7")).resolves.toBe(6);
   });
@@ -101,7 +100,7 @@ describe("useFormationWeek", () => {
   it("fetchFormationVersion ném khi ngày không còn, không đoán số", async () => {
     const { result } = renderFormationHook(() => useFormationWeek());
     await waitFor(() => expect(result.current.isPending).toBe(false));
-    fetchFormationsMock.mockResolvedValue([]);
+    fetchFormationsMock.mockResolvedValue({ ok: true, data: [] });
 
     await expect(result.current.fetchFormationVersion("thu-7")).rejects.toThrow(
       "không còn tồn tại"
@@ -153,9 +152,7 @@ describe("useFormationWeek", () => {
   });
 
   it("query đội hình lỗi thì hiện thông báo của backend", async () => {
-    fetchFormationsMock.mockRejectedValue(
-      new ApiError("Tuần này đã bị khoá.", 409)
-    );
+    fetchFormationsMock.mockResolvedValue({ ok: false, message: "Tuần này đã bị khoá.", statusCode: 409 });
 
     const { result } = renderFormationHook(() => useFormationWeek());
 
@@ -164,6 +161,7 @@ describe("useFormationWeek", () => {
   });
 
   it("lỗi không có thông báo riêng thì dùng câu mặc định", async () => {
+    // A plain Error is an unexpected failure, never a backend rejection.
     fetchCharactersMock.mockRejectedValue(new Error("boom"));
 
     const { result } = renderFormationHook(() => useFormationWeek());
@@ -173,9 +171,7 @@ describe("useFormationWeek", () => {
   });
 
   it("query nhân vật lỗi thì vẫn hiện thông báo của backend, không rơi về câu chung", async () => {
-    fetchCharactersMock.mockRejectedValue(
-      new ApiError("Phiên đăng nhập đã hết hạn.", 401)
-    );
+    fetchCharactersMock.mockResolvedValue({ ok: false, message: "Phiên đăng nhập đã hết hạn.", statusCode: 401 });
 
     const { result } = renderFormationHook(() => useFormationWeek());
 
@@ -186,8 +182,8 @@ describe("useFormationWeek", () => {
   it("không tuần nào có dữ liệu thì màn hình trống, không kẹt loading", async () => {
     // The branch where a "weekStart is not undefined" condition would hang forever:
     // findActiveWeekStart([]) returns null, so the week is never settled.
-    fetchWeeksMock.mockResolvedValue([]);
-    fetchFormationsMock.mockResolvedValue([]);
+    fetchWeeksMock.mockResolvedValue({ ok: true, data: [] });
+    fetchFormationsMock.mockResolvedValue({ ok: true, data: [] });
 
     const { result } = renderFormationHook(() => useFormationWeek());
 
@@ -197,9 +193,7 @@ describe("useFormationWeek", () => {
   });
 
   it("query tuần lỗi thì báo lỗi chứ không gọi query đội hình", async () => {
-    fetchWeeksMock.mockRejectedValue(
-      new ApiError("Phiên đăng nhập đã hết hạn.", 401)
-    );
+    fetchWeeksMock.mockResolvedValue({ ok: false, message: "Phiên đăng nhập đã hết hạn.", statusCode: 401 });
 
     const { result } = renderFormationHook(() => useFormationWeek());
 
@@ -212,7 +206,7 @@ describe("useFormationWeek", () => {
     // TanStack's refetch() ignores `enabled`, so pressing "Thử lại" while the week query is failing
     // can slip past the park and reload exactly what this guard exists to prevent: one pass with
     // "current", then another with the real week.
-    fetchWeeksMock.mockRejectedValueOnce(new ApiError("Hỏng rồi.", 500));
+    fetchWeeksMock.mockResolvedValueOnce({ ok: false, message: "Hỏng rồi.", statusCode: 500 });
 
     const { result } = renderFormationHook(() => useFormationWeek());
 

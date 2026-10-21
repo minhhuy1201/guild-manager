@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
+import { fromAction } from "@/lib/action-result";
 
 import { useInvalidate } from "@/hooks/use-invalidate";
 import { saveTeamNames } from "../api/team-builder-api";
@@ -15,7 +16,7 @@ export function useSaveTeamNames() {
   const invalidate = useInvalidate("formation");
 
   return useMutation({
-    mutationFn: saveTeamNames,
+    mutationFn: fromAction(saveTeamNames),
     onSuccess: invalidate,
   });
 }

@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { fromAction, unwrapAction } from "@/lib/action-result";
 import type { BattleSession, Character } from "@guild/shared/schemas";
 
 import { useInvalidate } from "@/hooks/use-invalidate";
@@ -30,7 +31,7 @@ import {
 export function useCharacters() {
   return useQuery({
     queryKey: attendanceKeys.characters(),
-    queryFn: fetchCharacters,
+    queryFn: fromAction(fetchCharacters),
   });
 }
 
@@ -42,7 +43,7 @@ export function useCharacters() {
 export function useBattleSessions(weekStart: string | null = null) {
   return useQuery({
     queryKey: attendanceKeys.sessionsOf(weekStart),
-    queryFn: () => fetchBattleSessions(weekStart),
+    queryFn: () => fetchBattleSessions(weekStart).then(unwrapAction),
   });
 }
 
@@ -53,7 +54,7 @@ export function useBattleSessions(weekStart: string | null = null) {
 export function useCurrentWeek() {
   return useQuery({
     queryKey: attendanceKeys.week(),
-    queryFn: fetchCurrentWeek,
+    queryFn: fromAction(fetchCurrentWeek),
   });
 }
 
@@ -65,7 +66,7 @@ export function useCurrentWeek() {
 export function useAttendanceRecords(weekStart: string | null = null) {
   return useQuery({
     queryKey: attendanceKeys.recordsOf(weekStart),
-    queryFn: () => fetchAttendanceRecords(weekStart),
+    queryFn: () => fetchAttendanceRecords(weekStart).then(unwrapAction),
   });
 }
 
@@ -173,7 +174,7 @@ export function useMarkAttendance() {
   const invalidate = useInvalidate("attendance");
 
   return useMutation({
-    mutationFn: markAttendance,
+    mutationFn: fromAction(markAttendance),
     onSuccess: invalidate,
   });
 }

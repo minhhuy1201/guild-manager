@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { fromAction } from "@/lib/action-result";
 
 import { useInvalidate } from "@/hooks/use-invalidate";
 import { attendanceKeys } from "../api/attendance-keys";
@@ -13,7 +14,7 @@ import { cancelLeave, createLeave, fetchLeaves } from "../api/leave-api";
 export function useLeaves() {
   return useQuery({
     queryKey: attendanceKeys.leaves(),
-    queryFn: fetchLeaves,
+    queryFn: fromAction(fetchLeaves),
   });
 }
 
@@ -24,7 +25,7 @@ export function useLeaves() {
 export function useCreateLeave() {
   const invalidate = useInvalidate("leave");
 
-  return useMutation({ mutationFn: createLeave, onSuccess: invalidate });
+  return useMutation({ mutationFn: fromAction(createLeave), onSuccess: invalidate });
 }
 
 /**
@@ -34,5 +35,5 @@ export function useCreateLeave() {
 export function useCancelLeave() {
   const invalidate = useInvalidate("leave");
 
-  return useMutation({ mutationFn: cancelLeave, onSuccess: invalidate });
+  return useMutation({ mutationFn: fromAction(cancelLeave), onSuccess: invalidate });
 }

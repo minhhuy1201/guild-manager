@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { unwrapAction } from "@/lib/action-result";
 import type { TacticDetail } from "@guild/shared/schemas";
 
 import { fetchTactic } from "../api/tactics-api";
@@ -20,7 +21,7 @@ import { readScene } from "../lib/read-scene";
 export function useTactic(id: string) {
   return useQuery({
     queryKey: tacticKeys.detail(id),
-    queryFn: () => fetchTactic(id),
+    queryFn: () => fetchTactic(id).then(unwrapAction),
     refetchOnMount: "always",
     select: readTacticDetail,
   });

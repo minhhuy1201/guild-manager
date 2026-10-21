@@ -5,6 +5,7 @@ import type { TeamNoticeReport } from "@guild/shared/schemas";
 
 import { toastError, toastSuccess } from "@/components/shared/toast";
 import { announceFormation, notifyTeamMembers } from "../../api/team-builder-api";
+import { CaptureCountError, captureFormations } from "../../lib/announce-capture";
 import { useFormationAnnounce } from "../use-formation-announce";
 import { renderFormationHook } from "./render-formation-hook";
 
@@ -24,8 +25,10 @@ vi.mock("@/components/shared/toast", () => ({
   toastError: vi.fn(),
 }));
 
+const recoverSession = vi.hoisted(() => vi.fn());
+
 vi.mock("@/hooks/use-session-recovery", () => ({
-  useSessionRecovery: () => () => false,
+  useSessionRecovery: () => recoverSession,
 }));
 
 const announceMock = vi.mocked(announceFormation);
@@ -50,8 +53,9 @@ function renderAnnounce() {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  announceMock.mockResolvedValue({ imageCount: 1 });
-  notifyMock.mockResolvedValue(REPORT);
+  recoverSession.mockReturnValue(false);
+  announceMock.mockResolvedValue({ ok: true, data: { imageCount: 1 } });
+  notifyMock.mockResolvedValue({ ok: true, data: REPORT });
 });
 
 describe("useFormationAnnounce - nhắn riêng", () => {
@@ -93,7 +97,7 @@ describe("useFormationAnnounce - nhắn riêng", () => {
   });
 
   it("đăng channel lỗi thì không nhắn riêng", async () => {
-    announceMock.mockRejectedValue(new Error("Bot chưa có quyền."));
+    announceMock.mockResolvedValue({ ok: false, message: "Bot chưa có quyền.", statusCode: 400 });
     const { result } = renderAnnounce();
 
     act(() => result.current.setOpen(true));
@@ -105,7 +109,7 @@ describe("useFormationAnnounce - nhắn riêng", () => {
   });
 
   it("nhắn riêng lỗi thì tin channel vẫn tính là đã đăng, lỗi nằm trong dialog", async () => {
-    notifyMock.mockRejectedValue(new Error("Ngày này chưa đóng điểm danh."));
+    notifyMock.mockResolvedValue({ ok: false, message: "Ngày này chưa đóng điểm danh.", statusCode: 400 });
     const { result } = renderAnnounce();
 
     act(() => result.current.setOpen(true));
@@ -135,18 +139,18 @@ describe("useFormationAnnounce - nhắn lại", () => {
   const KLEIN = { characterId: "klein", name: "Klein", matchIndex: 2 };
 
   it("nhắn lại chỉ gửi cho người chưa nhắn được rồi gộp vào báo cáo cũ", async () => {
-    notifyMock.mockResolvedValueOnce({
+    notifyMock.mockResolvedValueOnce({ ok: true, data: {
       ...REPORT,
       sentCount: 1,
       totalCount: 3,
       unsent: [ASUNA, KLEIN],
-    });
-    notifyMock.mockResolvedValueOnce({
+    } });
+    notifyMock.mockResolvedValueOnce({ ok: true, data: {
       ...REPORT,
       sentCount: 1,
       totalCount: 2,
       unsent: [KLEIN],
-    });
+    } });
     const { result } = renderAnnounce();
 
     act(() => result.current.setOpen(true));
@@ -168,7 +172,7 @@ describe("useFormationAnnounce - nhắn lại", () => {
   });
 
   it("request lỗi cả lượt thì thử lại gửi cho tất cả", async () => {
-    notifyMock.mockRejectedValueOnce(new Error("Mất kết nối."));
+    notifyMock.mockResolvedValueOnce({ ok: false, message: "Mất kết nối.", statusCode: 400 });
     const { result } = renderAnnounce();
 
     act(() => result.current.setOpen(true));
@@ -183,7 +187,7 @@ describe("useFormationAnnounce - nhắn lại", () => {
   });
 
   it("thử lại cả lượt không đăng lại tin channel", async () => {
-    notifyMock.mockRejectedValueOnce(new Error("Mất kết nối."));
+    notifyMock.mockResolvedValueOnce({ ok: false, message: "Mất kết nối.", statusCode: 400 });
     const { result } = renderAnnounce();
 
     act(() => result.current.setOpen(true));
@@ -194,13 +198,13 @@ describe("useFormationAnnounce - nhắn lại", () => {
   });
 
   it("lần nhắn lại lỗi thì giữ danh sách cũ để còn thử tiếp", async () => {
-    notifyMock.mockResolvedValueOnce({
+    notifyMock.mockResolvedValueOnce({ ok: true, data: {
       ...REPORT,
       sentCount: 1,
       totalCount: 2,
       unsent: [ASUNA],
-    });
-    notifyMock.mockRejectedValueOnce(new Error("Mất kết nối."));
+    } });
+    notifyMock.mockResolvedValueOnce({ ok: false, message: "Mất kết nối.", statusCode: 400 });
     const { result } = renderAnnounce();
 
     act(() => result.current.setOpen(true));
@@ -211,5 +215,78 @@ describe("useFormationAnnounce - nhắn lại", () => {
       report: { unsent: [ASUNA] },
       error: "Mất kết nối.",
     });
+  });
+});
+
+describe("useFormationAnnounce - chụp ảnh và guard", () => {
+  it("không làm gì khi chưa có ngày đánh", async () => {
+    const { result } = renderFormationHook(() => useFormationAnnounce(null, 2, false));
+
+    await act(() => result.current.confirm());
+
+    expect(announceMock).not.toHaveBeenCalled();
+  });
+
+  it("không gửi khi còn thay đổi chưa lưu", async () => {
+    const { result } = renderFormationHook(() => useFormationAnnounce("session-1", 2, true));
+
+    await act(() => result.current.confirm());
+
+    expect(announceMock).not.toHaveBeenCalled();
+  });
+
+  it("chụp lỗi thì báo chung chung và không gửi", async () => {
+    vi.mocked(captureFormations).mockRejectedValueOnce(new Error("snapDOM: node #12"));
+    const { result } = renderAnnounce();
+
+    await act(() => result.current.confirm());
+
+    expect(toastError).toHaveBeenCalledWith("Không chụp được ảnh đội hình.");
+    expect(announceMock).not.toHaveBeenCalled();
+    expect(result.current.sending).toBe(false);
+  });
+
+  it("chụp thiếu đội thì bảo đóng rồi mở lại", async () => {
+    vi.mocked(captureFormations).mockRejectedValueOnce(new CaptureCountError(1, 2));
+    const { result } = renderAnnounce();
+
+    await act(() => result.current.confirm());
+
+    expect(toastError).toHaveBeenCalledWith(
+      "Chưa chụp được đủ đội hình của ngày này. Đóng rồi mở lại rồi gửi."
+    );
+  });
+
+  it("hết phiên khi nhắn riêng thì báo bị gián đoạn thay vì lỗi của backend", async () => {
+    recoverSession.mockReturnValue(true);
+    notifyMock.mockResolvedValue({ ok: false, message: "Hết phiên", statusCode: 401 });
+    const { result } = renderAnnounce();
+
+    act(() => result.current.setOpen(true));
+    await act(() => result.current.confirm());
+
+    expect(result.current.outcome?.error).not.toBe("Hết phiên");
+    expect(result.current.outcome?.error).toEqual(expect.any(String));
+  });
+});
+
+describe("useFormationAnnounce - nhắn lại không có gì để gửi", () => {
+  it("chưa có kết quả thì không nhắn lại", async () => {
+    const { result } = renderAnnounce();
+
+    await act(() => result.current.retry());
+
+    expect(notifyMock).not.toHaveBeenCalled();
+  });
+
+  it("báo cáo không còn ai chưa nhắn được thì không nhắn lại", async () => {
+    const { result } = renderAnnounce();
+
+    act(() => result.current.setOpen(true));
+    await act(() => result.current.confirm());
+    notifyMock.mockClear();
+    await act(() => result.current.retry());
+
+    expect(notifyMock).not.toHaveBeenCalled();
   });
 });

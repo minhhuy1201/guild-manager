@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { fromAction } from "@/lib/action-result";
 
 import { fetchTactics } from "../api/tactics-api";
 import { tacticKeys } from "../api/tactics-keys";
@@ -12,6 +13,6 @@ import { tacticKeys } from "../api/tactics-keys";
 export function useTactics() {
   return useQuery({
     queryKey: tacticKeys.list(),
-    queryFn: fetchTactics,
+    queryFn: fromAction(fetchTactics),
   });
 }

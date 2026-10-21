@@ -72,4 +72,14 @@ describe("apiFetch", () => {
       "Không kết nối được máy chủ."
     );
   });
+
+  it("đổi lỗi mạng thành ApiError 503 để lỗi vẫn mang câu tiếng Việt qua Server Action", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("fetch failed")));
+
+    await expect(apiFetch("/attendance")).rejects.toMatchObject({
+      name: "ApiError",
+      statusCode: 503,
+      message: "Không kết nối được máy chủ.",
+    });
+  });
 });

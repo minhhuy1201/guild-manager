@@ -47,18 +47,21 @@ vi.mock("../hooks/use-token-presets", () => ({
 vi.mock("../api/tactics-api", () => ({
   fetchTactic: vi.fn(() =>
     Promise.resolve({
-      id: "t1",
-      name: "Thủ cổng tây",
-      description: null,
-      notes: "Giữ cổng tây tới khi có lệnh.",
-      stageCount: 2,
-      updatedAt: "2026-09-20T10:00:00.000Z",
-      scene: {
-        schemaVersion: TACTIC_SCHEMA_VERSION,
-        stages: [
-          { id: "s1", name: "Giai đoạn 1", elements: [] },
-          { id: "s2", name: "Giai đoạn 2", elements: [] },
-        ],
+      ok: true,
+      data: {
+        id: "t1",
+        name: "Thủ cổng tây",
+        description: null,
+        notes: "Giữ cổng tây tới khi có lệnh.",
+        stageCount: 2,
+        updatedAt: "2026-09-20T10:00:00.000Z",
+        scene: {
+          schemaVersion: TACTIC_SCHEMA_VERSION,
+          stages: [
+            { id: "s1", name: "Giai đoạn 1", elements: [] },
+            { id: "s2", name: "Giai đoạn 2", elements: [] },
+          ],
+        },
       },
     })
   ),
@@ -90,7 +93,7 @@ beforeEach(() => {
   isDesktop = true;
   push.mockReset();
   updateTactic.mockReset();
-  updateTactic.mockResolvedValue({});
+  updateTactic.mockResolvedValue({ ok: true, data: {} });
   useTacticEditorStore.getState().reset();
   // jsdom measures every box as 0 wide, and a canvas 0 wide has nowhere to put the action bar.
   vi.spyOn(Element.prototype, "getBoundingClientRect").mockReturnValue({

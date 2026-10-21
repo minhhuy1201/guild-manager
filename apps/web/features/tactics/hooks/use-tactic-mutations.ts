@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
+import { fromAction } from "@/lib/action-result";
 
 import { useInvalidate } from "@/hooks/use-invalidate";
 import {
@@ -16,7 +17,7 @@ import {
 export function useCreateTactic() {
   const invalidate = useInvalidate("tactic");
 
-  return useMutation({ mutationFn: createTactic, onSuccess: invalidate });
+  return useMutation({ mutationFn: fromAction(createTactic), onSuccess: invalidate });
 }
 
 /**
@@ -26,7 +27,7 @@ export function useCreateTactic() {
 export function useUpdateTactic() {
   const invalidate = useInvalidate("tactic");
 
-  return useMutation({ mutationFn: updateTactic, onSuccess: invalidate });
+  return useMutation({ mutationFn: fromAction(updateTactic), onSuccess: invalidate });
 }
 
 /**
@@ -36,5 +37,5 @@ export function useUpdateTactic() {
 export function useDeleteTactic() {
   const invalidate = useInvalidate("tactic");
 
-  return useMutation({ mutationFn: deleteTactic, onSuccess: invalidate });
+  return useMutation({ mutationFn: fromAction(deleteTactic), onSuccess: invalidate });
 }

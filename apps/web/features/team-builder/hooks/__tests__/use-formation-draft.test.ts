@@ -207,7 +207,7 @@ describe("useFormationDraft — cờ dirty", () => {
 
 describe("useFormationDraft — lưu", () => {
   it("lưu thành công thì xoá nháp và hết dirty", async () => {
-    saveFormationMock.mockResolvedValue(SAVED_SESSION);
+    saveFormationMock.mockResolvedValue({ ok: true, data: SAVED_SESSION });
     const { result } = renderDraft();
 
     act(() => result.current.setNote(SLOT, "vào sau"));
@@ -228,7 +228,7 @@ describe("useFormationDraft — lưu", () => {
   });
 
   it("trận 2 không còn ai thì không được lưu lên server", async () => {
-    saveFormationMock.mockResolvedValue(SAVED_SESSION);
+    saveFormationMock.mockResolvedValue({ ok: true, data: SAVED_SESSION });
     const { result } = renderDraft();
 
     // "Tạo trận 2" clones match 1 wholesale, so match 2 has to be cleared to reach the state "a
@@ -259,7 +259,7 @@ describe("useFormationDraft — lưu", () => {
   });
 
   it("lưu thất bại thì GIỮ nháp và hiện thông báo của backend", async () => {
-    saveFormationMock.mockRejectedValue(new ApiError("Máy chủ bận.", 500));
+    saveFormationMock.mockResolvedValue({ ok: false, message: "Máy chủ bận.", statusCode: 500 });
     const { result } = renderDraft();
 
     act(() => result.current.setNote(SLOT, "vào sau"));
@@ -275,7 +275,7 @@ describe("useFormationDraft — lưu", () => {
   });
 
   it("409 — ngày vừa bị khoá: tải lại đội hình và vẫn giữ nháp", async () => {
-    saveFormationMock.mockRejectedValue(new ApiError("Trận đã khoá.", 409));
+    saveFormationMock.mockResolvedValue({ ok: false, message: "Trận đã khoá.", statusCode: 409 });
     const refetchFormations = vi.fn();
     const { result } = renderDraft(refetchFormations);
 
@@ -291,7 +291,7 @@ describe("useFormationDraft — lưu", () => {
   it("401 — phiên hết hạn giữa lúc xếp: giao cho recoverSession và giữ nháp", async () => {
     // Only a navigation renews the cookies, so without this the press fails forever and the toolbar
     // shows a plain error - the attendance screens have handed 401s over since they were written.
-    saveFormationMock.mockRejectedValue(new ApiError("Hết phiên.", 401));
+    saveFormationMock.mockResolvedValue({ ok: false, message: "Hết phiên.", statusCode: 401 });
     const refetchFormations = vi.fn();
     const { result } = renderDraft(refetchFormations);
 
@@ -314,7 +314,7 @@ describe("useFormationDraft — lưu", () => {
   });
 
   it("409 không đi đường recover — tải lại là đúng việc cần làm", async () => {
-    saveFormationMock.mockRejectedValue(new ApiError("Trận đã khoá.", 409));
+    saveFormationMock.mockResolvedValue({ ok: false, message: "Trận đã khoá.", statusCode: 409 });
     const { result } = renderDraft();
 
     act(() => result.current.setNote(SLOT, "vào sau"));
@@ -660,7 +660,7 @@ describe("useFormationDraft - hoàn tác (Ctrl+Z)", () => {
   });
 
   it("lưu xong thì không hoàn tác được về trước lúc lưu", async () => {
-    saveFormationMock.mockResolvedValue(SAVED_SESSION);
+    saveFormationMock.mockResolvedValue({ ok: true, data: SAVED_SESSION });
     const { result } = renderDraft();
     moveToSecondSlot(result);
 
@@ -764,7 +764,7 @@ describe("useFormationDraft — xung đột phiên bản", () => {
   }
 
   it("lưu gửi baseVersion của nháp, không phải version của bản refetch", async () => {
-    saveFormationMock.mockResolvedValue(SAVED_SESSION);
+    saveFormationMock.mockResolvedValue({ ok: true, data: SAVED_SESSION });
     const { result } = renderStale(5, 3);
 
     await act(async () => {
@@ -778,7 +778,7 @@ describe("useFormationDraft — xung đột phiên bản", () => {
   });
 
   it("nháp mới lấy version của bản đã lưu lúc sửa lần đầu", async () => {
-    saveFormationMock.mockResolvedValue(SAVED_SESSION);
+    saveFormationMock.mockResolvedValue({ ok: true, data: SAVED_SESSION });
     const { result } = renderStale(5);
 
     act(() => result.current.setNote(SLOT, "vào sau"));
@@ -793,7 +793,7 @@ describe("useFormationDraft — xung đột phiên bản", () => {
   });
 
   it("412: isStale = true, nháp còn, không refetch", async () => {
-    saveFormationMock.mockRejectedValue(new ApiError("Cũ rồi.", 412));
+    saveFormationMock.mockResolvedValue({ ok: false, message: "Cũ rồi.", statusCode: 412 });
     const { result, refetchFormations } = renderStale(5, 3);
 
     await act(async () => {
@@ -807,7 +807,7 @@ describe("useFormationDraft — xung đột phiên bản", () => {
   });
 
   it("409: hành vi cũ - refetch, isStale = false", async () => {
-    saveFormationMock.mockRejectedValue(new ApiError("Đã khoá.", 409));
+    saveFormationMock.mockResolvedValue({ ok: false, message: "Đã khoá.", statusCode: 409 });
     const { result, refetchFormations } = renderStale(5, 3);
 
     await act(async () => {
@@ -819,7 +819,7 @@ describe("useFormationDraft — xung đột phiên bản", () => {
   });
 
   it("discardStale: xoá nháp, isStale = false, refetch", async () => {
-    saveFormationMock.mockRejectedValue(new ApiError("Cũ rồi.", 412));
+    saveFormationMock.mockResolvedValue({ ok: false, message: "Cũ rồi.", statusCode: 412 });
     const { result, refetchFormations } = renderStale(5, 3);
     await act(async () => {
       await result.current.handleSave();
@@ -833,7 +833,7 @@ describe("useFormationDraft — xung đột phiên bản", () => {
   });
 
   it("dismissStale giữ nháp, isStale = false", async () => {
-    saveFormationMock.mockRejectedValue(new ApiError("Cũ rồi.", 412));
+    saveFormationMock.mockResolvedValue({ ok: false, message: "Cũ rồi.", statusCode: 412 });
     const { result } = renderStale(5, 3);
     await act(async () => {
       await result.current.handleSave();
@@ -846,8 +846,8 @@ describe("useFormationDraft — xung đột phiên bản", () => {
   });
 
   it("overwriteStale: rebase lên version mới nhất rồi lưu với nó", async () => {
-    saveFormationMock.mockRejectedValueOnce(new ApiError("Cũ rồi.", 412));
-    saveFormationMock.mockResolvedValueOnce(SAVED_SESSION);
+    saveFormationMock.mockResolvedValueOnce({ ok: false, message: "Cũ rồi.", statusCode: 412 });
+    saveFormationMock.mockResolvedValueOnce({ ok: true, data: SAVED_SESSION });
     fetchVersionMock.mockResolvedValue(6);
     const { result } = renderStale(5, 3);
     await act(async () => {
@@ -866,7 +866,7 @@ describe("useFormationDraft — xung đột phiên bản", () => {
   });
 
   it("overwriteStale gặp 412 lần nữa: isStale vẫn true, nháp còn", async () => {
-    saveFormationMock.mockRejectedValue(new ApiError("Cũ rồi.", 412));
+    saveFormationMock.mockResolvedValue({ ok: false, message: "Cũ rồi.", statusCode: 412 });
     fetchVersionMock.mockResolvedValue(6);
     const { result } = renderStale(5, 3);
 
@@ -879,7 +879,7 @@ describe("useFormationDraft — xung đột phiên bản", () => {
   });
 
   it("overwriteStale gặp 409: hết isStale để dialog đóng, và refetch", async () => {
-    saveFormationMock.mockRejectedValue(new ApiError("Đã khoá.", 409));
+    saveFormationMock.mockResolvedValue({ ok: false, message: "Đã khoá.", statusCode: 409 });
     fetchVersionMock.mockResolvedValue(6);
     const { result, refetchFormations } = renderStale(5, 3);
 
@@ -892,7 +892,7 @@ describe("useFormationDraft — xung đột phiên bản", () => {
   });
 
   it("overwriteStale gặp lỗi 500: hết isStale, thông báo hiện ở thanh công cụ", async () => {
-    saveFormationMock.mockRejectedValue(new ApiError("Máy chủ bận.", 500));
+    saveFormationMock.mockResolvedValue({ ok: false, message: "Máy chủ bận.", statusCode: 500 });
     fetchVersionMock.mockResolvedValue(6);
     const { result } = renderStale(5, 3);
 

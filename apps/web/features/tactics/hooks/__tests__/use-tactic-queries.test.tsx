@@ -41,20 +41,20 @@ import {
 import { makeScene, makeTactic, renderTacticHook } from "./render-tactic-hook";
 
 beforeEach(() => {
-  vi.mocked(fetchTactics).mockResolvedValue([]);
-  vi.mocked(fetchTactic).mockResolvedValue(makeTactic());
-  vi.mocked(fetchTokenPresets).mockResolvedValue([]);
-  vi.mocked(createTactic).mockResolvedValue(makeTactic());
-  vi.mocked(updateTactic).mockResolvedValue(makeTactic());
-  vi.mocked(saveTacticStages).mockResolvedValue(makeTactic());
-  vi.mocked(deleteTactic).mockResolvedValue(undefined);
-  vi.mocked(createTokenPreset).mockResolvedValue({
+  vi.mocked(fetchTactics).mockResolvedValue({ ok: true, data: [] });
+  vi.mocked(fetchTactic).mockResolvedValue({ ok: true, data: makeTactic() });
+  vi.mocked(fetchTokenPresets).mockResolvedValue({ ok: true, data: [] });
+  vi.mocked(createTactic).mockResolvedValue({ ok: true, data: makeTactic() });
+  vi.mocked(updateTactic).mockResolvedValue({ ok: true, data: makeTactic() });
+  vi.mocked(saveTacticStages).mockResolvedValue({ ok: true, data: makeTactic() });
+  vi.mocked(deleteTactic).mockResolvedValue({ ok: true, data: undefined });
+  vi.mocked(createTokenPreset).mockResolvedValue({ ok: true, data: {
     id: "p1",
     label: "Đội cảm tử",
     icon: "skull",
     sortOrder: 1,
-  });
-  vi.mocked(deleteTokenPreset).mockResolvedValue(undefined);
+  } });
+  vi.mocked(deleteTokenPreset).mockResolvedValue({ ok: true, data: undefined });
 });
 
 describe("tactics queries", () => {
@@ -137,9 +137,7 @@ describe("tactics mutations", () => {
   });
 
   it("hands a failed save back to the caller instead of swallowing it", async () => {
-    vi.mocked(saveTacticStages).mockRejectedValue(
-      new Error("Một chiến thuật tối đa 20 giai đoạn.")
-    );
+    vi.mocked(saveTacticStages).mockResolvedValue({ ok: false, message: "Một chiến thuật tối đa 20 giai đoạn.", statusCode: 400 });
     const { result } = renderTacticHook(() => useSaveTactic());
 
     await expect(

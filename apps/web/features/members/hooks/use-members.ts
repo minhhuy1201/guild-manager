@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { fromAction } from "@/lib/action-result";
 
 import { fetchMembers } from "../api/members-api";
 import { memberKeys } from "../api/members-keys";
@@ -12,6 +13,6 @@ import { memberKeys } from "../api/members-keys";
 export function useMembers() {
   return useQuery({
     queryKey: memberKeys.list(),
-    queryFn: fetchMembers,
+    queryFn: fromAction(fetchMembers),
   });
 }

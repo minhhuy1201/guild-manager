@@ -40,12 +40,12 @@ vi.mock("@/hooks/use-session-recovery", () => ({
 const fetchTeamNamesMock = vi.mocked(fetchTeamNames);
 
 beforeEach(() => {
-  vi.mocked(fetchFormationWeeks).mockResolvedValue([
+  vi.mocked(fetchFormationWeeks).mockResolvedValue({ ok: true, data: [
     { weekStart: "2026-08-17T00:00:00.000Z", weekEnd: "x", isActive: true },
-  ]);
-  vi.mocked(fetchFormations).mockResolvedValue([makeSession("thu-7")]);
-  vi.mocked(fetchCharacters).mockResolvedValue([]);
-  vi.mocked(fetchAttendanceRecords).mockResolvedValue({});
+  ] });
+  vi.mocked(fetchFormations).mockResolvedValue({ ok: true, data: [makeSession("thu-7")] });
+  vi.mocked(fetchCharacters).mockResolvedValue({ ok: true, data: [] });
+  vi.mocked(fetchAttendanceRecords).mockResolvedValue({ ok: true, data: {} });
 });
 
 describe("useFormationScreen - tên đội", () => {
@@ -61,10 +61,10 @@ describe("useFormationScreen - tên đội", () => {
   });
 
   it("tải xong tên đội thì sửa được, nháp mang version đã tải", async () => {
-    fetchTeamNamesMock.mockResolvedValue({
+    fetchTeamNamesMock.mockResolvedValue({ ok: true, data: {
       names: { "2": "Thủ nhà" },
       version: 4,
-    });
+    } });
     const { result } = renderFormationHook(() => useFormationScreen());
     await waitFor(() =>
       expect(result.current.teamNames.names).toEqual({ "2": "Thủ nhà" })

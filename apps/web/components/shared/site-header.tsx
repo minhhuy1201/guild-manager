@@ -61,7 +61,8 @@ function GuildName() {
 export async function SiteHeader() {
   const session = await getSession();
   // The login page renders this header too, so a broken session just means "signed out".
-  const me = session ? await fetchMe().catch(() => null) : null;
+  const meResult = session ? await fetchMe() : null;
+  const me = meResult?.ok ? meResult.data : null;
   const isAdmin = session ? canManageGuild(session.role) : false;
 
   return (

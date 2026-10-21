@@ -22,6 +22,7 @@ paths:
 - **Render `ApiError.message` verbatim.** The backend writes the Vietnamese text. Never re-word it.
 - **Use `PUBLIC_API_URL`, not `FETCH_API_URL`,** for a URL the browser follows by itself (the Discord login link).
 - **Run admin calls in a `"use server"` module** in `features/<feature>/api/` that attaches `authHeader()` from `features/auth/server`. Client JavaScript cannot read the httpOnly token.
+- **Never throw from a Server Action - return a rejection.** Wrap the API call in `toActionResult` (`lib/action-result.ts`) and adapt the action in its hook with `fromAction` / `unwrapAction`. A thrown error reaches the client as a bare digest in production, without the backend's message or status.
 - **Hand every write failure to `recoverSession` before showing it** (`hooks/use-session-recovery.ts`). When it returns `true`, show no message of your own (`if (recoverSession(error)) return;`). A derived-error hook filters the 401 with `isSessionExpired` and calls `recoverSession` unconditionally (`use-formation-draft`).
 - **Mirror `isAttendanceClosed` from the API; never recompute a week or deadline rule on the client.** The one local check is the deadline cap in `session-form-dialog`, through `isWithinDeadlineCap` and `deadlineCapFor` from `@guild/shared/lib`.
 - **Import shared code by package name:** `@guild/shared/enums|schemas|lib`. The `exports` list is in [`shared.md`](../shared.md).

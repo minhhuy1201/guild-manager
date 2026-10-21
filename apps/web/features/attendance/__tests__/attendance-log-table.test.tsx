@@ -81,15 +81,18 @@ const RECORDS = makeRecords([
 // The queries are real; only the server actions they call are stubbed, so the store, the filter
 // hooks and the table all run the way they do in the app.
 vi.mock("../api/attendance-api", () => ({
-  fetchCharacters: async () => CHARACTERS,
-  fetchBattleSessions: async () => SESSIONS,
-  fetchAttendanceRecords: async () => RECORDS,
+  fetchCharacters: async () => ({ ok: true, data: CHARACTERS }),
+  fetchBattleSessions: async () => ({ ok: true, data: SESSIONS }),
+  fetchAttendanceRecords: async () => ({ ok: true, data: RECORDS }),
   fetchCurrentWeek: async () => ({
-    weekStart: "2026-08-24T00:00:00.000Z",
-    weekEnd: "2026-08-29T16:59:59.000Z",
-    isActive: true,
+    ok: true,
+    data: {
+      weekStart: "2026-08-24T00:00:00.000Z",
+      weekEnd: "2026-08-29T16:59:59.000Z",
+      isActive: true,
+    },
   }),
-  markAttendance: async () => undefined,
+  markAttendance: async () => ({ ok: true, data: undefined }),
 }));
 
 import { AttendanceLogTable } from "../components/attendance-log-table";
