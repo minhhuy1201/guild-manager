@@ -716,6 +716,118 @@
 .race-name[data-podium="true"] { font-weight: 600; }
 .race-gap { font-size: 12px; font-variant-numeric: tabular-nums; color: var(--stage-paper-dim); }
 
+/* The winner card. Children stagger in the order the markup lists them: tier line, winner, class,
+   odds, podium, button. */
+.race-result {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: #0b0610b0;
+}
+
+.race-card {
+  --tier-color: var(--stage-gold);
+  position: relative;
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  width: min(420px, 100%);
+  padding: 20px 20px 18px;
+  border: 2px solid var(--tier-color);
+  border-radius: 6px;
+  background: linear-gradient(180deg, #2c2033, #1d1524);
+  color: var(--stage-paper);
+  text-align: center;
+  box-shadow: 0 0 60px -10px var(--tier-color), 12px 12px 0 #0008;
+}
+
+.race-card[data-tier="MEDIUM"] { --tier-color: var(--stage-jade); }
+.race-card[data-tier="LOW"] { --tier-color: var(--stage-paper-dim); }
+
+.race-card > * {
+  opacity: 0;
+  animation: race-rise 420ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+.race-card > :nth-child(1) { animation-delay: 60ms; }
+.race-card > :nth-child(2) { animation-delay: 260ms; animation-name: race-slam; }
+.race-card > :nth-child(3) { animation-delay: 520ms; }
+.race-card > :nth-child(4) { animation-delay: 680ms; }
+.race-card > :nth-child(5) { animation-delay: 900ms; }
+.race-card > :nth-child(6) { animation-delay: 1100ms; }
+
+.race-tierline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--tier-color);
+}
+
+.race-winner {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+}
+
+.race-winner-name {
+  font-size: clamp(28px, 6vw, 40px);
+  line-height: 1.05;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+.race-class { font-size: 13px; color: var(--stage-paper-dim); }
+.race-odds { font-size: 14px; font-variant-numeric: tabular-nums; }
+
+.race-podium {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--stage-paper-dim);
+}
+.race-podium span {
+  padding: 3px 8px;
+  border: 1px solid var(--stage-line);
+  border-radius: 3px;
+}
+.race-podium b { font-weight: 600; color: var(--stage-paper); }
+
+/* Rotated by its own keyframes: the shared `race-rise` would end on `transform: none`. */
+.race-card > .race-stamp {
+  position: absolute;
+  top: 14px;
+  right: -10px;
+  padding: 3px 8px 1px;
+  border: 2px solid var(--stage-lacquer);
+  background: #1d1524;
+  font-size: 13px;
+  color: var(--stage-lacquer);
+  transform: rotate(8deg);
+  animation-name: race-stamp;
+  animation-delay: 1100ms;
+}
+
+@keyframes race-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes race-slam {
+  0% { opacity: 0; transform: scale(2.2); }
+  60% { opacity: 1; transform: scale(0.94); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes race-stamp {
+  from { opacity: 0; transform: rotate(8deg) scale(1.8); }
+  to { opacity: 1; transform: rotate(8deg) scale(1); }
+}
+
 @keyframes race-blink {
   to { visibility: hidden; }
 }

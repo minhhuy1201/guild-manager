@@ -239,6 +239,7 @@ export function RaceStage({
               event={event}
               prize={event.prizes.find((p) => p.id === pendingResult.round.prizeId)}
               result={pendingResult}
+              script={script}
               isContinuing={isContinuing}
               onContinue={() => void continueRacing()}
             />

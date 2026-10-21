@@ -12,11 +12,11 @@ người và số người > 2. Confetti theo bậc như spec §6.
 
 **Blocked by:** 01
 
-**Status:** todo
+**Status:** done
 
-- [ ] Tỉ lệ đúng ở hai chế độ, một chữ số thập phân. Có test thuần trên lớp `lib/`.
-- [ ] Tem kèo dưới đúng ngưỡng, kể cả 2 người. Có test.
-- [ ] Hạng 2-3 lấy từ thứ hạng cuối; thiếu thì không hiện. Có test.
-- [ ] Confetti đúng số hạt và số đợt theo bậc; không confetti khi giảm chuyển động. Có test.
-- [ ] Giữ avatar và fallback chữ cái đầu; test cũ của thẻ kết quả cập nhật.
-- [ ] `pnpm --filter web test`, `typecheck`, `lint` xanh.
+- [x] Tỉ lệ đúng ở hai chế độ, một chữ số thập phân. Có test thuần trên lớp `lib/`.
+- [x] Tem kèo dưới đúng ngưỡng, kể cả 2 người. Có test.
+- [x] Hạng 2-3 lấy từ thứ hạng cuối; thiếu thì không hiện. Có test.
+- [x] Confetti đúng số hạt và số đợt theo bậc; không confetti khi giảm chuyển động. Có test.
+- [x] Giữ avatar và fallback chữ cái đầu; test cũ của thẻ kết quả cập nhật.
+- [x] `pnpm --filter web test`, `typecheck`, `lint` xanh.
