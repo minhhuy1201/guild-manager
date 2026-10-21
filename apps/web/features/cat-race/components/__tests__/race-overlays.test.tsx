@@ -100,6 +100,13 @@ describe("RaceOverlays", () => {
     expect(screen.getByRole("status").textContent).toContain("vượt lên dẫn đầu");
   });
 
+  it("reads out the sprint banner that follows a lead change", () => {
+    const key = SCRIPT.cats.find((cat) => cat.characterId === "c2")!.key;
+    renderOverlays({ leadToast: { id: 4, catKey: key }, banner: { id: 5, text: "NƯỚC RÚT" } });
+
+    expect(screen.getByRole("status").textContent).toBe("NƯỚC RÚT");
+  });
+
   it("reads each countdown number out through one live region that stays mounted", () => {
     const { rerender } = renderOverlays({ isCountingDown: true, countdownStep: 0 });
     const region = screen.getByRole("status");

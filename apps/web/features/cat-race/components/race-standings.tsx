@@ -57,6 +57,8 @@ export function RaceStandings({ script, participants, board, className }: RaceSt
     }
     tops.current = after;
     if (moved.length === 0) return;
+    // Flush the starting transforms; otherwise the last row written has none to slide from.
+    void moved[0].parentElement?.offsetHeight;
     // A cancelled frame would strand the rows at their old place, so the frame is never cancelled.
     requestAnimationFrame(() => {
       for (const row of moved) {

@@ -46,8 +46,10 @@ export function RaceOverlays({ state, script, participants }: RaceOverlaysProps)
         };
       });
   }, [state.photo, script, participants, labels]);
-  const announcement = state.leadToast
-    ? `Đổi ngôi: ${labels.get(state.leadToast.catKey)} vượt lên dẫn đầu`
+  const isLeadNewest =
+    state.leadToast !== null && (state.banner === null || state.leadToast.id > state.banner.id);
+  const announcement = isLeadNewest
+    ? `Đổi ngôi: ${labels.get(state.leadToast!.catKey)} vượt lên dẫn đầu`
     : state.banner
       ? state.banner.text
       : state.isCountingDown && state.countdownStep >= 0
