@@ -388,6 +388,201 @@
   to { background-position: -100% 0; }
 }
 
+/* The cat race stage (`features/cat-race`). A fixed dusk scene, the same in both themes, so its
+   colours are declared once here instead of coming from the theme tokens, and its overlays keep
+   their own keyframes and durations: a broadcast moment is a performance, not a UI transition
+   (interaction.md, Motion). Reduced motion is answered by the rule at the end of this file. */
+[data-slot="cat-race-stage"] {
+  --stage-night: #1b1424;
+  --stage-paper: #f3e9d2;
+  --stage-paper-dim: #b9ab90;
+  --stage-lacquer: #c8372d;
+  --stage-gold: #e8b84a;
+  --stage-jade: #4fae8c;
+  --stage-wood: #2b1f1a;
+  --stage-line: #3d2f45;
+  /* The one place to point the overlay lettering at the stage's display face. */
+  --stage-font-display: var(--font-sans);
+  --stage-display-weight: 800;
+  --stage-banner-duration: 1500ms;
+  --stage-lead-bar-duration: 1500ms;
+  --stage-flash-duration: 520ms;
+  --stage-digit-duration: 420ms;
+  --stage-photo-duration: 300ms;
+}
+
+.race-display {
+  font-family: var(--stage-font-display);
+  font-weight: var(--stage-display-weight);
+}
+
+.race-ov {
+  position: absolute;
+  pointer-events: none;
+}
+
+.race-vignette {
+  inset: 0;
+  background: radial-gradient(75% 70% at 70% 55%, transparent 40%, #0b0610d9 100%);
+  opacity: 0;
+  transition: opacity 600ms ease;
+}
+.race-vignette[data-on="true"] { opacity: 1; }
+
+.race-flash {
+  inset: 0;
+  background: #fff;
+  opacity: 0;
+  animation: race-flash var(--stage-flash-duration) ease-out;
+}
+
+.race-slowmo {
+  top: 12px;
+  right: 14px;
+  font-size: 12px;
+  color: var(--stage-night);
+  background: var(--stage-gold);
+  padding: 4px 8px 3px;
+  border-radius: 3px;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+.race-slowmo[data-on="true"] { opacity: 1; transform: none; }
+
+.race-countdown {
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 14px;
+  background: #0b061088;
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+.race-countdown[data-on="true"] { opacity: 1; }
+.race-lanterns { display: flex; gap: 22px; }
+.race-lantern {
+  width: 34px;
+  height: 44px;
+  border-radius: 12px;
+  background: #3a2328;
+  border-top: 5px solid #6b5333;
+  border-bottom: 5px solid #6b5333;
+  transition: background 120ms ease, box-shadow 120ms ease;
+}
+.race-lantern[data-lit="true"] { background: var(--stage-lacquer); box-shadow: 0 0 28px 6px #c8372d99; }
+.race-lantern[data-gold="true"][data-lit="true"] { background: var(--stage-gold); box-shadow: 0 0 34px 8px #e8b84aaa; }
+.race-digit {
+  font-size: clamp(64px, 14vw, 132px);
+  line-height: 1;
+  color: var(--stage-paper);
+  text-shadow: 0 6px 0 #0008, 0 0 30px #e8b84a66;
+  animation: race-digit var(--stage-digit-duration) cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+
+.race-banner {
+  left: 0;
+  right: 0;
+  top: 38%;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  animation: race-banner var(--stage-banner-duration) cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+.race-banner span {
+  font-size: clamp(34px, 7vw, 72px);
+  color: var(--stage-night);
+  background: var(--stage-gold);
+  padding: 6px 28px 2px;
+  transform: skewX(-12deg);
+  box-shadow: 8px 8px 0 var(--stage-lacquer);
+}
+
+.race-lead-bar {
+  left: 14px;
+  bottom: 14px;
+  display: flex;
+  align-items: stretch;
+  max-width: calc(100% - 28px);
+  opacity: 0;
+  animation: race-lead-bar var(--stage-lead-bar-duration) cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+.race-lead-bar b {
+  font-weight: var(--stage-display-weight);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  background: var(--stage-lacquer);
+  color: var(--stage-paper);
+  padding: 8px 10px 6px;
+  display: grid;
+  place-items: center;
+}
+.race-lead-bar span {
+  background: #120c18ee;
+  color: var(--stage-paper);
+  padding: 8px 12px;
+  font-weight: 600;
+  font-size: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border: 1px solid var(--stage-line);
+  border-left: 0;
+}
+.race-lead-bar em { color: var(--stage-gold); font-style: normal; }
+
+.race-photo {
+  left: 50%;
+  top: 50%;
+  width: min(420px, calc(100% - 32px));
+  transform: translate(-50%, -50%);
+  background: #120c18;
+  border: 3px solid var(--stage-paper);
+  box-shadow: 10px 10px 0 #0009;
+  animation: race-photo var(--stage-photo-duration) cubic-bezier(0.2, 1.4, 0.4, 1) backwards;
+}
+.race-photo header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  padding: 6px 10px 4px;
+  background: var(--stage-paper);
+  color: var(--stage-night);
+}
+.race-photo canvas { display: block; width: 100%; image-rendering: pixelated; }
+
+@keyframes race-flash {
+  from { opacity: 0.95; }
+  to { opacity: 0; }
+}
+
+@keyframes race-digit {
+  from { transform: scale(1.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes race-banner {
+  0% { opacity: 0; transform: translateX(-60%); }
+  18% { opacity: 1; transform: translateX(0); }
+  78% { opacity: 1; transform: translateX(0); }
+  100% { opacity: 0; transform: translateX(60%); }
+}
+
+/* In over the first 260ms, held, out over the last 220ms of 1500ms. */
+@keyframes race-lead-bar {
+  0% { opacity: 0; transform: translateX(-24px); }
+  17% { opacity: 1; transform: none; }
+  85% { opacity: 1; transform: none; }
+  100% { opacity: 0; transform: translateX(-24px); }
+}
+
+@keyframes race-photo {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
 /* Answered once for the whole app, never repeated at a call site. The delay goes too: a staggered
    list would otherwise still hold its items back after the animation itself is gone. */
 @media (prefers-reduced-motion: reduce) {

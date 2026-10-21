@@ -19,13 +19,13 @@ Keyframe và thời lượng riêng của sân khấu khai báo một lần tron
 
 **Blocked by:** 01
 
-**Status:** todo
+**Status:** done
 
-- [ ] Sự kiện phát đúng thứ tự và đúng một lần mỗi vòng; "Bỏ qua" ở bất kỳ pha nào (kể cả đếm ngược,
+- [x] Sự kiện phát đúng thứ tự và đúng một lần mỗi vòng; "Bỏ qua" ở bất kỳ pha nào (kể cả đếm ngược,
       ảnh đích) nhảy thẳng tới thẻ kết quả, không chớp, không ảnh đích. Có test.
-- [ ] Mỗi lớp phủ phản ứng đúng sự kiện; thanh đổi ngôi tôn trọng giới hạn tần suất. Có test.
-- [ ] Ảnh đích chỉ hiện khi á quân cách đích < 0.004 tiến độ. Có test.
-- [ ] Canvas không còn vẽ ô đếm ngược; test cũ về đếm ngược chuyển sang lớp phủ.
-- [ ] Chữ, màu, nhịp, kích thước khớp prototype.
-- [ ] Ngoại lệ motion ghi trong `interaction.md` và `docs/frontend.md`.
-- [ ] `pnpm --filter web test`, `typecheck`, `lint` xanh.
+- [x] Mỗi lớp phủ phản ứng đúng sự kiện; thanh đổi ngôi tôn trọng giới hạn tần suất. Có test.
+- [x] Ảnh đích chỉ hiện khi á quân cách đích < 0.004 tiến độ. Có test.
+- [x] Canvas không còn vẽ ô đếm ngược; test cũ về đếm ngược chuyển sang lớp phủ.
+- [ ] Chữ, màu, nhịp, kích thước khớp prototype. (CSS, chữ và nhịp sao từ prototype; chưa đối chiếu bằng mắt trên trình duyệt, và chữ hiển thị tạm dùng font sans cho tới khi vé 03 nạp Bungee qua `--stage-font-display`.)
+- [x] Ngoại lệ motion ghi trong `interaction.md` và `docs/frontend.md`.
+- [x] `pnpm --filter web test`, `typecheck`, `lint` xanh.

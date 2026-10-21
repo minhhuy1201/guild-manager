@@ -167,7 +167,7 @@ function bigField(people: number) {
 }
 
 describe("RaceCanvas", () => {
-  it("counts down before the cats leave", () => {
+  it("paints no countdown of its own", () => {
     render(
       <RaceCanvas
         script={SCRIPT}
@@ -175,40 +175,158 @@ describe("RaceCanvas", () => {
         onFinish={vi.fn()}
         skipSignal={0}
         onStandings={vi.fn()}
+        onCue={vi.fn()}
       />
     );
-
-    runFrame(0);
-
-    expect(fillText).toHaveBeenCalledWith("3", 400, 200);
-  });
-
-  it("lights the countdown 3, 2, 1 in steps of 0.8 seconds, then leaves the cats to run", () => {
-    render(
-      <RaceCanvas
-        script={SCRIPT}
-        participants={participants(false)}
-        onFinish={vi.fn()}
-        skipSignal={0}
-        onStandings={vi.fn()}
-      />
-    );
-    const digits = () => fillText.mock.calls.map((call) => String(call[0])).filter((text) => /^[123]$/.test(text));
 
     runFrame(START_MS);
-    expect(digits()).toEqual(["3"]);
-    fillText.mockClear();
+
+    const digits = fillText.mock.calls.map((call) => String(call[0])).filter((text) => /^[123]$/.test(text));
+    expect(digits).toEqual([]);
+  });
+
+  it("announces the countdown 3, 2, 1 in steps of 0.8 seconds, then go", () => {
+    const onCue = vi.fn();
+    render(
+      <RaceCanvas
+        script={SCRIPT}
+        participants={participants(false)}
+        onFinish={vi.fn()}
+        skipSignal={0}
+        onStandings={vi.fn()}
+        onCue={onCue}
+      />
+    );
+    const cues = () => onCue.mock.calls.map((call) => call[0]);
+
+    runFrame(START_MS);
     runFrame(START_MS + 700);
-    expect(digits()).toEqual(["3"]);
-    fillText.mockClear();
+    expect(cues()).toEqual([{ kind: "countdown", step: 0 }]);
     runFrame(START_MS + 900);
-    expect(digits()).toEqual(["2"]);
-    fillText.mockClear();
     runFrame(START_MS + 1700);
-    expect(digits()).toEqual(["1"]);
-    fillText.mockClear();
+    expect(cues()).toEqual([
+      { kind: "countdown", step: 0 },
+      { kind: "countdown", step: 1 },
+      { kind: "countdown", step: 2 },
+    ]);
     runFrame(START_MS + 2500);
-    expect(digits()).toEqual([]);
+    expect(cues().at(-1)).toEqual({ kind: "go" });
+  });
+
+  it("sends every cue once and in order over a whole round", () => {
+    const { script, racers } = bigField(30);
+    const onCue = vi.fn();
+    const onFinish = vi.fn();
+    render(
+      <RaceCanvas
+        script={script}
+        participants={racers}
+        onFinish={onFinish}
+        skipSignal={0}
+        onStandings={vi.fn()}
+        onCue={onCue}
+      />
+    );
+
+    runToEnd(onFinish);
+
+    const kinds = onCue.mock.calls.map((call) => call[0].kind as string);
+    const ordered = kinds.filter((kind) => kind !== "lead-change");
+    expect(ordered).toEqual([
+      "countdown",
+      "countdown",
+      "countdown",
+      "go",
+      "sprint",
+      "slow-motion",
+      "slow-motion",
+      "finish",
+    ]);
+    const slow = onCue.mock.calls.map((call) => call[0]).filter((cue) => cue.kind === "slow-motion");
+    expect(slow.map((cue) => cue.isOn)).toEqual([true, false]);
+    expect(kinds.lastIndexOf("finish")).toBe(kinds.length - 1);
+    expect(onFinish).toHaveBeenCalledTimes(1);
+  });
+
+  it("names the new leader in a lead-change cue, only after the pack has sorted itself out", () => {
+    const { script, racers } = bigField(30);
+    const onCue = vi.fn();
+    const onFinish = vi.fn();
+    render(
+      <RaceCanvas
+        script={script}
+        participants={racers}
+        onFinish={onFinish}
+        skipSignal={0}
+        onStandings={vi.fn()}
+        onCue={onCue}
+      />
+    );
+
+    runToEnd(onFinish);
+
+    const changes = onCue.mock.calls.map((call) => call[0]).filter((cue) => cue.kind === "lead-change");
+    for (const change of changes) {
+      expect(script.cats.map((cat) => cat.key)).toContain(change.catKey);
+    }
+    expect(changes.at(-1)?.catKey ?? script.winnerKey).toBe(script.winnerKey);
+  });
+
+  it("flags the finish as a photo finish only when the runner-up is that close", () => {
+    const entrants = [
+      { characterId: "a", tickets: 3 },
+      { characterId: "b", tickets: 1 },
+    ];
+    const finishOf = (scenario: "photo" | "duel") => {
+      cleanup();
+      frames.length = 0;
+      const onCue = vi.fn();
+      const onFinish = vi.fn();
+      const script = buildRaceScript({
+        entrants,
+        winner: { characterId: "a", ticketNo: 2 },
+        durationSeconds: 10,
+        scenario,
+        random: () => 0.5,
+      });
+      render(
+        <RaceCanvas
+          script={script}
+          participants={participants(false)}
+          onFinish={onFinish}
+          skipSignal={0}
+          onStandings={vi.fn()}
+          onCue={onCue}
+        />
+      );
+      runToEnd(onFinish);
+
+      return onCue.mock.calls.map((call) => call[0]).find((cue) => cue.kind === "finish");
+    };
+
+    expect(finishOf("photo")?.isPhotoFinish).toBe(true);
+    expect(finishOf("duel")?.isPhotoFinish).toBe(false);
+    expect(finishOf("duel")?.lengthsBehind).toBeGreaterThan(0);
+  });
+
+  it.each([
+    ["the countdown", 100],
+    ["the run", 5000],
+    ["the hold after the finish", (2.4 + SCRIPT.durationSeconds + 0.3) * 1000],
+  ])("finishes at once and sends no cue when skipped during %s", (_phase, elapsedMs) => {
+    const onCue = vi.fn();
+    const onFinish = vi.fn();
+    const props = { script: SCRIPT, participants: participants(false), onFinish, onStandings: vi.fn(), onCue };
+    const { rerender } = render(<RaceCanvas {...props} skipSignal={0} />);
+    runFrame(START_MS);
+    runFrame(START_MS + elapsedMs);
+    onCue.mockClear();
+
+    rerender(<RaceCanvas {...props} skipSignal={1} />);
+    runFrame(START_MS + elapsedMs + 5000);
+
+    expect(onFinish).toHaveBeenCalledTimes(1);
+    expect(onCue).not.toHaveBeenCalled();
   });
 
   it("keeps the finished race on screen for the hold before it finishes", () => {
@@ -220,6 +338,7 @@ describe("RaceCanvas", () => {
         onFinish={onFinish}
         skipSignal={0}
         onStandings={vi.fn()}
+        onCue={vi.fn()}
       />
     );
     const finishMs = (2.4 + SCRIPT.durationSeconds) * 1000;
@@ -250,6 +369,7 @@ describe("RaceCanvas", () => {
         onFinish={onFinish}
         skipSignal={0}
         onStandings={vi.fn()}
+        onCue={vi.fn()}
       />
     );
     const finishMs = (2.4 + photo.durationSeconds) * 1000;
@@ -269,6 +389,7 @@ describe("RaceCanvas", () => {
         onFinish={vi.fn()}
         skipSignal={0}
         onStandings={vi.fn()}
+        onCue={vi.fn()}
       />
     );
 
@@ -281,7 +402,7 @@ describe("RaceCanvas", () => {
   it("puts every cat on the same start line at the start", () => {
     const { script, racers } = bigField(12);
     render(
-      <RaceCanvas script={script} participants={racers} onFinish={vi.fn()} skipSignal={0} onStandings={vi.fn()} />
+      <RaceCanvas script={script} participants={racers} onFinish={vi.fn()} skipSignal={0} onStandings={vi.fn()} onCue={vi.fn()} />
     );
 
     runFrame(0);
@@ -304,6 +425,7 @@ describe("RaceCanvas", () => {
         onFinish={onFinish}
         skipSignal={0}
         onStandings={onStandings}
+        onCue={vi.fn()}
       />
     );
 
@@ -326,6 +448,7 @@ describe("RaceCanvas", () => {
         onFinish={vi.fn()}
         skipSignal={0}
         onStandings={vi.fn()}
+        onCue={vi.fn()}
       />
     );
 
@@ -338,7 +461,7 @@ describe("RaceCanvas", () => {
   it("paints only the lanes in view for 240 cats, so the bitmap stays small", () => {
     const { script, racers } = bigField(240);
     render(
-      <RaceCanvas script={script} participants={racers} onFinish={vi.fn()} skipSignal={0} onStandings={vi.fn()} />
+      <RaceCanvas script={script} participants={racers} onFinish={vi.fn()} skipSignal={0} onStandings={vi.fn()} onCue={vi.fn()} />
     );
 
     runFrame(0);
@@ -354,7 +477,7 @@ describe("RaceCanvas", () => {
     const onFinish = vi.fn();
     const onStandings = vi.fn();
     render(
-      <RaceCanvas script={script} participants={racers} onFinish={onFinish} skipSignal={0} onStandings={onStandings} />
+      <RaceCanvas script={script} participants={racers} onFinish={onFinish} skipSignal={0} onStandings={onStandings} onCue={vi.fn()} />
     );
 
     runToEnd(onFinish);
@@ -377,6 +500,7 @@ describe("RaceCanvas", () => {
         onFinish={onFinish}
         skipSignal={0}
         onStandings={vi.fn()}
+        onCue={vi.fn()}
       />
     );
 
@@ -394,6 +518,7 @@ describe("RaceCanvas", () => {
       participants: participants(false),
       onFinish,
       onStandings,
+      onCue: vi.fn(),
     };
     const { rerender } = render(<RaceCanvas {...props} skipSignal={0} />);
 
@@ -413,6 +538,7 @@ describe("RaceCanvas", () => {
         onFinish={vi.fn()}
         skipSignal={0}
         onStandings={vi.fn()}
+        onCue={vi.fn()}
       />
     );
 
@@ -427,6 +553,7 @@ describe("RaceCanvas", () => {
         onFinish={vi.fn()}
         skipSignal={0}
         onStandings={vi.fn()}
+        onCue={vi.fn()}
       />
     );
 
@@ -456,6 +583,7 @@ describe("RaceCanvas", () => {
         onFinish={vi.fn()}
         skipSignal={0}
         onStandings={vi.fn()}
+        onCue={vi.fn()}
       />
     );
     runFrame(0);

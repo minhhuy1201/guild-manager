@@ -46,12 +46,21 @@ export function raceTimeAt(fraction: number): number {
 }
 
 /**
+ * Whether the finish is close enough to freeze on the photo.
+ * @param runnerUpGap - Share of the track the runner-up is short of the line
+ * @returns True under `PHOTO_FINISH_GAP`
+ */
+export function isPhotoFinish(runnerUpGap: number): boolean {
+  return runnerUpGap < PHOTO_FINISH_GAP;
+}
+
+/**
  * Seconds the finished race stays before the result.
  * @param runnerUpGap - Share of the track the runner-up is short of the line
  * @returns The long photo-finish hold when it is that close, else the short one
  */
 export function finishHoldSeconds(runnerUpGap: number): number {
-  return runnerUpGap < PHOTO_FINISH_GAP ? PHOTO_HOLD_SECONDS : FINISH_HOLD_SECONDS;
+  return isPhotoFinish(runnerUpGap) ? PHOTO_HOLD_SECONDS : FINISH_HOLD_SECONDS;
 }
 
 /**
@@ -84,7 +93,7 @@ export function momentAt(elapsed: number, durationSeconds: number, runnerUpGap: 
   if (u < RACE_END_U) {
     return { phase: "running", countdownStep: null, u, isSprint, isSlow: u >= SLOW_FROM_U };
   }
-  const isPhoto = runnerUpGap < PHOTO_FINISH_GAP;
+  const isPhoto = isPhotoFinish(runnerUpGap);
   const afterFinish = raced - durationSeconds;
   const base = { countdownStep: null, u, isSprint, isSlow: false };
   if (afterFinish >= finishHoldSeconds(runnerUpGap)) return { ...base, phase: "done" };

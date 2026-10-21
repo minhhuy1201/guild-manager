@@ -1,0 +1,76 @@
+import { useMemo } from "react";
+import type { CatRaceParticipant } from "@guild/shared/schemas";
+
+import { GUILD_CLASS_COLOR } from "@/lib/guild-class";
+import { catLabels } from "../lib/cat-label";
+import type { PhotoRow } from "../lib/draw-photo-finish";
+import type { OverlayState } from "../lib/race-overlay";
+import { rankAt, type RaceScript } from "../lib/race-script";
+import { PhotoFinishPanel } from "./photo-finish-panel";
+import { RaceCountdown } from "./race-countdown";
+
+/** Cats in the finish photo. */
+const PHOTO_CATS = 2;
+const FALLBACK_CAT_COLOR = "#999999";
+
+interface RaceOverlaysProps {
+  state: OverlayState;
+  script: RaceScript;
+  participants: readonly CatRaceParticipant[];
+}
+
+/**
+ * The broadcast layer over the track: countdown, banners, lead-change bar, slow-motion frame,
+ * finish flash and finish photo. It only reacts to the stage's state and takes no input.
+ * @param props.state - What to show now
+ * @param props.script - The race, for names and the photo
+ * @param props.participants - Who is racing, for names and colours
+ * @returns The overlays
+ */
+export function RaceOverlays({ state, script, participants }: RaceOverlaysProps) {
+  const labels = useMemo(() => catLabels(script.cats, participants), [script, participants]);
+  const photoRows = useMemo<PhotoRow[]>(() => {
+    if (!state.photo) return [];
+    const owners = new Map(script.cats.map((cat) => [cat.key, cat.characterId]));
+    const classes = new Map(participants.map((p) => [p.characterId, p.guildClass]));
+
+    return rankAt(script, 1)
+      .slice(0, PHOTO_CATS)
+      .map((key, index) => {
+        const guildClass = classes.get(owners.get(key) ?? "");
+
+        return {
+          label: labels.get(key)!,
+          color: guildClass ? GUILD_CLASS_COLOR[guildClass] : FALLBACK_CAT_COLOR,
+          lengthsBehind: index === 0 ? 0 : state.photo!.lengthsBehind,
+        };
+      });
+  }, [state.photo, script, participants, labels]);
+
+  return (
+    <>
+      <div className="race-ov race-vignette" data-on={state.isSlow} />
+      <div className="race-ov race-display race-slowmo" data-on={state.isSlow}>
+        CHẬM ×3
+      </div>
+      {state.leadToast ? (
+        <div key={state.leadToast.id} className="race-ov race-lead-bar" role="status">
+          <b className="race-display">ĐỔI NGÔI</b>
+          <span>
+            <em>{labels.get(state.leadToast.catKey)}</em> vượt lên dẫn đầu
+          </span>
+        </div>
+      ) : null}
+      {state.banner ? (
+        <div key={state.banner.id} className="race-ov race-banner" role="status">
+          <span className="race-display">{state.banner.text}</span>
+        </div>
+      ) : null}
+      <RaceCountdown step={state.countdownStep} isOn={state.isCountingDown} />
+      {state.photo ? (
+        <PhotoFinishPanel rows={photoRows} lengthsBehind={state.photo.lengthsBehind} />
+      ) : null}
+      {state.flashId === null ? null : <div key={state.flashId} className="race-ov race-flash" />}
+    </>
+  );
+}

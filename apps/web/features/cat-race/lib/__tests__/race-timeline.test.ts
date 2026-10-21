@@ -6,6 +6,7 @@ import {
   PHOTO_FINISH_GAP,
   PHOTO_HOLD_SECONDS,
   finishHoldSeconds,
+  isPhotoFinish,
   momentAt,
   raceTimeAt,
   totalSeconds,
@@ -98,5 +99,13 @@ describe("finishHoldSeconds", () => {
   it("adds the countdown, the race and the hold", () => {
     expect(totalSeconds(DURATION, FAR_GAP)).toBeCloseTo(2.4 + DURATION + 0.9);
     expect(totalSeconds(DURATION, CLOSE_GAP)).toBeCloseTo(2.4 + DURATION + 2.6);
+  });
+});
+
+describe("isPhotoFinish", () => {
+  it("is true only when the runner-up is under the gap from the line", () => {
+    expect(isPhotoFinish(PHOTO_FINISH_GAP - 0.0001)).toBe(true);
+    expect(isPhotoFinish(PHOTO_FINISH_GAP)).toBe(false);
+    expect(isPhotoFinish(1)).toBe(false);
   });
 });

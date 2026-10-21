@@ -27,12 +27,14 @@ vi.mock("../race-canvas", () => ({
   RaceCanvas: ({
     onFinish,
     onStandings,
+    onCue,
     skipSignal,
     isPreview,
     laneOrder,
   }: {
     onFinish: () => void;
     onStandings: (keys: string[]) => void;
+    onCue: (cue: RaceCue) => void;
     skipSignal: number;
     isPreview?: boolean;
     laneOrder: string[] | null;
@@ -42,6 +44,16 @@ vi.mock("../race-canvas", () => ({
       <span>{`LANES ${laneOrder?.join(",") ?? "none"}`}</span>
       <button onClick={onFinish}>finish</button>
       <button onClick={() => onStandings(["b#1", "a#1"])}>standings</button>
+      <button onClick={() => onCue({ kind: "countdown", step: 0 })}>cue countdown</button>
+      <button onClick={() => onCue({ kind: "go" })}>cue go</button>
+      <button onClick={() => onCue({ kind: "lead-change", catKey: "b#1" })}>cue lead</button>
+      <button onClick={() => onCue({ kind: "slow-motion", isOn: true })}>cue slow</button>
+      <button onClick={() => onCue({ kind: "finish", isPhotoFinish: true, lengthsBehind: 0.1 })}>
+        cue photo
+      </button>
+      <button onClick={() => onCue({ kind: "finish", isPhotoFinish: false, lengthsBehind: 2 })}>
+        cue finish
+      </button>
     </div>
   ),
 }));
@@ -60,6 +72,7 @@ vi.mock("../race-result-overlay", () => ({
   ),
 }));
 
+import type { RaceCue } from "../../lib/race-cue";
 import { useRaceStore } from "../../store/race-store";
 import { RaceStage } from "../race-stage";
 
@@ -113,6 +126,7 @@ function renderStage(event = EVENT, prize = PRIZE, isDurationValid = true) {
 
 beforeEach(() => {
   reducedMotion.current = false;
+  HTMLCanvasElement.prototype.getContext = vi.fn(() => null) as never;
   useRaceStore.getState().reset();
   useRaceStore.setState({ laneOrder: null });
 });
@@ -376,5 +390,84 @@ describe("RaceStage", () => {
     });
 
     expect(screen.getByText("Bảng xếp hạng hiện khi bắt đầu đua.")).toBeTruthy();
+  });
+
+  describe("broadcast overlays", () => {
+    /** Start a round and wait for the canvas. */
+    async function startRace() {
+      mutateAsync.mockResolvedValue(RESULT);
+      renderStage();
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: /ĐUA/ }));
+      });
+    }
+
+    it("counts down with lanterns and the number, then banners CHẠY! on go", async () => {
+      await startRace();
+
+      fireEvent.click(screen.getByText("cue countdown"));
+      expect(screen.getByText("3")).toBeTruthy();
+      fireEvent.click(screen.getByText("cue go"));
+
+      expect(screen.getByText("CHẠY!")).toBeTruthy();
+      expect(document.querySelector(".race-countdown")?.getAttribute("data-on")).toBe("false");
+    });
+
+    it("shows the lead-change bar with the cat's label and CHẬM ×3 on its cues", async () => {
+      await startRace();
+
+      fireEvent.click(screen.getByText("cue lead"));
+      fireEvent.click(screen.getByText("cue slow"));
+
+      expect(screen.getByText("ĐỔI NGÔI")).toBeTruthy();
+      expect(document.querySelector(".race-lead-bar em")?.textContent).toBe("b");
+      expect(document.querySelector(".race-slowmo")?.getAttribute("data-on")).toBe("true");
+    });
+
+    it("shows the finish photo only when the finish cue says photo finish", async () => {
+      await startRace();
+
+      fireEvent.click(screen.getByText("cue finish"));
+      expect(document.querySelector(".race-flash")).not.toBeNull();
+      expect(screen.queryByText("ẢNH ĐÍCH")).toBeNull();
+      fireEvent.click(screen.getByText("cue photo"));
+
+      expect(screen.getByText("ẢNH ĐÍCH")).toBeTruthy();
+    });
+
+    it("takes every overlay off when the round ends or is skipped, photo and flash included", async () => {
+      await startRace();
+      fireEvent.click(screen.getByText("cue photo"));
+      expect(screen.getByText("ẢNH ĐÍCH")).toBeTruthy();
+
+      fireEvent.click(screen.getByText("finish"));
+
+      expect(screen.queryByText("ẢNH ĐÍCH")).toBeNull();
+      expect(document.querySelector(".race-flash")).toBeNull();
+      expect(screen.getByText(/RESULT/)).toBeTruthy();
+    });
+
+    it("starts the next round with clean overlays", async () => {
+      invalidate.mockResolvedValue(undefined);
+      await startRace();
+      fireEvent.click(screen.getByText("cue go"));
+      fireEvent.click(screen.getByText("finish"));
+      await act(async () => {
+        fireEvent.click(screen.getByText("continue"));
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: /ĐUA/ }));
+      });
+
+      expect(screen.queryByText("CHẠY!")).toBeNull();
+    });
+
+    it("shows no overlay under reduced motion, which jumps to the result", async () => {
+      reducedMotion.current = true;
+      await startRace();
+
+      expect(document.querySelector(".race-countdown")).toBeNull();
+      expect(screen.getByText(/RESULT/)).toBeTruthy();
+    });
   });
 });

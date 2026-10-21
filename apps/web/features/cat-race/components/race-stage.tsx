@@ -15,11 +15,14 @@ import { errorMessageOf } from "@/lib/error-message";
 import { useDrawCatRaceRound } from "../hooks/use-cat-race-mutations";
 import { catLabels } from "../lib/cat-label";
 import { PRIZE_LOCK_LABEL, prizeLockReason } from "../lib/prize-lock";
+import { INITIAL_OVERLAY, applyCue } from "../lib/race-overlay";
+import type { RaceCue } from "../lib/race-cue";
 import { laneOrderOf } from "../lib/race-frame";
 import { buildRaceScript, rankAt, shuffled } from "../lib/race-script";
 import { RACE_END_U } from "../lib/race-timeline";
 import { useRaceStore } from "../store/race-store";
 import { RaceCanvas } from "./race-canvas";
+import { RaceOverlays } from "./race-overlays";
 import { RaceResultOverlay } from "./race-result-overlay";
 import { RaceStandings } from "./race-standings";
 
@@ -58,6 +61,7 @@ export function RaceStage({
   const [skipSignal, setSkipSignal] = useState(0);
   const [standings, setStandings] = useState<string[]>([]);
   const [isContinuing, setIsContinuing] = useState(false);
+  const [overlay, setOverlay] = useState(INITIAL_OVERLAY);
 
   const lock = prize ? prizeLockReason(prize, event.status) : null;
   const entrants = useMemo(
@@ -106,6 +110,7 @@ export function RaceStage({
   const startRound = async () => {
     if (!prize || lock || stage !== "idle" || !isDurationValid) return;
     setStandings([]);
+    setOverlay(INITIAL_OVERLAY);
     store().startDrawing();
     try {
       const result = await draw.mutateAsync({ id: event.id, prizeId: prize.id });
@@ -149,6 +154,11 @@ export function RaceStage({
     if (pendingResult) store().showResult(pendingResult);
   };
 
+  const showCue = (cue: RaceCue) => {
+    const now = performance.now();
+    setOverlay((current) => applyCue(current, cue, now));
+  };
+
   const continueRacing = async () => {
     setIsContinuing(true);
     try {
@@ -168,7 +178,7 @@ export function RaceStage({
         </p>
       ) : null}
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_17rem]">
-        <div className="relative h-[70dvh] min-h-96">
+        <div data-slot="cat-race-stage" className="relative h-[70dvh] min-h-96">
           {stage === "racing" && script ? (
             <RaceCanvas
               script={script}
@@ -177,6 +187,7 @@ export function RaceStage({
               laneOrder={laneKeys}
               onFinish={finishRace}
               onStandings={setStandings}
+              onCue={showCue}
             />
           ) : stage !== "result" && previewScript ? (
             <RaceCanvas
@@ -187,6 +198,7 @@ export function RaceStage({
               laneOrder={laneKeys}
               onFinish={finishRace}
               onStandings={setStandings}
+              onCue={showCue}
             />
           ) : (
             <div className="flex h-full flex-col items-center justify-center gap-2 rounded-lg border border-border bg-background text-center">
@@ -201,6 +213,9 @@ export function RaceStage({
               )}
             </div>
           )}
+          {stage === "racing" && script ? (
+            <RaceOverlays state={overlay} script={script} participants={event.participants} />
+          ) : null}
           {stage === "result" && pendingResult ? (
             <RaceResultOverlay
               event={event}

@@ -4,6 +4,7 @@ import {
   RACE_SCENARIOS,
   buildRaceScript,
   catKey,
+  leaderAt,
   progressAt,
   rankAt,
   type PaceCurve,
@@ -219,5 +220,22 @@ describe("buildRaceScript", () => {
 
     expect(rankAt(script, 1)).toEqual([script.winnerKey]);
     expect(script.runnerUpGap).toBe(1);
+  });
+});
+
+describe("leaderAt", () => {
+  it("names the cat rankAt puts first, for every scenario and moment", () => {
+    for (const scenario of RACE_SCENARIOS) {
+      const script = buildRaceScript({
+        entrants: Array.from({ length: 30 }, (_, index) => ({ characterId: `c${index}`, tickets: 1 })),
+        winner: { characterId: "c7", ticketNo: 1 },
+        durationSeconds: 20,
+        scenario,
+        random: seeded(11),
+      });
+      for (let u = 0; u <= 1; u += 0.05) {
+        expect(leaderAt(script, u)).toBe(rankAt(script, u)[0]);
+      }
+    }
   });
 });

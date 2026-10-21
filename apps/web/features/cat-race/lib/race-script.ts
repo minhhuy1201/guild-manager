@@ -276,3 +276,23 @@ export function rankAt(
     .sort((a, b) => b.progress - a.progress || a.key.localeCompare(b.key))
     .map((entry) => entry.key);
 }
+
+/**
+ * Key of the cat in front at one moment; the same cat `rankAt` puts first, without sorting the field.
+ * @param script - The race
+ * @param u - Race time, 0..1
+ * @returns The leader's key
+ */
+export function leaderAt(script: Pick<RaceScript, "cats" | "curves">, u: number): string {
+  let leader = script.cats[0].key;
+  let best = progressAt(script.curves.get(leader)!, u);
+  for (const { key } of script.cats) {
+    const progress = progressAt(script.curves.get(key)!, u);
+    if (progress > best || (progress === best && key.localeCompare(leader) < 0)) {
+      leader = key;
+      best = progress;
+    }
+  }
+
+  return leader;
+}

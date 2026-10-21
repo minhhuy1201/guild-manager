@@ -5,11 +5,14 @@ import type { CatRaceParticipant } from "@guild/shared/schemas";
 
 import { GUILD_CLASS_COLOR } from "@/lib/guild-class";
 import { catLabels } from "../lib/cat-label";
+import { INITIAL_CUE_CURSOR, nextCues, type FinishCue, type RaceCue } from "../lib/race-cue";
 import { frameAt, planRace, type RacePlan } from "../lib/race-frame";
+import { lengthsBehind } from "../lib/race-lengths";
 import type { RaceScript } from "../lib/race-script";
-import { rankAt } from "../lib/race-script";
+import { leaderAt, rankAt } from "../lib/race-script";
 import { SPRITE_COLUMNS, SPRITE_ROWS, catSprite } from "../lib/race-sprites";
-import { COUNTDOWN_STEPS, RACE_END_U, momentAt } from "../lib/race-timeline";
+import { RACE_END_U, isPhotoFinish, momentAt } from "../lib/race-timeline";
+
 /** Live board refresh interval; a faster board only flickers. */
 const STANDINGS_INTERVAL_MS = 250;
 /** Running frames per second. */
@@ -22,8 +25,6 @@ const CLASS_MARK_SIZE = 8;
 const LANE_STRIPE_ALPHA = 0.06;
 const START_LINE_WIDTH = 3;
 const FINISH_SQUARE = 8;
-const COUNTDOWN_FONT_PX = 64;
-const COUNTDOWN_BOX = 120;
 const LABEL_ELLIPSIS = "…";
 const FALLBACK_CAT_COLOR = "#999999";
 
@@ -36,6 +37,8 @@ interface RaceCanvasProps {
   skipSignal: number;
   /** Every cat key, leader first, at most every `STANDINGS_INTERVAL_MS` and once more at the end */
   onStandings: (keys: string[]) => void;
+  /** Called for each moment of the round, once and in order; a skip sends none */
+  onCue: (cue: RaceCue) => void;
   /** Paint the cats on the start line and stop: no countdown, no replay, no callbacks */
   isPreview?: boolean;
   /** Cat keys from the top lane down, when the lanes were shuffled; null keeps them A to Z */
@@ -93,6 +96,7 @@ function fitText(context: CanvasRenderingContext2D, text: string, maxWidth: numb
  * @param props.onFinish - Called once at the end or on skip
  * @param props.skipSignal - Change it to skip to the end
  * @param props.onStandings - Receives the live order of every cat
+ * @param props.onCue - Receives the countdown, lead changes, sprint, slow motion and the finish
  * @param props.isPreview - Paint the start line once instead of replaying
  * @param props.laneOrder - Shuffled lane order, or null for A to Z
  * @returns The scrolling track
@@ -103,6 +107,7 @@ export function RaceCanvas({
   onFinish,
   skipSignal,
   onStandings,
+  onCue,
   isPreview = false,
   laneOrder: shuffledOrder = null,
 }: RaceCanvasProps) {
@@ -111,12 +116,14 @@ export function RaceCanvas({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const finishRef = useRef(onFinish);
   const standingsRef = useRef(onStandings);
+  const cueRef = useRef(onCue);
   const skipRef = useRef(skipSignal);
   const doneRef = useRef(false);
 
   useEffect(() => {
     finishRef.current = onFinish;
     standingsRef.current = onStandings;
+    cueRef.current = onCue;
   });
 
   useEffect(() => {
@@ -152,6 +159,7 @@ export function RaceCanvas({
     let frameId = 0;
     let startedAt = 0;
     let lastStandings = 0;
+    let cursor = INITIAL_CUE_CURSOR;
     let frames = 0;
     doneRef.current = false;
 
@@ -258,23 +266,18 @@ export function RaceCanvas({
       const top = scroller.scrollTop;
       drawTrack(plan, top);
       drawCats(plan, moment.u, top);
-      if (moment.countdownStep !== null) {
-        const width = viewWidth;
-        context.fillStyle = palette.card;
-        context.fillRect((width - COUNTDOWN_BOX) / 2, (viewHeight - COUNTDOWN_BOX) / 2, COUNTDOWN_BOX, COUNTDOWN_BOX);
-        context.fillStyle = palette.foreground;
-        context.font = `bold ${COUNTDOWN_FONT_PX}px ${getComputedStyle(document.body).fontFamily}`;
-        context.textAlign = "center";
-        context.textBaseline = "middle";
-        context.fillText(
-          String(COUNTDOWN_STEPS - moment.countdownStep),
-          width / 2,
-          viewHeight / 2
-        );
-      } else if (now - lastStandings >= STANDINGS_INTERVAL_MS) {
+      if (moment.countdownStep === null && now - lastStandings >= STANDINGS_INTERVAL_MS) {
         lastStandings = now;
         standingsRef.current(rankAt(script, moment.u));
       }
+      const finish: FinishCue = {
+        kind: "finish",
+        isPhotoFinish: isPhotoFinish(script.runnerUpGap),
+        lengthsBehind: lengthsBehind(script.runnerUpGap, plan.layout),
+      };
+      const announced = nextCues(cursor, moment, leaderAt(script, moment.u), finish);
+      cursor = announced.cursor;
+      for (const cue of announced.cues) cueRef.current(cue);
       frames += 1;
       if (showFps) {
         context.fillStyle = palette.mutedForeground;
