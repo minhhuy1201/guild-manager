@@ -15,8 +15,9 @@ import { paintStageBand, type BandScene } from "../lib/paint-stage-band";
 import { nameFontPx, nameRoom, paintStageNames } from "../lib/paint-stage-names";
 import { paintStageTrack } from "../lib/paint-stage-track";
 import { frameAt, planRace, type RacePlan } from "../lib/race-frame";
+import { standingsAt, type RaceStanding } from "../lib/race-board";
 import { lengthsBehind } from "../lib/race-lengths";
-import { visibleLanes, type LaneRange } from "../lib/race-layout";
+import { visibleLanes, type LaneLayout, type LaneRange } from "../lib/race-layout";
 import type { RaceScript } from "../lib/race-script";
 import { leaderAt, rankAt } from "../lib/race-script";
 import { spawnDust, stepDust, type DustParticle } from "../lib/race-dust";
@@ -31,7 +32,7 @@ import { STAGE_PALETTE } from "../lib/stage-palette";
 import { GATE_TEXT, TITLE_TEXT, bodyFont, displayFont, type StageFonts } from "../lib/stage-text";
 
 /** Live board refresh interval; a faster board only flickers. */
-const STANDINGS_INTERVAL_MS = 250;
+const STANDINGS_INTERVAL_MS = 300;
 /** Longest step the dust moves in one frame, so a stalled tab does not fling it. */
 const MAX_DT_SECONDS = 0.05;
 const LABEL_ELLIPSIS = "…";
@@ -49,8 +50,8 @@ interface RaceCanvasProps {
   onFinish: () => void;
   /** Bumped by the parent to cut the race short */
   skipSignal: number;
-  /** Every cat key, leader first, at most every `STANDINGS_INTERVAL_MS` and once more at the end */
-  onStandings: (keys: string[]) => void;
+  /** Every cat with its gap to the leader, leader first, at most every `STANDINGS_INTERVAL_MS` and once more at the end */
+  onStandings: (rows: readonly RaceStanding[]) => void;
   /** Called for each moment of the round, once and in order; a skip sends none */
   onCue: (cue: RaceCue) => void;
   /** Paint the stage with the cats standing on the start line: no countdown, no replay, no callbacks */
@@ -110,6 +111,8 @@ export function RaceCanvas({
   const cueRef = useRef(onCue);
   const skipRef = useRef(skipSignal);
   const doneRef = useRef(false);
+  // The gaps are in cat bodies of the current canvas width, which only the canvas effect knows.
+  const layoutRef = useRef<LaneLayout | null>(null);
 
   useEffect(() => {
     finishRef.current = onFinish;
@@ -122,7 +125,7 @@ export function RaceCanvas({
     skipRef.current = skipSignal;
     if (doneRef.current) return;
     doneRef.current = true;
-    standingsRef.current(rankAt(script, RACE_END_U));
+    standingsRef.current(standingsAt(script, RACE_END_U, layoutRef.current));
     finishRef.current();
   }, [skipSignal, script]);
 
@@ -176,6 +179,7 @@ export function RaceCanvas({
       const nextPlan = planRace(script, { width, height: viewHeight }, labels, shuffledOrder);
       const { layout } = nextPlan;
       plan = nextPlan;
+      layoutRef.current = layout;
       spacer.style.height = `${Math.max(layout.contentHeight, viewHeight)}px`;
       fonts = { body: getComputedStyle(document.body).fontFamily, display: stageFont.style.fontFamily };
       context.font = bodyFont(nameFontPx(layout.laneHeight), NAME_WEIGHT, fonts);
@@ -309,7 +313,7 @@ export function RaceCanvas({
       paintStage(plan, { phase: moment.phase, isSprint: moment.isSprint, u: moment.u, time, dt }, ranks);
       if (ranks && now - lastStandings >= STANDINGS_INTERVAL_MS) {
         lastStandings = now;
-        standingsRef.current(ranks);
+        standingsRef.current(standingsAt(script, moment.u, plan.layout));
       }
       const finish: FinishCue = {
         kind: "finish",
@@ -331,7 +335,7 @@ export function RaceCanvas({
       if (moment.phase === "done") {
         doneRef.current = true;
         if (showFps) console.info(`[cat-race] ${script.cats.length} cats, ${(frames * MS_PER_SECOND / (now - startedAt)).toFixed(1)} fps avg`);
-        standingsRef.current(rankAt(script, RACE_END_U));
+        standingsRef.current(standingsAt(script, RACE_END_U, plan.layout));
         finishRef.current();
 
         return;

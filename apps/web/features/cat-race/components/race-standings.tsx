@@ -1,76 +1,125 @@
+"use client";
+
+import { useLayoutEffect, useRef } from "react";
 import type { CatRaceParticipant } from "@guild/shared/schemas";
 
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { GUILD_CLASS_COLOR } from "@/lib/guild-class";
 import { cn } from "@/lib/utils";
 import { catLabels } from "../lib/cat-label";
+import { gapLabel, moveOf, type BoardState } from "../lib/race-board";
 import type { RaceScript } from "../lib/race-script";
 
-/** Cats on the podium; their rank takes the primary surface. */
-const PODIUM_SIZE = 3;
+/** Medal of each podium place, first to third; the CSS paints gold, silver and bronze. */
+const MEDALS = ["gold", "silver", "bronze"] as const;
+/** How long a row takes to slide to its new place. */
+const SLIDE_MS = 280;
+const SLIDE_EASING = "cubic-bezier(.2,.8,.2,1)";
 
 interface RaceStandingsProps {
   /** The race being replayed; null before the first round */
   script: RaceScript | null;
   participants: readonly CatRaceParticipant[];
-  /** Every cat key, leader first */
-  keys: readonly string[];
+  /** Every cat, leader first, and the order one update ago */
+  board: BoardState;
   className?: string;
 }
 
 /**
  * The live board: every cat in the race, one row each, in the order they run. The same ranking
- * orders the track, so the board and the lanes never disagree.
- * @param script - The race being replayed
- * @param participants - Who is racing, for names and colours
- * @param keys - Every cat key, leader first
- * @param className - Sizing from the screen
+ * orders the track, so the board and the lanes never disagree. A row that changes place slides
+ * there (FLIP: it starts at the old place and the transition runs to the new one) unless the
+ * viewer asked for less motion.
+ * @param props.script - The race being replayed
+ * @param props.participants - Who is racing, for names and colours
+ * @param props.board - The standings and the order before them
+ * @param props.className - Sizing from the screen
  * @returns The board
  */
-export function RaceStandings({ script, participants, keys, className }: RaceStandingsProps) {
+export function RaceStandings({ script, participants, board, className }: RaceStandingsProps) {
+  const reducedMotion = useReducedMotion();
+  const rowRefs = useRef(new Map<string, HTMLLIElement>());
+  const tops = useRef(new Map<string, number>());
   const labels = script ? catLabels(script.cats, participants) : null;
   const ownerOf = new Map(script?.cats.map((cat) => [cat.key, cat.characterId]));
   const classOf = new Map(participants.map((p) => [p.characterId, p.guildClass]));
+  const order = board.rows.map((row) => row.key).join("|");
+
+  useLayoutEffect(() => {
+    const before = tops.current;
+    const after = new Map<string, number>();
+    const moved: HTMLLIElement[] = [];
+    for (const [key, row] of rowRefs.current) {
+      // offsetTop ignores the transform of a slide still running, so it is always the settled place.
+      after.set(key, row.offsetTop);
+      const from = before.get(key);
+      if (reducedMotion || from === undefined || from === row.offsetTop) continue;
+      row.style.transition = "none";
+      row.style.transform = `translateY(${from - row.offsetTop}px)`;
+      moved.push(row);
+    }
+    tops.current = after;
+    if (moved.length === 0) return;
+    // A cancelled frame would strand the rows at their old place, so the frame is never cancelled.
+    requestAnimationFrame(() => {
+      for (const row of moved) {
+        row.style.transition = `transform ${SLIDE_MS}ms ${SLIDE_EASING}`;
+        row.style.transform = "";
+      }
+    });
+  }, [order, reducedMotion]);
 
   return (
     <aside
       aria-label="Bảng xếp hạng"
-      className={cn("flex min-h-0 flex-col rounded-lg border border-border bg-background", className)}
+      data-slot="cat-race-hud"
+      className={cn("race-board", className)}
     >
-      <h2 className="border-b border-border px-3 py-2 text-base font-semibold">
-        Bảng xếp hạng{script ? ` · ${script.cats.length} mèo` : ""}
+      <h2 className="race-display">
+        BẢNG XẾP HẠNG
+        {script ? <small>{script.cats.length} mèo</small> : null}
       </h2>
-      {labels && keys.length > 0 ? (
-        <ol className="min-h-0 flex-1 overflow-y-auto">
-          {keys.map((key, index) => {
-            const guildClass = classOf.get(ownerOf.get(key) ?? "");
+      {labels && board.rows.length > 0 ? (
+        <ol>
+          {board.rows.map((row, index) => {
+            const guildClass = classOf.get(ownerOf.get(row.key) ?? "");
+            const move = moveOf(board.previousKeys, row.key, index);
 
             return (
               <li
-                key={key}
-                className="flex items-center gap-2 border-b border-border/60 px-3 py-1.5 text-sm last:border-b-0"
+                key={row.key}
+                ref={(element) => {
+                  if (element) rowRefs.current.set(row.key, element);
+                  else rowRefs.current.delete(row.key);
+                }}
+                data-lead={index === 0}
               >
-                <span
-                  className={cn(
-                    "w-8 shrink-0 rounded-md px-1 text-center font-semibold tabular-nums",
-                    index < PODIUM_SIZE && "bg-primary text-primary-foreground"
-                  )}
-                >
+                <span className="race-rank" data-medal={MEDALS[index]}>
                   {index + 1}
+                </span>
+                <span className="race-move" data-move={move}>
+                  {move ? (
+                    <>
+                      <span aria-hidden>{move === "up" ? "▲" : "▼"}</span>
+                      <span className="sr-only">{move === "up" ? "Lên hạng" : "Xuống hạng"}</span>
+                    </>
+                  ) : null}
                 </span>
                 <span
                   aria-hidden
-                  className="size-2 shrink-0"
+                  className="race-dot"
                   style={{ backgroundColor: guildClass ? GUILD_CLASS_COLOR[guildClass] : undefined }}
                 />
-                <span className={cn("min-w-0 truncate", index < PODIUM_SIZE && "font-semibold")}>
-                  {labels.get(key)}
+                <span className="race-name" data-podium={index < MEDALS.length}>
+                  {labels.get(row.key)}
                 </span>
+                <span className="race-gap">{gapLabel(row, index)}</span>
               </li>
             );
           })}
         </ol>
       ) : (
-        <p className="p-3 text-sm text-muted-foreground">Bảng xếp hạng hiện khi bắt đầu đua.</p>
+        <p>Bảng xếp hạng hiện khi bắt đầu đua.</p>
       )}
     </aside>
   );

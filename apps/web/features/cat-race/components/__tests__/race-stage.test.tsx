@@ -37,7 +37,7 @@ vi.mock("../race-canvas", () => ({
     laneOrder,
   }: {
     onFinish: () => void;
-    onStandings: (keys: string[]) => void;
+    onStandings: (rows: readonly RaceStanding[]) => void;
     onCue: (cue: RaceCue) => void;
     skipSignal: number;
     isPreview?: boolean;
@@ -47,7 +47,26 @@ vi.mock("../race-canvas", () => ({
       {isPreview ? "PREVIEW" : `CANVAS ${skipSignal}`}
       <span>{`LANES ${laneOrder?.join(",") ?? "none"}`}</span>
       <button onClick={onFinish}>finish</button>
-      <button onClick={() => onStandings(["b#1", "a#1"])}>standings</button>
+      <button
+        onClick={() =>
+          onStandings([
+            { key: "b#1", lengthsBehind: 0 },
+            { key: "a#1", lengthsBehind: 1.234 },
+          ])
+        }
+      >
+        standings
+      </button>
+      <button
+        onClick={() =>
+          onStandings([
+            { key: "a#1", lengthsBehind: 0 },
+            { key: "b#1", lengthsBehind: 0.8 },
+          ])
+        }
+      >
+        standings swapped
+      </button>
       <button onClick={() => onCue({ kind: "countdown", step: 0 })}>cue countdown</button>
       <button onClick={() => onCue({ kind: "go" })}>cue go</button>
       <button onClick={() => onCue({ kind: "lead-change", catKey: "b#1" })}>cue lead</button>
@@ -76,6 +95,7 @@ vi.mock("../race-result-overlay", () => ({
   ),
 }));
 
+import type { RaceStanding } from "../../lib/race-board";
 import type { RaceCue } from "../../lib/race-cue";
 import { useRaceStore } from "../../store/race-store";
 import { RaceStage } from "../race-stage";
@@ -293,7 +313,7 @@ describe("RaceStage", () => {
 
     fireEvent.click(screen.getByText("standings"));
     const rows = screen.getAllByRole("listitem").map((row) => row.textContent);
-    expect(rows).toEqual(["1b", "2a"]);
+    expect(rows).toEqual(["1b", "2a-1,2"]);
     fireEvent.click(screen.getByRole("button", { name: "Bỏ qua" }));
 
     expect(screen.getByText(/CANVAS 1/)).toBeTruthy();
@@ -329,18 +349,72 @@ describe("RaceStage", () => {
     expect(screen.queryByText("PREVIEW")).toBeNull();
   });
 
-  it("states the prize and the number of people above the track", () => {
-    renderStage();
+  describe("broadcast bar", () => {
+    const liveTag = () => screen.getByText("TRỰC TIẾP").getAttribute("data-on");
 
-    expect(screen.getByText("Hạng mục: Tiền mặt · 2 người")).toBeTruthy();
-  });
+    it("states the prize with its tier and the number of people above the track", () => {
+      renderStage();
 
-  it("adds the ticket total in TICKET mode", () => {
-    const event = { ...EVENT, mode: CatRaceMode.TICKET };
-    event.participants = event.participants.map((p) => ({ ...p, tickets: 3 }));
-    renderStage(event);
+      expect(screen.getByText("Đặc biệt · Tiền mặt").getAttribute("data-tier")).toBe("HIGH");
+      expect(screen.getByText("2 người")).toBeTruthy();
+      expect(screen.getByText("00.0s")).toBeTruthy();
+    });
 
-    expect(screen.getByText("Hạng mục: Tiền mặt · 2 người · 6 vé")).toBeTruthy();
+    it("adds the ticket total in TICKET mode", () => {
+      const event = { ...EVENT, mode: CatRaceMode.TICKET };
+      event.participants = event.participants.map((p) => ({ ...p, tickets: 3 }));
+      renderStage(event);
+
+      expect(screen.getByText("2 người · 6 vé")).toBeTruthy();
+    });
+
+    it("lights TRỰC TIẾP only while the round races and greys it at the card", async () => {
+      mutateAsync.mockResolvedValue(RESULT);
+      renderStage();
+      expect(liveTag()).toBe("false");
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: /ĐUA/ }));
+      });
+      expect(liveTag()).toBe("true");
+      fireEvent.click(screen.getByText("finish"));
+
+      expect(liveTag()).toBe("false");
+    });
+
+    it("counts seconds from go and freezes at the finish", async () => {
+      const now = vi.spyOn(performance, "now");
+      now.mockReturnValue(10_000);
+      mutateAsync.mockResolvedValue(RESULT);
+      renderStage();
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: /ĐUA/ }));
+      });
+
+      fireEvent.click(screen.getByText("cue go"));
+      now.mockReturnValue(13_000);
+      fireEvent.click(screen.getByText("cue finish"));
+      now.mockReturnValue(20_000);
+      fireEvent.click(screen.getByText("finish"));
+
+      expect(screen.getByText("03.0s")).toBeTruthy();
+      now.mockRestore();
+    });
+
+    it("shows an arrow for the cat that moved up on the next board update", async () => {
+      mutateAsync.mockResolvedValue(RESULT);
+      renderStage();
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: /ĐUA/ }));
+      });
+
+      fireEvent.click(screen.getByText("standings"));
+      fireEvent.click(screen.getByText("standings swapped"));
+
+      const rows = screen.getAllByRole("listitem").map((row) => row.textContent);
+      expect(rows[0]).toContain("▲");
+      expect(rows[1]).toContain("▼");
+    });
   });
 
   it("says nobody is in the list instead of showing an empty track", () => {

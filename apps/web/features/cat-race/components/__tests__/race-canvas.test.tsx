@@ -14,6 +14,7 @@ vi.mock("@/features/auth", () => ({
 }));
 
 import { laneLayout, markX } from "../../lib/race-layout";
+import type { RaceStanding } from "../../lib/race-board";
 import { buildRaceScript, rankAt } from "../../lib/race-script";
 import { STAGE_PALETTE } from "../../lib/stage-palette";
 import { RaceCanvas } from "../race-canvas";
@@ -546,10 +547,12 @@ describe("RaceCanvas", () => {
     runToEnd(onFinish);
 
     expect(onFinish).toHaveBeenCalledTimes(1);
-    const last = onStandings.mock.calls.at(-1)![0] as string[];
+    const last = onStandings.mock.calls.at(-1)![0] as RaceStanding[];
     expect(last).toHaveLength(30);
-    expect(last[0]).toBe(script.winnerKey);
-    expect(last).toEqual(rankAt(script, 1));
+    expect(last[0]).toEqual({ key: script.winnerKey, lengthsBehind: 0 });
+    expect(last.map((row) => row.key)).toEqual(rankAt(script, 1));
+    // The gap is in cat bodies of this canvas, so each row behind the leader carries one.
+    expect(last.slice(1).every((row) => (row.lengthsBehind ?? 0) > 0)).toBe(true);
   });
 
   it("shows the fps counter and logs the average with ?fps", () => {
@@ -589,7 +592,8 @@ describe("RaceCanvas", () => {
     rerender(<RaceCanvas {...props} skipSignal={2} />);
 
     expect(onFinish).toHaveBeenCalledTimes(1);
-    expect(onStandings).toHaveBeenCalledWith(rankAt(SCRIPT, 1));
+    const reported = onStandings.mock.calls.at(-1)![0] as RaceStanding[];
+    expect(reported.map((row) => row.key)).toEqual(rankAt(SCRIPT, 1));
   });
 
   it("does nothing when the canvas has no 2D context", () => {

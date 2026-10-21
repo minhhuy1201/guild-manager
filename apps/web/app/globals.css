@@ -392,7 +392,9 @@
    colours are declared once here instead of coming from the theme tokens, and its overlays keep
    their own keyframes and durations: a broadcast moment is a performance, not a UI transition
    (interaction.md, Motion). Reduced motion is answered by the rule at the end of this file. */
-[data-slot="cat-race-stage"] {
+/* The bar and the board sit beside the stage, not inside it, so they carry the palette too. */
+[data-slot="cat-race-stage"],
+[data-slot="cat-race-hud"] {
   --stage-night: #1b1424;
   --stage-paper: #f3e9d2;
   --stage-paper-dim: #b9ab90;
@@ -582,6 +584,140 @@
 @keyframes race-photo {
   from { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
   to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+/* Broadcast bar above the track. */
+.race-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  padding: 8px 12px;
+  border: 1px solid var(--stage-line);
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--stage-wood), #261c31);
+  color: var(--stage-paper);
+}
+
+.race-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px 2px;
+  border-radius: 3px;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: var(--stage-paper);
+  background: var(--stage-lacquer);
+}
+
+.race-live i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--stage-paper);
+  animation: race-blink 1.1s steps(2, start) infinite;
+}
+
+.race-live[data-on="false"] { background: var(--stage-line); }
+.race-live[data-on="false"] i { animation: none; opacity: 0.5; }
+
+.race-tier {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.race-tier[data-tier="HIGH"] { color: var(--stage-gold); }
+.race-tier[data-tier="MEDIUM"] { color: var(--stage-jade); }
+.race-tier[data-tier="LOW"] { color: var(--stage-paper-dim); }
+
+.race-meta { font-size: 13px; color: var(--stage-paper-dim); }
+
+.race-clock {
+  margin-left: auto;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  color: var(--stage-gold);
+}
+
+/* The live board beside the track. */
+.race-board {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--stage-line);
+  border-radius: 10px;
+  background: #150f1c;
+  color: var(--stage-paper);
+}
+
+.race-board h2 {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0;
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid var(--stage-line);
+  font-size: 14px;
+  letter-spacing: 0.04em;
+}
+
+.race-board h2 small { font-family: var(--font-sans); font-size: 12px; color: var(--stage-paper-dim); }
+.race-board p { margin: 0; padding: 12px; font-size: 14px; color: var(--stage-paper-dim); }
+
+.race-board ol {
+  position: relative;
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.race-board li {
+  display: grid;
+  grid-template-columns: 2rem 0.9rem 8px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-bottom: 1px solid #2a2033;
+  background: #150f1c;
+  font-size: 13px;
+  will-change: transform;
+}
+
+.race-board li[data-lead="true"] { background: #2a1f14; }
+
+.race-rank {
+  padding: 1px 0;
+  border-radius: 3px;
+  text-align: center;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.race-rank[data-medal="gold"] { background: var(--stage-gold); color: var(--stage-night); }
+.race-rank[data-medal="silver"] { background: #c9ced6; color: var(--stage-night); }
+.race-rank[data-medal="bronze"] { background: #c98a52; color: var(--stage-night); }
+
+.race-move { font-size: 10px; text-align: center; }
+.race-move[data-move="up"] { color: var(--stage-jade); }
+.race-move[data-move="down"] { color: var(--stage-lacquer); }
+
+.race-dot { width: 8px; height: 8px; }
+.race-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.race-name[data-podium="true"] { font-weight: 600; }
+.race-gap { font-size: 12px; font-variant-numeric: tabular-nums; color: var(--stage-paper-dim); }
+
+@keyframes race-blink {
+  to { visibility: hidden; }
 }
 
 /* Answered once for the whole app, never repeated at a call site. The delay goes too: a staggered

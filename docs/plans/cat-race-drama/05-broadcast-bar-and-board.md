@@ -12,10 +12,10 @@ cách "-1,2" theo thân mèo; top 3 nền vàng, bạc, đồng; hàng dẫn đ�
 
 **Blocked by:** 01
 
-**Status:** todo
+**Status:** done
 
-- [ ] Thanh trên hiện đúng nội dung ở cả hai chế độ; "TRỰC TIẾP" chỉ sáng khi đang đua. Có test.
-- [ ] Bảng hiện ▲▼, khoảng cách theo thân (một chữ số thập phân, dấu phẩy), top 3. Có test.
-- [ ] Giảm chuyển động: bảng không trượt.
-- [ ] Test cũ về dòng "Hạng mục: …" cập nhật theo thanh mới.
-- [ ] `pnpm --filter web test`, `typecheck`, `lint` xanh.
+- [x] Thanh trên hiện đúng nội dung ở cả hai chế độ; "TRỰC TIẾP" chỉ sáng khi đang đua. Có test.
+- [x] Bảng hiện ▲▼, khoảng cách theo thân (một chữ số thập phân, dấu phẩy), top 3. Có test.
+- [x] Giảm chuyển động: bảng không trượt.
+- [x] Test cũ về dòng "Hạng mục: …" cập nhật theo thanh mới.
+- [x] `pnpm --filter web test`, `typecheck`, `lint` xanh.
