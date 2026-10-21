@@ -9,11 +9,7 @@ import { frameAt, planRace, type RacePlan } from "../lib/race-frame";
 import type { RaceScript } from "../lib/race-script";
 import { rankAt } from "../lib/race-script";
 import { SPRITE_COLUMNS, SPRITE_ROWS, catSprite } from "../lib/race-sprites";
-
-/** Countdown before the cats leave, in seconds. */
-const COUNTDOWN_SECONDS = 1.5;
-/** Digits shown during the countdown: 3, 2, 1. */
-const COUNTDOWN_STEPS = 3;
+import { COUNTDOWN_STEPS, RACE_END_U, momentAt } from "../lib/race-timeline";
 /** Live board refresh interval; a faster board only flickers. */
 const STANDINGS_INTERVAL_MS = 250;
 /** Running frames per second. */
@@ -128,7 +124,7 @@ export function RaceCanvas({
     skipRef.current = skipSignal;
     if (doneRef.current) return;
     doneRef.current = true;
-    standingsRef.current(rankAt(script, script.durationSeconds));
+    standingsRef.current(rankAt(script, RACE_END_U));
     finishRef.current();
   }, [skipSignal, script]);
 
@@ -226,17 +222,18 @@ export function RaceCanvas({
     /**
      * Paint every cat that is in view.
      * @param current - The plan being painted
-     * @param seconds - Time since the start
+     * @param u - Race time, 0..1
      * @param top - How far the lanes are scrolled, in px
      */
-    const drawCats = (current: RacePlan, seconds: number, top: number) => {
+    const drawCats = (current: RacePlan, u: number, top: number) => {
       const { layout } = current;
       const height = (layout.catWidth * SPRITE_ROWS) / SPRITE_COLUMNS;
-      for (const cat of frameAt(current, seconds)) {
+      const legTick = Math.floor(u * current.script.durationSeconds * STEP_RATE);
+      for (const cat of frameAt(current, u)) {
         const y = cat.y - top;
         if (y < -layout.laneHeight || y > viewHeight + layout.laneHeight) continue;
-        // Positions freeze when the winner crosses, so the legs stop with them.
-        const step = (Math.floor(Math.min(seconds, current.script.durationSeconds) * STEP_RATE) + cat.key.length) % 2 === 0 ? 0 : 1;
+        // The legs follow race time, so they stop with the cats when the winner crosses.
+        const step = (legTick + cat.key.length) % 2 === 0 ? 0 : 1;
         const sprite = catSprite(colorOf.get(cat.key)!, layout.catWidth, step);
         context.drawImage(sprite, cat.x, y - height / 2, layout.catWidth, height);
       }
@@ -257,11 +254,11 @@ export function RaceCanvas({
       }
       if (startedAt === 0) startedAt = now;
       const elapsed = (now - startedAt) / 1000;
-      const seconds = Math.max(0, elapsed - COUNTDOWN_SECONDS);
+      const moment = momentAt(elapsed, script.durationSeconds, script.runnerUpGap);
       const top = scroller.scrollTop;
       drawTrack(plan, top);
-      drawCats(plan, seconds, top);
-      if (elapsed < COUNTDOWN_SECONDS) {
+      drawCats(plan, moment.u, top);
+      if (moment.countdownStep !== null) {
         const width = viewWidth;
         context.fillStyle = palette.card;
         context.fillRect((width - COUNTDOWN_BOX) / 2, (viewHeight - COUNTDOWN_BOX) / 2, COUNTDOWN_BOX, COUNTDOWN_BOX);
@@ -270,13 +267,13 @@ export function RaceCanvas({
         context.textAlign = "center";
         context.textBaseline = "middle";
         context.fillText(
-          String(Math.ceil(((COUNTDOWN_SECONDS - elapsed) * COUNTDOWN_STEPS) / COUNTDOWN_SECONDS)),
+          String(COUNTDOWN_STEPS - moment.countdownStep),
           width / 2,
           viewHeight / 2
         );
       } else if (now - lastStandings >= STANDINGS_INTERVAL_MS) {
         lastStandings = now;
-        standingsRef.current(rankAt(script, seconds));
+        standingsRef.current(rankAt(script, moment.u));
       }
       frames += 1;
       if (showFps) {
@@ -285,10 +282,10 @@ export function RaceCanvas({
         context.textAlign = "left";
         context.fillText(`${Math.round((frames * 1000) / Math.max(1, now - startedAt))} fps`, 8, 14);
       }
-      if (seconds >= script.endSeconds) {
+      if (moment.phase === "done") {
         doneRef.current = true;
         if (showFps) console.info(`[cat-race] ${script.cats.length} cats, ${(frames * 1000 / (now - startedAt)).toFixed(1)} fps avg`);
-        standingsRef.current(rankAt(script, script.durationSeconds));
+        standingsRef.current(rankAt(script, RACE_END_U));
         finishRef.current();
 
         return;

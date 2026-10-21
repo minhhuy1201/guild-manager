@@ -38,7 +38,6 @@ function raceOf(people: number, tickets: number) {
 
 describe("frameAt", () => {
   const plan = raceOf(80, 3);
-  const duration = plan.script.durationSeconds;
 
   it("puts every one of the 240 cats on the same start line, one per lane", () => {
     const frame = frameAt(plan, 0);
@@ -50,8 +49,8 @@ describe("frameAt", () => {
   });
 
   it("puts cats at the same progress at the same x, so the track agrees with the ranking", () => {
-    const frame = frameAt(plan, duration * 0.6);
-    const ranking = rankAt(plan.script, duration * 0.6);
+    const frame = frameAt(plan, 0.6);
+    const ranking = rankAt(plan.script, 0.6);
     const xOf = new Map(frame.map((cat) => [cat.key, cat.x]));
 
     for (let index = 1; index < ranking.length; index += 1) {
@@ -60,7 +59,7 @@ describe("frameAt", () => {
   });
 
   it("ends with the winner on the finish line and everyone else short of it", () => {
-    const frame = frameAt(plan, duration);
+    const frame = frameAt(plan, 1);
     const noseOf = (x: number) => x + plan.layout.catWidth;
     const winner = frame.find((cat) => cat.key === plan.script.winnerKey)!;
 
@@ -71,12 +70,12 @@ describe("frameAt", () => {
   });
 
   it("holds still after the winner crossed", () => {
-    expect(frameAt(plan, duration + 0.5)).toEqual(frameAt(plan, duration));
+    expect(frameAt(plan, 1.5)).toEqual(frameAt(plan, 1));
   });
 
   it("never moves a cat backwards", () => {
     const last = new Map(frameAt(plan, 0).map((cat) => [cat.key, cat.x]));
-    for (let t = 0.1; t <= duration; t += 0.1) {
+    for (let t = 0.01; t <= 1; t += 0.01) {
       for (const cat of frameAt(plan, t)) {
         expect(cat.x).toBeGreaterThanOrEqual(last.get(cat.key)! - 1e-9);
         last.set(cat.key, cat.x);

@@ -42,6 +42,8 @@ const fakeContext = new Proxy(
   }
 );
 
+/** A real frame timestamp is never 0, which the canvas reads as 'not started yet'. */
+const START_MS = 1000;
 const frames: FrameRequestCallback[] = [];
 const resizeObservers: { disconnect: ReturnType<typeof vi.fn> }[] = [];
 
@@ -181,6 +183,84 @@ describe("RaceCanvas", () => {
     expect(fillText).toHaveBeenCalledWith("3", 400, 200);
   });
 
+  it("lights the countdown 3, 2, 1 in steps of 0.8 seconds, then leaves the cats to run", () => {
+    render(
+      <RaceCanvas
+        script={SCRIPT}
+        participants={participants(false)}
+        onFinish={vi.fn()}
+        skipSignal={0}
+        onStandings={vi.fn()}
+      />
+    );
+    const digits = () => fillText.mock.calls.map((call) => String(call[0])).filter((text) => /^[123]$/.test(text));
+
+    runFrame(START_MS);
+    expect(digits()).toEqual(["3"]);
+    fillText.mockClear();
+    runFrame(START_MS + 700);
+    expect(digits()).toEqual(["3"]);
+    fillText.mockClear();
+    runFrame(START_MS + 900);
+    expect(digits()).toEqual(["2"]);
+    fillText.mockClear();
+    runFrame(START_MS + 1700);
+    expect(digits()).toEqual(["1"]);
+    fillText.mockClear();
+    runFrame(START_MS + 2500);
+    expect(digits()).toEqual([]);
+  });
+
+  it("keeps the finished race on screen for the hold before it finishes", () => {
+    const onFinish = vi.fn();
+    render(
+      <RaceCanvas
+        script={SCRIPT}
+        participants={participants(false)}
+        onFinish={onFinish}
+        skipSignal={0}
+        onStandings={vi.fn()}
+      />
+    );
+    const finishMs = (2.4 + SCRIPT.durationSeconds) * 1000;
+
+    runFrame(START_MS);
+    runFrame(START_MS + finishMs + 100);
+    expect(onFinish).not.toHaveBeenCalled();
+    runFrame(START_MS + finishMs + 1000);
+    expect(onFinish).toHaveBeenCalledTimes(1);
+  });
+
+  it("holds longer on a photo finish", () => {
+    const photo = buildRaceScript({
+      entrants: [
+        { characterId: "a", tickets: 3 },
+        { characterId: "b", tickets: 1 },
+      ],
+      winner: { characterId: "a", ticketNo: 2 },
+      durationSeconds: 10,
+      scenario: "photo",
+      random: () => 0.5,
+    });
+    const onFinish = vi.fn();
+    render(
+      <RaceCanvas
+        script={photo}
+        participants={participants(false)}
+        onFinish={onFinish}
+        skipSignal={0}
+        onStandings={vi.fn()}
+      />
+    );
+    const finishMs = (2.4 + photo.durationSeconds) * 1000;
+
+    runFrame(START_MS);
+    runFrame(START_MS + finishMs + 1000);
+    expect(onFinish).not.toHaveBeenCalled();
+    runFrame(START_MS + finishMs + 2700);
+    expect(onFinish).toHaveBeenCalledTimes(1);
+  });
+
   it("writes every name in its lane, a multi-ticket cat with its number", () => {
     render(
       <RaceCanvas
@@ -283,7 +363,7 @@ describe("RaceCanvas", () => {
     const last = onStandings.mock.calls.at(-1)![0] as string[];
     expect(last).toHaveLength(30);
     expect(last[0]).toBe(script.winnerKey);
-    expect(last).toEqual(rankAt(script, script.durationSeconds));
+    expect(last).toEqual(rankAt(script, 1));
   });
 
   it("shows the fps counter and logs the average with ?fps", () => {
@@ -321,7 +401,7 @@ describe("RaceCanvas", () => {
     rerender(<RaceCanvas {...props} skipSignal={2} />);
 
     expect(onFinish).toHaveBeenCalledTimes(1);
-    expect(onStandings).toHaveBeenCalledWith(rankAt(SCRIPT, SCRIPT.durationSeconds));
+    expect(onStandings).toHaveBeenCalledWith(rankAt(SCRIPT, 1));
   });
 
   it("does nothing when the canvas has no 2D context", () => {

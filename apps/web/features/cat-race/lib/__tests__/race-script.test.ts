@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  FINISH_HOLD_SECONDS,
+  RACE_SCENARIOS,
   buildRaceScript,
   catKey,
   progressAt,
   rankAt,
+  type PaceCurve,
+  type RaceScenario,
 } from "../race-script";
+import { PHOTO_FINISH_GAP } from "../race-timeline";
 
 /**
  * A small seeded PRNG (mulberry32) so a failing case replays.
@@ -44,76 +47,161 @@ function field(people: number, tickets: number) {
  * @param tickets - Tickets each
  * @param durationSeconds - Seconds the winner takes
  * @param seed - PRNG seed
+ * @param scenario - Staging to force; picked from the seed when omitted
  * @returns The script
  */
 function scriptFor(
   people: number,
   tickets: number,
   durationSeconds = 12,
-  seed = 7
+  seed = 7,
+  scenario?: RaceScenario
 ) {
   return buildRaceScript({
     entrants: field(people, tickets),
     winner: { characterId: "c0", ticketNo: tickets },
     durationSeconds,
+    scenario,
     random: seeded(seed),
   });
 }
 
+/** Fields the script is checked against: a duel, a small, a normal and the largest field. */
+const FIELD_SIZES = [2, 8, 30, 240];
+const SEEDS = Array.from({ length: 12 }, (_, index) => index + 1);
+/** Race-time step when walking a script; fine enough to see every lead change. */
+const SAMPLE_STEP = 0.002;
+const MONOTONE_STEP = 0.01;
+
+/**
+ * How often the lead changes after the start, counting the same way the stage does.
+ * @param script - The race
+ * @returns Lead changes between `u = 0.08` and the finish
+ */
+function leadChanges(script: ReturnType<typeof scriptFor>): number {
+  let leader: string | null = null;
+  let changes = 0;
+  for (let u = 0; u <= 1 + SAMPLE_STEP; u += SAMPLE_STEP) {
+    const [front] = rankAt(script, u);
+    if (front !== leader && leader !== null && u > 0.08) changes += 1;
+    leader = front;
+  }
+
+  return changes;
+}
+
+/**
+ * The largest step backwards a pace curve takes, 0 when it never does.
+ * @param curve - A cat's pace curve
+ * @returns The drop in progress
+ */
+function steepestDrop(curve: PaceCurve): number {
+  let drop = 0;
+  let last = 0;
+  for (let u = 0; u <= 1; u += MONOTONE_STEP) {
+    const now = progressAt(curve, u);
+    drop = Math.max(drop, last - now);
+    last = now;
+  }
+
+  return drop;
+}
+
+/** Fewest lead changes each staging must produce, measured over many seeds and field sizes. */
+const MIN_LEAD_CHANGES: Record<RaceScenario, number> = { comeback: 1, duel: 3, photo: 2 };
+
 describe("buildRaceScript", () => {
-  it.each([10, 12, 40])(
-    "makes the winning ticket cross exactly at %i seconds, ahead of everyone",
-    (duration) => {
-      const script = scriptFor(80, 3, duration);
-      const winnerMotion = script.motions.get(script.winnerKey)!;
+  it("makes the winner cross exactly at u = 1, ahead of everyone, in every staging", () => {
+    for (const scenario of RACE_SCENARIOS) {
+      for (const people of FIELD_SIZES) {
+        for (const seed of SEEDS) {
+          const script = scriptFor(people, 1, 12, seed, scenario);
 
-      expect(script.winnerKey).toBe(catKey("c0", 3));
-      expect(script.durationSeconds).toBe(duration);
-      expect(script.endSeconds).toBeCloseTo(duration + FINISH_HOLD_SECONDS);
-      expect(progressAt(winnerMotion, duration)).toBe(1);
-      for (const cat of script.cats) {
-        if (cat.key === script.winnerKey) continue;
-        expect(progressAt(script.motions.get(cat.key)!, duration)).toBeLessThan(1);
-      }
-    }
-  );
-
-  it.each([10, 12, 40])("never moves a cat backwards in a %i second race", (duration) => {
-    for (const seed of [11, 12]) {
-      const script = scriptFor(10, 3, duration, seed);
-
-      for (const motion of script.motions.values()) {
-        let last = 0;
-        for (let t = 0; t <= duration * 2; t += 0.02) {
-          const now = progressAt(motion, t);
-          expect(now).toBeGreaterThanOrEqual(last - 1e-12);
-          last = now;
+          expect(script.winnerKey).toBe(catKey("c0", 1));
+          expect(progressAt(script.curves.get(script.winnerKey)!, 1)).toBe(1);
+          expect(rankAt(script, 1)[0]).toBe(script.winnerKey);
+          for (const cat of script.cats) {
+            if (cat.key === script.winnerKey) continue;
+            expect(progressAt(script.curves.get(cat.key)!, 1)).toBeLessThan(1);
+          }
         }
-        expect(progressAt(motion, motion.finishAt)).toBe(1);
-        expect(progressAt(motion, motion.finishAt * 2)).toBe(1);
       }
     }
   });
 
-  it("starts every cat at progress 0", () => {
-    const script = scriptFor(80, 3);
+  it("starts every cat at 0 and never moves one backwards", () => {
+    for (const scenario of RACE_SCENARIOS) {
+      for (const people of FIELD_SIZES) {
+        for (const seed of SEEDS) {
+          const script = scriptFor(people, 1, 12, seed, scenario);
 
-    for (const motion of script.motions.values()) expect(progressAt(motion, 0)).toBe(0);
+          for (const curve of script.curves.values()) {
+            expect(progressAt(curve, 0)).toBe(0);
+            expect(steepestDrop(curve)).toBeLessThanOrEqual(1e-12);
+          }
+        }
+      }
+    }
   });
 
-  it("ranks the winner first from the moment it crosses on, whatever the seed", () => {
-    for (const seed of [1, 2, 3, 4, 5]) {
-      const script = scriptFor(80, 3, 12, seed);
+  it("keeps the winner's pace curve at 1 beyond the end", () => {
+    const script = scriptFor(8, 1);
 
-      expect(rankAt(script, script.durationSeconds)[0]).toBe(script.winnerKey);
-      expect(rankAt(script, script.endSeconds)).toEqual(rankAt(script, script.durationSeconds));
+    expect(progressAt(script.curves.get(script.winnerKey)!, 3)).toBe(1);
+    expect(progressAt(script.curves.get(script.winnerKey)!, -1)).toBe(0);
+  });
+
+  it.each(RACE_SCENARIOS)("changes the lead often enough in a %s", (scenario) => {
+    for (const people of FIELD_SIZES) {
+      for (const seed of SEEDS) {
+        const script = scriptFor(people, 1, 12, seed, scenario);
+
+        expect(leadChanges(script)).toBeGreaterThanOrEqual(MIN_LEAD_CHANGES[scenario]);
+      }
     }
+  });
+
+  it("ends a photo finish inside the photo gap and the other stagings outside it", () => {
+    for (const people of FIELD_SIZES) {
+      for (const seed of SEEDS) {
+        expect(scriptFor(people, 1, 12, seed, "photo").runnerUpGap).toBeLessThan(PHOTO_FINISH_GAP);
+        expect(scriptFor(people, 1, 12, seed, "comeback").runnerUpGap).toBeGreaterThan(PHOTO_FINISH_GAP);
+        expect(scriptFor(people, 1, 12, seed, "duel").runnerUpGap).toBeGreaterThan(PHOTO_FINISH_GAP);
+      }
+    }
+  });
+
+  it("picks the staging with the injected random when none is given, and every staging comes up", () => {
+    const picked = new Set(SEEDS.map((seed) => scriptFor(8, 1, 12, seed).scenario));
+
+    expect(picked).toEqual(new Set(RACE_SCENARIOS));
+    expect(scriptFor(8, 1, 12, 3).scenario).toBe(scriptFor(8, 1, 12, 3).scenario);
+  });
+
+  it("keeps the pack close to the winner at the halfway mark", () => {
+    const script = scriptFor(80, 3, 12, 4, "duel");
+    const progress = script.cats.map((cat) => progressAt(script.curves.get(cat.key)!, 0.5));
+
+    expect(Math.max(...progress) - Math.min(...progress)).toBeLessThan(0.12);
+  });
+
+  it("does not touch the entrants it was given", () => {
+    const entrants = field(4, 2);
+    const copy = structuredClone(entrants);
+    buildRaceScript({
+      entrants,
+      winner: { characterId: "c0", ticketNo: 1 },
+      durationSeconds: 12,
+      random: seeded(1),
+    });
+
+    expect(entrants).toEqual(copy);
   });
 
   it("ranks every cat once", () => {
     const script = scriptFor(80, 3);
 
-    expect(new Set(rankAt(script, 5)).size).toBe(240);
+    expect(new Set(rankAt(script, 0.5)).size).toBe(240);
   });
 
   it("has one cat per person in standard mode", () => {
@@ -123,6 +211,13 @@ describe("buildRaceScript", () => {
   it("races a field of two", () => {
     const script = scriptFor(2, 1);
 
-    expect(rankAt(script, script.durationSeconds)).toEqual([script.winnerKey, catKey("c1", 1)]);
+    expect(rankAt(script, 1)).toEqual([script.winnerKey, catKey("c1", 1)]);
+  });
+
+  it("has no runner-up gap to speak of when one cat races alone", () => {
+    const script = scriptFor(1, 1);
+
+    expect(rankAt(script, 1)).toEqual([script.winnerKey]);
+    expect(script.runnerUpGap).toBe(1);
   });
 });
