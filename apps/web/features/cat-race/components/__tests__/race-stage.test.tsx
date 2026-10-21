@@ -169,6 +169,17 @@ describe("RaceStage", () => {
     expect(screen.getByText(`LANES ${order!.keys.join(",")}`)).toBeTruthy();
   });
 
+  it("never lands on the A-Z lanes already shown, even with two cats", () => {
+    for (let run = 0; run < 20; run += 1) {
+      cleanup();
+      useRaceStore.setState({ laneOrder: null });
+      renderStage();
+      fireEvent.click(screen.getByRole("button", { name: /Xáo trộn/ }));
+
+      expect(useRaceStore.getState().laneOrder!.keys).toEqual(["b#1", "a#1"]);
+    }
+  });
+
   it("changes the lanes on every click", () => {
     renderStage();
     const button = screen.getByRole("button", { name: /Xáo trộn/ });

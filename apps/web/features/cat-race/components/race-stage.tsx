@@ -13,7 +13,9 @@ import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { useSessionRecovery } from "@/hooks/use-session-recovery";
 import { errorMessageOf } from "@/lib/error-message";
 import { useDrawCatRaceRound } from "../hooks/use-cat-race-mutations";
+import { catLabels } from "../lib/cat-label";
 import { PRIZE_LOCK_LABEL, prizeLockReason } from "../lib/prize-lock";
+import { laneOrderOf } from "../lib/race-frame";
 import { buildRaceScript, rankAt, shuffled } from "../lib/race-script";
 import { useRaceStore } from "../store/race-store";
 import { RaceCanvas } from "./race-canvas";
@@ -127,9 +129,14 @@ export function RaceStage({
   const shuffleLanes = () => {
     if (!prize || !previewScript || stage !== "idle") return;
     const keys = previewScript.cats.map((cat) => cat.key);
+    const shown = laneOrderOf(
+      previewScript,
+      catLabels(previewScript.cats, event.participants),
+      laneKeys
+    );
     let next = shuffled(keys, Math.random);
     // A click that lands on the lanes already shown looks like a dead button.
-    while (laneKeys && next.every((key, index) => key === laneKeys[index])) {
+    while (next.every((key, index) => key === shown[index])) {
       next = shuffled(keys, Math.random);
     }
     store().shuffleLanes(prize.id, next);

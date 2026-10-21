@@ -87,6 +87,7 @@ function EventBody({ event }: { event: CatRaceEventDetail }) {
         stage: "idle",
         pendingResult: null,
         selectedPrizeId: null,
+        laneOrder: null,
       });
       if (pendingResult) void invalidate();
     };

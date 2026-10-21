@@ -49,7 +49,8 @@ export const useRaceStore = create<RaceState>((set) => ({
   stage: "idle",
   pendingResult: null,
   laneOrder: null,
-  selectPrize: (prizeId) => set({ selectedPrizeId: prizeId }),
+  // Another prize has another field, so a shuffle made for the old one is dropped.
+  selectPrize: (prizeId) => set({ selectedPrizeId: prizeId, laneOrder: null }),
   shuffleLanes: (prizeId, keys) => set({ laneOrder: { prizeId, keys } }),
   setDurationSeconds: (durationSeconds) => {
     try {
