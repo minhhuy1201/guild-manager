@@ -12,6 +12,10 @@ const { mutateAsync, invalidate, recover, toastError, reducedMotion } = vi.hoist
   reducedMotion: { current: false },
 }));
 
+// next/font only works through the Next compiler; the stage font is a stand-in here.
+vi.mock("next/font/google", () => ({
+  Bungee: () => ({ variable: "bungee-variable", style: { fontFamily: "'Bungee', 'Bungee Fallback'" } }),
+}));
 vi.mock("../../hooks/use-cat-race-mutations", () => ({
   useDrawCatRaceRound: () => ({ mutateAsync }),
 }));

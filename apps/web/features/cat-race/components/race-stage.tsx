@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { useInvalidate } from "@/hooks/use-invalidate";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { useSessionRecovery } from "@/hooks/use-session-recovery";
+import { cn } from "@/lib/utils";
 import { errorMessageOf } from "@/lib/error-message";
 import { useDrawCatRaceRound } from "../hooks/use-cat-race-mutations";
 import { catLabels } from "../lib/cat-label";
@@ -18,6 +19,7 @@ import { PRIZE_LOCK_LABEL, prizeLockReason } from "../lib/prize-lock";
 import { INITIAL_OVERLAY, applyCue } from "../lib/race-overlay";
 import type { RaceCue } from "../lib/race-cue";
 import { laneOrderOf } from "../lib/race-frame";
+import { stageFont } from "../lib/stage-font";
 import { buildRaceScript, rankAt, shuffled } from "../lib/race-script";
 import { RACE_END_U } from "../lib/race-timeline";
 import { useRaceStore } from "../store/race-store";
@@ -178,7 +180,10 @@ export function RaceStage({
         </p>
       ) : null}
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_17rem]">
-        <div data-slot="cat-race-stage" className="relative h-[70dvh] min-h-96">
+        <div
+          data-slot="cat-race-stage"
+          className={cn("relative h-[70dvh] min-h-96", stageFont.variable)}
+        >
           {stage === "racing" && script ? (
             <RaceCanvas
               script={script}

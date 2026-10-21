@@ -401,9 +401,10 @@
   --stage-jade: #4fae8c;
   --stage-wood: #2b1f1a;
   --stage-line: #3d2f45;
-  /* The one place to point the overlay lettering at the stage's display face. */
-  --stage-font-display: var(--font-sans);
-  --stage-display-weight: 800;
+  /* The one place to point the overlay lettering at the stage's display face: Bungee, whose
+     `--font-bungee` the stage root receives from `next/font` in `features/cat-race`. */
+  --stage-font-display: var(--font-bungee, var(--font-sans));
+  --stage-display-weight: 400; /* Bungee ships one weight; a heavier value would be synthesised bold. */
   --stage-banner-duration: 1500ms;
   --stage-lead-bar-duration: 1500ms;
   --stage-flash-duration: 520ms;

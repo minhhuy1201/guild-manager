@@ -6,27 +6,35 @@ import type { CatRaceParticipant } from "@guild/shared/schemas";
 import { GUILD_CLASS_COLOR } from "@/lib/guild-class";
 import { catLabels } from "../lib/cat-label";
 import { INITIAL_CUE_CURSOR, nextCues, type FinishCue, type RaceCue } from "../lib/race-cue";
+import { paintStageBand, type BandScene } from "../lib/paint-stage-band";
+import { nameFontPx, nameRoom, paintStageNames } from "../lib/paint-stage-names";
+import { paintStageTrack } from "../lib/paint-stage-track";
 import { frameAt, planRace, type RacePlan } from "../lib/race-frame";
 import { lengthsBehind } from "../lib/race-lengths";
+import { visibleLanes, type LaneRange } from "../lib/race-layout";
 import type { RaceScript } from "../lib/race-script";
 import { leaderAt, rankAt } from "../lib/race-script";
 import { SPRITE_COLUMNS, SPRITE_ROWS, catSprite } from "../lib/race-sprites";
 import { RACE_END_U, isPhotoFinish, momentAt } from "../lib/race-timeline";
+import { buildCrowd } from "../lib/stage-crowd";
+import { renderBackdrop } from "../lib/stage-backdrop";
+import { excitementAt, isRacing, type StagePhase } from "../lib/stage-excitement";
+import { stageFont } from "../lib/stage-font";
+import { STAGE_PALETTE } from "../lib/stage-palette";
+import { GATE_TEXT, TITLE_TEXT, bodyFont, displayFont, type StageFonts } from "../lib/stage-text";
 
 /** Live board refresh interval; a faster board only flickers. */
 const STANDINGS_INTERVAL_MS = 250;
 /** Running frames per second. */
 const STEP_RATE = 8;
-/** Name text size in px, and the room kept left of it for the class colour mark. */
-const NAME_FONT_PX = 14;
-const NAME_PADDING = 8;
-const CLASS_MARK_SIZE = 8;
-/** How strong the alternate lanes tint, as a share of the text colour. */
-const LANE_STRIPE_ALPHA = 0.06;
-const START_LINE_WIDTH = 3;
-const FINISH_SQUARE = 8;
 const LABEL_ELLIPSIS = "…";
 const FALLBACK_CAT_COLOR = "#999999";
+const NAME_WEIGHT = 600;
+const FONT_PROBE_PX = 16;
+const FPS_FONT = "12px monospace";
+const FPS_X = 8;
+const FPS_BOTTOM_GAP = 8;
+const MS_PER_SECOND = 1000;
 
 interface RaceCanvasProps {
   script: RaceScript;
@@ -43,30 +51,6 @@ interface RaceCanvasProps {
   isPreview?: boolean;
   /** Cat keys from the top lane down, when the lanes were shuffled; null keeps them A to Z */
   laneOrder?: readonly string[] | null;
-}
-
-/** Theme colours the canvas paints with, read from the CSS tokens. */
-interface Palette {
-  background: string;
-  card: string;
-  foreground: string;
-  mutedForeground: string;
-}
-
-/**
- * Read the colours from the tokens, so the canvas follows the theme.
- * @returns The palette for the current theme
- */
-function readPalette(): Palette {
-  const style = getComputedStyle(document.documentElement);
-  const token = (name: string) => style.getPropertyValue(name).trim();
-
-  return {
-    background: token("--background"),
-    card: token("--card"),
-    foreground: token("--foreground"),
-    mutedForeground: token("--muted-foreground"),
-  };
 }
 
 /**
@@ -150,9 +134,11 @@ export function RaceCanvas({
         return [cat.key, owner ? GUILD_CLASS_COLOR[owner.guildClass] : FALLBACK_CAT_COLOR];
       })
     );
+    const peopleCount = new Set(script.cats.map((cat) => cat.characterId)).size;
     const showFps = new URLSearchParams(window.location.search).has("fps");
-    let palette = readPalette();
     let plan: RacePlan | null = null;
+    let scene: BandScene | null = null;
+    let fonts: StageFonts = { body: "", display: "" };
     let fitted = new Map<string, string>();
     let viewWidth = 0;
     let viewHeight = 0;
@@ -161,11 +147,10 @@ export function RaceCanvas({
     let lastStandings = 0;
     let cursor = INITIAL_CUE_CURSOR;
     let frames = 0;
+    let isDisposed = false;
     doneRef.current = false;
 
-    const nameFont = () => `600 ${NAME_FONT_PX}px ${getComputedStyle(document.body).fontFamily}`;
-
-    /** Fit the bitmap to the viewport and rebuild the plan for its width. */
+    /** Fit the bitmap to the viewport; rebuild the plan, the sky and the crowd for its width. */
     const resize = () => {
       const ratio = window.devicePixelRatio || 1;
       const width = scroller.clientWidth;
@@ -176,75 +161,88 @@ export function RaceCanvas({
       canvas.width = Math.round(width * ratio);
       canvas.height = Math.round(viewHeight * ratio);
       context.setTransform(ratio, 0, 0, ratio, 0, 0);
-      plan = planRace(script, { width, height: viewHeight }, labels, shuffledOrder);
-      spacer.style.height = `${Math.max(plan.layout.contentHeight, viewHeight)}px`;
-      context.font = nameFont();
-      const room = plan.layout.nameColumn - NAME_PADDING * 2 - CLASS_MARK_SIZE;
+      const nextPlan = planRace(script, { width, height: viewHeight }, labels, shuffledOrder);
+      const { layout } = nextPlan;
+      plan = nextPlan;
+      spacer.style.height = `${Math.max(layout.contentHeight, viewHeight)}px`;
+      fonts = { body: getComputedStyle(document.body).fontFamily, display: stageFont.style.fontFamily };
+      context.font = bodyFont(nameFontPx(layout.laneHeight), NAME_WEIGHT, fonts);
+      const room = nameRoom(layout.nameColumn);
       fitted = new Map(
-        plan.laneOrder.map((key) => [key, fitText(context, labels.get(key)!, room)])
+        nextPlan.laneOrder.map((key) => [key, fitText(context, labels.get(key)!, room)])
       );
-    };
-
-    /**
-     * Paint the track: lanes, name column, start line and finish line.
-     * @param current - The plan being painted
-     * @param top - How far the lanes are scrolled, in px
-     */
-    const drawTrack = (current: RacePlan, top: number) => {
-      const { layout, laneOrder } = current;
-      const width = viewWidth;
-      context.fillStyle = palette.background;
-      context.fillRect(0, 0, width, viewHeight);
-      const firstLane = Math.max(0, Math.floor(top / layout.laneHeight));
-      const lastLane = Math.min(laneOrder.length - 1, Math.floor((top + viewHeight) / layout.laneHeight));
-      context.fillStyle = palette.foreground;
-      context.globalAlpha = LANE_STRIPE_ALPHA;
-      for (let lane = firstLane; lane <= lastLane; lane += 1) {
-        if (lane % 2 === 1) context.fillRect(0, lane * layout.laneHeight - top, width, layout.laneHeight);
-      }
-      context.globalAlpha = 1;
-      context.fillStyle = palette.card;
-      context.fillRect(0, 0, layout.nameColumn, viewHeight);
-      context.font = nameFont();
-      context.textAlign = "left";
-      context.textBaseline = "middle";
-      for (let lane = firstLane; lane <= lastLane; lane += 1) {
-        const key = laneOrder[lane];
-        const centre = (lane + 0.5) * layout.laneHeight - top;
-        context.fillStyle = colorOf.get(key)!;
-        context.fillRect(NAME_PADDING, centre - CLASS_MARK_SIZE / 2, CLASS_MARK_SIZE, CLASS_MARK_SIZE);
-        context.fillStyle = palette.foreground;
-        context.fillText(fitted.get(key)!, NAME_PADDING * 2 + CLASS_MARK_SIZE, centre);
-      }
-      context.fillStyle = palette.foreground;
-      context.fillRect(layout.startX - START_LINE_WIDTH / 2, 0, START_LINE_WIDTH, viewHeight);
-      for (let y = 0; y < viewHeight; y += FINISH_SQUARE) {
-        for (let column = 0; column < 2; column += 1) {
-          const isDark = (Math.floor((y + top) / FINISH_SQUARE) + column) % 2 === 0;
-          context.fillStyle = isDark ? palette.foreground : palette.card;
-          context.fillRect(layout.finishX + column * FINISH_SQUARE, y, FINISH_SQUARE, FINISH_SQUARE);
-        }
-      }
+      scene = {
+        layout,
+        width,
+        backdrop: renderBackdrop(width, layout, ratio),
+        crowd: buildCrowd(width, layout, Math.random),
+        fonts,
+        cats: script.cats.length,
+        people: peopleCount,
+      };
     };
 
     /**
      * Paint every cat that is in view.
      * @param current - The plan being painted
      * @param u - Race time, 0..1
+     * @param lanes - The lanes in view
      * @param top - How far the lanes are scrolled, in px
      */
-    const drawCats = (current: RacePlan, u: number, top: number) => {
+    const drawCats = (current: RacePlan, u: number, lanes: LaneRange, top: number) => {
       const { layout } = current;
       const height = (layout.catWidth * SPRITE_ROWS) / SPRITE_COLUMNS;
       const legTick = Math.floor(u * current.script.durationSeconds * STEP_RATE);
-      for (const cat of frameAt(current, u)) {
-        const y = cat.y - top;
-        if (y < -layout.laneHeight || y > viewHeight + layout.laneHeight) continue;
+      const cats = frameAt(current, u);
+      for (let lane = lanes.first; lane <= lanes.last; lane += 1) {
+        const cat = cats[lane];
         // The legs follow race time, so they stop with the cats when the winner crosses.
         const step = (legTick + cat.key.length) % 2 === 0 ? 0 : 1;
         const sprite = catSprite(colorOf.get(cat.key)!, layout.catWidth, step);
-        context.drawImage(sprite, cat.x, y - height / 2, layout.catWidth, height);
+        context.drawImage(sprite, cat.x, cat.y - top - height / 2, layout.catWidth, height);
       }
+    };
+
+    /**
+     * Paint one frame of the stage: dirt and cats clipped under the sky, the name column, then the
+     * sky band over the top.
+     * @param current - The plan being painted
+     * @param frame - Where the stage is and when
+     * @param ranks - Cat keys front to back while racing, else null
+     */
+    const paintStage = (
+      current: RacePlan,
+      frame: { phase: StagePhase; isSprint: boolean; u: number; time: number },
+      ranks: readonly string[] | null
+    ) => {
+      if (!scene) return;
+      const { layout } = current;
+      const top = scroller.scrollTop;
+      const lanes = visibleLanes(layout, current.laneOrder.length, top, viewHeight);
+      const view = { layout, width: viewWidth, height: viewHeight, top, lanes };
+      const leaderKey = ranks?.[0] ?? null;
+      context.fillStyle = STAGE_PALETTE.wood;
+      context.fillRect(0, 0, viewWidth, viewHeight);
+      context.save();
+      context.beginPath();
+      context.rect(0, layout.band, viewWidth, viewHeight - layout.band);
+      context.clip();
+      paintStageTrack(context, {
+        ...view,
+        leaderLane: leaderKey === null ? null : current.laneOf.get(leaderKey)!,
+      });
+      drawCats(current, frame.u, lanes, top);
+      paintStageNames(context, {
+        ...view,
+        laneOrder: current.laneOrder,
+        fitted,
+        colors: colorOf,
+        places: ranks && new Map(ranks.map((key, index) => [key, index + 1])),
+        leaderKey,
+        fonts,
+      });
+      context.restore();
+      paintStageBand(context, scene, frame.time, excitementAt(frame.phase, frame.isSprint));
     };
 
     /**
@@ -253,22 +251,20 @@ export function RaceCanvas({
      */
     const tick = (now: number) => {
       if (!plan || doneRef.current) return;
+      const time = now / MS_PER_SECOND;
       if (isPreview) {
-        const top = scroller.scrollTop;
-        drawTrack(plan, top);
-        drawCats(plan, 0, top);
+        paintStage(plan, { phase: "idle", isSprint: false, u: 0, time }, null);
 
         return;
       }
       if (startedAt === 0) startedAt = now;
-      const elapsed = (now - startedAt) / 1000;
+      const elapsed = (now - startedAt) / MS_PER_SECOND;
       const moment = momentAt(elapsed, script.durationSeconds, script.runnerUpGap);
-      const top = scroller.scrollTop;
-      drawTrack(plan, top);
-      drawCats(plan, moment.u, top);
-      if (moment.countdownStep === null && now - lastStandings >= STANDINGS_INTERVAL_MS) {
+      const ranks = isRacing(moment.phase) ? rankAt(script, moment.u) : null;
+      paintStage(plan, { phase: moment.phase, isSprint: moment.isSprint, u: moment.u, time }, ranks);
+      if (ranks && now - lastStandings >= STANDINGS_INTERVAL_MS) {
         lastStandings = now;
-        standingsRef.current(rankAt(script, moment.u));
+        standingsRef.current(ranks);
       }
       const finish: FinishCue = {
         kind: "finish",
@@ -280,14 +276,16 @@ export function RaceCanvas({
       for (const cue of announced.cues) cueRef.current(cue);
       frames += 1;
       if (showFps) {
-        context.fillStyle = palette.mutedForeground;
-        context.font = "12px monospace";
+        context.fillStyle = STAGE_PALETTE.paperDim;
+        context.font = FPS_FONT;
         context.textAlign = "left";
-        context.fillText(`${Math.round((frames * 1000) / Math.max(1, now - startedAt))} fps`, 8, 14);
+        context.textBaseline = "alphabetic";
+        const fps = Math.round((frames * MS_PER_SECOND) / Math.max(1, now - startedAt));
+        context.fillText(`${fps} fps`, FPS_X, viewHeight - FPS_BOTTOM_GAP);
       }
       if (moment.phase === "done") {
         doneRef.current = true;
-        if (showFps) console.info(`[cat-race] ${script.cats.length} cats, ${(frames * 1000 / (now - startedAt)).toFixed(1)} fps avg`);
+        if (showFps) console.info(`[cat-race] ${script.cats.length} cats, ${(frames * MS_PER_SECOND / (now - startedAt)).toFixed(1)} fps avg`);
         standingsRef.current(rankAt(script, RACE_END_U));
         finishRef.current();
 
@@ -298,40 +296,34 @@ export function RaceCanvas({
 
     /** A preview repaints on demand; a replay already repaints every frame. */
     const repaint = () => {
-      if (!isPreview) return;
+      if (!isPreview || isDisposed) return;
       cancelAnimationFrame(frameId);
       frameId = requestAnimationFrame(tick);
     };
 
     resize();
+    // The first paint may land before the lettering has downloaded; paint again when it has.
+    void document.fonts?.load(displayFont(FONT_PROBE_PX, fonts), `${GATE_TEXT} ${TITLE_TEXT}`).then(repaint);
     const observer = new ResizeObserver(() => {
       resize();
       repaint();
     });
     observer.observe(scroller);
     scroller.addEventListener("scroll", repaint, { passive: true });
-    const themeObserver = new MutationObserver(() => {
-      palette = readPalette();
-      repaint();
-    });
-    themeObserver.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"],
-    });
     frameId = requestAnimationFrame(tick);
 
     return () => {
+      isDisposed = true;
       cancelAnimationFrame(frameId);
       scroller.removeEventListener("scroll", repaint);
       observer.disconnect();
-      themeObserver.disconnect();
     };
   }, [script, participants, isPreview, shuffledOrder]);
 
   return (
     <div
       ref={scrollRef}
-      className="h-full overflow-y-auto rounded-lg border border-border"
+      className="h-full overflow-y-auto rounded-lg border border-(--stage-line)"
     >
       <div ref={spacerRef} className="relative">
         <canvas

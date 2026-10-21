@@ -4,12 +4,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GuildClass } from "@guild/shared/enums";
 import type { CatRaceParticipant } from "@guild/shared/schemas";
 
+// next/font only works through the Next compiler; the stage font is a stand-in here.
+vi.mock("next/font/google", () => ({
+  Bungee: () => ({ variable: "bungee-variable", style: { fontFamily: "'Bungee', 'Bungee Fallback'" } }),
+}));
 vi.mock("@/features/auth", () => ({
   discordAvatarUrl: (id: string, hash: string | null) =>
     hash ? `https://cdn.test/${id}/${hash}.png` : null,
 }));
 
+import { laneLayout, markX } from "../../lib/race-layout";
 import { buildRaceScript, rankAt } from "../../lib/race-script";
+import { STAGE_PALETTE } from "../../lib/stage-palette";
 import { RaceCanvas } from "../race-canvas";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -17,13 +23,16 @@ import { RaceCanvas } from "../race-canvas";
 /** A 2D context that accepts every call; text, colours, rectangles and sprites are recorded to read what got painted. */
 const fillText = vi.fn();
 const fills: unknown[] = [];
+const fonts: string[] = [];
 const rects: [number, number, number, number][] = [];
 const sprites: { x: number; y: number }[] = [];
+const GRADIENT = { addColorStop: () => undefined };
 const fakeContext = new Proxy(
   {},
   {
     get: (_target, property) => {
       if (property === "fillText") return fillText;
+      if (property === "createLinearGradient" || property === "createRadialGradient") return () => GRADIENT;
       if (property === "measureText") return (text: string) => ({ width: text.length * 7 });
       if (property === "fillRect") {
         return (x: number, y: number, w: number, h: number) => rects.push([x, y, w, h]);
@@ -36,6 +45,7 @@ const fakeContext = new Proxy(
     },
     set: (_target, property, value) => {
       if (property === "fillStyle") fills.push(value);
+      if (property === "font") fonts.push(String(value));
 
       return true;
     },
@@ -101,6 +111,7 @@ const SCRIPT = buildRaceScript({
 
 beforeEach(() => {
   fills.length = 0;
+  fonts.length = 0;
   rects.length = 0;
   sprites.length = 0;
   frames.length = 0;
@@ -440,7 +451,7 @@ describe("RaceCanvas", () => {
     expect(onStandings).not.toHaveBeenCalled();
   });
 
-  it("draws the start line the full height of the track", () => {
+  it("draws the start line from the sky band down to the bottom of the track", () => {
     render(
       <RaceCanvas
         script={SCRIPT}
@@ -454,8 +465,8 @@ describe("RaceCanvas", () => {
 
     runFrame(0);
 
-    // 800px wide: the name column is 22% = 176px, and the line is centred on it.
-    expect(rects).toContainEqual([174.5, 0, 3, 400]);
+    const layout = laneLayout(SCRIPT.cats.length, { width: 800, height: 400 });
+    expect(rects).toContainEqual([markX(0, layout) - 1, layout.band, 3, 400 - layout.band]);
   });
 
   it("paints only the lanes in view for 240 cats, so the bitmap stays small", () => {
@@ -467,9 +478,8 @@ describe("RaceCanvas", () => {
     runFrame(0);
 
     const names = fillText.mock.calls.map((call) => String(call[0])).filter((text) => text.startsWith("Ngư"));
-    // 400px of 22px lanes.
-    expect(names.length).toBeGreaterThanOrEqual(18);
-    expect(names.length).toBeLessThanOrEqual(20);
+    // 400px under a 94px band is room for 14 lanes of 22px, the last one cut off.
+    expect(names).toHaveLength(14);
   });
 
   it("reports every cat in order and ends on the winner first", () => {
@@ -563,19 +573,67 @@ describe("RaceCanvas", () => {
     expect(cancelAnimationFrame).toHaveBeenCalled();
   });
 
-  it("re-reads the palette when the theme class changes", async () => {
-    vi.spyOn(window, "getComputedStyle").mockImplementation(
-      () =>
-        ({
-          fontFamily: "sans-serif",
-          getPropertyValue: (name: string) =>
-            name === "--foreground"
-              ? document.documentElement.classList.contains("dark")
-                ? "dark-fg"
-                : "light-fg"
-              : "",
-        }) as CSSStyleDeclaration
+  it("paints the same scene whatever the theme class says", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    const paintedFills = (isDark: boolean) => {
+      cleanup();
+      fills.length = 0;
+      document.documentElement.classList.toggle("dark", isDark);
+      render(
+        <RaceCanvas
+          script={SCRIPT}
+          participants={participants(false)}
+          onFinish={vi.fn()}
+          skipSignal={0}
+          onStandings={vi.fn()}
+          onCue={vi.fn()}
+        />
+      );
+      runFrame(0);
+
+      return [...fills];
+    };
+
+    const light = paintedFills(false);
+    const dark = paintedFills(true);
+    document.documentElement.classList.remove("dark");
+
+    expect(dark).toEqual(light);
+    expect(light).toEqual(expect.arrayContaining([STAGE_PALETTE.wood, STAGE_PALETTE.earth, STAGE_PALETTE.gold]));
+    vi.restoreAllMocks();
+  });
+
+  it("shows a place number per lane only once the cats are running", () => {
+    const { script, racers } = bigField(12);
+    const placesPainted = () =>
+      fillText.mock.calls.map((call) => String(call[0])).filter((text) => /^\d+$/.test(text));
+    const onFinish = vi.fn();
+    render(
+      <RaceCanvas script={script} participants={racers} onFinish={onFinish} skipSignal={0} onStandings={vi.fn()} onCue={vi.fn()} />
     );
+
+    runFrame(START_MS);
+    runFrame(START_MS + 1000);
+    expect(placesPainted()).toEqual([]);
+
+    runFrame(START_MS + 3000);
+    expect(placesPainted().sort((a, b) => Number(a) - Number(b))).toEqual(
+      Array.from({ length: 12 }, (_, index) => String(index + 1)).sort((a, b) => Number(a) - Number(b))
+    );
+  });
+
+  it("shows no place number in the preview", () => {
+    const { script, racers } = bigField(12);
+    render(
+      <RaceCanvas isPreview script={script} participants={racers} onFinish={vi.fn()} skipSignal={0} onStandings={vi.fn()} onCue={vi.fn()} />
+    );
+
+    runFrame(0);
+
+    expect(fillText.mock.calls.map((call) => String(call[0])).filter((text) => /^\d+$/.test(text))).toEqual([]);
+  });
+
+  it("writes the plaque and the finish gate in the stage font, with the field size", () => {
     render(
       <RaceCanvas
         script={SCRIPT}
@@ -586,17 +644,39 @@ describe("RaceCanvas", () => {
         onCue={vi.fn()}
       />
     );
+
     runFrame(0);
-    expect(fills).toContain("light-fg");
 
-    fills.length = 0;
-    document.documentElement.classList.add("dark");
-    await Promise.resolve();
-    runFrame(500);
+    const texts = fillText.mock.calls.map((call) => String(call[0]));
+    expect(texts).toEqual(expect.arrayContaining(["ĐÍCH", "ĐUA MÈO", "4 mèo · 2 người"]));
+    expect(fonts).toContainEqual(expect.stringContaining("'Bungee'"));
+  });
 
-    expect(fills).toContain("dark-fg");
-    expect(fills).not.toContain("light-fg");
-    document.documentElement.classList.remove("dark");
+  it("draws the sky once per size, not once per frame", () => {
+    const backdrops: number[] = [];
+    const original = document.createElement.bind(document);
+    vi.spyOn(document, "createElement").mockImplementation((tag: string) => {
+      if (tag === "canvas") backdrops.push(backdrops.length);
+
+      return original(tag);
+    });
+    render(
+      <RaceCanvas
+        script={SCRIPT}
+        participants={participants(false)}
+        onFinish={vi.fn()}
+        skipSignal={0}
+        onStandings={vi.fn()}
+        onCue={vi.fn()}
+      />
+    );
+    const afterMount = backdrops.length;
+
+    runFrame(START_MS);
+    runFrame(START_MS + 500);
+    runFrame(START_MS + 1000);
+
+    expect(backdrops).toHaveLength(afterMount);
     vi.restoreAllMocks();
   });
 });
