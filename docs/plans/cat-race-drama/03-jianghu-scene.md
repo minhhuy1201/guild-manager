@@ -20,10 +20,9 @@ màu cố định hợp lệ.
 
 **Status:** done
 
-- [ ] Sân khấu vẽ đủ các thành phần trên, khớp prototype; dải trời vẽ sẵn ra canvas phụ khi đổi kích
-      thước, không vẽ lại mỗi khung hình. (Đủ thành phần, hằng số và toạ độ sao từ prototype, canvas
-      phụ có test; chưa đối chiếu bằng mắt trên trình duyệt. Lúc chờ, bản xem trước chỉ vẽ một lần nên
-      đèn lồng và khán giả chưa đung đưa tới khi bấm ĐUA.)
+- [x] Sân khấu vẽ đủ các thành phần trên, khớp prototype; dải trời vẽ sẵn ra canvas phụ khi đổi kích
+      thước, không vẽ lại mỗi khung hình. (Đối chiếu bằng ảnh chụp chromium headless trên app local,
+      1440px và 390px, theme sáng và tối. Sân khấu chuyển động lúc chờ được bổ sung ở vé 04.)
 - [x] Đổi theme không đổi sân khấu; test "đọc lại bảng màu khi đổi theme" bỏ vì canvas không đọc token theme nữa, commit ghi lý do.
 - [x] Vẫn chỉ vẽ làn trong khung nhìn với 240 mèo; `?fps` còn. Có test.
 - [x] Số hạng ở cột tên chỉ hiện khi đang đua. Có test.

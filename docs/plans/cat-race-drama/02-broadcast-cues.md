@@ -26,6 +26,7 @@ Keyframe và thời lượng riêng của sân khấu khai báo một lần tron
 - [x] Mỗi lớp phủ phản ứng đúng sự kiện; thanh đổi ngôi tôn trọng giới hạn tần suất. Có test.
 - [x] Ảnh đích chỉ hiện khi á quân cách đích < 0.004 tiến độ. Có test.
 - [x] Canvas không còn vẽ ô đếm ngược; test cũ về đếm ngược chuyển sang lớp phủ.
-- [ ] Chữ, màu, nhịp, kích thước khớp prototype. (CSS, chữ và nhịp sao từ prototype; chưa đối chiếu bằng mắt trên trình duyệt, và chữ hiển thị tạm dùng font sans cho tới khi vé 03 nạp Bungee qua `--stage-font-display`.)
+- [x] Chữ, màu, nhịp, kích thước khớp prototype. (Đối chiếu bằng ảnh chụp chromium headless trên app
+      local: đèn lồng đếm ngược, thanh đổi ngôi, CHẬM ×3, ảnh đích; chữ Bungee từ vé 03.)
 - [x] Ngoại lệ motion ghi trong `interaction.md` và `docs/frontend.md`.
 - [x] `pnpm --filter web test`, `typecheck`, `lint` xanh.
