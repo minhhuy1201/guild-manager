@@ -126,8 +126,10 @@ export function RaceStage({
   // Another prize has another field, so a shuffle made for a different prize means nothing here.
   const laneKeys = prize && laneOrder?.prizeId === prize.id ? laneOrder.keys : null;
 
+  const canShuffle = stage === "idle" && (previewScript?.cats.length ?? 0) >= 2;
+
   const shuffleLanes = () => {
-    if (!prize || !previewScript || stage !== "idle") return;
+    if (!prize || !previewScript || !canShuffle) return;
     const keys = previewScript.cats.map((cat) => cat.key);
     const shown = laneOrderOf(
       previewScript,
@@ -228,7 +230,7 @@ export function RaceStage({
               type="button"
               variant="outline"
               size="lg"
-              disabled={stage !== "idle" || (previewScript?.cats.length ?? 0) < 2}
+              disabled={!canShuffle}
               onClick={shuffleLanes}
             >
               <Shuffle />

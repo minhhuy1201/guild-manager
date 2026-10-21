@@ -74,6 +74,9 @@ describe("race store lane order", () => {
 
     expect(useRaceStore.getState().laneOrder).toEqual({ prizeId: "p1", keys: ["b#1", "a#1"] });
 
+    store.selectPrize("p1");
+    expect(useRaceStore.getState().laneOrder).not.toBeNull();
+
     store.selectPrize("p2");
     expect(useRaceStore.getState().laneOrder).toBeNull();
   });
