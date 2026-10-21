@@ -105,3 +105,18 @@ describe("SiteHeader - đã đăng nhập", () => {
     expect(screen.queryByRole("button", { name: "Đăng nhập" })).toBeNull();
   });
 });
+
+describe("SiteHeader - phiên đã đăng nhập", () => {
+  it.each([
+    ["đọc được tài khoản", { ok: true, data: { id: "u1" } }],
+    ["backend từ chối tài khoản", { ok: false, message: "Hết phiên", statusCode: 401 }],
+  ])("vẫn vẽ nav khi %s", async (_name, meResult) => {
+    getSession.mockResolvedValue({ discordId: "1", role: GuildRole.MEMBER });
+    fetchMe.mockResolvedValue(meResult);
+
+    await renderHeader();
+
+    expect(screen.getByRole("banner")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Đăng nhập" })).toBeNull();
+  });
+});

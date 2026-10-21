@@ -14,6 +14,7 @@ vi.mock("@/features/auth/server", () => ({
 
 const {
   fetchAttendanceRecords,
+  fetchCharacters,
   fetchBattleSessions,
   fetchCurrentWeek,
   markAttendance,
@@ -173,5 +174,19 @@ describe("attendance-api", () => {
         `/battle-sessions?weekStart=${encodeURIComponent(weekStart)}`
       );
     });
+  });
+});
+
+describe("attendance-api characters", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("lists the characters through the attendance endpoint", async () => {
+    const fetchMock = mockFetch({ status: 200, body: { data: [] } });
+
+    await expect(fetchCharacters()).resolves.toEqual({ ok: true, data: [] });
+
+    expect(fetchMock.mock.calls[0][0]).toContain("/attendance/characters");
   });
 });
