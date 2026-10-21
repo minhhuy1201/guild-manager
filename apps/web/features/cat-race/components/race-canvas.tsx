@@ -108,8 +108,9 @@ export function RaceCanvas({
   mode = "replay",
   laneOrder: shuffledOrder = null,
 }: RaceCanvasProps) {
-  const isStill = useReducedMotion();
   const isPreview = mode !== "replay";
+  // Only a preview reads it: a replay must not restart when the setting flips mid-race.
+  const isStill = useReducedMotion() && isPreview;
   const scrollRef = useRef<HTMLDivElement>(null);
   const spacerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);

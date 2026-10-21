@@ -406,6 +406,16 @@
   --stage-jade: #4fae8c;
   --stage-wood: #2b1f1a;
   --stage-line: #3d2f45;
+  --stage-plate: #120c18;
+  --stage-board: #150f1c;
+  --stage-board-line: #2a2033;
+  --stage-board-lead: #2a1f14;
+  --stage-card: #1d1524;
+  --stage-card-top: #2c2033;
+  --stage-lantern-off: #3a2328;
+  --stage-lantern-cap: #6b5333;
+  --stage-silver: #c9ced6;
+  --stage-bronze: #c98a52;
   /* The one place to point the overlay lettering at the stage's display face: Bungee, whose
      `--font-bungee` the stage root receives from `next/font` in `features/cat-race`. */
   --stage-font-display: var(--font-bungee, var(--font-sans));
@@ -486,9 +496,9 @@
   width: 34px;
   height: 44px;
   border-radius: 12px;
-  background: #3a2328;
-  border-top: 5px solid #6b5333;
-  border-bottom: 5px solid #6b5333;
+  background: var(--stage-lantern-off);
+  border-top: 5px solid var(--stage-lantern-cap);
+  border-bottom: 5px solid var(--stage-lantern-cap);
   transition: background var(--stage-lantern-duration) ease, box-shadow var(--stage-lantern-duration) ease;
 }
 .race-lantern[data-lit="true"] { background: var(--stage-lacquer); box-shadow: 0 0 28px 6px #c8372d99; }
@@ -557,7 +567,7 @@
   top: 50%;
   width: min(420px, calc(100% - 32px));
   transform: translate(-50%, -50%);
-  background: #120c18;
+  background: var(--stage-plate);
   border: 3px solid var(--stage-paper);
   box-shadow: 10px 10px 0 #0009;
   animation: race-photo var(--stage-photo-duration) cubic-bezier(0.2, 1.4, 0.4, 1) backwards;
@@ -671,7 +681,7 @@
   overflow: hidden;
   border: 1px solid var(--stage-line);
   border-radius: 10px;
-  background: #150f1c;
+  background: var(--stage-board);
   color: var(--stage-paper);
 }
 
@@ -704,14 +714,13 @@
   align-items: center;
   gap: 6px;
   padding: 5px 10px;
-  border-bottom: 1px solid #2a2033;
-  background: #150f1c;
+  border-bottom: 1px solid var(--stage-board-line);
+  background: var(--stage-board);
   font-size: 13px;
-  will-change: transform;
   transition: transform var(--stage-slide-duration) var(--stage-slide-ease);
 }
 
-.race-board li[data-lead="true"] { background: #2a1f14; }
+.race-board li[data-lead="true"] { background: var(--stage-board-lead); }
 
 .race-rank {
   padding: 1px 0;
@@ -722,8 +731,8 @@
 }
 
 .race-rank[data-medal="gold"] { background: var(--stage-gold); color: var(--stage-night); }
-.race-rank[data-medal="silver"] { background: #c9ced6; color: var(--stage-night); }
-.race-rank[data-medal="bronze"] { background: #c98a52; color: var(--stage-night); }
+.race-rank[data-medal="silver"] { background: var(--stage-silver); color: var(--stage-night); }
+.race-rank[data-medal="bronze"] { background: var(--stage-bronze); color: var(--stage-night); }
 
 .race-move { font-size: 10px; text-align: center; }
 .race-move[data-move="up"] { color: var(--stage-jade); }
@@ -756,7 +765,7 @@
   padding: 20px 20px 18px;
   border: 2px solid var(--tier-color);
   border-radius: 6px;
-  background: linear-gradient(180deg, #2c2033, #1d1524);
+  background: linear-gradient(180deg, var(--stage-card-top), var(--stage-card));
   color: var(--stage-paper);
   text-align: center;
   box-shadow: 0 0 60px -10px var(--tier-color), 12px 12px 0 #0008;
@@ -824,7 +833,7 @@
   right: -10px;
   padding: 3px 8px 1px;
   border: 2px solid var(--stage-lacquer);
-  background: #1d1524;
+  background: var(--stage-card);
   font-size: 13px;
   color: var(--stage-lacquer);
   transform: rotate(8deg);

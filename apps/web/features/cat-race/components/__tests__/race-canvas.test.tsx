@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render } from "@testing-library/react";
+import { act, cleanup, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GuildClass } from "@guild/shared/enums";
 import type { CatRaceParticipant } from "@guild/shared/schemas";
@@ -232,6 +232,44 @@ describe("RaceCanvas", () => {
     ]);
     runFrame(START_MS + 2500);
     expect(cues().at(-1)).toEqual({ kind: "go" });
+  });
+
+  it("keeps a running replay going when the reduced-motion setting flips", () => {
+    let matches = false;
+    const listeners: (() => void)[] = [];
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn(() => ({
+        get matches() {
+          return matches;
+        },
+        addEventListener: (_type: string, listener: () => void) => listeners.push(listener),
+        removeEventListener: vi.fn(),
+      }))
+    );
+    const onCue = vi.fn();
+    render(
+      <RaceCanvas
+        script={SCRIPT}
+        participants={participants(false)}
+        onFinish={vi.fn()}
+        skipSignal={0}
+        onStandings={vi.fn()}
+        onCue={onCue}
+      />
+    );
+    runFrame(START_MS);
+    runFrame(START_MS + 2500);
+
+    act(() => {
+      matches = true;
+      for (const listener of listeners) listener();
+    });
+    for (let now = START_MS + 3000; now <= START_MS + 4000; now += 250) runFrame(now);
+
+    const goes = onCue.mock.calls.filter(([cue]) => cue.kind === "go");
+    expect(goes).toHaveLength(1);
+    expect(onCue.mock.calls.filter(([cue]) => cue.kind === "countdown")).toHaveLength(3);
   });
 
   it("sends every cue once and in order over a whole round", () => {
