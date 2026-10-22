@@ -78,7 +78,8 @@ chưa được tick) đều nhận cùng một câu ephemeral: "Bạn chưa đư
 
 Bot đọc Grant của người gọi từ hàng thành viên ở mỗi tương tác. `/diem-danh-ho` là Grant để điểm danh
 hộ qua bot: người có nó bấm nút hộ người khác được mà không cần Capability "Điểm danh & nghỉ phép"
-(chỉ ở đường điểm danh của bot, các kiểm tra khác giữ Grant thật). Câu từ chối chung là
+(chỉ ở đường điểm danh của bot, các kiểm tra khác giữ Grant thật). Grant chỉ áp dụng khi điểm danh cho
+người khác: bảng và nút của chính nhân vật mình vẫn theo luật Member, hạn chót vẫn áp dụng. Câu từ chối chung là
 `NOT_GRANTED` trong `require-command.ts`; mô tả "(chỉ admin)" của command trên Discord giữ nguyên tới
 lần chạy `pnpm discord:register` kế tiếp.
 

@@ -78,14 +78,22 @@ const STATUS_ICON = {
 /**
  * The actor for marking attendance through the bot.
  *
- * Running `/diem-danh-ho` is the Grant to mark on behalf of others, with no web Capability needed,
- * so a caller holding it marks like someone with the attendance Capability. Only the marking path
- * gets this; every other check keeps the actor's real Grants.
+ * Running `/diem-danh-ho` is the Grant to mark on behalf of OTHERS, with no web Capability needed,
+ * so a caller holding it marks someone else like a person with the attendance Capability. Marking
+ * their own character stays under the Member rules, deadline included, so the board a press
+ * rebuilds matches the one the command first drew. Every other check keeps the actor's real Grants.
  * @param actor - The caller as resolved
+ * @param ownCharacterId - The caller's own character, null when they have none (a rescue admin)
+ * @param targetCharacterId - The character being marked
  * @returns The actor to hand to the board and to `AttendanceService.mark`
  */
-export function withOnBehalfAttendance(actor: RequestActor): RequestActor {
+export function withOnBehalfAttendance(
+  actor: RequestActor,
+  ownCharacterId: string | null | undefined,
+  targetCharacterId: string,
+): RequestActor {
   if (!canRunCommand(actor, GrantableCommand.DIEM_DANH_HO)) return actor;
+  if (ownCharacterId === targetCharacterId) return actor;
 
   return {
     ...actor,
@@ -310,7 +318,11 @@ export async function handleAttendanceButton(
 
   if (!resolved) return { kind: 'refusal', message: NOT_LINKED };
 
-  const actor = withOnBehalfAttendance(resolved.actor);
+  const actor = withOnBehalfAttendance(
+    resolved.actor,
+    resolved.character?.id,
+    pressed.characterId,
+  );
 
   // The character row is only needed for the heading, and `mark` never touches that table — so the
   // read rides alongside the write instead of waiting for it.

@@ -64,7 +64,11 @@ export const diemDanhHoCommand: SlashCommand = {
         characterName: row.name,
         discordId: row.discordId,
       },
-      withOnBehalfAttendance(check.caller.actor),
+      withOnBehalfAttendance(
+        check.caller.actor,
+        check.caller.character?.id,
+        row.id,
+      ),
       deps,
     );
 

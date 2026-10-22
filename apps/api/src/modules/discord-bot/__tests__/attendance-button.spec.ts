@@ -260,12 +260,16 @@ describe('handleAttendanceButton - điểm danh hộ bằng Grant command', () =
   /**
    * Press a button as a Manager holding the given Grants, and read the actor `mark` received.
    * @param grants - Grants the resolver reports for the Manager
+   * @param ownCharacterId - The Manager's own character; the button is for 'meo-beo-k7ma3x'
    * @returns The actor passed to `AttendanceService.mark`
    */
-  async function markedBy(grants: {
-    capabilities?: Capability[];
-    grantedCommands?: GrantableCommand[];
-  }) {
+  async function markedBy(
+    grants: {
+      capabilities?: Capability[];
+      grantedCommands?: GrantableCommand[];
+    },
+    ownCharacterId = 'quan-ly-1',
+  ) {
     const mark = jest.fn().mockResolvedValue({});
     const resolve = jest.fn().mockResolvedValue({
       actor: {
@@ -274,7 +278,7 @@ describe('handleAttendanceButton - điểm danh hộ bằng Grant command', () =
         type: TOKEN_TYPE.access,
         ...grants,
       },
-      character: { id: 'quan-ly-1', name: 'Quản', discordId: '111' },
+      character: { id: ownCharacterId, name: 'Quản', discordId: '111' },
     });
 
     await handleAttendanceButton(PRESS, makeDeps({ mark, resolve }));
@@ -288,6 +292,15 @@ describe('handleAttendanceButton - điểm danh hộ bằng Grant command', () =
     });
 
     expect(can(actor, Capability.ATTENDANCE)).toBe(true);
+  });
+
+  it('bấm nút của chính mình thì không được nâng: hạn chót vẫn áp dụng như Member', async () => {
+    const actor = await markedBy(
+      { grantedCommands: [GrantableCommand.DIEM_DANH_HO] },
+      'meo-beo-k7ma3x',
+    );
+
+    expect(can(actor, Capability.ATTENDANCE)).toBe(false);
   });
 
   it('chỉ nâng đúng việc điểm danh hộ, không mở Capability nào khác', async () => {
