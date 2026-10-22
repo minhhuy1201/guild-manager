@@ -8,6 +8,7 @@ import type {
   Character,
 } from "@guild/shared/schemas";
 
+import { CountUp } from "@/components/shared/count-up";
 import { DataTable } from "@/components/shared/data-table";
 import { SessionLabel } from "@/components/shared/session-label";
 import { UnsavedChangesBar } from "@/components/shared/unsaved-changes-bar";
@@ -54,6 +55,21 @@ const SWIPE_HINT = "Vuốt ngang để xem các ngày đánh khác - cột tên 
 
 /** Shown when a save fails with something that carries no sentence of its own. */
 const SAVE_FALLBACK_ERROR = "Không lưu được điểm danh, thử lại giúp mình.";
+
+/**
+ * The name column has a fixed width from `lg`; the day columns split what is left evenly, so one
+ * match is one balanced wide column and six stay readable. The minimum keeps a day column legible
+ * and makes a long week scroll inside its container on a phone.
+ */
+const NAME_COLUMN_WIDTH = "lg:w-72 lg:min-w-72";
+const DAY_COLUMN = "min-w-36 text-center";
+
+/**
+ * The totals row: an opaque tint of `primary` over the card, set apart from the header band above
+ * and the striped rows below. Opaque because the pinned name cell inherits it (`bg-inherit`).
+ */
+const TOTALS_ROW =
+  "bg-[color-mix(in_oklch,var(--card),var(--primary)_14%)]! [&_td]:py-3.5";
 
 // Stable stand-ins while a query has no data. A fallback built per render would change the
 // filtered list's identity on every render, and the pagination resets its page on that identity.
@@ -232,17 +248,19 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
           header={
             <>
               <TableRow>
-                <TableHead className={STICKY_NAME_COLUMN}>Thành viên</TableHead>
+                <TableHead className={cn(STICKY_NAME_COLUMN, NAME_COLUMN_WIDTH)}>
+                  Thành viên
+                </TableHead>
                 {state.isPending
                   ? Array.from({ length: dayColumns }, (_, index) => (
-                      <TableHead key={index} className="text-center">
+                      <TableHead key={index} className={DAY_COLUMN}>
                         <Skeleton className="mx-auto h-5 w-20" />
                       </TableHead>
                     ))
                   : battleSessions.map((session) => {
                       const subtitle = getSessionSubtitle(session);
                       return (
-                        <TableHead key={session.id} className="text-center">
+                        <TableHead key={session.id} className={DAY_COLUMN}>
                           <SessionLabel session={session} size="sm" />
                           {subtitle && (
                             <span className="block text-xs font-normal text-muted-foreground">
@@ -260,11 +278,12 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
               </TableRow>
               {/* `td`, not `th`: the heads are counted as the table's columns, and this row adds
                   none. */}
-              <TableRow>
+              <TableRow className={TOTALS_ROW}>
                 <TableCell
                   className={cn(
                     STICKY_NAME_COLUMN,
-                    "text-sm font-medium text-muted-foreground"
+                    NAME_COLUMN_WIDTH,
+                    "text-sm font-semibold text-foreground"
                   )}
                 >
                   Cả bang
@@ -272,7 +291,7 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
                 {state.isPending
                   ? Array.from({ length: dayColumns }, (_, index) => (
                       <TableCell key={index}>
-                        <Skeleton className="mx-auto h-5 w-24" />
+                        <Skeleton className="mx-auto h-6 w-24" />
                       </TableCell>
                     ))
                   : battleSessions.map((session) => (
@@ -341,21 +360,21 @@ function DayTotalsCell({ session, totals }: DayTotalsCellProps) {
     >
       <div
         aria-hidden
-        className="flex items-center justify-center gap-3 text-sm font-medium tabular-nums"
+        className="flex items-center justify-center gap-3 text-lg font-semibold tabular-nums"
       >
         <span className="inline-flex items-center gap-1">
           <AttendanceStatusIcon isPresent source="answer" />
-          {totals.co}
+          <CountUp value={totals.co} />
         </span>
         <span className="inline-flex items-center gap-1">
           <AttendanceStatusIcon isPresent={false} source="answer" />
-          {totals.khong}
+          <CountUp value={totals.khong} />
         </span>
         {/* Amber is the palette's "not answered yet" (frontend.md §6). A bare dash before the
             number read as a minus sign. */}
         <span className="inline-flex items-center gap-1">
           <CircleDashed className="size-5 text-amber-500" />
-          {totals.chuaTraLoi}
+          <CountUp value={totals.chuaTraLoi} />
         </span>
       </div>
     </TableCell>
