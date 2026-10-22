@@ -181,7 +181,7 @@ export function RaceStage({
   };
 
   return (
-    <section className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4">
+    <section className="flex flex-col gap-4 rounded-container border border-border bg-card p-4">
       {prize ? (
         <RaceBroadcastBar
           prize={prize}

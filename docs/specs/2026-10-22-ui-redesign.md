@@ -139,8 +139,10 @@ Giao làm 5 PR, mỗi PR tự đứng được và đổi diện mạo thấy ng
 - Giữ cấu trúc token hiện tại: `:root` sáng, `.dark` tối, jade, gold, primary navy, emerald/đỏ/amber
   chỉ cho trạng thái điểm danh.
 - Chỉnh giá trị: nền sáng giữ tông đá ấm, thêm vân mực nhạt bên cạnh vân giấy. Theme tối giữ navy mực.
-  Thêm token cho glow (jade, gold), viền sáng trong của card nổi, và `--radius` lớn hơn cho khối
-  chứa (bo trong nhỏ, bo ngoài lớn).
+  Thêm token cho glow (jade, gold), viền sáng trong của card nổi, và hai token bo góc: khối chứa
+  12px, phần bên trong 6px (bo trong nhỏ hơn bo ngoài). Bản đầu dùng 20px / 10px, nhìn quá tròn so với
+  một app làm việc; thang 12px / 6px theo [Vercel Geist Materials](https://vercel.com/geist/materials)
+  ("material-medium: Radius 12px", "material-base: Radius 6px").
 - Font tiêu đề đổi từ Noto Serif sang **Playfair Display** (Google Fonts, có subset `vietnamese`, đã
   kiểm tra trong `font-data.json` của `next/font`). Body giữ Be Vietnam Pro. `font-heading` thêm cho
   tiêu đề section trong card (h2), không chỉ h1.

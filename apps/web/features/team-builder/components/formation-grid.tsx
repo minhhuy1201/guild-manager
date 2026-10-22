@@ -247,7 +247,7 @@ export function FormationGrid({
           the eyes are down here, and the cover also keeps a drag or a keystroke
           from landing on a formation already on its way to the server. */}
       {saving ? (
-        <div className="absolute inset-0 z-10 flex items-center justify-center gap-2 rounded-xl bg-background/60 text-sm font-medium backdrop-blur-[1px]">
+        <div className="absolute inset-0 z-10 flex items-center justify-center gap-2 rounded-container bg-background/60 text-sm font-medium backdrop-blur-[1px]">
           <Spinner />
           Đang lưu đội hình...
         </div>

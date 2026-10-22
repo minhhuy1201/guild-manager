@@ -155,9 +155,9 @@
     /* the thin lit inner edge of a raised card, drawn as an inset box-shadow colour. */
     --card-highlight: oklch(1 0 0 / 0.85);
     /* corner radius of a block that holds other blocks (page banner, raised card). */
-    --radius-container-size: 1.25rem;
+    --radius-container-size: 0.75rem;
     /* corner radius of what sits inside such a block (tile, field, chip). */
-    --radius-inner-size: 0.625rem;
+    --radius-inner-size: 0.375rem;
     --radius: 0.375rem;
     --sidebar: oklch(1 0 0);
     --sidebar-foreground: oklch(0.286 0.017 270.758);

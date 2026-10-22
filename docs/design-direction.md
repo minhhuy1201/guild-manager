@@ -38,8 +38,9 @@ immersion.
     accents lifted so they carry on the dark.
   - Surfaces come in three levels: *raised* (the few blocks that matter most: a lit inner edge and
     a soft jade glow), *default*, and *inset* (a recessed support block such as a filter strip). Blocks
-    that hold other blocks take the large container radius; what sits inside takes the smaller
-    inner one.
+    that hold other blocks take the container radius (12px); what sits inside takes the smaller
+    inner one (6px). The first pass used 20px / 10px and read as too round for a working app; the
+    scale follows Vercel Geist Materials ("material-medium: Radius 12px", "material-base: Radius 6px").
   - In both, the plane and the card sit far enough apart that a card reads as lifted without looking
     for its border. The first light pass (2026-09-13) kept them ~3% apart and the whole app read as
     one white sheet; the guild asked for more contrast on 2026-09-23.

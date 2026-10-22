@@ -81,7 +81,7 @@ export function CatRaceListScreen() {
                       href={catRaceEventPath(race.id)}
                       className="font-medium hover:underline"
                     >
-                      <span className="absolute inset-0 rounded-xl" />
+                      <span className="absolute inset-0 rounded-container" />
                       {race.name}
                     </Link>
                     <p className="text-sm text-muted-foreground">
