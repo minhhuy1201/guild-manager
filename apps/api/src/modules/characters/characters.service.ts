@@ -20,6 +20,9 @@ import {
 import { toGuildMember, type GuildMemberRow } from './characters.codec';
 import { generateId } from './characters.lib';
 
+/** Prisma error code for a write whose `where` matched no row. */
+const RECORD_NOT_FOUND = 'P2025';
+
 /** Prisma error code for a unique constraint violation (here, a primary key collision). */
 const UNIQUE_VIOLATION = 'P2002';
 
@@ -45,6 +48,10 @@ const DISCORD_ID_TAKEN = 'Discord ID này đã được gán cho thành viên kh
 /** Message when the change would leave the guild with no admin at all. */
 const LAST_ADMIN =
   'Đây là quản trị viên cuối cùng. Hãy chỉ định một quản trị viên khác trước khi hạ quyền hoặc xoá.';
+
+/** Message when the row's role changed between reading it and writing it. */
+const ROW_CHANGED =
+  'Thành viên vừa được thay đổi bởi người khác. Hãy tải lại rồi thử lại.';
 
 /** Message when a non-Admin tries to change a role or a Grant. */
 const ADMIN_ONLY_FIELDS =
@@ -151,7 +158,8 @@ export class CharactersService {
    * Manager or an Admin
    * @throws BadRequestException when Grants are sent for someone who is not a Manager, or this
    * would demote the last admin
-   * @throws ConflictException when the Discord ID already belongs to another member
+   * @throws ConflictException when the Discord ID already belongs to another member, or the
+   * member's role changed between the checks and the write
    */
   async update(
     id: string,
@@ -175,13 +183,15 @@ export class CharactersService {
     const data = withGrantInvariant(input, currentRole);
 
     try {
-      const row = await this.write(id, data);
+      const row = await this.write(id, data, currentRole);
 
       return toGuildMember(row);
     } catch (error) {
       // The only unique constraint that can break here is discordId — the id is not in `data`.
       if (isUniqueViolation(error))
         throw new ConflictException(DISCORD_ID_TAKEN);
+      // `write` filters on the role that was judged; a miss means someone changed it in between.
+      if (isRecordNotFound(error)) throw new ConflictException(ROW_CHANGED);
       throw error;
     }
   }
@@ -191,21 +201,26 @@ export class CharactersService {
    * A rename must not cost a COUNT over the whole table, and a role staying `ADMIN` removes nobody.
    * @param id - Member id
    * @param data - Fields to write, already checked
+   * @param judgedRole - The role the checks were made against; the write only lands while the row
+   * still holds it, so the Manager-row rule and the Grant invariant judge the row that changes
    * @returns The updated Character row
    * @throws BadRequestException when this would demote the last admin
    */
   private async write(
     id: string,
     data: UpdateCharacterInput,
+    judgedRole: GuildRole,
   ): Promise<GuildMemberRow> {
+    const where = { id, role: judgedRole };
+
     if (data.role === undefined || data.role === GuildRole.ADMIN) {
-      return this.prisma.character.update({ where: { id }, data });
+      return this.prisma.character.update({ where, data });
     }
 
     return this.prisma.$transaction(async (tx) => {
       await this.ensureNotLastAdmin(tx, id);
 
-      return tx.character.update({ where: { id }, data });
+      return tx.character.update({ where, data });
     });
   }
 
@@ -445,6 +460,20 @@ function isDiscordIdViolation(error: unknown): boolean {
   return (
     (constraintName ?? '').includes(DISCORD_ID_COLUMN) ||
     (columns ?? []).includes(DISCORD_ID_COLUMN)
+  );
+}
+
+/**
+ * Whether this error is Prisma's "the row to update does not exist".
+ * @param error - The caught error
+ * @returns true for P2025
+ */
+function isRecordNotFound(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    error.code === RECORD_NOT_FOUND
   );
 }
 

@@ -306,7 +306,7 @@ describe('CharactersService', () => {
       await service.update(ROW.id, { name: 'Mèo Mập' }, ADMIN);
 
       expect(prisma.character.update).toHaveBeenCalledWith({
-        where: { id: ROW.id },
+        where: { id: ROW.id, role: GuildRole.MEMBER },
         data: { name: 'Mèo Mập' },
       });
     });
@@ -339,7 +339,7 @@ describe('CharactersService', () => {
       );
 
       expect(prisma.character.update).toHaveBeenCalledWith({
-        where: { id: ROW.id },
+        where: { id: ROW.id, role: GuildRole.MEMBER },
         data: {
           role: GuildRole.MANAGER,
           capabilities: [Capability.TEAM_BUILDER, Capability.TACTICS],
@@ -367,7 +367,7 @@ describe('CharactersService', () => {
       );
 
       expect(prisma.character.update).toHaveBeenCalledWith({
-        where: { id: ROW.id },
+        where: { id: ROW.id, role: GuildRole.MANAGER },
         data: { capabilities: [Capability.CAT_RACE] },
       });
     });
@@ -395,7 +395,7 @@ describe('CharactersService', () => {
         await service.update(ROW.id, { role }, ADMIN);
 
         expect(prisma.character.update).toHaveBeenCalledWith({
-          where: { id: ROW.id },
+          where: { id: ROW.id, role: GuildRole.MANAGER },
           data: { role, capabilities: [], grantedCommands: [] },
         });
       },
@@ -503,7 +503,7 @@ describe('CharactersService', () => {
       );
 
       expect(prisma.character.update).toHaveBeenCalledWith({
-        where: { id: ROW.id },
+        where: { id: ROW.id, role: GuildRole.MEMBER },
         data: {
           name: 'Mèo Mập',
           guildClass: GuildClass.THIET_Y,
@@ -566,6 +566,63 @@ describe('CharactersService', () => {
       expect(data).not.toHaveProperty('role');
       expect(data).not.toHaveProperty('capabilities');
       expect(data).not.toHaveProperty('grantedCommands');
+    });
+  });
+
+  describe('ghi có điều kiện theo vai đã kiểm tra', () => {
+    it('chỉ ghi khi hàng còn đúng vai đã được đọc và kiểm tra', async () => {
+      prisma.character.findUnique.mockResolvedValue({
+        ...ROW,
+        role: GuildRole.MEMBER,
+      });
+
+      await service.update(ROW.id, { name: 'Mèo Mập' }, MANAGER);
+
+      expect(prisma.character.update.mock.calls[0][0].where).toEqual({
+        id: ROW.id,
+        role: GuildRole.MEMBER,
+      });
+    });
+
+    it('báo 409 khi vai đổi giữa lúc kiểm tra và lúc ghi, thay vì ghi lên hàng mới', async () => {
+      // A Manager was checked against a Member row; an Admin promoted that row before the write.
+      prisma.character.findUnique.mockResolvedValue({
+        ...ROW,
+        role: GuildRole.MEMBER,
+      });
+      prisma.character.update.mockRejectedValue(
+        Object.assign(new Error('Record to update not found'), {
+          code: 'P2025',
+        }),
+      );
+
+      await expect(
+        service.update(ROW.id, { name: 'Mèo Mập' }, MANAGER),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('cũng báo 409 trên đường đổi vai trong transaction', async () => {
+      prisma.character.findUnique.mockResolvedValue({
+        ...ROW,
+        role: GuildRole.MANAGER,
+      });
+      prisma.character.update.mockRejectedValue(
+        Object.assign(new Error('Record to update not found'), {
+          code: 'P2025',
+        }),
+      );
+
+      await expect(
+        service.update(ROW.id, { role: GuildRole.MEMBER }, ADMIN),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('lỗi Prisma khác vẫn nổi lên nguyên trạng', async () => {
+      prisma.character.update.mockRejectedValue(OTHER_ERROR);
+
+      await expect(service.update(ROW.id, { name: 'X' }, ADMIN)).rejects.toBe(
+        OTHER_ERROR,
+      );
     });
   });
 
@@ -679,7 +736,7 @@ describe('CharactersService', () => {
       await service.update(ADMIN_ROW.id, { role: GuildRole.MEMBER }, ADMIN);
 
       expect(prisma.character.update).toHaveBeenCalledWith({
-        where: { id: ADMIN_ROW.id },
+        where: { id: ADMIN_ROW.id, role: GuildRole.ADMIN },
         data: { role: GuildRole.MEMBER, capabilities: [], grantedCommands: [] },
       });
     });
