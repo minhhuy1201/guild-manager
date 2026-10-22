@@ -137,17 +137,19 @@ export async function announceFormation(
   );
 }
 
-/** Arguments of `notifyTeamMembers`. `sessionId` travels on the URL; only `notices` is sent. */
+/** Arguments of `notifyTeamMembers`. `sessionId` travels on the URL; the rest is the body. */
 export interface NotifyTeamMembersArgs {
   /** Id of the battle day whose line-up was announced */
   sessionId: string;
   /** Limit the send to these members and matches (a retry); left out, everyone is messaged */
   notices?: NotifyMembersInput["notices"];
+  /** Card image of each (match, team) that has one; a team without one is messaged in text */
+  teamImages?: NotifyMembersInput["teamImages"];
 }
 
 /**
  * Message each placed member which team they are in, one direct message per match.
- * @param input - sessionId and, for a retry, which members and matches to message
+ * @param input - sessionId, the team card images, and for a retry which members and matches to message
  * @returns How many messages were sent and who did not get one; a failure value (`ok: false`) when signed out, the day is gone (404), or its attendance is still open (400)
  */
 export async function notifyTeamMembers(
@@ -158,7 +160,10 @@ export async function notifyTeamMembers(
       `/team-builder/formations/${encodeURIComponent(input.sessionId)}/notify-members`,
       {
         method: "POST",
-        body: JSON.stringify({ notices: input.notices }),
+        body: JSON.stringify({
+          notices: input.notices,
+          teamImages: input.teamImages,
+        }),
         headers: await authHeader(),
       }
     )

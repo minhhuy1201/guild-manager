@@ -53,6 +53,9 @@ interface FormationCaptureSheetProps {
  * columns so the image is the same picture whatever window the admin happens to be on — without
  * that, announcing from a narrow laptop sends the guild a one-column strip ten screens tall.
  *
+ * Each team card with someone in it is marked for the Team notice image, which is why the sheet
+ * must stay mounted while the direct messages go out.
+ *
  * Read-only: no drag handles, no note inputs to focus. The banner rides inside the grid already,
  * so screenshotting the grid is what puts the battle's name on the image.
  *
@@ -102,6 +105,7 @@ export function FormationCaptureSheet({
             names={names}
             onNameChange={() => {}}
             layout="capture"
+            captureMatchIndex={index + 1}
           />
         </div>
       ))}

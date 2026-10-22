@@ -2,7 +2,8 @@
 import { DndContext } from "@dnd-kit/core";
 import { cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { SessionFormation } from "@guild/shared/schemas";
+import { GuildClass } from "@guild/shared/enums";
+import type { Character, SessionFormation } from "@guild/shared/schemas";
 
 import type { MatchDraft } from "../../types/formation";
 
@@ -14,6 +15,11 @@ vi.mock("server-only", () => ({}));
 const { CAPTURE_NODE_ATTRIBUTE, FormationCaptureSheet } = await import(
   "../formation-capture-sheet"
 );
+const {
+  TEAM_CAPTURE_MATCH_ATTRIBUTE,
+  TEAM_CAPTURE_MEMBERS_ATTRIBUTE,
+  TEAM_CAPTURE_TEAM_ATTRIBUTE,
+} = await import("../../lib/team-capture-attributes");
 
 afterEach(cleanup);
 
@@ -36,13 +42,16 @@ const EMPTY_MATCH: MatchDraft = { assignment: {}, notes: {} };
  * @param matches - Matches of the day
  * @returns The rendered container
  */
-function renderSheet(matches: MatchDraft[]) {
+function renderSheet(
+  matches: MatchDraft[],
+  charactersById: Map<string, Character> = new Map()
+) {
   return render(
     <DndContext>
       <FormationCaptureSheet
         session={SESSION}
         matches={matches}
-        charactersById={new Map()}
+        charactersById={charactersById}
         absentIds={new Set()}
         names={{}}
       />
@@ -89,5 +98,56 @@ describe("FormationCaptureSheet", () => {
 
     expect(nodes[0].textContent).toContain("trận 1/2");
     expect(nodes[1].textContent).toContain("trận 2/2");
+  });
+});
+
+describe("FormationCaptureSheet - card từng team", () => {
+  const KIRITO: Character = { id: "kirito", name: "Kirito", guildClass: GuildClass.THIET_Y };
+  const ASUNA: Character = { id: "asuna", name: "Asuna", guildClass: GuildClass.THIET_Y };
+  const CHARACTERS = new Map([
+    ["kirito", KIRITO],
+    ["asuna", ASUNA],
+  ]);
+
+  /**
+   * The team cards the sheet marked, as match:team pairs.
+   * @param container - The rendered container
+   * @returns One string per marked card, in document order
+   */
+  function markedPairs(container: HTMLElement): string[] {
+    return Array.from(
+      container.querySelectorAll(`[${TEAM_CAPTURE_MATCH_ATTRIBUTE}]`)
+    ).map(
+      (card) =>
+        `${card.getAttribute(TEAM_CAPTURE_MATCH_ATTRIBUTE)}:${card.getAttribute(TEAM_CAPTURE_TEAM_ATTRIBUTE)}`
+    );
+  }
+
+  it("chỉ card của team có người được đánh dấu, mang số trận 1-based và số team", () => {
+    const { container } = renderSheet(
+      [
+        { assignment: { "team-1-pos-1": "kirito", "team-3-pos-2": "asuna" }, notes: {} },
+        { assignment: { "team-3-pos-1": "kirito" }, notes: {} },
+      ],
+      CHARACTERS
+    );
+
+    expect(markedPairs(container)).toEqual(["1:1", "1:3", "2:3"]);
+  });
+
+  it("card ghi id người đứng trong team, để nhắn lại chọn đúng card", () => {
+    const { container } = renderSheet(
+      [{ assignment: { "team-1-pos-1": "kirito", "team-1-pos-2": "asuna" }, notes: {} }],
+      CHARACTERS
+    );
+    const card = container.querySelector(`[${TEAM_CAPTURE_MATCH_ATTRIBUTE}]`) as HTMLElement;
+
+    expect(card.getAttribute(TEAM_CAPTURE_MEMBERS_ATTRIBUTE)).toBe("kirito asuna");
+  });
+
+  it("đội hình trống thì không card nào được đánh dấu", () => {
+    const { container } = renderSheet([EMPTY_MATCH, EMPTY_MATCH]);
+
+    expect(markedPairs(container)).toEqual([]);
   });
 });
