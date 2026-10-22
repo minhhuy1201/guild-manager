@@ -117,7 +117,7 @@ describe('reconcileParticipants', () => {
 describe('defaultEventName', () => {
   it('uses the Vietnam calendar day', () => {
     expect(defaultEventName(new Date('2026-10-11T18:30:00Z'))).toBe(
-      'Đợt quay 12/10/2026',
+      'Đợt đua 12/10/2026',
     );
   });
 });

@@ -155,7 +155,7 @@ describe("CatRaceEventScreen", () => {
 
     m.event.current = { data: undefined, isPending: false, isError: true, error: null, refetch: vi.fn() };
     render(<CatRaceEventScreen id="e1" />);
-    expect(screen.getByText("Không tải được đợt quay.")).toBeTruthy();
+    expect(screen.getByText("Không tải được đợt đua.")).toBeTruthy();
   });
 
   it("renders nothing for a resolved query without data", () => {

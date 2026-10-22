@@ -13,7 +13,7 @@ kết quả do server quyết định và lưu lại để đối chứng. Bang 
 
 ## 2. Mục tiêu
 
-- Admin tạo một **đợt quay** gồm nhiều **hạng mục giải** tự đặt, mỗi hạng mục có số lượng.
+- Admin tạo một **đợt đua** gồm nhiều **hạng mục giải** tự đặt, mỗi hạng mục có số lượng.
 - Hai **chế độ** chọn khi tạo đợt: **Thường** (mỗi người một cơ hội) và **Vé** (mỗi người 1-3 vé,
   mỗi vé là một con mèo trên đường đua).
 - Mỗi **vòng đua** ra đúng một người thắng cho một hạng mục; các hạng mục quay xen kẽ tuỳ ý.
@@ -50,7 +50,7 @@ Ngoài phạm vi (đã chốt bỏ):
 | D12 | Huỷ vòng | Chỉ khi đợt đang mở. Bắt buộc nhập lý do. Suất trả về hạng mục; người thắng được thêm lại vào danh sách đua của hạng mục nếu còn là người tham gia đợt. Vòng huỷ vẫn hiện, gạch ngang kèm lý do. (Q28, Q35) |
 | D13 | Kết thúc đợt | Admin bấm. Không tự đóng khi đủ giải. Đợt đã kết thúc chỉ xem, không mở lại. (Q26, Q35) |
 | D14 | Xoá đợt | Chỉ khi đợt chưa có vòng nào. (Q31) |
-| D15 | Tên đợt | Không bắt buộc; trống thì server đặt "Đợt quay dd/MM/yyyy" theo giờ VN. Đổi tên được. (Q32) |
+| D15 | Tên đợt | Không bắt buộc; trống thì server đặt "Đợt đua dd/MM/yyyy" theo giờ VN. Đổi tên được. (Q32) |
 | D16 | Discord | Một bài tổng kết, gom theo hạng mục, tag `<@discordId>` người thắng (người chưa liên kết Discord hiện tên), không ghi số vé. Admin bấm nút trên đợt đã kết thúc; post một lần, đánh dấu `discordPostedAt` chỉ sau khi Discord nhận. (Q10, Q19, Q27, Q39) |
 | D17 | Kênh Discord | Purpose mới **`GENERAL_NOTI`** trong bảng `BotChannel`, cấu hình bằng `/cau-hinh-kenh muc-dich:Thông báo chung`. Không dùng env. Kênh dùng chung cho các thông báo sau này. (Q11 → Q33) |
 | D18 | Tốc độ | Nhanh / Vừa / Chậm = 6 / 12 / 20 giây. Chọn ở client, nhớ bằng `localStorage`, không lưu DB. (Q21) |
@@ -187,13 +187,13 @@ mở thêm `discordId` + `discordAvatar` của người tham gia; chấp nhận 
 
 ### 8.2 `/dua-meo` - danh sách đợt
 
-- Nút "Tạo đợt quay" mở form: tên (không bắt buộc), **chế độ** (Thường / Vé), danh sách hạng mục
+- Nút "Tạo đợt đua" mở form: tên (không bắt buộc), **chế độ** (Thường / Vé), danh sách hạng mục
   (điền sẵn từ `prefill`, sửa / thêm / xoá dòng), danh sách người tham gia (tick tất cả mặc định, có ô
   tìm; ở chế độ Vé mỗi dòng có ô số vé 1-3).
 - Danh sách đợt: tên, chế độ, trạng thái (Đang mở / Đã kết thúc / Đã post), số giải đã trao, ngày.
   Bấm vào mở `/dua-meo/[id]`.
 
-### 8.3 `/dua-meo/[id]` - màn quay
+### 8.3 `/dua-meo/[id]` - màn đua
 
 ```
 ┌─ Đợt: Quà Trung Thu · Chế độ Vé ────────────── [Kết thúc đợt] ┐
@@ -235,7 +235,7 @@ Con mèo về nhất là con mang **đúng số thứ tự vé thắng** server 
    mọi con có avatar và tên; camera zoom vào đoạn cuối đường.
 6. **Nước rút**: tốc độ dao động, có vượt mặt, sát nút; con mang vé thắng về nhất. Bảng top 5 live.
 7. Về đích: overlay người thắng (avatar, tên, phái, hạng mục, màu theo bậc; chế độ Vé thêm "thắng với
-   3/160 vé") + `canvas-confetti`. Bấm "Đua tiếp" về màn quay với dữ liệu mới.
+   3/160 vé") + `canvas-confetti`. Bấm "Đua tiếp" về màn đua với dữ liệu mới.
 
 Quy tắc kịch bản (thuần hàm trong `lib/`, test được):
 

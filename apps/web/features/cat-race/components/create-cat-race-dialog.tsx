@@ -51,7 +51,7 @@ interface CreateCatRaceDialogProps {
 }
 
 /**
- * The "Tạo đợt quay" dialog. The body keeps its own field state, so it sits in a child of the shell
+ * The "Tạo đợt đua" dialog. The body keeps its own field state, so it sits in a child of the shell
  * and starts clean on every open.
  * @param open - Whether the dialog is open
  * @param onOpenChange - Called when the dialog wants to open or close
@@ -140,12 +140,12 @@ function CreateCatRaceBody({
   return (
     <StepSlide key={step} direction={direction}>
       <MutationForm
-        title="Tạo đợt quay"
+        title="Tạo đợt đua"
         description={<CreateRaceStepIndicator current="roster" />}
         submitLabel="Tạo đợt"
         pendingLabel="Đang tạo..."
         submitIcon={<Save />}
-        fallbackError="Không tạo được đợt quay."
+        fallbackError="Không tạo được đợt đua."
         cancelLabel="Quay lại"
         cancelIcon={<ArrowLeft />}
         onCancel={() => goTo("prizes")}

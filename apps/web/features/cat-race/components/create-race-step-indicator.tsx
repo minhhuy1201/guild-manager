@@ -23,7 +23,7 @@ export function CreateRaceStepIndicator({ current }: CreateRaceStepIndicatorProp
   const currentIndex = STEPS.findIndex((step) => step.id === current);
 
   return (
-    <ol className="flex items-center gap-2 text-sm" aria-label="Các bước tạo đợt quay">
+    <ol className="flex items-center gap-2 text-sm" aria-label="Các bước tạo đợt đua">
       {STEPS.map((step, index) => {
         const isDone = index < currentIndex;
         const isCurrent = index === currentIndex;

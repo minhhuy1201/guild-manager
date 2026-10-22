@@ -85,9 +85,9 @@ describe("EndEventButton", () => {
     m.endRace.mockResolvedValue({});
     render(<EndEventButton eventId="e1" />);
 
-    expect(screen.queryByText("Kết thúc đợt quay?")).toBeNull();
+    expect(screen.queryByText("Kết thúc đợt đua?")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /Kết thúc đợt/ }));
-    expect(screen.getByText("Kết thúc đợt quay?")).toBeTruthy();
+    expect(screen.getByText("Kết thúc đợt đua?")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Kết thúc" }));
 
     await waitFor(() => expect(m.endRace).toHaveBeenCalledWith("e1"));

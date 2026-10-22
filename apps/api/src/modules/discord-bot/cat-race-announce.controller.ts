@@ -35,7 +35,7 @@ export class CatRaceAnnounceController {
    */
   @Post(':id/announce')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Đăng tổng kết đợt quay lên Discord' })
+  @ApiOperation({ summary: 'Đăng tổng kết đợt đua lên Discord' })
   async announce(@Param('id') id: string): Promise<CatRaceEventDetail> {
     await this.announcer.announce(id);
 

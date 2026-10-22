@@ -43,7 +43,7 @@ export class CatRaceController {
 
   /** Events, newest first. */
   @Get()
-  @ApiOperation({ summary: 'Danh sách đợt quay' })
+  @ApiOperation({ summary: 'Danh sách đợt đua' })
   list(): Promise<CatRaceEventSummary[]> {
     return this.catRace.list();
   }
@@ -57,7 +57,7 @@ export class CatRaceController {
 
   /** Create an event. */
   @Post()
-  @ApiOperation({ summary: 'Tạo đợt quay' })
+  @ApiOperation({ summary: 'Tạo đợt đua' })
   create(
     @Body() body: CreateCatRaceEventDto,
     @CurrentUser() user: JwtPayload,
@@ -67,14 +67,14 @@ export class CatRaceController {
 
   /** One event with roster, prizes and rounds. */
   @Get(':id')
-  @ApiOperation({ summary: 'Chi tiết đợt quay' })
+  @ApiOperation({ summary: 'Chi tiết đợt đua' })
   get(@Param('id') id: string): Promise<CatRaceEventDetail> {
     return this.catRace.detail(id);
   }
 
   /** Rename, or change mode before the first round. */
   @Patch(':id')
-  @ApiOperation({ summary: 'Sửa đợt quay' })
+  @ApiOperation({ summary: 'Sửa đợt đua' })
   update(
     @Param('id') id: string,
     @Body() body: UpdateCatRaceEventDto,
@@ -85,7 +85,7 @@ export class CatRaceController {
   /** Delete an event with no round. */
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Xoá đợt quay chưa có vòng' })
+  @ApiOperation({ summary: 'Xoá đợt đua chưa có vòng' })
   remove(@Param('id') id: string): Promise<void> {
     return this.catRace.remove(id);
   }
@@ -144,7 +144,7 @@ export class CatRaceController {
 
   /** Draw one round. */
   @Post(':id/rounds')
-  @ApiOperation({ summary: 'Quay một vòng' })
+  @ApiOperation({ summary: 'Đua một vòng' })
   draw(
     @Param('id') id: string,
     @Body() body: DrawCatRaceRoundDto,
@@ -168,7 +168,7 @@ export class CatRaceController {
   /** End the event. */
   @Post(':id/end')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Kết thúc đợt quay' })
+  @ApiOperation({ summary: 'Kết thúc đợt đua' })
   end(@Param('id') id: string): Promise<CatRaceEventDetail> {
     return this.catRace.end(id);
   }

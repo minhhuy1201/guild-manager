@@ -98,11 +98,11 @@ export function reconcileParticipants(
 /**
  * The name an event gets when the admin leaves it blank.
  * @param now - The current instant
- * @returns "Đợt quay dd/MM/yyyy" for the Vietnam calendar day of `now`
+ * @returns "Đợt đua dd/MM/yyyy" for the Vietnam calendar day of `now`
  */
 export function defaultEventName(now: Date): string {
   const { day, month, year } = vnParts(now);
   const pad = (value: number) => String(value).padStart(2, '0');
 
-  return `Đợt quay ${pad(day)}/${pad(month)}/${year}`;
+  return `Đợt đua ${pad(day)}/${pad(month)}/${year}`;
 }
