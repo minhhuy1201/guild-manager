@@ -110,7 +110,7 @@ A new interaction convention goes here; its reason goes in `frontend.md`.
 - Make `columns` equal the header `<th>` count. Pin a data-driven count in one variable shared by header and body (`attendance-grid`).
 - Remove a viewer-only column from header, row and `columns` together, on one flag.
 - Make a summary row a second header row of `td` cells.
-- Keep the table's look in `DataTable`'s `TABLE_SKIN` (`components/shared/data-table.tsx`), never in `components/ui/table.tsx`.
+- Keep the table's look in `TABLE_SKIN` inside `DataTableFrame` (`components/shared/data-table-frame.tsx`), never in `components/ui/table.tsx`. `DataTable` renders it with pagination; a table without paging (`LeavePanel`) uses `DataTableFrame` directly.
 - Page with `use-table-pagination` + `table-pagination-bar` / `page-size-select`. Always render the bar, even at one page. Hide page numbers below `lg`, keep the four arrows.
 
 ## A shortcut → a key cap (`Kbd`), on the button itself

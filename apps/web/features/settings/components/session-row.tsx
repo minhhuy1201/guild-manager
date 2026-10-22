@@ -44,7 +44,7 @@ export function SessionRow({ session, onEdit, onDelete }: SessionRowProps) {
   return (
     <div
       className={cn(
-        "flex flex-wrap items-center gap-3 rounded-lg border p-3",
+        "flex flex-wrap items-center gap-3 rounded-inner border bg-card p-3 shadow-sm transition-[border-color,box-shadow] duration-[var(--duration-base)] ease-out-soft hover:border-jade/50 hover:shadow-md",
         sessionTintClass(session.isGuildWar)
       )}
     >
