@@ -108,6 +108,23 @@ function participants(withAvatar: boolean): CatRaceParticipant[] {
   ];
 }
 
+/**
+ * Small seeded PRNG (mulberry32) so a failing round replays.
+ * @param seed - Any integer
+ * @returns Source in `[0, 1)`
+ */
+function seededRandom(seed: number): () => number {
+  let state = seed;
+
+  return () => {
+    state = (state + 0x6d2b79f5) | 0;
+    let t = Math.imul(state ^ (state >>> 15), 1 | state);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 const SCRIPT = buildRaceScript({
   entrants: [
     { characterId: "a", tickets: 3 },
@@ -331,22 +348,20 @@ describe("RaceCanvas", () => {
     expect(changes.at(-1)?.catKey ?? script.winnerKey).toBe(script.winnerKey);
   });
 
-  it("flags the finish as a photo finish only when the runner-up is that close", () => {
-    const entrants = [
-      { characterId: "a", tickets: 3 },
-      { characterId: "b", tickets: 1 },
-    ];
-    const finishOf = (scenario: "photo" | "duel") => {
+  it("announces the finish exactly once in every round, with the lengths between the first two", () => {
+    for (const seed of [1, 2, 3, 4]) {
       cleanup();
       frames.length = 0;
       const onCue = vi.fn();
       const onFinish = vi.fn();
       const script = buildRaceScript({
-        entrants,
+        entrants: [
+          { characterId: "a", tickets: 3 },
+          { characterId: "b", tickets: 1 },
+        ],
         winner: { characterId: "a", ticketNo: 2 },
         durationSeconds: 10,
-        scenario,
-        random: () => 0.5,
+        random: seededRandom(seed),
       });
       render(
         <RaceCanvas
@@ -360,12 +375,10 @@ describe("RaceCanvas", () => {
       );
       runToEnd(onFinish);
 
-      return onCue.mock.calls.map((call) => call[0]).find((cue) => cue.kind === "finish");
-    };
-
-    expect(finishOf("photo")?.isPhotoFinish).toBe(true);
-    expect(finishOf("duel")?.isPhotoFinish).toBe(false);
-    expect(finishOf("duel")?.lengthsBehind).toBeGreaterThan(0);
+      const finishes = onCue.mock.calls.map((call) => call[0]).filter((cue) => cue.kind === "finish");
+      expect(finishes).toHaveLength(1);
+      expect(finishes[0].lengthsBehind).toBeGreaterThan(0);
+    }
   });
 
   it.each([
@@ -388,7 +401,7 @@ describe("RaceCanvas", () => {
     expect(onCue).not.toHaveBeenCalled();
   });
 
-  it("keeps the finished race on screen for the hold before it finishes", () => {
+  it("holds the finish photo for 2.6 seconds before it finishes", () => {
     const onFinish = vi.fn();
     render(
       <RaceCanvas
@@ -401,37 +414,6 @@ describe("RaceCanvas", () => {
       />
     );
     const finishMs = (2.4 + SCRIPT.durationSeconds) * 1000;
-
-    runFrame(START_MS);
-    runFrame(START_MS + finishMs + 100);
-    expect(onFinish).not.toHaveBeenCalled();
-    runFrame(START_MS + finishMs + 1000);
-    expect(onFinish).toHaveBeenCalledTimes(1);
-  });
-
-  it("holds longer on a photo finish", () => {
-    const photo = buildRaceScript({
-      entrants: [
-        { characterId: "a", tickets: 3 },
-        { characterId: "b", tickets: 1 },
-      ],
-      winner: { characterId: "a", ticketNo: 2 },
-      durationSeconds: 10,
-      scenario: "photo",
-      random: () => 0.5,
-    });
-    const onFinish = vi.fn();
-    render(
-      <RaceCanvas
-        script={photo}
-        participants={participants(false)}
-        onFinish={onFinish}
-        skipSignal={0}
-        onStandings={vi.fn()}
-        onCue={vi.fn()}
-      />
-    );
-    const finishMs = (2.4 + photo.durationSeconds) * 1000;
 
     runFrame(START_MS);
     runFrame(START_MS + finishMs + 1000);

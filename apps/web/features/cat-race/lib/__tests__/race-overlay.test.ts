@@ -57,14 +57,12 @@ describe("applyCue", () => {
     expect(shown.leadToast?.catKey).toBe("c#1");
   });
 
-  it("flashes on the finish, drops slow motion, and shows the photo only for a photo finish", () => {
+  it("flashes on the finish, drops slow motion, and always shows the photo with its lengths", () => {
     const slow = applyCue(INITIAL_OVERLAY, { kind: "slow-motion", isOn: true }, 0);
-    const plain = applyCue(slow, { kind: "finish", isPhotoFinish: false, lengthsBehind: 1.4 }, 9000);
-    const photo = applyCue(slow, { kind: "finish", isPhotoFinish: true, lengthsBehind: 0.1 }, 9000);
+    const finished = applyCue(slow, { kind: "finish", lengthsBehind: 1.4 }, 9000);
 
-    expect(plain.flashId).not.toBeNull();
-    expect(plain.isSlow).toBe(false);
-    expect(plain.photo).toBeNull();
-    expect(photo.photo).toEqual({ lengthsBehind: 0.1 });
+    expect(finished.flashId).not.toBeNull();
+    expect(finished.isSlow).toBe(false);
+    expect(finished.photo).toEqual({ lengthsBehind: 1.4 });
   });
 });

@@ -10,7 +10,6 @@ import {
   type PaceCurve,
   type RaceScenario,
 } from "../race-script";
-import { PHOTO_FINISH_GAP } from "../race-timeline";
 
 /**
  * A small seeded PRNG (mulberry32) so a failing case replays.
@@ -158,16 +157,6 @@ describe("buildRaceScript", () => {
         const script = scriptFor(people, 1, 12, seed, scenario);
 
         expect(leadChanges(script)).toBeGreaterThanOrEqual(MIN_LEAD_CHANGES[scenario]);
-      }
-    }
-  });
-
-  it("ends a photo finish inside the photo gap and the other stagings outside it", () => {
-    for (const people of FIELD_SIZES) {
-      for (const seed of SEEDS) {
-        expect(scriptFor(people, 1, 12, seed, "photo").runnerUpGap).toBeLessThan(PHOTO_FINISH_GAP);
-        expect(scriptFor(people, 1, 12, seed, "comeback").runnerUpGap).toBeGreaterThan(PHOTO_FINISH_GAP);
-        expect(scriptFor(people, 1, 12, seed, "duel").runnerUpGap).toBeGreaterThan(PHOTO_FINISH_GAP);
       }
     }
   });

@@ -65,7 +65,7 @@ export function applyCue(state: OverlayState, cue: RaceCue, now: number): Overla
         ...state,
         isSlow: false,
         flashId: id,
-        photo: cue.isPhotoFinish ? { lengthsBehind: cue.lengthsBehind } : null,
+        photo: { lengthsBehind: cue.lengthsBehind },
         sequence: id,
       };
     default:

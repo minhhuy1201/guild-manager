@@ -71,10 +71,7 @@ vi.mock("../race-canvas", () => ({
       <button onClick={() => onCue({ kind: "go" })}>cue go</button>
       <button onClick={() => onCue({ kind: "lead-change", catKey: "b#1" })}>cue lead</button>
       <button onClick={() => onCue({ kind: "slow-motion", isOn: true })}>cue slow</button>
-      <button onClick={() => onCue({ kind: "finish", isPhotoFinish: true, lengthsBehind: 0.1 })}>
-        cue photo
-      </button>
-      <button onClick={() => onCue({ kind: "finish", isPhotoFinish: false, lengthsBehind: 2 })}>
+      <button onClick={() => onCue({ kind: "finish", lengthsBehind: 2 })}>
         cue finish
       </button>
     </div>
@@ -503,20 +500,18 @@ describe("RaceStage", () => {
       expect(document.querySelector(".race-slowmo")?.getAttribute("data-on")).toBe("true");
     });
 
-    it("shows the finish photo only when the finish cue says photo finish", async () => {
+    it("flashes and shows the finish photo on every finish cue", async () => {
       await startRace();
 
       fireEvent.click(screen.getByText("cue finish"));
       expect(document.querySelector(".race-flash")).not.toBeNull();
-      expect(screen.queryByText("ẢNH ĐÍCH")).toBeNull();
-      fireEvent.click(screen.getByText("cue photo"));
 
       expect(screen.getByText("ẢNH ĐÍCH")).toBeTruthy();
     });
 
     it("takes every overlay off when the round ends or is skipped, photo and flash included", async () => {
       await startRace();
-      fireEvent.click(screen.getByText("cue photo"));
+      fireEvent.click(screen.getByText("cue finish"));
       expect(screen.getByText("ẢNH ĐÍCH")).toBeTruthy();
 
       fireEvent.click(screen.getByText("finish"));
