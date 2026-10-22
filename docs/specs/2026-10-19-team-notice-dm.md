@@ -1,6 +1,6 @@
 # Nhắn riêng đội hình (Team notice) qua Discord DM
 
-Ngày: 2026-10-19 · Trạng thái: **approved** · Lát 1 (chỉ text). Lát ảnh từng team làm sau, spec riêng.
+Ngày: 2026-10-19 · Trạng thái: **approved** · Lát 1 (chỉ text). Lát ảnh từng team: [`2026-10-22-team-notice-image.md`](2026-10-22-team-notice-image.md), thay phần "Nội dung một Team notice" của spec này.
 
 Thuật ngữ theo [`GLOSSARY.md`](../../GLOSSARY.md): **Formation announcement** là tin đăng vào channel
 bang chiến; **Team notice** là DM gửi một thành viên cho một trận, nói người đó ở team nào.
@@ -148,7 +148,7 @@ type TeamNoticeReport = {
 
 ## Out of Scope
 
-- Ảnh cắt từng team trong DM (lát 2, spec riêng).
+- Ảnh cắt từng team trong DM (đã làm ở lát 2, xem `2026-10-22-team-notice-image.md`).
 - Chỉ nhắn người có thay đổi so với lần gửi trước (cần lưu lịch sử gửi).
 - Lưu DM channel id hoặc lịch sử Team notice vào DB.
 - Gửi nền sau khi request trả lời (`waitUntil`, queue).

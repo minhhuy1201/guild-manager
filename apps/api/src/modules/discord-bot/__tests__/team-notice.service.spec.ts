@@ -49,6 +49,9 @@ const MEMBERS = [
   { id: 'sinon', name: 'Sinon', discordId: 'd-sinon' },
 ];
 
+/** The guild war channel id the service reads from config. */
+const CHANNEL_ID = '777000111';
+
 /** Everyone but Sinon said "Có". */
 const PRESENT_IDS = ['kirito', 'asuna', 'klein'];
 
@@ -105,7 +108,9 @@ function build(options: BuildOptions = {}) {
   const rest = {
     openDm: jest.fn((userId: string) => Promise.resolve(`dm-${userId}`)),
     postMessage: jest.fn().mockResolvedValue(undefined),
+    postMessageWithFiles: jest.fn().mockResolvedValue(undefined),
   };
+  const config = { get: jest.fn().mockReturnValue(CHANNEL_ID) };
   const clock = new SteppingClock();
 
   const service = new TeamNoticeService(
@@ -114,6 +119,7 @@ function build(options: BuildOptions = {}) {
     attendance as never,
     characters as never,
     rest as never,
+    config as never,
     clock,
   );
 
@@ -168,7 +174,7 @@ describe('TeamNoticeService.notifyMembers', () => {
     ]);
   });
 
-  it('DM nói đúng trận, đúng team và đánh dấu người nhận', async () => {
+  it('DM nói đúng trận và đúng team, kèm link channel bang chiến vì chưa có ảnh', async () => {
     const { service, rest } = build();
 
     await service.notifyMembers('session-1');
@@ -177,9 +183,10 @@ describe('TeamNoticeService.notifyMembers', () => {
 
     expect(firstMatch.content).toContain('Trận 1/2');
     expect(firstMatch.content).toContain('Bạn ở **Hổ Báo** (team 1)');
-    expect(firstMatch.content).toContain('1. **Kirito** ← bạn - tank');
-    expect(firstMatch.content).toContain('2. Asuna');
-    expect(firstMatch.content).toContain('3. (trống) - giữ chỗ');
+    expect(firstMatch.content).toContain(
+      `Xem đội hình trong <#${CHANNEL_ID}>.`,
+    );
+    expect(firstMatch.content).not.toContain('←');
     expect(secondMatch.content).toContain('Trận 2/2');
     expect(secondMatch.content).toContain('Bạn ở **Team 2**');
   });
@@ -289,6 +296,142 @@ function rateLimited(seconds: number): DiscordApiError {
     `{"message":"You are being rate limited.","retry_after":${seconds}}`,
   );
 }
+
+/** A tiny webp data URL whose bytes are [1, 2, 3]. */
+const IMAGE = 'data:image/webp;base64,AQID';
+
+/** A different image, bytes [4, 5, 6], to tell two teams' files apart. */
+const OTHER_IMAGE = 'data:image/webp;base64,BAUG';
+
+describe('TeamNoticeService.notifyMembers - ảnh team', () => {
+  it('người ở team có ảnh nhận DM qua upload kèm đúng ảnh của cặp (trận, team) của họ', async () => {
+    const { service, rest } = build();
+
+    await service.notifyMembers('session-1', undefined, [
+      { matchIndex: 1, team: 1, image: IMAGE },
+      { matchIndex: 2, team: 2, image: OTHER_IMAGE },
+    ]);
+
+    const calls = rest.postMessageWithFiles.mock.calls as [
+      string,
+      { content: string },
+      { filename: string; bytes: Uint8Array }[],
+    ][];
+
+    expect(calls.map(([channelId]) => channelId)).toEqual([
+      'dm-d-kirito',
+      'dm-d-asuna',
+      'dm-d-kirito',
+    ]);
+    expect(calls.map(([, , files]) => files[0].filename)).toEqual([
+      'team-1-tran-1.webp',
+      'team-1-tran-1.webp',
+      'team-2-tran-2.webp',
+    ]);
+    expect([...calls[0][2][0].bytes]).toEqual([1, 2, 3]);
+    expect([...calls[2][2][0].bytes]).toEqual([4, 5, 6]);
+    expect(rest.postMessage).not.toHaveBeenCalled();
+  });
+
+  it('DM có ảnh không có dòng link channel', async () => {
+    const { service, rest } = build();
+
+    await service.notifyMembers('session-1', undefined, [
+      { matchIndex: 1, team: 1, image: IMAGE },
+    ]);
+
+    const [, payload] = rest.postMessageWithFiles.mock.calls[0] as [
+      string,
+      { content: string },
+    ];
+
+    expect(payload.content).toContain('Bạn ở **Hổ Báo** (team 1)');
+    expect(payload.content).not.toContain('<#');
+  });
+
+  it('team thiếu ảnh nhận text có link channel, team có ảnh vẫn nhận upload', async () => {
+    const { service, rest } = build();
+
+    await service.notifyMembers('session-1', undefined, [
+      { matchIndex: 1, team: 1, image: IMAGE },
+    ]);
+
+    expect(rest.postMessageWithFiles).toHaveBeenCalledTimes(2);
+    const [textOnly] = sent(rest);
+
+    expect(sent(rest)).toHaveLength(1);
+    expect(textOnly.channelId).toBe('dm-d-kirito');
+    expect(textOnly.content).toContain(`<#${CHANNEL_ID}>`);
+  });
+
+  it('ảnh của cặp không có người nhận bị bỏ qua', async () => {
+    const { service, rest } = build();
+
+    const report = await service.notifyMembers('session-1', undefined, [
+      { matchIndex: 1, team: 7, image: IMAGE },
+    ]);
+
+    expect(rest.postMessageWithFiles).not.toHaveBeenCalled();
+    expect(report.sentCount).toBe(3);
+  });
+
+  it('upload bị Discord từ chối thì vào unsent, không tự gửi lại bằng text', async () => {
+    const { service, rest } = build();
+    rest.postMessageWithFiles.mockRejectedValueOnce(
+      new DiscordApiError(413, 'dm-d-kirito', 'Payload too large'),
+    );
+    jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+
+    const report = await service.notifyMembers('session-1', undefined, [
+      { matchIndex: 1, team: 1, image: IMAGE },
+    ]);
+
+    expect(report.unsent).toEqual([
+      { characterId: 'kirito', name: 'Kirito', matchIndex: 1 },
+    ]);
+    // Only Kirito's match 2 notice (team 2, no image) went out as text.
+    expect(rest.postMessage).toHaveBeenCalledTimes(1);
+    jest.restoreAllMocks();
+  });
+
+  it('nhắn lại với notices và teamImages gửi đúng ảnh cho đúng người', async () => {
+    const { service, rest } = build();
+
+    const report = await service.notifyMembers(
+      'session-1',
+      [{ characterId: 'kirito', matchIndex: 2 }],
+      [{ matchIndex: 2, team: 2, image: OTHER_IMAGE }],
+    );
+
+    const [channelId, , files] = rest.postMessageWithFiles.mock.calls[0] as [
+      string,
+      unknown,
+      { filename: string }[],
+    ];
+
+    expect(channelId).toBe('dm-d-kirito');
+    expect(files.map((file) => file.filename)).toEqual(['team-2-tran-2.webp']);
+    expect(report.sentCount).toBe(1);
+  });
+
+  it('429 ở upload: chờ rồi gửi lại vẫn kèm ảnh', async () => {
+    jest.useFakeTimers();
+    const { service, rest } = build();
+    rest.postMessageWithFiles.mockRejectedValueOnce(rateLimited(0.1));
+
+    const pending = service.notifyMembers(
+      'session-1',
+      [{ characterId: 'kirito', matchIndex: 2 }],
+      [{ matchIndex: 2, team: 2, image: OTHER_IMAGE }],
+    );
+    await jest.runAllTimersAsync();
+    const report = await pending;
+
+    expect(rest.postMessageWithFiles).toHaveBeenCalledTimes(2);
+    expect(report.sentCount).toBe(1);
+    jest.useRealTimers();
+  });
+});
 
 describe('TeamNoticeService.notifyMembers - lỗi từ Discord', () => {
   let warn: jest.SpyInstance;

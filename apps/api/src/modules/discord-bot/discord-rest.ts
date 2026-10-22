@@ -6,7 +6,7 @@ import type { Env } from '../../config';
 import type { MessagePayload } from './commands/command.types';
 
 /**
- * How long one JSON call may take before it is abandoned. Without it a hung connection holds the
+ * How long one call, JSON or upload, may take before it is abandoned. Without it a hung connection holds the
  * whole Vercel Function until the platform kills it, which for the Team notices loses the report.
  */
 const REQUEST_TIMEOUT_MS = 15_000;
@@ -265,6 +265,7 @@ export class DiscordRestClient {
       method: 'POST',
       headers: this.authHeader(),
       body: form,
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
 
     await this.ensureAccepted(channelId, response);

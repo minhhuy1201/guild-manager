@@ -2,6 +2,11 @@ import type { Character } from "@guild/shared/schemas";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import {
+  TEAM_CAPTURE_MATCH_ATTRIBUTE,
+  TEAM_CAPTURE_MEMBERS_ATTRIBUTE,
+  TEAM_CAPTURE_TEAM_ATTRIBUTE,
+} from "../lib/team-capture-attributes";
 import { getTeamColors } from "../lib/team-colors";
 import type { Notes, Slot } from "../types/formation";
 import { SlotCell } from "./slot-cell";
@@ -28,6 +33,8 @@ interface TeamColumnProps {
   onNoteChange: (slotId: string, text: string) => void;
   /** Extra classes for the card, e.g. hiding it on a phone while another team is shown */
   className?: string;
+  /** Stored match number (1-based). Set, a card with someone in it is marked for the Team notice image. */
+  captureMatchIndex?: number;
 }
 
 /**
@@ -44,6 +51,7 @@ interface TeamColumnProps {
  * @param notes - Notes currently shown, keyed by slot id
  * @param onNoteChange - Called with the raw text when a slot's note changes
  * @param className - Extra classes for the card
+ * @param captureMatchIndex - Match number that marks this card for capture
  * @returns Card holding the team's slots
  */
 export function TeamColumn({
@@ -57,11 +65,26 @@ export function TeamColumn({
   notes,
   onNoteChange,
   className,
+  captureMatchIndex,
 }: TeamColumnProps) {
   const colors = getTeamColors(team);
+  const memberIds = [
+    ...new Set(
+      slots.flatMap((slot) => occupants.get(slot.id)?.id ?? [])
+    ),
+  ];
+  const captureMarks =
+    captureMatchIndex !== undefined && memberIds.length > 0
+      ? {
+          [TEAM_CAPTURE_MATCH_ATTRIBUTE]: String(captureMatchIndex),
+          [TEAM_CAPTURE_TEAM_ATTRIBUTE]: String(team),
+          [TEAM_CAPTURE_MEMBERS_ATTRIBUTE]: memberIds.join(" "),
+        }
+      : undefined;
 
   return (
     <Card
+      {...captureMarks}
       className={cn(
         "gap-2 overflow-hidden pt-0 pb-3",
         colors.background,

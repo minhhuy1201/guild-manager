@@ -18,8 +18,11 @@ import { mergeTeamNoticeReports } from "../lib/merge-team-notice-reports";
 import {
   CaptureCountError,
   captureFormations,
+  captureTeamImages,
   readCaptureNodes,
 } from "../lib/announce-capture";
+import type { TeamImage } from "../lib/announce-capture";
+import { dropOversizedTeamImages } from "../lib/team-images";
 
 /** Shown when the browser cannot rasterise the off-screen line-up. */
 const CAPTURE_FAILED = "Không chụp được ảnh đội hình.";
@@ -180,9 +183,11 @@ export function useFormationAnnounce(
   ): Promise<void> {
     setOutcome({ report: previous, error: null });
     try {
+      const teamImages = await captureTeamCards(notices);
       const report = await notifyMutation.mutateAsync({
         sessionId: id,
         notices,
+        teamImages,
       });
 
       setOutcome({
@@ -202,6 +207,39 @@ export function useFormationAnnounce(
             ? error.message
             : NOTIFY_FAILED,
       });
+    }
+  }
+
+  /**
+   * Screenshot the team cards the notices carry. Never throws: the announcement is already out, so
+   * the worst a failed capture costs is members getting the text notice.
+   * @param notices - A retry's members and matches; undefined for every team with someone in it
+   * @returns The images that fit the API's limit, empty when the capture failed
+   */
+  async function captureTeamCards(
+    notices: NotifyTeamMembersArgs["notices"]
+  ): Promise<TeamImage[]> {
+    setCapturing(true);
+    try {
+      const captured = await captureTeamImages(notices);
+      const kept = dropOversizedTeamImages(captured);
+
+      // The admin is not told (the member still gets the text notice), so the console is the one
+      // place a team card that never fits the cap can be noticed.
+      if (kept.length < captured.length) {
+        console.warn(
+          `Bỏ ${captured.length - kept.length} ảnh team vượt TEAM_IMAGE_MAX_CHARS; các team đó nhận Team notice dạng text.`
+        );
+      }
+
+      return kept;
+    } catch (error) {
+      // Swallowed on purpose: a failed team capture is not a failed request. The server messages
+      // those teams in text, and the report the dialog shows is unchanged by it.
+      console.warn("Không chụp được ảnh team, Team notice gửi dạng text.", error);
+      return [];
+    } finally {
+      setCapturing(false);
     }
   }
 

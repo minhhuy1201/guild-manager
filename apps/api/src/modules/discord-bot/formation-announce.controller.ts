@@ -52,7 +52,8 @@ export class FormationAnnounceController {
   /**
    * Message each placed member which team they are in, one direct message per match.
    * @param sessionId - Id of the battle day whose line-up is notified
-   * @param body - notices: limits the send to those members and matches, for a retry
+   * @param body - notices: limits the send to those members and matches, for a retry;
+   *   teamImages: the card image of each (match, team) that has one
    * @returns How many messages were sent and who did not get one
    */
   @Post('formations/:sessionId/notify-members')
@@ -61,6 +62,6 @@ export class FormationAnnounceController {
     @Param('sessionId') sessionId: string,
     @Body() body: NotifyMembersDto,
   ): Promise<TeamNoticeReport> {
-    return this.notices.notifyMembers(sessionId, body.notices);
+    return this.notices.notifyMembers(sessionId, body.notices, body.teamImages);
   }
 }

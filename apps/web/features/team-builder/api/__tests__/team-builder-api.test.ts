@@ -108,4 +108,13 @@ describe("team builder API", () => {
     expect(url).toContain("/team-builder/formations/a%20b/notify-members");
     expect(JSON.parse(String(init.body))).toEqual({ notices: [] });
   });
+
+  it("posts the team images next to the notices when notifying members", async () => {
+    const fetchMock = mockFetch({ status: 200, body: { data: {} } });
+    const teamImages = [{ matchIndex: 1, team: 3, image: "data:image/webp;base64,AQID" }];
+
+    await notifyTeamMembers({ sessionId: "s1", teamImages });
+
+    expect(JSON.parse(String(requestOf(fetchMock).init.body))).toEqual({ teamImages });
+  });
 });

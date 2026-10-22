@@ -1,11 +1,16 @@
 // @vitest-environment jsdom
 import { act } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { TEAM_IMAGE_MAX_CHARS } from "@guild/shared/schemas";
 import type { TeamNoticeReport } from "@guild/shared/schemas";
 
 import { toastError, toastSuccess } from "@/components/shared/toast";
 import { announceFormation, notifyTeamMembers } from "../../api/team-builder-api";
-import { CaptureCountError, captureFormations } from "../../lib/announce-capture";
+import {
+  CaptureCountError,
+  captureFormations,
+  captureTeamImages,
+} from "../../lib/announce-capture";
 import { useFormationAnnounce } from "../use-formation-announce";
 import { renderFormationHook } from "./render-formation-hook";
 
@@ -18,6 +23,7 @@ vi.mock("../../lib/announce-capture", () => ({
   CaptureCountError: class CaptureCountError extends Error {},
   readCaptureNodes: vi.fn(() => []),
   captureFormations: vi.fn(() => Promise.resolve(["data:image/webp;base64,AQID"])),
+  captureTeamImages: vi.fn(() => Promise.resolve([])),
 }));
 
 vi.mock("@/components/shared/toast", () => ({
@@ -51,8 +57,11 @@ function renderAnnounce() {
   return renderFormationHook(() => useFormationAnnounce("session-1", 2, false));
 }
 
+const TEAM_IMAGE = { matchIndex: 1, team: 1, image: "data:image/webp;base64,AQID" };
+
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(captureTeamImages).mockResolvedValue([]);
   recoverSession.mockReturnValue(false);
   announceMock.mockResolvedValue({ ok: true, data: { imageCount: 1 } });
   notifyMock.mockResolvedValue({ ok: true, data: REPORT });
@@ -78,6 +87,7 @@ describe("useFormationAnnounce - nhắn riêng", () => {
     expect(notifyMock).toHaveBeenCalledWith({
       sessionId: "session-1",
       notices: undefined,
+      teamImages: [],
     });
     expect(result.current.open).toBe(true);
     expect(result.current.outcome).toEqual({ report: REPORT, error: null });
@@ -134,6 +144,141 @@ describe("useFormationAnnounce - nhắn riêng", () => {
   });
 });
 
+describe("useFormationAnnounce - ảnh team", () => {
+  it("chụp ảnh team chỉ sau khi announce đã thành công", async () => {
+    const { result } = renderAnnounce();
+
+    act(() => result.current.setOpen(true));
+    await act(() => result.current.confirm());
+
+    expect(announceMock.mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(captureTeamImages).mock.invocationCallOrder[0]
+    );
+    expect(notifyMock.mock.invocationCallOrder[0]).toBeGreaterThan(
+      vi.mocked(captureTeamImages).mock.invocationCallOrder[0]
+    );
+  });
+
+  it("announce lỗi thì không chụp ảnh team", async () => {
+    announceMock.mockResolvedValue({ ok: false, message: "Bot chưa có quyền.", statusCode: 400 });
+    const { result } = renderAnnounce();
+
+    await act(() => result.current.confirm());
+
+    expect(captureTeamImages).not.toHaveBeenCalled();
+  });
+
+  it("tắt nhắn riêng thì không chụp ảnh team", async () => {
+    const { result } = renderAnnounce();
+
+    act(() => result.current.setNotifyMembers(false));
+    await act(() => result.current.confirm());
+
+    expect(captureTeamImages).not.toHaveBeenCalled();
+  });
+
+  it("lần đầu chụp mọi card có người và gửi ảnh trong request notify-members", async () => {
+    vi.mocked(captureTeamImages).mockResolvedValue([TEAM_IMAGE]);
+    const { result } = renderAnnounce();
+
+    act(() => result.current.setOpen(true));
+    await act(() => result.current.confirm());
+
+    expect(captureTeamImages).toHaveBeenCalledWith(undefined);
+    expect(notifyMock).toHaveBeenCalledWith({
+      sessionId: "session-1",
+      notices: undefined,
+      teamImages: [TEAM_IMAGE],
+    });
+  });
+
+  it("chụp ảnh team lỗi vẫn nhắn riêng, không kèm ảnh và không toast lỗi", async () => {
+    vi.mocked(captureTeamImages).mockRejectedValue(new Error("snapDOM"));
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { result } = renderAnnounce();
+
+    act(() => result.current.setOpen(true));
+    await act(() => result.current.confirm());
+
+    expect(notifyMock).toHaveBeenCalledWith({
+      sessionId: "session-1",
+      notices: undefined,
+      teamImages: [],
+    });
+    expect(toastError).not.toHaveBeenCalled();
+    expect(result.current.outcome).toEqual({ report: REPORT, error: null });
+    expect(warn).toHaveBeenCalledOnce();
+    warn.mockRestore();
+  });
+
+  it("bỏ ảnh quá cỡ khỏi request, giữ ảnh còn lại và cảnh báo ở console", async () => {
+    const huge = { matchIndex: 1, team: 2, image: `data:image/webp;base64,${"A".repeat(TEAM_IMAGE_MAX_CHARS)}` };
+    vi.mocked(captureTeamImages).mockResolvedValue([TEAM_IMAGE, huge]);
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { result } = renderAnnounce();
+
+    act(() => result.current.setOpen(true));
+    await act(() => result.current.confirm());
+
+    expect(notifyMock).toHaveBeenCalledWith({
+      sessionId: "session-1",
+      notices: undefined,
+      teamImages: [TEAM_IMAGE],
+    });
+    expect(warn).toHaveBeenCalledOnce();
+    warn.mockRestore();
+  });
+
+  it("nhắn lại chỉ chụp các card chứa người trong notices", async () => {
+    const asuna = { characterId: "asuna", name: "Asuna", matchIndex: 1 };
+    notifyMock.mockResolvedValueOnce({ ok: true, data: { ...REPORT, totalCount: 2, unsent: [asuna] } });
+    const { result } = renderAnnounce();
+
+    act(() => result.current.setOpen(true));
+    await act(() => result.current.confirm());
+    vi.mocked(captureTeamImages).mockResolvedValue([TEAM_IMAGE]);
+    await act(() => result.current.retry());
+
+    expect(captureTeamImages).toHaveBeenLastCalledWith([{ characterId: "asuna", matchIndex: 1 }]);
+    expect(notifyMock).toHaveBeenLastCalledWith({
+      sessionId: "session-1",
+      notices: [{ characterId: "asuna", matchIndex: 1 }],
+      teamImages: [TEAM_IMAGE],
+    });
+  });
+
+  it("thử lại cả lượt chụp lại mọi card có người", async () => {
+    notifyMock.mockResolvedValueOnce({ ok: false, message: "Mất kết nối.", statusCode: 400 });
+    const { result } = renderAnnounce();
+
+    act(() => result.current.setOpen(true));
+    await act(() => result.current.confirm());
+    await act(() => result.current.retry());
+
+    expect(captureTeamImages).toHaveBeenCalledTimes(2);
+    expect(captureTeamImages).toHaveBeenLastCalledWith(undefined);
+  });
+
+  it("chụp lại lỗi khi nhắn lại thì vẫn gửi, không kèm ảnh", async () => {
+    const asuna = { characterId: "asuna", name: "Asuna", matchIndex: 1 };
+    notifyMock.mockResolvedValueOnce({ ok: true, data: { ...REPORT, totalCount: 2, unsent: [asuna] } });
+    const { result } = renderAnnounce();
+
+    act(() => result.current.setOpen(true));
+    await act(() => result.current.confirm());
+    vi.mocked(captureTeamImages).mockRejectedValue(new Error("snapDOM"));
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    await act(() => result.current.retry());
+
+    expect(notifyMock).toHaveBeenLastCalledWith({
+      sessionId: "session-1",
+      notices: [{ characterId: "asuna", matchIndex: 1 }],
+      teamImages: [],
+    });
+    warn.mockRestore();
+  });
+});
+
 describe("useFormationAnnounce - nhắn lại", () => {
   const ASUNA = { characterId: "asuna", name: "Asuna", matchIndex: 1 };
   const KLEIN = { characterId: "klein", name: "Klein", matchIndex: 2 };
@@ -163,6 +308,7 @@ describe("useFormationAnnounce - nhắn lại", () => {
         { characterId: "asuna", matchIndex: 1 },
         { characterId: "klein", matchIndex: 2 },
       ],
+      teamImages: [],
     });
     expect(result.current.outcome?.report).toMatchObject({
       sentCount: 2,
@@ -182,6 +328,7 @@ describe("useFormationAnnounce - nhắn lại", () => {
     expect(notifyMock).toHaveBeenLastCalledWith({
       sessionId: "session-1",
       notices: undefined,
+      teamImages: [],
     });
     expect(result.current.outcome).toEqual({ report: REPORT, error: null });
   });

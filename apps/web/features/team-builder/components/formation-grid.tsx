@@ -54,6 +54,11 @@ interface FormationGridProps {
   saving?: boolean;
   /** Where the grid is drawn: the admin's screen, or the Discord image */
   layout?: FormationLayout;
+  /**
+   * Stored match number (1-based) of the capture sheet's grid. Set, it marks each team card that
+   * has someone in it for the Team notice image; left out, no card is marked.
+   */
+  captureMatchIndex?: number;
 }
 
 /**
@@ -88,6 +93,7 @@ interface FormationGridProps {
  * @param onNameChange - Called with the committed name of a team
  * @param saving - True while a save is in flight
  * @param layout - Where the grid is drawn, the screen by default
+ * @param captureMatchIndex - Match number that marks the team cards for capture
  * @returns Grid of team columns
  */
 export function FormationGrid({
@@ -104,6 +110,7 @@ export function FormationGrid({
   onNameChange,
   saving = false,
   layout = "screen",
+  captureMatchIndex,
 }: FormationGridProps) {
   const isCapture = layout === "capture";
 
@@ -214,6 +221,7 @@ export function FormationGrid({
                   absentIds={absentIds}
                   notes={notes}
                   onNoteChange={onNoteChange}
+                  captureMatchIndex={captureMatchIndex}
                   // Hidden with CSS, not left out of the tree: no screen size to read in JS (so no
                   // hydration mismatch), and every slot stays registered with dnd-kit from `md` up.
                   className={
