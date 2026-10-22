@@ -105,9 +105,11 @@ describe('JwtAuthGuard - vai và Grant đọc lại mỗi request', () => {
   });
 
   it('token Member mà hàng giờ là Quản lý có Grant thì dùng được Grant ngay request kế tiếp', async () => {
-    const current = jest.fn().mockResolvedValue(
-      currentOf(GuildRole.MANAGER, { capabilities: [Capability.SCHEDULE] }),
-    );
+    const current = jest
+      .fn()
+      .mockResolvedValue(
+        currentOf(GuildRole.MANAGER, { capabilities: [Capability.SCHEDULE] }),
+      );
 
     const user = await setup(payloadOf(GuildRole.MEMBER), current).run();
 

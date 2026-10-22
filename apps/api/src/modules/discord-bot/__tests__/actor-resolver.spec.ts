@@ -7,6 +7,7 @@ import {
 
 import { TOKEN_TYPE } from '../../../common';
 import type { GuildMemberRow } from '../../characters/characters.public';
+import { ActorLookupService } from '../../auth/auth.public';
 import { ActorResolver } from '../actor-resolver';
 
 /** A Character row as `findByDiscordId` now returns it. */
@@ -38,7 +39,9 @@ function makeResolver(options: {
   };
   const config = { get: jest.fn().mockReturnValue(options.adminIds) };
 
-  return new ActorResolver(characters as never, config as never);
+  return new ActorResolver(
+    new ActorLookupService(characters as never, config as never),
+  );
 }
 
 describe('ActorResolver', () => {

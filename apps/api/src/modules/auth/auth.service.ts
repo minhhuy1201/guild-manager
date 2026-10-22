@@ -16,11 +16,9 @@ import { verifyResponse, type AppConfigService } from '../../config';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import {
   CharactersService,
-  grantsOf,
-  memberRole,
   toCharacter,
 } from '../characters/characters.public';
-import { isRescueAdmin, resolveGuildRole } from './actor-identity';
+import { ActorLookupService } from './actor-lookup.service';
 import {
   ACCESS_TOKEN_TTL,
   AUTH_ERROR,
@@ -59,6 +57,7 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly prisma: PrismaService,
     private readonly characters: CharactersService,
+    private readonly actors: ActorLookupService,
     private readonly clock: Clock,
   ) {}
 
@@ -110,16 +109,12 @@ export class AuthService {
     ).catch(() => null);
     if (!profile) return this.errorUrl(AUTH_ERROR.upstream, state.redirect);
 
-    const member = await this.characters.findByDiscordId(profile.id);
-    const adminIds = this.config.get('DISCORD_ADMIN_IDS', { infer: true });
+    const identity = await this.actors.resolve(profile.id);
+    if (!identity) return this.errorUrl(AUTH_ERROR.notMember, state.redirect);
 
-    if (!member && !isRescueAdmin(profile.id, adminIds)) {
-      return this.errorUrl(AUTH_ERROR.notMember, state.redirect);
-    }
-
-    if (member) {
+    if (identity.member) {
       await this.characters.touchLogin(
-        member.id,
+        identity.member.id,
         profile.username,
         profile.avatar,
         this.clock.now(),
@@ -248,23 +243,19 @@ export class AuthService {
    * @throws UnauthorizedException when the person left the guild and is not a rescue admin
    */
   private async describeSession(discordId: string): Promise<SessionUser> {
-    const member = await this.characters.findByDiscordId(discordId);
-    const isRescue = isRescueAdmin(
-      discordId,
-      this.config.get('DISCORD_ADMIN_IDS', { infer: true }),
-    );
+    const identity = await this.actors.resolve(discordId);
+    if (!identity) throw new UnauthorizedException(SESSION_EXPIRED);
 
-    if (!member && !isRescue) throw new UnauthorizedException(SESSION_EXPIRED);
+    const { member, role, grants } = identity;
 
-    const role = resolveGuildRole({ isRescue, memberRole: memberRole(member) });
-    // `findByDiscordId` hands back the whole row, so the session is built from the one read that
-    // already happened rather than a second lookup by id.
+    // `resolve` hands back the whole row, so the session is built from the one read that already
+    // happened rather than a second lookup by id.
     return verifyResponse(sessionUserSchema, {
       discordId,
       discordUsername: member?.discordUsername ?? null,
       discordAvatar: member?.discordAvatar ?? null,
       role,
-      ...grantsOf(member, role),
+      ...grants,
       character: member ? toCharacter(member) : null,
     } satisfies SessionUser);
   }

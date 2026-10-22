@@ -6,6 +6,7 @@ import {
   GuildRole,
 } from '@guild/shared/enums';
 
+import { ActorLookupService } from '../actor-lookup.service';
 import { AuthService } from '../auth.service';
 import { AUTH_ERROR } from '../auth.constant';
 
@@ -95,6 +96,7 @@ function makeService(overrides: {
       jwt as never,
       prisma as never,
       characters as never,
+      new ActorLookupService(characters as never, config),
       clock,
     ),
     jwt,

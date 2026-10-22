@@ -39,6 +39,6 @@ import { AuthService } from './auth.service';
     ActorLookupService,
     { provide: ActorLookup, useExisting: ActorLookupService },
   ],
-  exports: [ActorLookup],
+  exports: [ActorLookup, ActorLookupService],
 })
 export class AuthModule {}

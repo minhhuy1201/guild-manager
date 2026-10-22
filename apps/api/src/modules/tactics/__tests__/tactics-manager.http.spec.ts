@@ -135,7 +135,9 @@ describe('tactics write as a Manager over HTTP', () => {
 
   it('token Member cũ mà hàng giờ là Quản lý có Capability thì ghi được ngay request kế tiếp', async () => {
     lookup.mockResolvedValueOnce(stored(GuildRole.MEMBER));
-    lookup.mockResolvedValueOnce(stored(GuildRole.MANAGER, [Capability.TACTICS]));
+    lookup.mockResolvedValueOnce(
+      stored(GuildRole.MANAGER, [Capability.TACTICS]),
+    );
 
     expect(await createAs(GuildRole.MEMBER)).toBe(403);
     // Same token, no new login: the promotion applies on the next request.

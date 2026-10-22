@@ -4,7 +4,8 @@
  * This is the only file other modules may import code from; every other file in this directory is
  * internal (the module boundary rule in `eslint.config.mjs`).
  *
- * Only the two pure identity rules are exposed. `AuthService` stays internal: nobody outside owns
- * a login, and the Discord bot needs the *rules*, not the OAuth flow.
+ * Only the identity lookup is exposed. `AuthService` stays internal: nobody outside owns a login,
+ * and the Discord bot needs to know *who someone is*, not the OAuth flow.
  */
-export { isRescueAdmin, resolveGuildRole } from './actor-identity';
+export { ActorLookupService } from './actor-lookup.service';
+export type { ResolvedIdentity } from './actor-lookup.service';

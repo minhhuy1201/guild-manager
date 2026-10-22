@@ -78,3 +78,30 @@ describe('ActorLookupService.current', () => {
     });
   });
 });
+
+describe('ActorLookupService.resolve', () => {
+  it('trả hàng thành viên cùng vai và Grant, để login và bot dùng chung một lần đọc', async () => {
+    const row = rowWith(GuildRole.MANAGER);
+
+    await expect(makeService(row).resolve('111')).resolves.toEqual({
+      member: row,
+      role: GuildRole.MANAGER,
+      grants: {
+        capabilities: [Capability.SCHEDULE],
+        grantedCommands: [GrantableCommand.THONG_BAO],
+      },
+    });
+  });
+
+  it('ID cứu hộ không có hàng vẫn có danh tính ADMIN, không có nhân vật', async () => {
+    await expect(makeService(null).resolve(RESCUE_ID)).resolves.toEqual({
+      member: null,
+      role: GuildRole.ADMIN,
+      grants: { capabilities: [], grantedCommands: [] },
+    });
+  });
+
+  it('không có hàng và không phải ID cứu hộ thì không có danh tính', async () => {
+    await expect(makeService(null).resolve('111')).resolves.toBeNull();
+  });
+});
