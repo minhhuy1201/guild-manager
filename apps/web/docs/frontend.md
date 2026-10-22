@@ -442,10 +442,10 @@ Never give a `<label>` to a field with no control: it announces a control that i
 
 Every page but the tactic page (below) opens with `components/shared/page-header.tsx`
 (`<PageHeader banner title description? actions? isPlainOnPhone? />`): a `rounded-2xl` strip holding
-the page's scene, the page's one `<h1>` in `font-heading` (Noto Serif), white on the scene, an
+the page's scene, the page's one `<h1>` in `font-heading` (Playfair Display), white on the scene, an
 optional one-sentence description, page-wide controls at the bottom right (the team builder's week
 picker), and the `OrnamentDivider` (a hairline with a small jade diamond, `surface="image"`) closing
-the block. A section title inside a card is an `<h2>`, in the sans face.
+the block. A section title inside a card is an `<h2>`; the redesign moves it to `font-heading` too (section title, tickets 02+), so Playfair Display marks every title and the body stays Be Vietnam Pro.
 
 - **One strip height** (`min-h-24`, `sm:min-h-28`) for every page, so no page spends almost a
   third of a phone's screen on decoration.
@@ -889,7 +889,7 @@ Which of the two feedback shapes:
 
 ### Motion
 
-Four tokens in `app/globals.css` are the app's whole motion vocabulary:
+Six tokens in `app/globals.css` are the app's whole motion vocabulary:
 
 | Token | Value | Used for |
 |---|---|---|
@@ -897,6 +897,8 @@ Four tokens in `app/globals.css` are the app's whole motion vocabulary:
 | `--duration-base` | 200ms | showing/hiding content inside a frame that already exists |
 | `--duration-slow` | 320ms | skeleton ⇄ data |
 | `--ease-out-soft` | `cubic-bezier(0.16, 1, 0.3, 1)` | every easing |
+| `--ease-spring` | `cubic-bezier(0.34, 1.56, 0.64, 1)` | hover lift and press of a control (overshoots slightly, transform only) |
+| `--duration-drift` | 9s | a banner scene's single slow drift (Ken Burns) on page open; 320ms cannot read as a camera move |
 
 Tailwind 4 has an `--ease-*` namespace, so `--ease-out-soft` gives the `ease-out-soft` class; it has
 **no** `--duration-*` namespace, so a duration is written `duration-[var(--duration-base)]`.

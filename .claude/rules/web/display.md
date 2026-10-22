@@ -14,7 +14,8 @@ Screens must look like one app. A new display convention goes here; its reason g
 - Neutrals are surfaces and text. Keep one hue per theme (warm 80-85 light, navy 262 dark). Keep `--background` clearly darker than `--card`.
 - `primary` (navy): primary actions, selected tabs, a battle's name (`SessionLabel`).
 - `jade`: the accent - current nav page, focus ring, guild seal, divider diamond, session card hover edge, the header login button fill.
-- `gold`: important highlights only - formation banner frame, login ornament, login button sheen. Never a state.
+- `gold`: important highlights only - formation banner frame, raised card edge, login ornament, login button sheen. Never a state.
+- Take glow and edge tokens from `globals.css` (`--glow-jade`, `--glow-gold`, `--card-highlight`), never a literal shadow colour. Round a block that holds blocks with `rounded-container`, what sits inside with `rounded-inner`.
 - emerald / `destructive` / amber: attendance state only ("Có" / "Không" / not answered). Never decoration.
 
 ## Themes → tokens only, switched by next-themes
@@ -37,8 +38,8 @@ Screens must look like one app. A new display convention goes here; its reason g
 - Open every page with `PageHeader` (`components/shared/page-header.tsx`), except the tactic page (`TacticHeader`). A new tool page asks first.
 - Pass `banner` (a `PAGE_BANNERS` entry in `lib/page-banners.ts`). A new page adds its scene there; pictures live in `public/img/bg/`. Only the attendance page and its history set `isPlainOnPhone` (below `sm` it shows text only); a new page asks first.
 - Keep the two scrims between a picture and its text. Never put text on a picture without them.
-- Keep one `<h1>` per page, in `font-heading`. A section title inside a card is an `<h2>` in the sans face.
-- Use `font-heading` for headings only: `PageHeader`, the guild name, the formation banner, `DialogTitle`.
+- Keep one `<h1>` per page, in `font-heading` (Playfair Display). A section title inside a card is an `<h2>`; it may take `font-heading` too.
+- Use `font-heading` for headings only: `PageHeader`, section titles, the guild name, the formation banner, `DialogTitle`. Never for body, labels or data.
 - Keep pictures in the header. Tables, the formation grid and forms stay on plain surfaces.
 - Credit a picture from outside the game once, in `SiteFooter` (`components/shared/site-footer.tsx`).
 - Use `GuildSeal` (`components/shared/guild-seal.tsx`) for the guild's mark, in a named size.

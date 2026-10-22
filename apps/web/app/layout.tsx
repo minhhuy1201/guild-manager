@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Be_Vietnam_Pro, Noto_Serif } from "next/font/google";
+import { Be_Vietnam_Pro, Playfair_Display } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { SiteFooter } from "@/components/shared/site-footer";
 import { SiteHeader } from "@/components/shared/site-header";
@@ -14,9 +14,10 @@ const beVietnamPro = Be_Vietnam_Pro({
   display: "swap",
 });
 
-// Heading font: page titles and the guild name only. Two weights, because nothing else uses it.
-const notoSerif = Noto_Serif({
-  variable: "--font-noto-serif",
+// Heading font: page and section titles, dialog titles and the guild name. Two weights, because
+// nothing else uses it.
+const playfairDisplay = Playfair_Display({
+  variable: "--font-playfair-display",
   subsets: ["latin", "vietnamese"],
   weight: ["500", "600"],
   display: "swap",
@@ -43,7 +44,7 @@ export default function RootLayout({
   return (
     <html
       lang="vi"
-      className={`${beVietnamPro.variable} ${notoSerif.variable} h-full antialiased`}
+      className={`${beVietnamPro.variable} ${playfairDisplay.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">

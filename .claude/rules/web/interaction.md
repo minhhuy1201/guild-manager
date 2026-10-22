@@ -78,7 +78,8 @@ A new interaction convention goes here; its reason goes in `frontend.md`.
 
 ## Motion
 
-- Use only the four tokens in `globals.css`: `--duration-fast` 120ms (colour, hover, press), `--duration-base` 200ms (show/hide in an existing frame), `--duration-slow` 320ms (skeleton ⇄ data), `--ease-out-soft` (every easing). Write a duration as `duration-[var(--duration-base)]`.
+- Use only the tokens in `globals.css`: `--duration-fast` 120ms (colour, hover, press), `--duration-base` 200ms (show/hide in an existing frame), `--duration-slow` 320ms (skeleton ⇄ data), `--ease-out-soft` (every easing), `--ease-spring` (hover lift and press of a control, transform only), `--duration-drift` 9s (a banner scene's one-shot drift, nothing else). Write a duration as `duration-[var(--duration-base)]`.
+- Play the drift once (`animation-iteration-count: 1`, `backwards`, ending on `transform: none`), never loop it.
 - Never animate layout geometry: no `height`, `width`, `scale` on table content, no `translate` on anything in place. An arriving element may rise a few pixels. The next step of a multi-step dialog may slide 24px in from the side it came from (`StepSlide`). A portal popup may slide in (`SelectContent` needs `alignItemWithTrigger={false}`).
 - Keep `ease-linear` only for the login button sheen.
 - Let the cat race stage overlays (countdown, banners, lead-change bar, finish flash, photo, result card), the race board's row slide and the TRỰC TIẾP blink own their keyframes and durations, declared once as `--stage-*` variables under the `[data-slot="cat-race-stage"], [data-slot="cat-race-hud"]` block in `globals.css`. They are exempt from the four tokens and the no-`scale` rule; every other screen is not.
