@@ -8,23 +8,7 @@ import {
   rankAt,
   type PaceCurve,
 } from "../race-script";
-
-/**
- * A small seeded PRNG (mulberry32) so a failing case replays.
- * @param seed - Seed
- * @returns A source in `[0, 1)`
- */
-function seeded(seed: number): () => number {
-  let state = seed;
-
-  return () => {
-    state = (state + 0x6d2b79f5) | 0;
-    let t = Math.imul(state ^ (state >>> 15), 1 | state);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
+import { seededRandom } from "./seeded-random";
 
 /**
  * A field of `people` entrants with the same number of tickets each.
@@ -52,12 +36,12 @@ function scriptFor(people: number, tickets: number, durationSeconds = 12, seed =
     entrants: field(people, tickets),
     winner: { characterId: "c0", ticketNo: tickets },
     durationSeconds,
-    random: seeded(seed),
+    random: seededRandom(seed),
   });
 }
 
-/** Fields the script is checked against: a duel, a small, a normal and the largest field. */
-const FIELD_SIZES = [2, 8, 30, 240];
+/** Fields the script is checked against: a duel, tiny, small, normal, big and the largest field. */
+const FIELD_SIZES = [2, 3, 8, 30, 80, 240];
 const SEEDS = Array.from({ length: 12 }, (_, index) => index + 1);
 /** Race-time step when walking a script; fine enough to see every lead change. */
 const SAMPLE_STEP = 0.002;
@@ -193,7 +177,7 @@ describe("buildRaceScript", () => {
       entrants,
       winner: { characterId: "c0", ticketNo: 1 },
       durationSeconds: 12,
-      random: seeded(1),
+      random: seededRandom(1),
     });
 
     expect(entrants).toEqual(copy);
@@ -229,7 +213,7 @@ describe("leaderAt", () => {
       entrants: Array.from({ length: 30 }, (_, index) => ({ characterId: `c${index}`, tickets: 1 })),
       winner: { characterId: "c7", ticketNo: 1 },
       durationSeconds: 20,
-      random: seeded(11),
+      random: seededRandom(11),
     });
     for (let u = 0; u <= 1; u += 0.05) {
       expect(leaderAt(script, u)).toBe(rankAt(script, u)[0]);
@@ -252,7 +236,7 @@ const TOP_PLACES = 3;
  */
 function winnerInFrontShare(people: number, u: number, places: number): number {
   const entrants = field(people, 1);
-  const random = seeded(2026);
+  const random = seededRandom(2026);
   let hits = 0;
   for (let round = 0; round < REVEAL_ROUNDS; round += 1) {
     const winner = entrants[Math.floor(random() * people)];

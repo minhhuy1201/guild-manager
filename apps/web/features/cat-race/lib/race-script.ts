@@ -3,7 +3,7 @@ const KNOTS: readonly number[] = [0, 0.12, 0.3, 0.5, 0.7, 0.85, 0.94, 1];
 const LAST_KNOT = KNOTS.length - 1;
 
 /**
- * How far each knot has moved from the cat's random walk to its final gap. Zero up to the reveal
+ * Weight of the cat's final gap against its random walk at each knot. Zero up to the reveal
  * point (0.7), so every cat, the winner included, is on the same walk until then.
  */
 const KNOT_BLEND: readonly number[] = [0, 0, 0, 0, 0, 0.5, 0.85, 1];
@@ -162,7 +162,7 @@ function settle(walk: readonly number[], shortfall: number, shake: (() => number
 }
 
 /**
- * Final shortfall of the winner and each contender, front to back; the winner's is 0.
+ * Final shortfall of each contender, front to back, the runner-up first.
  * @param count - How many contenders run with the winner
  * @param random - Source in `[0, 1)`
  * @returns One shortfall per contender, starting with the runner-up's

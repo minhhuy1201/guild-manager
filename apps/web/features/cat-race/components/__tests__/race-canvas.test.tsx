@@ -17,6 +17,7 @@ import { laneLayout, markX } from "../../lib/race-layout";
 import type { RaceStanding } from "../../lib/race-board";
 import { buildRaceScript, rankAt } from "../../lib/race-script";
 import { STAGE_PALETTE } from "../../lib/stage-palette";
+import { seededRandom } from "../../lib/__tests__/seeded-random";
 import { RaceCanvas } from "../race-canvas";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -106,23 +107,6 @@ function participants(withAvatar: boolean): CatRaceParticipant[] {
       tickets: 1,
     },
   ];
-}
-
-/**
- * Small seeded PRNG (mulberry32) so a failing round replays.
- * @param seed - Any integer
- * @returns Source in `[0, 1)`
- */
-function seededRandom(seed: number): () => number {
-  let state = seed;
-
-  return () => {
-    state = (state + 0x6d2b79f5) | 0;
-    let t = Math.imul(state ^ (state >>> 15), 1 | state);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
 }
 
 const SCRIPT = buildRaceScript({
