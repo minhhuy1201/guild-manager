@@ -1,53 +1,25 @@
-/** The three stagings a race can play; chosen per round on the client. */
-export type RaceScenario = "comeback" | "duel" | "photo";
-
-export const RACE_SCENARIOS: readonly RaceScenario[] = ["comeback", "duel", "photo"];
-
 /** Normalised race times the pace curve passes through; progress is `knot + offset` at each. */
 const KNOTS: readonly number[] = [0, 0.12, 0.3, 0.5, 0.7, 0.85, 0.94, 1];
 const LAST_KNOT = KNOTS.length - 1;
 
 /**
- * Offsets from even pace per knot, per role. The last entry is the final progress minus 1; the
- * winner's is overridden to land exactly on the line.
+ * How far each knot has moved from the cat's random walk to its final gap. Zero up to the reveal
+ * point (0.7), so every cat, the winner included, is on the same walk until then.
  */
-interface ScenarioRoles {
-  /** Winner */
-  readonly W: readonly number[];
-  /** Runner-up */
-  readonly R: readonly number[];
-  /** Dark horse (comeback) or third contender (photo); absent in a duel */
-  readonly X?: readonly number[];
-}
-
-const SCENARIO_ROLES: Record<RaceScenario, ScenarioRoles> = {
-  comeback: {
-    W: [0, -0.015, -0.04, -0.05, -0.02, 0.02, 0.012, 0],
-    R: [0, 0, 0.01, 0.02, 0.055, 0.035, 0.009, -0.012],
-    X: [0, 0.03, 0.05, 0.055, 0.045, 0.03, 0.005, -0.02],
-  },
-  duel: {
-    W: [0, 0.02, 0.04, 0.03, 0.045, 0.03, 0.012, 0],
-    R: [0, 0.025, 0.035, 0.045, 0.035, 0.04, 0.01, -0.012],
-  },
-  photo: {
-    W: [0, 0.01, 0.02, 0.03, 0.03, 0.02, 0.006, 0],
-    R: [0, 0.012, 0.025, 0.028, 0.033, 0.022, 0.007, -0.0025],
-    X: [0, 0.005, 0.015, 0.025, 0.028, 0.018, 0.004, -0.008],
-  },
-};
-
-/** Role offsets (not the final one) share one random scale per race: different rounds, same order of lead changes. */
-const ROLE_SCALE: readonly [number, number] = [0.85, 1.15];
-/** Cats right behind the dark horse that hang on to the leaders. */
-const CHASER_COUNT = 3;
-/** Final progress offset of a chaser and of the field, as a distance short of the line. */
-const CHASER_SHORTFALL: readonly [number, number] = [0.012, 0.037];
+const KNOT_BLEND: readonly number[] = [0, 0, 0, 0, 0, 0.5, 0.85, 1];
+/** Half-width of the extra shake the winner and the contenders get per knot, so their order stays open. */
+const CONTENDER_SHAKE: readonly number[] = [0, 0, 0, 0, 0, 0.02, 0.01, 0];
+/** Contenders other than the winner: how many run the finish alongside it. */
+const CONTENDER_COUNT: readonly [number, number] = [2, 4];
+/** Share of the track the runner-up is short of the line; skewed to the small end with a squared draw. */
+const RUNNER_UP_SHORTFALL: readonly [number, number] = [0.001, 0.02];
+/** Extra shortfall of each further contender over the one in front. */
+const CONTENDER_STEP: readonly [number, number] = [0.001, 0.004];
+/** Final shortfall of the rest of the field. */
 const FIELD_SHORTFALL: readonly [number, number] = [0.035, 0.205];
-/** The pack wanders with a damped random walk until `FIELD_BLEND_FROM`, then eases to its final gap. */
+/** The pack wanders with a damped random walk. */
 const FIELD_WALK_DAMPING = 0.6;
 const FIELD_WALK_STEP = 0.9;
-const FIELD_BLEND_FROM = 0.55;
 /** Fritsch-Carlson bound on a tangent pair's squared ratio to the segment slope (3 squared). */
 const TANGENT_LIMIT = 9;
 /** Every knot must clear the previous one by this much. */
@@ -66,7 +38,6 @@ export type PaceCurve = (u: number) => number;
 
 export interface RaceScript {
   readonly durationSeconds: number;
-  readonly scenario: RaceScenario;
   readonly cats: readonly RaceCat[];
   readonly curves: ReadonlyMap<string, PaceCurve>;
   readonly winnerKey: string;
@@ -108,19 +79,6 @@ export function shuffled<T>(items: readonly T[], random: () => number): T[] {
   }
 
   return copy;
-}
-
-/**
- * Hermite smoothstep.
- * @param from - Edge where the result leaves 0
- * @param to - Edge where the result reaches 1
- * @param value - The input
- * @returns 0..1
- */
-function smoothstep(from: number, to: number, value: number): number {
-  const t = Math.min(1, Math.max(0, (value - from) / (to - from)));
-
-  return t * t * (3 - 2 * t);
 }
 
 /**
@@ -169,27 +127,54 @@ function monotoneCubic(xs: readonly number[], ys: readonly number[]): PaceCurve 
 }
 
 /**
- * Offsets of a cat that is not in the front: stays close to even pace and drifts to its final gap
- * late, so the pack hangs together until about 60% of the race.
- * @param isChaser - Whether it is one of the cats that hang on to the leaders
+ * The random walk every cat starts from, whatever its place in the result: it stays close to even
+ * pace, so the pack hangs together.
  * @param random - Source in `[0, 1)`
- * @returns One offset per knot, the last being the final progress minus 1
+ * @returns One offset per knot, 0 at the start
  */
-function fieldOffsets(isChaser: boolean, random: () => number): number[] {
-  const final = -between(isChaser ? CHASER_SHORTFALL : FIELD_SHORTFALL, random);
+function packWalk(random: () => number): number[] {
   let walk = 0;
 
   return KNOTS.map((knot, index) => {
     if (index === 0) return 0;
-    if (index === LAST_KNOT) return final;
     walk = walk * FIELD_WALK_DAMPING + (random() * 2 - 1) * FIELD_WALK_STEP;
     const spread = 0.01 + 0.03 * knot;
     const cap = 0.012 + 0.018 * knot;
-    const raw = cap * Math.tanh((walk * spread) / cap);
-    const blend = smoothstep(FIELD_BLEND_FROM, 1, knot);
 
-    return raw * (1 - blend) + final * blend;
+    return cap * Math.tanh((walk * spread) / cap);
   });
+}
+
+/**
+ * Pull a walk toward the cat's final gap after the reveal point.
+ * @param walk - The cat's random walk
+ * @param shortfall - Share of the track it ends short of the line
+ * @param shake - Source of the contender shake, or null for a cat outside the finish
+ * @returns One offset per knot, the last being the final progress minus 1
+ */
+function settle(walk: readonly number[], shortfall: number, shake: (() => number) | null): number[] {
+  return walk.map((raw, index) => {
+    const blend = KNOT_BLEND[index];
+    const pulled = raw * (1 - blend) - shortfall * blend;
+
+    return shake ? pulled + CONTENDER_SHAKE[index] * (shake() * 2 - 1) : pulled;
+  });
+}
+
+/**
+ * Final shortfall of the winner and each contender, front to back; the winner's is 0.
+ * @param count - How many contenders run with the winner
+ * @param random - Source in `[0, 1)`
+ * @returns One shortfall per contender, starting with the runner-up's
+ */
+function contenderShortfalls(count: number, random: () => number): number[] {
+  const ratio = random();
+  const [low, high] = RUNNER_UP_SHORTFALL;
+
+  return Array.from({ length: count }).reduce<number[]>(
+    (gaps, _, index) => [...gaps, index === 0 ? low + (high - low) * ratio * ratio : gaps[index - 1] + between(CONTENDER_STEP, random)],
+    []
+  );
 }
 
 /**
@@ -197,7 +182,6 @@ function fieldOffsets(isChaser: boolean, random: () => number): number[] {
  * @param input.entrants - Who ran and how many tickets each holds
  * @param input.winner - The server's winning ticket
  * @param input.durationSeconds - Seconds the winner takes to cross the line
- * @param input.scenario - Staging to play; picked with `random` when omitted
  * @param input.random - Source in `[0, 1)`; seeded in tests
  * @returns The script the renderer replays
  */
@@ -205,12 +189,9 @@ export function buildRaceScript(input: {
   entrants: readonly { characterId: string; tickets: number }[];
   winner: { characterId: string; ticketNo: number };
   durationSeconds: number;
-  scenario?: RaceScenario;
   random: () => number;
 }): RaceScript {
   const { random, durationSeconds } = input;
-  const scenario = input.scenario ?? RACE_SCENARIOS[Math.floor(random() * RACE_SCENARIOS.length)];
-  const roles = SCENARIO_ROLES[scenario];
   const cats = input.entrants.flatMap(({ characterId, tickets }) =>
     Array.from({ length: tickets }, (_, index) => ({
       key: catKey(characterId, index + 1),
@@ -223,18 +204,19 @@ export function buildRaceScript(input: {
     cats.filter((cat) => cat.key !== winnerKey),
     random
   );
-  const scale = between(ROLE_SCALE, random);
-  const roleOf = new Map<string, readonly number[]>([[winnerKey, roles.W]]);
-  if (others[0]) roleOf.set(others[0].key, roles.R);
-  if (others[1] && roles.X) roleOf.set(others[1].key, roles.X);
-  const chasers = new Set(others.slice(2, 2 + CHASER_COUNT).map((cat) => cat.key));
+  const wanted = CONTENDER_COUNT[0] + Math.floor(random() * (CONTENDER_COUNT[1] - CONTENDER_COUNT[0] + 1));
+  const shortfalls = contenderShortfalls(Math.min(wanted, others.length), random);
+  const shortfallOf = new Map<string, number>([[winnerKey, 0]]);
+  shortfalls.forEach((gap, index) => shortfallOf.set(others[index].key, gap));
 
   const curves = new Map<string, PaceCurve>();
   for (const cat of cats) {
-    const role = roleOf.get(cat.key);
-    const offsets = role
-      ? role.map((offset, index) => (index === LAST_KNOT ? offset : offset * scale))
-      : fieldOffsets(chasers.has(cat.key), random);
+    const walk = packWalk(random);
+    const contenderShortfall = shortfallOf.get(cat.key);
+    const offsets =
+      contenderShortfall === undefined
+        ? settle(walk, between(FIELD_SHORTFALL, random), null)
+        : settle(walk, contenderShortfall, random);
     const raw = KNOTS.map((knot, index) => (index === 0 ? 0 : knot + offsets[index]));
     const stepped = raw.reduce<number[]>(
       (acc, value, index) => [...acc, index === 0 ? value : Math.max(value, acc[index - 1] + MIN_KNOT_STEP)],
@@ -244,7 +226,7 @@ export function buildRaceScript(input: {
     curves.set(cat.key, monotoneCubic(KNOTS, [...stepped.slice(0, LAST_KNOT), final]));
   }
 
-  const script = { durationSeconds, scenario, cats, curves, winnerKey, runnerUpGap: 1 };
+  const script = { durationSeconds, cats, curves, winnerKey, runnerUpGap: 1 };
   const [, runnerUp] = rankAt(script, 1);
 
   return { ...script, runnerUpGap: runnerUp ? 1 - curves.get(runnerUp)!(1) : 1 };

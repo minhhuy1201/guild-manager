@@ -37,7 +37,6 @@ const SCRIPT = buildRaceScript({
   entrants: PARTICIPANTS.map((p) => ({ characterId: p.characterId, tickets: 1 })),
   winner: { characterId: "c1", ticketNo: 1 },
   durationSeconds: 10,
-  scenario: "photo",
   random: () => 0.5,
 });
 
