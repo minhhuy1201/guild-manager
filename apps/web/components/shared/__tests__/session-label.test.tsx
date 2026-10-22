@@ -35,8 +35,8 @@ function renderRow(element: ReactElement): HTMLElement {
 }
 
 describe("sessionTintClass", () => {
-  it("Guild War được tô nhạt", () => {
-    expect(sessionTintClass(true)).toBe("border-primary/40 bg-primary/5");
+  it("Guild War được đánh dấu bằng cạnh nhấn primary", () => {
+    expect(sessionTintClass(true)).toBe("border-l-4 border-l-primary");
   });
 
   it("trận thường không tô gì", () => {

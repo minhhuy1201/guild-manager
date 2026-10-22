@@ -48,6 +48,14 @@ const CHOICES = [true, false];
 /** Placeholder rows while loading — as many as a week usually has sessions. */
 const SKELETON_ROWS = 3;
 
+/**
+ * The week's strip: tiles share the card's full width whatever their number - one match is one wide
+ * tile, four are four narrower ones - and wrap to the next line once a tile would get narrower than
+ * the minimum. `min(100%, …)` keeps that minimum from forcing a sideways scroll on a small phone.
+ */
+const TILE_STRIP =
+  "grid gap-3 grid-cols-[repeat(auto-fit,minmax(min(100%,17rem),1fr))]";
+
 /** Shown when the write fails with something other than an `ApiError`. */
 const FALLBACK_ERROR_MESSAGE = "Không điểm danh được, thử lại giúp mình.";
 
@@ -170,10 +178,10 @@ export function MemberAttendanceCard() {
     <QueryBoundary
       state={board}
       skeleton={
-        <Card>
-          <CardContent className="flex flex-col gap-3 py-6">
+        <Card variant="raised">
+          <CardContent className={cn(TILE_STRIP, "py-6")}>
             {Array.from({ length: SKELETON_ROWS }, (_, index) => (
-              <Skeleton key={index} className="h-16 w-full rounded-lg" />
+              <Skeleton key={index} className="h-40 w-full rounded-inner" />
             ))}
           </CardContent>
         </Card>
@@ -204,7 +212,7 @@ export function MemberAttendanceCard() {
           {battleSessions.length === 0 ? (
             <EmptyState message="Tuần này chưa có trận nào." />
           ) : (
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            <div className={TILE_STRIP}>
               {battleSessions.map((battleSession, index) => (
                 <DayTile
                   key={battleSession.id}
@@ -318,74 +326,87 @@ function DayTile({
         : TILE_TONE.khong;
 
   return (
+    // The wrapper is the size container: a tile that ends up wide (one match, or two on a big
+    // screen) lays its info and its answers side by side instead of stretching the buttons.
     <div
-      className={cn(
-        "flex flex-col gap-1.5 rounded-lg border p-3",
-        tone,
-        REVEAL_CLASS
-      )}
+      className={cn("@container/tile", REVEAL_CLASS)}
       style={revealStyle(index)}
     >
-      <SessionLabel session={battleSession} size="md" />
-      {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
-      <SessionDeadline session={battleSession} />
-      <div>
-        {isLocked ? (
-          <StatusBadge tone="danger">
-            <Lock className="size-3.5" />
-            Đã khoá
-          </StatusBadge>
-        ) : (
-          <StatusBadge tone="success">
-            <Clock className="size-3.5" />
-            Còn hạn
-          </StatusBadge>
+      <div
+        data-slot="day-tile"
+        className={cn(
+          "flex h-full flex-col gap-4 rounded-inner border-2 p-4",
+          "@xl/tile:flex-row @xl/tile:items-center @xl/tile:justify-between",
+          tone
         )}
-      </div>
-
-      {/* `mt-auto` pins the answers to the bottom, so a day with a longer subtitle does not leave
-          its buttons higher than its neighbour's. */}
-      {canAnswer ? (
-        <div className="mt-auto flex flex-col gap-2 pt-2">
-          {isLocked ? (
-            savedReason !== "" && (
-              <span className="text-center text-sm text-muted-foreground italic">
-                Lý do: {savedReason}
-              </span>
-            )
-          ) : (
-            <>
-              {CHOICES.map((isPresent) => (
-                <AttendanceChoiceButton
-                  key={String(isPresent)}
-                  isPresent={isPresent}
-                  isSelected={current === isPresent}
-                  isSaving={
-                    isPending &&
-                    pendingWrite?.sessionId === battleSession.id &&
-                    pendingWrite.isPresent === isPresent
-                  }
-                  // Both answers of every day wait: a second write while one is in flight would
-                  // leave the spinner on the wrong button.
-                  disabled={isPending}
-                  onSelect={() => onMark(isPresent)}
-                />
-              ))}
-              {current === false && (
-                // Remounting on the stored value resets the field once a save lands, while a
-                // failed save keeps the typed text - the stored value did not change, so there
-                // is no remount.
-                <AbsenceReasonInput
-                  key={`${battleSession.id}:${savedReason}`}
-                  savedReason={savedReason}
-                  disabled={isPending}
-                  onSubmit={onSaveReason}
-                />
-              )}
-            </>
+      >
+        <div className="flex flex-col gap-1.5">
+          <SessionLabel session={battleSession} size="md" />
+          {subtitle && (
+            <p className="text-sm text-muted-foreground">{subtitle}</p>
           )}
+          <SessionDeadline session={battleSession} />
+          <div>
+            {isLocked ? (
+              <StatusBadge tone="danger">
+                <Lock className="size-3.5" />
+                Đã khoá
+              </StatusBadge>
+            ) : (
+              <StatusBadge tone="success">
+                <Clock className="size-3.5" />
+                Còn hạn
+              </StatusBadge>
+            )}
+          </div>
         </div>
-      ) : null}
+
+        {/* `mt-auto` pins the answers to the bottom, so a day with a longer subtitle does not
+            leave its buttons higher than its neighbour's. */}
+        {canAnswer ? (
+          <div className="mt-auto grid grid-cols-2 gap-2 @xl/tile:mt-0 @xl/tile:w-96 @xl/tile:shrink-0">
+            {isLocked ? (
+              savedReason !== "" && (
+                <span className="col-span-2 text-center text-sm text-muted-foreground italic">
+                  Lý do: {savedReason}
+                </span>
+              )
+            ) : (
+              <>
+                {CHOICES.map((isPresent) => (
+                  <AttendanceChoiceButton
+                    key={String(isPresent)}
+                    isPresent={isPresent}
+                    isSelected={current === isPresent}
+                    isSaving={
+                      isPending &&
+                      pendingWrite?.sessionId === battleSession.id &&
+                      pendingWrite.isPresent === isPresent
+                    }
+                    // Both answers of every day wait: a second write while one is in flight would
+                    // leave the spinner on the wrong button.
+                    disabled={isPending}
+                    onSelect={() => onMark(isPresent)}
+                  />
+                ))}
+                {current === false && (
+                  // Remounting on the stored value resets the field once a save lands, while a
+                  // failed save keeps the typed text - the stored value did not change, so there
+                  // is no remount.
+                  <div className="col-span-2">
+                    <AbsenceReasonInput
+                      key={`${battleSession.id}:${savedReason}`}
+                      savedReason={savedReason}
+                      disabled={isPending}
+                      onSubmit={onSaveReason}
+                    />
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -427,6 +448,7 @@ function AttendanceChoiceButton({
   return (
     <Button
       variant="outline"
+      size="lg"
       aria-pressed={isSelected}
       disabled={disabled}
       onClick={onSelect}
