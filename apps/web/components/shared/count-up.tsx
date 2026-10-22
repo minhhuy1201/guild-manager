@@ -69,12 +69,12 @@ export function CountUp({ value, className, ...props }: CountUpProps) {
     frame = requestAnimationFrame(tick);
 
     return () => cancelAnimationFrame(frame);
-  }, [isReduced, isSettled]);
+  }, [isSettled]);
 
   return (
     <span className={cn("inline-grid", className)} {...props}>
       <span data-slot="count-up-value" className="col-start-1 row-start-1">
-        {isReduced || isSettled ? value : current}
+        {isSettled ? value : current}
       </span>
       <span aria-hidden className="invisible col-start-1 row-start-1">
         {value}
