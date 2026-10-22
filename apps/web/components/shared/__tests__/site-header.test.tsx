@@ -50,6 +50,17 @@ vi.stubGlobal(
   }
 );
 
+/** `/auth/me` for a Member: the header reads it for every signed-in user. */
+const MEMBER_ME = {
+  ok: true,
+  data: {
+    role: GuildRole.MEMBER,
+    capabilities: [],
+    grantedCommands: [],
+    character: null,
+  },
+};
+
 /**
  * `SiteHeader` is an async Server Component; awaiting it gives the element tree to render, which is
  * all these tests need - nothing here is interactive.
@@ -103,7 +114,7 @@ describe("SiteHeader - theme", () => {
 
   it("đã đăng nhập thì đổi theme trong menu tài khoản, header không có nút Giao diện riêng", async () => {
     getSession.mockResolvedValue({ discordId: "1", role: GuildRole.MEMBER });
-    fetchMe.mockResolvedValue(null);
+    fetchMe.mockResolvedValue(MEMBER_ME);
 
     await renderHeader();
 
@@ -117,7 +128,7 @@ describe("SiteHeader - đã đăng nhập", () => {
       discordId: "1",
       role: GuildRole.MEMBER,
     });
-    fetchMe.mockResolvedValue(null);
+    fetchMe.mockResolvedValue(MEMBER_ME);
 
     await renderHeader();
 
@@ -132,7 +143,7 @@ describe("SiteHeader - đã đăng nhập", () => {
 
 describe("SiteHeader - phiên đã đăng nhập", () => {
   it.each([
-    ["đọc được tài khoản", { ok: true, data: { id: "u1" } }],
+    ["đọc được tài khoản", MEMBER_ME],
     ["backend từ chối tài khoản", { ok: false, message: "Hết phiên", statusCode: 401 }],
   ])("vẫn vẽ nav khi %s", async (_name, meResult) => {
     getSession.mockResolvedValue({ discordId: "1", role: GuildRole.MEMBER });
@@ -160,7 +171,7 @@ describe("SiteHeader - chuyển trang", () => {
 
   it("header và tab bar có tên view-transition riêng để không bị main phủ lên", async () => {
     getSession.mockResolvedValue({ role: GuildRole.ADMIN, discordId: "1" });
-    fetchMe.mockResolvedValue({ ok: false });
+    fetchMe.mockResolvedValue({ ok: false, message: "x", statusCode: 500 });
 
     const { container } = render(await SiteHeader());
 
@@ -273,5 +284,22 @@ describe("SiteHeader - nav theo Capability", () => {
     await renderHeader();
 
     expect(navLinkNames()).toEqual(["Điểm danh", "Lịch sử điểm danh", "Chiến thuật"]);
+  });
+
+  it("token Member cũ mà /auth/me báo giờ là Quản lý có Xếp team thì thấy mục này ngay", async () => {
+    getSession.mockResolvedValue({ discordId: "1", role: GuildRole.MEMBER });
+    fetchMe.mockResolvedValue({
+      ok: true,
+      data: {
+        role: GuildRole.MANAGER,
+        capabilities: [Capability.TEAM_BUILDER],
+        grantedCommands: [],
+        character: null,
+      },
+    });
+
+    await renderHeader();
+
+    expect(navLinkNames()).toContain("Xếp team");
   });
 });

@@ -91,13 +91,30 @@ describe('JwtAuthGuard - vai và Grant đọc lại mỗi request', () => {
     });
   });
 
-  it('token Member không tốn thêm lần đọc nào và giữ nguyên payload', async () => {
-    const { run, current } = setup(payloadOf(GuildRole.MEMBER));
+  it('token Member cũng đọc lại: Member giữ vai Member và không Grant', async () => {
+    const current = jest.fn().mockResolvedValue(currentOf(GuildRole.MEMBER));
 
-    const user = await run();
+    const user = await setup(payloadOf(GuildRole.MEMBER), current).run();
 
-    expect(current).not.toHaveBeenCalled();
-    expect(user).toEqual(payloadOf(GuildRole.MEMBER));
+    expect(current).toHaveBeenCalledWith('discord-1');
+    expect(user).toMatchObject({
+      role: GuildRole.MEMBER,
+      capabilities: [],
+      grantedCommands: [],
+    });
+  });
+
+  it('token Member mà hàng giờ là Quản lý có Grant thì dùng được Grant ngay request kế tiếp', async () => {
+    const current = jest.fn().mockResolvedValue(
+      currentOf(GuildRole.MANAGER, { capabilities: [Capability.SCHEDULE] }),
+    );
+
+    const user = await setup(payloadOf(GuildRole.MEMBER), current).run();
+
+    expect(user).toMatchObject({
+      role: GuildRole.MANAGER,
+      capabilities: [Capability.SCHEDULE],
+    });
   });
 
   it('token Admin cũng đọc lại vai', async () => {

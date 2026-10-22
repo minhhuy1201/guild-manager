@@ -128,17 +128,16 @@ describe("proxy", () => {
     );
   });
 
-  it("đá bang chúng khỏi route quản trị", async () => {
+  // The token's role can be a day old, so a Member token may belong to someone promoted since. The
+  // proxy lets every signed-in user reach the page, which checks the Capability against /auth/me.
+  it("cho bang chúng đi tiếp tới route quản lý, trang tự xét Capability", async () => {
     const response = await proxy(
       request(ROUTES.teamBuilder, {
         access: await token(3600, MEMBER_PAYLOAD),
       })
     );
 
-    expect(response.status).toBe(307);
-    expect(new URL(response.headers.get("location") ?? "").pathname).toBe(
-      ROUTES.attendance
-    );
+    expect(response.status).toBe(200);
   });
 
   it("cho bang chúng vào trang điểm danh", async () => {

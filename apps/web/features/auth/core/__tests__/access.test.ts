@@ -45,47 +45,33 @@ describe("decideAccess", () => {
     );
   });
 
-  // The admin list is the opposite, and keeps `startsWith` on purpose: matching too widely here
-  // locks one door by mistake, while matching too narrowly leaves an admin route unguarded.
-  it("danh sách quản trị khớp rộng, vì hỏng theo hướng an toàn", () => {
-    expect(
-      decideAccess({ pathname: "/xep-team-v2", role: GuildRole.MEMBER })
-    ).toBe("home");
-  });
+  // The token's role can be a day old, so the proxy no longer judges management routes by it: a
+  // Member promoted to Manager would be turned away until the token refreshed. Every signed-in
+  // user reaches the page, whose server component checks the Capability against /auth/me.
+  it.each(Object.values(GuildRole))(
+    "%s đã đăng nhập đi qua proxy ở mọi route quản lý, trang tự kiểm Capability",
+    (role) => {
+      for (const pathname of [
+        "/xep-team",
+        "/xep-team-v2",
+        "/thiet-lap",
+        "/dua-meo",
+        "/dua-meo/abc",
+      ]) {
+        expect(decideAccess({ pathname, role })).toBe("allow");
+      }
+    }
+  );
 
-  it("bang chúng không vào được route quản trị", () => {
-    const role = GuildRole.MEMBER;
-
-    expect(decideAccess({ pathname: "/xep-team", role })).toBe("home");
-    expect(decideAccess({ pathname: "/thiet-lap", role })).toBe("home");
-    expect(decideAccess({ pathname: "/", role })).toBe("allow");
-  });
-
-  it("quản trị viên vào được mọi route", () => {
-    expect(decideAccess({ pathname: "/xep-team", role: GuildRole.ADMIN })).toBe(
+  it("bang chúng vào được route quản lý để trang xét vai mới nhất thay vì vai trong token", () => {
+    expect(decideAccess({ pathname: "/thiet-lap", role: GuildRole.MEMBER })).toBe(
       "allow"
     );
-    expect(
-      decideAccess({ pathname: "/thiet-lap", role: GuildRole.ADMIN })
-    ).toBe("allow");
   });
 
-  // The token carries the role only, so the proxy cannot judge Grants: it lets a Manager through
-  // and the page re-checks the Capability from /auth/me.
-  it("Manager đi qua proxy ở mọi route quản lý, trang tự kiểm Capability", () => {
-    for (const pathname of ["/xep-team", "/thiet-lap", "/dua-meo", "/dua-meo/abc"]) {
-      expect(decideAccess({ pathname, role: GuildRole.MANAGER })).toBe("allow");
-    }
-  });
-
-  it("Manager vẫn bị chuyển về login khi chưa đăng nhập", () => {
-    expect(decideAccess({ pathname: "/thiet-lap", role: null })).toBe("login");
-  });
-
-  it("/dua-meo và các trang con chỉ dành cho admin", () => {
-    for (const pathname of ["/dua-meo", "/dua-meo/abc"]) {
-      expect(decideAccess({ pathname, role: GuildRole.MEMBER })).toBe("home");
-      expect(decideAccess({ pathname, role: GuildRole.ADMIN })).toBe("allow");
+  it("khách vẫn bị chuyển về login ở route quản lý", () => {
+    for (const pathname of ["/xep-team", "/thiet-lap", "/dua-meo"]) {
+      expect(decideAccess({ pathname, role: null })).toBe("login");
     }
   });
 });

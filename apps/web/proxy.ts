@@ -136,11 +136,6 @@ function signedOutResponse(
         : NextResponse.redirect(new URL(ROUTES.landing, request.url));
     case "login":
       return NextResponse.redirect(loginUrl(request, isMisconfigured));
-    // "home" means signed in but not allowed, which cannot come back for `role: null`. It still gets
-    // a branch so that a verdict added to `decideAccess` later is a compile error here rather than a
-    // silent fall-through.
-    case "home":
-      return NextResponse.redirect(new URL(ROUTES.attendance, request.url));
     default:
       return assertNever(decision);
   }
@@ -171,8 +166,6 @@ function decide(
   switch (decision) {
     case "allow":
       return allowed;
-    case "home":
-      return NextResponse.redirect(new URL(ROUTES.attendance, request.url));
     case "landing":
       return NextResponse.redirect(new URL(ROUTES.landing, request.url));
     case "login":

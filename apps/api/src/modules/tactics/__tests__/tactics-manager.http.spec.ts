@@ -127,10 +127,18 @@ describe('tactics write as a Manager over HTTP', () => {
     expect(await createAs(GuildRole.ADMIN)).toBe(403);
   });
 
-  it('Member không bị đọc lại gì', async () => {
-    lookup.mockClear();
+  it('Member vẫn bị 403 khi hàng vẫn là Member', async () => {
+    lookup.mockResolvedValue(stored(GuildRole.MEMBER));
 
     expect(await createAs(GuildRole.MEMBER)).toBe(403);
-    expect(lookup).not.toHaveBeenCalled();
+  });
+
+  it('token Member cũ mà hàng giờ là Quản lý có Capability thì ghi được ngay request kế tiếp', async () => {
+    lookup.mockResolvedValueOnce(stored(GuildRole.MEMBER));
+    lookup.mockResolvedValueOnce(stored(GuildRole.MANAGER, [Capability.TACTICS]));
+
+    expect(await createAs(GuildRole.MEMBER)).toBe(403);
+    // Same token, no new login: the promotion applies on the next request.
+    expect(await createAs(GuildRole.MEMBER)).toBe(201);
   });
 });

@@ -61,17 +61,35 @@ describe("getActor", () => {
     expect(me.fetchMe).not.toHaveBeenCalled();
   });
 
-  it("Member không tốn lần gọi API nào, giữ nguyên phiên", async () => {
+  it("Member cũng đọc /auth/me, và vẫn là Member khi API xác nhận", async () => {
     session.getSession.mockResolvedValue({
       discordId: "1",
       role: GuildRole.MEMBER,
     });
+    me.fetchMe.mockResolvedValue(meReports(GuildRole.MEMBER));
 
     expect(await getActor()).toEqual({
       discordId: "1",
       role: GuildRole.MEMBER,
+      capabilities: [],
+      grantedCommands: [],
     });
-    expect(me.fetchMe).not.toHaveBeenCalled();
+    expect(me.fetchMe).toHaveBeenCalledTimes(1);
+  });
+
+  it("token Member cũ mà API báo giờ là Quản lý có Grant thì lấy vai và Grant mới ngay", async () => {
+    session.getSession.mockResolvedValue({
+      discordId: "1",
+      role: GuildRole.MEMBER,
+    });
+    me.fetchMe.mockResolvedValue(
+      meReports(GuildRole.MANAGER, { capabilities: [Capability.TEAM_BUILDER] })
+    );
+
+    expect(await getActor()).toMatchObject({
+      role: GuildRole.MANAGER,
+      capabilities: [Capability.TEAM_BUILDER],
+    });
   });
 
   it("Manager mang Grant đọc từ /auth/me", async () => {
@@ -127,7 +145,7 @@ describe("getActor", () => {
     expect((await getActor())?.role).toBe(GuildRole.ADMIN);
   });
 
-  it.each([GuildRole.ADMIN, GuildRole.MANAGER])(
+  it.each([GuildRole.ADMIN, GuildRole.MANAGER, GuildRole.MEMBER])(
     "token %s mà /auth/me lỗi thì chỉ còn là Member, không mở cửa",
     async (role) => {
       session.getSession.mockResolvedValue({ discordId: "1", role });

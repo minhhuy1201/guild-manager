@@ -133,19 +133,20 @@ người khác: bảng và nút của chính nhân vật mình vẫn theo luật
 - **Bất biến**: hàng không phải Manager luôn có hai mảng rỗng. Member service giữ bất biến này ở mọi
   lần ghi: rời vai Manager thì xóa mảng, và chỉ lần ghi của Admin mới đặt được mảng.
 - **Nguồn sự thật là DB, đọc mỗi request.** JWT chỉ là thẻ định danh: vai trong token có thể cũ tới
-  một ngày. Trên API, với token ADMIN hoặc MANAGER, `JwtAuthGuard` đọc lại vai và Grant của người
-  gọi từ DB (cùng quy tắc vai với lúc đăng nhập: ID cứu hộ trong env luôn là ADMIN) và dùng giá trị
-  đó thay cho vai trong token. Guard Capability (thay `AdminGuard`, dùng dạng
-  `@RequireCapability(...)` hoặc `@RequireAdmin()` sau `JwtAuthGuard`) và các service như điểm danh hộ
-  cùng đọc từ `request.user`, nên chỉ một lần đọc cho mỗi request. Token MEMBER không tốn lần đọc nào
-  vì Member không có gì để mất. Token ADMIN hoặc MANAGER mà hàng đã bị xóa (và không phải ID cứu hộ)
-  chỉ còn là Member không Grant: chặn quyền mà không thêm một kiểu lỗi mới. Nhờ vậy hạ vai hay thu
-  Grant có hiệu lực ngay request kế tiếp, thay vì trễ tới một vòng đời token (1 ngày).
-- **Chặn trên web**: `/auth/me` trả Grant của người gọi cùng nhân vật đã gắn. Proxy vẫn đẩy Member ra
-  khỏi route quản lý chỉ dựa vào vai. Proxy cho Manager đi qua, rồi server component của trang kiểm
-  tra Capability từ `/auth/me` và chuyển về trang điểm danh khi thiếu. Nav, tab bar điện thoại, user
-  menu và các tab Thiết lập lọc theo cùng Capability. API vẫn là chốt chặn thật, chặn trên web chỉ để
-  hiển thị và tiện dùng.
+  một ngày. Trên API, với mọi token (kể cả MEMBER, để người vừa được nâng lên Manager dùng được
+  Grant ở request kế tiếp), `JwtAuthGuard` đọc lại vai và Grant của người gọi từ DB (cùng quy tắc
+  vai với lúc đăng nhập: ID cứu hộ trong env luôn là ADMIN) và dùng giá trị đó thay cho vai trong
+  token. Guard Capability (thay `AdminGuard`, dùng dạng `@RequireCapability(...)` hoặc
+  `@RequireAdmin()` sau `JwtAuthGuard`) và các service như điểm danh hộ cùng đọc từ `request.user`,
+  nên chỉ một lần đọc (một findUnique theo Discord ID, có index) cho mỗi request. Token mà hàng đã
+  bị xóa (và không phải ID cứu hộ) chỉ còn là Member không Grant: chặn quyền mà không thêm một kiểu
+  lỗi mới. Nhờ vậy nâng vai, hạ vai hay đổi Grant có hiệu lực ngay request kế tiếp, thay vì trễ tới một vòng
+  đời token (1 ngày).
+- **Chặn trên web**: `/auth/me` trả Grant của người gọi cùng nhân vật đã gắn. Proxy chỉ yêu cầu đã
+  đăng nhập và không xét route quản lý theo vai trong token (vai đó có thể cũ). Server component của
+  trang đọc vai và Grant từ `/auth/me`, kiểm tra Capability và chuyển về trang điểm danh khi thiếu.
+  Nav, tab bar điện thoại, user menu và các tab Thiết lập lọc theo cùng Capability. API vẫn là chốt
+  chặn thật, chặn trên web chỉ để hiển thị và tiện dùng.
 - **Endpoint thành viên**: tạo mới được phép với `MEMBERS`, ép vai Member. Sửa với `MEMBERS` chỉ nhận
   tên, class và Discord ID, và chỉ trên hàng Member. Trường vai và Grant, xóa, và mọi lần ghi lên hàng
   Manager hoặc Admin cần Admin. Chốt chặn Admin cuối cùng hiện có đã chạy khi vai đổi khỏi Admin, nên

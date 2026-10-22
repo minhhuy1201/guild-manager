@@ -404,7 +404,7 @@ All user-facing copy is **Vietnamese**.
 ```
 apps/web/
 ├── app/              # routing and layout ONLY — one thin page per route
-├── proxy.ts          # session refresh + admin route guard, runs before every page request
+├── proxy.ts          # session refresh + sign-in requirement, runs before every page request
 ├── features/         # all the logic, one folder per feature
 │   └── <feature>/
 │       ├── api/      # "use server" request functions (through apiFetch) + query key factory
@@ -643,7 +643,7 @@ one exception is `prisma/fix-deadlines.ts`, a one-off migration of rows written 
 | **A new backend domain** | `src/modules/<domain>/` with `<domain>.module.ts`, `.controller.ts`, `.service.ts`, plus `dto/`. Register it in `app.module.ts`. Its request **and** response shapes go in `packages/shared/schemas/`. Add a `<domain>.repository.ts` only once the queries are complex or repeated; simple CRUD calls `PrismaService` from the service. |
 | **A database column or table** | `prisma/schema.prisma` → `pnpm --filter api prisma:migrate` → commit the migration folder. Enums must stay in step with `packages/shared/enums`. Then check the Data API grants ([`production.md`](production.md) §5). |
 | **A request/response shape, an enum, a validation rule** | `packages/shared` — never re-declared per app. |
-| **A new page** | A thin `app/<route>/page.tsx` that renders one feature component, the path added to `config/routes.ts`. Admin-only? Add the prefix to `ADMIN_PATH_PREFIXES` in `features/auth/core/access.ts` **and** re-check `getSession()` in the page. Readable without signing in? Add it to `PUBLIC_PATH_PREFIXES` in `features/auth/core/access.ts`, and remember every visitor on the internet can then read it. |
+| **A new page** | A thin `app/<route>/page.tsx` that renders one feature component, the path added to `config/routes.ts`. Needs a Capability? Check `can(await getActor(), Capability.X)` in the page and guard the API; the proxy only requires a session. Readable without signing in? Add it to `PUBLIC_PATH_PREFIXES` in `features/auth/core/access.ts`, and remember every visitor on the internet can then read it. |
 | **Frontend behavior for an existing feature** | Inside that `features/<feature>/`: request function in `api/`, hook in `hooks/`, UI state in `store/`, pure logic in `lib/`. Export it from `index.ts` only if another feature needs it. |
 | **A new frontend feature** | A new `features/<feature>/` with the same folders and an `index.ts`. Do not reach into another feature's files. |
 | **A component used by two or more features** | `components/shared/`. If it is a stock shadcn component, generate it into `components/ui/` with the CLI and wrap it. |

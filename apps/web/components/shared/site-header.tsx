@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { Capability } from "@guild/shared/enums";
-import { can, type Actor } from "@guild/shared/lib";
+import { can } from "@guild/shared/lib";
 
 import { GuildSeal } from "@/components/shared/guild-seal";
 import { HeaderLoginButton } from "@/components/shared/header-login-button";
@@ -56,17 +56,17 @@ function GuildName() {
  * The app's top header: the guild name "Mèo Mập Giang Hồ" and, once signed in, the main nav - in
  * the header from `sm` up, in the tab bar at the bottom of a phone's screen below it. A visitor gets
  * the guild's public page behind the mark and a way to sign in.
- * Reads the actor on the server to decide whether to show the nav at all, and which items it carries. The theme is picked from the account menu, or from `ThemeMenu` when signed out.
+ * Reads the actor on the server to decide whether to show the nav at all, and which items it
+ * carries. The theme is picked from the account menu, or from `ThemeMenu` when signed out.
  * @returns The styled header, followed by the phone's tab bar when signed in
  */
 export async function SiteHeader() {
   // The login page renders this header too, so a broken session just means "signed out".
   // The actor carries the role and Grants `/auth/me` reports today, not the token's older role, and
   // shares that one read with `getMe` below and with the page being rendered.
-  const session = await getActor();
-  const meResult = session ? await getMe() : null;
+  const actor = await getActor();
+  const meResult = actor ? await getMe() : null;
   const me = meResult?.ok ? meResult.data : null;
-  const actor: Actor | null = session;
 
   return (
     <>
@@ -93,25 +93,25 @@ export async function SiteHeader() {
           {/* Signed in the mark leads to the week's attendance, signed out to the guild's public
               page - the one route besides the login screen a visitor can actually reach. */}
           <Link
-            href={session ? ROUTES.attendance : ROUTES.landing}
+            href={actor ? ROUTES.attendance : ROUTES.landing}
             transitionTypes={PAGE_NAV_TRANSITION}
             className={BRAND}
           >
             <GuildName />
           </Link>
           {/* Signed out there is nothing to navigate between, only a way in. */}
-          {!session && (
+          {!actor && (
             <div className="ml-auto flex shrink-0 items-center gap-2">
               <ThemeMenu />
               <HeaderLoginButton />
             </div>
           )}
-          {session && actor && (
+          {actor && (
             <div className="ml-auto flex shrink-0 items-center gap-2.5">
               <MainNav actor={actor} />
               <UserMenu
                 label={me?.character?.name ?? me?.discordUsername ?? null}
-                discordId={session.discordId}
+                discordId={actor.discordId}
                 avatarHash={me?.discordAvatar ?? null}
                 canRaceCats={can(actor, Capability.CAT_RACE)}
               />
