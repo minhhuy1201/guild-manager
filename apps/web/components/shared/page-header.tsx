@@ -20,19 +20,23 @@ interface PageHeaderProps {
   actions?: ReactNode;
   /** Below `sm`, drop the scene and show title and description as plain text on the page */
   isPlainOnPhone?: boolean;
+  /** Keep the short strip and small title; only the cat race pages, so the stage stays put */
+  isCompact?: boolean;
 }
 
 /**
- * The top of every page: a banner strip with the page's scene, a serif title and an optional
+ * The top of every page: a tall, cinematic banner with the page's scene, a serif title and an optional
  * description over it, page-wide actions at the bottom right, and the jade-diamond rule closing the
  * block. Two scrims - one rising from the bottom, one from the left - keep white text readable on
  * the night scenes and the daylight ones alike. `isPlainOnPhone` (attendance and its history)
- * gives a phone the text alone, since the strip would spend its screen on decoration.
+ * gives a phone the text alone, since the strip would spend its screen on decoration. The scene
+ * drifts once on arrival (`animate-drift`, a single transform) and then holds still.
  * @param banner - Which page's scene to draw
  * @param title - The page title
  * @param description - Sentence under the title, if any
  * @param actions - Page-wide controls, if any
  * @param isPlainOnPhone - Whether a phone gets plain text instead of the scene
+ * @param isCompact - Whether to keep the short strip and small title
  * @returns The page header block
  */
 export function PageHeader({
@@ -41,6 +45,7 @@ export function PageHeader({
   description,
   actions,
   isPlainOnPhone = false,
+  isCompact = false,
 }: PageHeaderProps) {
   const { src, objectPosition, tint } = PAGE_BANNERS[banner];
   // Everything that belongs to the scene, so one flag drops it all on a phone.
@@ -49,12 +54,17 @@ export function PageHeader({
   return (
     <div
       className={cn(
-        "relative flex min-h-24 flex-col justify-end overflow-hidden rounded-2xl bg-(--banner-tint) sm:min-h-28",
-        isPlainOnPhone && "max-sm:min-h-0 max-sm:bg-transparent"
+        "relative flex flex-col justify-end overflow-hidden rounded-container bg-(--banner-tint) shadow-md",
+        isCompact ? "min-h-24 sm:min-h-28" : "min-h-36 sm:min-h-48 lg:min-h-60",
+        isPlainOnPhone && "max-sm:min-h-0 max-sm:bg-transparent max-sm:shadow-none"
       )}
       style={{ "--banner-tint": tint } as CSSProperties}
     >
-      <div aria-hidden className={cn("absolute inset-0", sceneClass)}>
+      <div
+        aria-hidden
+        data-slot="banner-scene"
+        className={cn("absolute inset-0 animate-drift", sceneClass)}
+      >
         <BannerImage
           src={src}
           objectPosition={objectPosition}
@@ -78,7 +88,10 @@ export function PageHeader({
 
       <div
         className={cn(
-          "relative flex flex-col gap-3 px-5 pt-4 pb-3 sm:px-8",
+          "relative flex flex-col gap-3 px-5 sm:px-8",
+          isCompact
+            ? "pt-4 pb-3"
+            : "pt-6 pb-4 sm:pt-8 sm:pb-5 lg:px-10",
           isPlainOnPhone && "max-sm:px-0"
         )}
       >
@@ -86,7 +99,10 @@ export function PageHeader({
           <div className="flex min-w-0 flex-col gap-1.5">
             <h1
               className={cn(
-                "font-heading text-2xl font-semibold tracking-tight text-balance text-white [text-shadow:0_1px_12px_rgb(0_0_0/0.35)] sm:text-3xl",
+                "font-heading font-semibold tracking-tight text-balance text-white",
+                isCompact
+                  ? "text-2xl [text-shadow:0_1px_12px_rgb(0_0_0/0.35)] sm:text-3xl"
+                  : "text-3xl leading-tight [text-shadow:0_2px_18px_rgb(0_0_0/0.45)] sm:text-4xl lg:text-5xl",
                 isPlainOnPhone &&
                   "max-sm:text-foreground max-sm:[text-shadow:none]"
               )}
@@ -96,7 +112,8 @@ export function PageHeader({
             {description && (
               <p
                 className={cn(
-                  "max-w-prose text-sm text-pretty text-white/80",
+                  "max-w-prose text-sm text-pretty text-white/85",
+                  !isCompact && "sm:text-base",
                   isPlainOnPhone && "max-sm:text-muted-foreground"
                 )}
               >

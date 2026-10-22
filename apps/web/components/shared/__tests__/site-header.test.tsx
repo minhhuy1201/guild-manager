@@ -25,6 +25,14 @@ vi.mock("@/features/auth/server", () => ({
 import { SiteHeader } from "../site-header";
 
 afterEach(cleanup);
+// jsdom has no ResizeObserver, which the nav uses to re-measure its sliding bar.
+vi.stubGlobal(
+  "ResizeObserver",
+  class {
+    observe() {}
+    disconnect() {}
+  }
+);
 
 /**
  * `SiteHeader` is an async Server Component; awaiting it gives the element tree to render, which is

@@ -23,7 +23,7 @@ Screens must look like one app. A new display convention goes here; its reason g
 - Use a token for every colour so it follows the theme. A literal colour is only for something identical in both themes: scrims, white text on a picture, attendance state colours, a guild class colour (`lib/guild-class.ts`).
 - Take the cat race stage colours from the `--stage-*` variables in `globals.css` (`lib/stage-palette.ts` for a canvas). That palette is a valid fixed colour: identical in both themes. Scrims, shadows and glows (translucent shades) inside the stage block may stay literal, like any scrim.
 - Treat a `dark:` variant as a last resort. Fix it with a token that fits both themes.
-- Give the header and the phone tab bar `className="dark"` plus `text-foreground`.
+- Give the header and the phone tab bar `className="dark"` plus `text-foreground`. Both are translucent glass (`bg-card/85` or `/80`, `backdrop-blur-xl`, a `border-white/10` edge); keep the tab bar a sibling of the header, since the blur is a containing block.
 - Read the theme in the toaster through `useTheme()` (`components/ui/sonner.tsx`).
 - Tint team columns (`features/team-builder/lib/team-colors.ts`) from the same palette. Text is always `foreground`.
 
@@ -37,6 +37,8 @@ Screens must look like one app. A new display convention goes here; its reason g
 
 - Open every page with `PageHeader` (`components/shared/page-header.tsx`), except the tactic page (`TacticHeader`). A new tool page asks first.
 - Pass `banner` (a `PAGE_BANNERS` entry in `lib/page-banners.ts`). A new page adds its scene there; pictures live in `public/img/bg/`. Only the attendance page and its history set `isPlainOnPhone` (below `sm` it shows text only); a new page asks first.
+- Keep the banner tall (`min-h-36` / `sm:min-h-48` / `lg:min-h-60`), the scene wrapper on `animate-drift`, and the title `text-3xl` up to `lg:text-5xl`.
+- Pass `isCompact` (the old short strip and small title) only on the two cat race pages: the redesign excludes the race, and a taller banner would push its stage down.
 - Keep the two scrims between a picture and its text. Never put text on a picture without them.
 - Keep one `<h1>` per page, in `font-heading` (Playfair Display). A section title inside a card is an `<h2>`; it may take `font-heading` too.
 - Use `font-heading` for headings only: `PageHeader`, section titles, the guild name, the formation banner, `DialogTitle`. Never for body, labels or data.

@@ -36,7 +36,7 @@ A new interaction convention goes here; its reason goes in `frontend.md`.
 - Give a bordered control `bg-card`, never a transparent fill.
 - Neutral hover: `hover:bg-foreground/5`; `bg-foreground/10` while a popup is open. Do not use `bg-muted` or `bg-secondary` for hover or selected state.
 - Selected: a solid `primary` surface with `primary-foreground` text (default `TabsTrigger`, team builder session cards).
-- Current page in the header nav: not a primary surface. Keep the ghost button, `text-foreground`, a `jade` icon and a 2px `jade` bar. Render each entry as a plain `Link` styled with `buttonVariants`, never a `Button` rendering a link. The same entries (`nav-items.ts`) feed `mobile-tab-bar.tsx` below `sm`; `desktopOnly` entries stay off it.
+- Current page in the header nav: not a primary surface. Keep the ghost button, `text-foreground`, a `jade` icon; the 2px `jade` bar is one shared indicator that slides to the active link by `transform` only (`main-nav.tsx`). Render each entry as a plain `Link` styled with `buttonVariants`, never a `Button` rendering a link. The same entries (`nav-items.ts`) feed `mobile-tab-bar.tsx` below `sm`; `desktopOnly` entries stay off it.
 - Reserve the tab bar's height through `--app-bottom-inset`; every sticky bottom bar sits above it.
 - Paint a hovered menu item with `data-highlighted:bg-foreground/5`, never `focus:` and never `bg-accent`.
 - Skip the selected item on hover: write `not-data-active:hover:*`.
@@ -95,6 +95,7 @@ A new interaction convention goes here; its reason goes in `frontend.md`.
 ## Entrance and data reveal
 
 - Reveal data with `REVEAL_CLASS` + `revealStyle(index)` from `lib/motion.ts` (40ms steps, capped at the ninth). A new list of loaded data takes the helper, never a delay of its own. Wrap a component without `className` in a one-cell `grid`.
+- Wrap `<main>` in React `<ViewTransition default="page-fade">` (`app/layout.tsx`): a page switch cross-fades the content while the header stays still. Style it only with the `::view-transition-*(.page-fade)` rules in `globals.css`; never give `main` or a page a permanent `view-transition-name` (it would become the containing block of the drag overlay and sticky bars). Reduced motion zeroes those pseudo-elements too.
 - Let `<main>` children run `page-enter` (60ms stagger). Table rows run `fade-in-soft` (opacity only). `Skeleton` uses `animate-shimmer`.
 - Wrap a block far below the fold in `ScrollReveal`; only the wrapper is a Client Component.
 - Fill every entrance `backwards`, never `both`. End every keyframe on `transform: none`.

@@ -1,14 +1,26 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ROUTES } from "@/config/routes";
 
-vi.mock("next/navigation", () => ({ usePathname: () => ROUTES.attendance }));
+const nav = vi.hoisted(() => ({ pathname: "/" }));
+vi.mock("next/navigation", () => ({ usePathname: () => nav.pathname }));
 
 import { MainNav } from "../main-nav";
 
 afterEach(cleanup);
+beforeEach(() => {
+  // jsdom has no ResizeObserver; the nav only needs it to re-measure on a layout change.
+  vi.stubGlobal(
+    "ResizeObserver",
+    class {
+      observe() {}
+      disconnect() {}
+    }
+  );
+  nav.pathname = ROUTES.attendance;
+});
 
 // From sm to lg (landscape phones, tablets) four full labels squeeze the guild name out of the
 // header, so the nav uses short labels there. A screen reader still reads the full name.
@@ -30,5 +42,45 @@ describe("MainNav - nhãn ngắn dưới lg", () => {
     const link = screen.getByRole("link", { name: "Điểm danh" });
 
     expect(within(link).getAllByText("Điểm danh")).toHaveLength(1);
+  });
+});
+
+describe("MainNav - mục active và indicator", () => {
+  it("chỉ mục khớp route hiện tại mang aria-current", () => {
+    nav.pathname = ROUTES.attendanceHistory;
+    render(<MainNav isAdmin={false} />);
+
+    const current = screen
+      .getAllByRole("link")
+      .filter((link) => link.getAttribute("aria-current") === "page");
+
+    expect(current).toHaveLength(1);
+    expect(current[0].getAttribute("href")).toBe(ROUTES.attendanceHistory);
+  });
+
+  it("một indicator chung trỏ tới mục active", () => {
+    nav.pathname = ROUTES.attendanceHistory;
+    const { container } = render(<MainNav isAdmin={false} />);
+
+    const indicators = container.querySelectorAll('[data-slot="nav-indicator"]');
+
+    expect(indicators).toHaveLength(1);
+    expect(indicators[0].getAttribute("data-active-href")).toBe(
+      ROUTES.attendanceHistory
+    );
+  });
+
+  it("route không thuộc nav thì không có mục active và indicator ẩn", () => {
+    nav.pathname = "/khong-ton-tai";
+    const { container } = render(<MainNav isAdmin={false} />);
+
+    expect(
+      screen.queryAllByRole("link").some((l) => l.hasAttribute("aria-current"))
+    ).toBe(false);
+    expect(
+      container
+        .querySelector('[data-slot="nav-indicator"]')
+        ?.hasAttribute("data-active-href")
+    ).toBe(false);
   });
 });

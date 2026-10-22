@@ -441,14 +441,17 @@ Never give a `<label>` to a field with no control: it announces a control that i
 ### Page header → `PageHeader` on its banner
 
 Every page but the tactic page (below) opens with `components/shared/page-header.tsx`
-(`<PageHeader banner title description? actions? isPlainOnPhone? />`): a `rounded-2xl` strip holding
+(`<PageHeader banner title description? actions? isPlainOnPhone? />`): a `rounded-container` banner holding
 the page's scene, the page's one `<h1>` in `font-heading` (Playfair Display), white on the scene, an
 optional one-sentence description, page-wide controls at the bottom right (the team builder's week
 picker), and the `OrnamentDivider` (a hairline with a small jade diamond, `surface="image"`) closing
 the block. A section title inside a card is an `<h2>`; it goes through `SectionTitle` (`components/shared/section-title.tsx`): a `font-heading` `<h2>` over a brush-stroke `OrnamentDivider` (`stroke="brush"`), so Playfair Display marks every title and the body stays Be Vietnam Pro.
 
-- **One strip height** (`min-h-24`, `sm:min-h-28`) for every page, so no page spends almost a
-  third of a phone's screen on decoration.
+- **One banner height** (`min-h-36`, `sm:min-h-48`, `lg:min-h-60`) for every page: cinematic on a
+  wide screen, still short on a phone. The title steps from `text-3xl` to `lg:text-5xl`. The scene
+  wrapper carries `animate-drift` (`--duration-drift`, 9s): one slow settle from a slight zoom,
+  transform only, `backwards` and ending on `transform: none`, never repeated. Reduced motion
+  collapses it to its final frame.
 - **`isPlainOnPhone`** goes further: below `sm` the scene, scrims and divider are hidden and the
   title and description read as plain text on the page. Only the attendance page and its history
   set it; a new page asks first. The picture is still requested on a phone (`preload`), because CSS
@@ -743,8 +746,12 @@ a selected state. The convention:
   light theme, inverted in the dark one. Both in-page selections follow it: the default
   `TabsTrigger` and the team builder's session cards.
 - **Current page in the header nav** - *not* a primary surface: navigation is not an in-page
-  selection. The item keeps its ghost button, takes `text-foreground`, a `jade` icon and a 2px
-  `jade` bar under it (`main-nav.tsx`). Only colour and opacity change, so the row never shifts.
+  selection. The item keeps its ghost button, takes `text-foreground` and a `jade` icon; the 2px
+  `jade` bar is one shared indicator that slides to the active link by `transform` alone
+  (`main-nav.tsx`: a 1px bar, `translateX` + `scaleX`, measured in a layout effect and again on a
+  `ResizeObserver` because labels change width at `lg`). It is placed without a transition on first
+  paint, and until it is measured the active link draws its own underline so a server-rendered page
+  is never unmarked. Only colour and the bar's transform change, so the row never shifts.
   Each entry is a plain `Link` styled with `buttonVariants`, never a `Button` rendering a link: Base
   UI gives that anchor `role="button"`, and navigation must read as links. From `sm` to `lg` the
   entries show their short names (the full name stays their `aria-label`) and the guild's name

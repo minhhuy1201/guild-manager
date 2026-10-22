@@ -27,6 +27,9 @@
        never `both`: a transform left on an element after it lands makes it the containing block
        of every `position: fixed` descendant - the team builder's drag overlay among them. */
     --animate-reveal: reveal var(--duration-slow) var(--ease-out-soft) backwards;
+    /* The banner scene's one slow drift (Ken Burns). `backwards` for the same reason as reveal: the
+       keyframes end on `transform: none`, so nothing is left on the element once it lands. */
+    --animate-drift: drift var(--duration-drift) var(--ease-out-soft) backwards;
     --animate-shimmer: shimmer 1.6s linear infinite;
     /* A multi-step dialog's next step arrives from the right, a step back from the left. */
     --animate-step-forward: step-forward var(--duration-base) var(--ease-out-soft) backwards;
@@ -399,6 +402,11 @@
   to { opacity: 1; transform: none; }
 }
 
+@keyframes drift {
+  from { transform: scale(1.12) translate3d(-1.5%, 1%, 0); }
+  to { transform: none; }
+}
+
 @keyframes reveal {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: none; }
@@ -417,6 +425,27 @@
 @keyframes fade-in-soft {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+/* Page switch (`<ViewTransition default="page-fade">` in `app/layout.tsx`): the old content leaves
+   fast, the new one settles in. The root snapshot stays still, so the header never fades, and the
+   overlay lets clicks through to the live page. */
+@keyframes page-fade-out {
+  to { opacity: 0; }
+}
+
+::view-transition {
+  pointer-events: none;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+::view-transition-old(.page-fade) {
+  animation: page-fade-out var(--duration-fast) ease-out both;
+}
+::view-transition-new(.page-fade) {
+  animation: fade-in-soft var(--duration-slow) var(--ease-out-soft) var(--duration-fast) both;
 }
 
 /* The highlight sits in the middle of a gradient twice the element's width and crosses left to right. */
@@ -908,5 +937,13 @@
         animation-delay: 0s !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
+    }
+
+    /* The page cross-fade runs on pseudo-elements the rule above cannot reach: the content swaps. */
+    ::view-transition-old(*),
+    ::view-transition-new(*),
+    ::view-transition-group(*) {
+        animation-duration: 0.01ms !important;
+        animation-delay: 0s !important;
     }
 }

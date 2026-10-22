@@ -207,6 +207,8 @@ Giao làm 5 PR, mỗi PR tự đứng được và đổi diện mạo thấy ng
 - Kích thước control và sàn 44px trên điện thoại. Root font 115%/120%.
 - Không ảnh sau dữ liệu. Không cuộn ngang trang. Save bar vẫn `sticky`.
 - Mọi thứ thuộc đua mèo: `features/cat-race`, khối `--stage-*` và `.race-*` trong `globals.css`.
+  Hai trang đua mèo giữ banner thấp như cũ (prop `isCompact` của `PageHeader`), để banner cao
+  không đẩy stage xuống. Card, Button, EmptyState và header dùng chung nên vẫn đổi theo.
 
 ## Testing Decisions
 

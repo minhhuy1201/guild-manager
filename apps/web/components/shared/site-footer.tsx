@@ -1,3 +1,4 @@
+import { OrnamentDivider } from "@/components/shared/ornament-divider";
 import { APP_SHELL_WIDTH } from "@/lib/layout";
 import { cn } from "@/lib/utils";
 
@@ -12,7 +13,8 @@ export function SiteFooter() {
     <footer
       className={cn("mx-auto mt-auto w-full px-4 pb-6 sm:px-6", APP_SHELL_WIDTH)}
     >
-      <p className="text-center text-xs text-pretty text-muted-foreground">
+      <OrnamentDivider align="center" stroke="brush" className="mb-4" />
+      <p className="mx-auto max-w-prose text-center text-xs text-pretty text-muted-foreground">
         Hình ảnh: © NetEase, Nghịch Thuỷ Hàn. Trang phi thương mại của bang Mèo
         Mập Giang Hồ, không liên kết với NetEase.
       </p>
