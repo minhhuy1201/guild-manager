@@ -177,7 +177,7 @@ Giao làm 5 PR, mỗi PR tự đứng được và đổi diện mạo thấy ng
 
 - **PR 2, điểm danh + lịch sử:**
   - "Tuần này của bạn" thành dải ô lớn lấp đủ chiều ngang, card cấp `raised`.
-  - Bảng điểm danh co theo số trận, dòng tổng nổi riêng, số tổng đếm chạy lên.
+  - Bảng điểm danh có cột tên cố định và các cột trận chia đều phần còn lại, dòng tổng nổi riêng, số tổng đếm chạy lên.
   - Banner nghỉ phép thành dạng notice.
   - Lịch sử: filter thành dải `inset` gọn. Lưới card biểu đồ tự giãn theo số card. Tint guild war
     chuyển thành cạnh nhấn primary thay vì nền `bg-primary/5`.
@@ -188,7 +188,7 @@ Giao làm 5 PR, mỗi PR tự đứng được và đổi diện mạo thấy ng
   - Sửa tab trận đang chọn ở theme tối.
   - Member pool thành khay. Drag overlay và vùng thả có highlight rõ.
   - Lưới đội hình vẫn không reveal. Bản `capture` (ảnh gửi Discord) không đổi bố cục: 5 cột, 10 đội,
-    banner cao, không chip.
+    banner cao, không chip. Màu và font banner của ảnh đổi theo giao diện mới có chủ ý.
 - **PR 4, chiến thuật + thiết lập:**
   - Danh sách chiến thuật thành lưới card, cả card vẫn là link, `RowActions` vẫn nằm trên overlay.
   - Khung editor và toolbar theo bề mặt mới, nhóm công cụ tách bằng nền.

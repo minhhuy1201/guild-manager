@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { QueryBoundary } from "@/components/shared/query-boundary";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import { REVEAL_CLASS, revealStyle } from "@/lib/motion";
 import { useAttendanceBoard } from "../hooks/use-attendance-board";
 import {
@@ -16,10 +17,14 @@ import {
   useSessionFilter,
 } from "../hooks/use-attendance";
 import { maxClassSize, summarizeByClass } from "../lib/attendance-summary";
+import { summaryCardSpanClass } from "../lib/summary-grid";
 import { AttendanceSummaryCard } from "./attendance-summary-card";
 
-/** Grid of the week's days, the same one the member card uses. */
-const GRID = "grid gap-4 sm:grid-cols-2 lg:grid-cols-3";
+/**
+ * Six-column grid (must match SUMMARY_GRID_COLUMNS in `lib/summary-grid.ts`): each card's span
+ * comes from `summaryCardSpanClass`, so the last row always fills.
+ */
+const GRID = "grid grid-cols-1 gap-4 sm:grid-cols-6";
 
 /** Placeholder cards while loading — as many as a week usually has sessions. */
 const SKELETON_CARDS = 3;
@@ -67,7 +72,13 @@ export function AttendanceSummaryDashboard() {
       skeleton={
         <div className={GRID}>
           {Array.from({ length: SKELETON_CARDS }, (_, index) => (
-            <Skeleton key={index} className="h-72 w-full rounded-xl" />
+            <Skeleton
+              key={index}
+              className={cn(
+                "h-72 w-full rounded-xl",
+                summaryCardSpanClass(index, SKELETON_CARDS)
+              )}
+            />
           ))}
         </div>
       }
@@ -91,7 +102,11 @@ export function AttendanceSummaryDashboard() {
             // item would.
             <div
               key={session.id}
-              className={`grid ${REVEAL_CLASS}`}
+              className={cn(
+                "grid",
+                REVEAL_CLASS,
+                summaryCardSpanClass(index, shownSessions.length)
+              )}
               style={revealStyle(index)}
             >
               <AttendanceSummaryCard

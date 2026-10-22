@@ -589,8 +589,10 @@ Four screens show a battle by name, and all four recognise the Guild War the sam
   ticks once a minute, so nothing around it re-renders, and under a day left it turns semibold
   `primary` (amber is "not answered", red is "Không"). The lock is still the API's
   `isAttendanceClosed`; a client clock already past the deadline reads "sắp khoá", never "đã khoá".
-- `sessionTintClass(isGuildWar)` returns `border-primary/40 bg-primary/5` for the Guild War, to be
-  merged into whatever frame the screen already draws.
+- `sessionTintClass(isGuildWar)` returns `border-l-4 border-l-primary` for the Guild War, to be
+  merged into whatever frame the screen already draws. It is an accent edge, not a wash: a
+  `primary/5` ground read as muddy grey on cards and tiles in both themes, and an edge survives any
+  surface (card, inset tile, settings row) unchanged.
 
 What the module deliberately does **not** hold: the frame, the spacing, and the subtitle. The four
 screens stack a battle four different ways, so the subtitle stays with each of them and keeps its own
@@ -794,6 +796,7 @@ bg-muted` and an active tab on `bg-background` sank into the page. The `default`
 - **Selected tab** — `bg-primary text-primary-foreground font-semibold`; the rest keep plain
   `text-foreground`. Not `text-muted-foreground`: on that track it measures 3.4:1 in the dark theme,
   and the filled pill already carries the hierarchy without dimming the other labels.
+- **Large selected blocks in dark** — the team builder's battle cards and team chips use a `primary/20` wash with `foreground` text in dark; dark `primary` is a bright periwinkle, and a card-sized block of it looked out of tone.
 
 The `line` variant keeps its underline look (transparent surface, `foreground` text). A screen that
 wants tabs of its own overrides them at the call site, as `session-tabs.tsx` does — it never edits

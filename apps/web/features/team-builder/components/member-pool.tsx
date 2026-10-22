@@ -64,7 +64,7 @@ export function MemberPool({
   const isFiltering = search.trim().length > 0 || guildClasses.length > 0;
 
   return (
-    <Card>
+    <Card variant="inset">
       <CardHeader>
         <SectionTitle count={pool.length}>Thành viên chưa xếp</SectionTitle>
       </CardHeader>
@@ -85,8 +85,8 @@ export function MemberPool({
         <div
           ref={setNodeRef}
           className={cn(
-            "rounded-md border border-dashed p-2 transition-colors",
-            isOver && "border-primary bg-primary/5"
+            "rounded-inner border border-dashed border-border bg-card/60 p-2 transition-[background-color,box-shadow,border-color] duration-[var(--duration-fast)]",
+            isOver && "border-solid border-jade bg-jade/10 shadow-[var(--glow-jade)]"
           )}
         >
           <ScrollArea className="h-64">
