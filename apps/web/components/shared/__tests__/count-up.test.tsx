@@ -68,6 +68,28 @@ describe("CountUp", () => {
     expect(shown()).toBe("42");
   });
 
+  it("does not start counting when reduced motion is turned off after mount", () => {
+    let isReduced = true;
+    let notify = () => {};
+    vi.stubGlobal("matchMedia", () => ({
+      get matches() {
+        return isReduced;
+      },
+      addEventListener: (_type: string, listener: () => void) => {
+        notify = listener;
+      },
+      removeEventListener: () => {},
+    }));
+
+    render(<CountUp value={42} data-testid="count" />);
+    act(() => {
+      isReduced = false;
+      notify();
+    });
+
+    expect(shown()).toBe("42");
+  });
+
   it("does not run again when a background refetch changes the value", () => {
     const { rerender } = render(<CountUp value={10} data-testid="count" />);
     act(() => {

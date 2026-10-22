@@ -1,5 +1,8 @@
-/** Columns of the dashboard grid; every per-row split below (1, 2, 3) divides it evenly. */
-export const SUMMARY_GRID_COLUMNS = 6;
+/**
+ * Columns of the dashboard grid; every per-row split below (1, 2, 3) divides it evenly. Must match
+ * the literal `sm:grid-cols-6` in `attendance-summary-dashboard.tsx` (Tailwind needs the literal).
+ */
+const SUMMARY_GRID_COLUMNS = 6;
 
 /** Full class names, so Tailwind's scanner sees them: a template string would be purged. */
 const SM_SPAN: Record<number, string> = {

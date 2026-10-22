@@ -41,8 +41,12 @@ export function CountUp({ value, className, ...props }: CountUpProps) {
     latestValue.current = value;
   }, [value]);
 
+  // Seen without motion counts as played: turning reduced motion off later must not replay it.
+  // Adjusted during render, React's pattern for state derived from a changing input.
+  if (isReduced && !isSettled) setIsSettled(true);
+
   useEffect(() => {
-    if (isReduced) return;
+    if (isSettled) return;
 
     const start = performance.now();
     let frame = 0;
@@ -65,7 +69,7 @@ export function CountUp({ value, className, ...props }: CountUpProps) {
     frame = requestAnimationFrame(tick);
 
     return () => cancelAnimationFrame(frame);
-  }, [isReduced]);
+  }, [isReduced, isSettled]);
 
   return (
     <span className={cn("inline-grid", className)} {...props}>

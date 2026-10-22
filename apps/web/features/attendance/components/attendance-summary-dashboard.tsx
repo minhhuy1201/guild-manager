@@ -21,6 +21,7 @@ import { summaryCardSpanClass } from "../lib/summary-grid";
 import { AttendanceSummaryCard } from "./attendance-summary-card";
 
 /** Six-column grid: each card's span comes from `summaryCardSpanClass`, so the last row always fills. */
+// Six columns: must match SUMMARY_GRID_COLUMNS in `lib/summary-grid.ts`.
 const GRID = "grid grid-cols-1 gap-4 sm:grid-cols-6";
 
 /** Placeholder cards while loading — as many as a week usually has sessions. */
