@@ -10,7 +10,7 @@ import { MobileTabBar } from "@/components/shared/mobile-tab-bar";
 import { ThemeMenu } from "@/components/shared/theme-menu";
 import { ROUTES } from "@/config/routes";
 import { UserMenu } from "@/features/auth";
-import { fetchMe, getSession } from "@/features/auth/server";
+import { getActor, getMe } from "@/features/auth/server";
 import { APP_SHELL_WIDTH } from "@/lib/layout";
 import { PAGE_NAV_TRANSITION } from "@/lib/page-transition";
 import { cn } from "@/lib/utils";
@@ -56,23 +56,17 @@ function GuildName() {
  * The app's top header: the guild name "Mèo Mập Giang Hồ" and, once signed in, the main nav - in
  * the header from `sm` up, in the tab bar at the bottom of a phone's screen below it. A visitor gets
  * the guild's public page behind the mark and a way to sign in.
- * Reads the session on the server to decide whether to show the nav at all, and whether it carries
- * the admin items. The theme is picked from the account menu, or from `ThemeMenu` when signed out.
+ * Reads the actor on the server to decide whether to show the nav at all, and which items it carries. The theme is picked from the account menu, or from `ThemeMenu` when signed out.
  * @returns The styled header, followed by the phone's tab bar when signed in
  */
 export async function SiteHeader() {
-  const session = await getSession();
   // The login page renders this header too, so a broken session just means "signed out".
-  const meResult = session ? await fetchMe() : null;
+  // The actor carries the role and Grants `/auth/me` reports today, not the token's older role, and
+  // shares that one read with `getMe` below and with the page being rendered.
+  const session = await getActor();
+  const meResult = session ? await getMe() : null;
   const me = meResult?.ok ? meResult.data : null;
-  // The token holds the role only; a Manager's Grants come with the `/auth/me` read above.
-  const actor: Actor | null = session
-    ? {
-        role: session.role,
-        capabilities: me?.capabilities,
-        grantedCommands: me?.grantedCommands,
-      }
-    : null;
+  const actor: Actor | null = session;
 
   return (
     <>

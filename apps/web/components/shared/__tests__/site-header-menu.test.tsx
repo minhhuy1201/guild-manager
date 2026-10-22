@@ -8,10 +8,10 @@ vi.mock("server-only", () => ({}));
 const getSession = vi.fn();
 const fetchMe = vi.fn();
 
-vi.mock("@/features/auth/server", () => ({
+vi.mock("@/features/auth/api/session", () => ({
   getSession: () => getSession(),
-  fetchMe: () => fetchMe(),
 }));
+vi.mock("@/features/auth/api/me", () => ({ fetchMe: () => fetchMe() }));
 // The menu itself is tested on its own; here only what the header hands it matters.
 vi.mock("@/features/auth", () => ({
   UserMenu: (props: { canRaceCats: boolean }) => (
@@ -40,7 +40,7 @@ async function offersCatRace(
   getSession.mockResolvedValue({ discordId: "1", role });
   fetchMe.mockResolvedValue({
     ok: true,
-    data: { capabilities, grantedCommands: [], character: null },
+    data: { role, capabilities, grantedCommands: [], character: null },
   });
   render(await SiteHeader());
 
@@ -64,5 +64,21 @@ describe("SiteHeader - mục Đua mèo trong menu tài khoản", () => {
 
   it("Admin luôn thấy", async () => {
     expect(await offersCatRace(GuildRole.ADMIN)).toBe("true");
+  });
+
+  it("token Admin cũ mà /auth/me báo giờ là Member thì không thấy mục này", async () => {
+    getSession.mockResolvedValue({ discordId: "1", role: GuildRole.ADMIN });
+    fetchMe.mockResolvedValue({
+      ok: true,
+      data: {
+        role: GuildRole.MEMBER,
+        capabilities: [],
+        grantedCommands: [],
+        character: null,
+      },
+    });
+    render(await SiteHeader());
+
+    expect(screen.getByTestId("user-menu").dataset.race).toBe("false");
   });
 });

@@ -17,10 +17,11 @@ vi.mock("next/navigation", () => ({
 const getSession = vi.fn();
 const fetchMe = vi.fn();
 
-vi.mock("@/features/auth/server", () => ({
+// The real `getActor` and `getMe` run over these two reads, as they do in the app.
+vi.mock("@/features/auth/api/session", () => ({
   getSession: () => getSession(),
-  fetchMe: () => fetchMe(),
 }));
+vi.mock("@/features/auth/api/me", () => ({ fetchMe: () => fetchMe() }));
 
 // Link's `transitionTypes` never reaches the DOM, so the stub exposes it for the tests to read.
 vi.mock("next/link", () => ({
@@ -182,7 +183,12 @@ describe("SiteHeader - nav theo Capability", () => {
     getSession.mockResolvedValue({ discordId: "1", role: GuildRole.MANAGER });
     fetchMe.mockResolvedValue({
       ok: true,
-      data: { capabilities, grantedCommands: [], character: null },
+      data: {
+        role: GuildRole.MANAGER,
+        capabilities,
+        grantedCommands: [],
+        character: null,
+      },
     });
   }
 
@@ -236,6 +242,32 @@ describe("SiteHeader - nav theo Capability", () => {
 
   it("khi /auth/me lỗi, Manager không có mục nào thêm", async () => {
     getSession.mockResolvedValue({ discordId: "1", role: GuildRole.MANAGER });
+    fetchMe.mockResolvedValue({ ok: false, message: "x", statusCode: 500 });
+
+    await renderHeader();
+
+    expect(navLinkNames()).toEqual(["Điểm danh", "Lịch sử điểm danh", "Chiến thuật"]);
+  });
+
+  it("token Admin cũ mà /auth/me báo giờ là Member thì không thấy mục quản trị nào", async () => {
+    getSession.mockResolvedValue({ discordId: "1", role: GuildRole.ADMIN });
+    fetchMe.mockResolvedValue({
+      ok: true,
+      data: {
+        role: GuildRole.MEMBER,
+        capabilities: [],
+        grantedCommands: [],
+        character: null,
+      },
+    });
+
+    await renderHeader();
+
+    expect(navLinkNames()).toEqual(["Điểm danh", "Lịch sử điểm danh", "Chiến thuật"]);
+  });
+
+  it("token Admin mà /auth/me lỗi thì nav chỉ còn như Member", async () => {
+    getSession.mockResolvedValue({ discordId: "1", role: GuildRole.ADMIN });
     fetchMe.mockResolvedValue({ ok: false, message: "x", statusCode: 500 });
 
     await renderHeader();

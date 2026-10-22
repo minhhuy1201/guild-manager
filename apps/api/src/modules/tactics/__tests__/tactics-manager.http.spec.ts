@@ -3,7 +3,7 @@ import { JwtModule, JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
 import { Capability, GrantableCommand, GuildRole } from '@guild/shared/enums';
 
-import { GrantLookup, JwtAuthGuard, TOKEN_TYPE } from '../../../common';
+import { ActorLookup, JwtAuthGuard, TOKEN_TYPE } from '../../../common';
 import { TacticsController } from '../tactics.controller';
 import { TacticsService } from '../tactics.service';
 
@@ -17,7 +17,16 @@ describe('tactics write as a Manager over HTTP', () => {
   let app: INestApplication;
   let baseUrl: string;
   let jwt: JwtService;
-  const grants = jest.fn();
+  const lookup = jest.fn();
+
+  /**
+   * Make the lookup answer as the database now stands.
+   * @param role - Role stored for the caller
+   * @param capabilities - Capabilities stored for the caller
+   */
+  function stored(role: GuildRole, capabilities: Capability[] = []) {
+    return { role, capabilities, grantedCommands: [] };
+  }
   const service = {
     create: jest.fn().mockResolvedValue({ id: 't1' }),
     list: jest.fn().mockResolvedValue([]),
@@ -30,7 +39,7 @@ describe('tactics write as a Manager over HTTP', () => {
       providers: [
         JwtAuthGuard,
         { provide: TacticsService, useValue: service },
-        { provide: GrantLookup, useValue: { forDiscordId: grants } },
+        { provide: ActorLookup, useValue: { current: lookup } },
       ],
     }).compile();
 
@@ -68,34 +77,31 @@ describe('tactics write as a Manager over HTTP', () => {
   }
 
   it('Manager có Capability sửa chiến thuật thì ghi được', async () => {
-    grants.mockResolvedValue({
-      capabilities: [Capability.TACTICS],
-      grantedCommands: [],
-    });
+    lookup.mockResolvedValue(stored(GuildRole.MANAGER, [Capability.TACTICS]));
 
     expect(await createAs(GuildRole.MANAGER)).toBe(201);
   });
 
   it('thu Capability thì request kế tiếp bị 403, không cần đăng nhập lại', async () => {
-    grants.mockResolvedValueOnce({
-      capabilities: [Capability.TACTICS],
-      grantedCommands: [],
-    });
-    grants.mockResolvedValueOnce({ capabilities: [], grantedCommands: [] });
+    lookup.mockResolvedValueOnce(
+      stored(GuildRole.MANAGER, [Capability.TACTICS]),
+    );
+    lookup.mockResolvedValueOnce(stored(GuildRole.MANAGER));
 
     expect(await createAs(GuildRole.MANAGER)).toBe(201);
     expect(await createAs(GuildRole.MANAGER)).toBe(403);
   });
 
   it('Manager chưa có Grant nào bị 403 như Member', async () => {
-    grants.mockResolvedValue({ capabilities: [], grantedCommands: [] });
+    lookup.mockResolvedValue(stored(GuildRole.MANAGER));
 
     expect(await createAs(GuildRole.MANAGER)).toBe(403);
     expect(await createAs(GuildRole.MEMBER)).toBe(403);
   });
 
   it('Capability của vùng khác không mở vùng này', async () => {
-    grants.mockResolvedValue({
+    lookup.mockResolvedValue({
+      role: GuildRole.MANAGER,
       capabilities: [Capability.SCHEDULE, Capability.CAT_RACE],
       grantedCommands: Object.values(GrantableCommand),
     });
@@ -103,10 +109,28 @@ describe('tactics write as a Manager over HTTP', () => {
     expect(await createAs(GuildRole.MANAGER)).toBe(403);
   });
 
-  it('Admin ghi được mà không tốn lần đọc Grant nào', async () => {
-    grants.mockClear();
+  it('Admin ghi được', async () => {
+    lookup.mockResolvedValue(stored(GuildRole.ADMIN));
 
     expect(await createAs(GuildRole.ADMIN)).toBe(201);
-    expect(grants).not.toHaveBeenCalled();
+  });
+
+  it('token Manager cũ mà hàng giờ là Member thì bị 403 dù từng có Capability', async () => {
+    lookup.mockResolvedValue(stored(GuildRole.MEMBER));
+
+    expect(await createAs(GuildRole.MANAGER)).toBe(403);
+  });
+
+  it('token Admin cũ mà hàng giờ là Quản lý chưa có Grant thì bị 403', async () => {
+    lookup.mockResolvedValue(stored(GuildRole.MANAGER));
+
+    expect(await createAs(GuildRole.ADMIN)).toBe(403);
+  });
+
+  it('Member không bị đọc lại gì', async () => {
+    lookup.mockClear();
+
+    expect(await createAs(GuildRole.MEMBER)).toBe(403);
+    expect(lookup).not.toHaveBeenCalled();
   });
 });

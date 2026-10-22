@@ -16,10 +16,10 @@ import { verifyResponse, type AppConfigService } from '../../config';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import {
   CharactersService,
+  grantsOf,
   memberRole,
   toCharacter,
 } from '../characters/characters.public';
-import { Capability, GrantableCommand, GuildRole } from '@guild/shared/enums';
 import { isRescueAdmin, resolveGuildRole } from './actor-identity';
 import {
   ACCESS_TOKEN_TTL,
@@ -257,12 +257,6 @@ export class AuthService {
     if (!member && !isRescue) throw new UnauthorizedException(SESSION_EXPIRED);
 
     const role = resolveGuildRole({ isRescue, memberRole: memberRole(member) });
-    // Grants belong to a Manager row; a rescue admin keeps the Admin role and needs none.
-    const grants =
-      role === GuildRole.MANAGER && member
-        ? member
-        : { capabilities: [], grantedCommands: [] };
-
     // `findByDiscordId` hands back the whole row, so the session is built from the one read that
     // already happened rather than a second lookup by id.
     return verifyResponse(sessionUserSchema, {
@@ -270,8 +264,7 @@ export class AuthService {
       discordUsername: member?.discordUsername ?? null,
       discordAvatar: member?.discordAvatar ?? null,
       role,
-      capabilities: grants.capabilities as Capability[],
-      grantedCommands: grants.grantedCommands as GrantableCommand[],
+      ...grantsOf(member, role),
       character: member ? toCharacter(member) : null,
     } satisfies SessionUser);
   }

@@ -48,7 +48,13 @@ describe('ActorResolver', () => {
     // The whole row, not just the id: every caller needed the name and the Discord ID too, and was
     // reading the same row again to get them.
     await expect(resolver.resolve('111')).resolves.toEqual({
-      actor: { sub: '111', role: GuildRole.MEMBER, type: TOKEN_TYPE.access },
+      actor: {
+        sub: '111',
+        role: GuildRole.MEMBER,
+        type: TOKEN_TYPE.access,
+        capabilities: [],
+        grantedCommands: [],
+      },
       character: ROW,
     });
   });
@@ -65,7 +71,13 @@ describe('ActorResolver', () => {
     const resolver = makeResolver({ member: null, adminIds: '111' });
 
     await expect(resolver.resolve('111')).resolves.toEqual({
-      actor: { sub: '111', role: GuildRole.ADMIN, type: TOKEN_TYPE.access },
+      actor: {
+        sub: '111',
+        role: GuildRole.ADMIN,
+        type: TOKEN_TYPE.access,
+        capabilities: [],
+        grantedCommands: [],
+      },
       character: null,
     });
   });
@@ -124,6 +136,7 @@ describe('ActorResolver', () => {
     const resolved = await resolver.resolve('111');
 
     expect(resolved?.actor.role).toBe(GuildRole.ADMIN);
-    expect(resolved?.actor).not.toHaveProperty('capabilities');
+    expect(resolved?.actor.capabilities).toEqual([]);
+    expect(resolved?.actor.grantedCommands).toEqual([]);
   });
 });

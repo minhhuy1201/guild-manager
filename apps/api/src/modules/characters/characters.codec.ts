@@ -1,8 +1,8 @@
-import type {
-  Capability,
-  GrantableCommand,
-  GuildClass,
+import {
   GuildRole,
+  type Capability,
+  type GrantableCommand,
+  type GuildClass,
 } from '@guild/shared/enums';
 import {
   characterSchema,
@@ -11,6 +11,7 @@ import {
   type GuildMember,
 } from '@guild/shared/schemas';
 
+import type { Grants } from '../../common';
 import { verifyResponse } from '../../config';
 
 /** The Character columns the codec needs to build a response. */
@@ -58,6 +59,29 @@ export type GuildMemberRow = CharacterRow & {
  */
 export function memberRole(row: { role: string } | null): GuildRole | null {
   return row === null ? null : (row.role as GuildRole);
+}
+
+/**
+ * The Grants a member holds, as the shared enums.
+ * Only a Manager has any: the member service empties both lists whenever a member leaves that role,
+ * and this keeps a stale list from reaching anyone else.
+ * @param row - The member row, null when there is none
+ * @param role - The role the member acts with, which may differ from the stored one (a rescue ID)
+ * @returns The row's two lists for a Manager, empty lists otherwise
+ */
+export function grantsOf(
+  row: { capabilities: string[]; grantedCommands: string[] } | null,
+  role: GuildRole,
+): Grants {
+  if (role !== GuildRole.MANAGER || row === null) {
+    return { capabilities: [], grantedCommands: [] };
+  }
+
+  // Same cast as `memberRole`: the database enums are kept in step with the shared ones.
+  return {
+    capabilities: row.capabilities as Capability[],
+    grantedCommands: row.grantedCommands as GrantableCommand[],
+  };
 }
 
 /**

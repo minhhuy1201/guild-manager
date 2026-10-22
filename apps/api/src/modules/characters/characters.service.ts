@@ -5,14 +5,14 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Capability, GrantableCommand, GuildRole } from '@guild/shared/enums';
+import { GuildRole } from '@guild/shared/enums';
 import type {
   CreateCharacterInput,
   GuildMember,
   UpdateCharacterInput,
 } from '@guild/shared/schemas';
 
-import { GrantLookup, type Grants, type JwtPayload } from '../../common';
+import type { JwtPayload } from '../../common';
 import {
   PrismaService,
   type PrismaTransactionClient,
@@ -59,7 +59,7 @@ const GRANTS_NEED_MANAGER = 'Chỉ vai Quản lý mới được cấp quyền r
 
 /** Member CRUD for admins — the controller locks every endpoint behind JwtAuthGuard. */
 @Injectable()
-export class CharactersService implements GrantLookup {
+export class CharactersService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
@@ -70,23 +70,6 @@ export class CharactersService implements GrantLookup {
     const rows = await this.listRows();
 
     return rows.map(toGuildMember);
-  }
-
-  /**
-   * The Grants of the member linked to a Discord ID, read fresh on every call.
-   * @param discordId - Discord ID of the caller
-   * @returns Their Grants; both empty when no member has this ID
-   */
-  async forDiscordId(discordId: string): Promise<Grants> {
-    const row = await this.prisma.character.findUnique({
-      where: { discordId },
-      select: { capabilities: true, grantedCommands: true },
-    });
-
-    return {
-      capabilities: (row?.capabilities ?? []) as Capability[],
-      grantedCommands: (row?.grantedCommands ?? []) as GrantableCommand[],
-    };
   }
 
   /**

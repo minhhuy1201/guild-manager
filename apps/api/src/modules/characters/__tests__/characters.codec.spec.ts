@@ -5,7 +5,7 @@ import {
   GuildRole,
 } from '@guild/shared/enums';
 
-import { toCharacter, toGuildMember } from '../characters.codec';
+import { grantsOf, toCharacter, toGuildMember } from '../characters.codec';
 
 describe('toCharacter', () => {
   it('giữ nguyên id, tên và lưu phái', () => {
@@ -63,5 +63,33 @@ describe('toGuildMember', () => {
     expect(() =>
       toGuildMember({ ...ROW, capabilities: ['QUYEN_LA'] }),
     ).toThrow();
+  });
+});
+
+describe('grantsOf', () => {
+  const ROW = {
+    capabilities: [Capability.TACTICS],
+    grantedCommands: [GrantableCommand.THONG_BAO],
+  };
+
+  it('Quản lý mang hai danh sách của hàng', () => {
+    expect(grantsOf(ROW, GuildRole.MANAGER)).toEqual(ROW);
+  });
+
+  it.each([GuildRole.ADMIN, GuildRole.MEMBER])(
+    '%s không mang Grant nào dù hàng còn danh sách cũ',
+    (role) => {
+      expect(grantsOf(ROW, role)).toEqual({
+        capabilities: [],
+        grantedCommands: [],
+      });
+    },
+  );
+
+  it('không có hàng thì rỗng', () => {
+    expect(grantsOf(null, GuildRole.MANAGER)).toEqual({
+      capabilities: [],
+      grantedCommands: [],
+    });
   });
 });

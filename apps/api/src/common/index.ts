@@ -1,5 +1,5 @@
 export * from './assert-never';
-export * from './auth/grant-lookup';
+export * from './auth/actor-lookup';
 export * from './auth/read-bearer-token';
 export * from './clock/clock';
 export * from './constants/auth.constant';

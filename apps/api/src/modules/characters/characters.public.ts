@@ -9,5 +9,10 @@
  * other that is a real domain cycle, and the answer is a third module, not `forwardRef()`.
  */
 export { CharactersService } from './characters.service';
-export { memberRole, toCharacter, toGuildMember } from './characters.codec';
+export {
+  grantsOf,
+  memberRole,
+  toCharacter,
+  toGuildMember,
+} from './characters.codec';
 export type { CharacterRow, GuildMemberRow } from './characters.codec';

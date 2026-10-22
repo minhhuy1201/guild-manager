@@ -131,12 +131,15 @@ lần chạy `pnpm discord:register` kế tiếp.
   tra Data API grants theo `production.md` §5.
 - **Bất biến**: hàng không phải Manager luôn có hai mảng rỗng. Member service giữ bất biến này ở mọi
   lần ghi: rời vai Manager thì xóa mảng, và chỉ lần ghi của Admin mới đặt được mảng.
-- **Nguồn sự thật là DB, đọc mỗi request.** JWT vẫn chỉ mang vai. Trên API, `JwtAuthGuard` đọc Grant
-  của người gọi khi vai là Manager và gắn vào `request.user`; guard Capability (thay `AdminGuard`,
-  dùng dạng `@RequireCapability(...)` hoặc `@RequireAdmin()` sau `JwtAuthGuard`) và các service như
-  điểm danh hộ cùng đọc từ đó, nên chỉ một lần đọc cho mỗi request. Admin và Member không tốn thêm
-  lần đọc nào. Nhờ vậy thu quyền có hiệu lực ngay request kế tiếp, thay vì trễ tới một vòng đời
-  token (1 ngày). Vai thì vẫn lấy từ token tới khi token làm mới.
+- **Nguồn sự thật là DB, đọc mỗi request.** JWT chỉ là thẻ định danh: vai trong token có thể cũ tới
+  một ngày. Trên API, với token ADMIN hoặc MANAGER, `JwtAuthGuard` đọc lại vai và Grant của người
+  gọi từ DB (cùng quy tắc vai với lúc đăng nhập: ID cứu hộ trong env luôn là ADMIN) và dùng giá trị
+  đó thay cho vai trong token. Guard Capability (thay `AdminGuard`, dùng dạng
+  `@RequireCapability(...)` hoặc `@RequireAdmin()` sau `JwtAuthGuard`) và các service như điểm danh hộ
+  cùng đọc từ `request.user`, nên chỉ một lần đọc cho mỗi request. Token MEMBER không tốn lần đọc nào
+  vì Member không có gì để mất. Token ADMIN hoặc MANAGER mà hàng đã bị xóa (và không phải ID cứu hộ)
+  chỉ còn là Member không Grant: chặn quyền mà không thêm một kiểu lỗi mới. Nhờ vậy hạ vai hay thu
+  Grant có hiệu lực ngay request kế tiếp, thay vì trễ tới một vòng đời token (1 ngày).
 - **Chặn trên web**: `/auth/me` trả Grant của người gọi cùng nhân vật đã gắn. Proxy vẫn đẩy Member ra
   khỏi route quản lý chỉ dựa vào vai. Proxy cho Manager đi qua, rồi server component của trang kiểm
   tra Capability từ `/auth/me` và chuyển về trang điểm danh khi thiếu. Nav, tab bar điện thoại, user

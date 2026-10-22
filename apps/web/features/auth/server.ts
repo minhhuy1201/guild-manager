@@ -8,7 +8,7 @@ import "server-only";
  * accidental import from a Client Component into a clearly named build error, instead of the
  * hard-to-trace "next/headers in the Pages Router" one.
  */
-export { getActor } from "./api/actor";
+export { getActor, getMe } from "./api/actor";
 export type { SessionActor } from "./api/actor";
 export { fetchMe } from "./api/me";
 export {

@@ -37,9 +37,10 @@ export interface JwtPayload {
 }
 
 /**
- * The caller as a request sees them: the token's claims plus, for a Manager, the Grants read from
- * the database on this very request. The token carries only the role, so a Grant taken away stops
- * working at the next request instead of at the token's expiry.
+ * The caller as a request sees them. For an Admin or Manager token the `role` is the one stored
+ * today, not the one the token was issued with, and a Manager's Grants come with it; both are read
+ * on this very request, so a demotion or a revoked Grant stops working at the next request instead
+ * of at the token's expiry.
  */
 export interface RequestActor extends JwtPayload {
   /** Capabilities granted to this Manager; absent for every other role */

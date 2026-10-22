@@ -8,7 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 import { GuildRole } from '@guild/shared/enums';
 import type { Request } from 'express';
 
-import { GrantLookup } from '../auth/grant-lookup';
+import { ActorLookup } from '../auth/actor-lookup';
 import { readBearerToken } from '../auth/read-bearer-token';
 import {
   TOKEN_TYPE,
@@ -24,14 +24,16 @@ export interface AuthenticatedRequest extends Request {
 
 /**
  * Rejects requests without a valid access token in `Authorization: Bearer <token>`.
- * On success the payload is attached to `request.user` for `@CurrentUser()` to read. For a Manager
- * it also carries their Grants, read here on every request: Admin and Member cost no extra read.
+ * On success the payload is attached to `request.user` for `@CurrentUser()` to read. For an Admin or
+ * Manager token the role and Grants are read from the database on every request and replace the
+ * token's role, so a demotion or a revoked Grant bites at the next request instead of at the token's
+ * expiry. A Member token costs no extra read: a Member has nothing to lose.
  */
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
   constructor(
     private readonly jwt: JwtService,
-    private readonly grants: GrantLookup,
+    private readonly actors: ActorLookup,
   ) {}
 
   /**
@@ -54,9 +56,9 @@ export class JwtAuthGuard implements CanActivate {
     if (!payload) throw new UnauthorizedException('Bạn cần đăng nhập.');
 
     request.user =
-      payload.role === GuildRole.MANAGER
-        ? { ...payload, ...(await this.grants.forDiscordId(payload.sub)) }
-        : payload;
+      payload.role === GuildRole.MEMBER
+        ? payload
+        : { ...payload, ...(await this.actors.current(payload.sub)) };
     return true;
   }
 }

@@ -3,7 +3,7 @@ import { JwtModule, JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
 import { Capability, GuildClass, GuildRole } from '@guild/shared/enums';
 
-import { GrantLookup, JwtAuthGuard, TOKEN_TYPE } from '../../../common';
+import { ActorLookup, JwtAuthGuard, TOKEN_TYPE } from '../../../common';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { CharactersController } from '../characters.controller';
 import { CharactersService } from '../characters.service';
@@ -42,7 +42,7 @@ describe('member routes as a Manager with the members Capability', () => {
       delete: jest.fn(),
     },
   };
-  const grants = jest.fn();
+  const lookup = jest.fn();
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -52,7 +52,7 @@ describe('member routes as a Manager with the members Capability', () => {
         JwtAuthGuard,
         CharactersService,
         { provide: PrismaService, useValue: prisma },
-        { provide: GrantLookup, useValue: { forDiscordId: grants } },
+        { provide: ActorLookup, useValue: { current: lookup } },
       ],
     }).compile();
 
@@ -68,7 +68,8 @@ describe('member routes as a Manager with the members Capability', () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
-    grants.mockResolvedValue({
+    lookup.mockResolvedValue({
+      role: GuildRole.MANAGER,
       capabilities: [Capability.MEMBERS],
       grantedCommands: [],
     });
@@ -82,16 +83,18 @@ describe('member routes as a Manager with the members Capability', () => {
    * @param method - HTTP method
    * @param path - Path under the controller
    * @param body - JSON body, if any
+   * @param tokenRole - Role the access token carries, which the lookup may contradict
    * @returns The response status
    */
   async function asManager(
     method: string,
     path: string,
     body?: object,
+    tokenRole: GuildRole = GuildRole.MANAGER,
   ): Promise<number> {
     const token = await jwt.signAsync({
       sub: 'manager-discord-id',
-      role: GuildRole.MANAGER,
+      role: tokenRole,
       type: TOKEN_TYPE.access,
     });
     const response = await fetch(`${baseUrl}/characters${path}`, {
@@ -156,7 +159,11 @@ describe('member routes as a Manager with the members Capability', () => {
   });
 
   it('mất Capability thành viên thì cả danh sách lẫn thao tác đều 403', async () => {
-    grants.mockResolvedValue({ capabilities: [], grantedCommands: [] });
+    lookup.mockResolvedValue({
+      role: GuildRole.MANAGER,
+      capabilities: [],
+      grantedCommands: [],
+    });
 
     expect(await asManager('GET', '')).toBe(403);
     expect(
@@ -164,6 +171,29 @@ describe('member routes as a Manager with the members Capability', () => {
         name: 'X',
         guildClass: GuildClass.THIET_Y,
       }),
+    ).toBe(403);
+  });
+
+  it('token Admin cũ mà hàng giờ là Quản lý thì không còn xoá được ai', async () => {
+    // The token still says ADMIN; the database says this person was demoted.
+    prisma.character.findUnique.mockResolvedValue({ role: GuildRole.MEMBER });
+
+    expect(await asManager('DELETE', '/m1', undefined, GuildRole.ADMIN)).toBe(
+      403,
+    );
+    expect(prisma.character.delete).not.toHaveBeenCalled();
+  });
+
+  it('token Admin cũ mà hàng giờ là Quản lý cũng không đổi được vai ai', async () => {
+    prisma.character.findUnique.mockResolvedValue({ role: GuildRole.MEMBER });
+
+    expect(
+      await asManager(
+        'PATCH',
+        '/m1',
+        { role: GuildRole.ADMIN },
+        GuildRole.ADMIN,
+      ),
     ).toBe(403);
   });
 });
