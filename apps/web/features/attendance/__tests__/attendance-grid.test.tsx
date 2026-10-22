@@ -44,7 +44,10 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
 import { AttendanceGrid } from "../components/attendance-grid";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 /**
  * Build a battle session with only the fields the grid reads.
@@ -113,6 +116,13 @@ function cell(characterId: string): HTMLButtonElement {
 }
 
 beforeEach(() => {
+  // jsdom has no matchMedia. Reduced motion keeps the totals' count-up out of the way: the cells
+  // read their final numbers at once.
+  vi.stubGlobal("matchMedia", () => ({
+    matches: true,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  }));
   boardState.isPending = false;
   sessions = [makeSession("a")];
   roster = [makeCharacter("1"), makeCharacter("2")];
@@ -138,6 +148,18 @@ describe("AttendanceGrid - bố cục", () => {
 
     expect(headerCount()).toBe(whilePending);
     expect(whilePending).toBe(5);
+  });
+
+  it("nhiều trận: mỗi trận một cột header, và số cột bằng số th", () => {
+    sessions = ["a", "b", "c", "d"].map(makeSession);
+
+    const { container } = render(<AttendanceGrid isAdmin={false} />);
+
+    const heads = container.querySelectorAll("thead th");
+    expect(heads).toHaveLength(5);
+    for (const id of ["a", "b", "c", "d"]) {
+      expect(screen.getByText(`Trận ${id}`)).toBeTruthy();
+    }
   });
 
   // The actions column on the right is gone, giving the room back to the day columns.

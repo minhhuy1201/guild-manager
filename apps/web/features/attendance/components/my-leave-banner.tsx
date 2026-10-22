@@ -27,20 +27,26 @@ export function MyLeaveBanner() {
       {mine.map((leave) => (
         <li
           key={leave.id}
-          className="flex flex-wrap items-center gap-2 rounded-lg border border-amber-500 bg-amber-500/5 px-4 py-2 text-sm"
+          className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-inner border-2 border-amber-500 bg-amber-500/10 px-4 py-3 text-sm"
         >
-          <Plane className="size-4 text-amber-600" aria-hidden />
-          <span className="font-medium">
-            Bạn đang nghỉ {formatLeaveRange(leave.startDate, leave.endDate)}
+          <span
+            aria-hidden
+            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400"
+          >
+            <Plane className="size-4.5" />
           </span>
-          {leave.reason && (
-            <span className="text-muted-foreground">- {leave.reason}</span>
-          )}
+          <div className="flex min-w-0 flex-1 flex-col">
+            <span className="font-semibold">
+              Bạn đang nghỉ {formatLeaveRange(leave.startDate, leave.endDate)}
+            </span>
+            {leave.reason && (
+              <span className="text-muted-foreground">{leave.reason}</span>
+            )}
+          </div>
           <Button
             type="button"
-            variant="ghost"
+            variant="outline"
             size="sm"
-            className="ml-auto"
             disabled={isCancelling(leave.id)}
             onClick={() => cancel(leave.id)}
           >
