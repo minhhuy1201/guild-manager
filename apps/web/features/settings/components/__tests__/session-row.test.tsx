@@ -96,7 +96,7 @@ function renderRow(value: BattleSession) {
 }
 
 describe("SessionRow", () => {
-  // The Guild War tint must not make the card see-through, and its primary edge must survive hover.
+  // The Guild War card stays opaque, and its primary edge must survive hover.
   it("Bang Chiến là thẻ đặc và không đổi viền ngọc khi hover", () => {
     const { container } = renderRow(session({ isGuildWar: true }));
     const row = container.firstElementChild as HTMLElement;

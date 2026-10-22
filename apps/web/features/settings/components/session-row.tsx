@@ -46,7 +46,7 @@ export function SessionRow({ session, onEdit, onDelete }: SessionRowProps) {
       className={cn(
         "flex flex-wrap items-center gap-3 rounded-inner border p-3 shadow-sm transition-[border-color,box-shadow] duration-[var(--duration-base)] ease-out-soft hover:shadow-md",
         sessionTintClass(session.isGuildWar),
-        // After the tint so the card stays opaque; the jade edge is for scrims, the Guild War keeps its own.
+        // Every card is opaque; the jade hover edge is for scrims, the Guild War keeps its primary edge.
         "bg-card",
         !session.isGuildWar && "hover:border-jade/50"
       )}

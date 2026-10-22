@@ -728,8 +728,8 @@ a card-sized target is what a pointer aims at, and a 2mm-tall name is not. The t
 - **The card carries the feedback**, since the card is the target: `focus-within:ring-3
   focus-within:ring-ring/50` for the ring the link inside it earns, and for a grid card a
   `hover:-translate-y-0.5` lift plus a jade edge that follows the pointer (`useSpotlight` writes
-  `--spot-x`/`--spot-y`; `.spotlight-edge` draws it with opacity only). The spotlight needs a fine
-  pointer and is off under reduced motion, since a finger has no hover. A leaf card in a grid takes
+  `--spot-x`/`--spot-y`; `.spotlight-edge` draws it with opacity only). The spotlight follows a mouse or
+  pen only (`event.pointerType`) and is off under reduced motion, since a finger has no hover. A leaf card in a grid takes
   `rounded-inner`, the container radius being too round at that size.
 - **Row actions sit above the overlay** — `RowActions` takes `relative`, so edit and delete keep
   taking their own clicks instead of navigating.
