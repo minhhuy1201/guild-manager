@@ -121,7 +121,9 @@ async function renderTable(): Promise<() => number> {
 
   // The title only carries a count once every query resolved, so this waits past the skeleton rows.
   await waitFor(() =>
-    expect(screen.getByText(/Lịch sử điểm danh \(\d+\)/)).toBeTruthy()
+    expect(
+      screen.getByRole("heading", { name: /Lịch sử điểm danh \(\d+\)/ })
+    ).toBeTruthy()
   );
   return () => container.querySelectorAll("tbody tr").length;
 }
@@ -190,7 +192,7 @@ describe("AttendanceLogTable", () => {
     await renderTable();
 
     const card = screen
-      .getByText(/Lịch sử điểm danh \(\d+\)/)
+      .getByRole("heading", { name: /Lịch sử điểm danh \(\d+\)/ })
       .closest("[data-slot=card]") as HTMLElement;
 
     expect(card.querySelector("#history-search")).not.toBeNull();

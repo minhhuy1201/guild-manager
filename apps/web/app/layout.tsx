@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { Be_Vietnam_Pro, Noto_Serif } from "next/font/google";
+import { ViewTransition } from "react";
+import { Be_Vietnam_Pro, Playfair_Display } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { SiteFooter } from "@/components/shared/site-footer";
 import { SiteHeader } from "@/components/shared/site-header";
@@ -14,9 +15,10 @@ const beVietnamPro = Be_Vietnam_Pro({
   display: "swap",
 });
 
-// Heading font: page titles and the guild name only. Two weights, because nothing else uses it.
-const notoSerif = Noto_Serif({
-  variable: "--font-noto-serif",
+// Heading font: page and section titles, dialog titles and the guild name. Two weights, because
+// nothing else uses it.
+const playfairDisplay = Playfair_Display({
+  variable: "--font-playfair-display",
   subsets: ["latin", "vietnamese"],
   weight: ["500", "600"],
   display: "swap",
@@ -43,17 +45,27 @@ export default function RootLayout({
   return (
     <html
       lang="vi"
-      className={`${beVietnamPro.variable} ${notoSerif.variable} h-full antialiased`}
+      className={`${beVietnamPro.variable} ${playfairDisplay.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
         <Providers>
           <SiteHeader />
-          <main
-            className={`mx-auto flex w-full ${APP_SHELL_WIDTH} flex-col gap-6 px-4 pt-8 pb-12 sm:px-6`}
+          {/* Only a navigation the user chose (a link with `transitionTypes={PAGE_NAV_TRANSITION}`)
+              cross-fades the content; the header, outside this boundary, stays put. Refreshes, tab
+              switches and Suspense reveals carry no type and stay still.
+              React names `main` only for the length of the transition, so the team builder's drag
+              overlay and the sticky save bars see no extra containing block while idle. */}
+          <ViewTransition
+            default="none"
+            update={{ "page-nav": "page-fade", default: "none" }}
           >
-            {children}
-          </main>
+            <main
+              className={`mx-auto flex w-full ${APP_SHELL_WIDTH} flex-col gap-6 px-4 pt-8 pb-12 sm:px-6`}
+            >
+              {children}
+            </main>
+          </ViewTransition>
           <SiteFooter />
         </Providers>
       </body>

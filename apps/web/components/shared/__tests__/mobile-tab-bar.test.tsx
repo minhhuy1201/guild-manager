@@ -8,6 +8,21 @@ let pathname: string = ROUTES.attendance;
 
 vi.mock("next/navigation", () => ({ usePathname: () => pathname }));
 
+// Link's `transitionTypes` never reaches the DOM, so the stub exposes it for the tests to read.
+vi.mock("next/link", () => ({
+  default: ({
+    transitionTypes,
+    children,
+    ...rest
+  }: React.AnchorHTMLAttributes<HTMLAnchorElement> & {
+    transitionTypes?: string[];
+  }) => (
+    <a {...rest} data-transition-types={transitionTypes?.join(" ")}>
+      {children}
+    </a>
+  ),
+}));
+
 import { MobileTabBar } from "../mobile-tab-bar";
 
 afterEach(cleanup);
@@ -67,5 +82,15 @@ describe("MobileTabBar", () => {
     expect(
       container.querySelector('[data-slot="mobile-tab-bar"]')?.classList.contains("dark")
     ).toBe(true);
+  });
+});
+
+describe("MobileTabBar - chuyển trang", () => {
+  it("mọi tab mang kiểu page-nav", () => {
+    render(<MobileTabBar isAdmin />);
+
+    for (const link of screen.getAllByRole("link")) {
+      expect(link.getAttribute("data-transition-types")).toBe("page-nav");
+    }
   });
 });

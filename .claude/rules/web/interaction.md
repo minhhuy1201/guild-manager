@@ -27,19 +27,23 @@ A new interaction convention goes here; its reason goes in `frontend.md`.
 - Put the feedback on the card: `hover:bg-foreground/5`, `focus-within:ring-3 focus-within:ring-ring/50`.
 - Make row actions `relative` (`RowActions`) so they sit above the overlay.
 
+## Buttons respond with weight
+
+- `default`, `outline` and `secondary` buttons rise 1px with a shadow on hover and sink (`translate-y-px`, `scale-[0.98]`) on press, on `--ease-spring` and `--duration-fast`. `ghost` and `link` do not lift, so a row of them stays still. Transform and shadow only; control heights never change.
+
 ## The surface behind a hovered or selected control
 
 - Give a bordered control `bg-card`, never a transparent fill.
 - Neutral hover: `hover:bg-foreground/5`; `bg-foreground/10` while a popup is open. Do not use `bg-muted` or `bg-secondary` for hover or selected state.
 - Selected: a solid `primary` surface with `primary-foreground` text (default `TabsTrigger`, team builder session cards).
-- Current page in the header nav: not a primary surface. Keep the ghost button, `text-foreground`, a `jade` icon and a 2px `jade` bar. Render each entry as a plain `Link` styled with `buttonVariants`, never a `Button` rendering a link. The same entries (`nav-items.ts`) feed `mobile-tab-bar.tsx` below `sm`; `desktopOnly` entries stay off it.
+- Current page in the header nav: not a primary surface. Keep the ghost button, `text-foreground`, a `jade` icon; the 2px `jade` bar is one shared indicator that slides to the active link by `transform` only (`main-nav.tsx`). Render each entry as a plain `Link` styled with `buttonVariants`, never a `Button` rendering a link. The same entries (`nav-items.ts`) feed `mobile-tab-bar.tsx` below `sm`; `desktopOnly` entries stay off it.
 - Reserve the tab bar's height through `--app-bottom-inset`; every sticky bottom bar sits above it.
 - Paint a hovered menu item with `data-highlighted:bg-foreground/5`, never `focus:` and never `bg-accent`.
 - Skip the selected item on hover: write `not-data-active:hover:*`.
 
 ## The selected tab → a `primary` surface
 
-- Keep the `default` `tabs.tsx` variant: track `border border-border bg-card` (`dark:bg-foreground/5`), selected tab `bg-primary text-primary-foreground font-semibold`, other tabs `text-foreground`.
+- Keep the `default` `tabs.tsx` variant: a recessed track (`rounded-inner border border-border bg-muted/70 shadow-inner`, `dark:bg-foreground/5`), selected tab `bg-primary text-primary-foreground font-semibold` with a `shadow-md`, other tabs `text-foreground`.
 - Override tabs at the call site (as `session-tabs.tsx` does). Never edit the `default` variant.
 
 ## Actions
@@ -52,11 +56,11 @@ A new interaction convention goes here; its reason goes in `frontend.md`.
 ## Empty state
 
 - Say "loaded fine, holds nothing" only through `EmptyState` (`components/shared/empty-state.tsx`). Inside a table it arrives through `table-body-state`.
-- Use `flex flex-col items-center gap-3 py-8 text-center`. Keep `border-dashed` for drop zones only.
+- Use `flex flex-col items-center gap-3 py-8 text-center`: the guild seal (the `icon` prop sits inside it), a centred brush-stroke divider, one short sentence. `ErrorState` shares the frame with a destructive seal. Keep `border-dashed` for drop zones only.
 
 ## A missing page or a crash → `app/not-found.tsx`, `app/error.tsx`
 
-- Keep both inside the root layout: guild seal at `lg`, a one-line `font-heading` heading, one short sentence, a way back to attendance.
+- Keep both inside the root layout, in a `raised` `Card`: guild seal at `lg` (destructive tone on the error page), a centred brush divider, a one-line `font-heading` heading, one short sentence, a way back to attendance.
 - Add "Thử lại" (`reset()`) on the error page. Never print the thrown message; show the `digest` when there is one.
 
 ## Unsaved work → a save bar pinned to the bottom
@@ -78,8 +82,9 @@ A new interaction convention goes here; its reason goes in `frontend.md`.
 
 ## Motion
 
-- Use only the four tokens in `globals.css`: `--duration-fast` 120ms (colour, hover, press), `--duration-base` 200ms (show/hide in an existing frame), `--duration-slow` 320ms (skeleton ⇄ data), `--ease-out-soft` (every easing). Write a duration as `duration-[var(--duration-base)]`.
-- Never animate layout geometry: no `height`, `width`, `scale` on table content, no `translate` on anything in place. An arriving element may rise a few pixels. The next step of a multi-step dialog may slide 24px in from the side it came from (`StepSlide`). A portal popup may slide in (`SelectContent` needs `alignItemWithTrigger={false}`).
+- Use only the tokens in `globals.css`: `--duration-fast` 120ms (colour, hover, press), `--duration-base` 200ms (show/hide in an existing frame), `--duration-slow` 320ms (skeleton ⇄ data), `--ease-out-soft` (every easing), `--ease-spring` (hover lift and press of a control, transform only), `--duration-drift` 9s (a banner scene's one-shot drift, nothing else). Write a duration as `duration-[var(--duration-base)]`.
+- Play the drift once (`animation-iteration-count: 1`, `backwards`, ending on `transform: none`), never loop it.
+- Never animate layout geometry: no `height`, `width`, `scale` on table content, no `translate` on anything in place. The one named exception is the button hover lift and press (`translate-y-px`, `scale-[0.98]` on a button, and the press scale on a tab trigger; see Buttons). An arriving element may rise a few pixels. The next step of a multi-step dialog may slide 24px in from the side it came from (`StepSlide`). A portal popup may slide in (`SelectContent` needs `alignItemWithTrigger={false}`).
 - Keep `ease-linear` only for the login button sheen.
 - Let the cat race stage overlays (countdown, banners, lead-change bar, finish flash, photo, result card), the race board's row slide and the TRỰC TIẾP blink own their keyframes and durations, declared once as `--stage-*` variables under the `[data-slot="cat-race-stage"], [data-slot="cat-race-hud"]` block in `globals.css`. They are exempt from the four tokens and the no-`scale` rule; every other screen is not.
 - Answer `prefers-reduced-motion` once, at the end of `globals.css`, never at a call site.
@@ -90,6 +95,7 @@ A new interaction convention goes here; its reason goes in `frontend.md`.
 ## Entrance and data reveal
 
 - Reveal data with `REVEAL_CLASS` + `revealStyle(index)` from `lib/motion.ts` (40ms steps, capped at the ninth). A new list of loaded data takes the helper, never a delay of its own. Wrap a component without `className` in a one-cell `grid`.
+- Wrap `<main>` in React `<ViewTransition default="none" update={{ "page-nav": "page-fade", default: "none" }}>` (`app/layout.tsx`): only a typed navigation cross-fades the content. A nav entry point (`MainNav`, `MobileTabBar`, the guild brand link, the 404 and error "back" links) passes `transitionTypes={PAGE_NAV_TRANSITION}` (`lib/page-transition.ts`); `router.refresh()`, the settings tab `router.replace`, Suspense reveals and logout carry no type and stay still. A new navigation link of that kind adds the type. Style it only with the `::view-transition-*(.page-fade)` rules in `globals.css`; never give `main` or a page a permanent `view-transition-name` (it would become the containing block of the drag overlay and sticky bars). Reduced motion zeroes those pseudo-elements too. The one exception to "no permanent name" is the site header (`site-header`) and the phone tab bar (`mobile-tab-bar`): each has a `viewTransitionName` and a `::view-transition-group(...) { animation: none; z-index: 1 }` rule so the main snapshot never paints over them (neither is an ancestor of the drag overlay or the sticky bars).
 - Let `<main>` children run `page-enter` (60ms stagger). Table rows run `fade-in-soft` (opacity only). `Skeleton` uses `animate-shimmer`.
 - Wrap a block far below the fold in `ScrollReveal`; only the wrapper is a Client Component.
 - Fill every entrance `backwards`, never `both`. End every keyframe on `transform: none`.

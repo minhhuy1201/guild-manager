@@ -11,6 +11,7 @@ import { ROUTES } from "@/config/routes";
 import { UserMenu } from "@/features/auth";
 import { fetchMe, getSession } from "@/features/auth/server";
 import { APP_SHELL_WIDTH } from "@/lib/layout";
+import { PAGE_NAV_TRANSITION } from "@/lib/page-transition";
 import { cn } from "@/lib/utils";
 
 /**
@@ -77,7 +78,10 @@ export async function SiteHeader() {
           `z-40`: above every layer the page itself raises (sticky table columns, the save bar at
           z-20, overlays at z-10) - on equal z-index the page, later in the DOM, paints over the
           header. Below the portalled popups and dialogs at z-50. */}
-      <header className="dark sticky top-0 z-40 border-b bg-card/90 text-foreground backdrop-blur [@media(max-height:500px)]:static">
+      <header
+        style={{ viewTransitionName: "site-header" }}
+        className="dark sticky top-0 z-40 border-b border-white/10 bg-card/85 text-foreground shadow-[inset_0_-1px_0_0_rgb(255_255_255/0.04),0_8px_24px_-12px_rgb(0_0_0/0.5)] backdrop-blur-xl backdrop-saturate-150 [@media(max-height:500px)]:static"
+      >
         <div
           className={cn(
             "mx-auto flex h-14 items-center gap-3 px-4 sm:px-6",
@@ -88,6 +92,7 @@ export async function SiteHeader() {
               page - the one route besides the login screen a visitor can actually reach. */}
           <Link
             href={session ? ROUTES.attendance : ROUTES.landing}
+            transitionTypes={PAGE_NAV_TRANSITION}
             className={BRAND}
           >
             <GuildName />

@@ -11,7 +11,8 @@ import type {
 import { DataTable } from "@/components/shared/data-table";
 import { SessionLabel } from "@/components/shared/session-label";
 import { UnsavedChangesBar } from "@/components/shared/unsaved-changes-bar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { SectionTitle } from "@/components/shared/section-title";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TableCell, TableHead, TableRow } from "@/components/ui/table";
 import { useSessionRecovery } from "@/hooks/use-session-recovery";
@@ -218,7 +219,7 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
   return (
     <Card>
       <CardHeader className="gap-4">
-        <CardTitle>Điểm danh theo ngày đánh</CardTitle>
+        <SectionTitle>Điểm danh theo ngày đánh</SectionTitle>
         <AttendanceFilters scope="attendance" />
       </CardHeader>
       <CardContent className="flex flex-col gap-4">

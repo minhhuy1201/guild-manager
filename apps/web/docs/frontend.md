@@ -441,14 +441,17 @@ Never give a `<label>` to a field with no control: it announces a control that i
 ### Page header → `PageHeader` on its banner
 
 Every page but the tactic page (below) opens with `components/shared/page-header.tsx`
-(`<PageHeader banner title description? actions? isPlainOnPhone? />`): a `rounded-2xl` strip holding
-the page's scene, the page's one `<h1>` in `font-heading` (Noto Serif), white on the scene, an
+(`<PageHeader banner title description? actions? isPlainOnPhone? />`): a `rounded-container` banner holding
+the page's scene, the page's one `<h1>` in `font-heading` (Playfair Display), white on the scene, an
 optional one-sentence description, page-wide controls at the bottom right (the team builder's week
 picker), and the `OrnamentDivider` (a hairline with a small jade diamond, `surface="image"`) closing
-the block. A section title inside a card is an `<h2>`, in the sans face.
+the block. A section title inside a card is an `<h2>`; it goes through `SectionTitle` (`components/shared/section-title.tsx`): a `font-heading` `<h2>` over a brush-stroke `OrnamentDivider` (`stroke="brush"`), so Playfair Display marks every title and the body stays Be Vietnam Pro.
 
-- **One strip height** (`min-h-24`, `sm:min-h-28`) for every page, so no page spends almost a
-  third of a phone's screen on decoration.
+- **One banner height** (`min-h-36`, `sm:min-h-48`, `lg:min-h-60`) for every page: cinematic on a
+  wide screen, still short on a phone. The title steps from `text-3xl` to `lg:text-5xl`. The scene
+  wrapper carries `animate-drift` (`--duration-drift`, 9s): one slow settle from a slight zoom,
+  transform only, `backwards` and ending on `transform: none`, never repeated. Reduced motion
+  collapses it to its final frame.
 - **`isPlainOnPhone`** goes further: below `sm` the scene, scrims and divider are hidden and the
   title and description read as plain text on the page. Only the attendance page and its history
   set it; a new page asks first. The picture is still requested on a phone (`preload`), because CSS
@@ -743,8 +746,12 @@ a selected state. The convention:
   light theme, inverted in the dark one. Both in-page selections follow it: the default
   `TabsTrigger` and the team builder's session cards.
 - **Current page in the header nav** - *not* a primary surface: navigation is not an in-page
-  selection. The item keeps its ghost button, takes `text-foreground`, a `jade` icon and a 2px
-  `jade` bar under it (`main-nav.tsx`). Only colour and opacity change, so the row never shifts.
+  selection. The item keeps its ghost button, takes `text-foreground` and a `jade` icon; the 2px
+  `jade` bar is one shared indicator that slides to the active link by `transform` alone
+  (`main-nav.tsx`: a 1px bar, `translateX` + `scaleX`, measured in a layout effect and again on a
+  `ResizeObserver` because labels change width at `lg`). It is placed without a transition on first
+  paint, and until it is measured the active link draws its own underline so a server-rendered page
+  is never unmarked. Only colour and the bar's transform change, so the row never shifts.
   Each entry is a plain `Link` styled with `buttonVariants`, never a `Button` rendering a link: Base
   UI gives that anchor `role="button"`, and navigation must read as links. From `sm` to `lg` the
   entries show their short names (the full name stays their `aria-label`) and the guild's name
@@ -776,11 +783,10 @@ let the active branch declare its own `hover:`.
 bg-muted` and an active tab on `bg-background` sank into the page. The `default` variant of
 `components/ui/tabs.tsx` therefore uses:
 
-- **Track** - `border border-border bg-card` (`dark:bg-foreground/5`). On the warm plane a tinted
-  track had to be heavy (`bg-foreground/20`) before its fill separated from the page at all, and at
-  that weight it read as a dark bar under a minimal header. The track is now drawn the way every
-  other bordered control is (see "The surface behind a hovered or selected control"): the card's
-  near-white surface, the thin border drawing the edge, the navy pill inside carrying the selection.
+- **Track** - `rounded-inner border border-border bg-muted/70 shadow-inner` (`dark:bg-foreground/5`).
+  On the warm plane a flat tinted track had to be heavy (`bg-foreground/20`) before its fill
+  separated from the page; a light `muted` fill with the thin border and an inner shadow reads as a
+  recessed channel instead, and the navy pill (with `shadow-md`) sits proud of it.
 - **Selected tab** — `bg-primary text-primary-foreground font-semibold`; the rest keep plain
   `text-foreground`. Not `text-muted-foreground`: on that track it measures 3.4:1 in the dark theme,
   and the filled pill already carries the hierarchy without dimming the other labels.
@@ -889,7 +895,7 @@ Which of the two feedback shapes:
 
 ### Motion
 
-Four tokens in `app/globals.css` are the app's whole motion vocabulary:
+Six tokens in `app/globals.css` are the app's whole motion vocabulary:
 
 | Token | Value | Used for |
 |---|---|---|
@@ -897,6 +903,8 @@ Four tokens in `app/globals.css` are the app's whole motion vocabulary:
 | `--duration-base` | 200ms | showing/hiding content inside a frame that already exists |
 | `--duration-slow` | 320ms | skeleton ⇄ data |
 | `--ease-out-soft` | `cubic-bezier(0.16, 1, 0.3, 1)` | every easing |
+| `--ease-spring` | `cubic-bezier(0.34, 1.56, 0.64, 1)` | hover lift and press of a control (overshoots slightly, transform only) |
+| `--duration-drift` | 9s | a banner scene's single slow drift (Ken Burns) on page open; 320ms cannot read as a camera move |
 
 Tailwind 4 has an `--ease-*` namespace, so `--ease-out-soft` gives the `ease-out-soft` class; it has
 **no** `--duration-*` namespace, so a duration is written `duration-[var(--duration-base)]`.
@@ -1003,7 +1011,8 @@ Data arrives, it does not snap in. Four pieces, all CSS, in `app/globals.css` an
   of `td` cells: it stays in view above the rows, and it adds no `th` to the column count.
 - The table's look lives in `DataTable`'s `TABLE_SKIN` (`components/shared/data-table.tsx`), never in
   `components/ui/table.tsx`, which a shadcn update would overwrite: header rows on `secondary` (a
-  navy tint), body rows striped `card` / `muted`, a neutral hover.
+  navy tint) under a 2px navy rule, body rows striped `card` / a light `card`-`muted` mix (opaque, so
+  a pinned column can inherit it), a neutral hover.
 - Paging → `use-table-pagination` (client-side, resets to page 1 when the filter changes) rendered
   with `table-pagination-bar` / `page-size-select`. The pagination bar **always** renders, even at one
   page, so filtering does not move the layout. Below `lg` the page numbers hide and only the four

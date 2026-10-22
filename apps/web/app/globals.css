@@ -13,16 +13,30 @@
     --duration-base: 200ms;
     --duration-slow: 320ms;
     --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
+    /* Hover lift and press of a control: overshoots a little, so it feels physical. Transform and
+       opacity only; never on layout geometry. */
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    /* One slow drift of a page banner's scene when the page opens (Ken Burns), played once. The
+       only duration beyond the three above, because 320ms cannot read as a camera move. */
+    --duration-drift: 9s;
+    /* Radius of a block that holds other blocks; its children use --radius-inner, so a nested
+       corner never looks tighter than the one around it. */
+    --radius-container: var(--radius-container-size);
+    --radius-inner: var(--radius-inner-size);
     /* Entrance of a freshly loaded item (`lib/motion.ts`) and the skeleton's sweep. `backwards`,
        never `both`: a transform left on an element after it lands makes it the containing block
        of every `position: fixed` descendant - the team builder's drag overlay among them. */
     --animate-reveal: reveal var(--duration-slow) var(--ease-out-soft) backwards;
+    /* The banner scene's one slow drift (Ken Burns). `backwards` for the same reason as reveal: the
+       keyframes end on `transform: none`, so nothing is left on the element once it lands. */
+    --animate-drift: drift var(--duration-drift) var(--ease-out-soft) backwards;
     --animate-shimmer: shimmer 1.6s linear infinite;
     /* A multi-step dialog's next step arrives from the right, a step back from the left. */
     --animate-step-forward: step-forward var(--duration-base) var(--ease-out-soft) backwards;
     --animate-step-back: step-back var(--duration-base) var(--ease-out-soft) backwards;
-    /* Serif for page titles and the guild name only; every other line of UI text stays sans. */
-    --font-heading: var(--font-noto-serif), ui-serif, Georgia, serif;
+    /* Serif (Playfair Display) for page titles, section titles in a card and the guild name; every
+       other line of UI text stays sans. */
+    --font-heading: var(--font-playfair-display), ui-serif, Georgia, serif;
     --font-sans: var(--font-be-vietnam-pro), ui-sans-serif, system-ui, sans-serif;
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
@@ -67,7 +81,7 @@
     --radius-3xl: calc(var(--radius) * 2.2);
     --radius-4xl: calc(var(--radius) * 2.6);
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    --font-serif: var(--font-noto-serif), ui-serif, Georgia, serif;
+    --font-serif: var(--font-playfair-display), ui-serif, Georgia, serif;
     --radius: 0.5rem;
     --tracking-tighter: calc(var(--tracking-normal) - 0.05em);
     --tracking-tight: calc(var(--tracking-normal) - 0.025em);
@@ -134,6 +148,16 @@
     --chart-3: oklch(0.344 0.094 270.46);
     --chart-4: oklch(0.821 0.048 262.492);
     --chart-5: oklch(0.956 0.007 39.461);
+    /* glow of the jade accent behind one highlight (a raised card, a focused call to action). */
+    --glow-jade: 0 0 0 1px color-mix(in oklab, var(--jade) 28%, transparent), 0 8px 28px -8px color-mix(in oklab, var(--jade) 38%, transparent);
+    /* glow of the gold accent behind the few important highlights (formation headline, login). Defined ahead of tickets 06 and 09 that use it; a raised Card takes the jade glow, not this. */
+    --glow-gold: 0 0 0 1px color-mix(in oklab, var(--gold) 34%, transparent), 0 8px 28px -8px color-mix(in oklab, var(--gold) 42%, transparent);
+    /* the thin lit inner edge of a raised card, drawn as an inset box-shadow colour. */
+    --card-highlight: oklch(1 0 0 / 0.85);
+    /* corner radius of a block that holds other blocks (page banner, raised card). */
+    --radius-container-size: 1.25rem;
+    /* corner radius of what sits inside such a block (tile, field, chip). */
+    --radius-inner-size: 0.625rem;
     --radius: 0.375rem;
     --sidebar: oklch(1 0 0);
     --sidebar-foreground: oklch(0.286 0.017 270.758);
@@ -147,7 +171,7 @@
        every shade of --destructive it defines. */
     --destructive-foreground: oklch(1.0000 0 0);
     --font-sans: var(--font-be-vietnam-pro), ui-sans-serif, system-ui, sans-serif;
-    --font-serif: var(--font-noto-serif), ui-serif, Georgia, serif;
+    --font-serif: var(--font-playfair-display), ui-serif, Georgia, serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     /* Shadows carry the plane's warm hue and are strong enough to see: with the border they draw
        the edge of every card. */
@@ -168,6 +192,8 @@
     --shadow-xl: 0 1px 2px 0px hsl(35 25% 12% / 0.08), 0 18px 32px -10px hsl(35 25% 12% / 0.2);
     --shadow-2xl: 0 24px 48px -12px hsl(35 25% 12% / 0.26);
     --tracking-normal: 0em;
+    /* static ink wash on the plane - large soft brush-like clouds of ink under the paper grain. */
+    --plane-ink: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='900'%3E%3Cfilter id='i'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.004 0.009' numOctaves='3' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.16 0 0 0 0 0.14 0 0 0 0 0.1 0 0 0 0.26 -0.06'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23i)'/%3E%3C/svg%3E");
     /* Paper grain on the plane: fractal noise in dark ink, ~7% alpha. */
     --plane-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.16 0 0 0 0 0.14 0 0 0 0 0.1 0.07 0 0 0 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
@@ -213,9 +239,15 @@
     --sidebar-border: oklch(0.34 0.03 262);
     --sidebar-ring: oklch(0.74 0.1 170);
     --destructive-foreground: oklch(0.9851 0 0);
+    /* glow of the jade accent behind one highlight (a raised card, a focused call to action). */
+    --glow-jade: 0 0 0 1px color-mix(in oklab, var(--jade) 28%, transparent), 0 8px 28px -8px color-mix(in oklab, var(--jade) 38%, transparent);
+    /* glow of the gold accent behind the few important highlights (formation headline, login). */
+    --glow-gold: 0 0 0 1px color-mix(in oklab, var(--gold) 34%, transparent), 0 8px 28px -8px color-mix(in oklab, var(--gold) 42%, transparent);
+    /* the thin lit inner edge of a raised card, drawn as an inset box-shadow colour. */
+    --card-highlight: oklch(1 0 0 / 0.07);
     --radius: 0.375rem;
     --font-sans: var(--font-be-vietnam-pro), ui-sans-serif, system-ui, sans-serif;
-    --font-serif: var(--font-noto-serif), ui-serif, Georgia, serif;
+    --font-serif: var(--font-playfair-display), ui-serif, Georgia, serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     /* Shadows sink into a deeper navy rather than grey, so they stay visible on the dark plane. */
     --shadow-color: #05070d;
@@ -234,6 +266,8 @@
     --shadow-lg: 0 1px 2px 0px hsl(228 45% 4% / 0.35), 0 10px 22px -6px hsl(228 45% 4% / 0.5);
     --shadow-xl: 0 1px 2px 0px hsl(228 45% 4% / 0.35), 0 18px 32px -10px hsl(228 45% 4% / 0.55);
     --shadow-2xl: 0 24px 48px -12px hsl(228 45% 4% / 0.65);
+    /* The wash in light ink, fainter than on the light plane: it should read as mist on ink, not fog. */
+    --plane-ink: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='900'%3E%3Cfilter id='i'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.004 0.009' numOctaves='3' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.6 0 0 0 0 0.68 0 0 0 0 0.85 0 0 0 0.11 -0.03'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23i)'/%3E%3C/svg%3E");
     /* The grain in light ink: dark ink would vanish into the navy plane. */
     --plane-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.92 0 0 0 0 0.9 0 0 0 0 0.85 0.05 0 0 0 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
@@ -298,15 +332,21 @@
 
 @layer base {
   body {
-    /* The plane is not flat: a jade and a gold glow at the top corners and a paper grain under
-       everything, its ink set per theme (`--plane-grain`). Fixed, so the grain does not scroll
-       with the page. */
+    /* The plane is not flat: a jade and a gold glow at the top corners, a paper grain and a static
+       ink wash under everything, their ink set per theme (`--plane-grain`, `--plane-ink`). Fixed,
+       so the texture does not scroll with the page. */
     background-color: var(--background);
     background-image:
       radial-gradient(60rem 36rem at 0% -8%, color-mix(in oklab, var(--jade) 12%, transparent), transparent 70%),
       radial-gradient(50rem 32rem at 100% -6%, color-mix(in oklab, var(--gold) 14%, transparent), transparent 70%),
-      var(--plane-grain);
+      var(--plane-grain),
+      var(--plane-ink);
     background-attachment: fixed;
+    /* Only the grain tiles. The ink wash is painted once over the viewport: tiled, its 900px edges
+       showed as seams and the repeat read as camouflage. */
+    background-repeat: no-repeat, no-repeat, repeat, no-repeat;
+    background-size: auto, auto, auto, cover;
+    background-position: 0 0, 0 0, 0 0, center;
   }
 
   /* Switching page: each block of the new page settles in, one beat after the one above it. */
@@ -362,6 +402,11 @@
   to { opacity: 1; transform: none; }
 }
 
+@keyframes drift {
+  from { transform: scale(1.12) translate3d(-1.5%, 1%, 0); }
+  to { transform: none; }
+}
+
 @keyframes reveal {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: none; }
@@ -380,6 +425,34 @@
 @keyframes fade-in-soft {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+/* Page switch (`<ViewTransition update={{ "page-nav": "page-fade" }}>` in `app/layout.tsx`, played
+   only for a link with `transitionTypes={PAGE_NAV_TRANSITION}`): the old content leaves fast, the
+   new one settles in. The root snapshot stays still and the overlay lets clicks through to the live
+   page. The site header and the phone tab bar have their own permanent names, and their groups
+   neither animate nor sit below the page snapshot, so the fading main never paints over them. */
+@keyframes page-fade-out {
+  to { opacity: 0; }
+}
+
+::view-transition {
+  pointer-events: none;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+::view-transition-group(site-header),
+::view-transition-group(mobile-tab-bar) {
+  animation: none;
+  z-index: 1;
+}
+::view-transition-old(.page-fade) {
+  animation: page-fade-out var(--duration-fast) ease-out both;
+}
+::view-transition-new(.page-fade) {
+  animation: fade-in-soft var(--duration-slow) var(--ease-out-soft) var(--duration-fast) both;
 }
 
 /* The highlight sits in the middle of a gradient twice the element's width and crosses left to right. */
@@ -871,5 +944,13 @@
         animation-delay: 0s !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
+    }
+
+    /* The page cross-fade runs on pseudo-elements the rule above cannot reach: the content swaps. */
+    ::view-transition-old(*),
+    ::view-transition-new(*),
+    ::view-transition-group(*) {
+        animation-duration: 0.01ms !important;
+        animation-delay: 0s !important;
     }
 }

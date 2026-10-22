@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { navItemsFor, type NavItem } from "@/components/shared/nav-items";
+import { PAGE_NAV_TRANSITION } from "@/lib/page-transition";
 import { cn } from "@/lib/utils";
 
 /**
@@ -25,7 +26,7 @@ interface MobileTabBarProps {
  * Members mostly open the site from a Discord link on their phone, where the header had room for
  * four bare icons - and "Điểm danh" and "Lịch sử điểm danh" were two clipboards apart. Here every
  * entry carries its short name under its icon, and the current page takes the header nav's marks:
- * full-strength text, a jade icon and a jade bar, on the top edge this time.
+ * full-strength text, a jade icon and a jade bar, on the top edge this time, and a faint jade wash.
  *
  * `data-slot` is what `globals.css` looks for to reserve the bar's height at the bottom of the page
  * (`--app-bottom-inset`), so no content - the save bars included - ends up under it. The bar must be
@@ -47,7 +48,10 @@ export function MobileTabBar({ isAdmin }: MobileTabBarProps) {
     <nav
       data-slot="mobile-tab-bar"
       aria-label="Điều hướng chính"
-      className="dark fixed inset-x-0 bottom-0 z-30 border-t bg-card text-foreground pb-[env(safe-area-inset-bottom)] sm:hidden"
+      // Its own transition name keeps the bar out of the page snapshot, so the fading `main` never
+      // paints over it (globals.css, "Page switch").
+      style={{ viewTransitionName: "mobile-tab-bar" }}
+      className="dark fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-card/80 text-foreground shadow-[0_-8px_24px_-12px_rgb(0_0_0/0.5)] backdrop-blur-xl backdrop-saturate-150 pb-[env(safe-area-inset-bottom)] sm:hidden"
     >
       <ul className="flex h-16">
         {mobileNavItems(isAdmin).map(({ href, shortLabel, icon: Icon }) => {
@@ -56,13 +60,14 @@ export function MobileTabBar({ isAdmin }: MobileTabBarProps) {
             <li key={href} className="flex-1">
               <Link
                 href={href}
+                transitionTypes={PAGE_NAV_TRANSITION}
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
                   "relative flex h-full flex-col items-center justify-center gap-1 text-xs font-medium outline-none",
                   "transition-colors duration-[var(--duration-fast)] focus-visible:bg-foreground/5",
-                  "before:absolute before:inset-x-6 before:top-0 before:h-0.5 before:rounded-full before:bg-jade before:opacity-0",
+                  "before:absolute before:inset-x-6 before:top-0 before:h-0.5 before:rounded-full before:bg-jade before:opacity-0 before:shadow-[0_0_10px_var(--jade)]",
                   isActive
-                    ? "text-foreground before:opacity-100 [&_svg]:text-jade"
+                    ? "bg-jade/10 text-foreground before:opacity-100 [&_svg]:text-jade"
                     : "text-muted-foreground"
                 )}
               >

@@ -22,9 +22,32 @@ vi.mock("@/features/auth/server", () => ({
   fetchMe: () => fetchMe(),
 }));
 
+// Link's `transitionTypes` never reaches the DOM, so the stub exposes it for the tests to read.
+vi.mock("next/link", () => ({
+  default: ({
+    transitionTypes,
+    children,
+    ...rest
+  }: React.AnchorHTMLAttributes<HTMLAnchorElement> & {
+    transitionTypes?: string[];
+  }) => (
+    <a {...rest} data-transition-types={transitionTypes?.join(" ")}>
+      {children}
+    </a>
+  ),
+}));
+
 import { SiteHeader } from "../site-header";
 
 afterEach(cleanup);
+// jsdom has no ResizeObserver, which the nav uses to re-measure its sliding bar.
+vi.stubGlobal(
+  "ResizeObserver",
+  class {
+    observe() {}
+    disconnect() {}
+  }
+);
 
 /**
  * `SiteHeader` is an async Server Component; awaiting it gives the element tree to render, which is
@@ -118,5 +141,34 @@ describe("SiteHeader - phiên đã đăng nhập", () => {
 
     expect(screen.getByRole("banner")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Đăng nhập" })).toBeNull();
+  });
+});
+
+describe("SiteHeader - chuyển trang", () => {
+  it("tên bang mang kiểu page-nav", async () => {
+    getSession.mockResolvedValue(null);
+
+    await renderHeader();
+
+    expect(
+      screen
+        .getByRole("link", { name: /Mèo Mập Giang Hồ/ })
+        .getAttribute("data-transition-types")
+    ).toBe("page-nav");
+  });
+
+  it("header và tab bar có tên view-transition riêng để không bị main phủ lên", async () => {
+    getSession.mockResolvedValue({ role: GuildRole.ADMIN, discordId: "1" });
+    fetchMe.mockResolvedValue({ ok: false });
+
+    const { container } = render(await SiteHeader());
+
+    expect(
+      container.querySelector("header")?.style.viewTransitionName
+    ).toBe("site-header");
+    expect(
+      container.querySelector<HTMLElement>('[data-slot="mobile-tab-bar"]')
+        ?.style.viewTransitionName
+    ).toBe("mobile-tab-bar");
   });
 });

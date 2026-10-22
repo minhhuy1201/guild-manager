@@ -3,7 +3,8 @@
 import { useMemo } from "react";
 
 import { DataTable } from "@/components/shared/data-table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { SectionTitle } from "@/components/shared/section-title";
 import {
   TableCell,
   TableHead,
@@ -100,10 +101,11 @@ export function AttendanceLogTable() {
   return (
     <Card>
       <CardHeader className="gap-4">
-        <CardTitle>
+        <SectionTitle
+          count={state.isPending || state.isError ? undefined : rows.length}
+        >
           Lịch sử điểm danh
-          {!state.isPending && !state.isError && ` (${rows.length})`}
-        </CardTitle>
+        </SectionTitle>
         <AttendanceHistoryFilters />
       </CardHeader>
       <CardContent>

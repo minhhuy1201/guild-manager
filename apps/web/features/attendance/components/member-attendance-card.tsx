@@ -22,8 +22,8 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
+import { SectionTitle } from "@/components/shared/section-title";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSession } from "@/features/auth";
 import { ApiError } from "@/lib/api-client";
@@ -179,9 +179,9 @@ export function MemberAttendanceCard() {
         </Card>
       }
     >
-      <Card>
+      <Card variant="raised">
         <CardHeader>
-          <CardTitle>Tuần này của bạn</CardTitle>
+          <SectionTitle>Tuần này của bạn</SectionTitle>
           {/* No separator between the two: on a phone the pair wraps, and a dot left hanging at
               the end of the first line reads as a typo. */}
           <CardDescription className="flex flex-wrap items-center gap-x-3">

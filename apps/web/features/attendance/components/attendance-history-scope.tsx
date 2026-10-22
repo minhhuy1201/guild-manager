@@ -94,7 +94,7 @@ export function AttendanceHistoryScope() {
   const shownWeek = selectedWeek ?? weeks[0] ?? null;
 
   return (
-    <Card>
+    <Card variant="inset">
       <CardContent className="grid gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor={`${SCOPE}-week`}>Tuần</Label>

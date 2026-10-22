@@ -4,7 +4,8 @@ import { useDroppable } from "@dnd-kit/core";
 import type { Character } from "@guild/shared/schemas";
 
 import { EmptyState } from "@/components/shared/empty-state";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { SectionTitle } from "@/components/shared/section-title";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { POOL_DROPPABLE_ID, type PoolDropData } from "../lib/dnd-data";
@@ -65,7 +66,7 @@ export function MemberPool({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Thành viên chưa xếp ({pool.length})</CardTitle>
+        <SectionTitle count={pool.length}>Thành viên chưa xếp</SectionTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <PoolFilters />

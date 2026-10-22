@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Cat } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -11,9 +12,22 @@ const SIZE_CLASS: Record<GuildSealSize, string> = {
   lg: "size-14 rounded-lg [&_svg]:size-8",
 };
 
+/** Jade for the guild's own mark; destructive for the stamp on an error. */
+export type GuildSealTone = "jade" | "destructive";
+
+/** Literal classes per tone - Tailwind only emits classes it can read in the source. */
+const TONE_CLASS: Record<GuildSealTone, string> = {
+  jade: "border-jade/50 bg-jade/10 text-jade",
+  destructive: "border-destructive/50 bg-destructive/10 text-destructive",
+};
+
 interface GuildSealProps {
   /** "md" in the header, "lg" on the login card */
   size?: GuildSealSize;
+  /** Colour of the edge and glyph */
+  tone?: GuildSealTone;
+  /** Glyph inside the seal, the guild's cat by default */
+  glyph?: ReactNode;
 }
 
 /**
@@ -21,18 +35,25 @@ interface GuildSealProps {
  * borrows the shape of a Chinese seal stamp. Decorative, so it is hidden from screen readers; the
  * guild name always sits next to it.
  * @param size - Named size of the seal
+ * @param tone - Jade, or destructive when the seal stamps an error
+ * @param glyph - What sits inside the seal
  * @returns The seal
  */
-export function GuildSeal({ size = "md" }: GuildSealProps) {
+export function GuildSeal({
+  size = "md",
+  tone = "jade",
+  glyph = <Cat />,
+}: GuildSealProps) {
   return (
     <span
       aria-hidden
       className={cn(
-        "flex shrink-0 items-center justify-center border border-jade/50 bg-jade/10 text-jade",
+        "flex shrink-0 items-center justify-center border",
+        TONE_CLASS[tone],
         SIZE_CLASS[size]
       )}
     >
-      <Cat />
+      {glyph}
     </span>
   );
 }
