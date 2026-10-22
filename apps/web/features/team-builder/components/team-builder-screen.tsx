@@ -195,7 +195,7 @@ export function TeamBuilderScreen() {
             slotCount={screen.draft.slotCount}
           />
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
             <MatchTabs
               matchCount={screen.draft.matchCount}
               activeMatchIndex={screen.draft.activeMatchIndex}

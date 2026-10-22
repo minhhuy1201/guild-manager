@@ -36,7 +36,7 @@ export function WinnersPanel({ event, canVoid, onVoid }: WinnersPanelProps) {
           return (
             <div
               key={prize.id}
-              className={cn("flex flex-col gap-2 rounded-container border-2 p-3", PRIZE_TIER_CLASS[prize.tier])}
+              className={cn("flex flex-col gap-2 rounded-inner border-2 p-3", PRIZE_TIER_CLASS[prize.tier])}
             >
               <div className="flex items-center gap-2">
                 <PrizeTierBadge tier={prize.tier} />

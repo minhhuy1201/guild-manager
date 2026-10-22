@@ -208,8 +208,9 @@ Giao làm 5 PR, mỗi PR tự đứng được và đổi diện mạo thấy ng
 - Vai trò màu: emerald/đỏ/amber chỉ cho trạng thái điểm danh. Gold không bao giờ là trạng thái.
 - Kích thước control và sàn 44px trên điện thoại. Root font 115%/120%.
 - Không ảnh sau dữ liệu. Không cuộn ngang trang. Save bar vẫn `sticky`.
-- Mọi thứ thuộc đua mèo: `features/cat-race`, khối `--stage-*` và `.race-*` trong `globals.css`.
-  Prop `isCompact` của `PageHeader` đã bỏ vì mọi trang giờ dùng chung một banner gọn. Card, Button, EmptyState và header dùng chung nên vẫn đổi theo.
+- Sân đua mèo: khối `--stage-*` và `.race-*` trong `globals.css` giữ nguyên. Hai trang đua mèo dùng
+  chung banner gọn (prop `isCompact` của `PageHeader` đã bỏ) và thang bo góc mới như mọi trang. Card,
+  Button, EmptyState và header dùng chung nên vẫn đổi theo.
 
 ## Testing Decisions
 

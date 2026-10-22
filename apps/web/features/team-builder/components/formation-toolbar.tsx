@@ -72,7 +72,7 @@ export function FormationToolbar({
     : SHORT_COPY_LABEL;
 
   return (
-    <div className="flex flex-wrap items-center justify-end gap-2 max-sm:w-full sm:ml-auto sm:flex-nowrap">
+    <div className="flex flex-wrap items-center justify-end gap-2 max-sm:w-full sm:ml-auto lg:flex-nowrap">
       {/* Before the buttons, so the buttons keep their place at the right edge when it appears. */}
       {dirty ? (
         <p className="text-xs text-muted-foreground max-sm:w-full max-sm:text-right sm:whitespace-nowrap">

@@ -37,8 +37,7 @@ Screens must look like one app. A new display convention goes here; its reason g
 
 - Open every page with `PageHeader` (`components/shared/page-header.tsx`), except the tactic page (`TacticHeader`). A new tool page asks first.
 - Pass `banner` (a `PAGE_BANNERS` entry in `lib/page-banners.ts`). A new page adds its scene there; pictures live in `public/img/bg/`. Only the attendance page and its history set `isPlainOnPhone` (below `sm` it shows text only); a new page asks first.
-- Keep the banner tall (`min-h-36` / `sm:min-h-48` / `lg:min-h-60`), the scene wrapper on `animate-drift`, and the title `text-3xl` up to `lg:text-5xl`.
-- Pass `isCompact` only on the two cat race pages: the banner renders exactly as before the redesign (short strip, small title, `rounded-2xl`, no shadow, no drift, `text-white/80` description). Shared component restyles (Card, Button, EmptyState, the header) do reach the cat race pages; only the banner is held.
+- Keep the banner one compact strip on every page, the cat race pages included (`min-h-24` / `sm:min-h-28` / `lg:min-h-32`, `rounded-container shadow-md`), the scene wrapper on `animate-drift`, and the title `text-2xl` / `sm:text-3xl`. A taller banner pulls the eye away from the page's own tools; never add a size variant.
 - Keep the two scrims between a picture and its text. Never put text on a picture without them.
 - Keep one `<h1>` per page, in `font-heading` (Playfair Display). A section title inside a card is an `<h2>`; it may take `font-heading` too.
 - Use `font-heading` for headings only: `PageHeader`, section titles, the guild name, the formation banner, `DialogTitle`. Never for body, labels or data.
