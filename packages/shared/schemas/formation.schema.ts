@@ -147,12 +147,13 @@ export type FormationWeek = z.infer<typeof formationWeekSchema>;
  */
 export const ANNOUNCEMENT_IMAGE_MAX_CHARS = 2_000_000;
 
+/** A webp image as a base64 data URL, the one format line-up and team card images travel in. */
+const WEBP_DATA_URL = /^data:image\/webp;base64,[A-Za-z0-9+/]+={0,2}$/;
+
 /**
  * One line-up image on the wire. The format is pinned to webp — the browser encodes it, the API
  * hands it to Discord, and one constant deciding both is what keeps them from drifting.
  */
-const WEBP_DATA_URL = /^data:image\/webp;base64,[A-Za-z0-9+/]+={0,2}$/;
-
 const announcementImageSchema = z
   .string()
   .regex(WEBP_DATA_URL, "Ảnh đội hình không hợp lệ.")
@@ -222,8 +223,9 @@ const MAX_MATCHES = 2;
  * `notices` list, and that sum has to clear the API's `JSON_BODY_LIMIT` (4 MiB) with room to spare,
  * which in turn sits under the 4.5MB a Vercel Function accepts. 180,000 characters puts the images
  * at 3.6MB, leaving about 0.5MB over the largest valid `notices`. A six-row card is far smaller
- * than a full line-up image; the real size is not yet measured, and an image over this cap is
- * dropped by the browser, so the member gets the text notice instead of a rejected request.
+ * than a full line-up image, but its real size was not measured when this was set: confirm it on
+ * the first real send (the browser console warns for every image dropped here). An image over this
+ * cap is dropped by the browser, so the member gets the text notice instead of a rejected request.
  * `apps/api/src/config/__tests__/body-limit.spec.ts` holds the numbers in order.
  */
 export const TEAM_IMAGE_MAX_CHARS = 180_000;

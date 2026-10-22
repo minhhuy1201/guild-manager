@@ -58,7 +58,7 @@ Team notice bằng text, thêm một dòng trỏ về channel bang chiến để
 
 - Hook gửi chạy: chụp ảnh trận → announce → (nếu bật "Nhắn riêng từng người") chụp ảnh team → notify-members.
 - Chụp ảnh trận lỗi: dừng, không gửi gì, như hiện tại.
-- Chụp ảnh team lỗi (toàn bộ hoặc một team): không phải lỗi của request. Team lỗi không có ảnh trong body, server gửi Team notice bằng text cho thành viên team đó. Không toast lỗi riêng; báo cáo vẫn như lát 1.
+- Chụp ảnh team lỗi (toàn bộ hoặc một team): không phải lỗi của request. Team lỗi không có ảnh trong body, server gửi Team notice bằng text cho thành viên team đó. Không toast lỗi riêng; báo cáo vẫn như lát 1. Browser ghi một dòng `console.warn` để còn chẩn đoán được.
 - Mọi lỗi từ bước chụp ảnh team trở đi chỉ hiện trong dialog kết quả, cạnh toast thành công của announcement. Đây là quy tắc đã có của lát 1, áp dụng thêm cho bước chụp ảnh team.
 
 ### Chụp ảnh team (web)
@@ -69,7 +69,7 @@ Team notice bằng text, thêm một dòng trỏ về channel bang chiến để
 - Mỗi cặp (trận, team) một ảnh, gửi chung cho mọi người nhận trong team đó. Không đánh dấu người nhận trong ảnh: đánh dấu từng người cần tới 120 ảnh, vượt giới hạn body.
 - Chỉ chụp các cặp (trận, team) có ít nhất một người được xếp. Khi nhắn lại, chỉ chụp các cặp chứa người trong `notices`.
 - Ảnh nào dài hơn giới hạn một ảnh team thì bỏ khỏi body, team đó nhận text. Body hợp lệ không bao giờ bị từ chối vì một ảnh quá cỡ.
-- Ảnh trùng một cặp (trận, team) là lỗi lập trình: hàm chụp đếm node như `readCaptureNodes` đang làm với ảnh trận, sai số thì bỏ hết ảnh team và mọi người nhận text.
+- Ảnh trùng một cặp (trận, team) là lỗi lập trình: số card cần chụp không biết trước, nên hàm chụp kiểm tra không có cặp nào xuất hiện hai lần. Trùng thì bỏ hết ảnh team và mọi người nhận text.
 
 ### Hợp đồng API
 
@@ -85,8 +85,9 @@ Team notice bằng text, thêm một dòng trỏ về channel bang chiến để
   ```
 
 - `image` dùng cùng regex định dạng webp với ảnh announcement, giới hạn độ dài riêng (`TEAM_IMAGE_MAX_CHARS`). `teamImages` tối đa `TEAM_COUNT × 2` phần tử, `team` trong `1..TEAM_COUNT`, `matchIndex` trong `1..2`, không trùng cặp (trận, team).
-- Giới hạn ảnh team chọn sao cho `TEAM_IMAGE_MAX_CHARS × TEAM_COUNT × 2` cộng phần `notices` lớn nhất vẫn dưới `JSON_BODY_LIMIT`. Test giới hạn body hiện có được mở rộng để giữ bất đẳng thức này. Con số cụ thể chốt khi đo ảnh thật lúc implement; nếu ảnh thật vượt giới hạn thì giảm quality hoặc scale của ảnh team, không nâng `JSON_BODY_LIMIT`.
+- Giới hạn ảnh team chọn sao cho `TEAM_IMAGE_MAX_CHARS × TEAM_COUNT × 2` cộng phần `notices` lớn nhất vẫn dưới `JSON_BODY_LIMIT`. Test giới hạn body hiện có được mở rộng để giữ bất đẳng thức này. Chốt `TEAM_IMAGE_MAX_CHARS = 180_000` (20 ảnh là 3.6MB, dưới 4 MiB với khoảng dư hơn 5%). Lúc implement chưa đo được ảnh card thật (không có môi trường đăng nhập để chụp), nên con số phải được xác nhận ở lần gửi thật đầu tiên: browser `console.warn` mỗi khi bỏ ảnh quá cỡ. Nếu ảnh thật vượt giới hạn thì giảm quality hoặc scale của ảnh team, không nâng `JSON_BODY_LIMIT`.
 - Thiếu `teamImages`, hoặc thiếu ảnh của một cặp: hợp lệ, team đó nhận text. Đây không phải cấu hình sai mà là đường fallback đã thống nhất.
+- `notices` được chặn trên: tối đa `TEAM_COUNT × SLOTS_PER_TEAM × 2` (120) phần tử, `characterId` tối đa 64 ký tự. Không chặn thì "phần `notices` lớn nhất" là vô hạn và bất đẳng thức giới hạn body không viết được. Cả hai đều xa trên mức dùng thật (một lần nhắn lại chỉ chứa người `unsent`, mỗi người một lần cho mỗi trận; id nhân vật tối đa 57 ký tự).
 - Báo cáo trả về không đổi.
 
 ### Nội dung một Team notice
@@ -138,7 +139,7 @@ Xem đội hình trong <#<channel bang chiến>>.
 - **`DiscordRestClient.postMessageWithFiles`:** mở rộng `discord-rest.spec.ts` để khẳng định có timeout.
 - **Web, seam `useFormationAnnounce`** (`use-formation-announce.test.ts`): announce luôn chạy trước chụp ảnh team; chụp ảnh team lỗi vẫn gọi notify-members không ảnh; chỉ chụp cặp có người; ảnh quá cỡ bị bỏ; nhắn lại chụp đúng các cặp cần.
 - **Web, hàm chụp** (`announce-capture.test.ts`): đọc node card theo data attribute, đếm sai số thì báo lỗi.
-- Không có test end-to-end. Kiểm tra thật: gửi vào server thử với 2-3 tài khoản ở hai team khác nhau, xem ảnh trên Discord desktop và điện thoại, đo dung lượng ảnh thật để chốt `TEAM_IMAGE_MAX_CHARS`.
+- Không có test end-to-end. Kiểm tra thật: gửi vào server thử với 2-3 tài khoản ở hai team khác nhau, xem ảnh trên Discord desktop và điện thoại, mở console của browser khi gửi để xác nhận không có ảnh nào bị bỏ vì quá `TEAM_IMAGE_MAX_CHARS`.
 
 ## Out of Scope
 

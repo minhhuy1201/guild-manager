@@ -40,11 +40,10 @@ export function buildTeamNotice(input: TeamNoticeInput): MessagePayload {
   const lines = [
     `**${battleHeading(input)} - Trận ${input.matchIndex}/${input.matchCount}**`,
     `Bạn ở ${team}. Online trước ${gather}.`,
+    ...(input.hasImage
+      ? []
+      : [`Xem đội hình trong <#${input.bangChienChannelId}>.`]),
   ];
-
-  if (!input.hasImage) {
-    lines.push(`Xem đội hình trong <#${input.bangChienChannelId}>.`);
-  }
 
   return {
     content: lines.join('\n'),

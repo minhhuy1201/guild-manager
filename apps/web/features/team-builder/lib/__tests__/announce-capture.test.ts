@@ -22,6 +22,7 @@ const {
 } = await import("../team-capture-attributes");
 const {
   CaptureCountError,
+  DuplicateTeamCaptureError,
   captureTeamImages,
   readCaptureNodes,
   readTeamCaptureNodes,
@@ -139,7 +140,7 @@ describe("readTeamCaptureNodes", () => {
       [1, 1, ["kirito"]],
     ]);
 
-    expect(() => readTeamCaptureNodes()).toThrow(CaptureCountError);
+    expect(() => readTeamCaptureNodes()).toThrow(DuplicateTeamCaptureError);
   });
 });
 
@@ -183,6 +184,8 @@ describe("captureTeamImages", () => {
       [1, 1, ["kirito"]],
     ]);
 
-    await expect(captureTeamImages()).rejects.toThrow(CaptureCountError);
+    await expect(captureTeamImages()).rejects.toThrow(
+      DuplicateTeamCaptureError
+    );
   });
 });

@@ -194,6 +194,7 @@ describe("useFormationAnnounce - ảnh team", () => {
 
   it("chụp ảnh team lỗi vẫn nhắn riêng, không kèm ảnh và không toast lỗi", async () => {
     vi.mocked(captureTeamImages).mockRejectedValue(new Error("snapDOM"));
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const { result } = renderAnnounce();
 
     act(() => result.current.setOpen(true));
@@ -206,11 +207,14 @@ describe("useFormationAnnounce - ảnh team", () => {
     });
     expect(toastError).not.toHaveBeenCalled();
     expect(result.current.outcome).toEqual({ report: REPORT, error: null });
+    expect(warn).toHaveBeenCalledOnce();
+    warn.mockRestore();
   });
 
-  it("bỏ ảnh quá cỡ khỏi request, giữ ảnh còn lại", async () => {
+  it("bỏ ảnh quá cỡ khỏi request, giữ ảnh còn lại và cảnh báo ở console", async () => {
     const huge = { matchIndex: 1, team: 2, image: `data:image/webp;base64,${"A".repeat(TEAM_IMAGE_MAX_CHARS)}` };
     vi.mocked(captureTeamImages).mockResolvedValue([TEAM_IMAGE, huge]);
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const { result } = renderAnnounce();
 
     act(() => result.current.setOpen(true));
@@ -221,6 +225,8 @@ describe("useFormationAnnounce - ảnh team", () => {
       notices: undefined,
       teamImages: [TEAM_IMAGE],
     });
+    expect(warn).toHaveBeenCalledOnce();
+    warn.mockRestore();
   });
 
   it("nhắn lại chỉ chụp các card chứa người trong notices", async () => {
@@ -261,6 +267,7 @@ describe("useFormationAnnounce - ảnh team", () => {
     act(() => result.current.setOpen(true));
     await act(() => result.current.confirm());
     vi.mocked(captureTeamImages).mockRejectedValue(new Error("snapDOM"));
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     await act(() => result.current.retry());
 
     expect(notifyMock).toHaveBeenLastCalledWith({
@@ -268,6 +275,7 @@ describe("useFormationAnnounce - ảnh team", () => {
       notices: [{ characterId: "asuna", matchIndex: 1 }],
       teamImages: [],
     });
+    warn.mockRestore();
   });
 });
 

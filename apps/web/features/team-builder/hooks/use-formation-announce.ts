@@ -221,10 +221,22 @@ export function useFormationAnnounce(
   ): Promise<TeamImage[]> {
     setCapturing(true);
     try {
-      return dropOversizedTeamImages(await captureTeamImages(notices));
-    } catch {
+      const captured = await captureTeamImages(notices);
+      const kept = dropOversizedTeamImages(captured);
+
+      // The admin is not told (the member still gets the text notice), so the console is the one
+      // place a team card that never fits the cap can be noticed.
+      if (kept.length < captured.length) {
+        console.warn(
+          `Bỏ ${captured.length - kept.length} ảnh team vượt TEAM_IMAGE_MAX_CHARS; các team đó nhận Team notice dạng text.`
+        );
+      }
+
+      return kept;
+    } catch (error) {
       // Swallowed on purpose: a failed team capture is not a failed request. The server messages
       // those teams in text, and the report the dialog shows is unchanged by it.
+      console.warn("Không chụp được ảnh team, Team notice gửi dạng text.", error);
       return [];
     } finally {
       setCapturing(false);

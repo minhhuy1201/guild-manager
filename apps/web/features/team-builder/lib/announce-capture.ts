@@ -123,6 +123,19 @@ export async function captureFormations(
   });
 }
 
+/** The document held one (match, team) card twice, so neither image can be trusted. */
+export class DuplicateTeamCaptureError extends Error {
+  constructor(
+    /** Stored match number of the repeated card */
+    readonly matchIndex: number,
+    /** Team number of the repeated card */
+    readonly team: number
+  ) {
+    super(`Found team ${team} of match ${matchIndex} twice in the capture sheet.`);
+    this.name = "DuplicateTeamCaptureError";
+  }
+}
+
 /** A team card in the capture sheet, with what the card says about itself. */
 interface TeamCaptureNode {
   /** The element to screenshot */
@@ -149,7 +162,7 @@ export type TeamImage = NonNullable<NotifyMembersInput["teamImages"]>[number];
  * @param only - A retry's notices; only cards holding one of those members in that match are read.
  *   Undefined reads every marked card.
  * @returns The cards in document order
- * @throws CaptureCountError when a pair appears more than once
+ * @throws DuplicateTeamCaptureError when a pair appears more than once
  */
 export function readTeamCaptureNodes(
   only?: NotifyMembersInput["notices"]
@@ -164,10 +177,16 @@ export function readTeamCaptureNodes(
       .split(" ")
       .filter(Boolean),
   }));
-  const distinct = new Set(cards.map((card) => `${card.matchIndex}:${card.team}`));
+  const seen = new Set<string>();
 
-  if (distinct.size !== cards.length) {
-    throw new CaptureCountError(cards.length, distinct.size);
+  for (const card of cards) {
+    const pair = `${card.matchIndex}:${card.team}`;
+
+    if (seen.has(pair)) {
+      throw new DuplicateTeamCaptureError(card.matchIndex, card.team);
+    }
+
+    seen.add(pair);
   }
 
   if (only === undefined) return cards;
@@ -189,7 +208,7 @@ export function readTeamCaptureNodes(
  *
  * @param only - A retry's notices; left out, every team with someone in it is captured
  * @returns One image per card that was captured
- * @throws CaptureCountError when the document holds a pair twice, so no image can be trusted
+ * @throws DuplicateTeamCaptureError when the document holds a pair twice, so no image can be trusted
  * @throws Error when the capture library itself cannot load
  */
 export async function captureTeamImages(
