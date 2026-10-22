@@ -37,7 +37,7 @@ immersion.
   - **Dark ("night battle")** - an ink-navy plane, cards one step lighter, warm ivory text, and the
     accents lifted so they carry on the dark.
   - Surfaces come in three levels: *raised* (the few blocks that matter most: a lit inner edge and
-    a soft glow), *default*, and *inset* (a recessed support block such as a filter strip). Blocks
+    a soft jade glow), *default*, and *inset* (a recessed support block such as a filter strip). Blocks
     that hold other blocks take the large container radius; what sits inside takes the smaller
     inner one.
   - In both, the plane and the card sit far enough apart that a card reads as lifted without looking
@@ -54,7 +54,7 @@ immersion.
 |---|---|
 | Navy (`--primary`) | Primary actions and selected tabs - the app's working colour; lit to a light navy on the dark theme |
 | Jade (`--jade`) | The accent: active navigation, focus ring, the guild seal, section dividers |
-| Antique gold (`--gold`) | Important highlights only: the formation headline, a raised card, the login ornament |
+| Antique gold (`--gold`) | Important highlights only: the formation headline and the login ornament; a raised card takes the jade glow, not gold |
 | Emerald / red / amber | Attendance state only ("Có" / "Không" / not answered yet) - never decoration |
 
 Gold is never used for a state; amber is never used for decoration. The two stay apart by
@@ -107,8 +107,8 @@ Motion says "the data is arriving" and "this responds to you", nothing more:
 
 ## Allowed since 2026-10-22
 
-- A thin gold edge on a few highlights only (formation headline, a raised card, login)
-- Jade and gold glow behind those highlights
+- A thin gold edge on a few highlights only (formation headline, login)
+- Jade glow behind a raised card, gold glow behind the formation headline and login
 - Static paper grain and ink wash on the plane
 - A translucent, blurred header band and dialog backdrop
 - One-shot motion: banner drift, page cross-fade, count-up of totals

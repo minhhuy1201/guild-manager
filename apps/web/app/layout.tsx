@@ -51,10 +51,15 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <Providers>
           <SiteHeader />
-          {/* Switching page cross-fades the content; the header, outside this boundary, stays put.
+          {/* Only a navigation the user chose (a link with `transitionTypes={PAGE_NAV_TRANSITION}`)
+              cross-fades the content; the header, outside this boundary, stays put. Refreshes, tab
+              switches and Suspense reveals carry no type and stay still.
               React names `main` only for the length of the transition, so the team builder's drag
               overlay and the sticky save bars see no extra containing block while idle. */}
-          <ViewTransition default="page-fade">
+          <ViewTransition
+            default="none"
+            update={{ "page-nav": "page-fade", default: "none" }}
+          >
             <main
               className={`mx-auto flex w-full ${APP_SHELL_WIDTH} flex-col gap-6 px-4 pt-8 pb-12 sm:px-6`}
             >

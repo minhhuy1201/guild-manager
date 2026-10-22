@@ -6,6 +6,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 
 import { navItemsFor } from "@/components/shared/nav-items";
 import { buttonVariants } from "@/components/ui/button";
+import { PAGE_NAV_TRANSITION } from "@/lib/page-transition";
 import { cn } from "@/lib/utils";
 
 interface IndicatorBox {
@@ -53,7 +54,13 @@ export function MainNav({ isAdmin }: MainNavProps) {
       const link = activeHref
         ? nav.querySelector<HTMLElement>(`a[href="${activeHref}"]`)
         : null;
-      setBox(link ? { x: link.offsetLeft, width: link.offsetWidth } : null);
+      // A zero width means the nav is `display: none` (below sm): not measured yet, so the bar
+      // does not park at x=0 and slide in from the left when the nav appears.
+      setBox(
+        link && link.offsetWidth > 0
+          ? { x: link.offsetLeft, width: link.offsetWidth }
+          : null
+      );
     };
     measure();
     const observer = new ResizeObserver(measure);
@@ -103,6 +110,7 @@ export function MainNav({ isAdmin }: MainNavProps) {
           <Link
             key={href}
             href={href}
+            transitionTypes={PAGE_NAV_TRANSITION}
             aria-current={isActive ? "page" : undefined}
             // Only when the visible name can be the short one, so it never repeats the text.
             aria-label={hasShortLabel ? label : undefined}

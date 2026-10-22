@@ -5,6 +5,7 @@ import { GuildSeal } from "@/components/shared/guild-seal";
 import { OrnamentDivider } from "@/components/shared/ornament-divider";
 import { Card } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
+import { PAGE_NAV_TRANSITION } from "@/lib/page-transition";
 import { ROUTES } from "@/config/routes";
 
 /**
@@ -30,7 +31,11 @@ export default function NotFound() {
         <p className="max-w-prose text-sm text-pretty text-muted-foreground">
           Đường dẫn có thể đã cũ hoặc bị gõ nhầm.
         </p>
-        <Link href={ROUTES.attendance} className={buttonVariants()}>
+        <Link
+          href={ROUTES.attendance}
+          transitionTypes={PAGE_NAV_TRANSITION}
+          className={buttonVariants()}
+        >
           <House />
           Về trang Điểm danh
         </Link>

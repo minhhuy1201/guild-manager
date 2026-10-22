@@ -3,6 +3,21 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ROUTES } from "@/config/routes";
+// Link's `transitionTypes` never reaches the DOM, so the stub exposes it for the tests to read.
+vi.mock("next/link", () => ({
+  default: ({
+    transitionTypes,
+    children,
+    ...rest
+  }: React.AnchorHTMLAttributes<HTMLAnchorElement> & {
+    transitionTypes?: string[];
+  }) => (
+    <a {...rest} data-transition-types={transitionTypes?.join(" ")}>
+      {children}
+    </a>
+  ),
+}));
+
 import ErrorPage from "../error";
 
 afterEach(cleanup);
@@ -32,5 +47,15 @@ describe("Trang lỗi", () => {
     );
 
     expect(container.textContent).not.toContain("x is undefined");
+  });
+
+  it("lối về mang kiểu page-nav để chuyển trang có hiệu ứng", () => {
+    render(<ErrorPage error={new Error("boom")} reset={vi.fn()} />);
+
+    expect(
+      screen
+        .getByRole("link", { name: /Về trang Điểm danh/ })
+        .getAttribute("data-transition-types")
+    ).toBe("page-nav");
   });
 });

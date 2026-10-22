@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { navItemsFor, type NavItem } from "@/components/shared/nav-items";
+import { PAGE_NAV_TRANSITION } from "@/lib/page-transition";
 import { cn } from "@/lib/utils";
 
 /**
@@ -47,6 +48,9 @@ export function MobileTabBar({ isAdmin }: MobileTabBarProps) {
     <nav
       data-slot="mobile-tab-bar"
       aria-label="Điều hướng chính"
+      // Its own transition name keeps the bar out of the page snapshot, so the fading `main` never
+      // paints over it (globals.css, "Page switch").
+      style={{ viewTransitionName: "mobile-tab-bar" }}
       className="dark fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-card/80 text-foreground shadow-[0_-8px_24px_-12px_rgb(0_0_0/0.5)] backdrop-blur-xl backdrop-saturate-150 pb-[env(safe-area-inset-bottom)] sm:hidden"
     >
       <ul className="flex h-16">
@@ -56,6 +60,7 @@ export function MobileTabBar({ isAdmin }: MobileTabBarProps) {
             <li key={href} className="flex-1">
               <Link
                 href={href}
+                transitionTypes={PAGE_NAV_TRANSITION}
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
                   "relative flex h-full flex-col items-center justify-center gap-1 text-xs font-medium outline-none",

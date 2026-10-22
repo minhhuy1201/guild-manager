@@ -7,6 +7,21 @@ import { ROUTES } from "@/config/routes";
 const nav = vi.hoisted(() => ({ pathname: "/" }));
 vi.mock("next/navigation", () => ({ usePathname: () => nav.pathname }));
 
+// Link's `transitionTypes` never reaches the DOM, so the stub exposes it for the tests to read.
+vi.mock("next/link", () => ({
+  default: ({
+    transitionTypes,
+    children,
+    ...rest
+  }: React.AnchorHTMLAttributes<HTMLAnchorElement> & {
+    transitionTypes?: string[];
+  }) => (
+    <a {...rest} data-transition-types={transitionTypes?.join(" ")}>
+      {children}
+    </a>
+  ),
+}));
+
 import { MainNav } from "../main-nav";
 
 afterEach(cleanup);
@@ -82,5 +97,39 @@ describe("MainNav - mục active và indicator", () => {
         .querySelector('[data-slot="nav-indicator"]')
         ?.hasAttribute("data-active-href")
     ).toBe(false);
+  });
+});
+
+describe("MainNav - chuyển trang", () => {
+  it("mọi mục đều là điều hướng thật nên mang kiểu page-nav", () => {
+    render(<MainNav isAdmin />);
+
+    for (const link of screen.getAllByRole("link")) {
+      expect(link.getAttribute("data-transition-types")).toBe("page-nav");
+    }
+  });
+});
+
+describe("MainNav - đo indicator", () => {
+  // Below sm the nav is `display: none`, so every offsetWidth is 0; measuring that would park the
+  // bar at x=0 and make it slide in from the left once the nav appears.
+  it("link rộng 0 (nav đang ẩn) coi như chưa đo", () => {
+    const { container } = render(<MainNav isAdmin={false} />);
+
+    expect(container.querySelector("nav")?.hasAttribute("data-measured")).toBe(
+      false
+    );
+  });
+
+  it("link có bề rộng thì đã đo", () => {
+    const width = vi
+      .spyOn(HTMLElement.prototype, "offsetWidth", "get")
+      .mockReturnValue(120);
+    const { container } = render(<MainNav isAdmin={false} />);
+
+    expect(container.querySelector("nav")?.hasAttribute("data-measured")).toBe(
+      true
+    );
+    width.mockRestore();
   });
 });

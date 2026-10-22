@@ -7,6 +7,7 @@ import { GuildSeal } from "@/components/shared/guild-seal";
 import { OrnamentDivider } from "@/components/shared/ornament-divider";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { PAGE_NAV_TRANSITION } from "@/lib/page-transition";
 import { ROUTES } from "@/config/routes";
 
 interface ErrorPageProps {
@@ -49,6 +50,7 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
               and a screen reader would announce the way back as an action. */}
           <Link
             href={ROUTES.attendance}
+            transitionTypes={PAGE_NAV_TRANSITION}
             className={buttonVariants({ variant: "outline" })}
           >
             <House />

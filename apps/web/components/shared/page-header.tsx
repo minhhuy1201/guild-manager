@@ -20,7 +20,7 @@ interface PageHeaderProps {
   actions?: ReactNode;
   /** Below `sm`, drop the scene and show title and description as plain text on the page */
   isPlainOnPhone?: boolean;
-  /** Keep the short strip and small title; only the cat race pages, so the stage stays put */
+  /** Keep the banner as it was before the redesign (short strip, small title, no drift or shadow); only the cat race pages */
   isCompact?: boolean;
 }
 
@@ -36,7 +36,7 @@ interface PageHeaderProps {
  * @param description - Sentence under the title, if any
  * @param actions - Page-wide controls, if any
  * @param isPlainOnPhone - Whether a phone gets plain text instead of the scene
- * @param isCompact - Whether to keep the short strip and small title
+ * @param isCompact - Whether to keep the pre-redesign banner
  * @returns The page header block
  */
 export function PageHeader({
@@ -54,8 +54,11 @@ export function PageHeader({
   return (
     <div
       className={cn(
-        "relative flex flex-col justify-end overflow-hidden rounded-container bg-(--banner-tint) shadow-md",
-        isCompact ? "min-h-24 sm:min-h-28" : "min-h-36 sm:min-h-48 lg:min-h-60",
+        "relative flex flex-col justify-end overflow-hidden bg-(--banner-tint)",
+        // `isCompact` is the banner exactly as it was before the redesign: the race pages keep it.
+        isCompact
+          ? "min-h-24 rounded-2xl sm:min-h-28"
+          : "min-h-36 rounded-container shadow-md sm:min-h-48 lg:min-h-60",
         isPlainOnPhone && "max-sm:min-h-0 max-sm:bg-transparent max-sm:shadow-none"
       )}
       style={{ "--banner-tint": tint } as CSSProperties}
@@ -63,7 +66,11 @@ export function PageHeader({
       <div
         aria-hidden
         data-slot="banner-scene"
-        className={cn("absolute inset-0 animate-drift", sceneClass)}
+        className={cn(
+          "absolute inset-0",
+          !isCompact && "animate-drift",
+          sceneClass
+        )}
       >
         <BannerImage
           src={src}
@@ -112,8 +119,8 @@ export function PageHeader({
             {description && (
               <p
                 className={cn(
-                  "max-w-prose text-sm text-pretty text-white/85",
-                  !isCompact && "sm:text-base",
+                  "max-w-prose text-sm text-pretty",
+                  isCompact ? "text-white/80" : "text-white/85 sm:text-base",
                   isPlainOnPhone && "max-sm:text-muted-foreground"
                 )}
               >

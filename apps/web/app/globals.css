@@ -150,7 +150,7 @@
     --chart-5: oklch(0.956 0.007 39.461);
     /* glow of the jade accent behind one highlight (a raised card, a focused call to action). */
     --glow-jade: 0 0 0 1px color-mix(in oklab, var(--jade) 28%, transparent), 0 8px 28px -8px color-mix(in oklab, var(--jade) 38%, transparent);
-    /* glow of the gold accent behind the few important highlights (formation headline, login). */
+    /* glow of the gold accent behind the few important highlights (formation headline, login). Defined ahead of tickets 06 and 09 that use it; a raised Card takes the jade glow, not this. */
     --glow-gold: 0 0 0 1px color-mix(in oklab, var(--gold) 34%, transparent), 0 8px 28px -8px color-mix(in oklab, var(--gold) 42%, transparent);
     /* the thin lit inner edge of a raised card, drawn as an inset box-shadow colour. */
     --card-highlight: oklch(1 0 0 / 0.85);
@@ -427,9 +427,11 @@
   to { opacity: 1; }
 }
 
-/* Page switch (`<ViewTransition default="page-fade">` in `app/layout.tsx`): the old content leaves
-   fast, the new one settles in. The root snapshot stays still, so the header never fades, and the
-   overlay lets clicks through to the live page. */
+/* Page switch (`<ViewTransition update={{ "page-nav": "page-fade" }}>` in `app/layout.tsx`, played
+   only for a link with `transitionTypes={PAGE_NAV_TRANSITION}`): the old content leaves fast, the
+   new one settles in. The root snapshot stays still and the overlay lets clicks through to the live
+   page. The site header and the phone tab bar have their own permanent names, and their groups
+   neither animate nor sit below the page snapshot, so the fading main never paints over them. */
 @keyframes page-fade-out {
   to { opacity: 0; }
 }
@@ -440,6 +442,11 @@
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation: none;
+}
+::view-transition-group(site-header),
+::view-transition-group(mobile-tab-bar) {
+  animation: none;
+  z-index: 1;
 }
 ::view-transition-old(.page-fade) {
   animation: page-fade-out var(--duration-fast) ease-out both;

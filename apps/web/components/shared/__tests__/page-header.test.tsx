@@ -48,6 +48,32 @@ describe("PageHeader", () => {
     );
   });
 
+  // The race pages are held at their pre-redesign look: no drift, no shadow, the old radius and
+  // the old description colour.
+  it("isCompact hiển thị đúng như trước thiết kế lại", () => {
+    const strip = renderStrip(false, true);
+
+    expect(strip.className).toContain("rounded-2xl");
+    expect(strip.className).not.toContain("rounded-container");
+    expect(strip.className).not.toContain("shadow-md");
+    expect(
+      strip.querySelector('[data-slot="banner-scene"]')?.className
+    ).not.toContain("animate-drift");
+    expect(screen.getByText("Câu trả lời của cả bang.").className).toContain(
+      "text-white/80"
+    );
+  });
+
+  it("trang thường vẫn trôi cảnh, đổ bóng và bo container", () => {
+    const strip = renderStrip();
+
+    expect(strip.className).toContain("rounded-container");
+    expect(strip.className).toContain("shadow-md");
+    expect(
+      strip.querySelector('[data-slot="banner-scene"]')?.className
+    ).toContain("animate-drift");
+  });
+
   it("giữ cảnh trên điện thoại khi không đặt isPlainOnPhone", () => {
     const strip = renderStrip();
 
