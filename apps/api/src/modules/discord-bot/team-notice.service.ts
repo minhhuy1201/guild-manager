@@ -27,9 +27,11 @@ import {
   DiscordApiError,
   DiscordRestClient,
 } from './discord-rest';
+import type { OutgoingFile } from './discord-rest';
 import { buildTeamNotice } from './team-notice';
 import { isWanted, placementsOf } from './team-notice-plan';
 import type { MemberRow } from './team-notice-plan';
+import { webpFileFromDataUrl } from './webp-file';
 
 /** Shown when the battle the notices point at no longer exists. */
 const SESSION_NOT_FOUND = 'Không tìm thấy trận đánh này.';
@@ -53,6 +55,16 @@ const NOTIFY_BUDGET_MS = 220_000;
 
 /** Milliseconds in a second, for turning Discord's `retry_after` into a timer. */
 const SECOND_MS = 1000;
+
+/**
+ * Key of one (match, team) pair in the image lookup.
+ * @param matchIndex - Stored match number, 1 or 2
+ * @param team - Team number
+ * @returns A string unique to the pair
+ */
+function pairKey(matchIndex: number, team: number): string {
+  return `${matchIndex}:${team}`;
+}
 
 /** How one member's delivery ended. */
 type DeliveryResult = 'sent' | 'blocked' | 'unsent' | 'too-fast';
@@ -87,6 +99,8 @@ export class TeamNoticeService {
    * @param sessionId - Battle day whose line-up is notified
    * @param only - Narrow the send to these members and matches (a retry); omitted means everyone.
    *   A pair the formation does not hold is ignored, and the rest of the rules still apply to it.
+   * @param teamImages - Card image of each (match, team) that has one. A team without one gets the
+   *   text notice; an image for a pair nobody is notified in is never sent.
    * @returns Who was messaged and, for everyone else, why not
    * @throws NotFoundException when the battle day does not exist
    * @throws BadRequestException when the day's attendance is still open (nothing announced yet)
@@ -94,6 +108,7 @@ export class TeamNoticeService {
   async notifyMembers(
     sessionId: string,
     only?: NotifyMembersInput['notices'],
+    teamImages: NotifyMembersInput['teamImages'] = [],
   ): Promise<TeamNoticeReport> {
     const session = await this.battleSessions.findById(sessionId);
 
@@ -121,6 +136,13 @@ export class TeamNoticeService {
       {
         infer: true,
       },
+    );
+
+    const imageFiles = new Map<string, OutgoingFile>(
+      teamImages.map(({ matchIndex, team, image }) => [
+        pairKey(matchIndex, team),
+        webpFileFromDataUrl(image, `team-${team}-tran-${matchIndex}.webp`),
+      ]),
     );
 
     const sent: TeamNoticeTarget[] = [];
@@ -157,6 +179,9 @@ export class TeamNoticeService {
         stopped = true;
         unsent.push(target);
       } else {
+        const file = imageFiles.get(
+          pairKey(placement.matchIndex, placement.team),
+        );
         const result = await this.deliver(
           member.discordId,
           buildTeamNotice({
@@ -166,9 +191,10 @@ export class TeamNoticeService {
             matchCount: session.matchCount,
             team: placement.team,
             teamName: saved.teamNames[String(placement.team)] ?? null,
-            hasImage: false,
+            hasImage: file !== undefined,
             bangChienChannelId,
           }),
+          file ? [file] : [],
         );
 
         switch (result) {
@@ -223,18 +249,24 @@ export class TeamNoticeService {
    *
    * @param discordId - Discord user id of the recipient
    * @param payload - The notice
+   * @param files - The team card to attach, empty for a text-only notice
    * @param canRetry - Whether a 429 may still be waited out
    * @returns How the delivery ended
    */
   private async deliver(
     discordId: string,
     payload: MessagePayload,
+    files: OutgoingFile[],
     canRetry = true,
   ): Promise<DeliveryResult> {
     try {
       const dmChannelId = await this.rest.openDm(discordId);
 
-      await this.rest.postMessage(dmChannelId, payload);
+      if (files.length > 0) {
+        await this.rest.postMessageWithFiles(dmChannelId, payload, files);
+      } else {
+        await this.rest.postMessage(dmChannelId, payload);
+      }
 
       return 'sent';
     } catch (error) {
@@ -260,7 +292,7 @@ export class TeamNoticeService {
         ) {
           await new Promise((resolve) => setTimeout(resolve, wait * SECOND_MS));
 
-          return this.deliver(discordId, payload, false);
+          return this.deliver(discordId, payload, files, false);
         }
       }
 

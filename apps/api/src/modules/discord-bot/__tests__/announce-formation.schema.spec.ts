@@ -1,4 +1,6 @@
+import { TEAM_COUNT } from '@guild/shared/lib';
 import {
+  TEAM_IMAGE_MAX_CHARS,
   announceFormationSchema,
   notifyMembersSchema,
 } from '@guild/shared/schemas';
@@ -95,7 +97,11 @@ describe('FormationAnnounceController', () => {
     await expect(controller.notifyMembers('session-1', {})).resolves.toEqual(
       report,
     );
-    expect(notices.notifyMembers).toHaveBeenCalledWith('session-1', undefined);
+    expect(notices.notifyMembers).toHaveBeenCalledWith(
+      'session-1',
+      undefined,
+      undefined,
+    );
   });
 });
 
@@ -123,5 +129,67 @@ describe('notifyMembersSchema', () => {
         notices: [{ characterId: '', matchIndex: 1 }],
       }).success,
     ).toBe(false);
+  });
+});
+
+describe('notifyMembersSchema - ảnh team', () => {
+  const teamImage = { matchIndex: 1, team: 3, image: IMAGE };
+
+  it('thiếu teamImages vẫn hợp lệ: team đó nhận text', () => {
+    expect(notifyMembersSchema.safeParse({ notices: [] }).success).toBe(true);
+  });
+
+  it('nhận ảnh cho các cặp (trận, team) khác nhau', () => {
+    expect(
+      notifyMembersSchema.safeParse({
+        teamImages: [teamImage, { ...teamImage, matchIndex: 2 }],
+      }).success,
+    ).toBe(true);
+  });
+
+  it('từ chối ảnh sai định dạng', () => {
+    expect(
+      notifyMembersSchema.safeParse({
+        teamImages: [{ ...teamImage, image: 'data:image/png;base64,AQID' }],
+      }).success,
+    ).toBe(false);
+  });
+
+  it('từ chối ảnh vượt TEAM_IMAGE_MAX_CHARS', () => {
+    const huge = `data:image/webp;base64,${'A'.repeat(TEAM_IMAGE_MAX_CHARS)}`;
+
+    expect(
+      notifyMembersSchema.safeParse({
+        teamImages: [{ ...teamImage, image: huge }],
+      }).success,
+    ).toBe(false);
+  });
+
+  it('từ chối cặp trùng', () => {
+    expect(
+      notifyMembersSchema.safeParse({ teamImages: [teamImage, teamImage] })
+        .success,
+    ).toBe(false);
+  });
+
+  it.each([
+    { matchIndex: 0, team: 1 },
+    { matchIndex: 3, team: 1 },
+    { matchIndex: 1, team: 0 },
+    { matchIndex: 1, team: TEAM_COUNT + 1 },
+  ])('từ chối cặp ngoài khoảng %j', (pair) => {
+    expect(
+      notifyMembersSchema.safeParse({
+        teamImages: [{ ...pair, image: IMAGE }],
+      }).success,
+    ).toBe(false);
+  });
+
+  it('từ chối nhiều hơn TEAM_COUNT x 2 ảnh', () => {
+    const teamImages = Array.from({ length: TEAM_COUNT * 2 + 1 }, () => ({
+      ...teamImage,
+    }));
+
+    expect(notifyMembersSchema.safeParse({ teamImages }).success).toBe(false);
   });
 });

@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { SLOTS_PER_TEAM, TEAM_COUNT } from "../lib/slot-id";
+
 /**
  * A formation on the wire: slotId → characterId. Empty slots carry NO key (not null) so the
  * payload does not balloon with 60 empty entries.
@@ -149,12 +151,11 @@ export const ANNOUNCEMENT_IMAGE_MAX_CHARS = 2_000_000;
  * One line-up image on the wire. The format is pinned to webp — the browser encodes it, the API
  * hands it to Discord, and one constant deciding both is what keeps them from drifting.
  */
+const WEBP_DATA_URL = /^data:image\/webp;base64,[A-Za-z0-9+/]+={0,2}$/;
+
 const announcementImageSchema = z
   .string()
-  .regex(
-    /^data:image\/webp;base64,[A-Za-z0-9+/]+={0,2}$/,
-    "Ảnh đội hình không hợp lệ.",
-  )
+  .regex(WEBP_DATA_URL, "Ảnh đội hình không hợp lệ.")
   .max(ANNOUNCEMENT_IMAGE_MAX_CHARS, "Ảnh đội hình quá lớn.");
 
 /**
@@ -211,18 +212,68 @@ export type TeamNoticeTarget = z.infer<typeof teamNoticeTargetSchema>;
 
 export type TeamNoticeReport = z.infer<typeof teamNoticeReportSchema>;
 
+/** A day is played over at most 2 matches, the same ceiling `saveFormationSchema` carries. */
+const MAX_MATCHES = 2;
+
+/**
+ * Longest a single team card image may be as a base64 data URL.
+ *
+ * Up to `TEAM_COUNT * MAX_MATCHES` (20) of these travel in one notify-members body next to the
+ * `notices` list, and that sum has to clear the API's `JSON_BODY_LIMIT` (4 MiB) with room to spare,
+ * which in turn sits under the 4.5MB a Vercel Function accepts. 180,000 characters puts the images
+ * at 3.6MB, leaving about 0.5MB over the largest valid `notices`. A six-row card is far smaller
+ * than a full line-up image; the real size is not yet measured, and an image over this cap is
+ * dropped by the browser, so the member gets the text notice instead of a rejected request.
+ * `apps/api/src/config/__tests__/body-limit.spec.ts` holds the numbers in order.
+ */
+export const TEAM_IMAGE_MAX_CHARS = 180_000;
+
+/**
+ * Most notices one body can carry: every position of every team in every match. Bounds the list so
+ * the largest valid body is a number the body-limit test can add up.
+ */
+export const MAX_NOTICES = TEAM_COUNT * SLOTS_PER_TEAM * MAX_MATCHES;
+
+/** Longest `characterId` a notice may carry, far above any real id and a bound for the same reason. */
+export const NOTICE_CHARACTER_ID_MAX_CHARS = 64;
+
+/**
+ * One team card image, shared by every recipient on that team in that match. `matchIndex` is the
+ * stored one (1 or 2) like in `notices`.
+ */
+const teamImageSchema = z.object({
+  matchIndex: z.number().int().min(1).max(MAX_MATCHES),
+  team: z.number().int().min(1).max(TEAM_COUNT),
+  image: z
+    .string()
+    .regex(WEBP_DATA_URL, "Ảnh team không hợp lệ.")
+    .max(TEAM_IMAGE_MAX_CHARS, "Ảnh team quá lớn."),
+});
+
 /**
  * Body of POST /team-builder/formations/:sessionId/notify-members. `notices` narrows the send to
  * those members and matches, the retry of whoever did not get theirs. Left out, everyone the day
- * calls for is messaged.
+ * calls for is messaged. `teamImages` holds the card image of each (match, team); a team without
+ * one is messaged in text, so leaving it out is valid.
  */
 export const notifyMembersSchema = z.object({
   notices: z
     .array(
       z.object({
-        characterId: z.string().min(1),
-        matchIndex: z.number().int().min(1).max(2),
+        characterId: z.string().min(1).max(NOTICE_CHARACTER_ID_MAX_CHARS),
+        matchIndex: z.number().int().min(1).max(MAX_MATCHES),
       }),
+    )
+    .max(MAX_NOTICES)
+    .optional(),
+  teamImages: z
+    .array(teamImageSchema)
+    .max(TEAM_COUNT * MAX_MATCHES)
+    .refine(
+      (images) =>
+        new Set(images.map((i) => `${i.matchIndex}:${i.team}`)).size ===
+        images.length,
+      "Mỗi team chỉ được có một ảnh cho mỗi trận.",
     )
     .optional(),
 });

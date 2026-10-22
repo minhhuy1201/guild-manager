@@ -303,7 +303,7 @@ Endpoints, all behind the `/api` prefix:
 | `GET` | `/team-builder/formations?weekStart=` | Match rosters of a week, each day with its `version` | Admin |
 | `PUT` | `/team-builder/formations/:sessionId` | Overwrite one match's roster; the body carries the `version` it was based on, a stale one is refused with 412 | Admin |
 | `POST` | `/team-builder/formations/:sessionId/announce` | Post the day's roster images to Discord with the gathering announcement, then close that day's attendance | Admin |
-| `POST` | `/team-builder/formations/:sessionId/notify-members` | Direct-message each placed member which team they are in, one message per match, from the saved formation; refuses a day whose attendance is still open | Admin |
+| `POST` | `/team-builder/formations/:sessionId/notify-members` | Direct-message each placed member which team they are in, one message per match, from the saved formation, with the team card image when the body carries one for that match and team; refuses a day whose attendance is still open | Admin |
 | `GET` | `/team-builder/team-names` | Names of the grid's team columns, as `{ names, version }` | Admin |
 | `PUT` | `/team-builder/team-names` | Overwrite the whole team name map; the body carries the `version` it was based on, a stale one is refused with 412 | Admin |
 | `GET` | `/tactics` | Tactics, newest edit first, without their scenes | Bearer |

@@ -12,15 +12,9 @@ import { Clock } from '../../common';
 import { verifyResponse } from '../../config';
 import type { Env } from '../../config';
 import { BattleSessionsService } from '../battle-sessions/battle-sessions.public';
-import type { OutgoingFile } from './discord-rest';
 import { DiscordRestClient, isDiscordForbidden } from './discord-rest';
 import { buildFormationAnnouncement } from './formation-announcement';
-
-/** The only image format the announcement accepts, mirrored by the shared schema. */
-const IMAGE_CONTENT_TYPE = 'image/webp';
-
-/** Prefix every incoming image carries, already enforced by `announceFormationSchema`. */
-const DATA_URL_PREFIX = `data:${IMAGE_CONTENT_TYPE};base64,`;
+import { webpFileFromDataUrl } from './webp-file';
 
 /** Shown when the battle the announcement points at no longer exists. */
 const SESSION_NOT_FOUND = 'Không tìm thấy trận đánh này.';
@@ -38,22 +32,6 @@ const TOO_MANY_IMAGES =
 const MISSING_PERMISSIONS =
   'Bot chưa có quyền đăng bài trong channel bang chiến. Vào Discord → Edit Channel → ' +
   'Permissions, bật Send Messages và Attach Files cho bot, rồi gửi lại.';
-
-/**
- * Turn one incoming data URL into the file Discord is handed.
- * @param image - A `data:image/webp;base64,…` string
- * @param index - Zero-based match index, used to name the file
- * @returns The file part
- */
-function toFile(image: string, index: number): OutgoingFile {
-  return {
-    filename: `doi-hinh-${index + 1}.webp`,
-    bytes: new Uint8Array(
-      Buffer.from(image.slice(DATA_URL_PREFIX.length), 'base64'),
-    ),
-    contentType: IMAGE_CONTENT_TYPE,
-  };
-}
 
 /**
  * Posts a day's line-up into the guild's battle channel.
@@ -128,7 +106,9 @@ export class FormationAnnouncerService {
       await this.rest.postMessageWithFiles(
         this.config.get('DISCORD_BANG_CHIEN_CHANNEL_ID', { infer: true }),
         payload,
-        images.map((image, index) => toFile(image, index)),
+        images.map((image, index) =>
+          webpFileFromDataUrl(image, `doi-hinh-${index + 1}.webp`),
+        ),
       );
     } catch (error) {
       // Only the permission refusal is translated. Every other status is the system's problem, and

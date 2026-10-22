@@ -1,4 +1,10 @@
-import { ANNOUNCEMENT_IMAGE_MAX_CHARS } from '@guild/shared/schemas';
+import { SLOTS_PER_TEAM, TEAM_COUNT } from '@guild/shared/lib';
+import {
+  ANNOUNCEMENT_IMAGE_MAX_CHARS,
+  MAX_NOTICES,
+  NOTICE_CHARACTER_ID_MAX_CHARS,
+  TEAM_IMAGE_MAX_CHARS,
+} from '@guild/shared/schemas';
 
 import { JSON_BODY_LIMIT } from '../app.config';
 
@@ -8,7 +14,7 @@ import { JSON_BODY_LIMIT } from '../app.config';
  */
 const VERCEL_BODY_LIMIT = 4.5 * 1000 * 1000;
 
-/** The announcement carries at most one image per match, and a day is played over at most 2. */
+/** A day is played over at most 2 matches, so at most 2 announcement images and 2 matches of notices. */
 const MAX_IMAGES = 2;
 
 // Express accepts only 100kb by default, so a formation announcement - carrying one or two base64
@@ -31,5 +37,32 @@ describe('Giới hạn body JSON', () => {
 
   it('không vượt trần body của Vercel Function', () => {
     expect(JSON_BODY_LIMIT).toBeLessThanOrEqual(VERCEL_BODY_LIMIT);
+  });
+});
+
+/** JSON around one notice besides its id: `{"characterId":"","matchIndex":1},`. */
+const NOTICE_OVERHEAD_CHARS = 40;
+
+/** JSON around one team image besides its data URL: keys, quotes and the pair numbers. */
+const TEAM_IMAGE_OVERHEAD_CHARS = 60;
+
+describe('Giới hạn body của notify-members', () => {
+  const imageCount = TEAM_COUNT * MAX_IMAGES;
+  const largestBody =
+    imageCount * (TEAM_IMAGE_MAX_CHARS + TEAM_IMAGE_OVERHEAD_CHARS) +
+    MAX_NOTICES * (NOTICE_CHARACTER_ID_MAX_CHARS + NOTICE_OVERHEAD_CHARS);
+
+  it('mỗi vị trí của mỗi trận có đúng một notice, không hơn', () => {
+    expect(MAX_NOTICES).toBe(TEAM_COUNT * SLOTS_PER_TEAM * MAX_IMAGES);
+  });
+
+  // Same reasoning as the announcement: past the parser's ceiling the admin gets a bare 500
+  // instead of the schema's sentence.
+  it('body hợp lệ lớn nhất (mọi ảnh team đúng cỡ tối đa cùng mọi notice) nằm dưới JSON_BODY_LIMIT', () => {
+    expect(largestBody).toBeLessThan(JSON_BODY_LIMIT);
+  });
+
+  it('còn dư ít nhất 5% để không sát trần', () => {
+    expect(largestBody).toBeLessThan(JSON_BODY_LIMIT * 0.95);
   });
 });

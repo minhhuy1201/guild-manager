@@ -207,4 +207,21 @@ describe('DiscordRestClient - giới hạn thời gian chờ', () => {
       expect(init.signal).toBeInstanceOf(AbortSignal);
     }
   });
+
+  it('postMessageWithFiles cũng mang AbortSignal, vì upload treo là loại treo lâu nhất', async () => {
+    const fetchMock = stubFetch({ ok: true });
+    const client = new DiscordRestClient(CONFIG);
+
+    await client.postMessageWithFiles('dm-1', { content: 'x' }, [
+      {
+        filename: 'a.webp',
+        bytes: new Uint8Array([1]),
+        contentType: 'image/webp',
+      },
+    ]);
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+
+    expect(init.signal).toBeInstanceOf(AbortSignal);
+  });
 });
