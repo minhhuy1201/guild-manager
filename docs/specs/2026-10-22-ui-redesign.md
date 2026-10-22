@@ -164,7 +164,7 @@ Giao làm 5 PR, mỗi PR tự đứng được và đổi diện mạo thấy ng
   tính năng này "work[s] in the App Router with no configuration". Cross-fade nội dung `<main>`, giữ
   header đứng yên. Trình duyệt không hỗ trợ thì không có animation, app vẫn chạy bình thường.
 - Spotlight: viền card bấm được sáng theo con trỏ. Dùng một hook client nhỏ ghi vị trí con trỏ vào
-  CSS variable. Chỉ bật với `pointer: fine`. Làm trong PR đầu tiên dùng nó (PR 4, danh sách chiến
+  CSS variable. Chỉ chạy với chuột hoặc bút (`event.pointerType`, theo từng lần nhập). Làm trong PR đầu tiên dùng nó (PR 4, danh sách chiến
   thuật), không làm sẵn ở PR 1.
 - Đếm số chạy lên: một component client cho số tổng, chạy một lần khi dữ liệu đến. Reduced motion
   hiện số cuối ngay. Làm trong PR 2 (dòng tổng bảng điểm danh), nơi đầu tiên dùng nó.

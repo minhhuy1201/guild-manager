@@ -14,7 +14,7 @@ Spec: [`docs/specs/2026-10-22-ui-redesign.md`](../../specs/2026-10-22-ui-redesig
 
 - [x] Cả card vẫn là một `Link` với overlay `absolute inset-0`. `RowActions` vẫn nằm trên overlay.
       Focus ring vẫn hiện trên card.
-- [x] Spotlight: hook client ghi vị trí con trỏ vào CSS variable, chỉ bật với `pointer: fine`, tắt
+- [x] Spotlight: hook client ghi vị trí con trỏ vào CSS variable, chỉ chạy với chuột hoặc bút (`event.pointerType`), tắt
       khi reduced motion. Có test hook.
 - [x] Lưới co về một cột trên điện thoại, không cuộn ngang.
 - [x] Editor: khung, toolbar, palette, notes, stage bar theo token mới. Canvas Konva không đổi. Phím
