@@ -1,5 +1,3 @@
-import type { GuildRole } from "@guild/shared/enums";
-
 import { ROUTES } from "@/config/routes";
 
 /**
@@ -39,23 +37,23 @@ export type AccessDecision =
  * Split out of `proxy.ts` so it is testable without building a NextRequest: the proxy is left reading
  * cookies and translating this verdict into a response.
  * @param input.pathname - Path being requested
- * @param input.role - Role read from the access token, null when signed out. Only whether there is
- * one matters: a token's role is too old to judge what a page may show.
+ * @param input.isSignedIn - Whether the request carries a usable session. Its role is not an input:
+ * a token's role is too old to judge what a page may show.
  * @returns The verdict for the request
  */
 export function decideAccess({
   pathname,
-  role,
+  isSignedIn,
 }: {
   pathname: string;
-  role: GuildRole | null;
+  isSignedIn: boolean;
 }): AccessDecision {
   const isPublic = PUBLIC_PATH_PREFIXES.some((prefix) =>
     isUnder(pathname, prefix)
   );
   if (isPublic) return "allow";
 
-  if (!role) {
+  if (!isSignedIn) {
     // The root is the address people are given, so a visitor who has never signed in lands on the
     // guild's public page rather than on a login form for an app they know nothing about. Only the
     // root: every other path was asked for deliberately, and sending someone who typed /xep-team to

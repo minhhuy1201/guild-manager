@@ -14,10 +14,9 @@ export const metadata: Metadata = {
 };
 
 /**
- * Route "/thiet-lap" — schedule setup, member management and leaves, for an Admin or a Manager
- * holding at least one of those Capabilities. The proxy already turns Members away by role; the
- * Capability is re-checked here, since the token carries no Grants. Checking only "has a session"
- * is not enough: member tokens are valid too.
+ * Route "/thiet-lap" — schedule setup, member management and leaves; needs the Lịch trận, Thành viên
+ * or Điểm danh & nghỉ phép Capability. This server-side check is the web gate: the proxy only
+ * requires a session, and the role and Grants come from /auth/me via `getActor`.
  * @returns The settings page content
  */
 export default async function SettingsPage() {

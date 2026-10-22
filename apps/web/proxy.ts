@@ -1,5 +1,4 @@
 import { NextResponse, type NextRequest } from "next/server";
-import type { GuildRole } from "@guild/shared/enums";
 import { assertNever } from "@guild/shared/lib";
 import type { AuthTokens } from "@guild/shared/schemas";
 
@@ -64,7 +63,7 @@ export async function proxy(request: NextRequest) {
   if (secret) {
     const access = await readJwt(accessToken, secret);
     if (access.status === "valid") {
-      return decide(request, access.payload.role, NextResponse.next());
+      return decide(request, NextResponse.next());
     }
 
     const refresh = refreshToken ? await readJwt(refreshToken, secret) : null;
@@ -72,7 +71,7 @@ export async function proxy(request: NextRequest) {
     if (refresh?.status === "valid" && refreshToken) {
       const tokens = await refreshRequest(refreshToken).catch(() => null);
       if (tokens) {
-        return decide(request, tokens.user.role, renewSession(request, tokens));
+        return decide(request, renewSession(request, tokens));
       }
     }
 
@@ -124,7 +123,7 @@ function signedOutResponse(
 ): NextResponse {
   const decision = decideAccess({
     pathname: request.nextUrl.pathname,
-    role: null,
+    isSignedIn: false,
   });
 
   switch (decision) {
@@ -144,23 +143,18 @@ function signedOutResponse(
 /**
  * Apply `decideAccess`'s verdict for a still-usable session.
  *
- * `login` and `landing` are the signed-out verdicts and cannot come back with a role in hand. They
- * are handled rather than assumed away: the switch is exhaustive, so a verdict added to
+ * `login` and `landing` are the signed-out verdicts and cannot come back for a signed-in request.
+ * They are handled rather than assumed away: the switch is exhaustive, so a verdict added to
  * `decideAccess` later becomes a compile error here instead of quietly taking the `allow` path and
  * letting a request through that was meant to be turned away.
  * @param request - The request being handled
- * @param role - Role read from the access token
  * @param allowed - Response used when the request goes through (may carry refreshed cookies)
  * @returns The continuing response, or the redirect the verdict calls for
  */
-function decide(
-  request: NextRequest,
-  role: GuildRole,
-  allowed: NextResponse
-): NextResponse {
+function decide(request: NextRequest, allowed: NextResponse): NextResponse {
   const decision: AccessDecision = decideAccess({
     pathname: request.nextUrl.pathname,
-    role,
+    isSignedIn: true,
   });
 
   switch (decision) {

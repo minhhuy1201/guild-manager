@@ -14,10 +14,9 @@ export const metadata: Metadata = {
 };
 
 /**
- * Route "/xep-team" — the team builder page, admins only.
- * The proxy already blocks it; both the session and the role are re-checked here in case the proxy is
- * bypassed (an internal rewrite, a matcher config change…). Checking only "has a session" is not
- * enough: member tokens are valid too.
+ * Route "/xep-team" — the team builder page; needs the Xếp team Capability. This server-side check
+ * is the web gate: the proxy only requires a session, and the role and Grants come from /auth/me
+ * via `getActor`.
  * @returns The team builder page content
  */
 export default async function TeamBuilderPage() {

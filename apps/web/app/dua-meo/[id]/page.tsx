@@ -19,7 +19,8 @@ interface CatRaceEventPageProps {
 }
 
 /**
- * Route "/dua-meo/[id]" — one cat race event, admins only.
+ * Route "/dua-meo/[id]" — one cat race event; needs the Đua mèo Capability, checked here like the
+ * list page (the proxy only requires a session).
  * @param params - Route parameters carrying the event id
  * @returns The event page
  */

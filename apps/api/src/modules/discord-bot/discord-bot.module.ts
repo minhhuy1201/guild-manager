@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 
 import { AttendanceModule } from '../attendance/attendance.module';
-import { AuthModule } from '../auth/auth.module';
 import { BattleSessionsModule } from '../battle-sessions/battle-sessions.module';
 import { CatRaceModule } from '../cat-race/cat-race.module';
 import { CharactersModule } from '../characters/characters.module';
@@ -36,7 +35,6 @@ import { TeamNoticeService } from './team-notice.service';
 @Module({
   imports: [
     AttendanceModule,
-    AuthModule,
     BattleSessionsModule,
     CatRaceModule,
     CharactersModule,

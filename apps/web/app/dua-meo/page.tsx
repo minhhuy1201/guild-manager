@@ -14,8 +14,9 @@ export const metadata: Metadata = {
 };
 
 /**
- * Route "/dua-meo" — the cat race events, admins only.
- * The proxy already blocks it; the session and the role are re-checked here in case it is bypassed.
+ * Route "/dua-meo" — the cat race events; needs the Đua mèo Capability. This server-side check is
+ * the web gate: the proxy only requires a session, and the role and Grants come from /auth/me via
+ * `getActor`.
  * @returns The event list page
  */
 export default async function CatRacePage() {
