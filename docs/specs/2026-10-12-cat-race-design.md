@@ -13,7 +13,7 @@ kết quả do server quyết định và lưu lại để đối chứng. Bang 
 
 ## 2. Mục tiêu
 
-- Admin tạo một **đợt quay** gồm nhiều **hạng mục giải** tự đặt, mỗi hạng mục có số lượng.
+- Admin tạo một **đợt đua** gồm nhiều **hạng mục giải** tự đặt, mỗi hạng mục có số lượng.
 - Hai **chế độ** chọn khi tạo đợt: **Thường** (mỗi người một cơ hội) và **Vé** (mỗi người 1-3 vé,
   mỗi vé là một con mèo trên đường đua).
 - Mỗi **vòng đua** ra đúng một người thắng cho một hạng mục; các hạng mục quay xen kẽ tuỳ ý.
@@ -193,7 +193,7 @@ mở thêm `discordId` + `discordAvatar` của người tham gia; chấp nhận 
 - Danh sách đợt: tên, chế độ, trạng thái (Đang mở / Đã kết thúc / Đã post), số giải đã trao, ngày.
   Bấm vào mở `/dua-meo/[id]`.
 
-### 8.3 `/dua-meo/[id]` - màn quay
+### 8.3 `/dua-meo/[id]` - màn đua
 
 ```
 ┌─ Đợt: Quà Trung Thu · Chế độ Vé ────────────── [Kết thúc đợt] ┐
@@ -235,7 +235,7 @@ Con mèo về nhất là con mang **đúng số thứ tự vé thắng** server 
    mọi con có avatar và tên; camera zoom vào đoạn cuối đường.
 6. **Nước rút**: tốc độ dao động, có vượt mặt, sát nút; con mang vé thắng về nhất. Bảng top 5 live.
 7. Về đích: overlay người thắng (avatar, tên, phái, hạng mục, màu theo bậc; chế độ Vé thêm "thắng với
-   3/160 vé") + `canvas-confetti`. Bấm "Đua tiếp" về màn quay với dữ liệu mới.
+   3/160 vé") + `canvas-confetti`. Bấm "Đua tiếp" về màn đua với dữ liệu mới.
 
 Quy tắc kịch bản (thuần hàm trong `lib/`, test được):
 
