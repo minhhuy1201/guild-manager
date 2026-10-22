@@ -26,7 +26,7 @@ export function JoinSteps() {
         <OrnamentDivider stroke="brush" />
       </div>
 
-      <ol className="flex flex-col">
+      <ol role="list" className="flex flex-col">
         {JOIN_STEPS.map((step, index) => {
           const StepIcon = step.icon;
           const isLast = index === JOIN_STEPS.length - 1;
