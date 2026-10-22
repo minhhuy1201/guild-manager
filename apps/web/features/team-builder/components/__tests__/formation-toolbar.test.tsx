@@ -128,6 +128,21 @@ describe("FormationToolbar - dùng được bằng tay trên điện thoại", (
     expect(screen.getByText("Lưu trước khi gửi")).toBeTruthy();
   });
 
+  // Focus and reading order follow the DOM, so the hint must not trail the buttons it explains
+  // on screen while sitting first or last in the markup.
+  it("dòng nhắc lưu đứng ngay trước các nút, cùng hàng với chúng", () => {
+    renderToolbar({ dirty: true });
+
+    const hint = screen.getByText("Lưu trước khi gửi");
+    const buttons = screen.getAllByRole("button");
+
+    expect(hint.parentElement).toBe(buttons[0].parentElement);
+    expect(
+      hint.compareDocumentPosition(buttons[0]) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
   it("đã lưu hết thì không có dòng nhắc lưu", () => {
     renderToolbar();
 

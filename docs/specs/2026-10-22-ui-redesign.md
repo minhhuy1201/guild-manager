@@ -184,7 +184,7 @@ Giao làm 5 PR, mỗi PR tự đứng được và đổi diện mạo thấy ng
   - Lịch sử: filter thành dải `inset` gọn. Lưới card biểu đồ tự giãn theo số card. Tint guild war
     chuyển thành cạnh nhấn primary thay vì nền `bg-primary/5`.
 - **PR 3, xếp team:**
-  - Vùng điều khiển gồm tab trận, tab match và toolbar gom thành một khối.
+  - Vùng điều khiển gồm hai hàng: tab session ở hàng 1 chiếm hết chiều rộng; hàng 2 có điều khiển trận bên trái, nút Copy và Gửi Discord bên phải, căn giữa theo chiều dọc.
   - Headline đội hình thành băng rôn có viền vàng mảnh.
   - Cột đội: header rõ, ô slot dịu, màu đội nằm ở nền header nhạt và một chấm màu cạnh tên đội, viền card trung tính. Không có vạch màu trên cùng: góc bo cắt cong vạch nên hai góc nhìn lệch.
   - Sửa tab trận đang chọn ở theme tối.

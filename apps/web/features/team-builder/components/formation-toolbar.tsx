@@ -33,7 +33,7 @@ interface FormationToolbarProps {
  * scrolled down to the member pool.
  *
  * The announcement is locked while anything is unsaved - the image sent is the saved formation -
- * and a line under the buttons says why, rather than letting the dialog open only to refuse. A line
+ * and a line beside the buttons says why, rather than letting the dialog open only to refuse. A line
  * and not a tooltip: a phone has no hover, and a disabled button fires no events to open one. The
  * dialog keeps its own refusal as a second guard.
  *
@@ -61,7 +61,7 @@ export function FormationToolbar({
 }: FormationToolbarProps) {
   if (!editable) {
     return (
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-muted-foreground sm:ml-auto">
         Ngày này đã đánh xong, chỉ xem lại được.
       </p>
     );
@@ -72,7 +72,13 @@ export function FormationToolbar({
     : SHORT_COPY_LABEL;
 
   return (
-    <div className="ml-auto flex flex-wrap items-center justify-end gap-2 max-sm:w-full">
+    <div className="flex flex-wrap items-center justify-end gap-2 max-sm:w-full sm:ml-auto sm:flex-nowrap">
+      {/* Before the buttons, so the buttons keep their place at the right edge when it appears. */}
+      {dirty ? (
+        <p className="text-xs text-muted-foreground max-sm:w-full max-sm:text-right sm:whitespace-nowrap">
+          Lưu trước khi gửi
+        </p>
+      ) : null}
       <Button
         type="button"
         variant="outline"
@@ -104,11 +110,6 @@ export function FormationToolbar({
         {announcing ? <Spinner /> : <Send />}
         {announcing ? "Đang gửi..." : "Gửi Discord"}
       </Button>
-      {dirty ? (
-        <p className="w-full text-right text-xs text-muted-foreground">
-          Lưu trước khi gửi
-        </p>
-      ) : null}
     </div>
   );
 }
