@@ -70,9 +70,11 @@ saturation.
 - **One scene per page, in the page's banner** - the strip behind the page title. A dark scrim
   keeps the white title readable whatever the scene's light. Data (tables, the formation grid)
   never sits on a picture.
-- The banner is tall and cinematic, and its scene drifts slowly once when the page opens (a single
-  transform, never a loop). On the attendance page and its history a phone drops the scene and shows
-  the title and description as plain text, so answers start near the top. Still one scene per page.
+- The banner is a compact strip (about 96px on a phone, 128px on desktop), and its scene drifts
+  slowly once when the page opens (a single transform, never a loop). A taller, cinematic banner was
+  tried first and pulled the eye away from the page's feature, so it was cut back. On the attendance
+  page and its history a phone drops the scene and shows the title and description as plain text, so
+  answers start near the top. Still one scene per page.
 - **The login page** is the one full-screen scene, behind a translucent card.
 - **The landing page** (`/trang-chu`) opens on its own scene, `landing.jpg`, in a tall hero rather
   than a banner strip. It starts as a copy of `login.jpg` so the guild can swap one without

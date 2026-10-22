@@ -14,12 +14,11 @@ afterEach(cleanup);
  * @param isPlainOnPhone - Whether a phone gets plain text
  * @returns The strip element
  */
-function renderStrip(isPlainOnPhone?: boolean, isCompact?: boolean): HTMLElement {
+function renderStrip(isPlainOnPhone?: boolean): HTMLElement {
   const { container } = render(
     <PageHeader
       banner="history"
       isPlainOnPhone={isPlainOnPhone}
-      isCompact={isCompact}
       title="Lịch sử điểm danh"
       description="Câu trả lời của cả bang."
     />
@@ -29,42 +28,26 @@ function renderStrip(isPlainOnPhone?: boolean, isCompact?: boolean): HTMLElement
 }
 
 describe("PageHeader", () => {
-  // A page used every day should not spend nearly a third of a phone screen on decoration.
-  it("dải cao kiểu điện ảnh cho mọi trang", () => {
+  // A page used every day should not spend its screen on decoration: one short strip for all pages.
+  it("dùng một dải gọn cho mọi trang", () => {
     const strip = renderStrip();
 
-    expect(strip.className).toContain("min-h-36");
-    expect(strip.className).not.toContain("min-h-44");
-  });
-
-  it("isCompact giữ dải thấp và tiêu đề nhỏ như cũ", () => {
-    const strip = renderStrip(false, true);
-
     expect(strip.className).toContain("min-h-24");
+    expect(strip.className).toContain("lg:min-h-32");
     expect(strip.className).not.toContain("min-h-36");
     expect(strip.className).not.toContain("lg:min-h-60");
-    expect(screen.getByRole("heading", { level: 1 }).className).not.toContain(
-      "lg:text-5xl"
-    );
   });
 
-  // The race pages are held at their pre-redesign look: no drift, no shadow, the old radius and
-  // the old description colour.
-  it("isCompact hiển thị đúng như trước thiết kế lại", () => {
-    const strip = renderStrip(false, true);
+  it("tiêu đề cỡ vừa, không phóng to theo màn hình", () => {
+    renderStrip();
 
-    expect(strip.className).toContain("rounded-2xl");
-    expect(strip.className).not.toContain("rounded-container");
-    expect(strip.className).not.toContain("shadow-md");
-    expect(
-      strip.querySelector('[data-slot="banner-scene"]')?.className
-    ).not.toContain("animate-drift");
-    expect(screen.getByText("Câu trả lời của cả bang.").className).toContain(
-      "text-white/80"
-    );
+    const { className } = screen.getByRole("heading", { level: 1 });
+    expect(className).toContain("text-2xl");
+    expect(className).toContain("sm:text-3xl");
+    expect(className).not.toContain("lg:text-5xl");
   });
 
-  it("trang thường vẫn trôi cảnh, đổ bóng và bo container", () => {
+  it("vẫn trôi cảnh, đổ bóng và bo container", () => {
     const strip = renderStrip();
 
     expect(strip.className).toContain("rounded-container");

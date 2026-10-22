@@ -26,7 +26,7 @@ Thiết kế lại toàn bộ web theo hướng **"Thuỷ mặc hiện đại"**
 nhất, nhưng không khí giang hồ được nâng lên rõ rệt. Cân bằng mới là **55% app / 30% wuxia / 15% Nghịch
 Thuỷ Hàn**, thay cho 70/20/10.
 
-- Banner trang cao hơn, kiểu điện ảnh. Cảnh zoom chậm một lần khi vào trang.
+- Banner trang gọn (khoảng 96px trên điện thoại, 128px trên desktop), cảnh zoom chậm một lần khi vào trang. Bản đầu làm banner cao kiểu điện ảnh, nhưng banner cao làm người dùng không tập trung vào tính năng của trang, nên đã thu lại.
 - Bề mặt có vân giấy và mực. Divider kiểu nét cọ.
 - Card có ba cấp: nổi bật, thường, lõm.
 - Header kính mờ.
@@ -63,10 +63,10 @@ Giao làm 5 PR, mỗi PR tự đứng được và đổi diện mạo thấy ng
 
 ### Tiêu đề trang
 
-14. As a member, I want each page to open on a taller, cinematic banner of its own game scene, so that each page has a clear identity.
+14. As a member, I want each page to open on a compact banner of its own game scene, so that each page has a clear identity.
 15. As a member, I want the banner scene to drift in slowly once when the page opens, so that the page feels alive without anything looping.
-16. As a member, I want the page title to be large and set in the new heading serif, so that I know at a glance which page I am on.
-17. As a member on the attendance page or its history on a phone, I want the banner to stay compact (text only, as today), so that my answers start near the top of the screen.
+16. As a member, I want the page title to be set in the new heading serif, so that I know at a glance which page I am on.
+17. As a member on the attendance page or its history on a phone, I want the banner to be text only, with no scene, so that my answers start near the top of the screen.
 18. As a member, I want page-wide controls (week picker, create button) to sit clearly inside the banner, so that I find them where I expect.
 
 ### Bề mặt và thành phần
@@ -157,7 +157,7 @@ Giao làm 5 PR, mỗi PR tự đứng được và đổi diện mạo thấy ng
 - Tabs: giữ biến thể `default` (track `bg-card`, tab chọn `bg-primary`), chỉnh bo, bóng và chuyển màu.
   Rule "không sửa biến thể default" được sửa thành "sửa ở `tabs.tsx`, không override từng chỗ".
 - `TABLE_SKIN`: header bảng tách hẳn khỏi thân, sọc nhẹ hơn, dòng tổng là một dải nổi riêng.
-- `PageHeader`: cao hơn (giữ thấp ở `isPlainOnPhone`), tiêu đề lớn hơn, scrim mới, cảnh zoom chậm một
+- `PageHeader`: một cỡ gọn duy nhất (`min-h-24 sm:min-h-28 lg:min-h-32`, tiêu đề `text-2xl sm:text-3xl`; chữ trơn ở `isPlainOnPhone`), scrim mới, cảnh zoom chậm một
   lần (Ken Burns bằng `transform`, không lặp). API của component (`banner`, `title`, `description`,
   `actions`, `isPlainOnPhone`) không đổi.
 - Header: kính mờ trên nền mực, vẫn luôn `dark` ở cả hai theme. Thanh active trong `MainNav` trượt
@@ -209,8 +209,7 @@ Giao làm 5 PR, mỗi PR tự đứng được và đổi diện mạo thấy ng
 - Kích thước control và sàn 44px trên điện thoại. Root font 115%/120%.
 - Không ảnh sau dữ liệu. Không cuộn ngang trang. Save bar vẫn `sticky`.
 - Mọi thứ thuộc đua mèo: `features/cat-race`, khối `--stage-*` và `.race-*` trong `globals.css`.
-  Hai trang đua mèo giữ banner thấp như cũ (prop `isCompact` của `PageHeader`), để banner cao
-  không đẩy stage xuống. Card, Button, EmptyState và header dùng chung nên vẫn đổi theo.
+  Prop `isCompact` của `PageHeader` đã bỏ vì mọi trang giờ dùng chung một banner gọn. Card, Button, EmptyState và header dùng chung nên vẫn đổi theo.
 
 ## Testing Decisions
 
