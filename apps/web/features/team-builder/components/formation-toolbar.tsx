@@ -72,7 +72,7 @@ export function FormationToolbar({
     : SHORT_COPY_LABEL;
 
   return (
-    <div className="flex flex-wrap items-center justify-end gap-2">
+    <div className="ml-auto flex flex-wrap items-center justify-end gap-2 max-sm:w-full">
       <Button
         type="button"
         variant="outline"

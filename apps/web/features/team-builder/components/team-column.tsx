@@ -63,13 +63,19 @@ export function TeamColumn({
   return (
     <Card
       className={cn(
-        "gap-2 overflow-hidden pt-0 pb-3",
+        "relative gap-2 overflow-hidden pt-0 pb-3",
         colors.border,
         colors.background,
         className
       )}
     >
-      <CardHeader className={cn("px-3 py-2", colors.header)}>
+      <span
+        aria-hidden
+        className={cn("absolute inset-x-0 top-0 h-1", colors.accent)}
+      />
+      <CardHeader
+        className={cn("border-b border-border/60 px-3 pt-3.5 pb-2", colors.header)}
+      >
         <TeamNameField
           team={team}
           value={name}

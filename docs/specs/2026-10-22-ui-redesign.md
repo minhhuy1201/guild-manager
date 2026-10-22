@@ -188,7 +188,7 @@ Giao làm 5 PR, mỗi PR tự đứng được và đổi diện mạo thấy ng
   - Sửa tab trận đang chọn ở theme tối.
   - Member pool thành khay. Drag overlay và vùng thả có highlight rõ.
   - Lưới đội hình vẫn không reveal. Bản `capture` (ảnh gửi Discord) không đổi bố cục: 5 cột, 10 đội,
-    banner cao, không chip.
+    banner cao, không chip. Màu và font banner của ảnh đổi theo giao diện mới có chủ ý.
 - **PR 4, chiến thuật + thiết lập:**
   - Danh sách chiến thuật thành lưới card, cả card vẫn là link, `RowActions` vẫn nằm trên overlay.
   - Khung editor và toolbar theo bề mặt mới, nhóm công cụ tách bằng nền.

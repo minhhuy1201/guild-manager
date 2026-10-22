@@ -30,7 +30,8 @@ interface FormationBannerProps {
  * Both kinds of battle share one frame - the wording already says which one this is, and a
  * second colour would compete with the team headers right underneath. It is the one headline
  * of the screen, so it takes the palette's gold: a thin edge with a heavier top rule, on the
- * plain card, the title in the serif heading face and the navy of a battle.
+ * plain card, the title in the sans face with lining, tabular figures (the date, time and count are data, and
+ * Playfair's old-style figures read as text) and the navy of a battle.
  *
  * No `uppercase` here: the kind is already written in capitals by `sessionKindLabel`, while
  * an opponent guild's name must render exactly as its members spell it.
@@ -51,8 +52,12 @@ export function FormationBanner({
   return (
     <h2
       className={cn(
-        "flex flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-xl border border-t-2 border-gold/60 border-t-gold bg-card px-4 text-center font-heading font-semibold tracking-wide text-primary",
-        isTall ? "min-h-24 py-3 text-xl sm:text-2xl" : "py-1.5 text-base sm:text-lg"
+        "flex flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-container border border-t-2 border-gold/60 border-t-gold px-4 text-center font-sans font-semibold tracking-wide text-primary lining-nums tabular-nums",
+        // The glow is the on-screen banner's only: the Discord image is cropped at the sheet's edge,
+        // which would cut a blur short.
+        isTall
+          ? "min-h-24 bg-card py-3 text-xl sm:text-2xl"
+          : "bg-linear-to-b from-gold/10 to-card py-2.5 text-base shadow-[inset_0_1px_0_var(--card-highlight),var(--glow-gold)] sm:text-lg"
       )}
     >
       {isGuildWar ? (
@@ -60,7 +65,7 @@ export function FormationBanner({
       ) : null}
       {title}
       {locked ? (
-        <span className="inline-flex items-center gap-1 font-sans text-base font-medium text-muted-foreground">
+        <span className="inline-flex items-center gap-1 text-base font-medium text-muted-foreground">
           <Lock className="size-4 shrink-0" />
           Đã khoá
         </span>
