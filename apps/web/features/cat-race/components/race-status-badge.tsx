@@ -1,44 +1,29 @@
 import { CircleDot, Flag, Send, type LucideIcon } from "lucide-react";
-import type { CatRaceEventSummary } from "@guild/shared/schemas";
 
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { StatusBadge, type BadgeTone } from "@/components/shared/status-badge";
+import type { EventStage } from "../lib/event-stage";
 
-type RaceStage = "open" | "ended" | "posted";
-
-const STAGE_LABEL: Record<RaceStage, string> = {
+const STAGE_LABEL: Record<EventStage, string> = {
   open: "Đang mở",
   ended: "Đã kết thúc",
   posted: "Đã post",
 };
 
-const STAGE_ICON: Record<RaceStage, LucideIcon> = {
+const STAGE_ICON: Record<EventStage, LucideIcon> = {
   open: CircleDot,
   ended: Flag,
   posted: Send,
 };
 
-// Open is the one live state, so it alone takes the accent; both finished states read as muted.
-const STAGE_CLASS: Record<RaceStage, string> = {
-  open: "bg-jade/15 text-jade",
-  ended: "bg-muted text-muted-foreground",
-  posted: "bg-muted text-muted-foreground",
+// Open is the one live state, so it alone takes a tone; both finished states read as muted.
+const STAGE_TONE: Record<EventStage, BadgeTone> = {
+  open: "success",
+  ended: "muted",
+  posted: "muted",
 };
 
-/**
- * Where an event stands in the list.
- * @param race - The event summary
- * @returns The stage the badge and the card dimming follow
- */
-export function raceStageOf(
-  race: Pick<CatRaceEventSummary, "status" | "discordPostedAt">
-): RaceStage {
-  if (race.status === "OPEN") return "open";
-  return race.discordPostedAt ? "posted" : "ended";
-}
-
 interface RaceStatusBadgeProps {
-  stage: RaceStage;
+  stage: EventStage;
   className?: string;
 }
 
@@ -52,9 +37,9 @@ export function RaceStatusBadge({ stage, className }: RaceStatusBadgeProps) {
   const Icon = STAGE_ICON[stage];
 
   return (
-    <Badge className={cn("h-6 gap-1.5 px-2.5 text-sm", STAGE_CLASS[stage], className)}>
+    <StatusBadge tone={STAGE_TONE[stage]} className={className}>
       <Icon aria-hidden />
       {STAGE_LABEL[stage]}
-    </Badge>
+    </StatusBadge>
   );
 }

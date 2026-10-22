@@ -16,9 +16,10 @@ import { useCharacters } from "@/features/attendance";
 import { formatDate } from "@/lib/format";
 import { combineQueries } from "@/lib/query-group";
 import { cn } from "@/lib/utils";
+import { eventStageOf } from "../lib/event-stage";
 import { useCatRacePrefill, useCatRaces } from "../hooks/use-cat-races";
 import { CreateCatRaceDialog } from "./create-cat-race-dialog";
-import { RaceStatusBadge, raceStageOf } from "./race-status-badge";
+import { RaceStatusBadge } from "./race-status-badge";
 
 /**
  * The cat race events, newest first, and the button that opens the create form.
@@ -69,7 +70,7 @@ export function CatRaceListScreen() {
         ) : (
           <ul className="flex flex-col gap-3">
             {races.map((race) => {
-              const stage = raceStageOf(race);
+              const stage = eventStageOf(race);
               const isFinished = stage !== "open";
               return (
                 <li key={race.id}>
