@@ -13,8 +13,8 @@ interface TeamColors {
 }
 
 /**
- * Fallback used by any team no colour group covers - the original look: a
- * primary header on the plain card. Edit here to change every unstyled team at once.
+ * Fallback used by any team no colour group covers: a primary wash header and a primary
+ * accent bar on the plain card. Edit here to change every unstyled team at once.
  */
 const DEFAULT_TEAM_COLORS: TeamColors = {
   header: "bg-primary/15 text-foreground",

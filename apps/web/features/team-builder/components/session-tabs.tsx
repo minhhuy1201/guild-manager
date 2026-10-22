@@ -81,7 +81,7 @@ export function SessionTabs({
                 "data-active:border-primary data-active:bg-primary data-active:text-primary-foreground data-active:*:text-primary-foreground",
                 // In dark, `primary` is a bright periwinkle; a card-sized block of it is out of tone, so the
                 // selected battle is a primary wash with a primary edge and normal text.
-                "dark:data-active:bg-primary/20 dark:data-active:text-foreground dark:data-active:*:text-foreground dark:data-active:shadow-[inset_0_1px_0_var(--card-highlight)]"
+                "dark:data-active:border-primary dark:data-active:bg-primary/20 dark:data-active:text-foreground dark:data-active:*:text-foreground dark:data-active:shadow-[inset_0_1px_0_var(--card-highlight)]"
               )}
             >
               <SessionLabel session={session} size="sm">
