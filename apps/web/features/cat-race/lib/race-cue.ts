@@ -12,7 +12,6 @@ export type RaceCue =
   | { readonly kind: "slow-motion"; readonly isOn: boolean }
   | {
       readonly kind: "finish";
-      readonly isPhotoFinish: boolean;
       /** Cat bodies the runner-up is short of the line, as the canvas sees them */
       readonly lengthsBehind: number;
     };
@@ -72,7 +71,7 @@ export function nextCues(
   const sprint: RaceCue[] = isRacing && moment.isSprint && !cursor.hasSprinted ? [{ kind: "sprint" }] : [];
   const slow: RaceCue[] =
     isRacing && moment.isSlow !== cursor.isSlow ? [{ kind: "slow-motion", isOn: moment.isSlow }] : [];
-  const isFinished = moment.phase === "finish" || moment.phase === "photo" || moment.phase === "done";
+  const isFinished = moment.phase === "photo" || moment.phase === "done";
   const finishing: RaceCue[] = isFinished && !cursor.hasFinished ? [finish] : [];
 
   return {

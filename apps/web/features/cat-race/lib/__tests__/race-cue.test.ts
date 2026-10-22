@@ -11,8 +11,7 @@ import {
 import { momentAt } from "../race-timeline";
 
 const DURATION = 20;
-const GAP = 0.05;
-const FINISH: FinishCue = { kind: "finish", isPhotoFinish: false, lengthsBehind: 2 };
+const FINISH: FinishCue = { kind: "finish", lengthsBehind: 2 };
 
 /**
  * Walk a round frame by frame and collect the cues.
@@ -24,7 +23,7 @@ function play(frames: readonly number[], leaderAt: (u: number) => string = () =>
   let cursor: CueCursor = INITIAL_CUE_CURSOR;
   const cues: RaceCue[] = [];
   for (const elapsed of frames) {
-    const moment = momentAt(elapsed, DURATION, GAP);
+    const moment = momentAt(elapsed, DURATION);
     const step = nextCues(cursor, moment, leaderAt(moment.u), FINISH);
     cursor = step.cursor;
     cues.push(...step.cues);
@@ -86,7 +85,7 @@ describe("nextCues", () => {
     let index = 0;
     const cues = play(frames, () => leaders.get(index++)!);
 
-    expect(momentAt(early, DURATION, GAP).u).toBeLessThan(LEAD_CHANGE_FROM_U);
+    expect(momentAt(early, DURATION).u).toBeLessThan(LEAD_CHANGE_FROM_U);
     expect(cues.filter((cue) => cue.kind === "lead-change")).toEqual([{ kind: "lead-change", catKey: "c" }]);
   });
 

@@ -2,6 +2,8 @@
 
 Ngày: 2026-10-22 · Trạng thái: **approved** (người dùng duyệt prototype và cho làm thẳng, 2026-10-22)
 · Nối tiếp: [`2026-10-15-cat-race-redesign.md`](2026-10-15-cat-race-redesign.md).
+· §1 "Kịch bản chạy" và phần ảnh đích của §2 bị thay bởi
+[`2026-10-22-cat-race-fair-staging.md`](2026-10-22-cat-race-fair-staging.md).
 
 Spec này **thay** phần kịch bản chạy (§3 "Quy tắc kịch bản" về dao động đều), đếm ngược 1.5 giây,
 nhịp giữ 0.8 giây sau đích và thẻ kết quả của spec trước. Giữ nguyên R1-R8: mỗi mèo một làn, mọi mèo

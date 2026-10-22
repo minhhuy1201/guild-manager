@@ -23,7 +23,7 @@ import { leaderAt, rankAt } from "../lib/race-script";
 import { spawnDust, stepDust, type DustParticle } from "../lib/race-dust";
 import { catSprite } from "../lib/race-sprites";
 import { FALLBACK_SPRITE_CLASS, SPRITE_COLUMNS, SPRITE_ROWS } from "../lib/sprite-rows";
-import { RACE_END_U, isPhotoFinish, momentAt } from "../lib/race-timeline";
+import { RACE_END_U, momentAt } from "../lib/race-timeline";
 import { buildCrowd } from "../lib/stage-crowd";
 import { renderBackdrop } from "../lib/stage-backdrop";
 import { excitementAt, isRacing, type StagePhase } from "../lib/stage-excitement";
@@ -321,7 +321,7 @@ export function RaceCanvas({
       }
       if (startedAt === 0) startedAt = now;
       const elapsed = (now - startedAt) / MS_PER_SECOND;
-      const moment = momentAt(elapsed, script.durationSeconds, script.runnerUpGap);
+      const moment = momentAt(elapsed, script.durationSeconds);
       const ranks = isRacing(moment.phase) ? rankAt(script, moment.u) : null;
       paintStage(plan, { phase: moment.phase, isSprint: moment.isSprint, u: moment.u, time, dt }, ranks);
       if (ranks && now - lastStandings >= STANDINGS_INTERVAL_MS) {
@@ -330,7 +330,6 @@ export function RaceCanvas({
       }
       const finish: FinishCue = {
         kind: "finish",
-        isPhotoFinish: isPhotoFinish(script.runnerUpGap),
         lengthsBehind: lengthsBehind(script.runnerUpGap, plan.layout),
       };
       const announced = nextCues(cursor, moment, leaderAt(script, moment.u), finish);

@@ -27,7 +27,6 @@ export function excitementAt(phase: StagePhase, isSprint: boolean): number {
       return EXCITEMENT_COUNTDOWN;
     case "running":
       return isSprint ? EXCITEMENT_SPRINT : EXCITEMENT_RUNNING;
-    case "finish":
     case "photo":
     case "done":
       return EXCITEMENT_FINISH;

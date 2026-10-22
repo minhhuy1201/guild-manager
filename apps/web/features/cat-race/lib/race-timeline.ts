@@ -13,14 +13,11 @@ const SLOW_FROM_WALL = 0.74;
 /** Race time from which the sprint is announced. */
 export const SPRINT_FROM_U = 0.84;
 
-/** Pause on the finished race before the result opens. */
-export const FINISH_HOLD_SECONDS = 0.9;
-/** Longer pause when the runner-up is this close to the line: the photo finish. */
+/** Pause on the finish photo before the result opens. */
 export const PHOTO_HOLD_SECONDS = 2.6;
-export const PHOTO_FINISH_GAP = 0.004;
 
 /** Where a round is on the wall clock. */
-export type RacePhase = "countdown" | "running" | "finish" | "photo" | "done";
+export type RacePhase = "countdown" | "running" | "photo" | "done";
 
 export interface RaceMoment {
   readonly phase: RacePhase;
@@ -46,41 +43,21 @@ export function raceTimeAt(fraction: number): number {
 }
 
 /**
- * Whether the finish is close enough to freeze on the photo.
- * @param runnerUpGap - Share of the track the runner-up is short of the line
- * @returns True under `PHOTO_FINISH_GAP`
- */
-export function isPhotoFinish(runnerUpGap: number): boolean {
-  return runnerUpGap < PHOTO_FINISH_GAP;
-}
-
-/**
- * Seconds the finished race stays before the result.
- * @param runnerUpGap - Share of the track the runner-up is short of the line
- * @returns The long photo-finish hold when it is that close, else the short one
- */
-export function finishHoldSeconds(runnerUpGap: number): number {
-  return isPhotoFinish(runnerUpGap) ? PHOTO_HOLD_SECONDS : FINISH_HOLD_SECONDS;
-}
-
-/**
  * Seconds from the first lantern to the result.
  * @param durationSeconds - Seconds the winner takes
- * @param runnerUpGap - See `finishHoldSeconds`
  * @returns The total
  */
-export function totalSeconds(durationSeconds: number, runnerUpGap: number): number {
-  return COUNTDOWN_SECONDS + durationSeconds + finishHoldSeconds(runnerUpGap);
+export function totalSeconds(durationSeconds: number): number {
+  return COUNTDOWN_SECONDS + durationSeconds + PHOTO_HOLD_SECONDS;
 }
 
 /**
  * Where a round stands on the wall clock.
  * @param elapsed - Seconds since the first lantern
  * @param durationSeconds - Seconds the winner takes after "go"
- * @param runnerUpGap - See `finishHoldSeconds`
  * @returns The phase, race time and the flags the overlay reads
  */
-export function momentAt(elapsed: number, durationSeconds: number, runnerUpGap: number): RaceMoment {
+export function momentAt(elapsed: number, durationSeconds: number): RaceMoment {
   if (elapsed < COUNTDOWN_SECONDS) {
     const step = Math.floor(Math.max(0, elapsed) / COUNTDOWN_STEP_SECONDS);
 
@@ -93,10 +70,9 @@ export function momentAt(elapsed: number, durationSeconds: number, runnerUpGap: 
   if (u < RACE_END_U) {
     return { phase: "running", countdownStep: null, u, isSprint, isSlow: u >= SLOW_FROM_U };
   }
-  const isPhoto = isPhotoFinish(runnerUpGap);
   const afterFinish = raced - durationSeconds;
   const base = { countdownStep: null, u, isSprint, isSlow: false };
-  if (afterFinish >= finishHoldSeconds(runnerUpGap)) return { ...base, phase: "done" };
+  if (afterFinish >= PHOTO_HOLD_SECONDS) return { ...base, phase: "done" };
 
-  return { ...base, phase: isPhoto ? "photo" : "finish" };
+  return { ...base, phase: "photo" };
 }
