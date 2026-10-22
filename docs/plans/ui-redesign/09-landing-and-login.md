@@ -9,13 +9,13 @@ Spec: [`docs/specs/2026-10-22-ui-redesign.md`](../../specs/2026-10-22-ui-redesig
 
 **Blocked by:** 03 (Khung app)
 
-**Status:** todo
+**Status:** done
 
-- [ ] Hero vẫn là cảnh `landing.jpg` cao, CTA điểm danh giữ nguyên đích.
-- [ ] Trụ cột và ban lãnh đạo theo cấp card mới. Vàng chỉ ở điểm nhấn được phép.
-- [ ] Bước gia nhập: số thứ tự và đường nối, vẫn là `<ol>`.
-- [ ] Các khối dưới vẫn bọc `ScrollReveal`.
-- [ ] Đăng nhập: thiệp mời trên `login.jpg`, nút Discord và thông báo lỗi đăng nhập không đổi.
-- [ ] Credit NetEase vẫn hiện ở footer.
-- [ ] Ảnh 1440 + 420 + 360, sáng + tối.
-- [ ] `pnpm --filter web typecheck`, `lint`, `test` xanh.
+- [x] Hero vẫn là cảnh `landing.jpg` cao, CTA điểm danh giữ nguyên đích.
+- [x] Trụ cột và ban lãnh đạo theo cấp card mới. Vàng chỉ ở điểm nhấn được phép.
+- [x] Bước gia nhập: số thứ tự và đường nối, vẫn là `<ol>`.
+- [x] Các khối dưới vẫn bọc `ScrollReveal`.
+- [x] Đăng nhập: thiệp mời trên `login.jpg`, nút Discord và thông báo lỗi đăng nhập không đổi.
+- [x] Credit NetEase vẫn hiện ở footer.
+- [x] Ảnh 1440 + 420 + 360, sáng + tối.
+- [x] `pnpm --filter web typecheck`, `lint`, `test` xanh.

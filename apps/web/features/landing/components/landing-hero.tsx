@@ -32,7 +32,7 @@ export function LandingHero({ isSignedIn }: LandingHeroProps) {
   return (
     <section
       aria-labelledby={HERO_HEADING_ID}
-      className="relative flex min-h-[72svh] flex-col justify-end overflow-hidden rounded-2xl"
+      className="relative flex min-h-[72svh] flex-col justify-end overflow-hidden rounded-container shadow-md"
       style={{ backgroundColor: LANDING_HERO.tint }}
     >
       <BannerImage

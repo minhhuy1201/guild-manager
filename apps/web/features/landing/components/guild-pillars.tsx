@@ -1,4 +1,5 @@
 import { BannerImage } from "@/components/shared/banner-image";
+import { Card } from "@/components/ui/card";
 import { LANDING_PILLAR } from "@/lib/page-banners";
 
 import { GUILD_PILLARS } from "../lib/guild-info";
@@ -10,7 +11,7 @@ const PILLAR_SIZES = "(min-width: 768px) 66vw, 100vw";
  * What the guild is, in three claims.
  *
  * A bento with exactly three cells for exactly three claims, and three different surfaces: the first
- * carries a scene from the game, the second the gold of the season's goal, the third the plain card.
+ * carries a scene from the game, the second a raised card for the season's goal (jade glow: gold never sits on a raised card), the third the plain card.
  * Three identical white tiles would say the same words and mean nothing.
  * @returns The pillars block
  */
@@ -31,7 +32,7 @@ export function GuildPillars() {
       className="grid gap-4 md:grid-cols-3 md:grid-rows-2"
     >
       <article
-        className="relative flex min-h-64 flex-col justify-end overflow-hidden rounded-2xl md:col-span-2 md:row-span-2"
+        className="relative flex min-h-64 flex-col justify-end overflow-hidden rounded-container shadow-sm md:col-span-2 md:row-span-2"
         style={{ backgroundColor: LANDING_PILLAR.tint }}
       >
         <BannerImage
@@ -56,15 +57,15 @@ export function GuildPillars() {
         </div>
       </article>
 
-      <article className="flex flex-col gap-3 rounded-2xl border border-gold/40 bg-gold/10 p-6">
-        <GoalIcon aria-hidden className="size-6 text-gold" />
+      <Card variant="raised" className="gap-3 p-6">
+        <GoalIcon aria-hidden className="size-6 text-jade" />
         <h2 className="font-heading text-xl font-semibold tracking-tight">
           {goal.title}
         </h2>
         <p className="text-sm text-pretty text-muted-foreground">{goal.body}</p>
-      </article>
+      </Card>
 
-      <article className="flex flex-col gap-3 rounded-2xl border bg-card p-6">
+      <Card className="gap-3 p-6">
         <DisciplineIcon aria-hidden className="size-6 text-jade" />
         <h2 className="font-heading text-xl font-semibold tracking-tight">
           {discipline.title}
@@ -72,7 +73,7 @@ export function GuildPillars() {
         <p className="text-sm text-pretty text-muted-foreground">
           {discipline.body}
         </p>
-      </article>
+      </Card>
     </section>
   );
 }

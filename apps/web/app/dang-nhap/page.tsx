@@ -56,11 +56,15 @@ export default async function LoginPage({
         <div className="absolute inset-0 bg-linear-to-b from-background/10 via-background/25 to-background/70" />
       </div>
 
-      <Card className="mx-auto mt-[6vh] w-full max-w-md bg-card/85 backdrop-blur-md">
-        <CardContent className="flex flex-col items-center gap-5 px-8 py-8 text-center">
-          <GuildSeal size="lg" />
+      {/* An invitation card: the guild's seal stamped across its top edge, the one gold glow on the
+          page. The stamp is tilted a few degrees, as a real one never lands square. */}
+      <Card className="mx-auto mt-[10vh] w-full max-w-md bg-card/90 shadow-[inset_0_1px_0_var(--card-highlight),var(--glow-gold)] backdrop-blur-md">
+        <CardContent className="flex flex-col items-center gap-5 px-8 pt-0 pb-10 text-center">
+          <div className="-mt-9 -rotate-6 rounded-lg bg-card p-1 shadow-md">
+            <GuildSeal size="lg" />
+          </div>
           <div className="flex flex-col gap-1">
-            <h1 className="font-heading text-2xl font-semibold tracking-tight">
+            <h1 className="font-heading text-3xl font-semibold tracking-tight">
               Mèo Mập Giang Hồ
             </h1>
             {/* `lang` so the browser picks a Chinese face for the glyphs rather than a Vietnamese one. */}

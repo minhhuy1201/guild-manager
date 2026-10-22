@@ -1,4 +1,6 @@
+import { GuildSeal } from "@/components/shared/guild-seal";
 import { OrnamentDivider } from "@/components/shared/ornament-divider";
+import { Card } from "@/components/ui/card";
 
 import { AttendanceCta } from "./attendance-cta";
 
@@ -19,22 +21,25 @@ interface AttendanceInviteProps {
  */
 export function AttendanceInvite({ isSignedIn }: AttendanceInviteProps) {
   return (
-    <section
-      aria-labelledby={INVITE_HEADING_ID}
-      className="flex flex-col items-center gap-5 rounded-2xl border bg-card px-6 py-12 text-center sm:px-10"
-    >
+    <section aria-labelledby={INVITE_HEADING_ID}>
+      <Card
+        variant="raised"
+        className="items-center gap-5 px-6 py-14 text-center sm:px-10"
+      >
+      <GuildSeal size="lg" />
       <h2
         id={INVITE_HEADING_ID}
-        className="font-heading text-2xl font-semibold tracking-tight text-balance"
+        className="font-heading text-3xl font-semibold tracking-tight text-balance"
       >
         Tuần này bang đánh, bạn có đi không
       </h2>
-      <OrnamentDivider tone="gold" align="center" className="w-40" />
+      <OrnamentDivider align="center" className="w-40" />
       <p className="max-w-md text-sm text-pretty text-muted-foreground">
         Trang điểm danh cần đăng nhập bằng Discord, và chỉ tài khoản đã được ban
         chỉ huy gắn vào một nhân vật mới vào được.
       </p>
       <AttendanceCta isSignedIn={isSignedIn} />
+      </Card>
     </section>
   );
 }
