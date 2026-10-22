@@ -44,6 +44,7 @@ A new interaction convention goes here; its reason goes in `frontend.md`.
 ## The selected tab → a `primary` surface
 
 - Keep the `default` `tabs.tsx` variant: a recessed track (`rounded-inner border border-border bg-muted/70 shadow-inner`, `dark:bg-foreground/5`), selected tab `bg-primary text-primary-foreground font-semibold` with a `shadow-md`, other tabs `text-foreground`.
+- The team builder's battle cards and team chips (large blocks, not a tab strip) take `dark:data-active:bg-primary/20 dark:text-foreground` in dark: dark `primary` is a bright periwinkle, and a big block of it sat out of tone with the page.
 - Override tabs at the call site (as `session-tabs.tsx` does). Never edit the `default` variant.
 
 ## Actions

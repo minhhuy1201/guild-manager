@@ -790,6 +790,7 @@ bg-muted` and an active tab on `bg-background` sank into the page. The `default`
 - **Selected tab** — `bg-primary text-primary-foreground font-semibold`; the rest keep plain
   `text-foreground`. Not `text-muted-foreground`: on that track it measures 3.4:1 in the dark theme,
   and the filled pill already carries the hierarchy without dimming the other labels.
+- **Large selected blocks in dark** — the team builder's battle cards and team chips use a `primary/20` wash with `foreground` text in dark; dark `primary` is a bright periwinkle, and a card-sized block of it looked out of tone.
 
 The `line` variant keeps its underline look (transparent surface, `foreground` text). A screen that
 wants tabs of its own overrides them at the call site, as `session-tabs.tsx` does — it never edits

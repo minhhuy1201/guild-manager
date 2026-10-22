@@ -5,6 +5,7 @@ import type { MatchFormation, SessionFormation } from "@guild/shared/schemas";
 
 import { SessionLabel } from "@/components/shared/session-label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 import { getSessionSubtitle, joinSessionMeta } from "@/features/attendance";
 
 interface SessionTabsProps {
@@ -67,7 +68,7 @@ export function SessionTabs({
         overridden under that same modifier — otherwise the row of session cards is squeezed to 32px
         and spills over the "Trận 1 / Tạo trận 2" row below it.
       */}
-      <TabsList className="grid w-full gap-2 border-0 bg-transparent p-0 group-data-horizontal/tabs:h-auto sm:grid-cols-2 lg:grid-cols-3">
+      <TabsList className="grid w-full gap-2 border-0 bg-transparent p-0 shadow-none dark:bg-transparent group-data-horizontal/tabs:h-auto sm:grid-cols-2 lg:grid-cols-3">
         {sessions.map((session) => {
           const subtitle = getSessionSubtitle(session);
           const progress = matchProgress(session.matches, slotCount);
@@ -75,7 +76,13 @@ export function SessionTabs({
             <TabsTrigger
               key={session.sessionId}
               value={session.sessionId}
-              className="h-auto flex-col items-center justify-center gap-0.5 rounded-lg border border-border bg-card px-3 py-3 text-sm font-medium not-data-active:hover:border-jade/60 not-data-active:hover:bg-foreground/5 data-active:border-primary data-active:bg-primary data-active:text-primary-foreground data-active:*:text-primary-foreground dark:data-active:border-primary dark:data-active:bg-primary dark:data-active:text-primary-foreground"
+              className={cn(
+                "h-auto flex-col items-center justify-center gap-0.5 rounded-inner border border-border bg-card px-3 py-3 text-sm font-medium not-data-active:hover:border-jade/60 not-data-active:hover:bg-foreground/5",
+                "data-active:border-primary data-active:bg-primary data-active:text-primary-foreground data-active:*:text-primary-foreground",
+                // Dark navy-on-light `primary` is a bright periwinkle, a block out of tone with the page: there the
+                // selected battle is a primary wash with a primary edge, text back on the normal colours.
+                "dark:data-active:bg-primary/20 dark:data-active:text-foreground dark:data-active:*:text-foreground dark:data-active:shadow-[inset_0_1px_0_var(--card-highlight)]"
+              )}
             >
               <SessionLabel session={session} size="sm">
                 {session.locked ? <Lock className="size-3 opacity-70" /> : null}
