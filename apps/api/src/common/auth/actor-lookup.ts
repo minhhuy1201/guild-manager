@@ -16,7 +16,7 @@ export interface CurrentActor extends Grants {
 }
 
 /**
- * Where `JwtAuthGuard` reads the live role and Grants of an Admin or Manager token from.
+ * Where `JwtAuthGuard` reads the live role and Grants of every token from.
  *
  * An abstract class so it doubles as the injection token: `common/` may not import the modules that
  * own the Character table and the rescue list, so the auth module provides the implementation.

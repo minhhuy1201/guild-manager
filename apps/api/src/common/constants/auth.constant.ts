@@ -37,14 +37,14 @@ export interface JwtPayload {
 }
 
 /**
- * The caller as a request sees them. For an Admin or Manager token the `role` is the one stored
- * today, not the one the token was issued with, and a Manager's Grants come with it; both are read
- * on this very request, so a demotion or a revoked Grant stops working at the next request instead
- * of at the token's expiry.
+ * The caller as a request sees them. The `role` is the one stored today, not the one the token was
+ * issued with, and a Manager's Grants come with it; both are read on this very request for every
+ * token, so a demotion or a revoked Grant stops working at the next request instead of at the
+ * token's expiry.
  */
 export interface RequestActor extends JwtPayload {
-  /** Capabilities granted to this Manager; absent for every other role */
+  /** Capabilities granted to this Manager; empty for every other role */
   capabilities?: Capability[];
-  /** Admin Discord commands granted to this Manager; absent for every other role */
+  /** Admin Discord commands granted to this Manager; empty for every other role */
   grantedCommands?: GrantableCommand[];
 }

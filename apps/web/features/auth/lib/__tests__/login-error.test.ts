@@ -22,7 +22,7 @@ describe("loginErrorMessage", () => {
 
   it("dịch cả mã do chính web app đặt ra", () => {
     // Being thrown out of /xep-team or /thiet-lap: this used to be a mute redirect.
-    const message = loginErrorMessage(WEB_AUTH_ERROR.adminOnly);
+    const message = loginErrorMessage(WEB_AUTH_ERROR.notGranted);
 
     expect(message).toContain("ADMIN");
     expect(message).not.toBe("Không đăng nhập được, vui lòng thử lại.");

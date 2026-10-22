@@ -10,6 +10,6 @@
 export const WEB_AUTH_ERROR = {
   /** The session cookie was not signed with this app's AUTH_SECRET, or the secret is missing */
   sessionInvalid: "phien-khong-hop-le",
-  /** An admin-only page was opened by someone who is not (or is no longer) an admin */
-  adminOnly: "khong-du-quyen",
+  /** A page was opened by someone who does not hold (or no longer holds) its Capability */
+  notGranted: "khong-du-quyen",
 } as const;

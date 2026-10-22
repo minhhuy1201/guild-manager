@@ -373,8 +373,10 @@ is one file in `commands/` plus one line in `commands/index.ts`; see §7.
 - **Auth.** Identity comes from Discord OAuth2; the API owns the whole flow and is the only side that
   talks to Discord. A login is a lookup of `Character.discordId`, a column an admin fills in by hand —
   no match means no access, except for the rescue IDs in `DISCORD_ADMIN_IDS`, which always sign in as
-  `ADMIN`. `JwtAuthGuard` requires a session; For an Admin or Manager token `JwtAuthGuard` also re-reads the role and Grants from the database on every request (a token's role can be a day old); `CapabilityGuard` (always after it) requires the Capability the route declares with
-  `@RequireCapability(...)`, or the `ADMIN` role for `@RequireAdmin()`. No password is stored anywhere. Because the two apps live on different domains, the API hands
+  `ADMIN`. `JwtAuthGuard` requires a session and re-reads the role and Grants from the database on every
+  request, for every token (a token's role can be a day old). `CapabilityGuard` (always after it)
+  requires the Capability the route declares with `@RequireCapability(...)`, or the `ADMIN` role for
+  `@RequireAdmin()`. No password is stored anywhere. Because the two apps live on different domains, the API hands
   the token pair over through a single-use code (`AuthExchange`, 60-second TTL) rather than a cookie.
 
 ### 3.5 Build notes
@@ -489,8 +491,7 @@ carries the Discord ID (`sub`) and the guild role.
 `proxy.ts` runs before every page request and does two things: it renews the pair when the access
 token has expired but the refresh token has not (the proxy is the only place in Next.js that can
 write cookies for any request), and it applies `decideAccess` — **every page needs a session** except
-`/dang-nhap` and `/trang-chu`, and admin routes (`/xep-team`, `/thiet-lap`) additionally need the
-`ADMIN` role.
+`/dang-nhap` and `/trang-chu`. The proxy does not judge roles: the token's role can be a day old.
 
 One path is answered specially. A signed-out request for **`/`** is sent to `/trang-chu`, not to the
 login page: the bare domain is the address people are given, so somebody who has never signed in
@@ -525,8 +526,9 @@ sequenceDiagram
 The single-use code exists because the two apps live on different domains: the API cannot set a
 cookie the web app will read, so it hands the pair over through `AuthExchange` instead.
 
-Hiding nav links is cosmetic. Real enforcement is the proxy plus a `getSession()` check inside each
-admin page's server component — and, ultimately, the guards on the API.
+Hiding nav links is cosmetic. Real enforcement is a `can(await getActor(), Capability.X)` check in
+each management page's server component, which reads the live role and Grants from `/auth/me` - and,
+ultimately, the guards on the API.
 
 ## 5. Data model
 

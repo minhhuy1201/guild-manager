@@ -24,7 +24,7 @@ export default async function TeamBuilderPage() {
   // With the reason, not bare: someone just demoted from ADMIN opens an old bookmark and would
   // otherwise watch a page they use every day silently vanish.
   if (!session || !can(session, Capability.TEAM_BUILDER)) {
-    redirect(`${ROUTES.attendance}?error=${WEB_AUTH_ERROR.adminOnly}`);
+    redirect(`${ROUTES.attendance}?error=${WEB_AUTH_ERROR.notGranted}`);
   }
 
   return <TeamBuilderScreen />;

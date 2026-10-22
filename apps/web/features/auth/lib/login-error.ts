@@ -14,7 +14,7 @@ const MESSAGES: Record<string, string> = {
     "Tài khoản Discord này chưa được gán cho thành viên nào trong bang. Liên hệ ADMIN.",
   "phien-het-han": "Phiên đăng nhập đã hết hạn, vui lòng thử lại.",
   "discord-loi": "Không kết nối được Discord, vui lòng thử lại sau.",
-  [WEB_AUTH_ERROR.adminOnly]:
+  [WEB_AUTH_ERROR.notGranted]:
     "Trang đó cần quyền bạn chưa được cấp. Nếu bạn vừa bị đổi quyền, hãy liên hệ ADMIN.",
   [WEB_AUTH_ERROR.sessionInvalid]:
     "Phiên đăng nhập không hợp lệ. Hãy đăng nhập lại — nếu vẫn không vào được, cấu hình máy chủ có thể đang sai, hãy báo ADMIN.",

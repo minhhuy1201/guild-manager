@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 export default async function CatRacePage() {
   const session = await getActor();
   if (!session || !can(session, Capability.CAT_RACE)) {
-    redirect(`${ROUTES.attendance}?error=${WEB_AUTH_ERROR.adminOnly}`);
+    redirect(`${ROUTES.attendance}?error=${WEB_AUTH_ERROR.notGranted}`);
   }
 
   return <CatRaceListScreen />;

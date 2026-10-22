@@ -26,7 +26,7 @@ export default async function SettingsPage() {
   const canOpen =
     session && SETTINGS_CAPABILITIES.some((capability) => can(session, capability));
   if (!session || !canOpen) {
-    redirect(`${ROUTES.attendance}?error=${WEB_AUTH_ERROR.adminOnly}`);
+    redirect(`${ROUTES.attendance}?error=${WEB_AUTH_ERROR.notGranted}`);
   }
 
   return <SettingsTabs actor={session} />;

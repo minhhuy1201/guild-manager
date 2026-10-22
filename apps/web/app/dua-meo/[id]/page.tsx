@@ -29,7 +29,7 @@ export default async function CatRaceEventPage({
 }: CatRaceEventPageProps) {
   const session = await getActor();
   if (!session || !can(session, Capability.CAT_RACE)) {
-    redirect(`${ROUTES.attendance}?error=${WEB_AUTH_ERROR.adminOnly}`);
+    redirect(`${ROUTES.attendance}?error=${WEB_AUTH_ERROR.notGranted}`);
   }
 
   const { id } = await params;
