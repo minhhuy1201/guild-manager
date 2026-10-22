@@ -26,10 +26,11 @@ interface PageHeaderProps {
  * The top of every page: a compact banner (about 96px on a phone, 128px on desktop) with the page's
  * scene, a serif title and an optional description over it, page-wide actions at the bottom right,
  * and the jade-diamond rule closing the block. It stays short so the page's own feature, not the
- * decoration, is what the eye lands on. Two scrims - one rising from the bottom, one from the left - keep white text readable on
- * the night scenes and the daylight ones alike. `isPlainOnPhone` (attendance and its history)
- * gives a phone the text alone, since the strip would spend its screen on decoration. The scene
- * drifts once on arrival (`animate-drift`, a single transform) and then holds still.
+ * decoration, is what the eye lands on. Two scrims - one rising from the bottom, one from the
+ * left - keep white text readable on the night scenes and the daylight ones alike.
+ * `isPlainOnPhone` (attendance and its history) gives a phone the text alone, since the strip
+ * would spend its screen on decoration. The scene drifts once on arrival (`animate-drift`, a single
+ * transform) and then holds still.
  * @param banner - Which page's scene to draw
  * @param title - The page title
  * @param description - Sentence under the title, if any
