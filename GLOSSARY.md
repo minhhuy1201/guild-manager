@@ -3,6 +3,29 @@
 The guild's own vocabulary: what the admins and members of the guild call things, so code, specs and
 conversations name each concept the same way.
 
+## Access
+
+**Admin** (UI: "ADMIN"):
+A member with every power in the app, including deciding who is a Manager and what each Manager may do.
+_Avoid_: officer, quản trị, superuser
+
+**Manager** (UI: "Quản lý"):
+A member who holds the Grants an Admin gave them personally, and nothing beyond a Member otherwise.
+_Avoid_: moderator, officer, sub-admin
+
+**Member** (UI: "Bang chúng"):
+A guild character with no management power: they act only on their own attendance and leaves.
+_Avoid_: user, player
+
+**Capability**:
+One named area of guild management, such as building teams or editing tactics, granted to a
+Manager as a whole.
+_Avoid_: route, tab, permission group
+
+**Grant**:
+One Capability or one admin Discord command given to one specific Manager.
+_Avoid_: role assignment, permission set
+
 ## Line-up on Discord
 
 **Formation announcement** (UI: "Thông báo đội hình"):
