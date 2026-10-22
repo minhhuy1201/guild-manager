@@ -10,14 +10,12 @@ afterEach(() => {
 });
 
 /**
- * Answer each media query by name.
- * @param answers - Which queries report a match
+ * Answer the reduced-motion query.
+ * @param answers - Whether the system asks for less motion
  */
-function stubMedia(answers: { finePointer: boolean; reducedMotion: boolean }): void {
-  vi.stubGlobal("matchMedia", (query: string) => ({
-    matches: query.includes("pointer: fine")
-      ? answers.finePointer
-      : answers.reducedMotion,
+function stubMedia(answers: { reducedMotion: boolean }): void {
+  vi.stubGlobal("matchMedia", () => ({
+    matches: answers.reducedMotion,
     addEventListener: () => {},
     removeEventListener: () => {},
   }));
@@ -34,21 +32,22 @@ function Card() {
 }
 
 /**
- * Move the pointer over the card at a point of its box.
+ * Move a pointer over the card at a point of its box.
+ * @param pointerType - What drives the pointer
  * @returns The card element
  */
-function movePointer(): HTMLElement {
+function movePointer(pointerType = "mouse"): HTMLElement {
   const card = screen.getByTestId("card");
 
   card.getBoundingClientRect = () => new DOMRect(100, 50, 200, 100);
-  fireEvent.pointerMove(card, { clientX: 130, clientY: 90 });
+  fireEvent.pointerMove(card, { clientX: 130, clientY: 90, pointerType });
 
   return card;
 }
 
 describe("useSpotlight", () => {
   it("writes the pointer position, relative to the card, into CSS variables", () => {
-    stubMedia({ finePointer: true, reducedMotion: false });
+    stubMedia({ reducedMotion: false });
     render(<Card />);
 
     const card = movePointer();
@@ -57,22 +56,29 @@ describe("useSpotlight", () => {
     expect(card.style.getPropertyValue("--spot-y")).toBe("40px");
   });
 
-  it("stays off on a touch screen", () => {
-    stubMedia({ finePointer: false, reducedMotion: false });
+  it("follows a pen as it does a mouse", () => {
+    stubMedia({ reducedMotion: false });
     render(<Card />);
 
-    expect(movePointer().style.getPropertyValue("--spot-x")).toBe("");
+    expect(movePointer("pen").style.getPropertyValue("--spot-x")).toBe("30px");
+  });
+
+  it("stays off for a finger, even where a mouse is also attached", () => {
+    stubMedia({ reducedMotion: false });
+    render(<Card />);
+
+    expect(movePointer("touch").style.getPropertyValue("--spot-x")).toBe("");
   });
 
   it("stays off when the system asks for less motion", () => {
-    stubMedia({ finePointer: true, reducedMotion: true });
+    stubMedia({ reducedMotion: true });
     render(<Card />);
 
     expect(movePointer().style.getPropertyValue("--spot-x")).toBe("");
   });
 
   it("hides the light once the pointer leaves", () => {
-    stubMedia({ finePointer: true, reducedMotion: false });
+    stubMedia({ reducedMotion: false });
     render(<Card />);
 
     const card = movePointer();

@@ -46,15 +46,15 @@ const TOOL_ICONS: Record<TacticTool, typeof Users> = {
   eraser: Eraser,
 };
 
+/** The recessed pill each tool group sits in, so the groups read apart without divider lines. */
+const GROUP_CLASS =
+  "flex items-center gap-0.5 rounded-inner bg-foreground/5 p-0.5";
+
 /**
  * How a key cap is tinted inside a button. `currentColor` rather than the muted pair shadcn ships
  * with: the cap sits on the filled Save button as well as on the ghost ones, and one fixed colour
  * cannot read on both.
  */
-/** The recessed pill each tool group sits in, so the groups read apart without divider lines. */
-const GROUP_CLASS =
-  "flex items-center gap-0.5 rounded-inner bg-foreground/5 p-0.5";
-
 const KEY_CAP_CLASS =
   "h-4 min-w-4 bg-current/12 px-0.5 text-[9px] text-current";
 
