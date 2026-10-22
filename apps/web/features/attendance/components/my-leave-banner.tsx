@@ -31,7 +31,7 @@ export function MyLeaveBanner() {
         >
           <span
             aria-hidden
-            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400"
+            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-amber-500/10 text-amber-600"
           >
             <Plane className="size-4.5" />
           </span>

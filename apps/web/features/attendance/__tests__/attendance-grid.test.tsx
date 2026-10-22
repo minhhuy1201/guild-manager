@@ -157,6 +157,12 @@ describe("AttendanceGrid - bố cục", () => {
 
     const heads = container.querySelectorAll("thead th");
     expect(heads).toHaveLength(5);
+
+    const headerRows = container.querySelectorAll("thead tr");
+    const totalsRow = headerRows[headerRows.length - 1];
+    const bodyRow = container.querySelector("tbody tr");
+    expect(totalsRow.children).toHaveLength(heads.length);
+    expect(bodyRow?.children).toHaveLength(heads.length);
     for (const id of ["a", "b", "c", "d"]) {
       expect(screen.getByText(`Trận ${id}`)).toBeTruthy();
     }
