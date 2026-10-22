@@ -1,7 +1,5 @@
-import { SLOTS_PER_TEAM, buildSlotId, parseSlotId } from '@guild/shared/lib';
+import { parseSlotId } from '@guild/shared/lib';
 import type { MatchFormation, NotifyMembersInput } from '@guild/shared/schemas';
-
-import type { TeamNoticeSlot } from './team-notice';
 
 /** The columns of a guild member this service reads. */
 export interface MemberRow {
@@ -76,28 +74,4 @@ export function isWanted(
       notice.characterId === placement.member.id &&
       notice.matchIndex === placement.matchIndex,
   );
-}
-
-/**
- * Every position of one team in one match, with names resolved.
- * @param match - The match's saved formation
- * @param team - Team number
- * @param members - Guild members by id
- * @returns Exactly `SLOTS_PER_TEAM` slots in position order
- */
-export function slotsOfTeam(
-  match: MatchFormation,
-  team: number,
-  members: Map<string, MemberRow>,
-): TeamNoticeSlot[] {
-  return Array.from({ length: SLOTS_PER_TEAM }, (_, index) => {
-    const slotId = buildSlotId(team, index + 1);
-    const characterId = match.slots[slotId] ?? null;
-
-    return {
-      characterId,
-      name: characterId ? (members.get(characterId)?.name ?? null) : null,
-      note: match.notes[slotId] ?? null,
-    };
-  });
 }

@@ -1,16 +1,6 @@
 import type { MessagePayload } from './commands/command.types';
 import { battleHeading, timesOf } from './formation-announcement';
 
-/** One position of the team, already resolved to a name. */
-export interface TeamNoticeSlot {
-  /** Who stands here, null for an empty position */
-  characterId: string | null;
-  /** Name of that character, null exactly when `characterId` is */
-  name: string | null;
-  /** The team builder's note for this position, null when there is none */
-  note: string | null;
-}
-
 /** What one Team notice says. */
 export interface TeamNoticeInput {
   /** Saturday Guild War: sets the headline and the online time */
@@ -25,61 +15,39 @@ export interface TeamNoticeInput {
   team: number;
   /** The team's name, null while it still shows its number */
   teamName: string | null;
-  /** The member this notice goes to. Their line is marked. */
-  recipientId: string;
-  /** Every position of the team, in order */
-  slots: TeamNoticeSlot[];
-}
-
-/** Shown for a position nobody stands in. */
-const EMPTY_SLOT = '(trống)';
-
-/**
- * One position as a list line.
- * @param slot - The position
- * @param index - Zero-based position, shown 1-based
- * @param recipientId - Who the notice goes to
- * @returns e.g. `2. **Kirito** ← bạn - tank`
- */
-function slotLine(
-  slot: TeamNoticeSlot,
-  index: number,
-  recipientId: string,
-): string {
-  const isRecipient = slot.characterId === recipientId;
-  const occupant = slot.name ?? EMPTY_SLOT;
-  const who = isRecipient ? `**${occupant}** ← bạn` : occupant;
-  const note = slot.note ? ` - ${slot.note}` : '';
-
-  return `${index + 1}. ${who}${note}`;
+  /** Whether the team's card image travels with this message */
+  hasImage: boolean;
+  /** The guild war channel, where the line-up announcement lives */
+  bangChienChannelId: string;
 }
 
 /**
  * Build the direct message that tells one member which team they are in for one match.
  *
- * Pure, like `buildFormationAnnouncement`: everything it says arrives in `input`. `allowed_mentions`
- * closes every mention because the team name and the notes are typed by an admin and must not be
- * able to ping anybody.
+ * Pure, like `buildFormationAnnouncement`: everything it says arrives in `input`. The positions are
+ * not listed: the card image shows them, and without an image the link to the announcement does.
+ * `allowed_mentions` closes every mention because the team name is typed by an admin and must not
+ * be able to ping anybody; the channel link is not a pinging mention, so it needs no opening.
  *
- * @param input - The match, the team and the recipient
- * @returns The message body, ready for `postMessage`
+ * @param input - The match, the team and whether an image goes with it
+ * @returns The message body, ready for `postMessage` or `postMessageWithFiles`
  */
 export function buildTeamNotice(input: TeamNoticeInput): MessagePayload {
   const { gather } = timesOf(input);
   const team = input.teamName
     ? `**${input.teamName}** (team ${input.team})`
     : `**Team ${input.team}**`;
+  const lines = [
+    `**${battleHeading(input)} - Trận ${input.matchIndex}/${input.matchCount}**`,
+    `Bạn ở ${team}. Online trước ${gather}.`,
+  ];
+
+  if (!input.hasImage) {
+    lines.push(`Xem đội hình trong <#${input.bangChienChannelId}>.`);
+  }
 
   return {
-    content: [
-      `**${battleHeading(input)} - Trận ${input.matchIndex}/${input.matchCount}**`,
-      `Bạn ở ${team}`,
-      `Online trước ${gather}.`,
-      '',
-      ...input.slots.map((slot, index) =>
-        slotLine(slot, index, input.recipientId),
-      ),
-    ].join('\n'),
+    content: lines.join('\n'),
     allowed_mentions: { parse: [] },
   };
 }

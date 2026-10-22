@@ -49,6 +49,9 @@ const MEMBERS = [
   { id: 'sinon', name: 'Sinon', discordId: 'd-sinon' },
 ];
 
+/** The guild war channel id the service reads from config. */
+const CHANNEL_ID = '777000111';
+
 /** Everyone but Sinon said "Có". */
 const PRESENT_IDS = ['kirito', 'asuna', 'klein'];
 
@@ -106,6 +109,7 @@ function build(options: BuildOptions = {}) {
     openDm: jest.fn((userId: string) => Promise.resolve(`dm-${userId}`)),
     postMessage: jest.fn().mockResolvedValue(undefined),
   };
+  const config = { get: jest.fn().mockReturnValue(CHANNEL_ID) };
   const clock = new SteppingClock();
 
   const service = new TeamNoticeService(
@@ -114,6 +118,7 @@ function build(options: BuildOptions = {}) {
     attendance as never,
     characters as never,
     rest as never,
+    config as never,
     clock,
   );
 
@@ -168,7 +173,7 @@ describe('TeamNoticeService.notifyMembers', () => {
     ]);
   });
 
-  it('DM nói đúng trận, đúng team và đánh dấu người nhận', async () => {
+  it('DM nói đúng trận và đúng team, kèm link channel bang chiến vì chưa có ảnh', async () => {
     const { service, rest } = build();
 
     await service.notifyMembers('session-1');
@@ -177,9 +182,10 @@ describe('TeamNoticeService.notifyMembers', () => {
 
     expect(firstMatch.content).toContain('Trận 1/2');
     expect(firstMatch.content).toContain('Bạn ở **Hổ Báo** (team 1)');
-    expect(firstMatch.content).toContain('1. **Kirito** ← bạn - tank');
-    expect(firstMatch.content).toContain('2. Asuna');
-    expect(firstMatch.content).toContain('3. (trống) - giữ chỗ');
+    expect(firstMatch.content).toContain(
+      `Xem đội hình trong <#${CHANNEL_ID}>.`,
+    );
+    expect(firstMatch.content).not.toContain('←');
     expect(secondMatch.content).toContain('Trận 2/2');
     expect(secondMatch.content).toContain('Bạn ở **Team 2**');
   });

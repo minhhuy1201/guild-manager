@@ -4,6 +4,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { assertNever } from '@guild/shared/lib';
 import { teamNoticeReportSchema } from '@guild/shared/schemas';
 import type {
@@ -14,6 +15,7 @@ import type {
 
 import { Clock } from '../../common';
 import { verifyResponse } from '../../config';
+import type { Env } from '../../config';
 import { AttendanceService } from '../attendance/attendance.public';
 import { BattleSessionsService } from '../battle-sessions/battle-sessions.public';
 import { CharactersService } from '../characters/characters.public';
@@ -26,7 +28,7 @@ import {
   DiscordRestClient,
 } from './discord-rest';
 import { buildTeamNotice } from './team-notice';
-import { isWanted, placementsOf, slotsOfTeam } from './team-notice-plan';
+import { isWanted, placementsOf } from './team-notice-plan';
 import type { MemberRow } from './team-notice-plan';
 
 /** Shown when the battle the notices point at no longer exists. */
@@ -72,6 +74,7 @@ export class TeamNoticeService {
     private readonly attendance: AttendanceService,
     private readonly characters: CharactersService,
     private readonly rest: DiscordRestClient,
+    private readonly config: ConfigService<Env, true>,
     private readonly clock: Clock,
   ) {}
 
@@ -111,6 +114,13 @@ export class TeamNoticeService {
       records
         .filter((record) => record.isPresent)
         .map((record) => record.characterId),
+    );
+
+    const bangChienChannelId = this.config.get(
+      'DISCORD_BANG_CHIEN_CHANNEL_ID',
+      {
+        infer: true,
+      },
     );
 
     const sent: TeamNoticeTarget[] = [];
@@ -156,12 +166,8 @@ export class TeamNoticeService {
             matchCount: session.matchCount,
             team: placement.team,
             teamName: saved.teamNames[String(placement.team)] ?? null,
-            recipientId: member.id,
-            slots: slotsOfTeam(
-              saved.matches[placement.matchIndex - 1],
-              placement.team,
-              members,
-            ),
+            hasImage: false,
+            bangChienChannelId,
           }),
         );
 
