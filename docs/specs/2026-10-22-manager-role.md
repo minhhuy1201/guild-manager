@@ -80,8 +80,8 @@ Bot đọc Grant của người gọi từ hàng thành viên ở mỗi tương 
 hộ qua bot: người có nó bấm nút hộ người khác được mà không cần Capability "Điểm danh & nghỉ phép"
 (chỉ ở đường điểm danh của bot, các kiểm tra khác giữ Grant thật). Grant chỉ áp dụng khi điểm danh cho
 người khác: bảng và nút của chính nhân vật mình vẫn theo luật Member, hạn chót vẫn áp dụng. Câu từ chối chung là
-`NOT_GRANTED` trong `require-command.ts`; mô tả "(chỉ admin)" của command trên Discord giữ nguyên tới
-lần chạy `pnpm discord:register` kế tiếp.
+`NOT_GRANTED` trong `require-command.ts`; mô tả của năm command này đổi từ "(chỉ admin)" thành
+"(cần được cấp quyền)"; Discord chỉ hiện chữ mới sau khi chạy tay `pnpm discord:register`.
 
 ## User Stories
 

@@ -46,7 +46,7 @@ export const chaoMungCommand: SlashCommand = {
   definition: {
     name: 'chao-mung',
     description:
-      'Chào một thành viên mới và chỉ họ các channel cần biết (chỉ admin)',
+      'Chào một thành viên mới và chỉ họ các channel cần biết (cần được cấp quyền)',
     options: [
       {
         name: MEMBER_OPTION,

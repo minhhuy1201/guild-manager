@@ -101,7 +101,7 @@ describe("MembersPanel - theo người xem", () => {
     expect(
       screen
         .getByRole("button", {
-          name: "Không thể xoá Chủ: đây là quản trị viên cuối cùng",
+          name: "Không thể xoá Chủ: đây là ADMIN cuối cùng",
         })
         .hasAttribute("disabled")
     ).toBe(true);

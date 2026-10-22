@@ -16,7 +16,7 @@ const HOW_TO = [
   '### ✅ Điểm danh',
   'Bấm **Điểm danh ngay** bên dưới, hoặc gõ `/diem-danh` trong chat.',
   'Bận thì chọn **KHÔNG**.',
-  'Gặp lỗi đăng nhập thì báo admin.',
+  'Gặp lỗi đăng nhập thì báo ADMIN.',
 ].join('\n');
 
 const FOOTER = 'Guild Manager';

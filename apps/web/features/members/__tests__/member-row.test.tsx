@@ -80,7 +80,7 @@ describe("MemberRow - quản trị viên cuối cùng", () => {
   it("khoá nút xoá quản trị viên cuối cùng, và nói vì sao", () => {
     renderRow({ ...MEMBER, role: GuildRole.ADMIN }, true);
     const button = screen.getByRole("button", {
-      name: `Không thể xoá ${MEMBER.name}: đây là quản trị viên cuối cùng`,
+      name: `Không thể xoá ${MEMBER.name}: đây là ADMIN cuối cùng`,
     });
     expect(button.hasAttribute("disabled")).toBe(true);
   });

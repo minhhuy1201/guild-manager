@@ -89,7 +89,7 @@ function scopeOf(interaction: ApplicationCommandInteraction): ReminderScope {
 export const nhacDiemDanhCommand: SlashCommand = {
   definition: {
     name: 'nhac-diem-danh',
-    description: 'Nhắc ngay những ai chưa điểm danh (chỉ admin)',
+    description: 'Nhắc ngay những ai chưa điểm danh (cần được cấp quyền)',
     options: [
       {
         name: SCOPE_OPTION,

@@ -47,15 +47,14 @@ const DISCORD_ID_TAKEN = 'Discord ID này đã được gán cho thành viên kh
 
 /** Message when the change would leave the guild with no admin at all. */
 const LAST_ADMIN =
-  'Đây là quản trị viên cuối cùng. Hãy chỉ định một quản trị viên khác trước khi hạ quyền hoặc xoá.';
+  'Đây là ADMIN cuối cùng. Hãy chỉ định một ADMIN khác trước khi hạ quyền hoặc xoá.';
 
 /** Message when the row's role changed between reading it and writing it. */
 const ROW_CHANGED =
   'Thành viên vừa được thay đổi bởi người khác. Hãy tải lại rồi thử lại.';
 
 /** Message when a non-Admin tries to change a role or a Grant. */
-const ADMIN_ONLY_FIELDS =
-  'Chỉ quản trị viên được đổi vai và quyền của thành viên.';
+const ADMIN_ONLY_FIELDS = 'Chỉ ADMIN được đổi vai và quyền của thành viên.';
 
 /** Message when a Manager tries to write the row of another Manager or an Admin. */
 const MEMBER_ROWS_ONLY =

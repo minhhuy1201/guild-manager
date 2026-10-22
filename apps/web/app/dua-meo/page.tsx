@@ -10,7 +10,7 @@ import { CatRaceListScreen } from "@/features/cat-race";
 
 export const metadata: Metadata = {
   title: "Đua mèo — Mèo Mập Giang Hồ",
-  description: "Đua mèo trong bang (chỉ quản trị viên)",
+  description: "Đua mèo trong bang (cần được cấp quyền)",
 };
 
 /**

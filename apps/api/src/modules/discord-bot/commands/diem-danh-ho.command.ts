@@ -24,7 +24,7 @@ const TARGET_OPTION = 'nguoi';
 export const diemDanhHoCommand: SlashCommand = {
   definition: {
     name: 'diem-danh-ho',
-    description: 'Điểm danh hộ một thành viên khác (chỉ admin)',
+    description: 'Điểm danh hộ một thành viên khác (cần được cấp quyền)',
     options: [
       {
         name: TARGET_OPTION,

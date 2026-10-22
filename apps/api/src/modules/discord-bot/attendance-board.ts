@@ -43,11 +43,11 @@ const STALE_BUTTON =
  * Exported so the two commands say it in the same words: three copies of one sentence drift.
  */
 export const NOT_LINKED =
-  'Bạn chưa được gán nhân vật nào. Nhờ admin thêm Discord ID của bạn.';
+  'Bạn chưa được gán nhân vật nào. Nhờ ADMIN thêm Discord ID của bạn.';
 
 /** Shown to a rescue admin who has no character of their own to mark. */
 export const NO_OWN_CHARACTER =
-  'Tài khoản admin này không gắn với nhân vật nào — dùng /diem-danh-ho.';
+  'Tài khoản ADMIN này không gắn với nhân vật nào — dùng /diem-danh-ho.';
 
 /**
  * What one button press produced.

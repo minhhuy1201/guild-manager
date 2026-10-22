@@ -48,7 +48,7 @@ import { useTactic } from "./use-tactic";
 
 /** Said when the fresh read failed and the draft had to start from the copy left in the cache. */
 export const STALE_DRAFT_WARNING =
-  "Không tải được bản mới nhất, đang mở bản đã lưu trong máy. Lưu lúc này có thể ghi đè thay đổi của admin khác.";
+  "Không tải được bản mới nhất, đang mở bản đã lưu trong máy. Lưu lúc này có thể ghi đè thay đổi của người khác.";
 
 /**
  * How far, in map units, the pointer has to travel from the press before it counts as a drag. Below

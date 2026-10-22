@@ -17,7 +17,7 @@ import type { CommandReply, SlashCommand } from './command.types';
 export const thongBaoCommand: SlashCommand = {
   definition: {
     name: 'thong-bao',
-    description: 'Đăng lịch đánh tuần này cho cả bang (chỉ admin)',
+    description: 'Đăng lịch đánh tuần này cho cả bang (cần được cấp quyền)',
   },
 
   execute: async (interaction, deps): Promise<CommandReply> => {

@@ -61,7 +61,7 @@ const FALLBACK_ERROR_MESSAGE = "Không điểm danh được, thử lại giúp 
 
 /** Shown in place of the summary to an account no admin has linked to a character yet. */
 const NO_CHARACTER_MESSAGE =
-  "Tài khoản chưa được gán nhân vật, liên hệ quản trị viên.";
+  "Tài khoản chưa được gán nhân vật, liên hệ ADMIN.";
 
 /**
  * Surface of a day tile, by the answer recorded for it: the tile says its own state before a single

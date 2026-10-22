@@ -154,6 +154,16 @@ describe.each(ADMIN_COMMANDS)('%s', (_name, command, grant) => {
   });
 });
 
+describe('mô tả command trên Discord', () => {
+  it.each(ADMIN_COMMANDS)(
+    '%s nói rõ là cần được cấp quyền, không còn "chỉ admin"',
+    (_name, command) => {
+      expect(command.definition.description).toContain('(cần được cấp quyền)');
+      expect(command.definition.description).not.toContain('chỉ admin');
+    },
+  );
+});
+
 describe('command mở cho mọi người', () => {
   it.each([
     ['/ping', pingCommand],

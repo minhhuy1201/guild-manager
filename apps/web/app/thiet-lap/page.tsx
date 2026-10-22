@@ -10,7 +10,7 @@ import { SettingsTabs } from "@/features/settings";
 
 export const metadata: Metadata = {
   title: "Thiết lập — Mèo Mập Giang Hồ",
-  description: "Thiết lập lịch đánh và quản lý thành viên (chỉ quản trị viên)",
+  description: "Thiết lập lịch đánh và quản lý thành viên (cần được cấp quyền)",
 };
 
 /**

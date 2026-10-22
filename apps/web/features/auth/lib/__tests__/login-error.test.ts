@@ -6,7 +6,7 @@ import { loginErrorMessage } from "../login-error";
 describe("loginErrorMessage", () => {
   it("dịch mã lỗi backend sang câu tiếng Việt", () => {
     expect(loginErrorMessage("khong-thuoc-bang")).toBe(
-      "Tài khoản Discord này chưa được gán cho thành viên nào trong bang. Liên hệ quản trị viên."
+      "Tài khoản Discord này chưa được gán cho thành viên nào trong bang. Liên hệ ADMIN."
     );
     expect(loginErrorMessage("tu-choi")).toBe(
       "Bạn đã huỷ đăng nhập bằng Discord."
@@ -24,7 +24,7 @@ describe("loginErrorMessage", () => {
     // Being thrown out of /xep-team or /thiet-lap: this used to be a mute redirect.
     const message = loginErrorMessage(WEB_AUTH_ERROR.adminOnly);
 
-    expect(message).toContain("quản trị viên");
+    expect(message).toContain("ADMIN");
     expect(message).not.toBe("Không đăng nhập được, vui lòng thử lại.");
   });
 });

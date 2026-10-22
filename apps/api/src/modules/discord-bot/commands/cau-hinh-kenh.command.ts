@@ -107,7 +107,7 @@ export const cauHinhKenhCommand: SlashCommand = {
   definition: {
     name: 'cau-hinh-kenh',
     description:
-      'Đặt channel này làm nơi bot nhắc điểm danh hoặc báo lỗi (chỉ admin)',
+      'Đặt channel này làm nơi bot nhắc điểm danh hoặc báo lỗi (cần được cấp quyền)',
     options: [
       {
         name: PURPOSE_OPTION,

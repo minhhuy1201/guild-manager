@@ -20,7 +20,7 @@ const PAYLOAD_TOO_LARGE_TYPE = 'entity.too.large';
 
 /** Shown when the request body exceeds `JSON_BODY_LIMIT`. */
 const PAYLOAD_TOO_LARGE_MESSAGE =
-  'Ảnh gửi lên quá nặng. Thử lại với ít trận hơn, hoặc báo admin.';
+  'Ảnh gửi lên quá nặng. Thử lại với ít trận hơn, hoặc báo ADMIN.';
 
 /** At and above this status the error is server-side — log it with a stack. */
 const SERVER_ERROR_STATUS: number = HttpStatus.INTERNAL_SERVER_ERROR;

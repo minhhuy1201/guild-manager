@@ -10,7 +10,7 @@ import { TeamBuilderScreen } from "@/features/team-builder";
 
 export const metadata: Metadata = {
   title: "Xếp team — Mèo Mập Giang Hồ",
-  description: "Xếp team cho bang hội (chỉ quản trị viên)",
+  description: "Xếp team cho bang hội (cần được cấp quyền)",
 };
 
 /**

@@ -11,7 +11,7 @@ import { InteractionRouter } from '../interaction-router';
 
 /** Every button test below lands on this one sentence, so it is written once. */
 const NOT_LINKED =
-  'Bạn chưa được gán nhân vật nào. Nhờ admin thêm Discord ID của bạn.';
+  'Bạn chưa được gán nhân vật nào. Nhờ ADMIN thêm Discord ID của bạn.';
 
 /**
  * Build a router over stubbed collaborators.

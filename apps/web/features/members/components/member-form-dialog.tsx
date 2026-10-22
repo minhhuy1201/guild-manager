@@ -264,7 +264,7 @@ function MemberForm({ member, onDone }: MemberFormProps) {
 function roleLockReason(isSelf: boolean, isLast: boolean): string {
   if (isSelf) return "Không thể tự đổi quyền của chính mình.";
   if (isLast)
-    return "Đây là quản trị viên cuối cùng. Hãy chỉ định một quản trị viên khác trước.";
+    return "Đây là ADMIN cuối cùng. Hãy chỉ định một ADMIN khác trước.";
 
   return "Cần gán Discord ID trước khi đổi quyền.";
 }

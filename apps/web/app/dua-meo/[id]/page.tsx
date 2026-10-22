@@ -10,7 +10,7 @@ import { CatRaceEventScreen } from "@/features/cat-race";
 
 export const metadata: Metadata = {
   title: "Đua mèo — Mèo Mập Giang Hồ",
-  description: "Màn đua mèo (chỉ quản trị viên)",
+  description: "Màn đua mèo (cần được cấp quyền)",
 };
 
 interface CatRaceEventPageProps {

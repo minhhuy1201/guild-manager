@@ -95,7 +95,7 @@ export function MemberRow({
               <DeleteAction
                 label={
                   isLastAdmin
-                    ? `Không thể xoá ${member.name}: đây là quản trị viên cuối cùng`
+                    ? `Không thể xoá ${member.name}: đây là ADMIN cuối cùng`
                     : `Xoá ${member.name}`
                 }
                 disabled={isLastAdmin}
