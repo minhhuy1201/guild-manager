@@ -190,7 +190,7 @@
     --shadow-2xl: 0 24px 48px -12px hsl(35 25% 12% / 0.26);
     --tracking-normal: 0em;
     /* static ink wash on the plane - large soft brush-like clouds of ink under the paper grain. */
-    --plane-ink: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='900'%3E%3Cfilter id='i'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.004 0.009' numOctaves='3' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.16 0 0 0 0 0.14 0 0 0 0 0.1 0 0 0 0.5 -0.12'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23i)'/%3E%3C/svg%3E");
+    --plane-ink: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='900'%3E%3Cfilter id='i'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.004 0.009' numOctaves='3' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.16 0 0 0 0 0.14 0 0 0 0 0.1 0 0 0 0.26 -0.06'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23i)'/%3E%3C/svg%3E");
     /* Paper grain on the plane: fractal noise in dark ink, ~7% alpha. */
     --plane-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.16 0 0 0 0 0.14 0 0 0 0 0.1 0.07 0 0 0 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
@@ -264,7 +264,7 @@
     --shadow-xl: 0 1px 2px 0px hsl(228 45% 4% / 0.35), 0 18px 32px -10px hsl(228 45% 4% / 0.55);
     --shadow-2xl: 0 24px 48px -12px hsl(228 45% 4% / 0.65);
     /* The wash in light ink, fainter than on the light plane: it should read as mist on ink, not fog. */
-    --plane-ink: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='900'%3E%3Cfilter id='i'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.004 0.009' numOctaves='3' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.6 0 0 0 0 0.68 0 0 0 0 0.85 0 0 0 0.32 -0.12'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23i)'/%3E%3C/svg%3E");
+    --plane-ink: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='900'%3E%3Cfilter id='i'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.004 0.009' numOctaves='3' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.6 0 0 0 0 0.68 0 0 0 0 0.85 0 0 0 0.11 -0.03'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23i)'/%3E%3C/svg%3E");
     /* The grain in light ink: dark ink would vanish into the navy plane. */
     --plane-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.92 0 0 0 0 0.9 0 0 0 0 0.85 0.05 0 0 0 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
@@ -339,6 +339,11 @@
       var(--plane-grain),
       var(--plane-ink);
     background-attachment: fixed;
+    /* Only the grain tiles. The ink wash is painted once over the viewport: tiled, its 900px edges
+       showed as seams and the repeat read as camouflage. */
+    background-repeat: no-repeat, no-repeat, repeat, no-repeat;
+    background-size: auto, auto, auto, cover;
+    background-position: 0 0, 0 0, 0 0, center;
   }
 
   /* Switching page: each block of the new page settles in, one beat after the one above it. */

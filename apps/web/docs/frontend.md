@@ -445,7 +445,7 @@ Every page but the tactic page (below) opens with `components/shared/page-header
 the page's scene, the page's one `<h1>` in `font-heading` (Playfair Display), white on the scene, an
 optional one-sentence description, page-wide controls at the bottom right (the team builder's week
 picker), and the `OrnamentDivider` (a hairline with a small jade diamond, `surface="image"`) closing
-the block. A section title inside a card is an `<h2>`; the redesign moves it to `font-heading` too (section title, tickets 02+), so Playfair Display marks every title and the body stays Be Vietnam Pro.
+the block. A section title inside a card is an `<h2>`; it goes through `SectionTitle` (`components/shared/section-title.tsx`): a `font-heading` `<h2>` over a brush-stroke `OrnamentDivider` (`stroke="brush"`), so Playfair Display marks every title and the body stays Be Vietnam Pro.
 
 - **One strip height** (`min-h-24`, `sm:min-h-28`) for every page, so no page spends almost a
   third of a phone's screen on decoration.
@@ -776,11 +776,10 @@ let the active branch declare its own `hover:`.
 bg-muted` and an active tab on `bg-background` sank into the page. The `default` variant of
 `components/ui/tabs.tsx` therefore uses:
 
-- **Track** - `border border-border bg-card` (`dark:bg-foreground/5`). On the warm plane a tinted
-  track had to be heavy (`bg-foreground/20`) before its fill separated from the page at all, and at
-  that weight it read as a dark bar under a minimal header. The track is now drawn the way every
-  other bordered control is (see "The surface behind a hovered or selected control"): the card's
-  near-white surface, the thin border drawing the edge, the navy pill inside carrying the selection.
+- **Track** - `rounded-inner border border-border bg-muted/70 shadow-inner` (`dark:bg-foreground/5`).
+  On the warm plane a flat tinted track had to be heavy (`bg-foreground/20`) before its fill
+  separated from the page; a light `muted` fill with the thin border and an inner shadow reads as a
+  recessed channel instead, and the navy pill (with `shadow-md`) sits proud of it.
 - **Selected tab** — `bg-primary text-primary-foreground font-semibold`; the rest keep plain
   `text-foreground`. Not `text-muted-foreground`: on that track it measures 3.4:1 in the dark theme,
   and the filled pill already carries the hierarchy without dimming the other labels.
@@ -1005,7 +1004,8 @@ Data arrives, it does not snap in. Four pieces, all CSS, in `app/globals.css` an
   of `td` cells: it stays in view above the rows, and it adds no `th` to the column count.
 - The table's look lives in `DataTable`'s `TABLE_SKIN` (`components/shared/data-table.tsx`), never in
   `components/ui/table.tsx`, which a shadcn update would overwrite: header rows on `secondary` (a
-  navy tint), body rows striped `card` / `muted`, a neutral hover.
+  navy tint) under a 2px navy rule, body rows striped `card` / a light `card`-`muted` mix (opaque, so
+  a pinned column can inherit it), a neutral hover.
 - Paging → `use-table-pagination` (client-side, resets to page 1 when the filter changes) rendered
   with `table-pagination-bar` / `page-size-select`. The pagination bar **always** renders, even at one
   page, so filtering does not move the layout. Below `lg` the page numbers hide and only the four

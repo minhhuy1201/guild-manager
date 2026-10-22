@@ -6,7 +6,8 @@ import { GUILD_CLASS_LABEL, type GuildClass } from "@guild/shared/enums";
 import type { BattleSession } from "@guild/shared/schemas";
 
 import { SessionLabel, sessionTintClass } from "@/components/shared/session-label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { SectionTitle } from "@/components/shared/section-title";
 import {
   ChartContainer,
   ChartLegend,
@@ -153,9 +154,9 @@ export function AttendanceSummaryCard({
   return (
     <Card className={cn(sessionTintClass(session.isGuildWar))}>
       <CardHeader>
-        <CardTitle>
+        <SectionTitle isData>
           <SessionLabel session={session} />
-        </CardTitle>
+        </SectionTitle>
         <div className="text-xs font-medium text-muted-foreground">
           {joinSessionMeta(
             getSessionSubtitle(session),
@@ -171,6 +172,7 @@ export function AttendanceSummaryCard({
               type="category"
               dataKey="guildClass"
               width={AXIS_WIDTH}
+              interval={0}
               tickLine={false}
               axisLine={false}
               tick={<ClassTick clipId={clipId} />}

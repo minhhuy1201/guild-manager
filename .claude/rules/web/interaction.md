@@ -27,6 +27,10 @@ A new interaction convention goes here; its reason goes in `frontend.md`.
 - Put the feedback on the card: `hover:bg-foreground/5`, `focus-within:ring-3 focus-within:ring-ring/50`.
 - Make row actions `relative` (`RowActions`) so they sit above the overlay.
 
+## Buttons respond with weight
+
+- `default`, `outline` and `secondary` buttons rise 1px with a shadow on hover and sink (`translate-y-px`, `scale-[0.98]`) on press, on `--ease-spring` and `--duration-fast`. `ghost` and `link` do not lift, so a row of them stays still. Transform and shadow only; control heights never change.
+
 ## The surface behind a hovered or selected control
 
 - Give a bordered control `bg-card`, never a transparent fill.
@@ -39,7 +43,7 @@ A new interaction convention goes here; its reason goes in `frontend.md`.
 
 ## The selected tab → a `primary` surface
 
-- Keep the `default` `tabs.tsx` variant: track `border border-border bg-card` (`dark:bg-foreground/5`), selected tab `bg-primary text-primary-foreground font-semibold`, other tabs `text-foreground`.
+- Keep the `default` `tabs.tsx` variant: a recessed track (`rounded-inner border border-border bg-muted/70 shadow-inner`, `dark:bg-foreground/5`), selected tab `bg-primary text-primary-foreground font-semibold` with a `shadow-md`, other tabs `text-foreground`.
 - Override tabs at the call site (as `session-tabs.tsx` does). Never edit the `default` variant.
 
 ## Actions
@@ -52,11 +56,11 @@ A new interaction convention goes here; its reason goes in `frontend.md`.
 ## Empty state
 
 - Say "loaded fine, holds nothing" only through `EmptyState` (`components/shared/empty-state.tsx`). Inside a table it arrives through `table-body-state`.
-- Use `flex flex-col items-center gap-3 py-8 text-center`. Keep `border-dashed` for drop zones only.
+- Use `flex flex-col items-center gap-3 py-8 text-center`: the guild seal (the `icon` prop sits inside it), a centred brush-stroke divider, one short sentence. `ErrorState` shares the frame with a destructive seal. Keep `border-dashed` for drop zones only.
 
 ## A missing page or a crash → `app/not-found.tsx`, `app/error.tsx`
 
-- Keep both inside the root layout: guild seal at `lg`, a one-line `font-heading` heading, one short sentence, a way back to attendance.
+- Keep both inside the root layout, in a `raised` `Card`: guild seal at `lg` (destructive tone on the error page), a centred brush divider, a one-line `font-heading` heading, one short sentence, a way back to attendance.
 - Add "Thử lại" (`reset()`) on the error page. Never print the thrown message; show the `digest` when there is one.
 
 ## Unsaved work → a save bar pinned to the bottom

@@ -2,6 +2,8 @@
 
 import { AlertCircle, RefreshCw } from "lucide-react";
 
+import { GuildSeal } from "@/components/shared/guild-seal";
+import { OrnamentDivider } from "@/components/shared/ornament-divider";
 import { Button } from "@/components/ui/button";
 
 interface ErrorStateProps {
@@ -21,7 +23,8 @@ interface ErrorStateProps {
 export function ErrorState({ message, onRetry }: ErrorStateProps) {
   return (
     <div className="flex flex-col items-center gap-3 py-8 text-center">
-      <AlertCircle className="size-6 text-destructive" />
+      <GuildSeal tone="destructive" glyph={<AlertCircle />} />
+      <OrnamentDivider stroke="brush" align="center" className="w-24" />
       <p className="text-sm text-destructive">{message}</p>
       <Button type="button" variant="outline" size="sm" onClick={onRetry}>
         <RefreshCw />
