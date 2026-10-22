@@ -1,7 +1,8 @@
+import { GrantableCommand } from '@guild/shared/enums';
 import { COMMAND_OPTION_TYPE } from '../discord.constants';
 import { commandOptionValue } from '../interaction.schema';
 import { publicMessage } from '../reply';
-import { requireAdmin } from '../require-admin';
+import { requireCommand } from '../require-command';
 import type { CommandLinks, CommandReply, SlashCommand } from './command.types';
 
 /** Option names, used both when registering and when reading the invocation. */
@@ -13,7 +14,7 @@ const SECT_OPTION = 'luu-phai';
  * The refusal stays ephemeral even though the welcome itself is public: a channel does not need to
  * watch someone be told no.
  */
-const ADMIN_ONLY = 'Chỉ admin mới chào thành viên mới được.';
+const REFUSAL = 'Chỉ admin mới chào thành viên mới được.';
 
 /**
  * The welcome itself.
@@ -70,7 +71,12 @@ export const chaoMungCommand: SlashCommand = {
   },
 
   execute: async (interaction, deps): Promise<CommandReply> => {
-    const check = await requireAdmin(interaction, deps, ADMIN_ONLY);
+    const check = await requireCommand(
+      interaction,
+      deps,
+      GrantableCommand.CHAO_MUNG,
+      REFUSAL,
+    );
 
     if (!check.ok) return check.reply;
 

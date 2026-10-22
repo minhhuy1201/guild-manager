@@ -7,7 +7,11 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { Capability } from "@guild/shared/enums";
+import { can, type Actor } from "@guild/shared/lib";
+
 import { ROUTES } from "@/config/routes";
+import { SETTINGS_CAPABILITIES } from "@/config/settings-capabilities";
 
 /** One entry of the main navigation. */
 export interface NavItem {
@@ -19,8 +23,11 @@ export interface NavItem {
   shortLabel: string;
   /** Icon shown before the name */
   icon: LucideIcon;
-  /** Shown to admins only - display alone; the proxy and the API do the real gating */
-  adminOnly: boolean;
+  /**
+   * Shown to a viewer holding any of these Capabilities, to everyone when empty - display alone; the
+   * proxy, the page and the API do the real gating
+   */
+  capabilities: readonly Capability[];
   /** Left out of the phone's tab bar - the page needs a wide screen (drag-and-drop, the map) */
   desktopOnly: boolean;
 }
@@ -32,7 +39,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
     label: "Điểm danh",
     shortLabel: "Điểm danh",
     icon: ClipboardCheck,
-    adminOnly: false,
+    capabilities: [],
     desktopOnly: false,
   },
   {
@@ -40,7 +47,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
     label: "Lịch sử điểm danh",
     shortLabel: "Lịch sử",
     icon: History,
-    adminOnly: false,
+    capabilities: [],
     desktopOnly: false,
   },
   {
@@ -48,7 +55,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
     label: "Xếp team",
     shortLabel: "Xếp team",
     icon: Users,
-    adminOnly: true,
+    capabilities: [Capability.TEAM_BUILDER],
     desktopOnly: true,
   },
   {
@@ -56,7 +63,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
     label: "Chiến thuật",
     shortLabel: "Chiến thuật",
     icon: Swords,
-    adminOnly: false,
+    capabilities: [],
     desktopOnly: true,
   },
   {
@@ -64,16 +71,20 @@ export const NAV_ITEMS: readonly NavItem[] = [
     label: "Thiết lập",
     shortLabel: "Thiết lập",
     icon: Settings,
-    adminOnly: true,
+    capabilities: SETTINGS_CAPABILITIES,
     desktopOnly: false,
   },
 ];
 
 /**
  * The entries a viewer is shown.
- * @param isAdmin - Whether the viewer is an admin
- * @returns Every entry for an admin, the non-admin ones otherwise
+ * @param actor - The viewer's role and Grants
+ * @returns The entries open to everyone plus those whose Capability the viewer holds
  */
-export function navItemsFor(isAdmin: boolean): NavItem[] {
-  return NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin);
+export function navItemsFor(actor: Actor): NavItem[] {
+  return NAV_ITEMS.filter(
+    ({ capabilities }) =>
+      capabilities.length === 0 ||
+      capabilities.some((capability) => can(actor, capability))
+  );
 }

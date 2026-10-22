@@ -12,6 +12,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Capability } from '@guild/shared/enums';
 import type {
   CatRaceDrawResult,
   CatRaceEventDetail,
@@ -19,7 +20,12 @@ import type {
   CatRacePrizeTemplate,
 } from '@guild/shared/schemas';
 
-import { AdminGuard, CurrentUser, JwtAuthGuard } from '../../common';
+import {
+  CapabilityGuard,
+  CurrentUser,
+  JwtAuthGuard,
+  RequireCapability,
+} from '../../common';
 import type { JwtPayload } from '../../common/constants/auth.constant';
 import { CatRaceService } from './cat-race.service';
 import {
@@ -37,7 +43,8 @@ import {
 @ApiTags('cat-races')
 @ApiBearerAuth()
 @Controller('cat-races')
-@UseGuards(JwtAuthGuard, AdminGuard)
+@UseGuards(JwtAuthGuard, CapabilityGuard)
+@RequireCapability(Capability.CAT_RACE)
 export class CatRaceController {
   constructor(private readonly catRace: CatRaceService) {}
 

@@ -28,8 +28,8 @@ interface UserMenuProps {
   discordId: string;
   /** Discord avatar hash from the last login, null on the default picture */
   avatarHash: string | null;
-  /** Whether to show the admin-only entries */
-  isAdmin: boolean;
+  /** Whether the viewer may open the cat race screen */
+  canRaceCats: boolean;
 }
 
 /**
@@ -45,14 +45,14 @@ interface UserMenuProps {
  * @param props.label - Display label of the signed-in user
  * @param props.discordId - Discord ID used to build the avatar URL
  * @param props.avatarHash - Discord avatar hash
- * @param props.isAdmin - Whether to show the admin-only cat race entry
+ * @param props.canRaceCats - Whether to show the cat race entry
  * @returns The account avatar that opens the menu
  */
 export function UserMenu({
   label,
   discordId,
   avatarHash,
-  isAdmin,
+  canRaceCats,
 }: UserMenuProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -105,7 +105,7 @@ export function UserMenu({
         )}
         <ThemeRadioItems />
         <DropdownMenuSeparator />
-        {isAdmin && (
+        {canRaceCats && (
           <>
             <DropdownMenuGroup>
               <DropdownMenuItem onClick={() => router.push(ROUTES.catRace)}>

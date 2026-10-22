@@ -1,6 +1,7 @@
 import Link from "next/link";
 
-import { canManageGuild } from "@guild/shared/lib";
+import { Capability } from "@guild/shared/enums";
+import { can, type Actor } from "@guild/shared/lib";
 
 import { GuildSeal } from "@/components/shared/guild-seal";
 import { HeaderLoginButton } from "@/components/shared/header-login-button";
@@ -64,7 +65,7 @@ export async function SiteHeader() {
   // The login page renders this header too, so a broken session just means "signed out".
   const meResult = session ? await fetchMe() : null;
   const me = meResult?.ok ? meResult.data : null;
-  const isAdmin = session ? canManageGuild(session.role) : false;
+  const actor: Actor | null = session ? { role: session.role } : null;
 
   return (
     <>
@@ -104,14 +105,14 @@ export async function SiteHeader() {
               <HeaderLoginButton />
             </div>
           )}
-          {session && (
+          {session && actor && (
             <div className="ml-auto flex shrink-0 items-center gap-2.5">
-              <MainNav isAdmin={isAdmin} />
+              <MainNav actor={actor} />
               <UserMenu
                 label={me?.character?.name ?? me?.discordUsername ?? null}
                 discordId={session.discordId}
                 avatarHash={me?.discordAvatar ?? null}
-                isAdmin={isAdmin}
+                canRaceCats={can(actor, Capability.CAT_RACE)}
               />
             </div>
           )}
@@ -120,7 +121,7 @@ export async function SiteHeader() {
       {/* A sibling of the header, not a child: the header's backdrop blur would become the
           containing block of the bar's `position: fixed` and pin it to the header instead of the
           bottom of the screen. */}
-      {session && <MobileTabBar isAdmin={isAdmin} />}
+      {actor && <MobileTabBar actor={actor} />}
     </>
   );
 }

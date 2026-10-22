@@ -1,6 +1,7 @@
+import { GrantableCommand } from '@guild/shared/enums';
 import { buildAnnouncement } from '../announcement';
 import { publicMessage } from '../reply';
-import { requireAdmin } from '../require-admin';
+import { requireCommand } from '../require-command';
 import type { CommandReply, SlashCommand } from './command.types';
 
 /**
@@ -8,7 +9,7 @@ import type { CommandReply, SlashCommand } from './command.types';
  * The refusal stays ephemeral even though the announcement itself is public: a channel does not
  * need to watch someone be told no.
  */
-const ADMIN_ONLY = 'Chỉ admin mới đăng thông báo được.';
+const REFUSAL = 'Chỉ admin mới đăng thông báo được.';
 
 /**
  * Post this week's schedule for the whole guild — admins only.
@@ -27,7 +28,12 @@ export const thongBaoCommand: SlashCommand = {
   },
 
   execute: async (interaction, deps): Promise<CommandReply> => {
-    const check = await requireAdmin(interaction, deps, ADMIN_ONLY);
+    const check = await requireCommand(
+      interaction,
+      deps,
+      GrantableCommand.THONG_BAO,
+      REFUSAL,
+    );
 
     if (!check.ok) return check.reply;
 

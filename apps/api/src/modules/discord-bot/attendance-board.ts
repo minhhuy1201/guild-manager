@@ -1,4 +1,5 @@
-import { canManageGuild } from '@guild/shared/lib';
+import { Capability } from '@guild/shared/enums';
+import { can } from '@guild/shared/lib';
 import type { AttendanceRecord, BattleSession } from '@guild/shared/schemas';
 
 import type { JwtPayload } from '../../common';
@@ -204,7 +205,7 @@ export async function buildAttendanceBoard(
       .map((record) => [record.sessionId, record]),
   );
 
-  const isAdmin = canManageGuild(actor.role);
+  const isAdmin = can(actor, Capability.ATTENDANCE);
   const actionable = sessions.filter((session) => canAct(session, isAdmin));
   const shown = actionable.slice(0, MAX_ACTION_ROWS);
   const dropped = actionable.slice(MAX_ACTION_ROWS);

@@ -1,3 +1,4 @@
+import { GrantableCommand } from '@guild/shared/enums';
 import { assertNever } from '../../../common';
 import type { ReminderScope } from '../../battle-sessions/battle-sessions.public';
 import { COMMAND_OPTION_TYPE } from '../discord.constants';
@@ -8,7 +9,7 @@ import {
 } from '../interaction.schema';
 import { ephemeralText } from '../reply';
 import type { ReminderOutcome } from '../reminder.service';
-import { requireAdmin } from '../require-admin';
+import { requireCommand } from '../require-command';
 import type { CommandReply, SlashCommand } from './command.types';
 
 /** Name of the option, used both when registering and when reading the invocation. */
@@ -27,7 +28,7 @@ const SCOPE_CHOICES = [
 const DEFAULT_SCOPE: ReminderScope = 'today';
 
 /** Shown to a member who tried to run the reminder. */
-const ADMIN_ONLY = 'Chỉ admin mới chạy được lệnh nhắc.';
+const REFUSAL = 'Chỉ admin mới chạy được lệnh nhắc.';
 
 /** Shown when no channel has been configured yet — the fix is one command away. */
 const NO_CHANNEL =
@@ -105,7 +106,12 @@ export const nhacDiemDanhCommand: SlashCommand = {
   },
 
   execute: async (interaction, deps): Promise<CommandReply> => {
-    const check = await requireAdmin(interaction, deps, ADMIN_ONLY);
+    const check = await requireCommand(
+      interaction,
+      deps,
+      GrantableCommand.NHAC_DIEM_DANH,
+      REFUSAL,
+    );
 
     if (!check.ok) return check.reply;
 

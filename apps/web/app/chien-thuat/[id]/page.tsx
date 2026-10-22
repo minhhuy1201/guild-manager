@@ -1,4 +1,5 @@
-import { canManageGuild } from "@guild/shared/lib";
+import { Capability } from "@guild/shared/enums";
+import { can } from "@guild/shared/lib";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
@@ -34,7 +35,7 @@ export default async function TacticPage({ params }: TacticPageProps) {
   return (
     <TacticEditorScreen
       tacticId={id}
-      isAdmin={canManageGuild(session.role)}
+      isAdmin={can(session, Capability.TACTICS)}
     />
   );
 }

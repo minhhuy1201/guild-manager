@@ -1,5 +1,4 @@
-import type { GuildRole } from "@guild/shared/enums";
-import { canManageGuild } from "@guild/shared/lib";
+import { GuildRole } from "@guild/shared/enums";
 
 import { ROUTES } from "@/config/routes";
 
@@ -81,5 +80,7 @@ export function decideAccess({
     pathname.startsWith(prefix)
   );
 
-  return isAdminPath && !canManageGuild(role) ? "home" : "allow";
+  // By role alone: the token carries no Grants. A Manager passes, and the page re-checks the
+  // Capability it needs.
+  return isAdminPath && role === GuildRole.MEMBER ? "home" : "allow";
 }

@@ -12,9 +12,9 @@ viên) giữ kiểm tra vai Admin rõ ràng. Chưa có vai Manager nên Admin v�
 
 **Blocked by:** None (can start immediately)
 
-**Status:** todo
+**Status:** done
 
-- [ ] `can` / `canRunCommand` có test dạng bảng: Admin luôn true, Member luôn false
-- [ ] Không còn tham chiếu `canManageGuild` hay `AdminGuard` trong repo
-- [ ] Test guard của từng controller khẳng định đúng Capability mỗi route ghi
-- [ ] Toàn bộ test, typecheck, lint của api, web, shared xanh, không test hành vi nào phải đổi
+- [x] `can` / `canRunCommand` có test dạng bảng: Admin luôn true, Member luôn false
+- [x] Không còn tham chiếu `canManageGuild` hay `AdminGuard` trong code (chỉ còn trong spec, ticket và tài liệu lịch sử)
+- [x] Test guard của từng controller khẳng định đúng Capability mỗi route ghi
+- [x] Toàn bộ test, typecheck, lint của api, web, shared xanh, không test hành vi nào phải đổi

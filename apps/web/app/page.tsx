@@ -28,7 +28,7 @@ export default async function Home({
   return (
     <>
       {message && <ErrorNotice message={message} />}
-      <AttendanceScreen role={session.role} />
+      <AttendanceScreen actor={session} />
     </>
   );
 }

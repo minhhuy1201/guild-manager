@@ -114,7 +114,7 @@ sequenceDiagram
     Note over SA: reads the httpOnly cookie,<br/>builds Authorization: Bearer
     SA->>AC: apiFetch
     AC->>NP: HTTP
-    Note over NP: requestIdMiddleware → JwtAuthGuard →<br/>AdminGuard → ZodValidationPipe → controller
+    Note over NP: requestIdMiddleware → JwtAuthGuard →<br/>CapabilityGuard → ZodValidationPipe → controller
     NP->>SV: validated DTO
     SV->>DB: query
     DB-->>SV: rows
@@ -165,7 +165,7 @@ the sources after compiling — see [`production.md`](production.md) §4.
 |---|---|
 | `@guild/shared/enums` | `GuildClass`, `GuildRole`, `attendanceLabel(isPresent)` — the Vietnamese "Có"/"Không" label — and the tactic enums (`TACTIC_COLORS`, `TACTIC_STROKE_WIDTHS`, `TACTIC_TOKEN_SIZES`, `TACTIC_TOKEN_ICONS`) |
 | `@guild/shared/schemas` | Zod schemas for attendance, auth, battle sessions, characters, formations, cat races, tactics (the scene document, plus `liftTacticScene` for older `schemaVersion`s) |
-| `@guild/shared/lib` | The Vietnam clock (`vnWeekday`, `vnParts`, `shiftVnDate`, `atVnTime`), the deadline-cap rules both sides share, `canManageGuild(role)`, `safeRedirect` and `assertNever` |
+| `@guild/shared/lib` | The Vietnam clock (`vnWeekday`, `vnParts`, `shiftVnDate`, `atVnTime`), the deadline-cap rules both sides share, `can(actor, capability)` and `canRunCommand(actor, command)`, `safeRedirect` and `assertNever` |
 
 The package is intentionally **not** `"type": "module"`: `apps/api` is CommonJS under `nodenext`,
 which would force `.js` suffixes on relative imports, and Turbopack in `apps/web` cannot resolve
@@ -262,12 +262,12 @@ no-op in it. `attendance`, `battle-sessions`, `cat-race`, `characters` and `tact
 |---|---|---|
 | `health` | Liveness + a database ping | Public |
 | `auth` | Discord OAuth2 sign-in, the single-use code exchange, refresh, `me` | Public except `me` |
-| `characters` | Member CRUD, Discord identity and guild role | Admin (`JwtAuthGuard, AdminGuard` on the controller) |
-| `battle-sessions` | The week's schedule, deadlines, the Guild War session, time rules | Reads signed-in, writes admin |
+| `characters` | Member CRUD, Discord identity and guild role | Capability `MEMBERS` (`JwtAuthGuard, CapabilityGuard` on the controller); deleting a member is `@RequireAdmin()` |
+| `battle-sessions` | The week's schedule, deadlines, the Guild War session, time rules | Reads signed-in, writes need Capability `SCHEDULE` |
 | `attendance` | Marking attendance and reading records; a "Không" answer also releases that member from the day's formation, through `team-builder`. Also **leaves** (`LeaveService`): a member's declared stretch of days away, merged into the records at read time | Bearer required; reads are guild-wide for everyone, admin bypasses the deadline and marks for others |
-| `team-builder` | Per-match formations, and the team names shown on the grid | Admin |
-| `tactics` | Guild war tactic drawings and the shared token palette. The scene is one JSON document per tactic, parsed with Zod on every read (`tactics.codec.ts`) | Reads signed-in, writes admin (`AdminGuard` per handler) |
-| `cat-race` | The admin-only prize draw ("Đua mèo"): an event holds prizes, a roster and rounds. The server picks each winner with `crypto.randomInt` inside one transaction that first locks the event row, and stores the round before the web app animates it; the draw rules are pure functions in `cat-race.rules.ts`. The Discord summary post lives in `discord-bot` and reads the winners through `cat-race.public.ts` | Admin (`JwtAuthGuard, AdminGuard` on the controller) |
+| `team-builder` | Per-match formations, and the team names shown on the grid | Capability `TEAM_BUILDER` |
+| `tactics` | Guild war tactic drawings and the shared token palette. The scene is one JSON document per tactic, parsed with Zod on every read (`tactics.codec.ts`) | Reads signed-in, writes need Capability `TACTICS` (`CapabilityGuard` per handler) |
+| `cat-race` | The prize draw ("Đua mèo"): an event holds prizes, a roster and rounds. The server picks each winner with `crypto.randomInt` inside one transaction that first locks the event row, and stores the round before the web app animates it; the draw rules are pure functions in `cat-race.rules.ts`. The Discord summary post lives in `discord-bot` and reads the winners through `cat-race.public.ts` | Capability `CAT_RACE` (`JwtAuthGuard, CapabilityGuard` on the controller) |
 | `discord-bot` | The Discord interactions endpoint, the slash command registry, attendance recorded from Discord — by command (`/diem-danh`, `/diem-danh-ho`) **and by button**: the private attendance board answers with a Có/Không button per match, and the two guild-wide messages carry an "Điểm danh ngay" button that opens that board and a "Xin nghỉ" button that opens a leave form (a modal, whose submission reaches the router as a modal-submit interaction), both reaching the router as message-component interactions — the weekly schedule announcement (`/thong-bao`), the channels the bot posts to — reminder, admin alert and general notices (`/cau-hinh-kenh`), and the cat race summary post posted to the general-notice channel, the Team notices (a direct message per placed member and match, sent after the formation announcement), the daily attendance reminder — run by Vercel Cron, or by hand with `/nhac-diem-danh` — and the welcome for a new member (`/chao-mung`), which links three channels configured in the environment plus the sect channel picked when the command is typed. The last four are admin only | Discord's Ed25519 signature for interactions; `CRON_SECRET` in a bearer header for the scheduled reminder — no JWT, no session; the identity comes from the signed payload and the write rules stay `AttendanceService`'s |
 
 Endpoints, all behind the `/api` prefix:
@@ -373,8 +373,8 @@ is one file in `commands/` plus one line in `commands/index.ts`; see §7.
 - **Auth.** Identity comes from Discord OAuth2; the API owns the whole flow and is the only side that
   talks to Discord. A login is a lookup of `Character.discordId`, a column an admin fills in by hand —
   no match means no access, except for the rescue IDs in `DISCORD_ADMIN_IDS`, which always sign in as
-  `ADMIN`. `JwtAuthGuard` requires a session; `AdminGuard` (always after it) requires the `ADMIN`
-  role. No password is stored anywhere. Because the two apps live on different domains, the API hands
+  `ADMIN`. `JwtAuthGuard` requires a session; `CapabilityGuard` (always after it) requires the Capability the route declares with
+  `@RequireCapability(...)`, or the `ADMIN` role for `@RequireAdmin()`. No password is stored anywhere. Because the two apps live on different domains, the API hands
   the token pair over through a single-use code (`AuthExchange`, 60-second TTL) rather than a cookie.
 
 ### 3.5 Build notes

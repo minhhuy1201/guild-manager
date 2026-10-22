@@ -5,7 +5,8 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { canManageGuild, vnDateKey } from '@guild/shared/lib';
+import { Capability } from '@guild/shared/enums';
+import { can, vnDateKey } from '@guild/shared/lib';
 import type { CreateLeaveInput, Leave } from '@guild/shared/schemas';
 
 import { Clock, type JwtPayload } from '../../common';
@@ -98,7 +99,7 @@ export class LeaveService {
   async create(input: CreateLeaveInput, actor: JwtPayload): Promise<Leave> {
     const now = this.clock.now();
     const { characterId, startDate, endDate, reason } = input;
-    const isAdmin = canManageGuild(actor.role);
+    const isAdmin = can(actor, Capability.ATTENDANCE);
 
     const [characterExists, own] = await Promise.all([
       this.characters.exists(characterId),
@@ -185,7 +186,7 @@ export class LeaveService {
     ]);
     if (!found) throw new NotFoundException(LEAVE_NOT_FOUND);
 
-    const isAdmin = canManageGuild(actor.role);
+    const isAdmin = can(actor, Capability.ATTENDANCE);
     if (!isAdmin && found.characterId !== own) {
       throw new ForbiddenException(NOT_YOUR_LEAVE);
     }

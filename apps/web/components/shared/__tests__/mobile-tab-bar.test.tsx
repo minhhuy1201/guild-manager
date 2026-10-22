@@ -2,7 +2,13 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { GuildRole } from "@guild/shared/enums";
+import type { Actor } from "@guild/shared/lib";
+
 import { ROUTES } from "@/config/routes";
+
+const MEMBER: Actor = { role: GuildRole.MEMBER };
+const ADMIN: Actor = { role: GuildRole.ADMIN };
 
 let pathname: string = ROUTES.attendance;
 
@@ -43,13 +49,13 @@ describe("MobileTabBar", () => {
   // On a phone the "Điểm danh" and "Lịch sử" icons are hard to tell apart, so every item needs its
   // text. "Xếp team" and "Chiến thuật" are desktop-only: drag-and-drop and the map need a wide screen.
   it("member thấy hai mục, mục nào cũng có chữ", () => {
-    render(<MobileTabBar isAdmin={false} />);
+    render(<MobileTabBar actor={MEMBER} />);
 
     expect(tabLabels()).toEqual(["Điểm danh", "Lịch sử"]);
   });
 
   it("admin thấy thêm Thiết lập, không có Xếp team và Chiến thuật", () => {
-    render(<MobileTabBar isAdmin />);
+    render(<MobileTabBar actor={ADMIN} />);
 
     expect(tabLabels()).toEqual(["Điểm danh", "Lịch sử", "Thiết lập"]);
   });
@@ -57,7 +63,7 @@ describe("MobileTabBar", () => {
   it("mục đang mở được đánh dấu là trang hiện tại", () => {
     pathname = ROUTES.attendanceHistory;
 
-    render(<MobileTabBar isAdmin={false} />);
+    render(<MobileTabBar actor={MEMBER} />);
 
     expect(
       screen.getByRole("link", { name: "Lịch sử" }).getAttribute("aria-current")
@@ -70,14 +76,14 @@ describe("MobileTabBar", () => {
   // globals.css only reserves bottom room for the page when this bar is present, and it finds the
   // bar through this attribute.
   it("mang data-slot mà globals.css dựa vào để chừa khoảng đáy", () => {
-    const { container } = render(<MobileTabBar isAdmin={false} />);
+    const { container } = render(<MobileTabBar actor={MEMBER} />);
 
     expect(container.querySelector('[data-slot="mobile-tab-bar"]')).not.toBeNull();
   });
 
   // The bar is an ink-navy band framing the page in both themes: it scopes the dark tokens to itself.
   it("luôn mang theme tối, kể cả khi trang đang ở theme sáng", () => {
-    const { container } = render(<MobileTabBar isAdmin={false} />);
+    const { container } = render(<MobileTabBar actor={MEMBER} />);
 
     expect(
       container.querySelector('[data-slot="mobile-tab-bar"]')?.classList.contains("dark")
@@ -87,7 +93,7 @@ describe("MobileTabBar", () => {
 
 describe("MobileTabBar - chuyển trang", () => {
   it("mọi tab mang kiểu page-nav", () => {
-    render(<MobileTabBar isAdmin />);
+    render(<MobileTabBar actor={ADMIN} />);
 
     for (const link of screen.getAllByRole("link")) {
       expect(link.getAttribute("data-transition-types")).toBe("page-nav");

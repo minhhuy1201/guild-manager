@@ -1,4 +1,5 @@
-import { canManageGuild } from "@guild/shared/lib";
+import { Capability } from "@guild/shared/enums";
+import { can } from "@guild/shared/lib";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
@@ -23,5 +24,5 @@ export default async function TacticsPage() {
   // proxy.ts already blocked visitors; this branch only tells TypeScript `session` is not null.
   if (!session) redirect(ROUTES.login);
 
-  return <TacticListScreen isAdmin={canManageGuild(session.role)} />;
+  return <TacticListScreen isAdmin={can(session, Capability.TACTICS)} />;
 }

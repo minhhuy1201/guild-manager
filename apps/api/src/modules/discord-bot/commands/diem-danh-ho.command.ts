@@ -1,8 +1,9 @@
+import { GrantableCommand } from '@guild/shared/enums';
 import { buildAttendanceBoard, withPressNote } from '../attendance-board';
 import { COMMAND_OPTION_TYPE } from '../discord.constants';
 import { commandOptionValue } from '../interaction.schema';
 import { ephemeralText, publicMessage } from '../reply';
-import { requireAdmin } from '../require-admin';
+import { requireCommand } from '../require-command';
 import type { CommandReply, SlashCommand } from './command.types';
 
 /** Name of the option, used both when registering and when reading the invocation. */
@@ -13,7 +14,7 @@ const TARGET_OPTION = 'nguoi';
  * Refusals stay ephemeral even though the board is public: only the caller needs them, and a channel
  * does not need to watch someone be told no.
  */
-const ADMIN_ONLY = 'Chỉ admin mới điểm danh hộ được.';
+const REFUSAL = 'Chỉ admin mới điểm danh hộ được.';
 
 /**
  * Attendance on behalf of somebody else — admins only.
@@ -38,7 +39,12 @@ export const diemDanhHoCommand: SlashCommand = {
   },
 
   execute: async (interaction, deps): Promise<CommandReply> => {
-    const check = await requireAdmin(interaction, deps, ADMIN_ONLY);
+    const check = await requireCommand(
+      interaction,
+      deps,
+      GrantableCommand.DIEM_DANH_HO,
+      REFUSAL,
+    );
 
     if (!check.ok) return check.reply;
 

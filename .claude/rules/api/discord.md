@@ -11,5 +11,5 @@ paths:
 - **Run `pnpm discord:register` by hand** after adding or renaming a command. Never from CI: Discord rate-limits that route and the list only changes with a command.
 - **Answer within 3 seconds.** `/diem-danh` and `/diem-danh-ho` answer directly, with no deferred reply (`type: 5`). Read `docs/archive/specs/2026-09-02-discord-attendance-commands-design.md` §9 before adding one.
 - **Reach dependencies through the `deps` argument,** never Nest DI. `src/scripts/register-discord-commands.ts` imports `commandDefinitions` without booting the app, so a command stays a plain object. `InteractionRouter` bundles `deps` and is the only provider.
-- **Keep `ephemeral` / `ephemeralText` in `discord-bot/reply.ts`** and `requireAdmin` in `discord-bot/require-admin.ts`, not on the router: the router imports the command registry and commands need these helpers.
-- **Check an admin-only command's caller with `requireAdmin`.** It owns the two refusals and their order; the command passes only the sentence a non-admin should read.
+- **Keep `ephemeral` / `ephemeralText` in `discord-bot/reply.ts`** and `requireCommand` in `discord-bot/require-command.ts`, not on the router: the router imports the command registry and commands need these helpers.
+- **Check an admin-only command's caller with `requireCommand`.** It owns the two refusals and their order; the command passes its `GrantableCommand` value and the sentence a caller without the Grant should read.

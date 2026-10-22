@@ -67,14 +67,14 @@ window.matchMedia ??= ((query: string) => ({
 /**
  * Render the menu and open it.
  * @param label - Display label of the signed-in user
- * @param isAdmin - Whether the signed-in user is an admin
+ * @param canRaceCats - Whether the signed-in user may open the cat race screen
  * @returns The trigger button
  */
 async function openMenu(
   label: string | null = "Mèo Mập",
-  isAdmin = false
+  canRaceCats = false
 ): Promise<HTMLElement> {
-  render(<UserMenu label={label} discordId="123456789012345678" avatarHash={null} isAdmin={isAdmin} />);
+  render(<UserMenu label={label} discordId="123456789012345678" avatarHash={null} canRaceCats={canRaceCats} />);
   const trigger = screen.getByRole("button");
 
   await act(async () => {
@@ -96,7 +96,7 @@ describe("UserMenu", () => {
 
   it("nút avatar tự xưng tên chủ tài khoản cho trình đọc màn hình", () => {
     render(
-      <UserMenu label="Mèo Mập" discordId="123456789012345678" avatarHash={null} isAdmin={false} />
+      <UserMenu label="Mèo Mập" discordId="123456789012345678" avatarHash={null} canRaceCats={false} />
     );
 
     expect(screen.getByRole("button").getAttribute("aria-label")).toBe(
@@ -106,7 +106,7 @@ describe("UserMenu", () => {
 
   it("chưa biết tên thì nhãn chỉ còn Menu tài khoản, và avatar hiện dấu hỏi", () => {
     render(
-      <UserMenu label={null} discordId="123456789012345678" avatarHash={null} isAdmin={false} />
+      <UserMenu label={null} discordId="123456789012345678" avatarHash={null} canRaceCats={false} />
     );
 
     expect(screen.getByRole("button").getAttribute("aria-label")).toBe(
@@ -153,7 +153,7 @@ describe("UserMenu", () => {
     document.documentElement.className = "";
     render(
       <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
-        <UserMenu label="Mèo Mập" discordId="123456789012345678" avatarHash={null} isAdmin={false} />
+        <UserMenu label="Mèo Mập" discordId="123456789012345678" avatarHash={null} canRaceCats={false} />
       </ThemeProvider>
     );
     await act(async () => {

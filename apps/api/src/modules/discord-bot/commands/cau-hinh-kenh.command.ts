@@ -1,3 +1,4 @@
+import { GrantableCommand } from '@guild/shared/enums';
 import { Logger } from '@nestjs/common';
 
 import type { BotChannelPurpose } from '../bot-channel.service';
@@ -8,11 +9,11 @@ import {
   commandOptionValue,
 } from '../interaction.schema';
 import { ephemeralText } from '../reply';
-import { requireAdmin } from '../require-admin';
+import { requireCommand } from '../require-command';
 import type { CommandReply, SlashCommand } from './command.types';
 
 /** Shown to a member who tried to configure the channel. */
-const ADMIN_ONLY = 'Chỉ admin mới đặt được channel thông báo.';
+const REFUSAL = 'Chỉ admin mới đặt được channel thông báo.';
 
 /** Name of the option, used both when registering and when reading the invocation. */
 const PURPOSE_OPTION = 'muc-dich';
@@ -123,7 +124,12 @@ export const cauHinhKenhCommand: SlashCommand = {
   },
 
   execute: async (interaction, deps): Promise<CommandReply> => {
-    const check = await requireAdmin(interaction, deps, ADMIN_ONLY);
+    const check = await requireCommand(
+      interaction,
+      deps,
+      GrantableCommand.CAU_HINH_KENH,
+      REFUSAL,
+    );
 
     if (!check.ok) return check.reply;
 

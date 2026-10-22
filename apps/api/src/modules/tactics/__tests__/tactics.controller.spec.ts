@@ -1,4 +1,7 @@
-import { AdminGuard, JwtAuthGuard } from '../../../common';
+import { Capability } from '@guild/shared/enums';
+
+import { CapabilityGuard, JwtAuthGuard } from '../../../common';
+import { accessOf } from '../../../__tests__/guards-of';
 import { emptyScene } from '../tactics.codec';
 import { TacticsController } from '../tactics.controller';
 
@@ -43,14 +46,22 @@ describe('TacticsController', () => {
     'remove',
     'createPreset',
     'removePreset',
-  ] as const)('guards the write handler %s with AdminGuard', (handler) => {
-    expect(guardsOf(handler)).toContain(AdminGuard);
-  });
+  ] as const)(
+    'guards the write handler %s with the tactics Capability',
+    (handler) => {
+      expect(guardsOf(handler)).toContain(CapabilityGuard);
+      expect(accessOf(TacticsController, handler)).toEqual({
+        kind: 'capability',
+        capability: Capability.TACTICS,
+      });
+    },
+  );
 
   it.each(['list', 'get', 'listPresets'] as const)(
     'leaves the read handler %s open to any member',
     (handler) => {
-      expect(guardsOf(handler)).not.toContain(AdminGuard);
+      expect(guardsOf(handler)).not.toContain(CapabilityGuard);
+      expect(accessOf(TacticsController, handler)).toBeUndefined();
     },
   );
 

@@ -19,7 +19,7 @@ const WRITE_ROUTES = [
 ] as const;
 
 /**
- * Walks the tactics routes over real HTTP as a signed-in member. The real `AdminGuard` runs; only
+ * Walks the tactics routes over real HTTP as a signed-in member. The real `CapabilityGuard` runs; only
  * the session check is replaced, by one that signs the request in as a member.
  */
 describe('tactics routes over HTTP, as a member', () => {

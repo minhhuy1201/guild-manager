@@ -1,10 +1,10 @@
-import { GuildRole } from '@guild/shared/enums';
+import { GrantableCommand, GuildRole } from '@guild/shared/enums';
 
 import { TOKEN_TYPE } from '../../../common';
 import { NOT_LINKED } from '../attendance-board';
 import type { CommandDeps } from '../commands/command.types';
 import { MESSAGE_FLAG } from '../discord.constants';
-import { requireAdmin } from '../require-admin';
+import { requireCommand } from '../require-command';
 
 const INTERACTION = {
   type: 2 as const,
@@ -13,13 +13,16 @@ const INTERACTION = {
   member: { user: { id: '111' } },
 };
 
+/** The command under test; every command passes its own. */
+const COMMAND = GrantableCommand.THONG_BAO;
+
 /** The sentence one command uses; every command passes its own. */
 const ADMIN_ONLY = 'Chỉ admin mới đăng thông báo được.';
 
 /**
  * Build deps whose resolver answers with the given caller.
  * @param resolved - What `ActorResolver.resolve` returns; null means the Discord ID has no access
- * @returns Deps holding only the resolver, which is all `requireAdmin` reads
+ * @returns Deps holding only the resolver, which is all `requireCommand` reads
  */
 function makeDeps(resolved: unknown): CommandDeps {
   return {
@@ -39,13 +42,14 @@ function caller(role: GuildRole) {
   };
 }
 
-describe('requireAdmin', () => {
+describe('requireCommand', () => {
   it('trả về caller đã resolve khi người gọi là admin', async () => {
     const resolved = caller(GuildRole.ADMIN);
 
-    const check = await requireAdmin(
+    const check = await requireCommand(
       INTERACTION,
       makeDeps(resolved),
+      COMMAND,
       ADMIN_ONLY,
     );
 
@@ -53,7 +57,12 @@ describe('requireAdmin', () => {
   });
 
   it('từ chối bằng NOT_LINKED khi Discord ID chưa gắn nhân vật', async () => {
-    const check = await requireAdmin(INTERACTION, makeDeps(null), ADMIN_ONLY);
+    const check = await requireCommand(
+      INTERACTION,
+      makeDeps(null),
+      COMMAND,
+      ADMIN_ONLY,
+    );
 
     expect(check.ok).toBe(false);
     if (check.ok) throw new Error('expected a refusal');
@@ -62,9 +71,10 @@ describe('requireAdmin', () => {
   });
 
   it('từ chối member bằng đúng câu của command đó', async () => {
-    const check = await requireAdmin(
+    const check = await requireCommand(
       INTERACTION,
       makeDeps(caller(GuildRole.MEMBER)),
+      COMMAND,
       ADMIN_ONLY,
     );
 
@@ -74,7 +84,12 @@ describe('requireAdmin', () => {
   });
 
   it('kiểm tra liên kết trước quyền admin — người chưa gắn nhân vật không bị nói là thiếu quyền', async () => {
-    const check = await requireAdmin(INTERACTION, makeDeps(null), ADMIN_ONLY);
+    const check = await requireCommand(
+      INTERACTION,
+      makeDeps(null),
+      COMMAND,
+      ADMIN_ONLY,
+    );
 
     if (check.ok) throw new Error('expected a refusal');
     expect(check.reply.data.content).not.toBe(ADMIN_ONLY);

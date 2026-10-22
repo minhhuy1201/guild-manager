@@ -10,18 +10,26 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Capability } from '@guild/shared/enums';
 import type { GuildMember } from '@guild/shared/schemas';
 
-import { AdminGuard, JwtAuthGuard } from '../../common';
+import {
+  CapabilityGuard,
+  JwtAuthGuard,
+  RequireAdmin,
+  RequireCapability,
+} from '../../common';
 import { CharactersService } from './characters.service';
 import { CreateCharacterDto, UpdateCharacterDto } from './dto/character.dto';
 
 /**
- * Member management — admins only, so the guard sits at controller level rather than on each route.
+ * Member management, so the guard sits at controller level rather than on each route. Deleting a
+ * member is the one route that stays Admin-only.
  */
 @ApiTags('characters')
 @Controller('characters')
-@UseGuards(JwtAuthGuard, AdminGuard)
+@UseGuards(JwtAuthGuard, CapabilityGuard)
+@RequireCapability(Capability.MEMBERS)
 export class CharactersController {
   constructor(private readonly characters: CharactersService) {}
 
@@ -68,6 +76,7 @@ export class CharactersController {
    * @returns A promise resolving once they are deleted
    */
   @Delete(':id')
+  @RequireAdmin()
   @HttpCode(204)
   @ApiOperation({ summary: 'Xoá một thành viên' })
   remove(@Param('id') id: string): Promise<void> {

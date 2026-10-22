@@ -28,7 +28,7 @@ afterEach(cleanup);
 
 describe("AttendanceScreen", () => {
   it("member thấy thẻ của mình rồi tới lưới chỉ đọc", () => {
-    render(<AttendanceScreen role={GuildRole.MEMBER} />);
+    render(<AttendanceScreen actor={{ role: GuildRole.MEMBER }} />);
 
     expect(screen.getByTestId("member-card")).toBeTruthy();
     expect(screen.getByTestId("grid").dataset.admin).toBe("false");
@@ -37,7 +37,7 @@ describe("AttendanceScreen", () => {
   // The week schedule folded into the personal card and the filters into the table's card: the page
   // is down to two blocks.
   it("mục xin nghỉ, rồi thẻ tuần của bạn, rồi card bảng, không còn thẻ lọc riêng", () => {
-    const { container } = render(<AttendanceScreen role={GuildRole.MEMBER} />);
+    const { container } = render(<AttendanceScreen actor={{ role: GuildRole.MEMBER }} />);
     const order = [...container.querySelectorAll("[data-testid]")].map(
       (node) => node.getAttribute("data-testid")
     );
@@ -46,7 +46,7 @@ describe("AttendanceScreen", () => {
   });
 
   it("admin cũng thấy thẻ cá nhân, và lưới cho sửa được", () => {
-    render(<AttendanceScreen role={GuildRole.ADMIN} />);
+    render(<AttendanceScreen actor={{ role: GuildRole.ADMIN }} />);
 
     expect(screen.getByTestId("member-card")).toBeTruthy();
     expect(screen.getByTestId("grid").dataset.admin).toBe("true");

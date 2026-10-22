@@ -4,7 +4,8 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { canManageGuild } from '@guild/shared/lib';
+import { Capability } from '@guild/shared/enums';
+import { can } from '@guild/shared/lib';
 import {
   attendanceSummarySchema,
   type AttendanceRecord,
@@ -171,7 +172,7 @@ export class AttendanceService {
   ): Promise<AttendanceRecord> {
     const now = this.clock.now();
     const { characterId, sessionId, isPresent, reason } = input;
-    const isAdmin = canManageGuild(actor.role);
+    const isAdmin = can(actor, Capability.ATTENDANCE);
 
     // Three independent reads, so one round trip rather than three: a Discord button press answers
     // inside the interaction's 3-second window, and this method sits on that path.

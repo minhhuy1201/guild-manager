@@ -1,4 +1,5 @@
-import { canManageGuild } from "@guild/shared/lib";
+import { Capability } from "@guild/shared/enums";
+import { can } from "@guild/shared/lib";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
@@ -19,7 +20,7 @@ export const metadata: Metadata = {
  */
 export default async function CatRacePage() {
   const session = await getSession();
-  if (!session || !canManageGuild(session.role)) {
+  if (!session || !can(session, Capability.CAT_RACE)) {
     redirect(`${ROUTES.attendance}?error=${WEB_AUTH_ERROR.adminOnly}`);
   }
 
