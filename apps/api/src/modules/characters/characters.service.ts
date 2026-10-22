@@ -50,6 +50,10 @@ const LAST_ADMIN =
 const ADMIN_ONLY_FIELDS =
   'Chỉ quản trị viên được đổi vai và quyền của thành viên.';
 
+/** Message when a Manager tries to write the row of another Manager or an Admin. */
+const MEMBER_ROWS_ONLY =
+  'Bạn chỉ được sửa thành viên thường, không sửa hàng của Quản lý hay ADMIN.';
+
 /** Message when Grants are sent for someone who is not, or is not becoming, a Manager. */
 const GRANTS_NEED_MANAGER = 'Chỉ vai Quản lý mới được cấp quyền riêng.';
 
@@ -160,7 +164,8 @@ export class CharactersService implements GrantLookup {
    * @param actor - JWT payload of the caller
    * @returns The updated member
    * @throws NotFoundException when no such member exists
-   * @throws ForbiddenException when a non-Admin sends a role or a Grant
+   * @throws ForbiddenException when a non-Admin sends a role or a Grant, or writes the row of a
+   * Manager or an Admin
    * @throws BadRequestException when Grants are sent for someone who is not a Manager, or this
    * would demote the last admin
    * @throws ConflictException when the Discord ID already belongs to another member
@@ -179,8 +184,12 @@ export class CharactersService implements GrantLookup {
     if (touchesAdminFields(input) && actor.role !== GuildRole.ADMIN) {
       throw new ForbiddenException(ADMIN_ONLY_FIELDS);
     }
+    const currentRole = current.role as GuildRole;
+    if (actor.role !== GuildRole.ADMIN && currentRole !== GuildRole.MEMBER) {
+      throw new ForbiddenException(MEMBER_ROWS_ONLY);
+    }
 
-    const data = withGrantInvariant(input, current.role as GuildRole);
+    const data = withGrantInvariant(input, currentRole);
 
     try {
       const row = await this.write(id, data);

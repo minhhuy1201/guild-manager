@@ -483,6 +483,92 @@ describe('CharactersService', () => {
     });
   });
 
+  describe('Quản lý có Capability thành viên', () => {
+    /** Point the update at a row of the given role. */
+    function targetIs(role: GuildRole): void {
+      prisma.character.findUnique.mockResolvedValue({ ...ROW, role });
+    }
+
+    it('sửa được tên, lưu phái và Discord ID của một Member', async () => {
+      targetIs(GuildRole.MEMBER);
+
+      await service.update(
+        ROW.id,
+        {
+          name: 'Mèo Mập',
+          guildClass: GuildClass.THIET_Y,
+          discordId: '123456789012345678',
+        },
+        MANAGER,
+      );
+
+      expect(prisma.character.update).toHaveBeenCalledWith({
+        where: { id: ROW.id },
+        data: {
+          name: 'Mèo Mập',
+          guildClass: GuildClass.THIET_Y,
+          discordId: '123456789012345678',
+        },
+      });
+    });
+
+    it.each([GuildRole.MANAGER, GuildRole.ADMIN])(
+      'bị từ chối khi ghi lên hàng %s, kể cả chỉ đổi tên',
+      async (role) => {
+        targetIs(role);
+
+        await expect(
+          service.update(ROW.id, { name: 'Mèo Mập' }, MANAGER),
+        ).rejects.toThrow(ForbiddenException);
+        expect(prisma.character.update).not.toHaveBeenCalled();
+      },
+    );
+
+    it('không tự sửa hàng của chính mình khi mình là Quản lý', async () => {
+      targetIs(GuildRole.MANAGER);
+
+      await expect(
+        service.update(ROW.id, { discordId: null }, MANAGER),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('không đổi vai hay Grant của Member dù chỉ gửi kèm tên', async () => {
+      targetIs(GuildRole.MEMBER);
+
+      await expect(
+        service.update(ROW.id, { name: 'X', role: GuildRole.ADMIN }, MANAGER),
+      ).rejects.toThrow(ForbiddenException);
+      expect(prisma.character.update).not.toHaveBeenCalled();
+    });
+
+    it('Admin vẫn sửa được hàng của Quản lý và Admin khác', async () => {
+      for (const role of [GuildRole.MANAGER, GuildRole.ADMIN]) {
+        targetIs(role);
+
+        await service.update(ROW.id, { name: 'Mèo Mập' }, ADMIN);
+      }
+
+      expect(prisma.character.update).toHaveBeenCalledTimes(2);
+    });
+
+    it('thêm thành viên mới luôn là Member, không mang Grant', async () => {
+      await service.create({
+        name: 'Mèo Mới',
+        guildClass: GuildClass.THIET_Y,
+        // A body can name a role; the create path has no way to carry it into the row.
+        ...({ role: GuildRole.ADMIN } as object),
+      });
+
+      const { data } = prisma.character.create.mock.calls[0][0] as {
+        data: Record<string, unknown>;
+      };
+
+      expect(data).not.toHaveProperty('role');
+      expect(data).not.toHaveProperty('capabilities');
+      expect(data).not.toHaveProperty('grantedCommands');
+    });
+  });
+
   describe('gán Discord ID', () => {
     it('trả 409 khi Discord ID đã thuộc thành viên khác', async () => {
       prisma.character.update.mockRejectedValue(UNIQUE_VIOLATION);

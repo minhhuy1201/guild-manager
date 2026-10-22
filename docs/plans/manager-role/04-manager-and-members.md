@@ -10,10 +10,10 @@ UI: chạy skill `redesign-skill` cho trạng thái chỉ xem của hàng và di
 
 **Blocked by:** 03
 
-**Status:** todo
+**Status:** done
 
-- [ ] Manager tạo thành viên: vai luôn là Member dù body gửi vai khác
-- [ ] Manager sửa Member: chỉ tên, class, Discord ID được nhận
-- [ ] Manager ghi lên hàng Manager hoặc Admin bị từ chối
-- [ ] Manager xóa bất kỳ ai bị từ chối; nút xóa không render cho Manager
-- [ ] Hàng Manager/Admin hiển thị chỉ xem với Manager
+- [x] Manager tạo thành viên: vai luôn là Member dù body gửi vai khác
+- [x] Manager sửa Member: chỉ tên, class, Discord ID được nhận
+- [x] Manager ghi lên hàng Manager hoặc Admin bị từ chối
+- [x] Manager xóa bất kỳ ai bị từ chối; nút xóa không render cho Manager
+- [x] Hàng Manager/Admin hiển thị chỉ xem với Manager

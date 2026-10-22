@@ -262,7 +262,7 @@ no-op in it. `attendance`, `battle-sessions`, `cat-race`, `characters` and `tact
 |---|---|---|
 | `health` | Liveness + a database ping | Public |
 | `auth` | Discord OAuth2 sign-in, the single-use code exchange, refresh, `me` | Public except `me` |
-| `characters` | Member CRUD, Discord identity and guild role | Capability `MEMBERS` (`JwtAuthGuard, CapabilityGuard` on the controller); deleting a member is `@RequireAdmin()` |
+| `characters` | Member CRUD, Discord identity and guild role | Capability `MEMBERS` (`JwtAuthGuard, CapabilityGuard` on the controller); deleting a member is `@RequireAdmin()`. A Manager adds members (always `MEMBER`) and edits name, class and Discord ID of `MEMBER` rows only; role, Grants and every write on a Manager or Admin row are an Admin's, enforced in `CharactersService.update` |
 | `battle-sessions` | The week's schedule, deadlines, the Guild War session, time rules | Reads signed-in, writes need Capability `SCHEDULE` |
 | `attendance` | Marking attendance and reading records; a "Không" answer also releases that member from the day's formation, through `team-builder`. Also **leaves** (`LeaveService`): a member's declared stretch of days away, merged into the records at read time | Bearer required; reads are guild-wide for everyone, admin bypasses the deadline and marks for others |
 | `team-builder` | Per-match formations, and the team names shown on the grid | Capability `TEAM_BUILDER` |

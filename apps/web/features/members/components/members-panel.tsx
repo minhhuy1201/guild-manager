@@ -13,7 +13,9 @@ import { useTablePagination } from "@/hooks/use-table-pagination";
 import { combineQueries } from "@/lib/query-group";
 import { matchesRosterFilter, type RosterFilter } from "@/lib/roster-filter";
 import { useMembers } from "../hooks/use-members";
+import { useSession } from "@/features/auth";
 import { isLastAdmin } from "../lib/last-admin";
+import { memberAccess } from "../lib/member-access";
 import { DeleteMemberDialog } from "./delete-member-dialog";
 import { MemberFormDialog } from "./member-form-dialog";
 import { MemberRow } from "./member-row";
@@ -31,6 +33,7 @@ const COLUMN_COUNT = 5;
  */
 export function MembersPanel() {
   const membersQuery = useMembers();
+  const { data: session } = useSession();
   const [filter, setFilter] = useState<RosterFilter>(EMPTY_FILTER);
   const [editing, setEditing] = useState<GuildMember | null>(null);
   const [formOpen, setFormOpen] = useState(false);
@@ -98,6 +101,7 @@ export function MembersPanel() {
             // Read from the unfiltered list: a class filter hiding the other admin must not make
             // this one look like the last.
             isLastAdmin={isLastAdmin(allMembers, member)}
+            access={memberAccess(session?.role, member)}
             onEdit={(target) => {
               setEditing(target);
               setFormOpen(true);
