@@ -1,6 +1,8 @@
 import { OrnamentDivider } from "@/components/shared/ornament-divider";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { cardVariants } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 import { GUILD_LEADERS, type GuildLeader } from "../lib/guild-info";
 
@@ -61,22 +63,22 @@ export function LeadershipSection() {
         >
           Ban chỉ huy
         </h2>
-        <OrnamentDivider />
+        <OrnamentDivider stroke="brush" />
       </div>
 
       {/* One column on a phone; from `md` the guild master keeps the left third. */}
       <div className="grid gap-4 md:grid-cols-3">
-        <article className="flex flex-col items-start gap-4 rounded-2xl border border-gold/40 bg-gold/5 p-6">
+        <article
+          data-slot="card"
+          data-variant="raised"
+          className={cn(
+            cardVariants({ variant: "raised" }),
+            "items-start gap-4 p-6"
+          )}
+        >
           <LeaderAvatar leader={master} className="size-24" />
           <div className="flex flex-col gap-2">
-            {/* `text-foreground`, not `text-gold-foreground`: that token is the ink for a solid
-                gold fill, and on this /15 tint it goes unreadable in dark mode. */}
-            <Badge
-              variant="outline"
-              className="border-gold/50 bg-gold/15 text-foreground"
-            >
-              {master.role}
-            </Badge>
+            <Badge>{master.role}</Badge>
             <h3 className="font-heading text-xl font-semibold tracking-tight">
               {master.name}
             </h3>
@@ -86,7 +88,7 @@ export function LeadershipSection() {
           </div>
         </article>
 
-        <div className="divide-y rounded-2xl border bg-card md:col-span-2">
+        <div className="divide-y rounded-container border bg-card shadow-sm md:col-span-2">
           {officers.map((officer) => (
             <article
               key={officer.name}

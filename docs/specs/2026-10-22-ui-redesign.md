@@ -129,8 +129,8 @@ Giao làm 5 PR, mỗi PR tự đứng được và đổi diện mạo thấy ng
 
 - Viết lại brief `docs/design-direction.md` theo hướng "Thuỷ mặc hiện đại", cân bằng 55/30/15. Mục
   "Avoid" mới vẫn cấm: ảnh sau dữ liệu, animation lặp vô hạn (trừ shimmer của skeleton), hạt bay,
-  sương/mây động, HUD kiểu game, font thư pháp cho chữ UI. Được phép: viền vàng mảnh ở vài điểm nhấn
-  (headline đội hình, card nổi bật, login), glow ngọc/vàng, vân giấy/mực tĩnh.
+  sương/mây động, HUD kiểu game, font thư pháp cho chữ UI. Được phép: viền và glow vàng mảnh chỉ ở
+  headline đội hình và login (card `raised` mang glow ngọc, không dùng vàng), vân giấy/mực tĩnh.
 - Cập nhật rule `display.md`, `interaction.md` và `frontend.md` §6 trong cùng PR với thay đổi chúng
   mô tả. Rule và code phải khớp ở mỗi PR.
 
