@@ -38,7 +38,6 @@ export function CatRaceListScreen() {
     <div className="flex flex-col gap-4">
       <PageHeader
         banner="teamBuilder"
-        isCompact
         title="Đua mèo"
         description="Quay thưởng trong bang: mỗi vòng đua ra một người thắng."
         // The create form seeds itself from these queries once, so it only opens with them loaded.
@@ -81,7 +80,7 @@ export function CatRaceListScreen() {
                       href={catRaceEventPath(race.id)}
                       className="font-medium hover:underline"
                     >
-                      <span className="absolute inset-0 rounded-xl" />
+                      <span className="absolute inset-0 rounded-container" />
                       {race.name}
                     </Link>
                     <p className="text-sm text-muted-foreground">

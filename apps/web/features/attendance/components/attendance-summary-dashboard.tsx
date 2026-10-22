@@ -75,7 +75,7 @@ export function AttendanceSummaryDashboard() {
             <Skeleton
               key={index}
               className={cn(
-                "h-72 w-full rounded-xl",
+                "h-72 w-full rounded-container",
                 summaryCardSpanClass(index, SKELETON_CARDS)
               )}
             />

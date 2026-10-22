@@ -26,7 +26,7 @@ Thiết kế lại toàn bộ web theo hướng **"Thuỷ mặc hiện đại"**
 nhất, nhưng không khí giang hồ được nâng lên rõ rệt. Cân bằng mới là **55% app / 30% wuxia / 15% Nghịch
 Thuỷ Hàn**, thay cho 70/20/10.
 
-- Banner trang cao hơn, kiểu điện ảnh. Cảnh zoom chậm một lần khi vào trang.
+- Banner trang gọn (khoảng 96px trên điện thoại, 128px trên desktop), cảnh zoom chậm một lần khi vào trang. Bản đầu làm banner cao kiểu điện ảnh, nhưng banner cao làm người dùng không tập trung vào tính năng của trang, nên đã thu lại.
 - Bề mặt có vân giấy và mực. Divider kiểu nét cọ.
 - Card có ba cấp: nổi bật, thường, lõm.
 - Header kính mờ.
@@ -63,10 +63,10 @@ Giao làm 5 PR, mỗi PR tự đứng được và đổi diện mạo thấy ng
 
 ### Tiêu đề trang
 
-14. As a member, I want each page to open on a taller, cinematic banner of its own game scene, so that each page has a clear identity.
+14. As a member, I want each page to open on a compact banner of its own game scene, so that each page has a clear identity.
 15. As a member, I want the banner scene to drift in slowly once when the page opens, so that the page feels alive without anything looping.
-16. As a member, I want the page title to be large and set in the new heading serif, so that I know at a glance which page I am on.
-17. As a member on the attendance page or its history on a phone, I want the banner to stay compact (text only, as today), so that my answers start near the top of the screen.
+16. As a member, I want the page title to be set in the new heading serif, so that I know at a glance which page I am on.
+17. As a member on the attendance page or its history on a phone, I want the banner to be text only, with no scene, so that my answers start near the top of the screen.
 18. As a member, I want page-wide controls (week picker, create button) to sit clearly inside the banner, so that I find them where I expect.
 
 ### Bề mặt và thành phần
@@ -100,7 +100,7 @@ Giao làm 5 PR, mỗi PR tự đứng được và đổi diện mạo thấy ng
 
 37. As an admin, I want the session tabs, the match tabs and the toolbar to form one clear control area above the formation, so that the page has a visible hierarchy.
 38. As an admin, I want the formation headline to look like a banner of the battle, so that the formation reads as the main subject of the page.
-39. As an admin, I want team columns to have a clear header, calmer slot cells and their team colour as an accent, so that ten columns side by side stay readable.
+39. As an admin, I want team columns to have a clear header, calmer slot cells and their team colour as a tinted header and a small dot beside the name, so that ten columns side by side stay readable.
 40. As an admin, I want the selected session tab in the dark theme to use the same palette as the rest of the page, so that it does not jump out as a bright block.
 41. As an admin, I want the member pool to read as a tray under the formation, so that I understand where unplaced members come from.
 42. As an admin, I want dragging a member to feel smooth and the drop target to be clearly lit, so that I place people without mistakes.
@@ -139,8 +139,10 @@ Giao làm 5 PR, mỗi PR tự đứng được và đổi diện mạo thấy ng
 - Giữ cấu trúc token hiện tại: `:root` sáng, `.dark` tối, jade, gold, primary navy, emerald/đỏ/amber
   chỉ cho trạng thái điểm danh.
 - Chỉnh giá trị: nền sáng giữ tông đá ấm, thêm vân mực nhạt bên cạnh vân giấy. Theme tối giữ navy mực.
-  Thêm token cho glow (jade, gold), viền sáng trong của card nổi, và `--radius` lớn hơn cho khối
-  chứa (bo trong nhỏ, bo ngoài lớn).
+  Thêm token cho glow (jade, gold), viền sáng trong của card nổi, và hai token bo góc: khối chứa
+  12px, phần bên trong 6px (bo trong nhỏ hơn bo ngoài). Bản đầu dùng 20px / 10px, nhìn quá tròn so với
+  một app làm việc; thang 12px / 6px theo [Vercel Geist Materials](https://vercel.com/geist/materials)
+  ("material-medium: Radius 12px", "material-base: Radius 6px").
 - Font tiêu đề đổi từ Noto Serif sang **Playfair Display** (Google Fonts, có subset `vietnamese`, đã
   kiểm tra trong `font-data.json` của `next/font`). Body giữ Be Vietnam Pro. `font-heading` thêm cho
   tiêu đề section trong card (h2), không chỉ h1.
@@ -155,7 +157,7 @@ Giao làm 5 PR, mỗi PR tự đứng được và đổi diện mạo thấy ng
 - Tabs: giữ biến thể `default` (track `bg-card`, tab chọn `bg-primary`), chỉnh bo, bóng và chuyển màu.
   Rule "không sửa biến thể default" được sửa thành "sửa ở `tabs.tsx`, không override từng chỗ".
 - `TABLE_SKIN`: header bảng tách hẳn khỏi thân, sọc nhẹ hơn, dòng tổng là một dải nổi riêng.
-- `PageHeader`: cao hơn (giữ thấp ở `isPlainOnPhone`), tiêu đề lớn hơn, scrim mới, cảnh zoom chậm một
+- `PageHeader`: một cỡ gọn duy nhất (`min-h-24 sm:min-h-28 lg:min-h-32`, tiêu đề `text-2xl sm:text-3xl`; chữ trơn ở `isPlainOnPhone`), scrim mới, cảnh zoom chậm một
   lần (Ken Burns bằng `transform`, không lặp). API của component (`banner`, `title`, `description`,
   `actions`, `isPlainOnPhone`) không đổi.
 - Header: kính mờ trên nền mực, vẫn luôn `dark` ở cả hai theme. Thanh active trong `MainNav` trượt
@@ -182,9 +184,9 @@ Giao làm 5 PR, mỗi PR tự đứng được và đổi diện mạo thấy ng
   - Lịch sử: filter thành dải `inset` gọn. Lưới card biểu đồ tự giãn theo số card. Tint guild war
     chuyển thành cạnh nhấn primary thay vì nền `bg-primary/5`.
 - **PR 3, xếp team:**
-  - Vùng điều khiển gồm tab trận, tab match và toolbar gom thành một khối.
+  - Vùng điều khiển gồm hai hàng: tab session ở hàng 1 chiếm hết chiều rộng; hàng 2 có điều khiển trận bên trái, nút Copy và Gửi Discord bên phải, căn giữa theo chiều dọc.
   - Headline đội hình thành băng rôn có viền vàng mảnh.
-  - Cột đội: header rõ, ô slot dịu, màu đội làm accent.
+  - Cột đội: header rõ, ô slot dịu, màu đội nằm ở nền header nhạt và một chấm màu cạnh tên đội, viền card trung tính. Không có vạch màu trên cùng: góc bo cắt cong vạch nên hai góc nhìn lệch.
   - Sửa tab trận đang chọn ở theme tối.
   - Member pool thành khay. Drag overlay và vùng thả có highlight rõ.
   - Lưới đội hình vẫn không reveal. Bản `capture` (ảnh gửi Discord) không đổi bố cục: 5 cột, 10 đội,
@@ -206,9 +208,9 @@ Giao làm 5 PR, mỗi PR tự đứng được và đổi diện mạo thấy ng
 - Vai trò màu: emerald/đỏ/amber chỉ cho trạng thái điểm danh. Gold không bao giờ là trạng thái.
 - Kích thước control và sàn 44px trên điện thoại. Root font 115%/120%.
 - Không ảnh sau dữ liệu. Không cuộn ngang trang. Save bar vẫn `sticky`.
-- Mọi thứ thuộc đua mèo: `features/cat-race`, khối `--stage-*` và `.race-*` trong `globals.css`.
-  Hai trang đua mèo giữ banner thấp như cũ (prop `isCompact` của `PageHeader`), để banner cao
-  không đẩy stage xuống. Card, Button, EmptyState và header dùng chung nên vẫn đổi theo.
+- Sân đua mèo: khối `--stage-*` và `.race-*` trong `globals.css` giữ nguyên. Hai trang đua mèo dùng
+  chung banner gọn (prop `isCompact` của `PageHeader` đã bỏ) và thang bo góc mới như mọi trang. Card,
+  Button, EmptyState và header dùng chung nên vẫn đổi theo.
 
 ## Testing Decisions
 

@@ -58,7 +58,7 @@ export function UnsavedChangesBar({
 }: UnsavedChangesBarProps) {
   return (
     // `--app-bottom-inset` lifts it above the phone's tab bar; it is 0 wherever that bar is absent.
-    <div className="sticky bottom-[calc(var(--app-bottom-inset)_+_--spacing(4))] z-20 flex animate-reveal flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-xl border bg-card px-4 py-3 shadow-md">
+    <div className="sticky bottom-[calc(var(--app-bottom-inset)_+_--spacing(4))] z-20 flex animate-reveal flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-container border bg-card px-4 py-3 shadow-md">
       <div className="flex min-w-0 flex-col text-sm" aria-live="polite">
         {errorMessages.length > 0 ? (
           errorMessages.map((error) => (

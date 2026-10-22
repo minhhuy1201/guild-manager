@@ -5,7 +5,6 @@ import { Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn } from "@/lib/utils";
 import { DeleteMatchDialog } from "./delete-match-dialog";
 
 interface MatchTabsProps {
@@ -23,8 +22,6 @@ interface MatchTabsProps {
   onAdd: () => void;
   /** Drop match 2 from the day */
   onRemove: () => void;
-  /** Layout classes from the place that hosts the row */
-  className?: string;
 }
 
 /**
@@ -37,7 +34,6 @@ interface MatchTabsProps {
  * @param onSelect - Switch to another match
  * @param onAdd - Clone match 1 into a new match 2
  * @param onRemove - Drop match 2 from the day
- * @param className - Layout classes from the place that hosts the row
  * @returns The match sub-tab row
  */
 export function MatchTabs({
@@ -48,7 +44,6 @@ export function MatchTabs({
   onSelect,
   onAdd,
   onRemove,
-  className,
 }: MatchTabsProps) {
   const [confirming, setConfirming] = useState(false);
 
@@ -57,12 +52,7 @@ export function MatchTabs({
   if (matchCount < 2 && !canAddMatch) return null;
 
   return (
-    <div
-      className={cn(
-        "flex flex-wrap items-center justify-between gap-2",
-        className
-      )}
-    >
+    <div className="flex flex-wrap items-center gap-2">
       <Tabs
         value={String(activeMatchIndex)}
         onValueChange={(value) => onSelect(Number(value))}

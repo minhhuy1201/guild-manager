@@ -27,7 +27,7 @@ interface WinnersPanelProps {
  */
 export function WinnersPanel({ event, canVoid, onVoid }: WinnersPanelProps) {
   return (
-    <section className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4">
+    <section className="flex flex-col gap-3 rounded-container border border-border bg-card p-4">
       <h2 className="text-lg font-semibold">Người thắng đợt này</h2>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {event.prizes.map((prize) => {
@@ -36,7 +36,7 @@ export function WinnersPanel({ event, canVoid, onVoid }: WinnersPanelProps) {
           return (
             <div
               key={prize.id}
-              className={cn("flex flex-col gap-2 rounded-xl border-2 p-3", PRIZE_TIER_CLASS[prize.tier])}
+              className={cn("flex flex-col gap-2 rounded-inner border-2 p-3", PRIZE_TIER_CLASS[prize.tier])}
             >
               <div className="flex items-center gap-2">
                 <PrizeTierBadge tier={prize.tier} />

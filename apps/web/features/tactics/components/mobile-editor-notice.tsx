@@ -8,7 +8,7 @@ import { MonitorSmartphone } from "lucide-react";
  */
 export function MobileEditorNotice() {
   return (
-    <div className="flex items-center gap-3 rounded-xl border bg-card px-4 py-3 text-sm text-muted-foreground">
+    <div className="flex items-center gap-3 rounded-container border bg-card px-4 py-3 text-sm text-muted-foreground">
       <MonitorSmartphone className="size-5 shrink-0" />
       <p>Mở trên máy tính để vẽ chiến thuật.</p>
     </div>

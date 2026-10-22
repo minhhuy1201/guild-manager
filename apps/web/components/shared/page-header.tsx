@@ -20,23 +20,22 @@ interface PageHeaderProps {
   actions?: ReactNode;
   /** Below `sm`, drop the scene and show title and description as plain text on the page */
   isPlainOnPhone?: boolean;
-  /** Keep the banner as it was before the redesign (short strip, small title, no drift or shadow); only the cat race pages */
-  isCompact?: boolean;
 }
 
 /**
- * The top of every page: a tall, cinematic banner with the page's scene, a serif title and an optional
- * description over it, page-wide actions at the bottom right, and the jade-diamond rule closing the
- * block. Two scrims - one rising from the bottom, one from the left - keep white text readable on
- * the night scenes and the daylight ones alike. `isPlainOnPhone` (attendance and its history)
- * gives a phone the text alone, since the strip would spend its screen on decoration. The scene
- * drifts once on arrival (`animate-drift`, a single transform) and then holds still.
+ * The top of every page: a compact banner (about 96px on a phone, 128px on desktop) with the page's
+ * scene, a serif title and an optional description over it, page-wide actions at the bottom right,
+ * and the jade-diamond rule closing the block. It stays short so the page's own feature, not the
+ * decoration, is what the eye lands on. Two scrims - one rising from the bottom, one from the
+ * left - keep white text readable on the night scenes and the daylight ones alike.
+ * `isPlainOnPhone` (attendance and its history) gives a phone the text alone, since the strip
+ * would spend its screen on decoration. The scene drifts once on arrival (`animate-drift`, a single
+ * transform) and then holds still.
  * @param banner - Which page's scene to draw
  * @param title - The page title
  * @param description - Sentence under the title, if any
  * @param actions - Page-wide controls, if any
  * @param isPlainOnPhone - Whether a phone gets plain text instead of the scene
- * @param isCompact - Whether to keep the pre-redesign banner
  * @returns The page header block
  */
 export function PageHeader({
@@ -45,7 +44,6 @@ export function PageHeader({
   description,
   actions,
   isPlainOnPhone = false,
-  isCompact = false,
 }: PageHeaderProps) {
   const { src, objectPosition, tint } = PAGE_BANNERS[banner];
   // Everything that belongs to the scene, so one flag drops it all on a phone.
@@ -55,10 +53,7 @@ export function PageHeader({
     <div
       className={cn(
         "relative flex flex-col justify-end overflow-hidden bg-(--banner-tint)",
-        // `isCompact` is the banner exactly as it was before the redesign: the race pages keep it.
-        isCompact
-          ? "min-h-24 rounded-2xl sm:min-h-28"
-          : "min-h-36 rounded-container shadow-md sm:min-h-48 lg:min-h-60",
+        "min-h-24 rounded-container shadow-md sm:min-h-28 lg:min-h-32",
         isPlainOnPhone && "max-sm:min-h-0 max-sm:bg-transparent max-sm:shadow-none"
       )}
       style={{ "--banner-tint": tint } as CSSProperties}
@@ -66,11 +61,7 @@ export function PageHeader({
       <div
         aria-hidden
         data-slot="banner-scene"
-        className={cn(
-          "absolute inset-0",
-          !isCompact && "animate-drift",
-          sceneClass
-        )}
+        className={cn("absolute inset-0 animate-drift", sceneClass)}
       >
         <BannerImage
           src={src}
@@ -95,21 +86,15 @@ export function PageHeader({
 
       <div
         className={cn(
-          "relative flex flex-col gap-3 px-5 sm:px-8",
-          isCompact
-            ? "pt-4 pb-3"
-            : "pt-6 pb-4 sm:pt-8 sm:pb-5 lg:px-10",
+          "relative flex flex-col gap-2 px-5 pt-4 pb-3 sm:px-8",
           isPlainOnPhone && "max-sm:px-0"
         )}
       >
         <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
-          <div className="flex min-w-0 flex-col gap-1.5">
+          <div className="flex min-w-0 flex-col gap-1">
             <h1
               className={cn(
-                "font-heading font-semibold tracking-tight text-balance text-white",
-                isCompact
-                  ? "text-2xl [text-shadow:0_1px_12px_rgb(0_0_0/0.35)] sm:text-3xl"
-                  : "text-3xl leading-tight [text-shadow:0_2px_18px_rgb(0_0_0/0.45)] sm:text-4xl lg:text-5xl",
+                "font-heading text-2xl font-semibold tracking-tight text-balance text-white [text-shadow:0_1px_12px_rgb(0_0_0/0.35)] sm:text-3xl",
                 isPlainOnPhone &&
                   "max-sm:text-foreground max-sm:[text-shadow:none]"
               )}
@@ -119,8 +104,7 @@ export function PageHeader({
             {description && (
               <p
                 className={cn(
-                  "max-w-prose text-sm text-pretty",
-                  isCompact ? "text-white/80" : "text-white/85 sm:text-base",
+                  "max-w-prose text-sm text-pretty text-white/85",
                   isPlainOnPhone && "max-sm:text-muted-foreground"
                 )}
               >

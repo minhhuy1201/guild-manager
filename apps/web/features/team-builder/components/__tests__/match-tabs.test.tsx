@@ -46,23 +46,6 @@ describe("MatchTabs", () => {
     expect(container.firstElementChild).toBeNull();
   });
 
-  it("nhận className của nơi đặt và gắn lên hàng gốc", () => {
-    const { container } = render(
-      <MatchTabs
-        matchCount={2}
-        activeMatchIndex={0}
-        secondMatchHasMembers={false}
-        canAddMatch={false}
-        className="lg:w-full"
-        {...HANDLERS}
-      />
-    );
-
-    expect(container.firstElementChild?.classList.contains("lg:w-full")).toBe(
-      true
-    );
-  });
-
   it("hai đội hình thì có hai tab", () => {
     render(
       <MatchTabs

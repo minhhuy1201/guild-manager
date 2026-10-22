@@ -180,46 +180,45 @@ export function TeamBuilderScreen() {
           }
         />
 
-        {/* One control area: the battle, its match, and what to do with the line-up. From `lg` the
-            toolbar shares the battle row and the match tabs wrap onto a row of their own. The DOM order is
-            the visual order, so focus follows the eye. */}
+        {/* One control area in two rows: the battle sessions at full width, then the match controls on
+            the left and what to do with the line-up on the right. The DOM order is the visual order,
+            so focus follows the eye. */}
         <section
           aria-label="Điều khiển đội hình"
-          className="flex flex-col gap-3 rounded-container border border-border/60 bg-muted/60 p-3 lg:flex-row lg:flex-wrap lg:items-center"
+          className="flex flex-col gap-3 rounded-container border border-border/60 bg-muted/60 p-3"
         >
-          <div className="lg:min-w-[32rem] lg:flex-1">
-            <SessionTabs
-              sessions={screen.selection.sessions}
-              activeSessionId={screen.selection.activeSessionId}
-              dirtySessionIds={screen.draft.dirtySessionIds}
-              onSelect={screen.selection.setActiveSession}
-              slotCount={screen.draft.slotCount}
+          <SessionTabs
+            sessions={screen.selection.sessions}
+            activeSessionId={screen.selection.activeSessionId}
+            dirtySessionIds={screen.draft.dirtySessionIds}
+            onSelect={screen.selection.setActiveSession}
+            slotCount={screen.draft.slotCount}
+          />
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+            <MatchTabs
+              matchCount={screen.draft.matchCount}
+              activeMatchIndex={screen.draft.activeMatchIndex}
+              secondMatchHasMembers={Object.values(
+                screen.draft.matches[1]?.assignment ?? {}
+              ).some(Boolean)}
+              canAddMatch={screen.draft.canAddMatch}
+              onSelect={screen.draft.setActiveMatch}
+              onAdd={screen.draft.addMatch}
+              onRemove={screen.draft.removeMatch}
+            />
+
+            <FormationToolbar
+              dirty={dirty}
+              saving={saving}
+              editable={editable}
+              copySourceLabel={screen.copy.sourceLabel}
+              canCopy={screen.copy.canCopy}
+              onCopy={handleCopy}
+              announcing={announce.sending}
+              onAnnounce={() => announce.setOpen(true)}
             />
           </div>
-
-          <FormationToolbar
-            dirty={dirty}
-            saving={saving}
-            editable={editable}
-            copySourceLabel={screen.copy.sourceLabel}
-            canCopy={screen.copy.canCopy}
-            onCopy={handleCopy}
-            announcing={announce.sending}
-            onAnnounce={() => announce.setOpen(true)}
-          />
-
-          <MatchTabs
-            className="lg:w-full"
-            matchCount={screen.draft.matchCount}
-            activeMatchIndex={screen.draft.activeMatchIndex}
-            secondMatchHasMembers={Object.values(
-              screen.draft.matches[1]?.assignment ?? {}
-            ).some(Boolean)}
-            canAddMatch={screen.draft.canAddMatch}
-            onSelect={screen.draft.setActiveMatch}
-            onAdd={screen.draft.addMatch}
-            onRemove={screen.draft.removeMatch}
-          />
         </section>
 
         <CopyFormationDialog

@@ -38,8 +38,9 @@ immersion.
     accents lifted so they carry on the dark.
   - Surfaces come in three levels: *raised* (the few blocks that matter most: a lit inner edge and
     a soft jade glow), *default*, and *inset* (a recessed support block such as a filter strip). Blocks
-    that hold other blocks take the large container radius; what sits inside takes the smaller
-    inner one.
+    that hold other blocks take the container radius (12px); what sits inside takes the smaller
+    inner one (6px). The first pass used 20px / 10px and read as too round for a working app; the
+    scale follows Vercel Geist Materials ("material-medium: Radius 12px", "material-base: Radius 6px").
   - In both, the plane and the card sit far enough apart that a card reads as lifted without looking
     for its border. The first light pass (2026-09-13) kept them ~3% apart and the whole app read as
     one white sheet; the guild asked for more contrast on 2026-09-23.
@@ -69,9 +70,11 @@ saturation.
 - **One scene per page, in the page's banner** - the strip behind the page title. A dark scrim
   keeps the white title readable whatever the scene's light. Data (tables, the formation grid)
   never sits on a picture.
-- The banner is tall and cinematic, and its scene drifts slowly once when the page opens (a single
-  transform, never a loop). On the attendance page and its history a phone drops the scene and shows
-  the title and description as plain text, so answers start near the top. Still one scene per page.
+- The banner is a compact strip (about 96px on a phone, 128px on desktop), and its scene drifts
+  slowly once when the page opens (a single transform, never a loop). A taller, cinematic banner was
+  tried first and pulled the eye away from the page's feature, so it was cut back. On the attendance
+  page and its history a phone drops the scene and shows the title and description as plain text, so
+  answers start near the top. Still one scene per page.
 - **The login page** is the one full-screen scene, behind a translucent card.
 - **The landing page** (`/trang-chu`) opens on its own scene, `landing.jpg`, in a tall hero rather
   than a banner strip. It starts as a copy of `login.jpg` so the guild can swap one without

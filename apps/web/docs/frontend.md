@@ -447,8 +447,10 @@ optional one-sentence description, page-wide controls at the bottom right (the t
 picker), and the `OrnamentDivider` (a hairline with a small jade diamond, `surface="image"`) closing
 the block. A section title inside a card is an `<h2>`; it goes through `SectionTitle` (`components/shared/section-title.tsx`): a `font-heading` `<h2>` over a brush-stroke `OrnamentDivider` (`stroke="brush"`), so Playfair Display marks every title and the body stays Be Vietnam Pro.
 
-- **One banner height** (`min-h-36`, `sm:min-h-48`, `lg:min-h-60`) for every page: cinematic on a
-  wide screen, still short on a phone. The title steps from `text-3xl` to `lg:text-5xl`. The scene
+- **One compact banner height** (`min-h-24`, `sm:min-h-28`, `lg:min-h-32`) for every page, the cat
+  race pages included. The first redesign pass made it tall and cinematic (up to `lg:min-h-60`, a
+  `lg:text-5xl` title); it pushed each page's tools below the fold and drew the eye away from them,
+  so it came back down. The title is `text-2xl`, `sm:text-3xl`. The scene
   wrapper carries `animate-drift` (`--duration-drift`, 9s): one slow settle from a slight zoom,
   transform only, `backwards` and ending on `transform: none`, never repeated. Reduced motion
   collapses it to its final frame.
