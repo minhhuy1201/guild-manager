@@ -79,8 +79,8 @@ export function SessionTabs({
               className={cn(
                 "h-auto flex-col items-center justify-center gap-0.5 rounded-inner border border-border bg-card px-3 py-3 text-sm font-medium not-data-active:hover:border-jade/60 not-data-active:hover:bg-foreground/5",
                 "data-active:border-primary data-active:bg-primary data-active:text-primary-foreground data-active:*:text-primary-foreground",
-                // Dark navy-on-light `primary` is a bright periwinkle, a block out of tone with the page: there the
-                // selected battle is a primary wash with a primary edge, text back on the normal colours.
+                // In dark, `primary` is a bright periwinkle; a card-sized block of it is out of tone, so the
+                // selected battle is a primary wash with a primary edge and normal text.
                 "dark:data-active:bg-primary/20 dark:data-active:text-foreground dark:data-active:*:text-foreground dark:data-active:shadow-[inset_0_1px_0_var(--card-highlight)]"
               )}
             >

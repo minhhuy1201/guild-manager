@@ -181,8 +181,8 @@ export function TeamBuilderScreen() {
         />
 
         {/* One control area: the battle, its match, and what to do with the line-up. From `lg` the
-            toolbar shares the battle row and the match tabs drop to a row of their own, by CSS order
-            so the tab order stays battle, match, toolbar. */}
+            toolbar shares the battle row and the match tabs wrap onto a row of their own. The DOM order is
+            the visual order, so focus follows the eye. */}
         <section
           aria-label="Điều khiển đội hình"
           className="flex flex-col gap-3 rounded-container border border-border/60 bg-muted/60 p-3 lg:flex-row lg:flex-wrap lg:items-center"
@@ -197,23 +197,6 @@ export function TeamBuilderScreen() {
             />
           </div>
 
-          {/* MatchTabs renders nothing for a single match that cannot grow; the row is dropped with it. */}
-          {screen.draft.matchCount >= 2 || screen.draft.canAddMatch ? (
-            <div className="lg:order-1 lg:w-full">
-              <MatchTabs
-                matchCount={screen.draft.matchCount}
-                activeMatchIndex={screen.draft.activeMatchIndex}
-                secondMatchHasMembers={Object.values(
-                  screen.draft.matches[1]?.assignment ?? {}
-                ).some(Boolean)}
-                canAddMatch={screen.draft.canAddMatch}
-                onSelect={screen.draft.setActiveMatch}
-                onAdd={screen.draft.addMatch}
-                onRemove={screen.draft.removeMatch}
-              />
-            </div>
-          ) : null}
-
           <FormationToolbar
             dirty={dirty}
             saving={saving}
@@ -223,6 +206,19 @@ export function TeamBuilderScreen() {
             onCopy={handleCopy}
             announcing={announce.sending}
             onAnnounce={() => announce.setOpen(true)}
+          />
+
+          <MatchTabs
+            className="lg:w-full"
+            matchCount={screen.draft.matchCount}
+            activeMatchIndex={screen.draft.activeMatchIndex}
+            secondMatchHasMembers={Object.values(
+              screen.draft.matches[1]?.assignment ?? {}
+            ).some(Boolean)}
+            canAddMatch={screen.draft.canAddMatch}
+            onSelect={screen.draft.setActiveMatch}
+            onAdd={screen.draft.addMatch}
+            onRemove={screen.draft.removeMatch}
           />
         </section>
 

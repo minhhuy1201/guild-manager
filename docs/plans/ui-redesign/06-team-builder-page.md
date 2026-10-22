@@ -23,7 +23,7 @@ Spec: [`docs/specs/2026-10-22-ui-redesign.md`](../../specs/2026-10-22-ui-redesig
 - [x] Drag: vẫn kích hoạt sau 8px (chuột) hoặc 250ms (chạm). Không `touch-none` trên card. Vùng thả
       có highlight rõ. Lưới đội hình không reveal.
 - [x] Bản `capture` (ảnh Discord) không đổi bố cục: 5 cột, 10 đội, banner cao, không chip. Test capture
-      sheet xanh.
+      sheet xanh. Màu (thanh màu đội, thân cột trung tính) và font banner (sans, số lining) của ảnh đổi theo giao diện mới có chủ ý; bố cục thì không.
 - [x] Undo, save bar, Ctrl+S/Ctrl+Z, xung đột lưu không đổi.
 - [x] Ảnh 1440 + 420 + 360, sáng + tối. Trạng thái đang kéo được phủ bởi các test kéo thả giữ nguyên; không chụp được vì dữ liệu local không có thành viên.
 - [x] `pnpm --filter web typecheck`, `lint`, `test` xanh.

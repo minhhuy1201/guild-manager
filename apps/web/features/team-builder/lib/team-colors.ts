@@ -17,7 +17,7 @@ interface TeamColors {
  * primary header on the plain card. Edit here to change every unstyled team at once.
  */
 const DEFAULT_TEAM_COLORS: TeamColors = {
-  header: "bg-primary text-primary-foreground",
+  header: "bg-primary/15 text-foreground",
   border: "border-border",
   background: "bg-card",
   accent: "bg-primary",

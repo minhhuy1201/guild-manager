@@ -53,7 +53,7 @@ export function TeamSwitcher({
             type="button"
             aria-pressed={isSelected}
             onClick={() => onSelect(team)}
-            // The selected chip is an in-page selection, so it takes the primary surface (frontend.md §6); in dark that is a wash, as in `session-tabs`.
+            // The selected chip is an in-page selection, so it takes the primary surface (frontend.md §6); in dark a primary wash with a primary edge and normal text, as in `session-tabs`.
             className={cn(
               "flex min-h-11 min-w-0 flex-col items-center justify-center rounded-md border px-1 py-1 text-xs leading-tight outline-none",
               "transition-colors duration-[var(--duration-fast)] focus-visible:ring-3 focus-visible:ring-ring/50",

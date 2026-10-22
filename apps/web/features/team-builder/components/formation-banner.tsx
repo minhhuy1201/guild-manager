@@ -57,7 +57,7 @@ export function FormationBanner({
         // which would cut a blur short.
         isTall
           ? "min-h-24 bg-card py-3 text-xl sm:text-2xl"
-          : "bg-gradient-to-b from-gold/10 to-card py-2.5 text-base shadow-[inset_0_1px_0_var(--card-highlight),var(--glow-gold)] sm:text-lg"
+          : "bg-linear-to-b from-gold/10 to-card py-2.5 text-base shadow-[inset_0_1px_0_var(--card-highlight),var(--glow-gold)] sm:text-lg"
       )}
     >
       {isGuildWar ? (
