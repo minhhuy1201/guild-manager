@@ -934,6 +934,28 @@
   to { visibility: hidden; }
 }
 
+/* A card whose edge lights up where the pointer is. `useSpotlight` writes --spot-x / --spot-y on the
+   card; with no pointer (touch, reduced motion, pointer outside) the variables are unset and the
+   glow rests off-card. Opacity only, so nothing moves. */
+.spotlight-edge::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    pointer-events: none;
+    opacity: 0;
+    background: radial-gradient(180px circle at var(--spot-x, -999px) var(--spot-y, -999px), var(--jade), transparent 70%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+    transition: opacity var(--duration-base) var(--ease-out-soft);
+}
+
+.spotlight-edge:hover::after {
+    opacity: 1;
+}
+
 /* Answered once for the whole app, never repeated at a call site. The delay goes too: a staggered
    list would otherwise still hold its items back after the animation itself is gone. */
 @media (prefers-reduced-motion: reduce) {

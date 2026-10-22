@@ -161,7 +161,7 @@ export function TokenPalette({
             <section
               key={group}
               className={cn(
-                "flex flex-col gap-1 rounded-lg border p-1.5",
+                "flex flex-col gap-1 rounded-inner border p-1.5",
                 GROUP_STYLES[group].box
               )}
             >

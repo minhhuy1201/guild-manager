@@ -23,9 +23,11 @@ A new interaction convention goes here; its reason goes in `frontend.md`.
 
 ## A row that opens a page → the whole card is the link
 
-- Make the whole row the link: one `Link` with an `absolute inset-0` span over a `relative` card. Never a clickable `div`. Worked example: `tactic-list-screen.tsx`.
-- Put the feedback on the card: `hover:bg-foreground/5`, `focus-within:ring-3 focus-within:ring-ring/50`.
+- Make the whole row or card the link: one `Link` with an `absolute inset-0` span over a `relative` card. Never a clickable `div`. Worked examples: `tactic-card.tsx` (grid card), `tactic-list-screen.tsx`.
+- Put the feedback on the card: `focus-within:ring-3 focus-within:ring-ring/50`, plus `hover:bg-foreground/5` on a list row.
 - Make row actions `relative` (`RowActions`) so they sit above the overlay.
+- A leaf card in a grid takes the inner radius (`rounded-inner`), not the container one, and the overlay repeats it.
+- A grid card lifts on hover with `hover:-translate-y-0.5` (`transition-[translate]`, `ease-spring`, `--duration-fast`) and wears the spotlight: spread `useSpotlight()` (`hooks/use-spotlight.ts`) on the card and add `spotlight-edge` (`globals.css`). The hook writes `--spot-x` / `--spot-y` on the card for a `(pointer: fine)` pointer only and nothing under reduced motion; the edge glow animates opacity only.
 
 ## Buttons respond with weight
 

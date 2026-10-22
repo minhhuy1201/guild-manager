@@ -158,7 +158,7 @@ export function TacticEditorScreen({
           {canDraw ? (
             <div
               data-testid="editor-frame"
-              className="flex flex-col overflow-hidden rounded-xl border bg-card shadow-xs"
+              className="flex flex-col overflow-hidden rounded-container border bg-card shadow-sm"
             >
               <div className="border-b">
                 <EditorToolbar
