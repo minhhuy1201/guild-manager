@@ -12,6 +12,10 @@ const { mutateAsync, invalidate, recover, toastError, reducedMotion } = vi.hoist
   reducedMotion: { current: false },
 }));
 
+// next/font only works through the Next compiler; the stage font is a stand-in here.
+vi.mock("next/font/google", () => ({
+  Bungee: () => ({ variable: "bungee-variable", style: { fontFamily: "'Bungee', 'Bungee Fallback'" } }),
+}));
 vi.mock("../../hooks/use-cat-race-mutations", () => ({
   useDrawCatRaceRound: () => ({ mutateAsync }),
 }));
@@ -27,21 +31,52 @@ vi.mock("../race-canvas", () => ({
   RaceCanvas: ({
     onFinish,
     onStandings,
+    onCue,
     skipSignal,
-    isPreview,
+    mode,
     laneOrder,
   }: {
     onFinish: () => void;
-    onStandings: (keys: string[]) => void;
+    onStandings: (rows: readonly RaceStanding[]) => void;
+    onCue: (cue: RaceCue) => void;
     skipSignal: number;
-    isPreview?: boolean;
+    mode?: string;
     laneOrder: string[] | null;
   }) => (
     <div>
-      {isPreview ? "PREVIEW" : `CANVAS ${skipSignal}`}
+      {mode === "start" ? "PREVIEW" : mode === "finish" ? "FINISH LINE" : `CANVAS ${skipSignal}`}
       <span>{`LANES ${laneOrder?.join(",") ?? "none"}`}</span>
       <button onClick={onFinish}>finish</button>
-      <button onClick={() => onStandings(["b#1", "a#1"])}>standings</button>
+      <button
+        onClick={() =>
+          onStandings([
+            { key: "b#1", lengthsBehind: 0 },
+            { key: "a#1", lengthsBehind: 1.234 },
+          ])
+        }
+      >
+        standings
+      </button>
+      <button
+        onClick={() =>
+          onStandings([
+            { key: "a#1", lengthsBehind: 0 },
+            { key: "b#1", lengthsBehind: 0.8 },
+          ])
+        }
+      >
+        standings swapped
+      </button>
+      <button onClick={() => onCue({ kind: "countdown", step: 0 })}>cue countdown</button>
+      <button onClick={() => onCue({ kind: "go" })}>cue go</button>
+      <button onClick={() => onCue({ kind: "lead-change", catKey: "b#1" })}>cue lead</button>
+      <button onClick={() => onCue({ kind: "slow-motion", isOn: true })}>cue slow</button>
+      <button onClick={() => onCue({ kind: "finish", isPhotoFinish: true, lengthsBehind: 0.1 })}>
+        cue photo
+      </button>
+      <button onClick={() => onCue({ kind: "finish", isPhotoFinish: false, lengthsBehind: 2 })}>
+        cue finish
+      </button>
     </div>
   ),
 }));
@@ -60,6 +95,8 @@ vi.mock("../race-result-overlay", () => ({
   ),
 }));
 
+import type { RaceStanding } from "../../lib/race-board";
+import type { RaceCue } from "../../lib/race-cue";
 import { useRaceStore } from "../../store/race-store";
 import { RaceStage } from "../race-stage";
 
@@ -113,6 +150,7 @@ function renderStage(event = EVENT, prize = PRIZE, isDurationValid = true) {
 
 beforeEach(() => {
   reducedMotion.current = false;
+  HTMLCanvasElement.prototype.getContext = vi.fn(() => null) as never;
   useRaceStore.getState().reset();
   useRaceStore.setState({ laneOrder: null });
 });
@@ -275,7 +313,7 @@ describe("RaceStage", () => {
 
     fireEvent.click(screen.getByText("standings"));
     const rows = screen.getAllByRole("listitem").map((row) => row.textContent);
-    expect(rows).toEqual(["1b", "2a"]);
+    expect(rows).toEqual(["1b", "2a-1,2"]);
     fireEvent.click(screen.getByRole("button", { name: "Bỏ qua" }));
 
     expect(screen.getByText(/CANVAS 1/)).toBeTruthy();
@@ -299,7 +337,7 @@ describe("RaceStage", () => {
     expect(useRaceStore.getState().stage).toBe("idle");
   });
 
-  it("shows the track with the cats before the first round, and not behind the winner card", async () => {
+  it("shows the cats on the start line before the first round, and the finished race behind the winner card", async () => {
     mutateAsync.mockResolvedValue(RESULT);
     renderStage();
     expect(screen.getByText("PREVIEW")).toBeTruthy();
@@ -309,20 +347,75 @@ describe("RaceStage", () => {
     fireEvent.click(screen.getByText("finish"));
 
     expect(screen.queryByText("PREVIEW")).toBeNull();
+    expect(screen.getByText("FINISH LINE")).toBeTruthy();
   });
 
-  it("states the prize and the number of people above the track", () => {
-    renderStage();
+  describe("broadcast bar", () => {
+    const liveTag = () => screen.getByText("TRỰC TIẾP").getAttribute("data-on");
 
-    expect(screen.getByText("Hạng mục: Tiền mặt · 2 người")).toBeTruthy();
-  });
+    it("states the prize with its tier and the number of people above the track", () => {
+      renderStage();
 
-  it("adds the ticket total in TICKET mode", () => {
-    const event = { ...EVENT, mode: CatRaceMode.TICKET };
-    event.participants = event.participants.map((p) => ({ ...p, tickets: 3 }));
-    renderStage(event);
+      expect(screen.getByText("Đặc biệt · Tiền mặt").getAttribute("data-tier")).toBe("HIGH");
+      expect(screen.getByText("2 người")).toBeTruthy();
+      expect(screen.getByText("00.0s")).toBeTruthy();
+    });
 
-    expect(screen.getByText("Hạng mục: Tiền mặt · 2 người · 6 vé")).toBeTruthy();
+    it("adds the ticket total in TICKET mode", () => {
+      const event = { ...EVENT, mode: CatRaceMode.TICKET };
+      event.participants = event.participants.map((p) => ({ ...p, tickets: 3 }));
+      renderStage(event);
+
+      expect(screen.getByText("2 người · 6 vé")).toBeTruthy();
+    });
+
+    it("lights TRỰC TIẾP only while the round races and greys it at the card", async () => {
+      mutateAsync.mockResolvedValue(RESULT);
+      renderStage();
+      expect(liveTag()).toBe("false");
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: /ĐUA/ }));
+      });
+      expect(liveTag()).toBe("true");
+      fireEvent.click(screen.getByText("finish"));
+
+      expect(liveTag()).toBe("false");
+    });
+
+    it("counts seconds from go and freezes at the finish", async () => {
+      const now = vi.spyOn(performance, "now");
+      now.mockReturnValue(10_000);
+      mutateAsync.mockResolvedValue(RESULT);
+      renderStage();
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: /ĐUA/ }));
+      });
+
+      fireEvent.click(screen.getByText("cue go"));
+      now.mockReturnValue(13_000);
+      fireEvent.click(screen.getByText("cue finish"));
+      now.mockReturnValue(20_000);
+      fireEvent.click(screen.getByText("finish"));
+
+      expect(screen.getByText("03.0s")).toBeTruthy();
+      now.mockRestore();
+    });
+
+    it("shows an arrow for the cat that moved up on the next board update", async () => {
+      mutateAsync.mockResolvedValue(RESULT);
+      renderStage();
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: /ĐUA/ }));
+      });
+
+      fireEvent.click(screen.getByText("standings"));
+      fireEvent.click(screen.getByText("standings swapped"));
+
+      const rows = screen.getAllByRole("listitem").map((row) => row.textContent);
+      expect(rows[0]).toContain("▲");
+      expect(rows[1]).toContain("▼");
+    });
   });
 
   it("says nobody is in the list instead of showing an empty track", () => {
@@ -376,5 +469,84 @@ describe("RaceStage", () => {
     });
 
     expect(screen.getByText("Bảng xếp hạng hiện khi bắt đầu đua.")).toBeTruthy();
+  });
+
+  describe("broadcast overlays", () => {
+    /** Start a round and wait for the canvas. */
+    async function startRace() {
+      mutateAsync.mockResolvedValue(RESULT);
+      renderStage();
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: /ĐUA/ }));
+      });
+    }
+
+    it("counts down with lanterns and the number, then banners CHẠY! on go", async () => {
+      await startRace();
+
+      fireEvent.click(screen.getByText("cue countdown"));
+      expect(document.querySelector(".race-digit")?.textContent).toBe("3");
+      fireEvent.click(screen.getByText("cue go"));
+
+      expect(document.querySelector(".race-banner")?.textContent).toBe("CHẠY!");
+      expect(document.querySelector(".race-countdown")?.getAttribute("data-on")).toBe("false");
+    });
+
+    it("shows the lead-change bar with the cat's label and CHẬM ×3 on its cues", async () => {
+      await startRace();
+
+      fireEvent.click(screen.getByText("cue lead"));
+      fireEvent.click(screen.getByText("cue slow"));
+
+      expect(screen.getByText("ĐỔI NGÔI")).toBeTruthy();
+      expect(document.querySelector(".race-lead-bar em")?.textContent).toBe("b");
+      expect(document.querySelector(".race-slowmo")?.getAttribute("data-on")).toBe("true");
+    });
+
+    it("shows the finish photo only when the finish cue says photo finish", async () => {
+      await startRace();
+
+      fireEvent.click(screen.getByText("cue finish"));
+      expect(document.querySelector(".race-flash")).not.toBeNull();
+      expect(screen.queryByText("ẢNH ĐÍCH")).toBeNull();
+      fireEvent.click(screen.getByText("cue photo"));
+
+      expect(screen.getByText("ẢNH ĐÍCH")).toBeTruthy();
+    });
+
+    it("takes every overlay off when the round ends or is skipped, photo and flash included", async () => {
+      await startRace();
+      fireEvent.click(screen.getByText("cue photo"));
+      expect(screen.getByText("ẢNH ĐÍCH")).toBeTruthy();
+
+      fireEvent.click(screen.getByText("finish"));
+
+      expect(screen.queryByText("ẢNH ĐÍCH")).toBeNull();
+      expect(document.querySelector(".race-flash")).toBeNull();
+      expect(screen.getByText(/RESULT/)).toBeTruthy();
+    });
+
+    it("starts the next round with clean overlays", async () => {
+      invalidate.mockResolvedValue(undefined);
+      await startRace();
+      fireEvent.click(screen.getByText("cue go"));
+      fireEvent.click(screen.getByText("finish"));
+      await act(async () => {
+        fireEvent.click(screen.getByText("continue"));
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: /ĐUA/ }));
+      });
+
+      expect(screen.queryByText("CHẠY!")).toBeNull();
+    });
+
+    it("shows no overlay under reduced motion, which jumps to the result", async () => {
+      reducedMotion.current = true;
+      await startRace();
+
+      expect(document.querySelector(".race-countdown")).toBeNull();
+      expect(screen.getByText(/RESULT/)).toBeTruthy();
+    });
   });
 });

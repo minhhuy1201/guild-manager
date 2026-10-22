@@ -1,71 +1,21 @@
-/**
- * Pixel-art cat, drawn from text rows so no image asset is needed (spec D20 fallback: no CC0 sprite
- * sheet was used). `#` takes the class colour, the rest are fixed.
- */
-const SHARED_ROWS = [
-  "..........o.o.",
-  "o........o#o#o",
-  "oo.ooooooo###o",
-  ".o#########w#o",
-  ".o#########ppo",
-  "..o########oo.",
-] as const;
+import type { GuildClass } from "@guild/shared/enums";
 
-const LEG_ROWS: Record<0 | 1, readonly string[]> = {
-  0: ["..o#o....o#o..", "..oo.....oo..."],
-  1: ["...o#o..o#o...", "...oo....oo..."],
-};
-
-/** Every row of each running frame, top to bottom. */
-export const SPRITE_FRAMES: Record<0 | 1, readonly string[]> = {
-  0: [...SHARED_ROWS, ...LEG_ROWS[0]],
-  1: [...SHARED_ROWS, ...LEG_ROWS[1]],
-};
-
-export const SPRITE_COLUMNS = 14;
-export const SPRITE_ROWS = SPRITE_FRAMES[0].length;
-
-const OUTLINE = "#2a2433";
-const EYE = "#ffffff";
-const NOSE = "#ff8fa3";
+import { GUILD_CLASS_COLOR } from "@/lib/guild-class";
+import { pixelColor } from "./sprite-color";
+import { SPRITE_COLUMNS, SPRITE_ROWS, spriteRows, type LegFrame } from "./sprite-rows";
 
 const cache = new Map<string, HTMLCanvasElement>();
 
 /**
- * Fill colour of one sprite pixel.
- * @param symbol - Character of the sprite row
- * @param body - Class colour for `#`
- * @returns A CSS colour, or null for an empty pixel
- */
-function pixelColor(symbol: string, body: string): string | null {
-  switch (symbol) {
-    case "#":
-      return body;
-    case "o":
-      return OUTLINE;
-    case "w":
-      return EYE;
-    case "p":
-      return NOSE;
-    default:
-      return null;
-  }
-}
-
-/**
- * A cat sprite, drawn once per colour, size and frame.
- * @param color - Body colour
+ * A cat sprite, drawn once per class, size and frame.
+ * @param guildClass - Decides the body colour and the accessory
  * @param sizePx - Width in CSS px
- * @param frame - Which of the two running frames
+ * @param frame - Which running frame
  * @returns A canvas ready for `drawImage`, scaled for the device pixel ratio
  */
-export function catSprite(
-  color: string,
-  sizePx: number,
-  frame: 0 | 1
-): HTMLCanvasElement {
+export function catSprite(guildClass: GuildClass, sizePx: number, frame: LegFrame): HTMLCanvasElement {
   const width = Math.max(1, Math.round(sizePx));
-  const key = `${color}|${width}|${frame}`;
+  const key = `${guildClass}|${width}|${frame}`;
   const cached = cache.get(key);
   if (cached) return cached;
 
@@ -77,9 +27,10 @@ export function catSprite(
   const context = sprite.getContext("2d");
   if (!context) return sprite;
 
-  SPRITE_FRAMES[frame].forEach((row, y) => {
+  const body = GUILD_CLASS_COLOR[guildClass];
+  spriteRows(guildClass, frame).forEach((row, y) => {
     [...row].forEach((symbol, x) => {
-      const fill = pixelColor(symbol, color);
+      const fill = pixelColor(symbol, body);
       if (!fill) return;
       context.fillStyle = fill;
       context.fillRect(

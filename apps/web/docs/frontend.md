@@ -411,6 +411,8 @@ button in the header, for a signed-out visitor.
 - **A colour comes from a token**, so it follows the theme on its own. A literal colour is only for
   something that must look the same in both: the scrims and white text on a picture, the attendance
   state colours, a guild class's colour (`lib/guild-class.ts` mixes it against `--card`).
+- **The cat race stage is a fixed palette** (`--stage-*` in `globals.css`, `lib/stage-palette.ts` for
+  its canvases): a dusk scene that looks the same in both themes, like the other things in this list.
 - **A `dark:` variant is a last resort** - a token that fits both themes is the fix.
 - **The header and the phone's tab bar carry `className="dark"`** in both themes, which scopes the
   dark tokens to their subtree (`.dark {}` and the `dark` variant match any ancestor, not only
@@ -919,6 +921,17 @@ One easing exception, and it needs this good a reason: the gold sheen crossing t
 button (`components/shared/header-login-button.tsx`) is `ease-linear`. A shine reads as a light
 source moving over a surface at a steady speed, and `ease-out-soft` spends three quarters of the
 travel in its first 40ms - the band is off the far edge before the eye finds it.
+
+**The cat race stage is the one place that keeps its own motion.** Its overlays (countdown lanterns
+and the popping digit, the CHẠY! / NƯỚC RÚT banners, the ĐỔI NGÔI bar, the finish flash, the photo
+finish and the result card), plus the race board's row slide and the blinking TRỰC TIẾP dot beside it,
+have their own keyframes and durations in `globals.css`, as `--stage-*` variables of the
+`[data-slot="cat-race-stage"], [data-slot="cat-race-hud"]` block, and use `scale`. The stage is a staged broadcast for a whole guild
+to watch, not an interface responding to input: a 1.5s banner that slides in and out, or a number that
+lands at 1.9x and settles, is the content itself, and four 120-320ms tokens cannot express it. The
+exception stays inside that block, so nothing else in the app can borrow it by accident; its colours are
+a fixed palette for the same reason (see "Themes" above), and reduced motion is still answered by the
+global rule below.
 
 `prefers-reduced-motion: reduce` is answered **once**, at the end of `globals.css`, for the whole app —
 never repeated at a call site.

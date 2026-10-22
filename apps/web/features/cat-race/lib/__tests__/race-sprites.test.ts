@@ -1,19 +1,9 @@
 // @vitest-environment jsdom
+import { GuildClass } from "@guild/shared/enums";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { SPRITE_COLUMNS, SPRITE_FRAMES, SPRITE_ROWS, catSprite } from "../race-sprites";
-
-describe("sprite source", () => {
-  it.each([0, 1] as const)("is a rectangle in running frame %i", (frame) => {
-    for (const row of SPRITE_FRAMES[frame]) {
-      expect(row).toHaveLength(SPRITE_COLUMNS);
-    }
-  });
-
-  it("has the same height in both frames", () => {
-    expect(SPRITE_FRAMES[0]).toHaveLength(SPRITE_FRAMES[1].length);
-  });
-});
+import { catSprite } from "../race-sprites";
+import { SPRITE_COLUMNS, SPRITE_ROWS } from "../sprite-rows";
 
 describe("catSprite", () => {
   const fillRect = vi.fn();
@@ -29,7 +19,7 @@ describe("catSprite", () => {
   });
 
   it("sizes the canvas from the width and the sprite's aspect ratio", () => {
-    const sprite = catSprite("#112233", 28, 0);
+    const sprite = catSprite(GuildClass.CUU_LINH, 28, 0);
 
     expect(sprite.width).toBe(28);
     expect(sprite.height).toBe(Math.ceil((28 / SPRITE_COLUMNS) * SPRITE_ROWS));
@@ -38,47 +28,49 @@ describe("catSprite", () => {
   it("scales the backing store by the device pixel ratio", () => {
     vi.stubGlobal("devicePixelRatio", 2);
 
-    expect(catSprite("#445566", 28, 0).width).toBe(56);
+    expect(catSprite(GuildClass.HUYET_HA, 28, 0).width).toBe(56);
   });
 
   it("falls back to a ratio of 1 when the browser reports none", () => {
     vi.stubGlobal("devicePixelRatio", 0);
 
-    expect(catSprite("#778899", 14, 0).width).toBe(14);
+    expect(catSprite(GuildClass.LONG_NGAM, 14, 0).width).toBe(14);
   });
 
-  it("draws once per colour, size and frame", () => {
-    const first = catSprite("#aa0000", 20, 1);
+  it("draws once per class, size and frame", () => {
+    const first = catSprite(GuildClass.THAN_TUONG, 20, 1);
     const calls = getContext.mock.calls.length;
 
-    expect(catSprite("#aa0000", 20, 1)).toBe(first);
+    expect(catSprite(GuildClass.THAN_TUONG, 20, 1)).toBe(first);
     expect(getContext).toHaveBeenCalledTimes(calls);
-    expect(catSprite("#aa0000", 20, 0)).not.toBe(first);
+    expect(catSprite(GuildClass.THAN_TUONG, 20, 2)).not.toBe(first);
+    expect(catSprite(GuildClass.THAN_TUONG, 21, 1)).not.toBe(first);
+    expect(catSprite(GuildClass.THIET_Y, 20, 1)).not.toBe(first);
   });
 
-  it("paints every non-empty pixel in the right colours", () => {
+  it("paints the body, the stripes, the features and the accessory in their colours", () => {
     const fills: string[] = [];
-    const context = {
+    getContext.mockReturnValue({
       fillRect,
       set fillStyle(value: string) {
         fills.push(value);
       },
-    };
-    getContext.mockReturnValue(context);
+    });
 
-    catSprite("#bb0000", 21, 0);
+    catSprite(GuildClass.TOAI_MONG, 21, 0);
 
-    expect(new Set(fills)).toEqual(new Set(["#bb0000", "#2a2433", "#ffffff", "#ff8fa3"]));
+    expect(new Set(fills)).toEqual(new Set(["#BDD6EE", "#889aab", "#221a26", "#ffffff", "#ff8fa3", "#f6efc4"]));
   });
 
   it("never makes a zero-width sprite", () => {
-    expect(catSprite("#cc0000", 0, 0).width).toBe(1);
+    expect(catSprite(GuildClass.TO_VAN, 0, 0).width).toBe(1);
   });
 
   it("returns the blank canvas when there is no 2D context", () => {
     getContext.mockReturnValue(null);
+    fillRect.mockClear();
 
-    const sprite = catSprite("#dd0000", 30, 0);
+    const sprite = catSprite(GuildClass.TO_VAN, 30, 3);
 
     expect(sprite.width).toBe(30);
     expect(fillRect).not.toHaveBeenCalled();

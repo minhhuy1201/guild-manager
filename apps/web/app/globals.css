@@ -388,6 +388,479 @@
   to { background-position: -100% 0; }
 }
 
+/* The cat race stage (`features/cat-race`). A fixed dusk scene, the same in both themes, so its
+   colours are declared once here instead of coming from the theme tokens, and its overlays keep
+   their own keyframes and durations: a broadcast moment is a performance, not a UI transition
+   (interaction.md, Motion). Reduced motion is answered by the rule at the end of this file. */
+/* The bar and the board sit beside the stage, not inside it, so they carry the palette too. */
+[data-slot="cat-race-stage"],
+[data-slot="cat-race-hud"] {
+  --stage-night: #1b1424;
+  --stage-paper: #f3e9d2;
+  --stage-paper-dim: #b9ab90;
+  --stage-lacquer: #c8372d;
+  --stage-lacquer-light: #e2584c;
+  --stage-lacquer-hover: #d8463b;
+  --stage-lacquer-deep: #7d1f19;
+  --stage-gold: #e8b84a;
+  --stage-jade: #4fae8c;
+  --stage-wood: #2b1f1a;
+  --stage-line: #3d2f45;
+  --stage-plate: #120c18;
+  --stage-bar-end: #261c31;
+  --stage-flash: #fff;
+  --stage-board: #150f1c;
+  --stage-board-line: #2a2033;
+  --stage-board-lead: #2a1f14;
+  --stage-card: #1d1524;
+  --stage-card-top: #2c2033;
+  --stage-lantern-off: #3a2328;
+  --stage-lantern-cap: #6b5333;
+  --stage-silver: #c9ced6;
+  --stage-bronze: #c98a52;
+  /* The one place to point the overlay lettering at the stage's display face: Bungee, whose
+     `--font-bungee` the stage root receives from `next/font` in `features/cat-race`. */
+  --stage-font-display: var(--font-bungee, var(--font-sans));
+  --stage-display-weight: 400; /* Bungee ships one weight; a heavier value would be synthesised bold. */
+  --stage-banner-duration: 1500ms;
+  --stage-lead-bar-duration: 1500ms;
+  --stage-flash-duration: 520ms;
+  --stage-digit-duration: 420ms;
+  --stage-photo-duration: 300ms;
+  --stage-vignette-duration: 600ms;
+  --stage-blink-duration: 1.1s;
+  --stage-slide-duration: 280ms;
+  --stage-slide-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --stage-chip-duration: 200ms;
+  --stage-lantern-duration: 120ms;
+  --stage-rise-duration: 420ms;
+  /* The result card's lines arrive one after another, the name second and loudest. */
+  --stage-reveal-1: 60ms;
+  --stage-reveal-2: 260ms;
+  --stage-reveal-3: 520ms;
+  --stage-reveal-4: 680ms;
+  --stage-reveal-5: 900ms;
+  --stage-reveal-6: 1100ms;
+}
+
+.race-display {
+  font-family: var(--stage-font-display);
+  font-weight: var(--stage-display-weight);
+}
+
+.race-ov {
+  position: absolute;
+  pointer-events: none;
+}
+
+.race-vignette {
+  inset: 0;
+  background: radial-gradient(75% 70% at 70% 55%, transparent 40%, #0b0610d9 100%);
+  opacity: 0;
+  transition: opacity var(--stage-vignette-duration) ease;
+}
+.race-vignette[data-on="true"] { opacity: 1; }
+
+.race-flash {
+  inset: 0;
+  background: var(--stage-flash);
+  opacity: 0;
+  animation: race-flash var(--stage-flash-duration) ease-out;
+}
+
+.race-slowmo {
+  top: 12px;
+  right: 14px;
+  font-size: 12px;
+  color: var(--stage-night);
+  background: var(--stage-gold);
+  padding: 4px 8px 3px;
+  border-radius: 3px;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity var(--stage-chip-duration) ease, transform var(--stage-chip-duration) ease;
+}
+.race-slowmo[data-on="true"] { opacity: 1; transform: none; }
+
+.race-countdown {
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 14px;
+  background: #0b061088;
+  opacity: 0;
+  transition: opacity var(--stage-chip-duration) ease;
+}
+.race-countdown[data-on="true"] { opacity: 1; }
+.race-lanterns { display: flex; gap: 22px; }
+.race-lantern {
+  width: 34px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--stage-lantern-off);
+  border-top: 5px solid var(--stage-lantern-cap);
+  border-bottom: 5px solid var(--stage-lantern-cap);
+  transition: background var(--stage-lantern-duration) ease, box-shadow var(--stage-lantern-duration) ease;
+}
+.race-lantern[data-lit="true"] { background: var(--stage-lacquer); box-shadow: 0 0 28px 6px #c8372d99; }
+.race-lantern[data-gold="true"][data-lit="true"] { background: var(--stage-gold); box-shadow: 0 0 34px 8px #e8b84aaa; }
+.race-digit {
+  font-size: clamp(64px, 14vw, 132px);
+  line-height: 1;
+  color: var(--stage-paper);
+  text-shadow: 0 6px 0 #0008, 0 0 30px #e8b84a66;
+  animation: race-digit var(--stage-digit-duration) cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+
+.race-banner {
+  left: 0;
+  right: 0;
+  top: 38%;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  animation: race-banner var(--stage-banner-duration) cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+.race-banner span {
+  font-size: clamp(34px, 7vw, 72px);
+  color: var(--stage-night);
+  background: var(--stage-gold);
+  padding: 6px 28px 2px;
+  transform: skewX(-12deg);
+  box-shadow: 8px 8px 0 var(--stage-lacquer);
+}
+
+.race-lead-bar {
+  left: 14px;
+  bottom: 14px;
+  display: flex;
+  align-items: stretch;
+  max-width: calc(100% - 28px);
+  opacity: 0;
+  animation: race-lead-bar var(--stage-lead-bar-duration) cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+.race-lead-bar b {
+  font-weight: var(--stage-display-weight);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  background: var(--stage-lacquer);
+  color: var(--stage-paper);
+  padding: 8px 10px 6px;
+  display: grid;
+  place-items: center;
+}
+.race-lead-bar span {
+  background: #120c18ee;
+  color: var(--stage-paper);
+  padding: 8px 12px;
+  font-weight: 600;
+  font-size: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border: 1px solid var(--stage-line);
+  border-left: 0;
+}
+.race-lead-bar em { color: var(--stage-gold); font-style: normal; }
+
+.race-photo {
+  left: 50%;
+  top: 50%;
+  width: min(420px, calc(100% - 32px));
+  transform: translate(-50%, -50%);
+  background: var(--stage-plate);
+  border: 3px solid var(--stage-paper);
+  box-shadow: 10px 10px 0 #0009;
+  animation: race-photo var(--stage-photo-duration) cubic-bezier(0.2, 1.4, 0.4, 1) backwards;
+}
+.race-photo header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  padding: 6px 10px 4px;
+  background: var(--stage-paper);
+  color: var(--stage-night);
+}
+.race-photo canvas { display: block; width: 100%; image-rendering: pixelated; }
+
+@keyframes race-flash {
+  from { opacity: 0.95; }
+  to { opacity: 0; }
+}
+
+@keyframes race-digit {
+  from { transform: scale(1.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes race-banner {
+  0% { opacity: 0; transform: translateX(-60%); }
+  18% { opacity: 1; transform: translateX(0); }
+  78% { opacity: 1; transform: translateX(0); }
+  100% { opacity: 0; transform: translateX(60%); }
+}
+
+/* In over the first 260ms, held, out over the last 220ms of 1500ms. */
+@keyframes race-lead-bar {
+  0% { opacity: 0; transform: translateX(-24px); }
+  17% { opacity: 1; transform: none; }
+  85% { opacity: 1; transform: none; }
+  100% { opacity: 0; transform: translateX(-24px); }
+}
+
+@keyframes race-photo {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+/* Broadcast bar above the track. */
+.race-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  padding: 8px 12px;
+  border: 1px solid var(--stage-line);
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--stage-wood), var(--stage-bar-end));
+  color: var(--stage-paper);
+}
+
+.race-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px 2px;
+  border-radius: 3px;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: var(--stage-paper);
+  background: var(--stage-lacquer);
+}
+
+.race-live i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--stage-paper);
+  animation: race-blink var(--stage-blink-duration) steps(2, start) infinite;
+}
+
+.race-live[data-on="false"] { background: var(--stage-line); }
+.race-live[data-on="false"] i { animation: none; opacity: 0.5; }
+
+.race-tier {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.race-tier[data-tier="HIGH"] { color: var(--stage-gold); }
+.race-tier[data-tier="MEDIUM"] { color: var(--stage-jade); }
+.race-tier[data-tier="LOW"] { color: var(--stage-paper-dim); }
+
+.race-meta { font-size: 13px; color: var(--stage-paper-dim); }
+
+.race-clock {
+  margin-left: auto;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  color: var(--stage-gold);
+}
+
+/* The live board beside the track. */
+.race-board {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--stage-line);
+  border-radius: 10px;
+  background: var(--stage-board);
+  color: var(--stage-paper);
+}
+
+.race-board h2 {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0;
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid var(--stage-line);
+  font-size: 14px;
+  letter-spacing: 0.04em;
+}
+
+.race-board h2 small { font-family: var(--font-sans); font-size: 12px; color: var(--stage-paper-dim); }
+.race-board p { margin: 0; padding: 12px; font-size: 14px; color: var(--stage-paper-dim); }
+
+.race-board ol {
+  position: relative;
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.race-board li {
+  display: grid;
+  grid-template-columns: 2rem 0.9rem 8px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-bottom: 1px solid var(--stage-board-line);
+  background: var(--stage-board);
+  font-size: 13px;
+  transition: transform var(--stage-slide-duration) var(--stage-slide-ease);
+}
+
+.race-board li[data-lead="true"] { background: var(--stage-board-lead); }
+
+.race-rank {
+  padding: 1px 0;
+  border-radius: 3px;
+  text-align: center;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.race-rank[data-medal="gold"] { background: var(--stage-gold); color: var(--stage-night); }
+.race-rank[data-medal="silver"] { background: var(--stage-silver); color: var(--stage-night); }
+.race-rank[data-medal="bronze"] { background: var(--stage-bronze); color: var(--stage-night); }
+
+.race-move { font-size: 10px; text-align: center; }
+.race-move[data-move="up"] { color: var(--stage-jade); }
+.race-move[data-move="down"] { color: var(--stage-lacquer); }
+
+.race-dot { width: 8px; height: 8px; }
+.race-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.race-name[data-podium="true"] { font-weight: 600; }
+.race-gap { font-size: 12px; font-variant-numeric: tabular-nums; color: var(--stage-paper-dim); }
+
+/* The winner card. Children stagger in the order the markup lists them: tier line, winner, class,
+   odds, podium, button. */
+.race-result {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: #0b0610b0;
+}
+
+.race-card {
+  --tier-color: var(--stage-gold);
+  position: relative;
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  width: min(420px, 100%);
+  padding: 20px 20px 18px;
+  border: 2px solid var(--tier-color);
+  border-radius: 6px;
+  background: linear-gradient(180deg, var(--stage-card-top), var(--stage-card));
+  color: var(--stage-paper);
+  text-align: center;
+  box-shadow: 0 0 60px -10px var(--tier-color), 12px 12px 0 #0008;
+}
+
+.race-card[data-tier="MEDIUM"] { --tier-color: var(--stage-jade); }
+.race-card[data-tier="LOW"] { --tier-color: var(--stage-paper-dim); }
+
+.race-card > * {
+  opacity: 0;
+  animation: race-rise var(--stage-rise-duration) cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+.race-card > :nth-child(1) { animation-delay: var(--stage-reveal-1); }
+.race-card > :nth-child(2) { animation-delay: var(--stage-reveal-2); animation-name: race-slam; }
+.race-card > :nth-child(3) { animation-delay: var(--stage-reveal-3); }
+.race-card > :nth-child(4) { animation-delay: var(--stage-reveal-4); }
+.race-card > :nth-child(5) { animation-delay: var(--stage-reveal-5); }
+.race-card > :nth-child(6) { animation-delay: var(--stage-reveal-6); }
+
+.race-tierline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--tier-color);
+}
+
+.race-winner {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+}
+
+.race-winner-name {
+  font-size: clamp(28px, 6vw, 40px);
+  line-height: 1.05;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+.race-class { font-size: 13px; color: var(--stage-paper-dim); }
+.race-odds { font-size: 14px; font-variant-numeric: tabular-nums; }
+
+.race-podium {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--stage-paper-dim);
+}
+.race-podium span {
+  padding: 3px 8px;
+  border: 1px solid var(--stage-line);
+  border-radius: 3px;
+}
+.race-podium b { font-weight: 600; color: var(--stage-paper); }
+
+/* Rotated by its own keyframes: the shared `race-rise` would end on `transform: none`. */
+.race-card > .race-stamp {
+  position: absolute;
+  top: 14px;
+  right: -10px;
+  padding: 3px 8px 1px;
+  border: 2px solid var(--stage-lacquer);
+  background: var(--stage-card);
+  font-size: 13px;
+  color: var(--stage-lacquer);
+  transform: rotate(8deg);
+  animation-name: race-stamp;
+  animation-delay: var(--stage-reveal-6);
+}
+
+@keyframes race-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes race-slam {
+  0% { opacity: 0; transform: scale(2.2); }
+  60% { opacity: 1; transform: scale(0.94); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes race-stamp {
+  from { opacity: 0; transform: rotate(8deg) scale(1.8); }
+  to { opacity: 1; transform: rotate(8deg) scale(1); }
+}
+
+@keyframes race-blink {
+  to { visibility: hidden; }
+}
+
 /* Answered once for the whole app, never repeated at a call site. The delay goes too: a staggered
    list would otherwise still hold its items back after the animation itself is gone. */
 @media (prefers-reduced-motion: reduce) {

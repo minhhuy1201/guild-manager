@@ -20,6 +20,7 @@ Screens must look like one app. A new display convention goes here; its reason g
 ## Themes → tokens only, switched by next-themes
 
 - Use a token for every colour so it follows the theme. A literal colour is only for something identical in both themes: scrims, white text on a picture, attendance state colours, a guild class colour (`lib/guild-class.ts`).
+- Take the cat race stage colours from the `--stage-*` variables in `globals.css` (`lib/stage-palette.ts` for a canvas). That palette is a valid fixed colour: identical in both themes. Scrims, shadows and glows (translucent shades) inside the stage block may stay literal, like any scrim.
 - Treat a `dark:` variant as a last resort. Fix it with a token that fits both themes.
 - Give the header and the phone tab bar `className="dark"` plus `text-foreground`.
 - Read the theme in the toaster through `useTheme()` (`components/ui/sonner.tsx`).

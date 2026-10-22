@@ -69,19 +69,17 @@ export function planRace(
 }
 
 /**
- * Position of every cat at one moment. The race stops when the winner crosses, so later moments
- * look the same as that one.
+ * Position of every cat at one moment. Past `u = 1` the winner has crossed and nothing moves.
  * @param plan - The race plan
- * @param seconds - Time since the start
+ * @param u - Race time, 0..1
  * @returns Every cat, from the top lane down
  */
-export function frameAt(plan: RacePlan, seconds: number): FrameCat[] {
+export function frameAt(plan: RacePlan, u: number): FrameCat[] {
   const { script, layout } = plan;
-  const moment = Math.min(seconds, script.durationSeconds);
 
   return plan.laneOrder.map((key) => ({
     key,
-    x: progressX(progressAt(script.motions.get(key)!, moment), layout),
+    x: progressX(progressAt(script.curves.get(key)!, u), layout),
     y: laneCenterY(plan.laneOf.get(key)!, layout),
   }));
 }

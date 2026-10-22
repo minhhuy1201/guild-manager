@@ -11,14 +11,23 @@ import { Button } from "@/components/ui/button";
 import { useInvalidate } from "@/hooks/use-invalidate";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { useSessionRecovery } from "@/hooks/use-session-recovery";
+import { cn } from "@/lib/utils";
 import { errorMessageOf } from "@/lib/error-message";
 import { useDrawCatRaceRound } from "../hooks/use-cat-race-mutations";
 import { catLabels } from "../lib/cat-label";
 import { PRIZE_LOCK_LABEL, prizeLockReason } from "../lib/prize-lock";
+import { EMPTY_BOARD, advanceBoard, standingsAt, type BoardState } from "../lib/race-board";
+import { IDLE_CLOCK, startClock, stopClock, type RaceClock } from "../lib/race-clock";
+import { INITIAL_OVERLAY, applyCue } from "../lib/race-overlay";
+import type { RaceCue } from "../lib/race-cue";
 import { laneOrderOf } from "../lib/race-frame";
-import { buildRaceScript, rankAt, shuffled } from "../lib/race-script";
+import { stageFont } from "../lib/stage-font";
+import { buildRaceScript, shuffled } from "../lib/race-script";
+import { RACE_END_U } from "../lib/race-timeline";
 import { useRaceStore } from "../store/race-store";
+import { RaceBroadcastBar } from "./race-broadcast-bar";
 import { RaceCanvas } from "./race-canvas";
+import { RaceOverlays } from "./race-overlays";
 import { RaceResultOverlay } from "./race-result-overlay";
 import { RaceStandings } from "./race-standings";
 
@@ -55,8 +64,10 @@ export function RaceStage({
   const recoverSession = useSessionRecovery();
   const reducedMotion = useReducedMotion();
   const [skipSignal, setSkipSignal] = useState(0);
-  const [standings, setStandings] = useState<string[]>([]);
+  const [standings, setStandings] = useState<BoardState>(EMPTY_BOARD);
+  const [clock, setClock] = useState<RaceClock>(IDLE_CLOCK);
   const [isContinuing, setIsContinuing] = useState(false);
+  const [overlay, setOverlay] = useState(INITIAL_OVERLAY);
 
   const lock = prize ? prizeLockReason(prize, event.status) : null;
   const entrants = useMemo(
@@ -97,14 +108,16 @@ export function RaceStage({
   }, [pendingResult, durationSeconds]);
 
   // Reduced motion skips the replay, so no board update ever came: rank the finished race instead.
-  const board =
-    standings.length === 0 && stage === "result" && script
-      ? rankAt(script, script.durationSeconds)
+  const board: BoardState =
+    standings.rows.length === 0 && stage === "result" && script
+      ? { rows: standingsAt(script, RACE_END_U, null), previousKeys: [] }
       : standings;
 
   const startRound = async () => {
     if (!prize || lock || stage !== "idle" || !isDurationValid) return;
-    setStandings([]);
+    setStandings(EMPTY_BOARD);
+    setClock(IDLE_CLOCK);
+    setOverlay(INITIAL_OVERLAY);
     store().startDrawing();
     try {
       const result = await draw.mutateAsync({ id: event.id, prizeId: prize.id });
@@ -145,7 +158,15 @@ export function RaceStage({
   };
 
   const finishRace = () => {
+    setClock((current) => stopClock(current, performance.now()));
     if (pendingResult) store().showResult(pendingResult);
+  };
+
+  const showCue = (cue: RaceCue) => {
+    const now = performance.now();
+    setOverlay((current) => applyCue(current, cue, now));
+    if (cue.kind === "go") setClock(startClock(now));
+    if (cue.kind === "finish") setClock((current) => stopClock(current, now));
   };
 
   const continueRacing = async () => {
@@ -155,37 +176,58 @@ export function RaceStage({
     } finally {
       setIsContinuing(false);
       store().reset();
+      setClock(IDLE_CLOCK);
     }
   };
 
   return (
     <section className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4">
       {prize ? (
-        <p className="text-sm text-muted-foreground">
-          Hạng mục: {prize.name} · {entrantCount} người
-          {event.mode === CatRaceMode.TICKET ? ` · ${ticketCount} vé` : ""}
-        </p>
+        <RaceBroadcastBar
+          prize={prize}
+          entrantCount={entrantCount}
+          ticketCount={event.mode === CatRaceMode.TICKET ? ticketCount : null}
+          isLive={stage === "racing"}
+          clock={clock}
+          className={stageFont.variable}
+        />
       ) : null}
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_17rem]">
-        <div className="relative h-[70dvh] min-h-96">
-          {stage === "racing" && script ? (
+        <div
+          data-slot="cat-race-stage"
+          className={cn("relative h-[70dvh] min-h-96 overflow-hidden rounded-lg", stageFont.variable)}
+        >
+          {stage === "result" && script ? (
+            <RaceCanvas
+              mode="finish"
+              script={script}
+              participants={event.participants}
+              skipSignal={skipSignal}
+              laneOrder={laneKeys}
+              onFinish={finishRace}
+              onStandings={(rows) => setStandings((current) => advanceBoard(current, rows))}
+              onCue={showCue}
+            />
+          ) : stage === "racing" && script ? (
             <RaceCanvas
               script={script}
               participants={event.participants}
               skipSignal={skipSignal}
               laneOrder={laneKeys}
               onFinish={finishRace}
-              onStandings={setStandings}
+              onStandings={(rows) => setStandings((current) => advanceBoard(current, rows))}
+              onCue={showCue}
             />
           ) : stage !== "result" && previewScript ? (
             <RaceCanvas
-              isPreview
+              mode="start"
               script={previewScript}
               participants={event.participants}
               skipSignal={skipSignal}
               laneOrder={laneKeys}
               onFinish={finishRace}
-              onStandings={setStandings}
+              onStandings={(rows) => setStandings((current) => advanceBoard(current, rows))}
+              onCue={showCue}
             />
           ) : (
             <div className="flex h-full flex-col items-center justify-center gap-2 rounded-lg border border-border bg-background text-center">
@@ -200,11 +242,15 @@ export function RaceStage({
               )}
             </div>
           )}
+          {stage === "racing" && script ? (
+            <RaceOverlays state={overlay} script={script} participants={event.participants} />
+          ) : null}
           {stage === "result" && pendingResult ? (
             <RaceResultOverlay
               event={event}
               prize={event.prizes.find((p) => p.id === pendingResult.round.prizeId)}
               result={pendingResult}
+              script={script}
               isContinuing={isContinuing}
               onContinue={() => void continueRacing()}
             />
@@ -213,8 +259,8 @@ export function RaceStage({
         <RaceStandings
           script={stage === "racing" || stage === "result" ? script : null}
           participants={event.participants}
-          keys={board}
-          className="max-h-80 lg:h-[70dvh] lg:max-h-none lg:min-h-96"
+          board={board}
+          className={cn("max-h-80 lg:h-[70dvh] lg:max-h-none lg:min-h-96", stageFont.variable)}
         />
       </div>
 

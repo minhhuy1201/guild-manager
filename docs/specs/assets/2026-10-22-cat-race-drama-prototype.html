@@ -1,0 +1,1150 @@
+<title>Đua Mèo Giang Hồ</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.js" integrity="sha384-/Ko/tqVwPYurnBe+Mj8WWw+39WmyOZn/kU+neqXn4hRxGI575k07mB/hIekAT51+" crossorigin="anonymous"></script>
+<style>
+/* Layout: broadcast bar on top, stage (canvas + overlays) beside a live board, controls and prototype state below. Single deliberate dusk look. */
+:root {
+  --night: #1b1424;
+  --night-2: #261c31;
+  --paper: #f3e9d2;
+  --paper-dim: #b9ab90;
+  --lacquer: #c8372d;
+  --gold: #e8b84a;
+  --jade: #4fae8c;
+  --wood: #2b1f1a;
+  --line: #3d2f45;
+  --font-display: "Bungee", "Impact", system-ui, sans-serif;
+  --font-body: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: radial-gradient(120% 80% at 50% -10%, #3a2440 0%, var(--night) 55%) fixed, var(--night);
+  color: var(--paper);
+  font-family: var(--font-body);
+  font-size: 14px;
+}
+.wrap {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding-block: 16px 32px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid;
+  gap: 14px;
+}
+.proto-note {
+  font-size: 12px;
+  color: var(--paper-dim);
+  border: 1px dashed var(--line);
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+.proto-note strong { color: var(--gold); }
+
+/* Broadcast bar */
+.bug {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  background: linear-gradient(90deg, var(--wood), var(--night-2));
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+.live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  background: var(--lacquer);
+  color: var(--paper);
+  padding: 3px 8px 2px;
+  border-radius: 3px;
+}
+.live i {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--paper);
+  animation: blink 1.1s steps(2, start) infinite;
+}
+.live[data-on="false"] { background: var(--line); }
+.live[data-on="false"] i { animation: none; opacity: 0.5; }
+@keyframes blink { to { visibility: hidden; } }
+.bug h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 18px;
+  letter-spacing: 0.02em;
+}
+.bug .meta { color: var(--paper-dim); font-size: 13px; }
+.tier {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-weight: 600; font-size: 13px;
+  padding: 3px 9px; border-radius: 3px;
+  border: 1px solid currentColor;
+}
+.tier[data-tier="HIGH"] { color: var(--gold); }
+.tier[data-tier="MEDIUM"] { color: var(--jade); }
+.tier[data-tier="LOW"] { color: var(--paper-dim); }
+.clock {
+  margin-left: auto;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  color: var(--gold);
+}
+
+/* Stage + board */
+.main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 18rem;
+  gap: 14px;
+}
+.stage {
+  position: relative;
+  height: clamp(24rem, 68vh, 46rem);
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: var(--wood);
+  box-shadow: 0 18px 50px -20px #000a, 0 0 0 1px #0004 inset;
+}
+.scroller { position: absolute; inset: 0; overflow-y: auto; overscroll-behavior: contain; }
+.scroller canvas { position: sticky; top: 0; display: block; }
+.ov { position: absolute; pointer-events: none; }
+
+.vignette {
+  inset: 0;
+  background: radial-gradient(75% 70% at 70% 55%, transparent 40%, #0b0610d9 100%);
+  opacity: 0;
+  transition: opacity 600ms ease;
+}
+.vignette[data-on="true"] { opacity: 1; }
+.flash { inset: 0; background: #fff; opacity: 0; }
+.flash.go { animation: flash 520ms ease-out; }
+@keyframes flash { 0% { opacity: 0.95; } 100% { opacity: 0; } }
+
+.slowmo {
+  top: 12px; right: 14px;
+  font-family: var(--font-display);
+  font-size: 12px;
+  color: var(--night);
+  background: var(--gold);
+  padding: 4px 8px 3px;
+  border-radius: 3px;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+.slowmo[data-on="true"] { opacity: 1; transform: none; }
+
+.countdown {
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 14px;
+  background: #0b061088;
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+.countdown[data-on="true"] { opacity: 1; }
+.lanterns { display: flex; gap: 22px; }
+.lantern {
+  width: 34px; height: 44px; border-radius: 12px;
+  background: #3a2328;
+  border-top: 5px solid #6b5333; border-bottom: 5px solid #6b5333;
+  transition: background 120ms ease, box-shadow 120ms ease;
+}
+.lantern[data-lit="true"] { background: var(--lacquer); box-shadow: 0 0 28px 6px #c8372d99; }
+.lantern.gold[data-lit="true"] { background: var(--gold); box-shadow: 0 0 34px 8px #e8b84aaa; }
+.digit {
+  font-family: var(--font-display);
+  font-size: clamp(64px, 14vw, 132px);
+  line-height: 1;
+  color: var(--paper);
+  text-shadow: 0 6px 0 #0008, 0 0 30px #e8b84a66;
+}
+.digit.pop { animation: pop 420ms cubic-bezier(.2, 1.6, .4, 1); }
+@keyframes pop { 0% { transform: scale(1.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+.banner {
+  left: 0; right: 0; top: 38%;
+  display: grid; place-items: center;
+  opacity: 0;
+}
+.banner span {
+  font-family: var(--font-display);
+  font-size: clamp(34px, 7vw, 72px);
+  color: var(--night);
+  background: var(--gold);
+  padding: 6px 28px 2px;
+  transform: skewX(-12deg);
+  box-shadow: 8px 8px 0 var(--lacquer);
+}
+.banner.go { animation: banner 1500ms cubic-bezier(.2, .8, .2, 1) forwards; }
+@keyframes banner {
+  0% { opacity: 0; transform: translateX(-60%); }
+  18% { opacity: 1; transform: translateX(0); }
+  78% { opacity: 1; transform: translateX(0); }
+  100% { opacity: 0; transform: translateX(60%); }
+}
+
+.lower {
+  left: 14px; bottom: 14px;
+  display: flex; align-items: stretch;
+  max-width: calc(100% - 28px);
+  opacity: 0; transform: translateX(-24px);
+  transition: opacity 220ms ease, transform 260ms cubic-bezier(.2, .8, .2, 1);
+}
+.lower[data-on="true"] { opacity: 1; transform: none; }
+.lower b {
+  font-family: var(--font-display); font-weight: 400;
+  font-size: 13px; letter-spacing: 0.04em;
+  background: var(--lacquer); color: var(--paper);
+  padding: 8px 10px 6px;
+  display: grid; place-items: center;
+}
+.lower span {
+  background: #120c18ee; color: var(--paper);
+  padding: 8px 12px;
+  font-weight: 600; font-size: 15px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  border: 1px solid var(--line); border-left: 0;
+}
+.lower em { color: var(--gold); font-style: normal; }
+
+.photo {
+  left: 50%; top: 50%;
+  width: min(420px, calc(100% - 32px));
+  transform: translate(-50%, -50%) scale(0.9);
+  opacity: 0;
+  transition: opacity 200ms ease, transform 300ms cubic-bezier(.2, 1.4, .4, 1);
+  background: #120c18;
+  border: 3px solid var(--paper);
+  box-shadow: 10px 10px 0 #0009;
+}
+.photo[data-on="true"] { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+.photo header {
+  display: flex; justify-content: space-between; align-items: center;
+  font-family: var(--font-display); font-size: 13px;
+  padding: 6px 10px 4px; background: var(--paper); color: var(--night);
+}
+.photo canvas { display: block; width: 100%; image-rendering: pixelated; }
+
+.result {
+  inset: 0;
+  display: grid; place-items: center;
+  padding: 16px;
+  background: #0b0610b0;
+  pointer-events: auto;
+}
+.card {
+  width: min(420px, 100%);
+  background: linear-gradient(180deg, #2c2033, #1d1524);
+  border: 2px solid var(--tier-color, var(--gold));
+  border-radius: 6px;
+  padding: 20px 20px 18px;
+  display: grid; gap: 10px; justify-items: center; text-align: center;
+  box-shadow: 0 0 60px -10px var(--tier-color, var(--gold)), 12px 12px 0 #0008;
+  position: relative;
+}
+.card > * { opacity: 0; animation: rise 420ms cubic-bezier(.2, .8, .2, 1) forwards; }
+.card > :nth-child(1) { animation-delay: 60ms; }
+.card > :nth-child(2) { animation-delay: 260ms; animation-name: slam; }
+.card > :nth-child(3) { animation-delay: 520ms; }
+.card > :nth-child(4) { animation-delay: 680ms; }
+.card > :nth-child(5) { animation-delay: 900ms; }
+.card > :nth-child(6) { animation-delay: 1100ms; }
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes slam { 0% { opacity: 0; transform: scale(2.2); } 60% { opacity: 1; transform: scale(0.94); } 100% { opacity: 1; transform: scale(1); } }
+.card .tierline { font-family: var(--font-display); font-size: 12px; letter-spacing: 0.08em; color: var(--tier-color, var(--gold)); }
+.card .winner { font-family: var(--font-display); font-size: clamp(28px, 6vw, 40px); line-height: 1.05; text-wrap: balance; }
+.card .cls { color: var(--paper-dim); font-size: 13px; }
+.card .odds { font-size: 14px; font-variant-numeric: tabular-nums; }
+.stamp {
+  position: absolute; top: 14px; right: -10px;
+  font-family: var(--font-display); font-size: 13px;
+  color: var(--lacquer); border: 2px solid var(--lacquer);
+  padding: 3px 8px 1px; transform: rotate(8deg);
+  background: #1d1524;
+}
+.podium { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; font-size: 13px; color: var(--paper-dim); }
+.podium span { border: 1px solid var(--line); border-radius: 3px; padding: 3px 8px; }
+.podium b { color: var(--paper); font-weight: 600; }
+
+/* Board */
+.board {
+  display: flex; flex-direction: column; min-height: 0;
+  height: clamp(24rem, 68vh, 46rem);
+  background: #150f1c;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.board h2 {
+  margin: 0; padding: 10px 12px 8px;
+  font-family: var(--font-display); font-weight: 400; font-size: 14px;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--line);
+  display: flex; justify-content: space-between; align-items: baseline;
+}
+.board h2 small { font-family: var(--font-body); font-size: 12px; color: var(--paper-dim); }
+.board ol { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1; position: relative; }
+.board li {
+  display: grid;
+  grid-template-columns: 2rem 0.9rem 8px minmax(0, 1fr) auto;
+  align-items: center; gap: 6px;
+  padding: 5px 10px;
+  border-bottom: 1px solid #2a2033;
+  font-size: 13px;
+  background: #150f1c;
+  will-change: transform;
+}
+.board li .rk { font-variant-numeric: tabular-nums; font-weight: 700; text-align: center; border-radius: 3px; padding: 1px 0; }
+.board li:nth-child(1) .rk { background: var(--gold); color: var(--night); }
+.board li:nth-child(2) .rk { background: #c9ced6; color: var(--night); }
+.board li:nth-child(3) .rk { background: #c98a52; color: var(--night); }
+.board li .mv { font-size: 10px; text-align: center; }
+.board li .mv[data-d="up"] { color: var(--jade); }
+.board li .mv[data-d="down"] { color: var(--lacquer); }
+.board li .dot { width: 8px; height: 8px; }
+.board li .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.board li:nth-child(-n+3) .nm { font-weight: 600; }
+.board li .gap { color: var(--paper-dim); font-size: 12px; font-variant-numeric: tabular-nums; }
+.board li.lead { background: #2a1f14; }
+
+/* Controls */
+.controls {
+  display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: end;
+}
+.field { display: grid; gap: 4px; }
+.field label { font-size: 12px; color: var(--paper-dim); }
+select, button {
+  font: inherit; color: var(--paper);
+  background: var(--night-2);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 8px 10px;
+}
+select:focus-visible, button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+button { cursor: pointer; transition: transform 120ms ease, background 160ms ease; }
+button:active { transform: translateY(1px) scale(0.98); }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+.go-btn {
+  font-family: var(--font-display); font-size: 18px; letter-spacing: 0.04em;
+  background: var(--lacquer); border-color: #e2584c;
+  padding: 10px 22px 8px;
+  box-shadow: 0 4px 0 #7d1f19;
+}
+.go-btn:hover:not(:disabled) { background: #d8463b; }
+.spacer { flex: 1; }
+
+details.state { font-size: 12px; color: var(--paper-dim); }
+details.state pre {
+  margin: 6px 0 0; padding: 10px; overflow-x: auto;
+  background: #120c18; border: 1px solid var(--line); border-radius: 6px;
+  color: var(--paper); font-size: 12px; line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  .main { grid-template-columns: minmax(0, 1fr); }
+  .board { height: 20rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card > * { animation: none; opacity: 1; }
+  .banner.go, .flash.go, .digit.pop { animation: none; }
+}
+</style>
+
+<div class="wrap">
+  <p class="proto-note"><strong>PROTOTYPE</strong> - hướng A (giang hồ pixel) + C (kịch tính kiểu truyền hình), không âm thanh. Dùng để duyệt cảm giác, vứt đi sau khi chốt. Dữ liệu là ví dụ.</p>
+
+  <header class="bug">
+    <span class="live" id="live" data-on="false"><i></i>TRỰC TIẾP</span>
+    <h1>Đua mèo · Tuần 43</h1>
+    <span class="tier" id="tierChip" data-tier="HIGH">♛ Đặc biệt · Ngọc Bội Long Văn</span>
+    <span class="meta" id="metaLine"></span>
+    <span class="clock" id="clock">00.0s</span>
+  </header>
+
+  <div class="main">
+    <div class="stage" id="stage">
+      <div class="scroller" id="scroller">
+        <div id="spacer"><canvas id="track" role="img" aria-label="Đường đua mèo"></canvas></div>
+      </div>
+      <div class="ov vignette" id="vignette" data-on="false"></div>
+      <div class="ov slowmo" id="slowmo" data-on="false">CHẬM ×3</div>
+      <div class="ov lower" id="lower" data-on="false"><b id="lowerTag">ĐỔI NGÔI</b><span id="lowerText"></span></div>
+      <div class="ov banner" id="banner"><span id="bannerText">NƯỚC RÚT</span></div>
+      <div class="ov countdown" id="countdown" data-on="false">
+        <div class="lanterns">
+          <div class="lantern" data-lit="false"></div>
+          <div class="lantern" data-lit="false"></div>
+          <div class="lantern gold" data-lit="false"></div>
+        </div>
+        <div class="digit" id="digit">3</div>
+      </div>
+      <div class="ov photo" id="photo" data-on="false">
+        <header><span>ẢNH ĐÍCH</span><span id="photoGap"></span></header>
+        <canvas id="photoCanvas" width="420" height="200"></canvas>
+      </div>
+      <div class="ov flash" id="flash"></div>
+      <div class="ov result" id="result" hidden></div>
+    </div>
+
+    <aside class="board" aria-label="Bảng xếp hạng">
+      <h2>BẢNG XẾP HẠNG <small id="boardCount"></small></h2>
+      <ol id="board"></ol>
+    </aside>
+  </div>
+
+  <div class="controls">
+    <div class="field">
+      <label for="countSel">Số mèo (vé)</label>
+      <select id="countSel">
+        <option value="8">8</option>
+        <option value="30" selected>30</option>
+        <option value="80">80</option>
+        <option value="240">240</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="scenarioSel">Kịch bản</label>
+      <select id="scenarioSel">
+        <option value="random" selected>Ngẫu nhiên</option>
+        <option value="comeback">Lội ngược dòng</option>
+        <option value="duel">Song mã</option>
+        <option value="photo">Photo finish</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="durationSel">Thời gian (giây)</label>
+      <select id="durationSel">
+        <option value="12" selected>12</option>
+        <option value="20">20</option>
+        <option value="30">30</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="tierSel">Độ quý của giải</label>
+      <select id="tierSel">
+        <option value="HIGH" selected>Đặc biệt</option>
+        <option value="MEDIUM">Lớn</option>
+        <option value="LOW">Thường</option>
+      </select>
+    </div>
+    <span class="spacer"></span>
+    <button type="button" id="skipBtn" hidden>Bỏ qua</button>
+    <button type="button" class="go-btn" id="goBtn">ĐUA</button>
+  </div>
+
+  <details class="state" open>
+    <summary>Trạng thái prototype</summary>
+    <pre id="stateOut"></pre>
+  </details>
+</div>
+
+<script>
+(() => {
+  "use strict";
+  const $ = (s) => document.querySelector(s);
+
+  const CLASSES = [
+    { id: "CUU_LINH", label: "Cửu Linh", color: "#BB8ED0", acc: ["...........c..", ".............."] },
+    { id: "HUYET_HA", label: "Huyết Hà", color: "#E06666", acc: ["............r.", "...........r.."] },
+    { id: "LONG_NGAM", label: "Long Ngâm", color: "#6AA84F", acc: ["..........g...", "..........gg.."] },
+    { id: "THAN_TUONG", label: "Thần Tướng", color: "#0070C0", acc: ["..........yy..", ".........yyyy."] },
+    { id: "THIET_Y", label: "Thiết Y", color: "#FFC000", acc: ["..........ss..", ".........ssss."] },
+    { id: "TOAI_MONG", label: "Toái Mộng", color: "#BDD6EE", acc: ["...........mm.", "...........m.."] },
+    { id: "TO_VAN", label: "Tố Vấn", color: "#FAA6D0", acc: ["...........f.f", "............f."] },
+  ];
+  const TIERS = {
+    HIGH: { label: "Đặc biệt", icon: "♛", color: "#e8b84a", prize: "Ngọc Bội Long Văn", confetti: ["#e8b84a", "#fff1c1", "#c8372d"] },
+    MEDIUM: { label: "Lớn", icon: "◆", color: "#4fae8c", prize: "Rương Bảo Thạch", confetti: ["#4fae8c", "#bff0dc", "#f3e9d2"] },
+    LOW: { label: "Thường", icon: "✦", color: "#b9ab90", prize: "Túi Kẹo Cá", confetti: ["#f3e9d2", "#b9ab90"] },
+  };
+  const PRE = ["Mộc", "Tiểu", "Hàn", "Dạ", "Lam", "Bạch", "Tử", "Vân", "Thiên", "Hồng", "Kiếm", "Nguyệt", "Phong", "Tuyết", "Hắc", "Lãnh", "Minh", "Thanh", "Ám", "Lạc", "Tiêu", "Băng", "Hỏa", "Lục", "Kim", "Sương", "Mặc", "Cuồng"];
+  const SUF = ["Lan", "Long", "Băng", "Vũ", "Phong", "Hổ", "Yên", "Khê", "Lang", "Liên", "Tâm", "Hạ", "Vân", "Nhi", "Miêu", "Nguyệt", "Châu", "Y", "Dạ", "Hoa", "Dao", "Phượng", "Trúc", "Ngân", "Mai", "Đao"];
+
+  /* ---------- race script: pace curves per cat, monotone, winner fixed ---------- */
+  const KNOTS = [0, 0.12, 0.3, 0.5, 0.7, 0.85, 0.94, 1];
+  // Offsets from even pace at each knot. The last one is the final progress minus 1.
+  const SCENARIOS = {
+    comeback: {
+      label: "Lội ngược dòng",
+      W: [0, -0.015, -0.04, -0.05, -0.02, 0.02, 0.012, 0],
+      R: [0, 0, 0.01, 0.02, 0.055, 0.035, 0.009, -0.012],
+      X: [0, 0.03, 0.05, 0.055, 0.045, 0.03, 0.005, -0.02],
+    },
+    duel: {
+      label: "Song mã",
+      W: [0, 0.02, 0.04, 0.03, 0.045, 0.03, 0.012, 0],
+      R: [0, 0.025, 0.035, 0.045, 0.035, 0.04, 0.01, -0.012],
+    },
+    photo: {
+      label: "Photo finish",
+      W: [0, 0.01, 0.02, 0.03, 0.03, 0.02, 0.006, 0],
+      R: [0, 0.012, 0.025, 0.028, 0.033, 0.022, 0.007, -0.0025],
+      X: [0, 0.005, 0.015, 0.025, 0.028, 0.018, 0.004, -0.008],
+    },
+  };
+  // Race time 0.9..1 plays over the last 26% of the wall clock: about 3x slower. The winner still
+  // touches the line exactly at the typed duration.
+  const SLOW_U = 0.9;
+  const SLOW_WALL = 0.74;
+  const SPRINT_U = 0.84;
+  const COUNT_STEP = 0.8;
+  /** Runner-up this close to the line (share of the track) gets the photo-finish freeze. */
+  const PHOTO_GAP = 0.004;
+
+  const smoothstep = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const shuffle = (arr) => { const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+  /** Fritsch-Carlson monotone cubic: progress never goes back. */
+  function monotone(xs, ys) {
+    const n = xs.length, d = [], m = new Array(n);
+    for (let i = 0; i < n - 1; i++) d[i] = (ys[i + 1] - ys[i]) / (xs[i + 1] - xs[i]);
+    m[0] = d[0]; m[n - 1] = d[n - 2];
+    for (let i = 1; i < n - 1; i++) m[i] = d[i - 1] * d[i] <= 0 ? 0 : (d[i - 1] + d[i]) / 2;
+    for (let i = 0; i < n - 1; i++) {
+      const a = m[i] / d[i], b = m[i + 1] / d[i], s = a * a + b * b;
+      if (s > 9) { const t = 3 / Math.sqrt(s); m[i] = t * a * d[i]; m[i + 1] = t * b * d[i]; }
+    }
+    return (x) => {
+      if (x <= 0) return 0;
+      if (x >= 1) return ys[n - 1];
+      let i = 0; while (x > xs[i + 1]) i++;
+      const h = xs[i + 1] - xs[i], t = (x - xs[i]) / h, t2 = t * t, t3 = t2 * t;
+      return (2 * t3 - 3 * t2 + 1) * ys[i] + (t3 - 2 * t2 + t) * h * m[i] + (-2 * t3 + 3 * t2) * ys[i + 1] + (t3 - t2) * h * m[i + 1];
+    };
+  }
+
+  function fieldOffsets(isChaser) {
+    const final = isChaser ? -(0.012 + Math.random() * 0.025) : -(0.035 + Math.random() * 0.17);
+    let z = 0;
+    return KNOTS.map((u, i) => {
+      if (i === 0) return 0;
+      if (i === KNOTS.length - 1) return final;
+      z = z * 0.6 + (Math.random() * 2 - 1) * 0.9;
+      const spread = 0.01 + 0.03 * u, cap = 0.012 + 0.018 * u;
+      const raw = cap * Math.tanh((z * spread) / cap);
+      const w = smoothstep(0.55, 1, u);
+      return raw * (1 - w) + final * w;
+    });
+  }
+
+  function buildScript(cats, winnerKey, scenarioId) {
+    const sc = SCENARIOS[scenarioId];
+    const others = shuffle(cats.filter((c) => c.key !== winnerKey));
+    const scale = 0.85 + Math.random() * 0.3;
+    const roleOf = new Map([[winnerKey, sc.W]]);
+    if (others[0]) roleOf.set(others[0].key, sc.R);
+    if (others[1] && sc.X) roleOf.set(others[1].key, sc.X);
+    const chasers = new Set(others.slice(2, 5).map((c) => c.key));
+    const curves = new Map();
+    for (const c of cats) {
+      const role = roleOf.get(c.key);
+      const offs = role ? role.map((o, i) => (i === KNOTS.length - 1 ? o : o * scale)) : fieldOffsets(chasers.has(c.key));
+      const ys = KNOTS.map((u, i) => (i === 0 ? 0 : u + offs[i]));
+      for (let i = 1; i < ys.length; i++) ys[i] = Math.max(ys[i], ys[i - 1] + 0.01);
+      if (c.key === winnerKey) ys[ys.length - 1] = 1;
+      else ys[ys.length - 1] = Math.min(ys[ys.length - 1], 0.9985);
+      curves.set(c.key, monotone(KNOTS, ys));
+    }
+    return { curves, winnerKey, scenarioId };
+  }
+
+  const wallToU = (f) => {
+    if (f <= 0) return 0;
+    if (f < SLOW_WALL) return (f / SLOW_WALL) * SLOW_U;
+    return Math.min(1, SLOW_U + ((f - SLOW_WALL) / (1 - SLOW_WALL)) * (1 - SLOW_U));
+  };
+
+  /* ---------- field ---------- */
+  function buildField(n) {
+    const people = [], used = new Set();
+    let total = 0;
+    while (total < n) {
+      let name;
+      do { name = PRE[Math.floor(Math.random() * PRE.length)] + " " + SUF[Math.floor(Math.random() * SUF.length)]; } while (used.has(name));
+      used.add(name);
+      const tickets = Math.min(n - total, 1 + Math.floor(Math.random() ** 2.2 * 5));
+      people.push({ id: "p" + people.length, name, cls: Math.floor(Math.random() * CLASSES.length), tickets });
+      total += tickets;
+    }
+    const cats = people.flatMap((p) => Array.from({ length: p.tickets }, (_, k) => ({
+      key: `${p.id}#${k + 1}`, owner: p, cls: p.cls, label: p.tickets > 1 ? `${p.name} #${k + 1}` : p.name,
+    })));
+    cats.sort((a, b) => a.label.localeCompare(b.label, "vi", { numeric: true }));
+    return { people, cats };
+  }
+
+  /* ---------- sprites ---------- */
+  const BODY = [
+    "..........o.o.",
+    "o........o#o#o",
+    "oo.ooooooo###o",
+    ".o#d#d#d###w#o",
+    ".o#########ppo",
+    "..o########oo.",
+  ];
+  const LEGS = [
+    ["..o#o....o#o..", "..oo.....oo..."],
+    ["...o#o..o#o...", "...oo....oo..."],
+    ["....o#oo#o....", "....oo..oo...."],
+    ["...o#o..o#o...", "...oo....oo..."],
+  ];
+  const SPR_COLS = 14, SPR_ROWS = 10;
+  const FIXED = { o: "#221a26", w: "#ffffff", p: "#ff8fa3", c: "#8ff0ff", r: "#e0362c", g: "#f2c14e", y: "#d9b26a", s: "#a8b0ba", m: "#f6efc4", f: "#fff4c0" };
+  const darker = (hex) => {
+    const n = parseInt(hex.slice(1), 16);
+    const ch = (v) => Math.round(v * 0.72).toString(16).padStart(2, "0");
+    return "#" + ch(n >> 16) + ch((n >> 8) & 255) + ch(n & 255);
+  };
+  const spriteCache = new Map();
+  function catSprite(cls, width, frame) {
+    const w = Math.max(4, Math.round(width));
+    const key = `${cls}|${w}|${frame}`;
+    if (spriteCache.has(key)) return spriteCache.get(key);
+    const ratio = window.devicePixelRatio || 1;
+    const px = (w * ratio) / SPR_COLS;
+    const cv = document.createElement("canvas");
+    cv.width = Math.ceil(w * ratio); cv.height = Math.ceil(px * SPR_ROWS);
+    const cx = cv.getContext("2d");
+    const C = CLASSES[cls];
+    const rows = [...C.acc, ...BODY, ...LEGS[frame]];
+    rows.forEach((row, y) => [...row].forEach((ch, x) => {
+      const fill = ch === "#" ? C.color : ch === "d" ? darker(C.color) : FIXED[ch];
+      if (!fill) return;
+      cx.fillStyle = fill;
+      cx.fillRect(Math.floor(x * px), Math.floor(y * px), Math.ceil(px), Math.ceil(px));
+    }));
+    spriteCache.set(key, cv);
+    return cv;
+  }
+
+  /* ---------- DOM ---------- */
+  const scroller = $("#scroller"), spacer = $("#spacer"), canvas = $("#track"), ctx = canvas.getContext("2d");
+  const photoCanvas = $("#photoCanvas"), pctx = photoCanvas.getContext("2d");
+  const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const S = {
+    phase: "idle", n: 30, scenarioPick: "random", scenario: null, duration: 12, tier: "HIGH",
+    people: [], cats: [], script: null, phaseStart: 0, u: 0,
+    progress: new Map(), ranks: [], leader: null, leadChanges: 0, lastToast: -9,
+    sprintShown: false, slow: false, lastBoard: 0, prevIndex: new Map(), fps: 0, fpsFrames: 0, fpsT: 0, gapLengths: null,
+  };
+  let view = { w: 0, h: 0 }, L = null, bandBg = null, crowd = [], fitted = new Map(), particles = [];
+
+  const fontBody = (px, wt = 600) => `${wt} ${px}px "Be Vietnam Pro", system-ui, sans-serif`;
+  const fontDisplay = (px) => `${px}px "Bungee", Impact, sans-serif`;
+
+  function computeLayout() {
+    const n = S.cats.length;
+    const band = view.w < 600 ? 66 : 94;
+    const laneH = clamp((view.h - band) / n, 22, 56);
+    const catH = Math.min(46, Math.floor(laneH * 0.86));
+    const catW = Math.round((catH * SPR_COLS) / SPR_ROWS);
+    const nameCol = clamp(Math.round(view.w * 0.2), 108, 196);
+    const startX = nameCol + 6;
+    const finishX = view.w - 46;
+    return { band, laneH, catH, catW, nameCol, startX, finishX, travel: finishX - catW - startX, contentH: band + n * laneH };
+  }
+
+  function fitText(text, max) {
+    if (ctx.measureText(text).width <= max) return text;
+    let end = text.length;
+    while (end > 1 && ctx.measureText(text.slice(0, end) + "…").width > max) end--;
+    return text.slice(0, end) + "…";
+  }
+
+  function buildBand() {
+    const { band } = L, w = view.w;
+    const cv = document.createElement("canvas");
+    const ratio = window.devicePixelRatio || 1;
+    cv.width = Math.round(w * ratio); cv.height = Math.round(band * ratio);
+    const c = cv.getContext("2d");
+    c.setTransform(ratio, 0, 0, ratio, 0, 0);
+    const sky = c.createLinearGradient(0, 0, 0, band);
+    sky.addColorStop(0, "#2a1c3e"); sky.addColorStop(0.55, "#6b3a52"); sky.addColorStop(1, "#c9774f");
+    c.fillStyle = sky; c.fillRect(0, 0, w, band);
+    c.fillStyle = "#f6e7c4"; c.globalAlpha = 0.9;
+    c.beginPath(); c.arc(w * 0.78, band * 0.3, band * 0.13, 0, Math.PI * 2); c.fill();
+    c.globalAlpha = 1;
+    const ridge = (base, amp, color, seed) => {
+      c.fillStyle = color; c.beginPath(); c.moveTo(0, band);
+      for (let x = 0; x <= w; x += 6) {
+        const y = base - amp * (0.55 * Math.sin(x * 0.011 + seed) + 0.3 * Math.sin(x * 0.027 + seed * 2) + 0.15 * Math.sin(x * 0.07 + seed * 3));
+        c.lineTo(x, y);
+      }
+      c.lineTo(w, band); c.closePath(); c.fill();
+    };
+    ridge(band * 0.62, band * 0.22, "#4a2f4e", 1.3);
+    ridge(band * 0.74, band * 0.16, "#33223a", 4.1);
+    // pagoda silhouette on the far ridge
+    c.fillStyle = "#33223a";
+    const px = w * 0.3, py = band * 0.58;
+    for (let i = 0; i < 3; i++) { const ww = 22 - i * 6; c.fillRect(px - ww / 2, py - i * 9 - 4, ww, 3); c.fillRect(px - ww / 2 + 4, py - i * 9 - 1, ww - 8, 6); }
+    bandBg = cv;
+    crowd = [];
+    for (let x = L.nameCol + 4; x < w; x += 6) {
+      for (let row = 0; row < 2; row++) {
+        crowd.push({ x: x + (row ? 3 : 0), row, color: ["#e3c9a8", "#c79b78", "#a8775a", "#7a5644"][Math.floor(Math.random() * 4)], shirt: ["#c8372d", "#2f5f8a", "#4f7d3e", "#8a5aa8", "#d9a441", "#3b3b4f"][Math.floor(Math.random() * 6)], ph: Math.random() * 6.28 });
+      }
+    }
+  }
+
+  function resize() {
+    view.w = scroller.clientWidth; view.h = scroller.clientHeight;
+    const ratio = window.devicePixelRatio || 1;
+    canvas.style.width = view.w + "px"; canvas.style.height = view.h + "px";
+    canvas.width = Math.round(view.w * ratio); canvas.height = Math.round(view.h * ratio);
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    L = computeLayout();
+    spacer.style.height = Math.max(L.contentH, view.h) + "px";
+    ctx.font = fontBody(Math.min(14, Math.max(11, L.laneH * 0.42)));
+    const room = L.nameCol - 8 * 3 - 8 - 22;
+    fitted = new Map(S.cats.map((c) => [c.key, fitText(c.label, room)]));
+    buildBand();
+    spriteCache.clear();
+  }
+
+  /* ---------- drawing ---------- */
+  const hash = (i, j) => { const s = Math.sin(i * 127.1 + j * 311.7) * 43758.5453; return s - Math.floor(s); };
+  const laneOf = new Map();
+
+  function excitement() {
+    if (S.phase === "running") return S.u > SPRINT_U ? 3.2 : 1.2;
+    if (S.phase === "finish" || S.phase === "photo" || S.phase === "result") return 4;
+    if (S.phase === "countdown") return 1.6;
+    return 0.5;
+  }
+
+  function drawBand(t) {
+    const c = ctx, { band, nameCol, startX, finishX, travel, catW } = L, w = view.w;
+    c.drawImage(bandBg, 0, 0, w, band);
+    // lantern string
+    const sway = Math.sin(t * 1.3) * 1.5;
+    c.strokeStyle = "#1b1218"; c.lineWidth = 1;
+    c.beginPath();
+    for (let x = nameCol; x <= w; x += 8) { const k = ((x - nameCol) % 140) / 140; c.lineTo(x, 10 + Math.sin(k * Math.PI) * 9); }
+    c.stroke();
+    for (let x = nameCol + 70; x < w; x += 140) {
+      const y = 19 + sway;
+      const g = c.createRadialGradient(x, y + 6, 1, x, y + 6, 22);
+      g.addColorStop(0, "#ff9a5a88"); g.addColorStop(1, "#ff9a5a00");
+      c.fillStyle = g; c.fillRect(x - 22, y - 16, 44, 44);
+      c.fillStyle = "#d8402f"; c.fillRect(x - 5, y, 10, 12);
+      c.fillStyle = "#e8b84a"; c.fillRect(x - 4, y - 2, 8, 2); c.fillRect(x - 4, y + 12, 8, 2); c.fillRect(x, y + 14, 1, 4);
+    }
+    // crowd behind the rail
+    const railY = band - 10, amp = excitement();
+    for (const p of crowd) {
+      const bob = Math.max(0, Math.sin(t * (4 + amp) + p.ph)) * amp;
+      const y = railY - 9 - p.row * 6 - bob;
+      c.fillStyle = p.shirt; c.fillRect(p.x - 1, y + 4, 6, 6);
+      c.fillStyle = p.color; c.fillRect(p.x, y, 4, 4);
+      if (amp > 3 && Math.sin(p.ph * 7) > 0.2) { c.fillStyle = p.color; c.fillRect(p.x - 2, y - 3 - bob * 0.5, 1, 4); c.fillRect(p.x + 5, y - 3 - bob * 0.5, 1, 4); }
+    }
+    // rail
+    c.fillStyle = "#4a3426"; c.fillRect(nameCol, railY, w - nameCol, 10);
+    c.fillStyle = "#6b4c36"; c.fillRect(nameCol, railY, w - nameCol, 3);
+    c.fillStyle = "#2e2019"; for (let x = nameCol + 10; x < w; x += 24) c.fillRect(x, railY + 3, 3, 7);
+    // distance flags
+    c.font = fontBody(10, 700); c.textAlign = "center"; c.textBaseline = "alphabetic";
+    [0.25, 0.5, 0.75].forEach((q) => {
+      const x = startX + catW + q * travel;
+      c.fillStyle = "#f3e9d2"; c.fillRect(x, railY - 18, 1, 18);
+      c.fillStyle = "#c8372d"; c.fillRect(x + 1, railY - 18, 10, 7);
+      c.fillStyle = "#f3e9d2"; c.fillText(`${q * 100}%`, x + 6, railY - 21);
+    });
+    // start post
+    c.fillStyle = "#f3e9d2"; c.fillRect(startX + catW - 1, railY - 22, 3, 22);
+    // finish gate (tam quan)
+    const gx = finishX, top = Math.max(16, band * 0.22);
+    c.fillStyle = "#9e2a22"; c.fillRect(gx - 26, top + 6, 6, band - top - 6); c.fillRect(gx + 20, top + 6, 6, band - top - 6);
+    c.fillStyle = "#c8372d"; c.fillRect(gx - 24, top + 6, 3, band - top - 6); c.fillRect(gx + 22, top + 6, 3, band - top - 6);
+    c.fillStyle = "#1e1a22"; c.fillRect(gx - 34, top, 68, 6); c.fillRect(gx - 38, top - 2, 6, 3); c.fillRect(gx + 32, top - 2, 6, 3);
+    c.fillStyle = "#c8372d"; c.fillRect(gx - 30, top + 9, 60, 4);
+    c.fillStyle = "#e8b84a"; c.fillRect(gx - 14, top + 14, 28, 14);
+    c.fillStyle = "#1b1424"; c.font = fontDisplay(9); c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("ĐÍCH", gx, top + 21.5);
+    // plaque over the name column
+    c.fillStyle = "#241a16"; c.fillRect(0, 0, nameCol, band);
+    c.fillStyle = "#e8b84a"; c.fillRect(nameCol - 1, 0, 1, band);
+    c.textAlign = "left"; c.textBaseline = "alphabetic";
+    c.fillStyle = "#e8b84a"; c.font = fontDisplay(band > 80 ? 15 : 12); c.fillText("ĐUA MÈO", 10, band * 0.42);
+    c.fillStyle = "#b9ab90"; c.font = fontBody(11, 500); c.fillText(`${S.cats.length} mèo · ${S.people.length} người`, 10, band * 0.42 + 16);
+  }
+
+  function drawCrown(x, y, size) {
+    const p = Math.max(2, Math.round(size / 6));
+    const shape = ["g.g.g", "ggggg", "ggggg"];
+    ctx.fillStyle = "#f2c14e";
+    shape.forEach((row, j) => [...row].forEach((ch, i) => { if (ch === "g") ctx.fillRect(x + i * p, y + j * p, p, p); }));
+    ctx.fillStyle = "#c8372d"; ctx.fillRect(x + 2 * p, y + p, p, p);
+  }
+
+  let lastT = 0;
+  function draw(t) {
+    const c = ctx, { band, laneH, catW, catH, nameCol, startX, finishX, travel } = L, w = view.w, h = view.h;
+    const dt = Math.min(0.05, t - lastT); lastT = t;
+    const top = scroller.scrollTop, n = S.cats.length;
+    c.fillStyle = "#2b1f1a"; c.fillRect(0, 0, w, h);
+    const first = Math.max(0, Math.floor(top / laneH));
+    const last = Math.min(n - 1, Math.floor((top + h - band) / laneH));
+    const racing = S.phase !== "idle" && S.phase !== "countdown";
+    const leader = racing ? S.ranks[0] : null;
+    const rankIndex = new Map(S.ranks.map((k, i) => [k, i]));
+    c.save(); c.beginPath(); c.rect(0, band, w, h - band); c.clip();
+    for (let lane = first; lane <= last; lane++) {
+      const y = band + lane * laneH - top;
+      c.fillStyle = lane % 2 ? "#5e4130" : "#6a4a35"; c.fillRect(nameCol, y, w - nameCol, laneH);
+      c.fillStyle = "#4b3325";
+      for (let j = 0; j < 7; j++) c.fillRect(startX + hash(lane, j) * (w - startX), y + 3 + hash(j, lane) * (laneH - 6), 2, 2);
+      c.fillStyle = "#83614a";
+      for (let j = 7; j < 10; j++) c.fillRect(startX + hash(lane, j) * (w - startX), y + 3 + hash(j, lane) * (laneH - 6), 2, 1);
+      c.fillStyle = "#f3e9d21f";
+      for (let x = startX; x < w; x += 14) c.fillRect(x, y + laneH - 1, 7, 1);
+    }
+    [0.25, 0.5, 0.75].forEach((q) => {
+      const x = startX + catW + q * travel;
+      c.fillStyle = "#f3e9d214";
+      for (let y = band; y < h; y += 8) c.fillRect(x, y, 1, 4);
+    });
+    if (leader) {
+      const lane = laneOf.get(leader), y = band + lane * laneH - top;
+      const g = c.createLinearGradient(nameCol, 0, w, 0);
+      g.addColorStop(0, "#e8b84a10"); g.addColorStop(1, "#e8b84a40");
+      c.fillStyle = g; c.fillRect(nameCol, y, w - nameCol, laneH);
+    }
+    c.fillStyle = "#f3e9d2"; c.fillRect(startX + catW - 1, band, 3, h - band);
+    const sq = 6;
+    for (let y = band; y < h; y += sq) for (let col = 0; col < 3; col++) {
+      c.fillStyle = (Math.floor((y - band + top) / sq) + col) % 2 ? "#f3e9d2" : "#1b1424";
+      c.fillRect(finishX + col * sq, y, sq, sq);
+    }
+    // dust
+    for (const p of particles) {
+      p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt;
+      if (p.life <= 0) continue;
+      c.globalAlpha = Math.max(0, p.life / p.max) * 0.7;
+      c.fillStyle = "#c9a27a"; c.fillRect(p.x, p.y - top, p.s, p.s);
+    }
+    c.globalAlpha = 1;
+    particles = particles.filter((p) => p.life > 0);
+    // cats
+    const legClock = S.u * S.duration * 9;
+    for (let lane = first; lane <= last; lane++) {
+      const cat = S.cats[S.laneOrder[lane]];
+      const p = S.progress.get(cat.key) || 0;
+      const x = startX + p * travel;
+      const cy = band + (lane + 0.5) * laneH - top;
+      const moving = S.phase === "running";
+      const frame = moving ? (Math.floor(legClock + lane * 0.37) % 4 + 4) % 4 : 0;
+      const bob = moving && frame % 2 === 0 ? -Math.max(1, catH / 14) : 0;
+      const sh = (catW * SPR_ROWS) / SPR_COLS;
+      if (moving && S.script) {
+        const f = S.script.curves.get(cat.key);
+        const speed = (f(Math.min(1, S.u + 0.006)) - f(Math.max(0, S.u - 0.006))) / 0.012;
+        if (speed > 1.12) {
+          c.fillStyle = "#f3e9d2"; c.globalAlpha = Math.min(0.8, (speed - 1.1) * 3);
+          for (let k = 0; k < 3; k++) c.fillRect(x - catW * (0.25 + 0.2 * k) - (legClock * 7 % 6), cy - sh * 0.15 + k * sh * 0.18, catW * 0.35, 1.5);
+          c.globalAlpha = 1;
+        }
+        if (particles.length < 420 && Math.random() < 0.18 * dt * 60 / Math.max(1, n / 30)) {
+          particles.push({ x: x + 2, y: cy + top + sh * 0.38, vx: -20 - Math.random() * 30, vy: -8 - Math.random() * 10, s: Math.max(2, catH / 12), life: 0.5, max: 0.5 });
+        }
+      }
+      c.drawImage(catSprite(cat.cls, catW, frame), x, cy - sh / 2 + bob, catW, sh);
+      if (cat.key === leader) drawCrown(x + catW * 0.62, cy - sh / 2 + bob - Math.max(6, catH / 3), catH);
+    }
+    // name column
+    c.fillStyle = "#241a16"; c.fillRect(0, band, nameCol, h - band);
+    c.fillStyle = "#e8b84a55"; c.fillRect(nameCol - 1, band, 1, h - band);
+    const fs = Math.min(14, Math.max(11, laneH * 0.42));
+    c.textBaseline = "middle";
+    for (let lane = first; lane <= last; lane++) {
+      const cat = S.cats[S.laneOrder[lane]];
+      const cy = band + (lane + 0.5) * laneH - top;
+      c.fillStyle = CLASSES[cat.cls].color; c.fillRect(8, cy - 4, 8, 8);
+      c.font = fontBody(fs, cat.key === leader ? 700 : 600);
+      c.textAlign = "left";
+      c.fillStyle = cat.key === leader ? "#e8b84a" : "#f3e9d2";
+      c.fillText(fitted.get(cat.key), 24, cy);
+      if (racing) {
+        const r = rankIndex.get(cat.key) + 1;
+        c.font = fontBody(11, 700); c.textAlign = "right";
+        c.fillStyle = r <= 3 ? "#e8b84a" : "#b9ab90";
+        c.fillText(String(r), nameCol - 8, cy);
+      }
+    }
+    c.restore();
+    drawBand(t);
+  }
+
+  function drawPhoto() {
+    const c = pctx, W = photoCanvas.width, H = photoCanvas.height;
+    c.imageSmoothingEnabled = false;
+    const rows = S.ranks.slice(0, 2), rh = H / rows.length, lineX = W * 0.74, CW = 92, Z = CW / L.catW;
+    rows.forEach((key, i) => {
+      const y = i * rh, cat = S.cats.find((k) => k.key === key), p = S.progress.get(key);
+      c.fillStyle = i % 2 ? "#5e4130" : "#6a4a35"; c.fillRect(0, y, W, rh);
+      for (let yy = 0; yy < rh; yy += 10) for (let col = 0; col < 2; col++) {
+        c.fillStyle = (Math.floor(yy / 10) + col) % 2 ? "#f3e9d2" : "#1b1424"; c.fillRect(lineX + col * 10, y + yy, 10, 10);
+      }
+      const nose = lineX - (1 - p) * L.travel * Z;
+      const sh = (CW * SPR_ROWS) / SPR_COLS;
+      c.drawImage(catSprite(cat.cls, L.catW, 0), nose - CW, y + rh / 2 - sh / 2 + 6, CW, sh);
+      c.fillStyle = "#120c18cc"; c.fillRect(0, y, 200, 24);
+      c.fillStyle = i === 0 ? "#e8b84a" : "#f3e9d2"; c.font = fontBody(13, 700); c.textAlign = "left"; c.textBaseline = "middle";
+      c.fillText(`${i + 1}. ${cat.label}`, 8, y + 12);
+    });
+    $("#photoGap").textContent = `cách ${fmtLen(S.gapLengths)} thân`;
+  }
+
+  /* ---------- ranking + board ---------- */
+  function updateProgress() {
+    if (!S.script) { S.cats.forEach((c) => S.progress.set(c.key, 0)); S.ranks = S.cats.map((c) => c.key); return; }
+    for (const c of S.cats) S.progress.set(c.key, S.script.curves.get(c.key)(S.u));
+    S.ranks = S.cats.map((c) => c.key).sort((a, b) => S.progress.get(b) - S.progress.get(a) || a.localeCompare(b));
+  }
+  const lengthsBehind = (key) => ((S.progress.get(S.ranks[0]) - S.progress.get(key)) * L.travel) / L.catW;
+  const fmtLen = (v) => v.toLocaleString("vi-VN", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const catByKey = () => new Map(S.cats.map((c) => [c.key, c]));
+
+  const rowEls = new Map();
+  function renderBoard() {
+    const ol = $("#board"), byKey = catByKey();
+    const before = new Map();
+    for (const [k, li] of rowEls) before.set(k, li.getBoundingClientRect().top);
+    const keep = new Set(S.ranks);
+    for (const [k, li] of rowEls) if (!keep.has(k)) { li.remove(); rowEls.delete(k); }
+    const racing = S.script !== null;
+    S.ranks.forEach((key, i) => {
+      let li = rowEls.get(key);
+      const cat = byKey.get(key);
+      if (!li) {
+        li = document.createElement("li");
+        li.innerHTML = `<span class="rk"></span><span class="mv"></span><span class="dot"></span><span class="nm"></span><span class="gap"></span>`;
+        li.querySelector(".dot").style.background = CLASSES[cat.cls].color;
+        li.querySelector(".nm").textContent = cat.label;
+        rowEls.set(key, li);
+      }
+      li.querySelector(".rk").textContent = racing ? i + 1 : "–";
+      const prev = S.prevIndex.get(key);
+      const mv = li.querySelector(".mv");
+      if (racing && prev !== undefined && prev !== i) { mv.dataset.d = prev > i ? "up" : "down"; mv.textContent = prev > i ? "▲" : "▼"; }
+      else { mv.dataset.d = ""; mv.textContent = ""; }
+      li.querySelector(".gap").textContent = racing && i > 0 ? `-${fmtLen(lengthsBehind(key))}` : "";
+      li.classList.toggle("lead", racing && i === 0);
+      ol.appendChild(li);
+    });
+    S.prevIndex = new Map(S.ranks.map((k, i) => [k, i]));
+    if (reducedMotion) return;
+    const moved = [];
+    for (const [k, li] of rowEls) {
+      const b = before.get(k);
+      if (b === undefined) continue;
+      const dy = b - li.getBoundingClientRect().top;
+      if (Math.abs(dy) < 1) continue;
+      li.style.transition = "none"; li.style.transform = `translateY(${dy}px)`; moved.push(li);
+    }
+    requestAnimationFrame(() => moved.forEach((li) => { li.style.transition = "transform 280ms cubic-bezier(.2,.8,.2,1)"; li.style.transform = ""; }));
+    $("#boardCount").textContent = `${S.cats.length} mèo`;
+  }
+
+  /* ---------- overlays ---------- */
+  let lowerTimer = 0;
+  function toast(tag, html) {
+    $("#lowerTag").textContent = tag; $("#lowerText").innerHTML = html;
+    const el = $("#lower"); el.dataset.on = "true";
+    clearTimeout(lowerTimer); lowerTimer = setTimeout(() => { el.dataset.on = "false"; }, 1500);
+  }
+  function banner(text) {
+    const el = $("#banner"); $("#bannerText").textContent = text;
+    el.classList.remove("go"); void el.offsetWidth; el.classList.add("go");
+  }
+  function flash() { const el = $("#flash"); el.classList.remove("go"); void el.offsetWidth; el.classList.add("go"); }
+  const esc = (s) => s.replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
+
+  function showResult() {
+    S.phase = "result";
+    $("#vignette").dataset.on = "false"; $("#slowmo").dataset.on = "false"; $("#photo").dataset.on = "false";
+    $("#live").dataset.on = "false";
+    const byKey = catByKey(), win = byKey.get(S.script.winnerKey), tier = TIERS[S.tier];
+    const total = S.cats.length, mine = win.owner.tickets, share = mine / total;
+    const underdog = share < 1 / S.people.length && S.people.length > 2;
+    const pct = (share * 100).toLocaleString("vi-VN", { maximumFractionDigits: 1 });
+    const pod = S.ranks.slice(1, 3).map((k, i) => `<span>${i + 2}. <b>${esc(byKey.get(k).label)}</b></span>`).join("");
+    const el = $("#result");
+    el.innerHTML = `<div class="card" style="--tier-color:${tier.color}">
+      <div class="tierline">${tier.icon} GIẢI ${tier.label.toUpperCase()} · ${esc(tier.prize)}</div>
+      <div class="winner">${esc(win.owner.name)}</div>
+      <div class="cls">${CLASSES[win.cls].label}${mine > 1 ? ` · mèo ${esc(win.label.split(" #")[1] ? "#" + win.label.split(" #")[1] : "")}` : ""}</div>
+      <div class="odds">Thắng với ${mine}/${total} vé · tỉ lệ ${pct}%</div>
+      <div class="podium">${pod}</div>
+      <button type="button" class="go-btn" id="againBtn">ĐUA TIẾP</button>
+      ${underdog ? `<div class="stamp">KÈO DƯỚI</div>` : ""}
+    </div>`;
+    el.hidden = false;
+    $("#againBtn").addEventListener("click", reset);
+    $("#skipBtn").hidden = true;
+    renderBoard();
+    if (!reducedMotion && window.confetti) {
+      const colors = tier.confetti;
+      const burst = S.tier === "HIGH" ? 2 : 1;
+      window.confetti({ particleCount: S.tier === "LOW" ? 70 : 140, spread: 80, origin: { y: 0.6 }, colors, disableForReducedMotion: true });
+      if (burst > 1) setTimeout(() => {
+        window.confetti({ particleCount: 90, angle: 60, spread: 60, origin: { x: 0, y: 0.75 }, colors });
+        window.confetti({ particleCount: 90, angle: 120, spread: 60, origin: { x: 1, y: 0.75 }, colors });
+      }, 350);
+    }
+  }
+
+  /* ---------- flow ---------- */
+  function prepare() {
+    const f = buildField(S.n);
+    S.people = f.people; S.cats = f.cats;
+    S.laneOrder = S.cats.map((_, i) => i);
+    laneOf.clear(); S.cats.forEach((c, i) => laneOf.set(c.key, i));
+    S.script = null; S.u = 0; S.leader = null; S.leadChanges = 0; S.sprintShown = false; S.slow = false; S.gapLengths = null;
+    S.prevIndex = new Map();
+    rowEls.forEach((li) => li.remove()); rowEls.clear();
+    resize(); updateProgress(); renderBoard();
+    $("#metaLine").textContent = `${S.people.length} người · ${S.cats.length} vé`;
+  }
+
+  function reset() {
+    $("#result").hidden = true; $("#result").innerHTML = "";
+    S.phase = "idle"; S.script = null; S.u = 0;
+    $("#goBtn").disabled = false; setInputsLocked(false);
+    prepare();
+  }
+
+  function setInputsLocked(locked) {
+    ["#countSel", "#scenarioSel", "#durationSel", "#tierSel"].forEach((s) => { $(s).disabled = locked; });
+  }
+
+  function startRace(t) {
+    const winner = S.cats[Math.floor(Math.random() * S.cats.length)]; // stands in for the server's draw
+    const ids = Object.keys(SCENARIOS);
+    S.scenario = S.scenarioPick === "random" ? ids[Math.floor(Math.random() * ids.length)] : S.scenarioPick;
+    S.script = buildScript(S.cats, winner.key, S.scenario);
+    S.leader = null; S.leadChanges = 0; S.sprintShown = false; S.slow = false;
+    $("#goBtn").disabled = true; setInputsLocked(true); $("#skipBtn").hidden = false;
+    if (reducedMotion) { S.u = 1; updateProgress(); finish(t, true); return; }
+    S.phase = "countdown"; S.phaseStart = t;
+    $("#countdown").dataset.on = "true";
+    $("#live").dataset.on = "true";
+  }
+
+  function finish(t, instant) {
+    S.u = 1; updateProgress();
+    S.gapLengths = lengthsBehind(S.ranks[1] ?? S.ranks[0]);
+    renderBoard();
+    $("#slowmo").dataset.on = "false";
+    if (instant) { showResult(); return; }
+    const close = 1 - S.progress.get(S.ranks[1] ?? S.ranks[0]) < PHOTO_GAP;
+    S.phase = "finish"; S.phaseStart = t;
+    flash();
+    if (close) {
+      S.phase = "photo"; drawPhoto(); $("#photo").dataset.on = "true";
+    }
+  }
+
+  let lastCount = -1;
+  function frame(now) {
+    const t = now / 1000;
+    if (S.phase === "countdown") {
+      const e = t - S.phaseStart, step = Math.floor(e / COUNT_STEP);
+      if (step !== lastCount && step < 3) {
+        lastCount = step;
+        const d = $("#digit"); d.textContent = String(3 - step); d.classList.remove("pop"); void d.offsetWidth; d.classList.add("pop");
+        document.querySelectorAll(".lantern").forEach((el, i) => { el.dataset.lit = String(i <= step); });
+      }
+      if (e >= COUNT_STEP * 3) {
+        lastCount = -1;
+        $("#countdown").dataset.on = "false";
+        document.querySelectorAll(".lantern").forEach((el) => { el.dataset.lit = "false"; });
+        banner("CHẠY!");
+        S.phase = "running"; S.phaseStart = t;
+      }
+    }
+    if (S.phase === "running") {
+      S.u = wallToU((t - S.phaseStart) / S.duration);
+      updateProgress();
+      const lead = S.ranks[0];
+      if (lead !== S.leader) {
+        if (S.leader && S.u > 0.08) {
+          S.leadChanges++;
+          if (t - S.lastToast > 1.3) { S.lastToast = t; toast("ĐỔI NGÔI", `<em>${esc(catByKey().get(lead).label)}</em> vượt lên dẫn đầu`); }
+        }
+        S.leader = lead;
+      }
+      if (!S.sprintShown && S.u >= SPRINT_U) { S.sprintShown = true; banner("NƯỚC RÚT"); }
+      const slow = S.u >= SLOW_U;
+      if (slow !== S.slow) { S.slow = slow; $("#slowmo").dataset.on = String(slow); $("#vignette").dataset.on = String(slow); }
+      if (now - S.lastBoard > 300) { S.lastBoard = now; renderBoard(); }
+      $("#clock").textContent = `${((t - S.phaseStart)).toFixed(1).padStart(4, "0")}s`;
+      if (S.u >= 1) finish(t, false);
+    } else if (S.phase === "finish" && t - S.phaseStart > 0.9) {
+      showResult();
+    } else if (S.phase === "photo" && t - S.phaseStart > 2.6) {
+      showResult();
+    }
+    draw(t);
+    S.fpsFrames++;
+    if (now - S.fpsT > 500) { S.fps = Math.round((S.fpsFrames * 1000) / (now - S.fpsT)); S.fpsFrames = 0; S.fpsT = now; renderState(); }
+    requestAnimationFrame(frame);
+  }
+
+  function renderState() {
+    const byKey = catByKey();
+    const lead = S.ranks[0] && S.script ? byKey.get(S.ranks[0]).label : "-";
+    const win = S.script ? byKey.get(S.script.winnerKey).label : "-";
+    $("#stateOut").textContent = [
+      `phase        ${S.phase}`,
+      `scenario     ${S.scenario ? SCENARIOS[S.scenario].label : "-"} (chọn: ${S.scenarioPick})`,
+      `race u       ${S.u.toFixed(3)}  ${S.slow ? "[slow-mo]" : ""}`,
+      `leader       ${lead}`,
+      `winner (srv) ${win}`,
+      `lead changes ${S.leadChanges}`,
+      `gap at line  ${S.gapLengths === null ? "-" : fmtLen(S.gapLengths) + " thân"}${S.phase === "photo" ? "  => photo finish" : ""}`,
+      `cats / lane  ${S.cats.length} / ${L ? L.laneH.toFixed(0) : "-"}px`,
+      `fps          ${S.fps}`,
+      `reducedMotion ${reducedMotion}`,
+    ].join("\n");
+  }
+
+  /* ---------- wiring ---------- */
+  $("#countSel").addEventListener("change", (e) => { S.n = Number(e.target.value); prepare(); });
+  $("#scenarioSel").addEventListener("change", (e) => { S.scenarioPick = e.target.value; });
+  $("#durationSel").addEventListener("change", (e) => { S.duration = Number(e.target.value); });
+  $("#tierSel").addEventListener("change", (e) => {
+    S.tier = e.target.value; const tier = TIERS[S.tier], chip = $("#tierChip");
+    chip.dataset.tier = S.tier; chip.textContent = `${tier.icon} ${tier.label} · ${tier.prize}`;
+  });
+  $("#goBtn").addEventListener("click", () => { if (S.phase === "idle") startRace(performance.now() / 1000); });
+  $("#skipBtn").addEventListener("click", () => {
+    if (S.phase === "countdown" || S.phase === "running" || S.phase === "photo" || S.phase === "finish") {
+      $("#countdown").dataset.on = "false"; S.u = 1; updateProgress();
+      S.gapLengths = lengthsBehind(S.ranks[1] ?? S.ranks[0]);
+      showResult();
+    }
+  });
+  new ResizeObserver(() => { if (S.cats.length) resize(); }).observe(scroller);
+
+  prepare();
+  (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => { resize(); });
+  requestAnimationFrame(frame);
+})();
+</script>
