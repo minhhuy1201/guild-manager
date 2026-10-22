@@ -23,9 +23,11 @@ A new interaction convention goes here; its reason goes in `frontend.md`.
 
 ## A row that opens a page → the whole card is the link
 
-- Make the whole row the link: one `Link` with an `absolute inset-0` span over a `relative` card. Never a clickable `div`. Worked example: `tactic-list-screen.tsx`.
-- Put the feedback on the card: `hover:bg-foreground/5`, `focus-within:ring-3 focus-within:ring-ring/50`.
+- Make the whole row or card the link: one `Link` with an `absolute inset-0` span over a `relative` card. Never a clickable `div`. Worked examples: `tactic-card.tsx` (grid card), `cat-race-list-screen.tsx` (list row).
+- Put the feedback on the card: `focus-within:ring-3 focus-within:ring-ring/50`, plus `hover:bg-foreground/5` on a list row.
 - Make row actions `relative` (`RowActions`) so they sit above the overlay.
+- A leaf card in a grid takes the inner radius (`rounded-inner`), not the container one, and the overlay repeats it.
+- A grid card lifts on hover with `hover:-translate-y-0.5` (`transition-[translate]`, `ease-spring`, `--duration-fast`) and wears the spotlight: spread `useSpotlight()` (`hooks/use-spotlight.ts`) on the card and add `spotlight-edge` (`globals.css`). The hook writes `--spot-x` / `--spot-y` on the card for a mouse or pen pointer only (`event.pointerType`, per input) and nothing under reduced motion; the edge glow animates opacity only.
 
 ## Buttons respond with weight
 
@@ -109,7 +111,7 @@ A new interaction convention goes here; its reason goes in `frontend.md`.
 - Make `columns` equal the header `<th>` count. Pin a data-driven count in one variable shared by header and body (`attendance-grid`).
 - Remove a viewer-only column from header, row and `columns` together, on one flag.
 - Make a summary row a second header row of `td` cells.
-- Keep the table's look in `DataTable`'s `TABLE_SKIN` (`components/shared/data-table.tsx`), never in `components/ui/table.tsx`.
+- Keep the table's look in `TABLE_SKIN` inside `DataTableFrame` (`components/shared/data-table-frame.tsx`), never in `components/ui/table.tsx`. `DataTable` renders it with pagination; a table without paging (`LeavePanel`) uses `DataTableFrame` directly.
 - Page with `use-table-pagination` + `table-pagination-bar` / `page-size-select`. Always render the bar, even at one page. Hide page numbers below `lg`, keep the four arrows.
 
 ## A shortcut → a key cap (`Kbd`), on the button itself

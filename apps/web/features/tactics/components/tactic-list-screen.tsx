@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { Layers, Swords } from "lucide-react";
+import { Swords } from "lucide-react";
 import type { TacticSummary } from "@guild/shared/schemas";
 
 import {
@@ -15,14 +14,11 @@ import { ConfirmDeleteDialog } from "@/components/shared/confirm-delete-dialog";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { QueryBoundary } from "@/components/shared/query-boundary";
-import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { tacticEditorPath } from "@/config/routes";
-import { formatDateTime } from "@/lib/format";
-import { cn } from "@/lib/utils";
 import { combineQueries } from "@/lib/query-group";
 import { useDeleteTactic } from "../hooks/use-tactic-mutations";
 import { useTactics } from "../hooks/use-tactics";
+import { TacticCard } from "./tactic-card";
 import { TacticFormDialog } from "./tactic-form-dialog";
 
 interface TacticListScreenProps {
@@ -71,9 +67,10 @@ export function TacticListScreen({ isAdmin }: TacticListScreenProps) {
       <QueryBoundary
         state={state}
         skeleton={
-          <div className="flex flex-col gap-3">
-            <Skeleton className="h-20 w-full" />
-            <Skeleton className="h-20 w-full" />
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <Skeleton className="h-28 w-full" />
+            <Skeleton className="h-28 w-full" />
+            <Skeleton className="h-28 w-full" />
           </div>
         }
       >
@@ -83,41 +80,13 @@ export function TacticListScreen({ isAdmin }: TacticListScreenProps) {
             icon={<Swords className="size-6" />}
           />
         ) : (
-          <ul className="flex flex-col gap-3">
+          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {tactics.map((tactic) => (
               <li key={tactic.id}>
-                <Card
-                  className={cn(
-                    "relative transition-colors duration-[var(--duration-fast)]",
-                    // The row is one big link, so the whole card takes the hover surface and wears
-                    // the focus ring the link inside it earns.
-                    "hover:bg-foreground/5 focus-within:ring-3 focus-within:ring-ring/50"
-                  )}
-                >
-                  <CardContent className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex min-w-0 flex-col gap-1">
-                      <Link
-                        href={tacticEditorPath(tactic.id)}
-                        className="font-medium hover:underline"
-                      >
-                        {/* The whole card opens the tactic: this overlay is the link's hit area, and
-                            the row actions sit above it so they still take their own clicks. */}
-                        <span className="absolute inset-0 rounded-xl" />
-                        {tactic.name}
-                      </Link>
-                      {tactic.description ? (
-                        <p className="text-sm text-muted-foreground">
-                          {tactic.description}
-                        </p>
-                      ) : null}
-                      <p className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Layers className="size-3.5" />
-                        <span>{tactic.stageCount} giai đoạn</span>
-                        <span>· Sửa lúc {formatDateTime(tactic.updatedAt)}</span>
-                      </p>
-                    </div>
-
-                    {isAdmin ? (
+                <TacticCard
+                  tactic={tactic}
+                  actions={
+                    isAdmin ? (
                       <RowActions className="relative">
                         <EditAction
                           label="Sửa chiến thuật"
@@ -131,9 +100,9 @@ export function TacticListScreen({ isAdmin }: TacticListScreenProps) {
                           onClick={() => setDeleting(tactic)}
                         />
                       </RowActions>
-                    ) : null}
-                  </CardContent>
-                </Card>
+                    ) : undefined
+                  }
+                />
               </li>
             ))}
           </ul>

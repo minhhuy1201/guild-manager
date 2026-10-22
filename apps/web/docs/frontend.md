@@ -719,14 +719,18 @@ point: make it a `button`.
 
 A list row whose name links somewhere makes the *whole* row that link, not the few words of the name:
 a card-sized target is what a pointer aims at, and a 2mm-tall name is not. The tactics list
-(`features/tactics/components/tactic-list-screen.tsx`) is the worked example:
+(`features/tactics/components/tactic-card.tsx`, a grid card) is the worked example:
 
 - **One stretched link, not a clickable `div`.** The `Link` keeps the name and adds an
   `absolute inset-0` span over the `relative` card, so the hit area grows while the row stays a
   single real anchor — right-click, middle-click, keyboard focus and "copy link" all keep working,
   and no `onClick` handler on a `div` has to reimplement them (see "A clickable element").
-- **The card carries the feedback**, since the card is the target: `hover:bg-foreground/5` for the
-  surface and `focus-within:ring-3 focus-within:ring-ring/50` for the ring the link inside it earns.
+- **The card carries the feedback**, since the card is the target: `focus-within:ring-3
+  focus-within:ring-ring/50` for the ring the link inside it earns, and for a grid card a
+  `hover:-translate-y-0.5` lift plus a jade edge that follows the pointer (`useSpotlight` writes
+  `--spot-x`/`--spot-y`; `.spotlight-edge` draws it with opacity only). The spotlight follows a mouse or
+  pen only (`event.pointerType`) and is off under reduced motion, since a finger has no hover. A leaf card in a grid takes
+  `rounded-inner`, the container radius being too round at that size.
 - **Row actions sit above the overlay** — `RowActions` takes `relative`, so edit and delete keep
   taking their own clicks instead of navigating.
 
@@ -1012,7 +1016,7 @@ Data arrives, it does not snap in. Four pieces, all CSS, in `app/globals.css` an
   `table-body-state`. (The attendance grid no longer has one: an admin presses the cells.)
 - A row that summarises the columns (the attendance grid's "Cả bang" totals) is a second header row
   of `td` cells: it stays in view above the rows, and it adds no `th` to the column count.
-- The table's look lives in `DataTable`'s `TABLE_SKIN` (`components/shared/data-table.tsx`), never in
+- The table's look lives in `TABLE_SKIN` inside `DataTableFrame` (`components/shared/data-table-frame.tsx`), never in
   `components/ui/table.tsx`, which a shadcn update would overwrite: header rows on `secondary` (a
   navy tint) under a 2px navy rule, body rows striped `card` / a light `card`-`muted` mix (opaque, so
   a pinned column can inherit it), a neutral hover.
