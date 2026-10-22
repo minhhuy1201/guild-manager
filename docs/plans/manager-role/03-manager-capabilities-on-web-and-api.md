@@ -15,11 +15,11 @@ UI: chạy skill `redesign-skill` cho phần nav và tab thay đổi.
 
 **Blocked by:** 02
 
-**Status:** todo
+**Status:** done
 
-- [ ] Manager có Capability gọi được endpoint của vùng đó; thiếu Capability bị 403
-- [ ] Thu Grant thì request kế tiếp bị từ chối, không cần đăng nhập lại
-- [ ] `decideAccess` và bộ lọc nav có test cho Admin, Member, Manager một phần Grant
-- [ ] Mở thẳng route không được cấp thì về trang điểm danh
-- [ ] Thiết lập chỉ hiện tab được cấp; `?tab=` sai rơi về tab được cấp đầu tiên
-- [ ] Manager không có Grant nào thấy app y hệt Member
+- [x] Manager có Capability gọi được endpoint của vùng đó; thiếu Capability bị 403
+- [x] Thu Grant thì request kế tiếp bị từ chối, không cần đăng nhập lại
+- [x] `decideAccess` và bộ lọc nav có test cho Admin, Member, Manager một phần Grant
+- [x] Mở thẳng route không được cấp thì về trang điểm danh
+- [x] Thiết lập chỉ hiện tab được cấp; `?tab=` sai rơi về tab được cấp đầu tiên
+- [x] Manager không có Grant nào thấy app y hệt Member

@@ -125,10 +125,12 @@ chưa được tick) đều nhận cùng một câu ephemeral: "Bạn chưa đư
   tra Data API grants theo `production.md` §5.
 - **Bất biến**: hàng không phải Manager luôn có hai mảng rỗng. Member service giữ bất biến này ở mọi
   lần ghi: rời vai Manager thì xóa mảng, và chỉ lần ghi của Admin mới đặt được mảng.
-- **Nguồn sự thật là DB, đọc mỗi request.** JWT vẫn chỉ mang vai. Trên API, guard Capability (thay
-  `AdminGuard`, dùng dạng `@RequireCapability(...)` sau `JwtAuthGuard`) đọc Grant của người gọi khi
-  vai là Manager. Admin và Member không tốn thêm lần đọc nào. Nhờ vậy thu quyền có hiệu lực ngay
-  request kế tiếp, thay vì trễ tới một vòng đời token (1 ngày).
+- **Nguồn sự thật là DB, đọc mỗi request.** JWT vẫn chỉ mang vai. Trên API, `JwtAuthGuard` đọc Grant
+  của người gọi khi vai là Manager và gắn vào `request.user`; guard Capability (thay `AdminGuard`,
+  dùng dạng `@RequireCapability(...)` hoặc `@RequireAdmin()` sau `JwtAuthGuard`) và các service như
+  điểm danh hộ cùng đọc từ đó, nên chỉ một lần đọc cho mỗi request. Admin và Member không tốn thêm
+  lần đọc nào. Nhờ vậy thu quyền có hiệu lực ngay request kế tiếp, thay vì trễ tới một vòng đời
+  token (1 ngày). Vai thì vẫn lấy từ token tới khi token làm mới.
 - **Chặn trên web**: `/auth/me` trả Grant của người gọi cùng nhân vật đã gắn. Proxy vẫn đẩy Member ra
   khỏi route quản lý chỉ dựa vào vai. Proxy cho Manager đi qua, rồi server component của trang kiểm
   tra Capability từ `/auth/me` và chuyển về trang điểm danh khi thiếu. Nav, tab bar điện thoại, user

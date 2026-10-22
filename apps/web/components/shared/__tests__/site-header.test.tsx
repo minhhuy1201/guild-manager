@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { GuildRole } from "@guild/shared/enums";
+import { Capability, GuildRole } from "@guild/shared/enums";
 
 import { ROUTES } from "@/config/routes";
 
@@ -170,5 +170,76 @@ describe("SiteHeader - chuyển trang", () => {
       container.querySelector<HTMLElement>('[data-slot="mobile-tab-bar"]')
         ?.style.viewTransitionName
     ).toBe("mobile-tab-bar");
+  });
+});
+
+describe("SiteHeader - nav theo Capability", () => {
+  /**
+   * Sign in as a Manager holding the given Capabilities.
+   * @param capabilities - Grants the `/auth/me` read returns
+   */
+  function signInAsManager(...capabilities: Capability[]) {
+    getSession.mockResolvedValue({ discordId: "1", role: GuildRole.MANAGER });
+    fetchMe.mockResolvedValue({
+      ok: true,
+      data: { capabilities, grantedCommands: [], character: null },
+    });
+  }
+
+  /**
+   * The names of the nav links in the header (the phone tab bar repeats the same entries).
+   * @returns Link names inside the header nav
+   */
+  function navLinkNames(): string[] {
+    const nav = screen.getAllByRole("navigation", { name: "Điều hướng chính" })[0];
+
+    return Array.from(nav.querySelectorAll("a")).map(
+      (link) => link.getAttribute("aria-label") ?? link.textContent ?? ""
+    );
+  }
+
+  it("Manager chưa có Grant nào thấy nav y hệt Member", async () => {
+    signInAsManager();
+
+    await renderHeader();
+
+    expect(navLinkNames()).toEqual(["Điểm danh", "Lịch sử điểm danh", "Chiến thuật"]);
+  });
+
+  it("Manager có Xếp team thấy mục Xếp team nhưng không có Thiết lập", async () => {
+    signInAsManager(Capability.TEAM_BUILDER);
+
+    await renderHeader();
+
+    expect(navLinkNames()).toContain("Xếp team");
+    expect(navLinkNames()).not.toContain("Thiết lập");
+  });
+
+  it.each([Capability.SCHEDULE, Capability.MEMBERS, Capability.ATTENDANCE])(
+    "Manager có %s thì thấy Thiết lập",
+    async (capability) => {
+      signInAsManager(capability);
+
+      await renderHeader();
+
+      expect(navLinkNames()).toContain("Thiết lập");
+    }
+  );
+
+  it("Capability không thuộc Thiết lập không mở Thiết lập", async () => {
+    signInAsManager(Capability.CAT_RACE, Capability.TACTICS);
+
+    await renderHeader();
+
+    expect(navLinkNames()).not.toContain("Thiết lập");
+  });
+
+  it("khi /auth/me lỗi, Manager không có mục nào thêm", async () => {
+    getSession.mockResolvedValue({ discordId: "1", role: GuildRole.MANAGER });
+    fetchMe.mockResolvedValue({ ok: false, message: "x", statusCode: 500 });
+
+    await renderHeader();
+
+    expect(navLinkNames()).toEqual(["Điểm danh", "Lịch sử điểm danh", "Chiến thuật"]);
   });
 });

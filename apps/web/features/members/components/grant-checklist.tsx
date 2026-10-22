@@ -65,7 +65,10 @@ export function GrantChecklist<T extends string>({
               />
               <Label
                 htmlFor={id}
-                className={cn("flex-1 cursor-pointer", isMonospace && "font-mono")}
+                className={cn(
+                  "flex-1 cursor-pointer",
+                  isMonospace && "font-mono"
+                )}
               >
                 {labels[option]}
               </Label>

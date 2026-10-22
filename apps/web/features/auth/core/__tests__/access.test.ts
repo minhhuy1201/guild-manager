@@ -70,6 +70,18 @@ describe("decideAccess", () => {
     ).toBe("allow");
   });
 
+  // The token carries the role only, so the proxy cannot judge Grants: it lets a Manager through
+  // and the page re-checks the Capability from /auth/me.
+  it("Manager đi qua proxy ở mọi route quản lý, trang tự kiểm Capability", () => {
+    for (const pathname of ["/xep-team", "/thiet-lap", "/dua-meo", "/dua-meo/abc"]) {
+      expect(decideAccess({ pathname, role: GuildRole.MANAGER })).toBe("allow");
+    }
+  });
+
+  it("Manager vẫn bị chuyển về login khi chưa đăng nhập", () => {
+    expect(decideAccess({ pathname: "/thiet-lap", role: null })).toBe("login");
+  });
+
   it("/dua-meo và các trang con chỉ dành cho admin", () => {
     for (const pathname of ["/dua-meo", "/dua-meo/abc"]) {
       expect(decideAccess({ pathname, role: GuildRole.MEMBER })).toBe("home");

@@ -9,7 +9,7 @@ import { Capability } from '@guild/shared/enums';
 import { can, vnDateKey } from '@guild/shared/lib';
 import type { CreateLeaveInput, Leave } from '@guild/shared/schemas';
 
-import { Clock, type JwtPayload } from '../../common';
+import { Clock, type RequestActor } from '../../common';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { BattleSessionsService } from '../battle-sessions/battle-sessions.public';
 import { CharactersService } from '../characters/characters.public';
@@ -96,7 +96,7 @@ export class LeaveService {
    * @throws BadRequestException when a member's leave already ended
    * @throws ConflictException when it overlaps an active leave of the same character
    */
-  async create(input: CreateLeaveInput, actor: JwtPayload): Promise<Leave> {
+  async create(input: CreateLeaveInput, actor: RequestActor): Promise<Leave> {
     const now = this.clock.now();
     const { characterId, startDate, endDate, reason } = input;
     const isAdmin = can(actor, Capability.ATTENDANCE);
@@ -179,7 +179,7 @@ export class LeaveService {
    * @throws NotFoundException when no such leave exists
    * @throws ForbiddenException when a member cancels somebody else's leave
    */
-  async cancel(id: string, actor: JwtPayload): Promise<Leave> {
+  async cancel(id: string, actor: RequestActor): Promise<Leave> {
     const [found, own] = await Promise.all([
       this.prisma.leave.findUnique({ where: { id } }),
       this.ownCharacterId(actor),
@@ -221,7 +221,7 @@ export class LeaveService {
    * @param actor - JWT payload of the caller
    * @returns The character id, or null for an account without a character (rescue admin)
    */
-  private async ownCharacterId(actor: JwtPayload): Promise<string | null> {
+  private async ownCharacterId(actor: RequestActor): Promise<string | null> {
     const member = await this.characters.findByDiscordId(actor.sub);
 
     return member?.id ?? null;

@@ -1,5 +1,10 @@
 import { UnauthorizedException } from '@nestjs/common';
-import { GuildClass, GuildRole } from '@guild/shared/enums';
+import {
+  Capability,
+  GrantableCommand,
+  GuildClass,
+  GuildRole,
+} from '@guild/shared/enums';
 
 import { AuthService } from '../auth.service';
 import { AUTH_ERROR } from '../auth.constant';
@@ -29,6 +34,8 @@ const ROW = {
   guildClass: GuildClass.THIET_Y,
   discordUsername: 'meobeo',
   role: GuildRole.MEMBER,
+  capabilities: [] as Capability[],
+  grantedCommands: [] as GrantableCommand[],
 };
 
 /**
@@ -288,5 +295,64 @@ describe('AuthService.refresh', () => {
     const tokens = await service.refresh({ refreshToken: 'r' });
 
     expect(tokens.user.role).toBe(GuildRole.ADMIN);
+  });
+});
+
+describe('AuthService.me', () => {
+  const PAYLOAD = {
+    sub: '123456789012345678',
+    role: GuildRole.MANAGER,
+    type: 'access',
+  } as const;
+
+  it('trả Grant của Manager để web lọc nav và route', async () => {
+    const { service } = makeService({
+      characters: {
+        findByDiscordId: jest.fn().mockResolvedValue({
+          ...ROW,
+          role: GuildRole.MANAGER,
+          capabilities: [Capability.SCHEDULE],
+          grantedCommands: [GrantableCommand.THONG_BAO],
+        }),
+      },
+    });
+
+    const me = await service.me(PAYLOAD);
+
+    expect(me).toMatchObject({
+      role: GuildRole.MANAGER,
+      capabilities: [Capability.SCHEDULE],
+      grantedCommands: [GrantableCommand.THONG_BAO],
+    });
+  });
+
+  it('Member và Admin nhận hai mảng rỗng', async () => {
+    for (const role of [GuildRole.MEMBER, GuildRole.ADMIN]) {
+      const { service } = makeService({
+        characters: {
+          findByDiscordId: jest.fn().mockResolvedValue({ ...ROW, role }),
+        },
+      });
+
+      const me = await service.me({ ...PAYLOAD, role });
+
+      expect(me).toMatchObject({ capabilities: [], grantedCommands: [] });
+    }
+  });
+
+  it('Admin cứu hộ có hàng Quản lý vẫn là Admin, không mang Grant', async () => {
+    const { service } = makeService({
+      characters: {
+        findByDiscordId: jest.fn().mockResolvedValue({
+          ...ROW,
+          role: GuildRole.MANAGER,
+          capabilities: [Capability.SCHEDULE],
+        }),
+      },
+    });
+
+    const me = await service.me({ ...PAYLOAD, sub: RESCUE_ID });
+
+    expect(me).toMatchObject({ role: GuildRole.ADMIN, capabilities: [] });
   });
 });

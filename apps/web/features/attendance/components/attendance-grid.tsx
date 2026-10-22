@@ -80,7 +80,7 @@ const EMPTY_DRAFT: GridDraft = {};
 
 interface AttendanceGridProps {
   /** The viewer is an admin - they may change any answer, past deadlines included. */
-  isAdmin: boolean;
+  canManageOthers: boolean;
 }
 
 /**
@@ -90,10 +90,10 @@ interface AttendanceGridProps {
  * An admin changes answers by pressing the cells themselves, on as many rows as they like; the
  * changes collect in one draft over the whole grid and go out together from the save bar. A member
  * reads the same grid and answers for their own character in `MemberAttendanceCard`.
- * @param isAdmin - Whether the viewer is an admin
+ * @param canManageOthers - Whether the viewer may edit the whole guild's attendance
  * @returns The attendance table card
  */
-export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
+export function AttendanceGrid({ canManageOthers }: AttendanceGridProps) {
   const characters = useFilteredCharacters("attendance");
   const { data: roster } = useCharacters();
   const { data: sessions } = useBattleSessions();
@@ -314,7 +314,7 @@ export function AttendanceGrid({ isAdmin }: AttendanceGridProps) {
               character={character}
               sessions={battleSessions}
               recordMap={recordMap}
-              canEdit={isAdmin}
+              canEdit={canManageOthers}
               disabled={saving}
               draft={draft}
               onCellClick={handleCellClick}

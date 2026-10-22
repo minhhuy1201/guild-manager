@@ -373,7 +373,7 @@ is one file in `commands/` plus one line in `commands/index.ts`; see §7.
 - **Auth.** Identity comes from Discord OAuth2; the API owns the whole flow and is the only side that
   talks to Discord. A login is a lookup of `Character.discordId`, a column an admin fills in by hand —
   no match means no access, except for the rescue IDs in `DISCORD_ADMIN_IDS`, which always sign in as
-  `ADMIN`. `JwtAuthGuard` requires a session; `CapabilityGuard` (always after it) requires the Capability the route declares with
+  `ADMIN`. `JwtAuthGuard` requires a session; `JwtAuthGuard` also reads a Manager's Grants from the database on every request; `CapabilityGuard` (always after it) requires the Capability the route declares with
   `@RequireCapability(...)`, or the `ADMIN` role for `@RequireAdmin()`. No password is stored anywhere. Because the two apps live on different domains, the API hands
   the token pair over through a single-use code (`AuthExchange`, 60-second TTL) rather than a cookie.
 

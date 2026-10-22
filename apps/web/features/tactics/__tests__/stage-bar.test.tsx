@@ -40,7 +40,7 @@ function renderBar(props: Partial<React.ComponentProps<typeof StageBar>> = {}) {
     <StageBar
       stages={stages}
       activeStageId="s1"
-      isAdmin
+      canEdit
       {...handlers}
       {...props}
     />
@@ -192,7 +192,7 @@ describe("StageBar", () => {
   });
 
   it("does not let a member rename a stage by double-clicking it", () => {
-    renderBar({ isAdmin: false });
+    renderBar({ canEdit: false });
 
     fireEvent.doubleClick(screen.getByRole("tab", { name: "Giai đoạn 1" }));
 
@@ -230,7 +230,7 @@ describe("StageBar", () => {
   });
 
   it("hides every write action from a member", () => {
-    renderBar({ isAdmin: false });
+    renderBar({ canEdit: false });
 
     expect(screen.queryByRole("button", { name: /Thêm giai đoạn/ })).toBeNull();
     expect(screen.queryByRole("button", { name: /Nhân bản/ })).toBeNull();

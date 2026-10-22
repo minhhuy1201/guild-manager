@@ -39,7 +39,7 @@ function renderPalette(
   render(
     <TokenPalette
       collapsed={false}
-      isAdmin
+      canEdit
       selected={null}
       {...handlers}
       {...props}
@@ -146,7 +146,7 @@ describe("TokenPalette", () => {
   });
 
   it("hides the preset manager from a member", () => {
-    renderPalette({ isAdmin: false });
+    renderPalette({ canEdit: false });
 
     expect(screen.queryByRole("button", { name: /Thêm đội/ })).toBeNull();
   });

@@ -23,16 +23,16 @@ import { TacticFormDialog } from "./tactic-form-dialog";
 
 interface TacticListScreenProps {
   /** Whether the viewer may write — the API is what actually enforces it */
-  isAdmin: boolean;
+  canEdit: boolean;
 }
 
 /**
  * The tactics list: every saved tactic, newest edit first, each linking to its own page.
  * Members read it; admins also create, rename and delete from here.
- * @param isAdmin - Whether the viewer may write
+ * @param canEdit - Whether the viewer may write
  * @returns The tactics list screen
  */
-export function TacticListScreen({ isAdmin }: TacticListScreenProps) {
+export function TacticListScreen({ canEdit }: TacticListScreenProps) {
   const tacticsQuery = useTactics();
   const deleteTactic = useDeleteTactic();
   const [editing, setEditing] = useState<TacticSummary | null>(null);
@@ -52,7 +52,7 @@ export function TacticListScreen({ isAdmin }: TacticListScreenProps) {
         title="Chiến thuật"
         description="Bản vẽ chiến thuật cho bang chiến."
         actions={
-          isAdmin ? (
+          canEdit ? (
             <CreateButton
               label="Tạo chiến thuật"
               onClick={() => {
@@ -86,7 +86,7 @@ export function TacticListScreen({ isAdmin }: TacticListScreenProps) {
                 <TacticCard
                   tactic={tactic}
                   actions={
-                    isAdmin ? (
+                    canEdit ? (
                       <RowActions className="relative">
                         <EditAction
                           label="Sửa chiến thuật"

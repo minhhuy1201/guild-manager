@@ -27,7 +27,7 @@ interface LeaveDialogProps {
   /** Called when the dialog closes */
   onOpenChange: (open: boolean) => void;
   /** Admins may file for anyone and pick days already past; members only for themselves */
-  isAdmin: boolean;
+  canManageOthers: boolean;
   /** The viewer's own character, null for a rescue admin */
   ownCharacterId: string | null;
   /** Everyone an admin may file for; unused for a member */
@@ -38,7 +38,7 @@ interface LeaveDialogProps {
  * The file-a-leave dialog: two day fields, an optional reason and, for an admin, who it is for.
  * @param open - Whether the dialog is open
  * @param onOpenChange - Called when the dialog closes
- * @param isAdmin - Whether the viewer may file for others and for past days
+ * @param canManageOthers - Whether the viewer may file for others and for past days
  * @param ownCharacterId - The viewer's own character
  * @param characters - Everyone an admin may file for
  * @returns The dialog
@@ -46,7 +46,7 @@ interface LeaveDialogProps {
 export function LeaveDialog({
   open,
   onOpenChange,
-  isAdmin,
+  canManageOthers,
   ownCharacterId,
   characters,
 }: LeaveDialogProps) {
@@ -54,7 +54,7 @@ export function LeaveDialog({
     // The shell mounts the body only while open, so every visit starts from an empty form.
     <MutationDialogShell open={open} onOpenChange={onOpenChange}>
       <LeaveForm
-        isAdmin={isAdmin}
+        canManageOthers={canManageOthers}
         ownCharacterId={ownCharacterId}
         characters={characters}
         onDone={() => onOpenChange(false)}
@@ -74,7 +74,7 @@ interface LeaveFormProps extends Omit<LeaveDialogProps, "open" | "onOpenChange">
  * @returns The form
  */
 function LeaveForm({
-  isAdmin,
+  canManageOthers,
   ownCharacterId,
   characters,
   onDone,
@@ -88,7 +88,7 @@ function LeaveForm({
   // A member cannot file a leave that already ended; the server says so too, this only stops the
   // pickers offering what would be refused. Admins fix past days, so for them nothing is bounded.
   const today = vnDateKey(new Date());
-  const earliestDay = isAdmin ? undefined : today;
+  const earliestDay = canManageOthers ? undefined : today;
 
   /**
    * Pick the first day. The last day follows it unless it is already on or after it, so one day off
@@ -128,7 +128,7 @@ function LeaveForm({
       onDone={onDone}
       run={submitLeave}
     >
-      {isAdmin && (
+      {canManageOthers && (
         <MemberPicker
           id="leave-member"
           characters={characters}

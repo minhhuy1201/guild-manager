@@ -1,6 +1,6 @@
 import { createLeaveSchema } from '@guild/shared/schemas';
 
-import type { JwtPayload } from '../../common';
+import type { RequestActor } from '../../common';
 import { NO_OWN_CHARACTER, NOT_LINKED } from './attendance-board';
 import type { CommandDeps, CommandReply } from './commands/command.types';
 import { parseLeaveDateInput } from './leave-date-input';
@@ -10,7 +10,7 @@ const BAD_DATE = 'Ngày phải có dạng dd/mm, ví dụ 05/10.';
 
 /** The caller's identity and character, or the refusal to show instead. */
 type LeaveCaller =
-  | { ok: true; actor: JwtPayload; characterId: string }
+  | { ok: true; actor: RequestActor; characterId: string }
   | { ok: false; reply: CommandReply };
 
 /**

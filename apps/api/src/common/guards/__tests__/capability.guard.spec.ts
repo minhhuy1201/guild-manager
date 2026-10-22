@@ -1,11 +1,11 @@
 import { ForbiddenException, type ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { Capability, GuildRole } from '@guild/shared/enums';
+import { Capability, GrantableCommand, GuildRole } from '@guild/shared/enums';
 
 import { CapabilityGuard } from '../capability.guard';
 import { RequireAdmin } from '../../decorators/require-access.decorator';
 import { RequireCapability } from '../../decorators/require-access.decorator';
-import { TOKEN_TYPE, type JwtPayload } from '../../constants/auth.constant';
+import { TOKEN_TYPE, type RequestActor } from '../../constants/auth.constant';
 
 /** A controller with one route per requirement, so the guard reads real decorator metadata. */
 class Sample {
@@ -21,12 +21,12 @@ class Sample {
 /**
  * Build a fake ExecutionContext for one route of `Sample`, carrying only `request.user`.
  * @param handler - Name of the route being entered
- * @param user - JWT payload JwtAuthGuard would have attached, undefined when it never ran
+ * @param user - Caller JwtAuthGuard would have attached, undefined when it never ran
  * @returns A context sufficient for CapabilityGuard
  */
 function contextWith(
   handler: keyof Sample,
-  user?: JwtPayload,
+  user?: RequestActor,
 ): ExecutionContext {
   return {
     // Metadata is read off the method reference and the method is never called.
@@ -40,10 +40,14 @@ function contextWith(
 /**
  * A verified access-token payload.
  * @param role - Role the token carries
- * @returns The payload JwtAuthGuard would attach
+ * @param grants - Grants JwtAuthGuard would have read for a Manager
+ * @returns The caller JwtAuthGuard would attach
  */
-function userOf(role: GuildRole): JwtPayload {
-  return { sub: '123', role, type: TOKEN_TYPE.access };
+function userOf(
+  role: GuildRole,
+  grants: Pick<RequestActor, 'capabilities' | 'grantedCommands'> = {},
+): RequestActor {
+  return { sub: '123', role, type: TOKEN_TYPE.access, ...grants };
 }
 
 describe('CapabilityGuard', () => {
@@ -71,6 +75,51 @@ describe('CapabilityGuard', () => {
     expect(() =>
       guard.canActivate(contextWith('adminOnly', userOf(GuildRole.MEMBER))),
     ).toThrow(ForbiddenException);
+  });
+
+  it('cho Manager đi qua khi có đúng Capability', () => {
+    const manager = userOf(GuildRole.MANAGER, {
+      capabilities: [Capability.SCHEDULE],
+    });
+
+    expect(guard.canActivate(contextWith('schedule', manager))).toBe(true);
+  });
+
+  it('chặn Manager chưa có Grant nào, như Member', () => {
+    expect(() =>
+      guard.canActivate(contextWith('schedule', userOf(GuildRole.MANAGER))),
+    ).toThrow(ForbiddenException);
+  });
+
+  it('chặn Manager có Capability khác', () => {
+    const manager = userOf(GuildRole.MANAGER, {
+      capabilities: [Capability.TACTICS],
+    });
+
+    expect(() => guard.canActivate(contextWith('schedule', manager))).toThrow(
+      ForbiddenException,
+    );
+  });
+
+  it('Grant command không mở route Capability', () => {
+    const manager = userOf(GuildRole.MANAGER, {
+      grantedCommands: Object.values(GrantableCommand),
+    });
+
+    expect(() => guard.canActivate(contextWith('schedule', manager))).toThrow(
+      ForbiddenException,
+    );
+  });
+
+  it('route chỉ Admin chặn Manager dù được cấp mọi Capability', () => {
+    const manager = userOf(GuildRole.MANAGER, {
+      capabilities: Object.values(Capability),
+      grantedCommands: Object.values(GrantableCommand),
+    });
+
+    expect(() => guard.canActivate(contextWith('adminOnly', manager))).toThrow(
+      ForbiddenException,
+    );
   });
 
   it('chặn khi request chưa qua JwtAuthGuard', () => {

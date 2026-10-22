@@ -4,10 +4,10 @@ import { ROUTES } from "@/config/routes";
 
 vi.mock("server-only", () => ({}));
 
-const getSession = vi.fn();
+const getActor = vi.fn();
 
 vi.mock("@/features/auth/server", () => ({
-  getSession: () => getSession(),
+  getActor: () => getActor(),
 }));
 
 /** Stand-in for `next/navigation`'s `redirect`, which throws to unwind the render. */
@@ -24,8 +24,8 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("@/features/tactics", () => ({
-  TacticListScreen: (props: { isAdmin: boolean }) => props,
-  TacticEditorScreen: (props: { tacticId: string; isAdmin: boolean }) => props,
+  TacticListScreen: (props: { canEdit: boolean }) => props,
+  TacticEditorScreen: (props: { tacticId: string; canEdit: boolean }) => props,
 }));
 
 const TacticsPage = (await import("../chien-thuat/page")).default;
@@ -49,28 +49,53 @@ async function outcomeOf(
 
 describe("Trang danh sách chiến thuật", () => {
   it("chưa đăng nhập thì về trang đăng nhập", async () => {
-    getSession.mockResolvedValue(null);
+    getActor.mockResolvedValue(null);
 
     expect((await outcomeOf(() => TacticsPage())).target).toBe(ROUTES.login);
   });
 
   it("member vào được, nhưng không phải admin", async () => {
-    getSession.mockResolvedValue({ discordId: "1", role: "MEMBER" });
+    getActor.mockResolvedValue({ discordId: "1", role: "MEMBER" });
 
     const { target, element } = await outcomeOf(() => TacticsPage());
 
     expect(target).toBeNull();
-    expect((element as { props: { isAdmin: boolean } }).props.isAdmin).toBe(
+    expect((element as { props: { canEdit: boolean } }).props.canEdit).toBe(
       false
     );
   });
 
-  it("admin vào được với quyền ghi", async () => {
-    getSession.mockResolvedValue({ discordId: "1", role: "ADMIN" });
+  it("Manager có Capability sửa chiến thuật được quyền ghi", async () => {
+    getActor.mockResolvedValue({
+      discordId: "1",
+      role: "MANAGER",
+      capabilities: ["TACTICS"],
+    });
 
     const { element } = await outcomeOf(() => TacticsPage());
 
-    expect((element as { props: { isAdmin: boolean } }).props.isAdmin).toBe(
+    expect((element as { props: { canEdit: boolean } }).props.canEdit).toBe(true);
+  });
+
+  it("Manager thiếu Capability chỉ đọc được, vẫn vào được trang", async () => {
+    getActor.mockResolvedValue({
+      discordId: "1",
+      role: "MANAGER",
+      capabilities: ["CAT_RACE"],
+    });
+
+    const { target, element } = await outcomeOf(() => TacticsPage());
+
+    expect(target).toBeNull();
+    expect((element as { props: { canEdit: boolean } }).props.canEdit).toBe(false);
+  });
+
+  it("admin vào được với quyền ghi", async () => {
+    getActor.mockResolvedValue({ discordId: "1", role: "ADMIN" });
+
+    const { element } = await outcomeOf(() => TacticsPage());
+
+    expect((element as { props: { canEdit: boolean } }).props.canEdit).toBe(
       true
     );
   });
@@ -78,7 +103,7 @@ describe("Trang danh sách chiến thuật", () => {
 
 describe("Trang một chiến thuật", () => {
   it("chưa đăng nhập thì về trang đăng nhập", async () => {
-    getSession.mockResolvedValue(null);
+    getActor.mockResolvedValue(null);
 
     const { target } = await outcomeOf(() =>
       TacticPage({ params: Promise.resolve({ id: "t1" }) })
@@ -88,14 +113,14 @@ describe("Trang một chiến thuật", () => {
   });
 
   it("truyền id trên đường dẫn xuống màn editor", async () => {
-    getSession.mockResolvedValue({ discordId: "1", role: "ADMIN" });
+    getActor.mockResolvedValue({ discordId: "1", role: "ADMIN" });
 
     const { element } = await outcomeOf(() =>
       TacticPage({ params: Promise.resolve({ id: "t1" }) })
     );
 
     expect(
-      (element as { props: { tacticId: string; isAdmin: boolean } }).props
-    ).toMatchObject({ tacticId: "t1", isAdmin: true });
+      (element as { props: { tacticId: string; canEdit: boolean } }).props
+    ).toMatchObject({ tacticId: "t1", canEdit: true });
   });
 });

@@ -36,6 +36,8 @@ const RENEWED: AuthTokens = {
     discordUsername: "meobeo",
     discordAvatar: "a1b2c3d4e5f6",
     role: GuildRole.ADMIN,
+    capabilities: [],
+    grantedCommands: [],
     character: {
       id: "meo-beo-k7ma3x",
       name: "Mèo Béo",

@@ -42,7 +42,7 @@ interface TacticEditorScreenProps {
   /** Id of the tactic being opened */
   tacticId: string;
   /** Whether the viewer may write — the API is what actually enforces it */
-  isAdmin: boolean;
+  canEdit: boolean;
 }
 
 /**
@@ -51,14 +51,14 @@ interface TacticEditorScreenProps {
  * The whole coordination lives in `useTacticEditor`, so this component only builds the tree and
  * decides which half of it a screen this wide should see.
  * @param tacticId - Id of the tactic being opened
- * @param isAdmin - Whether the viewer may write
+ * @param canEdit - Whether the viewer may write
  * @returns The editor screen
  */
 export function TacticEditorScreen({
   tacticId,
-  isAdmin,
+  canEdit,
 }: TacticEditorScreenProps) {
-  const editor = useTacticEditor(tacticId, isAdmin);
+  const editor = useTacticEditor(tacticId, canEdit);
   const isDesktop = useIsDesktop();
   const { ref, width } = useStageSize();
   const stageZoom = useStageZoom(width);
@@ -127,7 +127,7 @@ export function TacticEditorScreen({
     setActiveStage(stageId);
   }
   // Drawing needs a pointer, a keyboard and room for the toolbar; everything else reads.
-  const canDraw = isAdmin && isDesktop === true;
+  const canDraw = canEdit && isDesktop === true;
 
   useEditorShortcuts(
     canDraw && scene !== null,
@@ -152,7 +152,7 @@ export function TacticEditorScreen({
         skeleton={<Skeleton className="h-96 w-full" />}
       >
         <div className="flex flex-col gap-3">
-          {isAdmin && isDesktop === false ? <MobileEditorNotice /> : null}
+          {canEdit && isDesktop === false ? <MobileEditorNotice /> : null}
 
           {/* A member, and anyone on a phone, reads the tactic through the viewer instead. */}
           {canDraw ? (
@@ -170,7 +170,7 @@ export function TacticEditorScreen({
                   canRedo={editor.canRedo}
                   saving={editor.saving}
                   dirty={dirty}
-                  isAdmin={isAdmin}
+                  canEdit={canEdit}
                   onToolChange={setTool}
                   onColorChange={setColor}
                   onStrokeWidthChange={setStrokeWidth}
@@ -185,7 +185,7 @@ export function TacticEditorScreen({
               <div className="flex">
                 <TokenPalette
                   collapsed={paletteCollapsed}
-                  isAdmin={isAdmin}
+                  canEdit={canEdit}
                   selected={editor.paletteToken}
                   onToggle={togglePalette}
                   onSelect={(token) => {
@@ -271,7 +271,7 @@ export function TacticEditorScreen({
                 <StageBar
                   stages={stages}
                   activeStageId={activeStageId}
-                  isAdmin={isAdmin}
+                  canEdit={canEdit}
                   playbackControls={
                     <StagePlaybackControls
                       playing={playback.playing}

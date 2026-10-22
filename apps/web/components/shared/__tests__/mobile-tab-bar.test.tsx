@@ -2,7 +2,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { GuildRole } from "@guild/shared/enums";
+import { Capability, GuildRole } from "@guild/shared/enums";
 import type { Actor } from "@guild/shared/lib";
 
 import { ROUTES } from "@/config/routes";
@@ -88,6 +88,34 @@ describe("MobileTabBar", () => {
     expect(
       container.querySelector('[data-slot="mobile-tab-bar"]')?.classList.contains("dark")
     ).toBe(true);
+  });
+});
+
+describe("MobileTabBar - Manager", () => {
+  it("chưa có Grant nào thì thấy y hệt Member", () => {
+    render(<MobileTabBar actor={{ role: GuildRole.MANAGER }} />);
+
+    expect(tabLabels()).toEqual(["Điểm danh", "Lịch sử"]);
+  });
+
+  it("có Capability của một tab Thiết lập thì thấy Thiết lập", () => {
+    render(
+      <MobileTabBar
+        actor={{ role: GuildRole.MANAGER, capabilities: [Capability.ATTENDANCE] }}
+      />
+    );
+
+    expect(tabLabels()).toEqual(["Điểm danh", "Lịch sử", "Thiết lập"]);
+  });
+
+  it("Xếp team là mục chỉ dành cho màn rộng nên không hiện trên điện thoại", () => {
+    render(
+      <MobileTabBar
+        actor={{ role: GuildRole.MANAGER, capabilities: [Capability.TEAM_BUILDER] }}
+      />
+    );
+
+    expect(tabLabels()).toEqual(["Điểm danh", "Lịch sử"]);
   });
 });
 

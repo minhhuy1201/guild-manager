@@ -137,14 +137,14 @@ describe("AttendanceGrid - bố cục", () => {
   it("số cột header không đổi giữa lúc tải và lúc có 4 trận", () => {
     boardState.isPending = true;
     sessions = [];
-    const { container, rerender } = render(<AttendanceGrid isAdmin />);
+    const { container, rerender } = render(<AttendanceGrid canManageOthers />);
     const headerCount = () => container.querySelectorAll("thead th").length;
 
     const whilePending = headerCount();
 
     boardState.isPending = false;
     sessions = ["a", "b", "c", "d"].map(makeSession);
-    rerender(<AttendanceGrid isAdmin />);
+    rerender(<AttendanceGrid canManageOthers />);
 
     expect(headerCount()).toBe(whilePending);
     expect(whilePending).toBe(5);
@@ -153,7 +153,7 @@ describe("AttendanceGrid - bố cục", () => {
   it("nhiều trận: mỗi trận một cột header, và số cột bằng số th", () => {
     sessions = ["a", "b", "c", "d"].map(makeSession);
 
-    const { container } = render(<AttendanceGrid isAdmin={false} />);
+    const { container } = render(<AttendanceGrid canManageOthers={false} />);
 
     const heads = container.querySelectorAll("thead th");
     expect(heads).toHaveLength(5);
@@ -170,14 +170,14 @@ describe("AttendanceGrid - bố cục", () => {
 
   // The actions column on the right is gone, giving the room back to the day columns.
   it("không còn cột Điểm danh, kể cả với admin", () => {
-    render(<AttendanceGrid isAdmin />);
+    render(<AttendanceGrid canManageOthers />);
 
     expect(screen.queryByRole("columnheader", { name: "Điểm danh" })).toBeNull();
   });
 
   // The filters live inside the card they filter rather than standing as a separate block above.
   it("thanh lọc nằm trong card của bảng", () => {
-    render(<AttendanceGrid isAdmin={false} />);
+    render(<AttendanceGrid canManageOthers={false} />);
 
     const card = screen
       .getByText("Điểm danh theo ngày đánh")
@@ -195,7 +195,7 @@ describe("AttendanceGrid - bố cục", () => {
       makeCharacter(String(index + 1))
     );
 
-    const { container } = render(<AttendanceGrid isAdmin />);
+    const { container } = render(<AttendanceGrid canManageOthers />);
 
     expect(container.querySelectorAll("tbody tr").length).toBe(50);
   });
@@ -207,7 +207,7 @@ describe("AttendanceGrid - hàng tổng", () => {
     filtered = [roster[0]];
     records = { ...makeRecord("1", "a", true), ...makeRecord("2", "a", false) };
 
-    render(<AttendanceGrid isAdmin={false} />);
+    render(<AttendanceGrid canManageOthers={false} />);
 
     expect(
       screen.getByLabelText("Trận a: 1 Có, 1 Không, 1 chưa điểm danh")
@@ -220,7 +220,7 @@ describe("AttendanceGrid - lọc Chưa điểm danh", () => {
     records = makeRecord("1", "a", true);
     useAttendanceFilterStore.setState({ unansweredOnly: true });
 
-    render(<AttendanceGrid isAdmin={false} />);
+    render(<AttendanceGrid canManageOthers={false} />);
 
     expect(screen.queryByText("Người 1")).toBeNull();
     expect(screen.getByText("Người 2")).toBeTruthy();
@@ -236,12 +236,12 @@ describe("AttendanceGrid - phân trang khi đang lọc", () => {
     );
     roster = filtered;
     useAttendanceFilterStore.setState({ unansweredOnly: true });
-    const { rerender } = render(<AttendanceGrid isAdmin={false} />);
+    const { rerender } = render(<AttendanceGrid canManageOthers={false} />);
     fireEvent.click(screen.getByRole("button", { name: "Trang sau" }));
     expect(screen.getByText("Người 51")).toBeTruthy();
 
     records = { ...records };
-    rerender(<AttendanceGrid isAdmin={false} />);
+    rerender(<AttendanceGrid canManageOthers={false} />);
 
     expect(screen.getByText("Người 51")).toBeTruthy();
   });
@@ -249,7 +249,7 @@ describe("AttendanceGrid - phân trang khi đang lọc", () => {
 
 describe("AttendanceGrid - admin bấm thẳng vào ô", () => {
   it("bấm xoay vòng Có, Không, rồi lại Có", () => {
-    render(<AttendanceGrid isAdmin />);
+    render(<AttendanceGrid canManageOthers />);
 
     fireEvent.click(cell("1"));
     expect(cell("1").getAttribute("aria-label")).toContain(": Có");
@@ -260,7 +260,7 @@ describe("AttendanceGrid - admin bấm thẳng vào ô", () => {
   });
 
   it("thanh dưới đếm số ô đã đổi, Huỷ bỏ hết", () => {
-    render(<AttendanceGrid isAdmin />);
+    render(<AttendanceGrid canManageOthers />);
 
     fireEvent.click(cell("1"));
     fireEvent.click(cell("2"));
@@ -273,7 +273,7 @@ describe("AttendanceGrid - admin bấm thẳng vào ô", () => {
   });
 
   it("Lưu gửi mọi ô đã đổi một lần, xong thì hết nháp", async () => {
-    render(<AttendanceGrid isAdmin />);
+    render(<AttendanceGrid canManageOthers />);
     fireEvent.click(cell("1"));
     fireEvent.click(cell("2"));
     fireEvent.click(cell("2"));
@@ -300,7 +300,7 @@ describe("AttendanceGrid - admin bấm thẳng vào ô", () => {
     mutateAsync
       .mockResolvedValueOnce(undefined)
       .mockRejectedValueOnce(new ApiError("Máy chủ bận.", 500));
-    render(<AttendanceGrid isAdmin />);
+    render(<AttendanceGrid canManageOthers />);
     fireEvent.click(cell("1"));
     fireEvent.click(cell("2"));
 
@@ -314,7 +314,7 @@ describe("AttendanceGrid - admin bấm thẳng vào ô", () => {
   });
 
   it("còn nháp thì rời trang phải được hỏi lại", () => {
-    render(<AttendanceGrid isAdmin />);
+    render(<AttendanceGrid canManageOthers />);
     fireEvent.click(cell("1"));
 
     const event = new Event("beforeunload", { cancelable: true });
@@ -324,7 +324,7 @@ describe("AttendanceGrid - admin bấm thẳng vào ô", () => {
   });
 
   it("member không bấm được ô nào", () => {
-    render(<AttendanceGrid isAdmin={false} />);
+    render(<AttendanceGrid canManageOthers={false} />);
 
     expect(screen.queryAllByRole("button", { name: /Trận a/ })).toHaveLength(0);
   });

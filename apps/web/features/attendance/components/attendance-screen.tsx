@@ -22,7 +22,7 @@ interface AttendanceScreenProps {
  * @returns The attendance page content
  */
 export function AttendanceScreen({ actor }: AttendanceScreenProps) {
-  const isAdmin = can(actor, Capability.ATTENDANCE);
+  const canManageOthers = can(actor, Capability.ATTENDANCE);
 
   return (
     <>
@@ -32,9 +32,9 @@ export function AttendanceScreen({ actor }: AttendanceScreenProps) {
         title="Điểm danh"
         description="Chọn Có hoặc Không cho từng trận trong tuần, trước hạn chót của trận đó."
       />
-      <LeaveSection isAdmin={isAdmin} />
+      <LeaveSection canManageOthers={canManageOthers} />
       <MemberAttendanceCard />
-      <AttendanceGrid isAdmin={isAdmin} />
+      <AttendanceGrid canManageOthers={canManageOthers} />
     </>
   );
 }

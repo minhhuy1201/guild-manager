@@ -65,7 +65,14 @@ export async function SiteHeader() {
   // The login page renders this header too, so a broken session just means "signed out".
   const meResult = session ? await fetchMe() : null;
   const me = meResult?.ok ? meResult.data : null;
-  const actor: Actor | null = session ? { role: session.role } : null;
+  // The token holds the role only; a Manager's Grants come with the `/auth/me` read above.
+  const actor: Actor | null = session
+    ? {
+        role: session.role,
+        capabilities: me?.capabilities,
+        grantedCommands: me?.grantedCommands,
+      }
+    : null;
 
   return (
     <>

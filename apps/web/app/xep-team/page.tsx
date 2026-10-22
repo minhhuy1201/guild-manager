@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 
 import { ROUTES } from "@/config/routes";
 import { WEB_AUTH_ERROR } from "@/features/auth";
-import { getSession } from "@/features/auth/server";
+import { getActor } from "@/features/auth/server";
 import { TeamBuilderScreen } from "@/features/team-builder";
 
 export const metadata: Metadata = {
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
  * @returns The team builder page content
  */
 export default async function TeamBuilderPage() {
-  const session = await getSession();
+  const session = await getActor();
   // With the reason, not bare: someone just demoted from ADMIN opens an old bookmark and would
   // otherwise watch a page they use every day silently vanish.
   if (!session || !can(session, Capability.TEAM_BUILDER)) {

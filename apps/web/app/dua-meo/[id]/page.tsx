@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 
 import { ROUTES } from "@/config/routes";
 import { WEB_AUTH_ERROR } from "@/features/auth";
-import { getSession } from "@/features/auth/server";
+import { getActor } from "@/features/auth/server";
 import { CatRaceEventScreen } from "@/features/cat-race";
 
 export const metadata: Metadata = {
@@ -26,7 +26,7 @@ interface CatRaceEventPageProps {
 export default async function CatRaceEventPage({
   params,
 }: CatRaceEventPageProps) {
-  const session = await getSession();
+  const session = await getActor();
   if (!session || !can(session, Capability.CAT_RACE)) {
     redirect(`${ROUTES.attendance}?error=${WEB_AUTH_ERROR.adminOnly}`);
   }

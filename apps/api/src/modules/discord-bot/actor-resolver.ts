@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-import { TOKEN_TYPE, type JwtPayload } from '../../common';
+import { TOKEN_TYPE, type RequestActor } from '../../common';
 import type { Env } from '../../config';
 import { isRescueAdmin, resolveGuildRole } from '../auth/auth.public';
 import {
@@ -16,7 +16,7 @@ export interface ResolvedActor {
    * The shape `AttendanceService` already takes. Nothing is signed and nothing leaves the process:
    * it is a value object here, not a token.
    */
-  actor: JwtPayload;
+  actor: RequestActor;
   /**
    * The caller's own character row, null for a rescue admin who was never assigned one.
    * The whole row rather than the id: `findByDiscordId` has already read it, and every caller went

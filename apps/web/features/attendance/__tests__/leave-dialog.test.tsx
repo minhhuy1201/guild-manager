@@ -61,12 +61,12 @@ const CHARACTERS: Character[] = [
 const TODAY = vnDateKey(new Date());
 
 /** Render the open dialog as a member or an admin. */
-function renderDialog(isAdmin: boolean, ownCharacterId: string | null = "char-1") {
+function renderDialog(canManageOthers: boolean, ownCharacterId: string | null = "char-1") {
   return render(
     <LeaveDialog
       open
       onOpenChange={vi.fn()}
-      isAdmin={isAdmin}
+      canManageOthers={canManageOthers}
       ownCharacterId={ownCharacterId}
       characters={CHARACTERS}
     />

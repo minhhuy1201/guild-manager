@@ -35,7 +35,7 @@ function renderToolbar(
       canRedo={false}
       saving={false}
       dirty
-      isAdmin
+      canEdit
       {...handlers}
       {...props}
     />
@@ -74,7 +74,7 @@ describe("EditorToolbar", () => {
   });
 
   it("hides the export button from a member", () => {
-    renderToolbar({ isAdmin: false });
+    renderToolbar({ canEdit: false });
 
     expect(screen.queryByRole("button", { name: "Xuất ảnh" })).toBeNull();
   });

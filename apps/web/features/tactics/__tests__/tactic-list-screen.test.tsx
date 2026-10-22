@@ -64,14 +64,14 @@ beforeEach(() => {
 
 describe("TacticListScreen", () => {
   it("lists a tactic with its stage count", () => {
-    render(<TacticListScreen isAdmin={false} />);
+    render(<TacticListScreen canEdit={false} />);
 
     expect(screen.getByText("Thủ cổng tây")).toBeTruthy();
     expect(screen.getByText("3 giai đoạn")).toBeTruthy();
   });
 
   it("links each tactic to its own page", () => {
-    render(<TacticListScreen isAdmin={false} />);
+    render(<TacticListScreen canEdit={false} />);
 
     expect(
       screen.getByRole("link", { name: /Thủ cổng tây/ }).getAttribute("href")
@@ -79,7 +79,7 @@ describe("TacticListScreen", () => {
   });
 
   it("makes the whole row open the tactic, not only its name", () => {
-    const { container } = render(<TacticListScreen isAdmin={false} />);
+    const { container } = render(<TacticListScreen canEdit={false} />);
 
     const link = screen.getByRole("link", { name: /Thủ cổng tây/ });
     const card = container.querySelector('[data-slot="tactic-card"]');
@@ -91,14 +91,14 @@ describe("TacticListScreen", () => {
   });
 
   it("hides the write actions from a member", () => {
-    render(<TacticListScreen isAdmin={false} />);
+    render(<TacticListScreen canEdit={false} />);
 
     expect(screen.queryByRole("button", { name: "Tạo chiến thuật" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Xoá" })).toBeNull();
   });
 
   it("shows the write actions to an admin", () => {
-    render(<TacticListScreen isAdmin />);
+    render(<TacticListScreen canEdit />);
 
     expect(screen.getByRole("button", { name: "Tạo chiến thuật" })).toBeTruthy();
   });
@@ -106,7 +106,7 @@ describe("TacticListScreen", () => {
   it("shows a skeleton while the list is loading", () => {
     isPending = true;
 
-    const { container } = render(<TacticListScreen isAdmin={false} />);
+    const { container } = render(<TacticListScreen canEdit={false} />);
 
     expect(container.querySelectorAll('[data-slot="skeleton"]').length).toBeGreaterThan(0);
     expect(screen.queryByText("Thủ cổng tây")).toBeNull();
@@ -115,7 +115,7 @@ describe("TacticListScreen", () => {
   it("shows the failure instead of the list", () => {
     isError = true;
 
-    render(<TacticListScreen isAdmin={false} />);
+    render(<TacticListScreen canEdit={false} />);
 
     expect(
       screen.getByText("Không tải được danh sách chiến thuật.")
@@ -123,7 +123,7 @@ describe("TacticListScreen", () => {
   });
 
   it("deletes a tactic once the admin confirms", async () => {
-    render(<TacticListScreen isAdmin />);
+    render(<TacticListScreen canEdit />);
 
     fireEvent.click(screen.getByRole("button", { name: "Xoá chiến thuật" }));
     expect(screen.getByText(/Bản vẽ sẽ mất hẳn/)).toBeTruthy();
@@ -134,7 +134,7 @@ describe("TacticListScreen", () => {
   });
 
   it("opens the rename dialog on the tactic's row", () => {
-    render(<TacticListScreen isAdmin />);
+    render(<TacticListScreen canEdit />);
 
     fireEvent.click(screen.getByRole("button", { name: "Sửa chiến thuật" }));
 
@@ -150,7 +150,7 @@ describe("TacticListScreen", () => {
   it("says so when the guild has drawn nothing yet", () => {
     tactics = [];
 
-    render(<TacticListScreen isAdmin={false} />);
+    render(<TacticListScreen canEdit={false} />);
 
     expect(screen.getByText("Chưa có chiến thuật nào.")).toBeTruthy();
   });

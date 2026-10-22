@@ -8,7 +8,21 @@ import {
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { Capability, GuildRole } from "@guild/shared/enums";
+import type { Actor } from "@guild/shared/lib";
+
 import { ROUTES } from "@/config/routes";
+
+const ADMIN: Actor = { role: GuildRole.ADMIN };
+
+/**
+ * A Manager holding the given Capabilities.
+ * @param capabilities - Grants of the Manager
+ * @returns The actor
+ */
+function managerWith(...capabilities: Capability[]): Actor {
+  return { role: GuildRole.MANAGER, capabilities };
+}
 
 let params = new URLSearchParams();
 const replace = vi.fn();
@@ -49,7 +63,7 @@ function tab(name: RegExp): HTMLElement {
 
 describe("SettingsTabs - tab nằm trên URL", () => {
   it("không có ?tab thì mở tab lịch đánh", () => {
-    render(<SettingsTabs />);
+    render(<SettingsTabs actor={ADMIN} />);
 
     expect(tab(/Thiết lập lịch đánh/).getAttribute("aria-selected")).toBe("true");
   });
@@ -58,7 +72,7 @@ describe("SettingsTabs - tab nằm trên URL", () => {
   it("?tab=members mở tab thành viên", () => {
     params = new URLSearchParams("tab=members");
 
-    render(<SettingsTabs />);
+    render(<SettingsTabs actor={ADMIN} />);
 
     expect(tab(/Quản lý thành viên/).getAttribute("aria-selected")).toBe("true");
     expect(screen.getByTestId("members-panel")).toBeTruthy();
@@ -67,7 +81,7 @@ describe("SettingsTabs - tab nằm trên URL", () => {
   it("?tab=leaves mở tab nghỉ phép", () => {
     params = new URLSearchParams("tab=leaves");
 
-    render(<SettingsTabs />);
+    render(<SettingsTabs actor={ADMIN} />);
 
     expect(tab(/Nghỉ phép/).getAttribute("aria-selected")).toBe("true");
     expect(screen.getByTestId("leave-panel")).toBeTruthy();
@@ -76,13 +90,13 @@ describe("SettingsTabs - tab nằm trên URL", () => {
   it("giá trị lạ thì mở tab lịch đánh", () => {
     params = new URLSearchParams("tab=khong-co");
 
-    render(<SettingsTabs />);
+    render(<SettingsTabs actor={ADMIN} />);
 
     expect(tab(/Thiết lập lịch đánh/).getAttribute("aria-selected")).toBe("true");
   });
 
   it("bấm tab thành viên thì ghi ?tab=members vào URL, không thêm một bước Back", () => {
-    render(<SettingsTabs />);
+    render(<SettingsTabs actor={ADMIN} />);
 
     fireEvent.click(tab(/Quản lý thành viên/));
 
@@ -93,7 +107,7 @@ describe("SettingsTabs - tab nằm trên URL", () => {
 
   it("quay về tab lịch đánh thì URL bỏ ?tab", () => {
     params = new URLSearchParams("tab=members");
-    render(<SettingsTabs />);
+    render(<SettingsTabs actor={ADMIN} />);
 
     fireEvent.click(tab(/Thiết lập lịch đánh/));
 
@@ -112,7 +126,7 @@ describe("SettingsTabs - vừa màn điện thoại", () => {
   ])(
     "tab %s: tên truy cập là nhãn đầy đủ, dưới sm hiện chữ ngắn %s",
     (fullLabel, shortLabel) => {
-      render(<SettingsTabs />);
+      render(<SettingsTabs actor={ADMIN} />);
 
       const trigger = screen.getByRole("tab", { name: fullLabel });
 
@@ -134,7 +148,7 @@ describe("SettingsTabs - ba tab chia đều một hàng trên điện thoại", 
   it.each(["Thiết lập lịch đánh", "Quản lý thành viên", "Nghỉ phép của thành viên"])(
     "tab %s: icon xếp trên chữ, rộng bằng các tab còn lại",
     (fullLabel) => {
-      render(<SettingsTabs />);
+      render(<SettingsTabs actor={ADMIN} />);
 
       const { className } = screen.getByRole("tab", { name: fullLabel });
 
@@ -148,7 +162,7 @@ describe("SettingsTabs - không lặp tên tab", () => {
   it("tab thành viên không còn tiêu đề trùng tên tab, vẫn giữ dòng mô tả", () => {
     params = new URLSearchParams("tab=members");
 
-    render(<SettingsTabs />);
+    render(<SettingsTabs actor={ADMIN} />);
 
     expect(
       screen.queryByRole("heading", { name: "Quản lý thành viên" })
@@ -156,5 +170,59 @@ describe("SettingsTabs - không lặp tên tab", () => {
     expect(
       screen.getByText("Thêm thành viên, sửa lưu phái, gán Discord ID và phân quyền.")
     ).toBeTruthy();
+  });
+});
+
+describe("SettingsTabs - Manager chỉ thấy tab được cấp", () => {
+  /**
+   * The visible names of every tab, in order.
+   * @returns The tab names
+   */
+  function tabNames(): string[] {
+    return screen
+      .getAllByRole("tab")
+      .map((node) => node.getAttribute("aria-label") ?? "");
+  }
+
+  it("chỉ có Lịch trận thì chỉ có tab lịch đánh", () => {
+    render(<SettingsTabs actor={managerWith(Capability.SCHEDULE)} />);
+
+    expect(tabNames()).toEqual(["Thiết lập lịch đánh"]);
+    expect(screen.getByTestId("settings-screen")).toBeTruthy();
+  });
+
+  it("mở sẵn tab đầu tiên được cấp khi không có ?tab", () => {
+    render(
+      <SettingsTabs
+        actor={managerWith(Capability.ATTENDANCE, Capability.MEMBERS)}
+      />
+    );
+
+    expect(tabNames()).toEqual(["Quản lý thành viên", "Nghỉ phép của thành viên"]);
+    expect(tab(/Quản lý thành viên/).getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByTestId("members-panel")).toBeTruthy();
+  });
+
+  it("?tab trỏ vào tab không được cấp thì rơi về tab được cấp đầu tiên", () => {
+    params = new URLSearchParams("tab=battles");
+
+    render(<SettingsTabs actor={managerWith(Capability.ATTENDANCE)} />);
+
+    expect(tab(/Nghỉ phép/).getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByTestId("leave-panel")).toBeTruthy();
+    expect(screen.queryByTestId("settings-screen")).toBeNull();
+  });
+
+  it("tab được cấp đầu tiên giữ địa chỉ trần khi quay lại", () => {
+    params = new URLSearchParams("tab=leaves");
+    render(
+      <SettingsTabs
+        actor={managerWith(Capability.MEMBERS, Capability.ATTENDANCE)}
+      />
+    );
+
+    fireEvent.click(tab(/Quản lý thành viên/));
+
+    expect(replace).toHaveBeenCalledWith(ROUTES.settings, { scroll: false });
   });
 });

@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { Capability } from "../enums/capability.enum";
+import { GrantableCommand } from "../enums/grantable-command.enum";
 import { GuildRole } from "../enums/role.enum";
 import { characterSchema } from "./character.schema";
 
@@ -27,6 +29,10 @@ export const sessionUserSchema = z.object({
    */
   discordAvatar: z.string().nullable(),
   role: z.enum(GuildRole),
+  /** Capabilities granted to this Manager; empty for every other role */
+  capabilities: z.array(z.enum(Capability)),
+  /** Admin Discord commands granted to this Manager; empty for every other role */
+  grantedCommands: z.array(z.enum(GrantableCommand)),
   /** Character bound to this account; null only for a rescue admin */
   character: characterSchema.nullable(),
 });

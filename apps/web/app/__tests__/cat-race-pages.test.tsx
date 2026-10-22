@@ -4,10 +4,10 @@ import { ROUTES } from "@/config/routes";
 
 vi.mock("server-only", () => ({}));
 
-const getSession = vi.fn();
+const getActor = vi.fn();
 
 vi.mock("@/features/auth/server", () => ({
-  getSession: () => getSession(),
+  getActor: () => getActor(),
 }));
 
 /** Stand-in for `next/navigation`'s `redirect`, which throws to unwind the render. */
@@ -51,19 +51,38 @@ async function outcomeOf(
 
 describe("Trang danh sách đua mèo", () => {
   it("chưa đăng nhập thì bị đẩy ra", async () => {
-    getSession.mockResolvedValue(null);
+    getActor.mockResolvedValue(null);
 
     expect((await outcomeOf(() => CatRacePage())).target).toEqual(ADMIN_ONLY_TARGET);
   });
 
   it("member bị đẩy ra", async () => {
-    getSession.mockResolvedValue({ discordId: "1", role: "MEMBER" });
+    getActor.mockResolvedValue({ discordId: "1", role: "MEMBER" });
+
+    expect((await outcomeOf(() => CatRacePage())).target).toEqual(ADMIN_ONLY_TARGET);
+  });
+
+  it("Manager có Capability đua mèo vào được", async () => {
+    getActor.mockResolvedValue({
+      discordId: "1",
+      role: "MANAGER",
+      capabilities: ["CAT_RACE"],
+    });
+
+    expect((await outcomeOf(() => CatRacePage())).target).toBeNull();
+  });
+
+  it.each([
+    ["chưa có Grant nào", undefined],
+    ["chỉ có Capability khác", ["TEAM_BUILDER", "TACTICS"]],
+  ])("Manager %s bị đẩy ra", async (_name, capabilities) => {
+    getActor.mockResolvedValue({ discordId: "1", role: "MANAGER", capabilities });
 
     expect((await outcomeOf(() => CatRacePage())).target).toEqual(ADMIN_ONLY_TARGET);
   });
 
   it("admin vào được", async () => {
-    getSession.mockResolvedValue({ discordId: "1", role: "ADMIN" });
+    getActor.mockResolvedValue({ discordId: "1", role: "ADMIN" });
 
     const { target, element } = await outcomeOf(() => CatRacePage());
 
@@ -76,7 +95,7 @@ describe("Trang một đợt đua mèo", () => {
   const params = Promise.resolve({ id: "e1" });
 
   it("chưa đăng nhập thì bị đẩy ra", async () => {
-    getSession.mockResolvedValue(null);
+    getActor.mockResolvedValue(null);
 
     expect((await outcomeOf(() => CatRaceEventPage({ params }))).target).toEqual(
       ADMIN_ONLY_TARGET
@@ -84,15 +103,29 @@ describe("Trang một đợt đua mèo", () => {
   });
 
   it("member bị đẩy ra", async () => {
-    getSession.mockResolvedValue({ discordId: "1", role: "MEMBER" });
+    getActor.mockResolvedValue({ discordId: "1", role: "MEMBER" });
 
     expect((await outcomeOf(() => CatRaceEventPage({ params }))).target).toEqual(
       ADMIN_ONLY_TARGET
     );
   });
 
+  it("Manager có Capability đua mèo thấy đợt, Manager thiếu thì bị đẩy ra", async () => {
+    getActor.mockResolvedValue({
+      discordId: "1",
+      role: "MANAGER",
+      capabilities: ["CAT_RACE"],
+    });
+    expect((await outcomeOf(() => CatRaceEventPage({ params }))).target).toBeNull();
+
+    getActor.mockResolvedValue({ discordId: "1", role: "MANAGER" });
+    expect((await outcomeOf(() => CatRaceEventPage({ params }))).target).toEqual(
+      ADMIN_ONLY_TARGET
+    );
+  });
+
   it("admin thấy đợt theo id trên đường dẫn", async () => {
-    getSession.mockResolvedValue({ discordId: "1", role: "ADMIN" });
+    getActor.mockResolvedValue({ discordId: "1", role: "ADMIN" });
 
     const { element } = await outcomeOf(() => CatRaceEventPage({ params }));
 

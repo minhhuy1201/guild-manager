@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { ROUTES } from "@/config/routes";
-import { getSession } from "@/features/auth/server";
+import { getActor } from "@/features/auth/server";
 import { TacticEditorScreen } from "@/features/tactics";
 
 export const metadata: Metadata = {
@@ -25,7 +25,7 @@ interface TacticPageProps {
  * @returns The tactic page
  */
 export default async function TacticPage({ params }: TacticPageProps) {
-  const session = await getSession();
+  const session = await getActor();
 
   // proxy.ts already blocked visitors; this branch only tells TypeScript `session` is not null.
   if (!session) redirect(ROUTES.login);
@@ -35,7 +35,7 @@ export default async function TacticPage({ params }: TacticPageProps) {
   return (
     <TacticEditorScreen
       tacticId={id}
-      isAdmin={can(session, Capability.TACTICS)}
+      canEdit={can(session, Capability.TACTICS)}
     />
   );
 }

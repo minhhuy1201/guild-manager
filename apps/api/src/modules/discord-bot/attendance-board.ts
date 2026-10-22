@@ -2,7 +2,7 @@ import { Capability } from '@guild/shared/enums';
 import { can } from '@guild/shared/lib';
 import type { AttendanceRecord, BattleSession } from '@guild/shared/schemas';
 
-import type { JwtPayload } from '../../common';
+import type { RequestActor } from '../../common';
 import type {
   ActionRow,
   ButtonComponent,
@@ -185,7 +185,7 @@ function buildHeading(target: BoardTarget): string {
  */
 export async function buildAttendanceBoard(
   target: BoardTarget,
-  actor: JwtPayload,
+  actor: RequestActor,
   deps: CommandDeps,
 ): Promise<MessagePayload> {
   const sessions = await deps.battleSessions.listByWeek();

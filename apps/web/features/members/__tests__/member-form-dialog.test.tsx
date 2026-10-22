@@ -1,5 +1,11 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   Capability,
@@ -129,10 +135,14 @@ describe("MemberFormDialog - Grant", () => {
     });
 
     expect(
-      screen.getByRole("checkbox", { name: "Đua mèo" }).getAttribute("aria-checked")
+      screen
+        .getByRole("checkbox", { name: "Đua mèo" })
+        .getAttribute("aria-checked")
     ).toBe("true");
     expect(
-      screen.getByRole("checkbox", { name: "Xếp team" }).getAttribute("aria-checked")
+      screen
+        .getByRole("checkbox", { name: "Xếp team" })
+        .getAttribute("aria-checked")
     ).toBe("false");
   });
 

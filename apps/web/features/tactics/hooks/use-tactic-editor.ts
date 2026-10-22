@@ -198,12 +198,12 @@ export interface TacticEditorScreen {
  * The draft lives in Zustand rather than in the query cache because it is an unsent drawing
  * session, not a copy of a response — the same split the team builder uses for its formations.
  * @param tacticId - Id of the tactic being edited
- * @param isAdmin - Whether the viewer may write
+ * @param canEdit - Whether the viewer may write
  * @returns What the editor screen renders from
  */
 export function useTacticEditor(
   tacticId: string,
-  isAdmin: boolean
+  canEdit: boolean
 ): TacticEditorScreen {
   const tacticQuery = useTactic(tacticId);
   const saveTactic = useSaveTactic();
@@ -389,7 +389,7 @@ export function useTacticEditor(
 
   const onPointerDown = useCallback(
     (point: MapPoint, modifiers: PointerModifiers = NO_MODIFIERS) => {
-      if (!isAdmin || !activeStage) {
+      if (!canEdit || !activeStage) {
         return;
       }
 
@@ -442,7 +442,7 @@ export function useTacticEditor(
       }
     },
     [
-      isAdmin,
+      canEdit,
       activeStage,
       tool,
       paletteToken,
@@ -572,7 +572,7 @@ export function useTacticEditor(
       const token = draggedPaletteToken;
       setDraggedPaletteToken(null);
 
-      if (!token || !isAdmin || !activeStage) {
+      if (!token || !canEdit || !activeStage) {
         return;
       }
 
@@ -586,7 +586,7 @@ export function useTacticEditor(
     },
     [
       draggedPaletteToken,
-      isAdmin,
+      canEdit,
       activeStage,
       setTool,
       refuseFullStage,
@@ -652,13 +652,13 @@ export function useTacticEditor(
 
   const onSelectionTokenSizeChange = useCallback(
     (size: TacticTokenSize) => {
-      if (isAdmin && activeStage && selectedElementIds.length > 0) {
+      if (canEdit && activeStage && selectedElementIds.length > 0) {
         commitElements(
           resizeTokens(activeStage, selectedElementIds, size).elements
         );
       }
     },
-    [isAdmin, activeStage, selectedElementIds, commitElements]
+    [canEdit, activeStage, selectedElementIds, commitElements]
   );
 
   const onToolbarTokenSizeChange = useCallback(
@@ -674,14 +674,14 @@ export function useTacticEditor(
   );
 
   const onDeleteSelected = useCallback(() => {
-    if (isAdmin && activeStage && selectedElementIds.length > 0) {
+    if (canEdit && activeStage && selectedElementIds.length > 0) {
       commitElements(
         removeElements(activeStage, selectedElementIds).elements
       );
       clearSelection();
     }
   }, [
-    isAdmin,
+    canEdit,
     activeStage,
     selectedElementIds,
     commitElements,
@@ -691,7 +691,7 @@ export function useTacticEditor(
   const onSave = useCallback(async () => {
     const current = useTacticEditorStore.getState().scene;
 
-    if (!current || !isAdmin || savingRef.current) {
+    if (!current || !canEdit || savingRef.current) {
       return false;
     }
 
@@ -711,7 +711,7 @@ export function useTacticEditor(
     // `current` is what the server now holds; anything drawn since the request left stays unsaved.
     markSaved(current);
     return true;
-  }, [isAdmin, saveTactic, tacticId, markSaved]);
+  }, [canEdit, saveTactic, tacticId, markSaved]);
 
   const onStageReady = useCallback((stage: Konva.Stage | null) => {
     stageRef.current = stage;
