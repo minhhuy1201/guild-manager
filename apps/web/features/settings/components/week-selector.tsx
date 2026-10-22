@@ -26,7 +26,10 @@ interface WeekSelectorProps {
  */
 export function WeekSelector({ weeks, value, onChange }: WeekSelectorProps) {
   return (
-    <div className="flex flex-wrap gap-2">
+    <div
+      data-slot="week-selector"
+      className="flex flex-wrap gap-1 max-sm:w-full max-sm:flex-col rounded-inner border border-border/60 bg-muted/60 p-1"
+    >
       {weeks.map((week) => (
         <Button
           key={week.weekStart}
@@ -34,9 +37,10 @@ export function WeekSelector({ weeks, value, onChange }: WeekSelectorProps) {
           size="sm"
           aria-current={week.weekStart === value ? "true" : undefined}
           className={cn(
+            "max-sm:justify-start",
             week.weekStart === value
-              ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
-              : "text-muted-foreground"
+              ? "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 hover:text-primary-foreground"
+              : "text-muted-foreground hover:bg-foreground/5"
           )}
           onClick={() => onChange(week.weekStart)}
         >

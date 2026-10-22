@@ -70,7 +70,7 @@ Screens must look like one app. A new display convention goes here; its reason g
 - Name a battle through `SessionLabel` (`components/shared/session-label.tsx`): `Swords` when `isGuildWar`, `text-primary`, the backend-built `label`. `size` is `"sm"` or `"md"`; a third size means a new value there.
 - Never assemble a battle's name on the frontend. The one exception is a fixed-shape headline (the formation banner), composed in `features/team-builder/lib/banner-title.ts` from `sessionKindLabel`.
 - Show the deadline line through `SessionDeadline`. Under a day left it turns semibold `primary`. A client clock past the deadline reads "sắp khoá", never "đã khoá".
-- Merge `sessionTintClass(isGuildWar)` into the screen's own frame.
+- Merge `sessionTintClass(isGuildWar)` into the screen's own frame. It returns a primary accent edge (`border-l-4 border-l-primary`), never a background wash; change it there, not per call site.
 - Keep frame, spacing and subtitle out of the module. The subtitle comes from `getSessionSubtitle`.
 - Pass marks that belong to one screen through `children`.
 - Invert `SessionLabel` on a `primary` surface (`data-active:*:text-primary-foreground`, as in `session-tabs`).

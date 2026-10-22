@@ -2,9 +2,10 @@
 
 import type { ReactNode } from "react";
 
+import { DataTableFrame } from "@/components/shared/data-table-frame";
 import { TableBodyState } from "@/components/shared/table-body-state";
 import { TablePaginationBar } from "@/components/shared/table-pagination-bar";
-import { Table, TableBody, TableHeader } from "@/components/ui/table";
+import { TableBody, TableHeader } from "@/components/ui/table";
 import type { TablePaginationState } from "@/hooks/use-table-pagination";
 import type { QueryGroupState } from "@/lib/query-group";
 
@@ -34,22 +35,6 @@ interface DataTableProps<TItem> {
 }
 
 /**
- * The table's own skin, kept here rather than in `components/ui/table.tsx`, which stays shadcn CLI output.
- * Rows are striped by position — the skeleton bands like the loaded rows — and both bands are opaque, so a
- * pinned column can take the row colour with `bg-inherit` and hide what scrolls underneath.
- * The header row sits on `secondary` (a navy tint) under a 2px navy rule, set apart from both the
- * card and the lightly mixed stripes (opaque, never an alpha), so the column names read as a band of their own in either theme.
- * The hover rule is marked important because it ties with the stripe rule on specificity.
- */
-const TABLE_SKIN = [
-  "[&_thead_th]:h-11 [&_thead_th]:text-xs [&_thead_th]:font-semibold [&_thead_th]:tracking-wide [&_thead_th]:text-secondary-foreground",
-  "[&_thead_tr]:bg-secondary [&_thead]:border-b-2 [&_thead]:border-primary/25",
-  "[&_tbody_tr]:bg-card",
-  "[&_tbody_tr:nth-child(even)]:bg-[color-mix(in_oklch,var(--card),var(--muted)_55%)]",
-  "[&_tbody_tr:hover]:bg-foreground/5!",
-].join(" ");
-
-/**
  * The shared paginated table: the bordered, striped table and its pagination bar as one unit.
  * The caller owns the header cells and the shape of a row; everything else — the four body
  * branches, the footer layout, the page size — is the same everywhere.
@@ -71,22 +56,20 @@ export function DataTable<TItem>({
 }: DataTableProps<TItem>) {
   return (
     <div className="w-full space-y-4">
-      <div className="overflow-hidden rounded-inner border">
-        <Table className={TABLE_SKIN}>
-          <TableHeader>{header}</TableHeader>
-          <TableBody>
-            <TableBodyState
-              state={state}
-              columns={columns}
-              columnClassNames={columnClassNames}
-              rows={pagination.pagedItems}
-              renderRow={renderRow}
-              emptyMessage={emptyMessage}
-              skeletonRows={skeletonRows}
-            />
-          </TableBody>
-        </Table>
-      </div>
+      <DataTableFrame>
+        <TableHeader>{header}</TableHeader>
+        <TableBody>
+          <TableBodyState
+            state={state}
+            columns={columns}
+            columnClassNames={columnClassNames}
+            rows={pagination.pagedItems}
+            renderRow={renderRow}
+            emptyMessage={emptyMessage}
+            skeletonRows={skeletonRows}
+          />
+        </TableBody>
+      </DataTableFrame>
 
       {footer}
 

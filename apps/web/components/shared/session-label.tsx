@@ -20,8 +20,11 @@ const ICON_CLASS: Record<SessionLabelSize, string> = {
   md: "size-4",
 };
 
-/** Frame classes for a Guild War, kept beside the label they belong with. */
-const GUILD_WAR_TINT = "border-primary/40 bg-primary/5";
+/**
+ * Frame classes for a Guild War: an accent edge on the left, not a tinted ground. A `primary/5`
+ * wash over a card or tile read as a muddy grey in both themes.
+ */
+const GUILD_WAR_TINT = "border-l-4 border-l-primary";
 
 /**
  * How a battle kind is written in upper case, for a headline that has no room for the
@@ -109,8 +112,8 @@ export function SessionDeadline({ session }: SessionDeadlineProps) {
 }
 
 /**
- * Frame classes for a battle: a Guild War is tinted so it stands out of a
- * list. Returned as a string rather than rendered, because the frame belongs
+ * Frame classes for a battle: a Guild War carries an accent edge so it stands
+ * out of a list. Returned as a string rather than rendered, because the frame belongs
  * to the screen — the tint is the only part of it that is a convention.
  * @param isGuildWar - Whether the battle is the Guild War
  * @returns Classes to merge into the frame's own className, or an empty string

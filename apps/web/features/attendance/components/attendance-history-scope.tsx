@@ -2,10 +2,10 @@
 
 import { CalendarDays, CalendarRange } from "lucide-react";
 
+import { FieldLabel } from "@/components/shared/field-label";
 import { ClearableSelectTrigger } from "@/components/shared/clearable-select-trigger";
 import { FilterAllIcon } from "@/components/shared/filter-all-icon";
 import { Card, CardContent } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -94,10 +94,12 @@ export function AttendanceHistoryScope() {
   const shownWeek = selectedWeek ?? weeks[0] ?? null;
 
   return (
-    <Card variant="inset">
-      <CardContent className="grid gap-4 sm:grid-cols-2">
+    <Card variant="inset" className="py-3">
+      <CardContent className="grid gap-3 sm:grid-cols-2 sm:gap-4">
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor={`${SCOPE}-week`}>Tuần</Label>
+          <FieldLabel htmlFor={`${SCOPE}-week`} icon={<CalendarRange />}>
+            Tuần
+          </FieldLabel>
           <Select
             value={shownWeek?.weekStart ?? ""}
             onValueChange={(next) => setWeekStart(String(next))}
@@ -127,7 +129,9 @@ export function AttendanceHistoryScope() {
           </Select>
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor={`${SCOPE}-session`}>Ngày đánh</Label>
+          <FieldLabel htmlFor={`${SCOPE}-session`} icon={<CalendarDays />}>
+            Ngày đánh
+          </FieldLabel>
           <Select
             value={selectedSession?.id ?? ALL_SESSIONS}
             onValueChange={(next) =>

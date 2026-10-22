@@ -46,6 +46,10 @@ const TOOL_ICONS: Record<TacticTool, typeof Users> = {
   eraser: Eraser,
 };
 
+/** The recessed pill each tool group sits in, so the groups read apart without divider lines. */
+const GROUP_CLASS =
+  "flex items-center gap-0.5 rounded-inner bg-foreground/5 p-0.5";
+
 /**
  * How a key cap is tinted inside a button. `currentColor` rather than the muted pair shadcn ships
  * with: the cap sits on the filled Save button as well as on the ghost ones, and one fixed colour
@@ -148,8 +152,8 @@ export function EditorToolbar({
   const modifier = useModifierKey();
 
   return (
-    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 px-2 py-1">
-      <div className="flex items-center gap-0.5">
+    <div className="flex flex-wrap items-center gap-2 bg-muted/40 px-2 py-1.5">
+      <div className={GROUP_CLASS}>
         {(Object.keys(TOOL_LABELS) as TacticTool[]).map((candidate) => {
           const Icon = TOOL_ICONS[candidate];
 
@@ -173,9 +177,7 @@ export function EditorToolbar({
         })}
       </div>
 
-      <div className="h-5 w-px bg-border" aria-hidden />
-
-      <div className="flex items-center gap-1">
+      <div className={GROUP_CLASS}>
         {TACTIC_COLORS.map((candidate) => (
           <button
             key={candidate}
@@ -194,9 +196,7 @@ export function EditorToolbar({
         ))}
       </div>
 
-      <div className="h-5 w-px bg-border" aria-hidden />
-
-      <div className="flex items-center gap-0.5">
+      <div className={GROUP_CLASS}>
         {TACTIC_STROKE_WIDTHS.map((candidate) => (
           <Button
             key={candidate}
@@ -215,9 +215,7 @@ export function EditorToolbar({
         <ShortcutKeys shortcut={STROKE_WIDTH_SHORTCUT} modifier={modifier} />
       </div>
 
-      <div className="h-5 w-px bg-border" aria-hidden />
-
-      <div className="flex items-center gap-0.5">
+      <div className={GROUP_CLASS}>
         {TACTIC_TOKEN_SIZES.map((candidate) => (
           <Button
             key={candidate}
@@ -236,7 +234,7 @@ export function EditorToolbar({
         ))}
       </div>
 
-      <div className="ml-auto flex items-center gap-0.5">
+      <div className="ml-auto flex items-center gap-1">
         <Button
           type="button"
           size="xs"

@@ -96,6 +96,24 @@ function renderRow(value: BattleSession) {
 }
 
 describe("SessionRow", () => {
+  // The Guild War card stays opaque, and its primary edge must survive hover.
+  it("Bang Chiến là thẻ đặc và không đổi viền ngọc khi hover", () => {
+    const { container } = renderRow(session({ isGuildWar: true }));
+    const row = container.firstElementChild as HTMLElement;
+
+    expect(row.classList.contains("bg-card")).toBe(true);
+    expect(row.classList.contains("bg-primary/5")).toBe(false);
+    expect(row.classList.contains("hover:border-jade/50")).toBe(false);
+  });
+
+  it("buổi scrim đổi viền ngọc khi hover", () => {
+    const { container } = renderRow(session());
+    const row = container.firstElementChild as HTMLElement;
+
+    expect(row.classList.contains("bg-card")).toBe(true);
+    expect(row.classList.contains("hover:border-jade/50")).toBe(true);
+  });
+
   it("ngày chưa gửi đội hình thì không có nút mở lại", () => {
     renderRow(session());
 

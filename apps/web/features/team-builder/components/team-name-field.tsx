@@ -88,7 +88,7 @@ export function TeamNameField({
             // 44px tall on a phone, where it measured 32px; its pencil is the touch way in.
             "w-full truncate rounded-md px-1 text-center text-lg font-semibold max-sm:min-h-11",
             "cursor-text outline-none transition-colors duration-[var(--duration-fast)]",
-            "hover:bg-primary-foreground/15 focus-visible:ring-3 focus-visible:ring-primary-foreground/40"
+            "hover:bg-foreground/5 focus-visible:ring-3 focus-visible:ring-ring/50"
           )}
         >
           {label}

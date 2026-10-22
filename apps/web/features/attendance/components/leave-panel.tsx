@@ -4,10 +4,10 @@ import { useState } from "react";
 import { Plane } from "lucide-react";
 import type { Leave } from "@guild/shared/schemas";
 
+import { DataTableFrame } from "@/components/shared/data-table-frame";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Table,
   TableBody,
   TableCell,
   TableHead,
@@ -63,7 +63,7 @@ export function LeavePanel() {
       ) : leaves.length === 0 ? (
         <p className="text-sm text-muted-foreground">Chưa có ai khai nghỉ.</p>
       ) : (
-        <Table>
+        <DataTableFrame>
           <TableHeader>
             <TableRow>
               <TableHead>Thành viên</TableHead>
@@ -99,7 +99,7 @@ export function LeavePanel() {
               </TableRow>
             ))}
           </TableBody>
-        </Table>
+        </DataTableFrame>
       )}
 
       <CancelLeaveDialog

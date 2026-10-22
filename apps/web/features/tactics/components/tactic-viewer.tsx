@@ -114,7 +114,7 @@ export function TacticViewer({ stages, notes }: TacticViewerProps) {
           ref={ref}
           style={CANVAS_GRID_STYLE}
           className={cn(
-            "relative min-w-0 flex-1 overflow-hidden rounded-xl border bg-muted/30",
+            "relative min-w-0 flex-1 overflow-hidden rounded-inner border bg-muted/30",
             // Konva writes the hover cursor inline on its own container, so the drag cursor has to
             // be marked important to be seen at all while panning.
             stageZoom.panning &&
@@ -140,7 +140,7 @@ export function TacticViewer({ stages, notes }: TacticViewerProps) {
         {notes === null ? null : (
           <section
             aria-labelledby={notesHeadingId}
-            className="flex flex-col gap-2 rounded-xl border bg-card p-3 lg:w-72 lg:shrink-0"
+            className="flex flex-col gap-2 rounded-inner border bg-card p-3 lg:w-72 lg:shrink-0"
           >
             <h2
               id={notesHeadingId}

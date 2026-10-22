@@ -36,9 +36,18 @@ vi.mock("@/hooks/use-session-recovery", () => ({
 
 import { TacticListScreen } from "../components/tactic-list-screen";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 beforeEach(() => {
+  // jsdom has no matchMedia, which the cards' spotlight reads.
+  vi.stubGlobal("matchMedia", () => ({
+    matches: false,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  }));
   deleteTactic.mockReset().mockResolvedValue(undefined);
   isPending = false;
   isError = false;
@@ -73,12 +82,12 @@ describe("TacticListScreen", () => {
     const { container } = render(<TacticListScreen isAdmin={false} />);
 
     const link = screen.getByRole("link", { name: /Thủ cổng tây/ });
-    const card = container.querySelector('[data-slot="card"]');
+    const card = container.querySelector('[data-slot="tactic-card"]');
 
     // The link stretches over the card through an overlay, so a click anywhere on it navigates.
     expect(link.querySelector("span.absolute.inset-0")).toBeTruthy();
     expect(card?.className).toContain("relative");
-    expect(card?.className).toContain("hover:bg-foreground/5");
+    expect(card?.className).toContain("hover:-translate-y-0.5");
   });
 
   it("hides the write actions from a member", () => {

@@ -67,9 +67,12 @@ export function SlotCell({
       <div
         ref={setNodeRef}
         className={cn(
-          "flex min-h-11 min-w-0 items-center rounded-md transition-colors",
-          !character && "border border-dashed border-border bg-muted/30",
-          !readOnly && isOver && "ring-2 ring-primary"
+          "flex min-h-11 min-w-0 items-center rounded-md transition-[background-color,box-shadow,border-color] duration-[var(--duration-fast)]",
+          !character && "border border-dashed border-border/70 bg-foreground/[0.03]",
+          // A lit drop target: jade edge, jade wash and a soft glow, so it reads from across the grid.
+          !readOnly &&
+            isOver &&
+            "border-solid border-jade bg-jade/15 shadow-[var(--glow-jade)] ring-2 ring-jade"
         )}
       >
         {character ? (

@@ -133,7 +133,7 @@ function makeRecords(
 function tileOf(sessionId: string): HTMLElement {
   const label = screen.getByText(`Trận ${sessionId}`);
 
-  return label.closest("div.rounded-lg.border") as HTMLElement;
+  return label.closest('[data-slot="day-tile"]') as HTMLElement;
 }
 
 /**
@@ -199,6 +199,19 @@ describe("MemberAttendanceCard", () => {
     render(<MemberAttendanceCard />);
 
     expect(document.body.textContent).toContain("Bạn còn 2 trận chưa điểm danh");
+  });
+
+  it("nhiều trận trong tuần: mỗi trận một ô", () => {
+    sessions = ["sess-1", "sess-2", "sess-3", "sess-4"].map((id) =>
+      makeSession(id)
+    );
+
+    render(<MemberAttendanceCard />);
+
+    expect(document.querySelectorAll('[data-slot="day-tile"]')).toHaveLength(4);
+    for (const id of sessions.map((session) => session.id)) {
+      expect(tileOf(id).querySelectorAll("button")).toHaveLength(2);
+    }
   });
 
   it("trả lời đủ thì nói đã điểm danh đủ tuần này", () => {
