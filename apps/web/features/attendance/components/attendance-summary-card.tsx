@@ -47,9 +47,8 @@ const ICON_SIZE = 24;
 const ICON_GAP = 8;
 
 /**
- * How far the disc behind an icon reaches past it. The class images are transparent PNGs, so on the
- * Guild War card's tinted surface they lose their edge; an opaque `card` disc with the standard
- * border gives every icon the same ground whatever the card behind it is tinted.
+ * How far the disc behind an icon reaches past it. The class images are transparent PNGs, so an
+ * opaque `card` disc with the standard border gives every icon the same ground.
  */
 const ICON_RING = 2;
 
