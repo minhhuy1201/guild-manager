@@ -44,7 +44,7 @@ export interface JwtPayload {
  */
 export interface RequestActor extends JwtPayload {
   /** Capabilities granted to this Manager; empty for every other role */
-  capabilities?: Capability[];
+  capabilities: Capability[];
   /** Admin Discord commands granted to this Manager; empty for every other role */
-  grantedCommands?: GrantableCommand[];
+  grantedCommands: GrantableCommand[];
 }

@@ -45,9 +45,16 @@ function contextWith(
  */
 function userOf(
   role: GuildRole,
-  grants: Pick<RequestActor, 'capabilities' | 'grantedCommands'> = {},
+  grants: Partial<Pick<RequestActor, 'capabilities' | 'grantedCommands'>> = {},
 ): RequestActor {
-  return { sub: '123', role, type: TOKEN_TYPE.access, ...grants };
+  return {
+    sub: '123',
+    role,
+    type: TOKEN_TYPE.access,
+    capabilities: [],
+    grantedCommands: [],
+    ...grants,
+  };
 }
 
 describe('CapabilityGuard', () => {

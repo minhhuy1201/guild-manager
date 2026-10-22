@@ -108,7 +108,7 @@ sequenceDiagram
     participant DB as Prisma → PostgreSQL
 
     B->>PX: GET /xep-team
-    Note over PX: refreshes the token pair if the access<br/>token expired, then decideAccess:<br/>session required, ADMIN for admin routes
+    Note over PX: refreshes the token pair if the access<br/>token expired, then decideAccess:<br/>session required; the page checks<br/>the Capability via /auth/me
     PX-->>B: rendered page
     B->>SA: TanStack Query hook calls the action
     Note over SA: reads the httpOnly cookie,<br/>builds Authorization: Bearer

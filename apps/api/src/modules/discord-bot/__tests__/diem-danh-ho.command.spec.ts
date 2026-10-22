@@ -62,6 +62,8 @@ function makeDeps(options: {
           sub: '111',
           role: options.callerRole,
           type: TOKEN_TYPE.access,
+          capabilities: [],
+          grantedCommands: [],
           ...options.callerGrants,
         },
         character: {

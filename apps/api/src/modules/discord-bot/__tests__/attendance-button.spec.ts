@@ -50,6 +50,8 @@ function makeDeps(options: {
             sub: '111',
             role: GuildRole.MEMBER,
             type: TOKEN_TYPE.access,
+            capabilities: [],
+            grantedCommands: [],
           },
           character: {
             id: 'meo-beo-k7ma3x',
@@ -276,6 +278,8 @@ describe('handleAttendanceButton - điểm danh hộ bằng Grant command', () =
         sub: '111',
         role: GuildRole.MANAGER,
         type: TOKEN_TYPE.access,
+        capabilities: [],
+        grantedCommands: [],
         ...grants,
       },
       character: { id: ownCharacterId, name: 'Quản', discordId: '111' },

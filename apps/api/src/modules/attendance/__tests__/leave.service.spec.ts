@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { GuildRole } from '@guild/shared/enums';
 
-import { FixedClock, TOKEN_TYPE, type JwtPayload } from '../../../common';
+import { FixedClock, TOKEN_TYPE, type RequestActor } from '../../../common';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { BattleSessionsService } from '../../battle-sessions/battle-sessions.public';
 import { CharactersService } from '../../characters/characters.public';
@@ -19,15 +19,19 @@ const NOW = vn('2026-10-04T12:00');
 const MEMBER_CHARACTER = 'char-1';
 const OTHER_CHARACTER = 'char-2';
 
-const MEMBER: JwtPayload = {
+const MEMBER: RequestActor = {
   sub: 'member-discord',
   role: GuildRole.MEMBER,
   type: TOKEN_TYPE.access,
+  capabilities: [],
+  grantedCommands: [],
 };
-const ADMIN: JwtPayload = {
+const ADMIN: RequestActor = {
   sub: 'admin-discord',
   role: GuildRole.ADMIN,
   type: TOKEN_TYPE.access,
+  capabilities: [],
+  grantedCommands: [],
 };
 
 /** Open session (deadline in the future) and a closed one (deadline passed), both inside the range. */

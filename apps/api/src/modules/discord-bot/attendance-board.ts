@@ -97,7 +97,7 @@ export function withOnBehalfAttendance(
 
   return {
     ...actor,
-    capabilities: [...(actor.capabilities ?? []), Capability.ATTENDANCE],
+    capabilities: [...actor.capabilities, Capability.ATTENDANCE],
   };
 }
 

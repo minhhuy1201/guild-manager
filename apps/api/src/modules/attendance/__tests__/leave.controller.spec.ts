@@ -1,14 +1,16 @@
 import { GUARDS_METADATA } from '@nestjs/common/constants';
 import { GuildRole } from '@guild/shared/enums';
 
-import { JwtAuthGuard, TOKEN_TYPE, type JwtPayload } from '../../../common';
+import { JwtAuthGuard, TOKEN_TYPE, type RequestActor } from '../../../common';
 import { LeaveController } from '../leave.controller';
 import type { LeaveService } from '../leave.service';
 
-const USER: JwtPayload = {
+const USER: RequestActor = {
   sub: 'discord-1',
   role: GuildRole.MEMBER,
   type: TOKEN_TYPE.access,
+  capabilities: [],
+  grantedCommands: [],
 };
 
 describe('LeaveController', () => {
