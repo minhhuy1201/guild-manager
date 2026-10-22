@@ -71,7 +71,7 @@ export function CreateRacePrizesStep({
   return (
     <form onSubmit={handleSubmit} className="grid gap-4">
       <DialogHeader className="mb-2">
-        <DialogTitle>Tạo đợt quay</DialogTitle>
+        <DialogTitle>Tạo đợt đua</DialogTitle>
       </DialogHeader>
       <CreateRaceStepIndicator current="prizes" />
 
@@ -83,7 +83,7 @@ export function CreateRacePrizesStep({
           id="cat-race-name"
           value={name}
           maxLength={CAT_RACE_NAME_MAX}
-          placeholder="Để trống: Đợt quay theo ngày"
+          placeholder="Để trống: Đợt đua theo ngày"
           onChange={(event) => onNameChange(event.target.value)}
         />
       </div>

@@ -36,7 +36,7 @@ describe('CatRaceService events and rosters', () => {
       [{ data: { name: string; createdAt: Date } }],
     ];
     const { data } = call[0];
-    expect(data.name).toBe('Đợt quay 12/10/2026');
+    expect(data.name).toBe('Đợt đua 12/10/2026');
     expect(data.createdAt).toBe(NOW);
     expect(prisma.catRaceEntrant.createMany).toHaveBeenCalledWith({
       data: [
@@ -84,7 +84,7 @@ describe('CatRaceService events and rosters', () => {
 
     await expect(
       service.update('e1', { mode: 'STANDARD' as never }),
-    ).rejects.toThrow('Không đổi chế độ khi đợt đã quay.');
+    ).rejects.toThrow('Không đổi chế độ khi đợt đã đua.');
   });
 
   it('resets every ticket to 1 when switching TICKET to STANDARD before any round', async () => {
@@ -152,10 +152,10 @@ describe('CatRaceService events and rosters', () => {
     const service = buildService(prisma);
 
     await expect(service.update('e1', { name: 'x' })).rejects.toThrow(
-      'Đợt quay đã kết thúc.',
+      'Đợt đua đã kết thúc.',
     );
     await expect(service.addPrize('e1', prize as never)).rejects.toThrow(
-      'Đợt quay đã kết thúc.',
+      'Đợt đua đã kết thúc.',
     );
   });
 

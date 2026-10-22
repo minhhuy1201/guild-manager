@@ -42,7 +42,7 @@ interface CatRaceEventScreenProps {
  */
 export function CatRaceEventScreen({ id }: CatRaceEventScreenProps) {
   const eventQuery = useCatRaceEvent(id);
-  const state = combineQueries([eventQuery], "Không tải được đợt quay.");
+  const state = combineQueries([eventQuery], "Không tải được đợt đua.");
 
   return (
     <QueryBoundary

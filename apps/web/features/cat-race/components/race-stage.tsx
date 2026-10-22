@@ -132,7 +132,7 @@ export function RaceStage({
     } catch (error) {
       store().reset();
       if (recoverSession(error)) return;
-      toastError(errorMessageOf(error, "Không quay được vòng này."));
+      toastError(errorMessageOf(error, "Không đua được vòng này."));
     }
   };
 

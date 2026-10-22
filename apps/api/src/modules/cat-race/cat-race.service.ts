@@ -54,20 +54,20 @@ export const cryptoRandomInt: RandomInt = (maxExclusive) =>
 /** `CatRaceMode.STANDARD` as the string the database column holds. */
 const STANDARD_MODE = 'STANDARD';
 
-const EVENT_NOT_FOUND = 'Không tìm thấy đợt quay.';
+const EVENT_NOT_FOUND = 'Không tìm thấy đợt đua.';
 const PRIZE_NOT_FOUND = 'Không tìm thấy hạng mục.';
-const ROUND_NOT_FOUND = 'Không tìm thấy vòng quay.';
-const EVENT_ENDED = 'Đợt quay đã kết thúc.';
-const MODE_LOCKED = 'Không đổi chế độ khi đợt đã quay.';
-const EVENT_HAS_ROUNDS = 'Không xoá được đợt đã có vòng quay.';
-const PRIZE_HAS_ROUNDS = 'Không xoá được hạng mục đã có vòng quay.';
+const ROUND_NOT_FOUND = 'Không tìm thấy vòng đua.';
+const EVENT_ENDED = 'Đợt đua đã kết thúc.';
+const MODE_LOCKED = 'Không đổi chế độ khi đợt đã đua.';
+const EVENT_HAS_ROUNDS = 'Không xoá được đợt đã có vòng đua.';
+const PRIZE_HAS_ROUNDS = 'Không xoá được hạng mục đã có vòng đua.';
 const PRIZE_FULL = 'Hạng mục đã đủ giải.';
 const TOO_FEW_ENTRANTS = 'Cần ít nhất 2 người để đua.';
 const ROUND_ALREADY_VOID = 'Vòng này đã huỷ.';
 const UNKNOWN_MEMBER = 'Có thành viên không tồn tại.';
 const DUPLICATE_MEMBER = 'Danh sách có người trùng nhau.';
 const STANDARD_TICKETS = 'Chế độ Thường chỉ có 1 vé mỗi người.';
-const NOT_A_PARTICIPANT = 'Có người không thuộc đợt quay này.';
+const NOT_A_PARTICIPANT = 'Có người không thuộc đợt đua này.';
 
 /** What the Discord summary needs of an ended event: prizes in order, each with its winners. */
 export interface CatRaceAnnouncement {

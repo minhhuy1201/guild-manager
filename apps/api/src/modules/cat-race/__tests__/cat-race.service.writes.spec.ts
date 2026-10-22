@@ -65,7 +65,7 @@ describe('CatRaceService reads', () => {
 
     await expect(
       buildService(prisma).update('nope', { name: 'x' }),
-    ).rejects.toThrow('Không tìm thấy đợt quay.');
+    ).rejects.toThrow('Không tìm thấy đợt đua.');
   });
 });
 
@@ -311,7 +311,7 @@ describe('CatRaceService announcement', () => {
   });
 
   it.each([
-    [null, NotFoundException, 'Không tìm thấy đợt quay.'],
+    [null, NotFoundException, 'Không tìm thấy đợt đua.'],
     [
       { endedAt: null },
       ConflictException,

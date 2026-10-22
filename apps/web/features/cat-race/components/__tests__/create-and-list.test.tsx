@@ -204,29 +204,29 @@ describe("CatRaceListScreen", () => {
     setQueries(ready([]));
     render(<CatRaceListScreen />);
 
-    expect(screen.getByText("Chưa có đợt quay nào.")).toBeTruthy();
+    expect(screen.getByText("Chưa có đợt đua nào.")).toBeTruthy();
   });
 
   it("shows no create button while loading", () => {
     setQueries({ ...ready(undefined), isPending: true });
     render(<CatRaceListScreen />);
 
-    expect(screen.queryByRole("button", { name: /Tạo đợt quay/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Tạo đợt đua/ })).toBeNull();
   });
 
   it("shows the error and no create button when a query failed", () => {
     setQueries({ ...ready(undefined), isError: true });
     render(<CatRaceListScreen />);
 
-    expect(screen.getByText("Không tải được danh sách đợt quay.")).toBeTruthy();
-    expect(screen.queryByRole("button", { name: /Tạo đợt quay/ })).toBeNull();
+    expect(screen.getByText("Không tải được danh sách đợt đua.")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Tạo đợt đua/ })).toBeNull();
   });
 
   it("opens the create dialog", () => {
     setQueries(ready([]));
     render(<CatRaceListScreen />);
 
-    fireEvent.click(screen.getByRole("button", { name: /Tạo đợt quay/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Tạo đợt đua/ }));
 
     expect(screen.getByRole("button", { name: /^Tiếp/ })).toBeTruthy();
   });

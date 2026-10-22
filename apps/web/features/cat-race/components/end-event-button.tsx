@@ -30,12 +30,12 @@ export function EndEventButton({ eventId }: EndEventButtonProps) {
         open={open}
         onOpenChange={setOpen}
         showCancel
-        title="Kết thúc đợt quay?"
+        title="Kết thúc đợt đua?"
         description="Đợt đã kết thúc chỉ xem được, không mở lại và không huỷ vòng được nữa."
         submitLabel="Kết thúc"
         pendingLabel="Đang kết thúc..."
         submitIcon={<Flag />}
-        fallbackError="Không kết thúc được đợt quay."
+        fallbackError="Không kết thúc được đợt đua."
         run={async () => {
           await endRace.mutateAsync(eventId);
         }}
