@@ -1,5 +1,6 @@
 import { ConflictException, ForbiddenException } from '@nestjs/common';
-import { GuildRole } from '@guild/shared/enums';
+import { Capability, GrantableCommand, GuildRole } from '@guild/shared/enums';
+import { can } from '@guild/shared/lib';
 
 import { TOKEN_TYPE } from '../../../common';
 import {
@@ -252,5 +253,65 @@ describe('lỗi từ AttendanceService', () => {
         flags: MESSAGE_FLAG.ephemeral,
       },
     });
+  });
+});
+
+describe('handleAttendanceButton - điểm danh hộ bằng Grant command', () => {
+  /**
+   * Press a button as a Manager holding the given Grants, and read the actor `mark` received.
+   * @param grants - Grants the resolver reports for the Manager
+   * @returns The actor passed to `AttendanceService.mark`
+   */
+  async function markedBy(grants: {
+    capabilities?: Capability[];
+    grantedCommands?: GrantableCommand[];
+  }) {
+    const mark = jest.fn().mockResolvedValue({});
+    const resolve = jest.fn().mockResolvedValue({
+      actor: {
+        sub: '111',
+        role: GuildRole.MANAGER,
+        type: TOKEN_TYPE.access,
+        ...grants,
+      },
+      character: { id: 'quan-ly-1', name: 'Quản', discordId: '111' },
+    });
+
+    await handleAttendanceButton(PRESS, makeDeps({ mark, resolve }));
+
+    return (mark.mock.calls[0] as [unknown, Parameters<typeof can>[0]])[1];
+  }
+
+  it('Quản lý có /diem-danh-ho bấm hộ được mà không cần Capability điểm danh', async () => {
+    const actor = await markedBy({
+      grantedCommands: [GrantableCommand.DIEM_DANH_HO],
+    });
+
+    expect(can(actor, Capability.ATTENDANCE)).toBe(true);
+  });
+
+  it('chỉ nâng đúng việc điểm danh hộ, không mở Capability nào khác', async () => {
+    const actor = await markedBy({
+      grantedCommands: [GrantableCommand.DIEM_DANH_HO],
+    });
+
+    expect(
+      Object.values(Capability).filter((capability) => can(actor, capability)),
+    ).toEqual([Capability.ATTENDANCE]);
+  });
+
+  it('Quản lý có command khác hay chưa có Grant thì không được nâng', async () => {
+    for (const grants of [
+      {},
+      { grantedCommands: [GrantableCommand.THONG_BAO] },
+    ]) {
+      expect(can(await markedBy(grants), Capability.ATTENDANCE)).toBe(false);
+    }
+  });
+
+  it('Capability điểm danh một mình vẫn bấm hộ được, như trên web', async () => {
+    const actor = await markedBy({ capabilities: [Capability.ATTENDANCE] });
+
+    expect(can(actor, Capability.ATTENDANCE)).toBe(true);
   });
 });

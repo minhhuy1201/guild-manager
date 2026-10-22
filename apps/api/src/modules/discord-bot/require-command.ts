@@ -13,6 +13,9 @@ import type { ResolvedActor } from './actor-resolver';
  * command registry, so a helper the commands need must sit outside the router's own file.
  */
 
+/** Shown to a linked caller who may not run the command: a Member, or a Manager not granted it. */
+export const NOT_GRANTED = 'Bạn chưa được cấp quyền dùng lệnh này.';
+
 /** Outcome of the command check: either the resolved caller, or the reply to answer them with. */
 export type AdminCheck =
   { ok: true; caller: ResolvedActor } | { ok: false; reply: CommandReply };
@@ -31,21 +34,19 @@ export type AdminCheck =
  * @param interaction - The validated command invocation
  * @param deps - The services the command may use
  * @param command - The `GrantableCommand` value of the command being run
- * @param refusal - Sentence shown to a linked caller who may not run it, in that command's words
  * @returns The resolved caller when they may proceed, otherwise the refusal to reply with
  */
 export async function requireCommand(
   interaction: ApplicationCommandInteraction,
   deps: CommandDeps,
   command: GrantableCommand,
-  refusal: string,
 ): Promise<AdminCheck> {
   const resolved = await deps.actors.resolve(callerDiscordId(interaction));
 
   if (!resolved) return { ok: false, reply: ephemeralText(NOT_LINKED) };
 
   if (!canRunCommand(resolved.actor, command)) {
-    return { ok: false, reply: ephemeralText(refusal) };
+    return { ok: false, reply: ephemeralText(NOT_GRANTED) };
   }
 
   return { ok: true, caller: resolved };

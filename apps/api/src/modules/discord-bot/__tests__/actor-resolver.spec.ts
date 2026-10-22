@@ -1,4 +1,9 @@
-import { GuildClass, GuildRole } from '@guild/shared/enums';
+import {
+  Capability,
+  GrantableCommand,
+  GuildClass,
+  GuildRole,
+} from '@guild/shared/enums';
 
 import { TOKEN_TYPE } from '../../../common';
 import type { GuildMemberRow } from '../../characters/characters.public';
@@ -71,5 +76,54 @@ describe('ActorResolver', () => {
     const resolver = makeResolver({ member: null, adminIds: '999' });
 
     await expect(resolver.resolve('111')).resolves.toBeNull();
+  });
+
+  it('Quản lý mang Grant của hàng mình, đọc từ cùng lần đọc nhân vật', async () => {
+    const manager = {
+      ...ROW,
+      role: GuildRole.MANAGER,
+      capabilities: [Capability.ATTENDANCE],
+      grantedCommands: [GrantableCommand.THONG_BAO],
+    };
+    const resolver = makeResolver({ member: manager, adminIds: '' });
+
+    await expect(resolver.resolve('111')).resolves.toEqual({
+      actor: {
+        sub: '111',
+        role: GuildRole.MANAGER,
+        type: TOKEN_TYPE.access,
+        capabilities: [Capability.ATTENDANCE],
+        grantedCommands: [GrantableCommand.THONG_BAO],
+      },
+      character: manager,
+    });
+  });
+
+  it('Quản lý chưa được tick gì thì mang hai mảng rỗng', async () => {
+    const resolver = makeResolver({
+      member: { ...ROW, role: GuildRole.MANAGER },
+      adminIds: '',
+    });
+
+    const resolved = await resolver.resolve('111');
+
+    expect(resolved?.actor.capabilities).toEqual([]);
+    expect(resolved?.actor.grantedCommands).toEqual([]);
+  });
+
+  it('Admin cứu hộ có hàng Quản lý vẫn là Admin, không mang Grant', async () => {
+    const resolver = makeResolver({
+      member: {
+        ...ROW,
+        role: GuildRole.MANAGER,
+        capabilities: [Capability.ATTENDANCE],
+      },
+      adminIds: '111',
+    });
+
+    const resolved = await resolver.resolve('111');
+
+    expect(resolved?.actor.role).toBe(GuildRole.ADMIN);
+    expect(resolved?.actor).not.toHaveProperty('capabilities');
   });
 });

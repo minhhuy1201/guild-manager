@@ -1,5 +1,5 @@
-import { Capability } from '@guild/shared/enums';
-import { can } from '@guild/shared/lib';
+import { Capability, GrantableCommand } from '@guild/shared/enums';
+import { can, canRunCommand } from '@guild/shared/lib';
 import type { AttendanceRecord, BattleSession } from '@guild/shared/schemas';
 
 import type { RequestActor } from '../../common';
@@ -74,6 +74,24 @@ const STATUS_ICON = {
   present: '✅',
   absent: '❌',
 } as const;
+
+/**
+ * The actor for marking attendance through the bot.
+ *
+ * Running `/diem-danh-ho` is the Grant to mark on behalf of others, with no web Capability needed,
+ * so a caller holding it marks like someone with the attendance Capability. Only the marking path
+ * gets this; every other check keeps the actor's real Grants.
+ * @param actor - The caller as resolved
+ * @returns The actor to hand to the board and to `AttendanceService.mark`
+ */
+export function withOnBehalfAttendance(actor: RequestActor): RequestActor {
+  if (!canRunCommand(actor, GrantableCommand.DIEM_DANH_HO)) return actor;
+
+  return {
+    ...actor,
+    capabilities: [...(actor.capabilities ?? []), Capability.ATTENDANCE],
+  };
+}
 
 /**
  * Whether this actor may still record an answer for this session.
@@ -292,6 +310,8 @@ export async function handleAttendanceButton(
 
   if (!resolved) return { kind: 'refusal', message: NOT_LINKED };
 
+  const actor = withOnBehalfAttendance(resolved.actor);
+
   // The character row is only needed for the heading, and `mark` never touches that table — so the
   // read rides alongside the write instead of waiting for it.
   const [, row] = await Promise.all([
@@ -301,7 +321,7 @@ export async function handleAttendanceButton(
         sessionId: pressed.sessionId,
         isPresent: pressed.isPresent,
       },
-      resolved.actor,
+      actor,
     ),
     deps.characters.findById(pressed.characterId),
   ]);
@@ -310,7 +330,7 @@ export async function handleAttendanceButton(
 
   const board = await buildAttendanceBoard(
     { characterId: row.id, characterName: row.name, discordId: row.discordId },
-    resolved.actor,
+    actor,
     deps,
   );
 

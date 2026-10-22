@@ -1,5 +1,9 @@
 import { GrantableCommand } from '@guild/shared/enums';
-import { buildAttendanceBoard, withPressNote } from '../attendance-board';
+import {
+  buildAttendanceBoard,
+  withOnBehalfAttendance,
+  withPressNote,
+} from '../attendance-board';
 import { COMMAND_OPTION_TYPE } from '../discord.constants';
 import { commandOptionValue } from '../interaction.schema';
 import { ephemeralText, publicMessage } from '../reply';
@@ -10,14 +14,7 @@ import type { CommandReply, SlashCommand } from './command.types';
 const TARGET_OPTION = 'nguoi';
 
 /**
- * Shown to a member who tried to mark on someone else's behalf.
- * Refusals stay ephemeral even though the board is public: only the caller needs them, and a channel
- * does not need to watch someone be told no.
- */
-const REFUSAL = 'Chỉ admin mới điểm danh hộ được.';
-
-/**
- * Attendance on behalf of somebody else — admins only.
+ * Attendance on behalf of somebody else — an Admin, or a Manager granted this command.
  *
  * The role is checked here rather than left to `AttendanceService`, which only refuses at write
  * time: the board appears before anyone presses anything, and showing a board whose every button
@@ -43,7 +40,6 @@ export const diemDanhHoCommand: SlashCommand = {
       interaction,
       deps,
       GrantableCommand.DIEM_DANH_HO,
-      REFUSAL,
     );
 
     if (!check.ok) return check.reply;
@@ -68,7 +64,7 @@ export const diemDanhHoCommand: SlashCommand = {
         characterName: row.name,
         discordId: row.discordId,
       },
-      check.caller.actor,
+      withOnBehalfAttendance(check.caller.actor),
       deps,
     );
 

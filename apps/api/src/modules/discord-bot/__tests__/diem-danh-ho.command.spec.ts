@@ -4,6 +4,7 @@ import { TOKEN_TYPE } from '../../../common';
 import type { CommandDeps } from '../commands/command.types';
 import { diemDanhHoCommand } from '../commands/diem-danh-ho.command';
 import { MESSAGE_FLAG } from '../discord.constants';
+import { NOT_GRANTED } from '../require-command';
 
 const INTERACTION = {
   type: 2 as const,
@@ -149,7 +150,7 @@ describe('/diem-danh-ho', () => {
 
     const reply = await diemDanhHoCommand.execute(INTERACTION, deps);
 
-    expect(reply.data.content).toContain('Chỉ admin');
+    expect(reply.data.content).toBe(NOT_GRANTED);
     expect(reply.data.components).toBeUndefined();
   });
 

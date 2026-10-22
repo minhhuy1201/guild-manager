@@ -5,14 +5,7 @@ import { requireCommand } from '../require-command';
 import type { CommandReply, SlashCommand } from './command.types';
 
 /**
- * Shown to a member who tried to announce.
- * The refusal stays ephemeral even though the announcement itself is public: a channel does not
- * need to watch someone be told no.
- */
-const REFUSAL = 'Chỉ admin mới đăng thông báo được.';
-
-/**
- * Post this week's schedule for the whole guild — admins only.
+ * Post this week's schedule for the whole guild — an Admin, or a Manager granted this command.
  *
  * It never runs on its own. There is no scheduler behind it and none is planned: the announcement
  * carries a mention that pings every member, and who gets pinged when is a decision an admin makes,
@@ -32,7 +25,6 @@ export const thongBaoCommand: SlashCommand = {
       interaction,
       deps,
       GrantableCommand.THONG_BAO,
-      REFUSAL,
     );
 
     if (!check.ok) return check.reply;

@@ -27,9 +27,6 @@ const SCOPE_CHOICES = [
 /** Left empty, the command runs the cron's own rule - what it did before the option existed. */
 const DEFAULT_SCOPE: ReminderScope = 'today';
 
-/** Shown to a member who tried to run the reminder. */
-const REFUSAL = 'Chỉ admin mới chạy được lệnh nhắc.';
-
 /** Shown when no channel has been configured yet — the fix is one command away. */
 const NO_CHANNEL =
   'Chưa có channel nào để nhắc. Gõ /cau-hinh-kenh trong channel muốn dùng.';
@@ -79,7 +76,7 @@ function scopeOf(interaction: ApplicationCommandInteraction): ReminderScope {
 }
 
 /**
- * Run the attendance reminder right now - admins only.
+ * Run the attendance reminder right now - an Admin, or a Manager granted this command.
  *
  * It calls the very same `ReminderService.run` the cron endpoint calls, so a hand-run reminder and
  * a scheduled one cannot disagree about who is missing. It exists for two reasons: the scheduled
@@ -110,7 +107,6 @@ export const nhacDiemDanhCommand: SlashCommand = {
       interaction,
       deps,
       GrantableCommand.NHAC_DIEM_DANH,
-      REFUSAL,
     );
 
     if (!check.ok) return check.reply;

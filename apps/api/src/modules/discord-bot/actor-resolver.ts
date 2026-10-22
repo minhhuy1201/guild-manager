@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Capability, GrantableCommand, GuildRole } from '@guild/shared/enums';
 
 import { TOKEN_TYPE, type RequestActor } from '../../common';
 import type { Env } from '../../config';
@@ -52,13 +53,35 @@ export class ActorResolver {
 
     if (!member && !isRescue) return null;
 
+    const role = resolveGuildRole({
+      isRescue,
+      memberRole: memberRole(member),
+    });
+
     return {
       actor: {
         sub: discordId,
-        role: resolveGuildRole({ isRescue, memberRole: memberRole(member) }),
+        role,
         type: TOKEN_TYPE.access,
+        // A Manager's Grants come from the row already read, so Discord sees a Grant change on the
+        // next interaction like the API does on the next request.
+        ...(role === GuildRole.MANAGER && member && grantsOf(member)),
       },
       character: member,
     };
   }
+}
+
+/**
+ * The Grants stored on a member row.
+ * @param member - A member row
+ * @returns Its two Grant lists, typed as the shared enums
+ */
+function grantsOf(
+  member: GuildMemberRow,
+): Pick<RequestActor, 'capabilities' | 'grantedCommands'> {
+  return {
+    capabilities: member.capabilities as Capability[],
+    grantedCommands: member.grantedCommands as GrantableCommand[],
+  };
 }

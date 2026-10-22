@@ -9,8 +9,8 @@ vẫn đi trước. Bot nạp Grant của người gọi khi resolve actor.
 
 **Blocked by:** 02
 
-**Status:** todo
+**Status:** done
 
-- [ ] Mỗi command admin có test: Admin chạy được, Manager được cấp chạy được, Manager chưa cấp và
+- [x] Mỗi command admin có test: Admin chạy được, Manager được cấp chạy được, Manager chưa cấp và
       Member nhận câu từ chối chung, người chưa liên kết nhận câu chưa liên kết
-- [ ] `/ping` và `/diem-danh` vẫn mở cho mọi người
+- [x] `/ping` và `/diem-danh` vẫn mở cho mọi người

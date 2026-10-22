@@ -1,3 +1,4 @@
+import { NOT_GRANTED } from '../require-command';
 import { GuildRole } from '@guild/shared/enums';
 
 import { TOKEN_TYPE } from '../../../common';
@@ -61,7 +62,7 @@ describe('/thong-bao', () => {
     );
 
     expect(reply.data.flags).toBe(MESSAGE_FLAG.ephemeral);
-    expect(reply.data.content).toBe('Chỉ admin mới đăng thông báo được.');
+    expect(reply.data.content).toBe(NOT_GRANTED);
   });
 
   it('Discord ID chưa gán nhân vật nào thì nói rõ', async () => {

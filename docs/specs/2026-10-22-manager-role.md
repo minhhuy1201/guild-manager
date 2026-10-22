@@ -76,6 +76,12 @@ người. Việc chặn nằm hoàn toàn ở bot. Ai gọi command admin mà kh
 chưa được tick) đều nhận cùng một câu ephemeral: "Bạn chưa được cấp quyền dùng lệnh này". Câu
 "chưa liên kết nhân vật" vẫn đi trước, như hôm nay.
 
+Bot đọc Grant của người gọi từ hàng thành viên ở mỗi tương tác. `/diem-danh-ho` là Grant để điểm danh
+hộ qua bot: người có nó bấm nút hộ người khác được mà không cần Capability "Điểm danh & nghỉ phép"
+(chỉ ở đường điểm danh của bot, các kiểm tra khác giữ Grant thật). Câu từ chối chung là
+`NOT_GRANTED` trong `require-command.ts`; mô tả "(chỉ admin)" của command trên Discord giữ nguyên tới
+lần chạy `pnpm discord:register` kế tiếp.
+
 ## User Stories
 
 1. Là Admin, tôi muốn đặt một thành viên làm Manager, để giao bớt việc mà không trao toàn quyền.
