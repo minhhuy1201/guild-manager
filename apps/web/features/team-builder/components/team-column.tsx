@@ -63,25 +63,29 @@ export function TeamColumn({
   return (
     <Card
       className={cn(
-        "relative gap-2 overflow-hidden pt-0 pb-3",
-        colors.border,
+        "gap-2 overflow-hidden pt-0 pb-3",
         colors.background,
         className
       )}
     >
-      <span
-        aria-hidden
-        className={cn("absolute inset-x-0 top-0 h-1", colors.accent)}
-      />
       <CardHeader
-        className={cn("border-b border-border/60 px-3 pt-3.5 pb-2", colors.header)}
+        className={cn("border-b border-border/60 px-3 py-2.5", colors.header)}
       >
-        <TeamNameField
-          team={team}
-          value={name}
-          readOnly={readOnly}
-          onCommit={onNameChange}
-        />
+        <div className="flex items-center gap-2">
+          <span
+            aria-hidden
+            data-slot="team-marker"
+            className={cn("size-2.5 shrink-0 rounded-full", colors.marker)}
+          />
+          <div className="min-w-0 flex-1">
+            <TeamNameField
+              team={team}
+              value={name}
+              readOnly={readOnly}
+              onCommit={onNameChange}
+            />
+          </div>
+        </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-2 px-3">
         {slots.map((slot) => {

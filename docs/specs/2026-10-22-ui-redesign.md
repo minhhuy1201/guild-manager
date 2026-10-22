@@ -100,7 +100,7 @@ Giao làm 5 PR, mỗi PR tự đứng được và đổi diện mạo thấy ng
 
 37. As an admin, I want the session tabs, the match tabs and the toolbar to form one clear control area above the formation, so that the page has a visible hierarchy.
 38. As an admin, I want the formation headline to look like a banner of the battle, so that the formation reads as the main subject of the page.
-39. As an admin, I want team columns to have a clear header, calmer slot cells and their team colour as an accent, so that ten columns side by side stay readable.
+39. As an admin, I want team columns to have a clear header, calmer slot cells and their team colour as a tinted header and a small dot beside the name, so that ten columns side by side stay readable.
 40. As an admin, I want the selected session tab in the dark theme to use the same palette as the rest of the page, so that it does not jump out as a bright block.
 41. As an admin, I want the member pool to read as a tray under the formation, so that I understand where unplaced members come from.
 42. As an admin, I want dragging a member to feel smooth and the drop target to be clearly lit, so that I place people without mistakes.
@@ -186,7 +186,7 @@ Giao làm 5 PR, mỗi PR tự đứng được và đổi diện mạo thấy ng
 - **PR 3, xếp team:**
   - Vùng điều khiển gồm tab trận, tab match và toolbar gom thành một khối.
   - Headline đội hình thành băng rôn có viền vàng mảnh.
-  - Cột đội: header rõ, ô slot dịu, màu đội làm accent.
+  - Cột đội: header rõ, ô slot dịu, màu đội nằm ở nền header nhạt và một chấm màu cạnh tên đội, viền card trung tính. Không có vạch màu trên cùng: góc bo cắt cong vạch nên hai góc nhìn lệch.
   - Sửa tab trận đang chọn ở theme tối.
   - Member pool thành khay. Drag overlay và vùng thả có highlight rõ.
   - Lưới đội hình vẫn không reveal. Bản `capture` (ảnh gửi Discord) không đổi bố cục: 5 cột, 10 đội,
