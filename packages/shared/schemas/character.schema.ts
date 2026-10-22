@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { Capability } from "../enums/capability.enum";
+import { GrantableCommand } from "../enums/grantable-command.enum";
 import { GuildClass } from "../enums/guild-class.enum";
 import { GuildRole } from "../enums/role.enum";
 
@@ -34,12 +36,21 @@ export const createCharacterSchema = z.object({
   discordId: discordIdField.optional(),
 });
 
+/** The Capabilities ticked for a Manager. */
+const capabilitiesField = z.array(z.enum(Capability));
+
+/** The admin Discord commands ticked for a Manager. */
+const grantedCommandsField = z.array(z.enum(GrantableCommand));
+
 /**
- * Body of PATCH /characters/:id — every create field optional, plus the role. Only an existing
- * member has a role to change: creating one always lands on MEMBER.
+ * Body of PATCH /characters/:id — every create field optional, plus the role and the Grants. Only
+ * an existing member has a role to change: creating one always lands on MEMBER. Role and Grants are
+ * for an Admin to send; the service refuses them from anyone else.
  */
 export const updateCharacterSchema = createCharacterSchema.partial().extend({
   role: z.enum(GuildRole).optional(),
+  capabilities: capabilitiesField.optional(),
+  grantedCommands: grantedCommandsField.optional(),
 });
 
 export type CreateCharacterInput = z.infer<typeof createCharacterSchema>;
@@ -71,6 +82,10 @@ export const guildMemberSchema = characterSchema.extend({
   /** Last login (ISO string); null = never signed in */
   lastLoginAt: z.string().nullable(),
   role: z.enum(GuildRole),
+  /** Capabilities granted to this Manager; empty for every other role */
+  capabilities: capabilitiesField,
+  /** Admin Discord commands granted to this Manager; empty for every other role */
+  grantedCommands: grantedCommandsField,
 });
 
 export type GuildMember = z.infer<typeof guildMemberSchema>;

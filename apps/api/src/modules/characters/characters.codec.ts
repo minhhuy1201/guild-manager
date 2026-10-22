@@ -1,4 +1,9 @@
-import type { GuildClass, GuildRole } from '@guild/shared/enums';
+import type {
+  Capability,
+  GrantableCommand,
+  GuildClass,
+  GuildRole,
+} from '@guild/shared/enums';
 import {
   characterSchema,
   guildMemberSchema,
@@ -39,6 +44,8 @@ export type GuildMemberRow = CharacterRow & {
   discordAvatar: string | null;
   lastLoginAt: Date | null;
   role: string;
+  capabilities: string[];
+  grantedCommands: string[];
 };
 
 /**
@@ -67,5 +74,8 @@ export function toGuildMember(row: GuildMemberRow): GuildMember {
     discordUsername: row.discordUsername,
     lastLoginAt: row.lastLoginAt?.toISOString() ?? null,
     role: row.role as GuildRole,
+    // Same cast as `role`: database enums kept in step with the shared ones.
+    capabilities: row.capabilities as Capability[],
+    grantedCommands: row.grantedCommands as GrantableCommand[],
   } satisfies GuildMember);
 }

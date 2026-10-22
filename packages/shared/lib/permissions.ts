@@ -1,4 +1,5 @@
 import { GuildRole } from "../enums/role.enum";
+import { assertNever } from "./assert-never";
 import type { Capability } from "../enums/capability.enum";
 import type { GrantableCommand } from "../enums/grantable-command.enum";
 
@@ -21,10 +22,16 @@ export interface Actor {
  * @returns true when allowed
  */
 export function can(actor: Actor, capability: Capability): boolean {
-  if (actor.role === GuildRole.ADMIN) return true;
-  if (actor.role === GuildRole.MEMBER) return false;
-
-  return actor.capabilities?.includes(capability) ?? false;
+  switch (actor.role) {
+    case GuildRole.ADMIN:
+      return true;
+    case GuildRole.MEMBER:
+      return false;
+    case GuildRole.MANAGER:
+      return actor.capabilities?.includes(capability) ?? false;
+    default:
+      return assertNever(actor.role);
+  }
 }
 
 /**
@@ -38,8 +45,14 @@ export function canRunCommand(
   actor: Actor,
   command: GrantableCommand,
 ): boolean {
-  if (actor.role === GuildRole.ADMIN) return true;
-  if (actor.role === GuildRole.MEMBER) return false;
-
-  return actor.grantedCommands?.includes(command) ?? false;
+  switch (actor.role) {
+    case GuildRole.ADMIN:
+      return true;
+    case GuildRole.MEMBER:
+      return false;
+    case GuildRole.MANAGER:
+      return actor.grantedCommands?.includes(command) ?? false;
+    default:
+      return assertNever(actor.role);
+  }
 }

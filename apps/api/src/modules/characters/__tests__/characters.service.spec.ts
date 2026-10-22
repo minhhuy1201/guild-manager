@@ -1,9 +1,17 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
-import { GuildClass, GuildRole } from '@guild/shared/enums';
+import {
+  Capability,
+  GrantableCommand,
+  GuildClass,
+  GuildRole,
+} from '@guild/shared/enums';
+
+import { TOKEN_TYPE, type JwtPayload } from '../../../common';
 
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { CharactersService } from '../characters.service';
@@ -17,6 +25,8 @@ const ROW = {
   discordUsername: null,
   lastLoginAt: null,
   role: GuildRole.MEMBER,
+  capabilities: [] as Capability[],
+  grantedCommands: [] as GrantableCommand[],
   createdAt: new Date(),
   updatedAt: new Date(),
 };
@@ -30,7 +40,21 @@ const MEMBER = {
   discordUsername: null,
   lastLoginAt: null,
   role: GuildRole.MEMBER,
+  capabilities: [],
+  grantedCommands: [],
 };
+
+/**
+ * The caller of an update.
+ * @param role - Role the caller's token carries
+ * @returns The verified payload JwtAuthGuard would attach
+ */
+function callerOf(role: GuildRole): JwtPayload {
+  return { sub: 'caller-discord-id', role, type: TOKEN_TYPE.access };
+}
+
+const ADMIN = callerOf(GuildRole.ADMIN);
+const MANAGER = callerOf(GuildRole.MANAGER);
 
 /** Prisma's primary-key conflict error. */
 const UNIQUE_VIOLATION = Object.assign(new Error('Unique constraint failed'), {
@@ -83,7 +107,13 @@ interface CreateArgs {
 /** Argument of `prisma.character.update`. */
 interface UpdateArgs {
   where: { id: string };
-  data: { name?: string; guildClass?: GuildClass };
+  data: {
+    name?: string;
+    guildClass?: GuildClass;
+    role?: GuildRole;
+    capabilities?: Capability[];
+    grantedCommands?: GrantableCommand[];
+  };
 }
 
 describe('CharactersService', () => {
@@ -273,7 +303,7 @@ describe('CharactersService', () => {
 
   describe('update', () => {
     it('chỉ gửi xuống Prisma những field được truyền vào', async () => {
-      await service.update(ROW.id, { name: 'Mèo Mập' });
+      await service.update(ROW.id, { name: 'Mèo Mập' }, ADMIN);
 
       expect(prisma.character.update).toHaveBeenCalledWith({
         where: { id: ROW.id },
@@ -284,10 +314,172 @@ describe('CharactersService', () => {
     it('ném NotFoundException khi không có thành viên đó', async () => {
       prisma.character.findUnique.mockResolvedValue(null);
 
-      await expect(service.update('khong-co', { name: 'X' })).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.update('khong-co', { name: 'X' }, ADMIN),
+      ).rejects.toThrow(NotFoundException);
       expect(prisma.character.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('vai Quản lý và Grant', () => {
+    /** The member row an update lands on, in the given role. */
+    function rowWith(role: GuildRole): void {
+      prisma.character.findUnique.mockResolvedValue({ ...ROW, role });
+    }
+
+    it('Admin đặt thành viên làm Quản lý cùng Grant', async () => {
+      await service.update(
+        ROW.id,
+        {
+          role: GuildRole.MANAGER,
+          capabilities: [Capability.TEAM_BUILDER, Capability.TACTICS],
+          grantedCommands: [GrantableCommand.THONG_BAO],
+        },
+        ADMIN,
+      );
+
+      expect(prisma.character.update).toHaveBeenCalledWith({
+        where: { id: ROW.id },
+        data: {
+          role: GuildRole.MANAGER,
+          capabilities: [Capability.TEAM_BUILDER, Capability.TACTICS],
+          grantedCommands: [GrantableCommand.THONG_BAO],
+        },
+      });
+    });
+
+    it('lên Quản lý mà không tick gì thì không có Grant nào', async () => {
+      await service.update(ROW.id, { role: GuildRole.MANAGER }, ADMIN);
+
+      const { data } = prisma.character.update.mock.calls[0][0];
+
+      expect(data.capabilities ?? []).toEqual([]);
+      expect(data.grantedCommands ?? []).toEqual([]);
+    });
+
+    it('đổi Grant của Quản lý đang có mà không gửi lại vai', async () => {
+      rowWith(GuildRole.MANAGER);
+
+      await service.update(
+        ROW.id,
+        { capabilities: [Capability.CAT_RACE] },
+        ADMIN,
+      );
+
+      expect(prisma.character.update).toHaveBeenCalledWith({
+        where: { id: ROW.id },
+        data: { capabilities: [Capability.CAT_RACE] },
+      });
+    });
+
+    it('bỏ trùng Grant gửi lên', async () => {
+      rowWith(GuildRole.MANAGER);
+
+      await service.update(
+        ROW.id,
+        { capabilities: [Capability.CAT_RACE, Capability.CAT_RACE] },
+        ADMIN,
+      );
+
+      expect(
+        prisma.character.update.mock.calls[0][0].data.capabilities,
+      ).toEqual([Capability.CAT_RACE]);
+    });
+
+    it.each([GuildRole.MEMBER, GuildRole.ADMIN])(
+      'hạ Quản lý xuống %s thì xóa sạch Grant',
+      async (role) => {
+        rowWith(GuildRole.MANAGER);
+        prisma.character.count.mockResolvedValue(1);
+
+        await service.update(ROW.id, { role }, ADMIN);
+
+        expect(prisma.character.update).toHaveBeenCalledWith({
+          where: { id: ROW.id },
+          data: { role, capabilities: [], grantedCommands: [] },
+        });
+      },
+    );
+
+    it('lên lại Quản lý thì cấp lại từ đầu, không giữ Grant cũ', async () => {
+      rowWith(GuildRole.MEMBER);
+
+      await service.update(ROW.id, { role: GuildRole.MANAGER }, ADMIN);
+
+      const { data } = prisma.character.update.mock.calls[0][0];
+
+      expect(data.capabilities ?? []).toEqual([]);
+      expect(data.grantedCommands ?? []).toEqual([]);
+    });
+
+    it.each([GuildRole.MEMBER, GuildRole.ADMIN])(
+      'từ chối Grant gửi kèm vai %s: chỉ Quản lý mới có Grant',
+      async (role) => {
+        await expect(
+          service.update(
+            ROW.id,
+            { role, capabilities: [Capability.TACTICS] },
+            ADMIN,
+          ),
+        ).rejects.toThrow(BadRequestException);
+        expect(prisma.character.update).not.toHaveBeenCalled();
+      },
+    );
+
+    it('từ chối Grant cho một Member không đổi vai', async () => {
+      await expect(
+        service.update(
+          ROW.id,
+          { grantedCommands: [GrantableCommand.CHAO_MUNG] },
+          ADMIN,
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('hạ Admin cuối cùng xuống Quản lý bị chặn', async () => {
+      prisma.character.findUnique.mockResolvedValue({
+        ...ROW,
+        role: GuildRole.ADMIN,
+      });
+      prisma.character.count.mockResolvedValue(0);
+
+      await expect(
+        service.update(ROW.id, { role: GuildRole.MANAGER }, ADMIN),
+      ).rejects.toThrow(BadRequestException);
+      expect(prisma.character.update).not.toHaveBeenCalled();
+    });
+
+    it('hạ Admin xuống Quản lý được khi còn Admin khác', async () => {
+      prisma.character.findUnique.mockResolvedValue({
+        ...ROW,
+        role: GuildRole.ADMIN,
+      });
+      prisma.character.count.mockResolvedValue(1);
+
+      await service.update(ROW.id, { role: GuildRole.MANAGER }, ADMIN);
+
+      expect(prisma.character.update).toHaveBeenCalled();
+    });
+
+    it.each([
+      ['vai', { role: GuildRole.MANAGER }],
+      ['Capability', { capabilities: [Capability.MEMBERS] }],
+      ['command', { grantedCommands: [GrantableCommand.THONG_BAO] }],
+    ])('người không phải Admin gửi %s bị từ chối', async (_field, input) => {
+      for (const caller of [MANAGER, callerOf(GuildRole.MEMBER)]) {
+        await expect(service.update(ROW.id, input, caller)).rejects.toThrow(
+          ForbiddenException,
+        );
+      }
+      expect(prisma.character.update).not.toHaveBeenCalled();
+    });
+
+    it('người không phải Admin tự nâng mình bằng cách gửi lại đúng vai hiện có cũng bị từ chối', async () => {
+      rowWith(GuildRole.MANAGER);
+
+      await expect(
+        service.update(ROW.id, { role: GuildRole.MANAGER }, MANAGER),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 
@@ -296,16 +488,16 @@ describe('CharactersService', () => {
       prisma.character.update.mockRejectedValue(UNIQUE_VIOLATION);
 
       await expect(
-        service.update(ROW.id, { discordId: '123456789012345678' }),
+        service.update(ROW.id, { discordId: '123456789012345678' }, ADMIN),
       ).rejects.toThrow(ConflictException);
     });
 
     it('không nuốt lỗi Prisma khác khi sửa', async () => {
       prisma.character.update.mockRejectedValue(OTHER_ERROR);
 
-      await expect(service.update(ROW.id, { name: 'X' })).rejects.toThrow(
-        'Connection lost',
-      );
+      await expect(
+        service.update(ROW.id, { name: 'X' }, ADMIN),
+      ).rejects.toThrow('Connection lost');
     });
 
     it('tra được thành viên theo Discord ID, trả nguyên hàng', async () => {
@@ -378,7 +570,7 @@ describe('CharactersService', () => {
       otherAdmins(0);
 
       await expect(
-        service.update(ADMIN_ROW.id, { role: GuildRole.MEMBER }),
+        service.update(ADMIN_ROW.id, { role: GuildRole.MEMBER }, ADMIN),
       ).rejects.toThrow(BadRequestException);
       expect(prisma.character.update).not.toHaveBeenCalled();
     });
@@ -398,11 +590,11 @@ describe('CharactersService', () => {
     it('hạ quyền được khi còn quản trị viên khác', async () => {
       otherAdmins(1);
 
-      await service.update(ADMIN_ROW.id, { role: GuildRole.MEMBER });
+      await service.update(ADMIN_ROW.id, { role: GuildRole.MEMBER }, ADMIN);
 
       expect(prisma.character.update).toHaveBeenCalledWith({
         where: { id: ADMIN_ROW.id },
-        data: { role: GuildRole.MEMBER },
+        data: { role: GuildRole.MEMBER, capabilities: [], grantedCommands: [] },
       });
     });
 
@@ -431,7 +623,7 @@ describe('CharactersService', () => {
     it('không chặn PATCH không đụng role, kể cả trên quản trị viên cuối cùng', async () => {
       otherAdmins(0);
 
-      await service.update(ADMIN_ROW.id, { name: 'Mèo Mập' });
+      await service.update(ADMIN_ROW.id, { name: 'Mèo Mập' }, ADMIN);
 
       expect(prisma.character.update).toHaveBeenCalled();
       // Renaming someone cannot cost a COUNT over the whole table.
@@ -441,7 +633,7 @@ describe('CharactersService', () => {
     it('không chặn khi role được gửi lên vẫn là ADMIN', async () => {
       otherAdmins(0);
 
-      await service.update(ADMIN_ROW.id, { role: GuildRole.ADMIN });
+      await service.update(ADMIN_ROW.id, { role: GuildRole.ADMIN }, ADMIN);
 
       expect(prisma.character.update).toHaveBeenCalled();
       expect(prisma.character.count).not.toHaveBeenCalled();

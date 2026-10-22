@@ -1,6 +1,11 @@
-import { GuildClass } from '@guild/shared/enums';
+import {
+  Capability,
+  GrantableCommand,
+  GuildClass,
+  GuildRole,
+} from '@guild/shared/enums';
 
-import { toCharacter } from '../characters.codec';
+import { toCharacter, toGuildMember } from '../characters.codec';
 
 describe('toCharacter', () => {
   it('giữ nguyên id, tên và lưu phái', () => {
@@ -28,6 +33,35 @@ describe('toCharacter', () => {
   it('ném khi lưu phái trong database không thuộc enum dùng chung', () => {
     expect(() =>
       toCharacter({ id: 'huy-a1', name: 'Huy', guildClass: 'PHAI_LA' }),
+    ).toThrow();
+  });
+});
+
+describe('toGuildMember', () => {
+  const ROW = {
+    id: 'huy-a1',
+    name: 'Huy',
+    guildClass: GuildClass.THIET_Y,
+    discordId: null,
+    discordUsername: null,
+    discordAvatar: null,
+    lastLoginAt: null,
+    role: GuildRole.MANAGER,
+    capabilities: [Capability.TACTICS],
+    grantedCommands: [GrantableCommand.THONG_BAO],
+  };
+
+  it('mang vai và cả hai nhóm Grant ra màn quản lý', () => {
+    expect(toGuildMember(ROW)).toMatchObject({
+      role: GuildRole.MANAGER,
+      capabilities: [Capability.TACTICS],
+      grantedCommands: [GrantableCommand.THONG_BAO],
+    });
+  });
+
+  it('ném khi Grant trong database không thuộc enum dùng chung', () => {
+    expect(() =>
+      toGuildMember({ ...ROW, capabilities: ['QUYEN_LA'] }),
     ).toThrow();
   });
 });

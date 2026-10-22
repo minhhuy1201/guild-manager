@@ -5,10 +5,14 @@ import Image from "next/image";
 import { AtSign, Save, ShieldCheck, Swords, UserRound } from "lucide-react";
 
 import {
+  CAPABILITY_LABEL,
+  GRANTABLE_COMMAND_LABEL,
   GUILD_CLASS_LABEL,
   GUILD_CLASS_OPTIONS,
   GUILD_ROLE_LABEL,
   GUILD_ROLE_OPTIONS,
+  Capability,
+  GrantableCommand,
   GuildRole,
   type GuildClass,
 } from "@guild/shared/enums";
@@ -33,6 +37,7 @@ import {
 } from "../hooks/use-member-mutations";
 import { useMembers } from "../hooks/use-members";
 import { isLastAdmin } from "../lib/last-admin";
+import { GrantChecklist } from "./grant-checklist";
 
 interface MemberFormDialogProps {
   /** Whether the dialog is open */
@@ -84,6 +89,12 @@ function MemberForm({ member, onDone }: MemberFormProps) {
   );
   const [discordId, setDiscordId] = useState(member?.discordId ?? "");
   const [role, setRole] = useState<GuildRole>(member?.role ?? GuildRole.MEMBER);
+  const [capabilities, setCapabilities] = useState<Capability[]>(
+    member?.capabilities ?? [],
+  );
+  const [grantedCommands, setGrantedCommands] = useState<GrantableCommand[]>(
+    member?.grantedCommands ?? [],
+  );
 
   const createMutation = useCreateMember();
   const updateMutation = useUpdateMember();
@@ -97,6 +108,13 @@ function MemberForm({ member, onDone }: MemberFormProps) {
     discordId.trim() === "" ||
     member?.discordId === session?.discordId ||
     isLast;
+  // Only an Admin changes roles and Grants; the API refuses them from anyone else, this just keeps
+  // the controls out of a Manager's way.
+  const isViewerAdmin = session?.role === GuildRole.ADMIN;
+  // A locked picker leaves the member in the role they have, and a Manager's Grants stay editable.
+  const effectiveRole = member && isRoleLocked ? member.role : role;
+  const showsGrants =
+    isViewerAdmin && member !== null && effectiveRole === GuildRole.MANAGER;
 
   return (
     <MutationForm
@@ -120,7 +138,8 @@ function MemberForm({ member, onDone }: MemberFormProps) {
             input: {
               ...input,
               // Locked means the picker could not be touched — the member keeps the role they have.
-              ...(isRoleLocked ? {} : { role }),
+              ...(isViewerAdmin && !isRoleLocked ? { role } : {}),
+              ...(showsGrants ? { capabilities, grantedCommands } : {}),
             },
           });
           return;
@@ -155,7 +174,7 @@ function MemberForm({ member, onDone }: MemberFormProps) {
       </div>
 
       {/* Only a saved member has a role to change: a new one always starts as MEMBER. */}
-      {member && (
+      {member && isViewerAdmin && (
         <div className="flex flex-col gap-1.5">
           <FieldLabel htmlFor="member-role" icon={<ShieldCheck />}>
             Quyền
@@ -185,6 +204,28 @@ function MemberForm({ member, onDone }: MemberFormProps) {
             </p>
           )}
         </div>
+      )}
+
+      {showsGrants && (
+        <>
+          <GrantChecklist
+            legend="Chức năng"
+            idPrefix="member-capability"
+            options={Object.values(Capability)}
+            labels={CAPABILITY_LABEL}
+            value={capabilities}
+            onChange={setCapabilities}
+          />
+          <GrantChecklist
+            legend="Command Discord"
+            idPrefix="member-command"
+            options={Object.values(GrantableCommand)}
+            labels={GRANTABLE_COMMAND_LABEL}
+            value={grantedCommands}
+            onChange={setGrantedCommands}
+            isMonospace
+          />
+        </>
       )}
 
       <div className="flex flex-col gap-1.5">

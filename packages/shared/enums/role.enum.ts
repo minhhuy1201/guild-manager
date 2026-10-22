@@ -3,17 +3,24 @@
  * in the shared package and must match Prisma's GuildRole enum values.
  */
 export enum GuildRole {
-  /** Sees the whole guild, administers it, marks attendance for others past the deadline */
+  /** Every power in the app, including who is a Manager and what each Manager may do */
   ADMIN = "ADMIN",
+  /** A Member plus the Grants an Admin ticked for this one person */
+  MANAGER = "MANAGER",
   /** Sees and marks attendance only for their own character */
   MEMBER = "MEMBER",
 }
 
 /** Vietnamese display label per role. */
 export const GUILD_ROLE_LABEL: Record<GuildRole, string> = {
-  [GuildRole.ADMIN]: "Quản trị",
+  [GuildRole.ADMIN]: "ADMIN",
+  [GuildRole.MANAGER]: "Quản lý",
   [GuildRole.MEMBER]: "Bang chúng",
 };
 
 /** Roles in dropdown display order. */
-export const GUILD_ROLE_OPTIONS: GuildRole[] = [GuildRole.MEMBER, GuildRole.ADMIN];
+export const GUILD_ROLE_OPTIONS: GuildRole[] = [
+  GuildRole.MEMBER,
+  GuildRole.MANAGER,
+  GuildRole.ADMIN,
+];

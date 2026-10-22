@@ -31,7 +31,29 @@ enum GuildClass {
 /// Guild role. Values must match the GuildRole enum in packages/shared/enums.
 enum GuildRole {
   ADMIN
+  MANAGER
   MEMBER
+}
+
+/// One area of guild management an admin grants to a Manager. Values must match the Capability enum
+/// in packages/shared/enums.
+enum Capability {
+  TEAM_BUILDER
+  SCHEDULE
+  MEMBERS
+  ATTENDANCE
+  CAT_RACE
+  TACTICS
+}
+
+/// An admin Discord command an admin grants to a Manager. Values must match the GrantableCommand
+/// enum in packages/shared/enums.
+enum GrantableCommand {
+  DIEM_DANH_HO
+  CHAO_MUNG
+  CAU_HINH_KENH
+  THONG_BAO
+  NHAC_DIEM_DANH
 }
 
 /// A character in the guild.
@@ -53,6 +75,11 @@ model Character {
   /// Null = never signed in.
   lastLoginAt     DateTime?
   role            GuildRole  @default(MEMBER)
+  /// Areas of management granted to this person. Empty unless role = MANAGER: the member service
+  /// clears it whenever a member leaves that role.
+  capabilities    Capability[]       @default([])
+  /// Admin Discord commands granted to this person. Same invariant as `capabilities`.
+  grantedCommands GrantableCommand[] @default([])
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
 

@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -11,6 +12,7 @@ import type {
   UpdateCharacterInput,
 } from '@guild/shared/schemas';
 
+import type { JwtPayload } from '../../common';
 import {
   PrismaService,
   type PrismaTransactionClient,
@@ -43,6 +45,13 @@ const DISCORD_ID_TAKEN = 'Discord ID này đã được gán cho thành viên kh
 /** Message when the change would leave the guild with no admin at all. */
 const LAST_ADMIN =
   'Đây là quản trị viên cuối cùng. Hãy chỉ định một quản trị viên khác trước khi hạ quyền hoặc xoá.';
+
+/** Message when a non-Admin tries to change a role or a Grant. */
+const ADMIN_ONLY_FIELDS =
+  'Chỉ quản trị viên được đổi vai và quyền của thành viên.';
+
+/** Message when Grants are sent for someone who is not, or is not becoming, a Manager. */
+const GRANTS_NEED_MANAGER = 'Chỉ vai Quản lý mới được cấp quyền riêng.';
 
 /** Member CRUD for admins — the controller locks every endpoint behind JwtAuthGuard. */
 @Injectable()
@@ -124,18 +133,40 @@ export class CharactersService {
   }
 
   /**
-   * Edit the name, class, Discord ID and/or role. The id never changes because other tables point at it.
+   * Edit a member. The id never changes because other tables point at it.
+   *
+   * The role and the Grants are an Admin's alone, and Grants live only on a Manager: a member who
+   * leaves that role has both lists emptied in the same write, so promoting them again starts from
+   * nothing instead of quietly handing back what they once had.
    * @param id - Member id
    * @param input - Fields to change
+   * @param actor - JWT payload of the caller
    * @returns The updated member
    * @throws NotFoundException when no such member exists
+   * @throws ForbiddenException when a non-Admin sends a role or a Grant
+   * @throws BadRequestException when Grants are sent for someone who is not a Manager, or this
+   * would demote the last admin
    * @throws ConflictException when the Discord ID already belongs to another member
    */
-  async update(id: string, input: UpdateCharacterInput): Promise<GuildMember> {
-    await this.ensureExists(id);
+  async update(
+    id: string,
+    input: UpdateCharacterInput,
+    actor: JwtPayload,
+  ): Promise<GuildMember> {
+    const current = await this.prisma.character.findUnique({
+      where: { id },
+      select: { role: true },
+    });
+    if (!current) throw new NotFoundException(NOT_FOUND);
+
+    if (touchesAdminFields(input) && actor.role !== GuildRole.ADMIN) {
+      throw new ForbiddenException(ADMIN_ONLY_FIELDS);
+    }
+
+    const data = withGrantInvariant(input, current.role as GuildRole);
 
     try {
-      const row = await this.write(id, input);
+      const row = await this.write(id, data);
 
       return toGuildMember(row);
     } catch (error) {
@@ -150,22 +181,22 @@ export class CharactersService {
    * Apply the update, guarding the admin count only when the change can drop it.
    * A rename must not cost a COUNT over the whole table, and a role staying `ADMIN` removes nobody.
    * @param id - Member id
-   * @param input - Fields to change
+   * @param data - Fields to write, already checked
    * @returns The updated Character row
    * @throws BadRequestException when this would demote the last admin
    */
   private async write(
     id: string,
-    input: UpdateCharacterInput,
+    data: UpdateCharacterInput,
   ): Promise<GuildMemberRow> {
-    if (input.role === undefined || input.role === GuildRole.ADMIN) {
-      return this.prisma.character.update({ where: { id }, data: input });
+    if (data.role === undefined || data.role === GuildRole.ADMIN) {
+      return this.prisma.character.update({ where: { id }, data });
     }
 
     return this.prisma.$transaction(async (tx) => {
       await this.ensureNotLastAdmin(tx, id);
 
-      return tx.character.update({ where: { id }, data: input });
+      return tx.character.update({ where: { id }, data });
     });
   }
 
@@ -326,6 +357,62 @@ export class CharactersService {
       throw new NotFoundException(NOT_FOUND);
     }
   }
+}
+
+/**
+ * Whether the input carries a field only an Admin may write.
+ * @param input - Fields the caller sent
+ * @returns true when it holds a role or a Grant, even one equal to what is stored
+ */
+function touchesAdminFields(input: UpdateCharacterInput): boolean {
+  return (
+    input.role !== undefined ||
+    input.capabilities !== undefined ||
+    input.grantedCommands !== undefined
+  );
+}
+
+/**
+ * Apply the rule that only a Manager holds Grants: duplicates dropped, Grants for anyone else
+ * refused, and both lists emptied when the role is being changed to something other than Manager.
+ * @param input - Fields the caller sent
+ * @param currentRole - The member's role before this write
+ * @returns The fields to store
+ * @throws BadRequestException when non-empty Grants meet a role that is not Manager
+ */
+function withGrantInvariant(
+  input: UpdateCharacterInput,
+  currentRole: GuildRole,
+): UpdateCharacterInput {
+  const role = input.role ?? currentRole;
+  const capabilities = input.capabilities && uniqueOf(input.capabilities);
+  const grantedCommands =
+    input.grantedCommands && uniqueOf(input.grantedCommands);
+
+  if (role === GuildRole.MANAGER) {
+    return {
+      ...input,
+      ...(capabilities && { capabilities }),
+      ...(grantedCommands && { grantedCommands }),
+    };
+  }
+
+  if (capabilities?.length || grantedCommands?.length) {
+    throw new BadRequestException(GRANTS_NEED_MANAGER);
+  }
+
+  return input.role === undefined
+    ? input
+    : { ...input, capabilities: [], grantedCommands: [] };
+}
+
+/**
+ * Drop repeated values, keeping first occurrence order.
+ * @param values - Values that may repeat
+ * @returns The distinct values
+ */
+function uniqueOf<T>(values: readonly T[]): T[] {
+  return [...new Set(values)];
 }
 
 /**

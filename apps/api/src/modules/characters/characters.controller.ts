@@ -15,9 +15,11 @@ import type { GuildMember } from '@guild/shared/schemas';
 
 import {
   CapabilityGuard,
+  CurrentUser,
   JwtAuthGuard,
   RequireAdmin,
   RequireCapability,
+  type JwtPayload,
 } from '../../common';
 import { CharactersService } from './characters.service';
 import { CreateCharacterDto, UpdateCharacterDto } from './dto/character.dto';
@@ -55,9 +57,10 @@ export class CharactersController {
   }
 
   /**
-   * Edit a member's name or class.
+   * Edit a member. The role and the Grants are for an Admin to send.
    * @param id - Member id
    * @param body - Fields to change
+   * @param actor - JWT payload of the caller
    * @returns The updated member
    */
   @Patch(':id')
@@ -65,8 +68,9 @@ export class CharactersController {
   update(
     @Param('id') id: string,
     @Body() body: UpdateCharacterDto,
+    @CurrentUser() actor: JwtPayload,
   ): Promise<GuildMember> {
-    return this.characters.update(id, body);
+    return this.characters.update(id, body, actor);
   }
 
   /**

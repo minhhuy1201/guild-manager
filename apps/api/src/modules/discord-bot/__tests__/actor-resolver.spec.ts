@@ -14,6 +14,8 @@ const ROW: GuildMemberRow = {
   discordAvatar: null,
   lastLoginAt: null,
   role: GuildRole.MEMBER,
+  capabilities: [],
+  grantedCommands: [],
 };
 
 /**

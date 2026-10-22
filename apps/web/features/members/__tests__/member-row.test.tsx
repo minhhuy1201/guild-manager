@@ -17,6 +17,8 @@ const MEMBER: GuildMember = {
   discordId: "42",
   discordUsername: "meomap",
   lastLoginAt: null,
+  capabilities: [],
+  grantedCommands: [],
 };
 
 /**
@@ -50,6 +52,14 @@ describe("MemberRow - cột quyền", () => {
     renderRow();
     expect(screen.queryByLabelText(`Quyền của ${MEMBER.name}`)).toBeNull();
     expect(screen.queryByRole("combobox")).toBeNull();
+  });
+
+  it("Quản lý có badge riêng để thấy ai lo việc gì", () => {
+    renderRow({ ...MEMBER, role: GuildRole.MANAGER });
+    expect(
+      screen.getByText(GUILD_ROLE_LABEL[GuildRole.MANAGER]).dataset.slot
+    ).toBe("badge");
+    expect(GUILD_ROLE_LABEL[GuildRole.MANAGER]).toBe("Quản lý");
   });
 
   it("hiển thị nhãn quyền quản trị", () => {

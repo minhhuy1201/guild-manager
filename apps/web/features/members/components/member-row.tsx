@@ -19,6 +19,7 @@ const ROLE_BADGE_VARIANT: Record<
   React.ComponentProps<typeof Badge>["variant"]
 > = {
   [GuildRole.ADMIN]: "default",
+  [GuildRole.MANAGER]: "secondary",
   [GuildRole.MEMBER]: "outline",
 };
 

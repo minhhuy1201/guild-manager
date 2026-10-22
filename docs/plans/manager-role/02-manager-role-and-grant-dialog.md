@@ -13,13 +13,13 @@ UI: chạy skill `redesign-skill` cho dialog và badge, giữ quy ước trong `
 
 **Blocked by:** 01
 
-**Status:** todo
+**Status:** done
 
-- [ ] `GuildRole` có `MANAGER`, enum Prisma khớp enum chung (test enum-sync xanh)
-- [ ] Test "chỉ có hai vai" đổi có chủ đích thành ba vai, commit message nói lý do
-- [ ] `can` với Manager trả theo Grant; Grant command độc lập với Grant Capability
-- [ ] Chỉ Admin ghi được vai và Grant; người khác gửi các trường đó bị từ chối
-- [ ] Rời vai Manager thì hai mảng Grant về rỗng; hàng không phải Manager luôn có mảng rỗng
-- [ ] Hạ Admin cuối cùng xuống Manager bị chặn
-- [ ] Test component: checklist chỉ hiện khi chọn "Quản lý"
-- [ ] Kiểm tra Data API grants theo `docs/production.md` §5
+- [x] `GuildRole` có `MANAGER`, enum Prisma khớp enum chung (test enum-sync xanh)
+- [x] Test "chỉ có hai vai" đổi có chủ đích thành ba vai, commit message nói lý do
+- [x] `can` với Manager trả theo Grant; Grant command độc lập với Grant Capability
+- [x] Chỉ Admin ghi được vai và Grant; người khác gửi các trường đó bị từ chối
+- [x] Rời vai Manager thì hai mảng Grant về rỗng; hàng không phải Manager luôn có mảng rỗng
+- [x] Hạ Admin cuối cùng xuống Manager bị chặn
+- [x] Test component: checklist chỉ hiện khi chọn "Quản lý"
+- [x] Kiểm tra Data API grants theo `docs/production.md` §5

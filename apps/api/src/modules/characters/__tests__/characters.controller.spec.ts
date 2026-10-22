@@ -1,4 +1,4 @@
-import { Capability } from '@guild/shared/enums';
+import { Capability, GuildRole } from '@guild/shared/enums';
 
 import { CapabilityGuard, JwtAuthGuard } from '../../../common';
 import { accessOf, guardsOf } from '../../../__tests__/guards-of';
@@ -30,5 +30,19 @@ describe('CharactersController', () => {
     expect(accessOf(CharactersController, 'remove')).toEqual({
       kind: 'admin',
     });
+  });
+
+  it('chuyển người gọi xuống service khi sửa, để service tự xét vai và Grant', async () => {
+    const service = { update: jest.fn().mockResolvedValue({ id: 'm1' }) };
+    const controller = new CharactersController(service as never);
+    const actor = {
+      sub: 'd1',
+      role: GuildRole.MANAGER,
+      type: 'access',
+    } as never;
+
+    await controller.update('m1', { name: 'X' }, actor);
+
+    expect(service.update).toHaveBeenCalledWith('m1', { name: 'X' }, actor);
   });
 });

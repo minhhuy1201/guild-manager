@@ -19,12 +19,15 @@ function member(id: string, role: GuildRole): GuildMember {
     discordId: null,
     discordUsername: null,
     lastLoginAt: null,
+    capabilities: [],
+    grantedCommands: [],
   };
 }
 
 const ADMIN = member("a1", GuildRole.ADMIN);
 const OTHER_ADMIN = member("a2", GuildRole.ADMIN);
 const MEMBER = member("m1", GuildRole.MEMBER);
+const MANAGER = member("g1", GuildRole.MANAGER);
 
 describe("isLastAdmin", () => {
   it("đúng khi bang chỉ còn đúng một quản trị viên", () => {
@@ -39,6 +42,11 @@ describe("isLastAdmin", () => {
     // Even in a guild with no administrator at all - deleting a character of theirs is never
     // blocked.
     expect(isLastAdmin([MEMBER], MEMBER)).toBe(false);
+  });
+
+  it("không tính Quản lý là quản trị viên", () => {
+    expect(isLastAdmin([ADMIN, MANAGER], ADMIN)).toBe(true);
+    expect(isLastAdmin([ADMIN, MANAGER], MANAGER)).toBe(false);
   });
 
   it("sai khi danh sách chưa tải xong", () => {
