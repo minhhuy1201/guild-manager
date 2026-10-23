@@ -5,6 +5,9 @@ import type { TeamNoticeInput } from '../team-notice';
 /** 19/08/2026 20:30 Vietnam time. */
 const SCRIM_AT_2030 = new Date('2026-08-19T13:30:00.000Z');
 
+/** 08/08/2026 20:00 Vietnam time, a Saturday. */
+const GUILD_WAR_AT_2000 = new Date('2026-08-08T13:00:00.000Z');
+
 /** Id of the guild war channel the no-image variant points at. */
 const CHANNEL_ID = '777000111';
 
@@ -54,14 +57,19 @@ describe('buildTeamNotice', () => {
     expect(content).not.toContain('(team 3)');
   });
 
-  it('nhắc giờ online bằng đúng mốc của tin channel: 45 phút trước giờ đánh', () => {
+  it('nhắc giờ online bằng đúng mốc của tin channel: 30 phút trước giờ đánh', () => {
     const { content } = buildTeamNotice(input());
 
-    expect(content).toContain('Online trước 19:45.');
+    expect(content).toContain('Online trước 20:00.');
   });
 
-  it('Guild War nhắc 19:30', () => {
-    const { content } = buildTeamNotice(input({ isGuildWar: true }));
+  it('Guild War 20:00 nhắc 19:30', () => {
+    const { content } = buildTeamNotice(
+      input({
+        isGuildWar: true,
+        dateTime: GUILD_WAR_AT_2000,
+      }),
+    );
 
     expect(content).toContain('Online trước 19:30.');
   });
@@ -71,7 +79,7 @@ describe('buildTeamNotice', () => {
 
     expect(content.split('\n')).toEqual([
       '**SCRIM 20:30 19/08 - Trận 1/2**',
-      'Bạn ở **Hổ Báo** (team 3). Online trước 19:45.',
+      'Bạn ở **Hổ Báo** (team 3). Online trước 20:00.',
     ]);
   });
 
@@ -80,7 +88,7 @@ describe('buildTeamNotice', () => {
 
     expect(content.split('\n')).toEqual([
       '**SCRIM 20:30 19/08 - Trận 1/2**',
-      'Bạn ở **Hổ Báo** (team 3). Online trước 19:45.',
+      'Bạn ở **Hổ Báo** (team 3). Online trước 20:00.',
       `Xem đội hình trong <#${CHANNEL_ID}>.`,
     ]);
   });
@@ -119,7 +127,7 @@ describe('buildTeamNotice — lưu ý thêm', () => {
       '**SCRIM 20:30 19/08 - Trận 1/2**',
       '> Mang giáp',
       '> Vào sớm',
-      'Bạn ở **Hổ Báo** (team 3). Online trước 19:45.',
+      'Bạn ở **Hổ Báo** (team 3). Online trước 20:00.',
     ]);
   });
 

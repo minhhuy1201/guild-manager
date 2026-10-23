@@ -8,6 +8,12 @@ const LINKS = { guildRoleId: '999888777', baoBanChannelId: '111222333' };
 /** 19/08/2026 20:30 Vietnam time. */
 const SCRIM_AT_2030 = new Date('2026-08-19T13:30:00.000Z');
 
+/** 19/08/2026 21:00 Vietnam time. */
+const SCRIM_AT_2100 = new Date('2026-08-19T14:00:00.000Z');
+
+/** 08/08/2026 20:00 Vietnam time, a Saturday. */
+const GUILD_WAR_AT_2000 = new Date('2026-08-08T13:00:00.000Z');
+
 /** 19/08/2026 09:00 Vietnam time - the same day as the match above. */
 const MORNING_OF_BATTLE = new Date('2026-08-19T02:00:00.000Z');
 
@@ -30,12 +36,25 @@ function input(
 }
 
 describe('buildFormationAnnouncement — scrim', () => {
-  it('suy ba mốc giờ từ giờ đánh: −45, −15, −45', () => {
+  // The guild's rule: be online 30 minutes before, and a slot still empty 15 minutes after that goes
+  // to someone else. Reporting late is due by the same replacement time.
+  it('suy ba mốc giờ từ giờ đánh: −30, −15, −15', () => {
     const { content } = buildFormationAnnouncement(input(), LINKS);
 
-    expect(content).toContain('online *sớm trước 19:45*');
+    expect(content).toContain('online *sớm trước 20:00*');
     expect(content).toContain('Sau 20:15 chưa online');
-    expect(content).toContain('vào trễ *sau 19:45*');
+    expect(content).toContain('vào trễ *sau 20:15*');
+  });
+
+  it('scrim 21:00 tập trung trước 20:30, thay thế sau 20:45', () => {
+    const { content } = buildFormationAnnouncement(
+      input({ dateTime: SCRIM_AT_2100 }),
+      LINKS,
+    );
+
+    expect(content).toContain('online *sớm trước 20:30*');
+    expect(content).toContain('Sau 20:45 chưa online');
+    expect(content).toContain('vào trễ *sau 20:45*');
   });
 
   it('tiêu đề mang loại trận, giờ, ngày và số trận', () => {
@@ -46,14 +65,11 @@ describe('buildFormationAnnouncement — scrim', () => {
 });
 
 describe('buildFormationAnnouncement — bang chiến', () => {
-  // Bang chiến is pinned to 20:00 on Saturday (architecture.md §6), so its three checkpoints are
-  // fixed text rather than a set of offsets - 19:30 is -30 minutes, which does not match a scrim's
-  // -45.
-  it('in cứng 19:30 / 19:45 / 19:45', () => {
+  it('dùng chung luật với scrim: 20:00 ra 19:30 / 19:45 / 19:45', () => {
     const { content } = buildFormationAnnouncement(
       input({
         isGuildWar: true,
-        dateTime: new Date('2026-08-08T13:00:00.000Z'),
+        dateTime: GUILD_WAR_AT_2000,
         now: new Date('2026-08-08T02:00:00.000Z'),
       }),
       LINKS,

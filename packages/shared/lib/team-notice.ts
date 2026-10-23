@@ -3,7 +3,7 @@ import { battleHeading, timesOf } from './formation-announcement';
 
 /** What one Team notice says. */
 export interface TeamNoticeInput {
-  /** Saturday Guild War: sets the headline and the online time */
+  /** Saturday Guild War: sets the headline */
   isGuildWar: boolean;
   /** When the battle is played */
   dateTime: Date;

@@ -2,35 +2,21 @@ import { noteQuoteLines } from './announcement-note';
 import { formatVnDayMonth, formatVnTime } from './vn-format';
 import { shiftVnDate, vnParts } from './vn-time';
 
-/** How long before a scrim members are asked to be online. */
-const SCRIM_GATHER_MINUTES = 45;
+/** How long before a battle members are asked to be online. */
+const GATHER_MINUTES = 30;
 
-/** How long before a scrim an empty slot is handed to somebody else. */
-const SCRIM_REPLACE_MINUTES = 15;
+/** How long before a battle an empty slot is handed to somebody else: 15 minutes after gathering. */
+const REPLACE_MINUTES = 15;
 
 /** Minutes in milliseconds, for shifting a battle time backwards. */
 const MINUTE_MS = 60_000;
-
-/**
- * The Guild War's three times, written out rather than derived.
- *
- * The Guild War is pinned to 20:00 Saturday (architecture.md §6) and these are the words the guild
- * already knows. They are not a shifted copy of the scrim rule — 19:30 is 30 minutes before the
- * battle where a scrim asks for 45 — so forcing both into one formula would silently reword the
- * announcement. If the Guild War ever moves, this constant and the spec change together.
- */
-const GUILD_WAR_TIMES = {
-  gather: '19:30',
-  replace: '19:45',
-  late: '19:45',
-} as const;
 
 /** The rule of dashes the guild's own template puts above the mention. */
 const SEPARATOR = '-'.repeat(69);
 
 /** What the announcement says about the battle it announces. */
 export interface FormationAnnouncementInput {
-  /** Saturday Guild War — decides both the wording and the three times */
+  /** Saturday Guild War: decides the wording of the headline */
   isGuildWar: boolean;
   /** When the battle is played */
   dateTime: Date;
@@ -69,17 +55,15 @@ export interface GatheringTimes {
  * @returns Gather time, replacement time and the "arriving late" time
  */
 export function timesOf(
-  input: Pick<FormationAnnouncementInput, 'isGuildWar' | 'dateTime'>,
+  input: Pick<FormationAnnouncementInput, 'dateTime'>,
 ): GatheringTimes {
-  if (input.isGuildWar) return GUILD_WAR_TIMES;
-
   const before = (minutes: number) =>
     formatVnTime(new Date(input.dateTime.getTime() - minutes * MINUTE_MS));
 
   return {
-    gather: before(SCRIM_GATHER_MINUTES),
-    replace: before(SCRIM_REPLACE_MINUTES),
-    late: before(SCRIM_GATHER_MINUTES),
+    gather: before(GATHER_MINUTES),
+    replace: before(REPLACE_MINUTES),
+    late: before(REPLACE_MINUTES),
   };
 }
 
