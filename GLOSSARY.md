@@ -64,6 +64,13 @@ _Avoid_: decoy, dark horse, runner-up role
 The close-up of the first two cats at the line, shown after every race.
 _Avoid_: finish shot, close finish
 
+## Attendance
+
+**Fought battle** (UI: "Đã đánh"):
+A battle day whose battle time has passed. A locked battle day is not yet a fought battle: its
+attendance can no longer be answered, but the battle is still to come.
+_Avoid_: past battle, closed battle, locked battle
+
 ## Screens
 
 **Focus mode** (UI: "Toàn màn hình"):

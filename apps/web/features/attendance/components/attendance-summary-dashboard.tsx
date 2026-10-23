@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import type { Character } from "@guild/shared/schemas";
+import type { BattleSession, Character } from "@guild/shared/schemas";
 
 import { EmptyState } from "@/components/shared/empty-state";
 import { QueryBoundary } from "@/components/shared/query-boundary";
@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { REVEAL_CLASS, revealStyle } from "@/lib/motion";
 import { useAttendanceBoard } from "../hooks/use-attendance-board";
+import { useBattleClock } from "../hooks/use-battle-clock";
 import {
   useAttendanceRecords,
   useCharacters,
@@ -17,8 +18,10 @@ import {
   useSessionFilter,
 } from "../hooks/use-attendance";
 import { maxClassSize, summarizeByClass } from "../lib/attendance-summary";
+import { splitFoughtBattles } from "../lib/fought-battles";
 import { summaryCardSpanClass } from "../lib/summary-grid";
 import { AttendanceSummaryCard } from "./attendance-summary-card";
+import { FoughtBattlesFold } from "./fought-battles-fold";
 
 /**
  * Six-column grid (must match SUMMARY_GRID_COLUMNS in `lib/summary-grid.ts`): each card's span
@@ -66,6 +69,42 @@ export function AttendanceSummaryDashboard() {
 
   const domainMax = useMemo(() => maxClassSize(summaries), [summaries]);
 
+  // A battle picked on purpose is always shown. Otherwise the fought ones fold under the rest; a
+  // week that is over is all fought, so the split leaves it whole.
+  const now = useBattleClock(shownSessions);
+  const { upcoming, fought } = selectedSession
+    ? { upcoming: shownSessions, fought: [] }
+    : splitFoughtBattles(shownSessions, now);
+
+  /**
+   * The cards of one group, laid out on the six-column grid.
+   * @param group - Battles of the group, in the week's order
+   * @returns The grid of summary cards
+   */
+  const renderCards = (group: BattleSession[]) => (
+    <div className={GRID}>
+      {group.map((session, index) => (
+        // A one-cell grid, so the card still stretches to the row's height like a direct grid
+        // item would.
+        <div
+          key={session.id}
+          className={cn(
+            "grid",
+            REVEAL_CLASS,
+            summaryCardSpanClass(index, group.length)
+          )}
+          style={revealStyle(index)}
+        >
+          <AttendanceSummaryCard
+            session={session}
+            rows={summaries[shownSessions.indexOf(session)]}
+            domainMax={domainMax}
+          />
+        </div>
+      ))}
+    </div>
+  );
+
   return (
     <QueryBoundary
       state={state}
@@ -96,26 +135,13 @@ export function AttendanceSummaryDashboard() {
           </CardContent>
         </Card>
       ) : (
-        <div className={GRID}>
-          {shownSessions.map((session, index) => (
-            // A one-cell grid, so the card still stretches to the row's height like a direct grid
-            // item would.
-            <div
-              key={session.id}
-              className={cn(
-                "grid",
-                REVEAL_CLASS,
-                summaryCardSpanClass(index, shownSessions.length)
-              )}
-              style={revealStyle(index)}
-            >
-              <AttendanceSummaryCard
-                session={session}
-                rows={summaries[index]}
-                domainMax={domainMax}
-              />
-            </div>
-          ))}
+        <div className="flex flex-col gap-4">
+          {renderCards(upcoming)}
+          {fought.length > 0 ? (
+            <FoughtBattlesFold count={fought.length}>
+              {renderCards(fought)}
+            </FoughtBattlesFold>
+          ) : null}
         </div>
       )}
     </QueryBoundary>

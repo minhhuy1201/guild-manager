@@ -574,3 +574,166 @@ describe("MemberAttendanceCard", () => {
     expect(screen.getByText("Lý do: Bận đi công tác")).toBeTruthy();
   });
 });
+
+describe("MemberAttendanceCard - trận đã đánh", () => {
+  // Wednesday noon: Monday's and Tuesday's battles are over, Thursday's is still to come.
+  const NOW = new Date("2026-08-26T12:00:00.000Z");
+  const FOUGHT_BAR = "Đã đánh · 2 trận";
+
+  /**
+   * The bar that folds the fought battles.
+   * @returns The bar button, or null when there is none
+   */
+  function foughtBar(): HTMLElement | null {
+    return (
+      screen
+        .queryAllByRole("button")
+        .find((button) => button.textContent?.includes("Đã đánh ·")) ?? null
+    );
+  }
+
+  /**
+   * Build a battle that is over: its time passed, so attendance is locked too.
+   * @param id - Session id
+   * @param dateTime - Battle time (ISO)
+   * @returns The session
+   */
+  function fought(id: string, dateTime: string): BattleSession {
+    return makeSession(id, { dateTime, isAttendanceClosed: true });
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date", "setTimeout", "clearTimeout"] });
+    vi.setSystemTime(NOW);
+    character = CHARACTER;
+    records = {};
+    boardState.isPending = false;
+    boardState.isError = false;
+    markState.isPending = false;
+    markState.variables = undefined;
+    sessions = [
+      fought("mon", "2026-08-24T20:00:00.000Z"),
+      fought("tue", "2026-08-25T20:00:00.000Z"),
+      makeSession("thu", { dateTime: "2026-08-27T20:00:00.000Z" }),
+    ];
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("trận đã đánh nằm sau thanh thu gọn, chỉ còn tile sắp tới", () => {
+    render(<MemberAttendanceCard />);
+
+    expect(screen.getByText("Trận thu")).toBeTruthy();
+    expect(screen.queryByText("Trận mon")).toBeNull();
+    expect(screen.queryByText("Trận tue")).toBeNull();
+    expect(foughtBar()?.textContent).toContain(FOUGHT_BAR);
+  });
+
+  it("thanh ghi câu trả lời của mình cho từng trận đã đánh", () => {
+    records = {
+      ...makeRecords("mon", true),
+      ...makeRecords("tue", false),
+    };
+
+    render(<MemberAttendanceCard />);
+
+    const bar = foughtBar() as HTMLElement;
+    expect(bar.textContent).toContain("Có");
+    expect(bar.textContent).toContain("Không");
+  });
+
+  it("trận đã đánh mà chưa trả lời thì thanh ghi chưa điểm danh", () => {
+    render(<MemberAttendanceCard />);
+
+    expect(foughtBar()?.textContent).toContain("Chưa điểm danh");
+  });
+
+  it("bấm thanh thì hiện tile đã đánh kèm lý do đã ghi, bấm lại thì thu", () => {
+    records = makeRecords("mon", false, "Bận đi công tác");
+
+    render(<MemberAttendanceCard />);
+    const bar = foughtBar() as HTMLElement;
+    expect(bar.getAttribute("aria-expanded")).toBe("false");
+
+    fireEvent.click(bar);
+
+    expect(bar.getAttribute("aria-expanded")).toBe("true");
+    expect(tileOf("mon").textContent).toContain("Đã đánh");
+    expect(tileOf("mon").textContent).toContain("Lý do: Bận đi công tác");
+    expect(screen.getByText("Trận tue")).toBeTruthy();
+
+    fireEvent.click(bar);
+
+    expect(bar.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByText("Trận mon")).toBeNull();
+  });
+
+  it("chưa có trận nào đã đánh thì không có thanh", () => {
+    vi.setSystemTime(new Date("2026-08-23T12:00:00.000Z"));
+
+    render(<MemberAttendanceCard />);
+
+    expect(foughtBar()).toBeNull();
+    expect(document.querySelectorAll('[data-slot="day-tile"]')).toHaveLength(3);
+  });
+
+  // Folding everything would leave the card empty after the week's last battle.
+  it("tất cả đã đánh thì hiện hết như cũ, không có thanh", () => {
+    vi.setSystemTime(new Date("2026-08-28T12:00:00.000Z"));
+
+    render(<MemberAttendanceCard />);
+
+    expect(foughtBar()).toBeNull();
+    expect(document.querySelectorAll('[data-slot="day-tile"]')).toHaveLength(3);
+  });
+
+  // Locked means attendance can no longer be answered, not that the battle was played.
+  it("trận đã khoá nhưng chưa tới giờ đánh vẫn là tile sắp tới", () => {
+    sessions = [
+      fought("mon", "2026-08-24T20:00:00.000Z"),
+      makeSession("thu", {
+        dateTime: "2026-08-27T20:00:00.000Z",
+        isAttendanceClosed: true,
+      }),
+    ];
+
+    render(<MemberAttendanceCard />);
+
+    expect(screen.getByText("Trận thu")).toBeTruthy();
+    expect(foughtBar()?.textContent).toContain("Đã đánh · 1 trận");
+  });
+
+  it("tới giờ đánh khi trang đang mở thì trận tự chuyển vào thanh", () => {
+    sessions = [
+      fought("mon", "2026-08-24T20:00:00.000Z"),
+      makeSession("thu", { dateTime: "2026-08-27T20:00:00.000Z" }),
+      makeSession("fri", { dateTime: "2026-08-28T20:00:00.000Z" }),
+    ];
+
+    render(<MemberAttendanceCard />);
+    expect(screen.getByText("Trận thu")).toBeTruthy();
+
+    act(() => {
+      vi.advanceTimersByTime(
+        new Date("2026-08-27T20:00:01.000Z").getTime() - NOW.getTime()
+      );
+    });
+
+    expect(screen.queryByText("Trận thu")).toBeNull();
+    expect(screen.getByText("Trận fri")).toBeTruthy();
+    expect(foughtBar()?.textContent).toContain("Đã đánh · 2 trận");
+  });
+
+  it("tài khoản chưa gắn nhân vật cũng được thu gọn, thanh không kèm câu trả lời", () => {
+    character = null;
+
+    render(<MemberAttendanceCard />);
+
+    const bar = foughtBar() as HTMLElement;
+    expect(bar.textContent).toContain(FOUGHT_BAR);
+    expect(bar.textContent).not.toContain("Chưa điểm danh");
+    expect(screen.queryByText("Trận mon")).toBeNull();
+  });
+});

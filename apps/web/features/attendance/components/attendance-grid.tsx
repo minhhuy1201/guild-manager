@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CircleDashed } from "lucide-react";
 import type {
   AttendanceRecord,
   BattleSession,
@@ -21,6 +20,7 @@ import { useTablePagination } from "@/hooks/use-table-pagination";
 import { errorMessageOf } from "@/lib/error-message";
 import { cn } from "@/lib/utils";
 import { useAttendanceBoard } from "../hooks/use-attendance-board";
+import { useBattleClock } from "../hooks/use-battle-clock";
 import { useDeadlineRefresh } from "../hooks/use-deadline-refresh";
 import {
   useAttendanceRecords,
@@ -30,6 +30,7 @@ import {
   useMarkAttendance,
 } from "../hooks/use-attendance";
 import { countDayTotals, type DayTotals } from "../lib/day-totals";
+import { splitFoughtBattles } from "../lib/fought-battles";
 import { clickCell, type GridDraft } from "../lib/grid-draft";
 import { recordKey } from "../lib/record-key";
 import { getSessionSubtitle } from "../lib/session-subtitle";
@@ -39,6 +40,7 @@ import { useAttendanceFilterStore } from "../store/attendance-filter-store";
 import { AttendanceFilters } from "./attendance-filters";
 import { AttendanceRow } from "./attendance-row";
 import { AttendanceStatusIcon } from "./attendance-status-icon";
+import { UnansweredIcon } from "./unanswered-icon";
 
 /**
  * Day columns drawn while the week's schedule is still loading. A guess, not a rule —
@@ -102,6 +104,7 @@ export function AttendanceGrid({ canManageOthers }: AttendanceGridProps) {
   const recoverSession = useSessionRecovery();
   const state = useAttendanceBoard();
   const unansweredOnly = useAttendanceFilterStore((s) => s.unansweredOnly);
+  const showFought = useAttendanceFilterStore((s) => s.showFought);
 
   const [draft, setDraft] = useState<GridDraft>(EMPTY_DRAFT);
   const [saving, setSaving] = useState(false);
@@ -110,6 +113,16 @@ export function AttendanceGrid({ canManageOthers }: AttendanceGridProps) {
   const battleSessions = sessions ?? EMPTY_SESSIONS;
   const recordMap = records ?? EMPTY_RECORDS;
   const changeCount = Object.keys(draft).length;
+
+  // The columns on screen: the battles still to come, plus the fought ones when asked for. The
+  // header, the totals row, the rows and the column count all read this one list.
+  const now = useBattleClock(battleSessions);
+  const { upcoming, fought } = splitFoughtBattles(battleSessions, now);
+  const shownSessions = showFought ? battleSessions : upcoming;
+  const shownIds = new Set(shownSessions.map((session) => session.id));
+  const hiddenChangeCount = Object.values(draft).filter(
+    (change) => !shownIds.has(change.sessionId)
+  ).length;
 
   const visibleCharacters = useMemo(
     () =>
@@ -151,7 +164,7 @@ export function AttendanceGrid({ canManageOthers }: AttendanceGridProps) {
   // about how many columns there are, or the whole width recomputes when data lands.
   const dayColumns = state.isPending
     ? PLACEHOLDER_DAY_COLUMNS
-    : battleSessions.length;
+    : shownSessions.length;
   const columns = dayColumns + 1; // name + days
 
   useDeadlineRefresh(battleSessions);
@@ -236,7 +249,7 @@ export function AttendanceGrid({ canManageOthers }: AttendanceGridProps) {
     <Card>
       <CardHeader className="gap-4">
         <SectionTitle>Điểm danh theo ngày đánh</SectionTitle>
-        <AttendanceFilters scope="attendance" />
+        <AttendanceFilters scope="attendance" foughtCount={fought.length} />
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         {!state.isError && !state.isPending && battleSessions.length > 0 && (
@@ -257,7 +270,7 @@ export function AttendanceGrid({ canManageOthers }: AttendanceGridProps) {
                         <Skeleton className="mx-auto h-5 w-20" />
                       </TableHead>
                     ))
-                  : battleSessions.map((session) => {
+                  : shownSessions.map((session) => {
                       const subtitle = getSessionSubtitle(session);
                       return (
                         <TableHead key={session.id} className={DAY_COLUMN}>
@@ -294,7 +307,7 @@ export function AttendanceGrid({ canManageOthers }: AttendanceGridProps) {
                         <Skeleton className="mx-auto h-6 w-24" />
                       </TableCell>
                     ))
-                  : battleSessions.map((session) => (
+                  : shownSessions.map((session) => (
                       <DayTotalsCell
                         key={session.id}
                         session={session}
@@ -312,7 +325,7 @@ export function AttendanceGrid({ canManageOthers }: AttendanceGridProps) {
             <AttendanceRow
               key={character.id}
               character={character}
-              sessions={battleSessions}
+              sessions={shownSessions}
               recordMap={recordMap}
               canEdit={canManageOthers}
               disabled={saving}
@@ -325,7 +338,11 @@ export function AttendanceGrid({ canManageOthers }: AttendanceGridProps) {
         />
         {changeCount > 0 ? (
           <UnsavedChangesBar
-            message={`${changeCount} ô đã đổi`}
+            message={
+              hiddenChangeCount > 0
+                ? `${changeCount} ô đã đổi (${hiddenChangeCount} ở cột đã ẩn)`
+                : `${changeCount} ô đã đổi`
+            }
             resetLabel="Huỷ"
             saving={saving}
             errorMessages={saveError ? [saveError] : []}
@@ -370,10 +387,8 @@ function DayTotalsCell({ session, totals }: DayTotalsCellProps) {
           <AttendanceStatusIcon isPresent={false} source="answer" />
           <CountUp value={totals.khong} />
         </span>
-        {/* Amber is the palette's "not answered yet" (frontend.md §6). A bare dash before the
-            number read as a minus sign. */}
         <span className="inline-flex items-center gap-1">
-          <CircleDashed className="size-5 text-amber-500" />
+          <UnansweredIcon />
           <CountUp value={totals.chuaTraLoi} />
         </span>
       </div>

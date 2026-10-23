@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, Lock, Swords, X } from "lucide-react";
+import { Clock, History, Lock, Swords, X } from "lucide-react";
 import { attendanceLabel } from "@guild/shared/enums";
 import type { AttendanceRecord, BattleSession } from "@guild/shared/schemas";
 
@@ -30,6 +30,7 @@ import { ApiError } from "@/lib/api-client";
 import { REVEAL_CLASS, revealStyle } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { useAttendanceBoard } from "../hooks/use-attendance-board";
+import { useBattleClock } from "../hooks/use-battle-clock";
 import { useDeadlineRefresh } from "../hooks/use-deadline-refresh";
 import {
   useAttendanceRecords,
@@ -37,10 +38,14 @@ import {
   useCurrentWeek,
   useMarkAttendance,
 } from "../hooks/use-attendance";
+import { splitFoughtBattles } from "../lib/fought-battles";
 import { getSessionSubtitle } from "../lib/session-subtitle";
 import { recordKey } from "../lib/record-key";
 import { countUnanswered } from "../lib/unanswered";
 import { AbsenceReasonInput } from "./absence-reason-input";
+import { AttendanceStatusIcon } from "./attendance-status-icon";
+import { FoughtBattlesFold } from "./fought-battles-fold";
+import { UnansweredIcon } from "./unanswered-icon";
 
 /** The two options of an attendance entry, in display order. */
 const CHOICES = [true, false];
@@ -109,6 +114,8 @@ export function MemberAttendanceCard() {
   const character = session?.character ?? null;
 
   useDeadlineRefresh(battleSessions);
+  const now = useBattleClock(battleSessions);
+  const { upcoming, fought } = splitFoughtBattles(battleSessions, now);
 
   /**
    * Record one answer and report the outcome in a toast.
@@ -174,6 +181,36 @@ export function MemberAttendanceCard() {
     }
   };
 
+  /**
+   * One day's tile, wired to the card's writes.
+   * @param battleSession - Battle the tile shows
+   * @param index - Position inside its group, for the staggered entrance
+   * @param isFought - Whether the battle is over and folded
+   * @returns The tile
+   */
+  const renderTile = (
+    battleSession: BattleSession,
+    index: number,
+    isFought: boolean
+  ) => (
+    <DayTile
+      key={battleSession.id}
+      battleSession={battleSession}
+      index={index}
+      isFought={isFought}
+      record={
+        character
+          ? recordMap[recordKey(character.id, battleSession.id)]
+          : undefined
+      }
+      canAnswer={character !== null}
+      isPending={isPending}
+      pendingWrite={variables}
+      onMark={(isPresent) => void handleMark(battleSession, isPresent)}
+      onSaveReason={(reason) => void handleSaveReason(battleSession, reason)}
+    />
+  );
+
   return (
     <QueryBoundary
       state={board}
@@ -212,28 +249,32 @@ export function MemberAttendanceCard() {
           {battleSessions.length === 0 ? (
             <EmptyState message="Tuần này chưa có trận nào." />
           ) : (
-            <div className={TILE_STRIP}>
-              {battleSessions.map((battleSession, index) => (
-                <DayTile
-                  key={battleSession.id}
-                  battleSession={battleSession}
-                  index={index}
-                  record={
-                    character
-                      ? recordMap[recordKey(character.id, battleSession.id)]
-                      : undefined
+            <div className="flex flex-col gap-4">
+              <div className={TILE_STRIP}>
+                {upcoming.map((battleSession, index) =>
+                  renderTile(battleSession, index, false)
+                )}
+              </div>
+              {fought.length > 0 ? (
+                <FoughtBattlesFold
+                  count={fought.length}
+                  summary={
+                    character ? (
+                      <FoughtAnswers
+                        battles={fought}
+                        recordMap={recordMap}
+                        characterId={character.id}
+                      />
+                    ) : null
                   }
-                  canAnswer={character !== null}
-                  isPending={isPending}
-                  pendingWrite={variables}
-                  onMark={(isPresent) =>
-                    void handleMark(battleSession, isPresent)
-                  }
-                  onSaveReason={(reason) =>
-                    void handleSaveReason(battleSession, reason)
-                  }
-                />
-              ))}
+                >
+                  <div className={TILE_STRIP}>
+                    {fought.map((battleSession, index) =>
+                      renderTile(battleSession, index, true)
+                    )}
+                  </div>
+                </FoughtBattlesFold>
+              ) : null}
             </div>
           )}
         </CardContent>
@@ -272,8 +313,10 @@ function WeekSummary({ unanswered }: WeekSummaryProps) {
 interface DayTileProps {
   /** Battle this tile shows */
   battleSession: BattleSession;
-  /** Position in the week, for the staggered entrance */
+  /** Position in its group, for the staggered entrance */
   index: number;
+  /** The battle is over: the tile fades and says "Đã đánh" instead of its lock */
+  isFought: boolean;
   /** The member's recorded answer, undefined when there is none or no character */
   record: Pick<AttendanceRecord, "isPresent" | "reason"> | undefined;
   /** Whether a character is linked, so there is someone to answer for */
@@ -292,7 +335,8 @@ interface DayTileProps {
  * One battle day of the week: its name, subtitle, deadline and open/locked badge, then the
  * member's two answers while the day is open - or the reason already given once it is locked.
  * @param battleSession - Battle this tile shows
- * @param index - Position in the week
+ * @param index - Position in its group
+ * @param isFought - Whether the battle is over
  * @param record - The member's recorded answer
  * @param canAnswer - Whether a character is linked
  * @param isPending - Whether a write is in flight
@@ -304,6 +348,7 @@ interface DayTileProps {
 function DayTile({
   battleSession,
   index,
+  isFought,
   record,
   canAnswer,
   isPending,
@@ -337,7 +382,8 @@ function DayTile({
         className={cn(
           "flex h-full flex-col gap-4 rounded-inner border-2 p-4",
           "@xl/tile:flex-row @xl/tile:items-center @xl/tile:justify-between",
-          tone
+          tone,
+          isFought && "opacity-70"
         )}
       >
         <div className="flex flex-col gap-1.5">
@@ -347,7 +393,12 @@ function DayTile({
           )}
           <SessionDeadline session={battleSession} />
           <div>
-            {isLocked ? (
+            {isFought ? (
+              <StatusBadge tone="muted">
+                <History className="size-3.5" />
+                Đã đánh
+              </StatusBadge>
+            ) : isLocked ? (
               <StatusBadge tone="danger">
                 <Lock className="size-3.5" />
                 Đã khoá
@@ -408,6 +459,44 @@ function DayTile({
         ) : null}
       </div>
     </div>
+  );
+}
+
+interface FoughtAnswersProps {
+  /** The fought battles, in the week's order */
+  battles: BattleSession[];
+  /** Recorded answers, keyed by `recordKey` */
+  recordMap: Record<string, AttendanceRecord>;
+  /** Character whose answers are shown */
+  characterId: string;
+}
+
+/**
+ * The member's answer to each fought battle, as the marks the tiles use, so the folded bar still
+ * answers "did I go?" at a glance.
+ * @param battles - The fought battles
+ * @param recordMap - Recorded answers
+ * @param characterId - Character whose answers are shown
+ * @returns One mark per battle
+ */
+function FoughtAnswers({ battles, recordMap, characterId }: FoughtAnswersProps) {
+  return (
+    <span className="flex items-center gap-1.5">
+      {battles.map((battle) => {
+        const record = recordMap[recordKey(characterId, battle.id)];
+
+        return record ? (
+          <AttendanceStatusIcon
+            key={battle.id}
+            isPresent={record.isPresent}
+            source={record.source}
+            className="size-6"
+          />
+        ) : (
+          <UnansweredIcon key={battle.id} className="size-6" />
+        );
+      })}
+    </span>
   );
 }
 
