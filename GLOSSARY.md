@@ -37,6 +37,11 @@ _Avoid_: notify, broadcast, post
 A direct message to one placed member, for one match, telling them which team they are in.
 _Avoid_: DM, member notification, announcement
 
+**Announcement note** (UI: "Lưu ý thêm"):
+Optional text an admin writes for one send, shown first in the Formation announcement and in every
+Team notice of that send.
+_Avoid_: message, extra announcement, thông báo thêm
+
 ## Cat race
 
 **Draw** (UI: "đua"):
