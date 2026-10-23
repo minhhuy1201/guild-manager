@@ -166,8 +166,9 @@ Thoát bằng `Esc` hoặc nút ✕. Cuộc đua đang chạy vẫn chạy tiế
   - Bật hoặc tắt chế độ giữa lúc đang đua thì canvas giả không bị mount lại. Đếm số lần mount
     của mock.
   - `S` khi đang đua thì gọi Bỏ qua. `S` khi chưa đua hoặc khi đang gõ thì không có tác dụng.
-  - Tự ẩn dùng fake timers: sau 2 giây không có chuột thì tấm nút bị ẩn với công nghệ hỗ trợ (`inert`
-    hoặc `aria-hidden`, chốt khi làm). `pointermove` thì hiện lại.
+  - Tự ẩn dùng fake timers: sau 2 giây không có chuột thì tấm nút và nút ✕ có `data-idle`.
+    `pointermove` hoặc focus vào tấm nút thì hết `data-idle`. Test đọc `data-idle` vì `inert` hay
+    `aria-hidden` sẽ làm nút không focus được bằng bàn phím.
 - **Màn xếp đội:** test hiện có của `TeamBuilderScreen` và overlay phải xanh mà không sửa assertion.
   Đó là bằng chứng việc tách phần chung không đổi hành vi.
 - Fullscreen API không có trong jsdom, nên test stub `requestFullscreen`, `exitFullscreen` và

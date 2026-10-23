@@ -605,3 +605,122 @@ describe("RaceStage", () => {
     });
   });
 });
+
+/**
+ * Start a round and wait for the replay to mount.
+ * @param active - Whether the stage renders in focus mode
+ */
+async function startRacing(active: boolean) {
+  mutateAsync.mockResolvedValue(RESULT);
+  renderStage(EVENT, PRIZE, true, active);
+  await act(async () => {
+    fireEvent.click(screen.getByRole("button", { name: /ĐUA/ }));
+  });
+  expect(useRaceStore.getState().stage).toBe("racing");
+}
+
+describe("RaceStage skip key", () => {
+  it.each([false, true])("skips on S while racing (focus mode %s), in either case", async (active) => {
+    await startRacing(active);
+
+    fireEvent.keyDown(window, { key: "s" });
+    expect(screen.getByText(/CANVAS 1/)).toBeTruthy();
+    fireEvent.keyDown(window, { key: "S" });
+    expect(screen.getByText(/CANVAS 2/)).toBeTruthy();
+  });
+
+  it("does nothing on S before the race starts", () => {
+    renderStage();
+
+    fireEvent.keyDown(window, { key: "s" });
+
+    expect(screen.queryByText(/CANVAS 1/)).toBeNull();
+  });
+
+  it("leaves S alone in a field, with a modifier, or once defaultPrevented", async () => {
+    await startRacing(false);
+    const input = document.createElement("input");
+    document.body.append(input);
+
+    fireEvent.keyDown(input, { key: "s" });
+    fireEvent.keyDown(window, { key: "s", ctrlKey: true });
+    fireEvent.keyDown(window, { key: "s", metaKey: true });
+    fireEvent.keyDown(window, { key: "s", altKey: true });
+    const prevented = new KeyboardEvent("keydown", { key: "s", cancelable: true });
+    prevented.preventDefault();
+    window.dispatchEvent(prevented);
+    input.remove();
+
+    expect(screen.getByText(/CANVAS 0/)).toBeTruthy();
+  });
+
+  it("shows the S cap on the skip button, hidden from assistive tech", async () => {
+    await startRacing(false);
+
+    const cap = screen.getByRole("button", { name: "Bỏ qua" }).querySelector("kbd");
+
+    expect(cap?.textContent).toBe("S");
+    expect(cap?.getAttribute("aria-hidden")).toBe("true");
+  });
+});
+
+describe("RaceStage auto-hide", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  /** The focus plate wrapper and the exit button, the two things that fade. */
+  function chrome() {
+    const plate = screen.getByRole("button", { name: "Bỏ qua" }).closest("[data-slot='cat-race-plate']");
+    return { plate, exit: screen.getByRole("button", { name: "Thoát toàn màn hình" }) };
+  }
+
+  const idle = (element: Element | null) => element?.hasAttribute("data-idle");
+
+  it("hides the plate and the exit button after 2s without a pointer move, and a move brings them back", async () => {
+    await startRacing(true);
+    const { plate, exit } = chrome();
+    expect(idle(plate)).toBe(false);
+
+    act(() => void vi.advanceTimersByTime(1999));
+    expect(idle(plate)).toBe(false);
+    act(() => void vi.advanceTimersByTime(1));
+    expect(idle(plate)).toBe(true);
+    expect(idle(exit)).toBe(true);
+
+    act(() => void window.dispatchEvent(new Event("pointermove")));
+    expect(idle(plate)).toBe(false);
+    expect(idle(exit)).toBe(false);
+
+    act(() => void vi.advanceTimersByTime(2000));
+    expect(idle(plate)).toBe(true);
+  });
+
+  it("keeps hidden buttons focusable and shows them again when one takes focus", async () => {
+    await startRacing(true);
+    act(() => void vi.advanceTimersByTime(2000));
+    const { plate } = chrome();
+    expect(idle(plate)).toBe(true);
+    expect(plate?.hasAttribute("inert")).toBe(false);
+    expect(plate?.closest("[aria-hidden]")).toBeNull();
+
+    act(() => screen.getByRole("button", { name: "Bỏ qua" }).focus());
+
+    expect(idle(plate)).toBe(false);
+  });
+
+  it("never hides outside focus mode", async () => {
+    await startRacing(false);
+
+    act(() => void vi.advanceTimersByTime(5000));
+
+    expect(document.querySelector("[data-idle]")).toBeNull();
+  });
+
+  it("never hides while the race has not started", () => {
+    renderStage(EVENT, PRIZE, true, true);
+
+    act(() => void vi.advanceTimersByTime(5000));
+
+    expect(document.querySelector("[data-idle]")).toBeNull();
+  });
+});

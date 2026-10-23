@@ -15,13 +15,13 @@ Testing Decisions phải được sửa theo.
 
 **Blocked by:** 02
 
-**Status:** todo
+**Status:** done
 
-- [ ] `S` khi đang đua thì bỏ qua. `S` khi chưa đua, khi đang gõ, kèm phím bổ trợ, hoặc đã `defaultPrevented` thì không có tác dụng.
-- [ ] Nút Bỏ qua có cap `S`
-- [ ] Chế độ toàn màn hình đang đua: sau 2 giây không có `pointermove` thì tấm nút và ✕ có `data-idle`. `pointermove` thì hết `data-idle`.
-- [ ] Focus vào tấm nút thì hết `data-idle`
-- [ ] Ngoài chế độ, hoặc khi không đua, thì không bao giờ có `data-idle`
-- [ ] Thời gian 2 giây là một hằng số có tên
-- [ ] Spec được sửa ở dòng test tự ẩn. Thêm quy ước phím `S` và tự ẩn vào `.claude/rules/web/interaction.md`.
-- [ ] Test ở `RaceStage` (fake timers). Typecheck, lint, test xanh.
+- [x] `S` khi đang đua thì bỏ qua. `S` khi chưa đua, khi đang gõ, kèm phím bổ trợ, hoặc đã `defaultPrevented` thì không có tác dụng.
+- [x] Nút Bỏ qua có cap `S`
+- [x] Chế độ toàn màn hình đang đua: sau 2 giây không có `pointermove` thì tấm nút và ✕ có `data-idle`. `pointermove` thì hết `data-idle`.
+- [x] Focus vào tấm nút thì hết `data-idle`
+- [x] Ngoài chế độ, hoặc khi không đua, thì không bao giờ có `data-idle`
+- [x] Thời gian 2 giây là một hằng số có tên
+- [x] Spec được sửa ở dòng test tự ẩn. Thêm quy ước phím `S` và tự ẩn vào `.claude/rules/web/interaction.md`.
+- [x] Test ở `RaceStage` (fake timers). Typecheck, lint, test xanh.

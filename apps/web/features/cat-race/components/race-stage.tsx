@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffectEvent, useEffect, useMemo, useState } from "react";
 import { Cat, FastForward, Play, Shuffle } from "lucide-react";
 import { CatRaceMode } from "@guild/shared/enums";
 import type { CatRaceEventDetail, CatRacePrize } from "@guild/shared/schemas";
@@ -15,7 +15,10 @@ import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { useSessionRecovery } from "@/hooks/use-session-recovery";
 import { cn } from "@/lib/utils";
 import { errorMessageOf } from "@/lib/error-message";
+import { belongsElsewhere } from "@/lib/keyboard-target";
+import { Kbd } from "@/components/ui/kbd";
 import { useDrawCatRaceRound } from "../hooks/use-cat-race-mutations";
+import { useIdleChrome } from "../hooks/use-idle-chrome";
 import { catLabels } from "../lib/cat-label";
 import { PRIZE_LOCK_LABEL, prizeLockReason } from "../lib/prize-lock";
 import { EMPTY_BOARD, advanceBoard, standingsAt, type BoardState } from "../lib/race-board";
@@ -83,6 +86,24 @@ export function RaceStage({
   const [clock, setClock] = useState<RaceClock>(IDLE_CLOCK);
   const [isContinuing, setIsContinuing] = useState(false);
   const [overlay, setOverlay] = useState(INITIAL_OVERLAY);
+
+  const isFocused = focus.active;
+  const { idle, wake } = useIdleChrome(isFocused && stage === "racing");
+
+  const skip = () => setSkipSignal((n) => n + 1);
+
+  const handleSkipKey = useEffectEvent((event: KeyboardEvent) => {
+    if (stage !== "racing" || event.key.toLowerCase() !== "s") return;
+    if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return;
+    if (belongsElsewhere(event.target)) return;
+
+    skip();
+  });
+
+  useEffect(() => {
+    window.addEventListener("keydown", handleSkipKey);
+    return () => window.removeEventListener("keydown", handleSkipKey);
+  }, []);
 
   const lock = prize ? prizeLockReason(prize, event.status) : null;
   const entrants = useMemo(
@@ -195,7 +216,6 @@ export function RaceStage({
     }
   };
 
-  const isFocused = focus.active;
   const bar = prize ? (
     <RaceBroadcastBar
       prize={prize}
@@ -222,9 +242,10 @@ export function RaceStage({
   const controls = (
     <div className="flex flex-col items-center gap-2">
       {stage === "racing" ? (
-        <Button type="button" variant="outline" onClick={() => setSkipSignal((n) => n + 1)}>
+        <Button type="button" variant="outline" onClick={skip}>
           <FastForward />
           Bỏ qua
+          <Kbd aria-hidden>S</Kbd>
         </Button>
       ) : (
         <div className="flex flex-wrap items-center justify-center gap-2">
@@ -263,7 +284,8 @@ export function RaceStage({
       barClassName={FOCUS_BAR_CLASS}
       onExit={focus.exit}
       className="flex flex-col gap-4 rounded-container border border-border bg-card p-4"
-      activeClassName="bg-[color:var(--stage-night)]"
+      activeClassName={cn("bg-[color:var(--stage-night)]", idle && "cursor-none")}
+      hideExit={idle}
       activeSlot="cat-race-focus"
     >
       {isFocused ? null : bar}
@@ -342,8 +364,16 @@ export function RaceStage({
             />
           ) : null}
           {isFocused && stage !== "result" ? (
-            <div className="pointer-events-none absolute inset-x-0 bottom-5 flex justify-center px-4">
-              <div className="dark pointer-events-auto flex flex-col items-center gap-2 rounded-container border border-white/10 bg-[color:var(--stage-plate)]/70 p-3 shadow-[0_12px_32px_-8px_rgb(0_0_0/0.6)] backdrop-blur-md">
+            <div
+              data-slot="cat-race-plate"
+              data-idle={idle ? "" : undefined}
+              onFocusCapture={wake}
+              className={cn(
+                "pointer-events-none absolute inset-x-0 bottom-5 flex justify-center px-4 transition-opacity duration-[var(--duration-base)] ease-out-soft",
+                idle && "opacity-0"
+              )}
+            >
+              <div className={cn("dark flex flex-col items-center gap-2 rounded-container border border-white/10 bg-[color:var(--stage-plate)]/70 p-3 shadow-[0_12px_32px_-8px_rgb(0_0_0/0.6)] backdrop-blur-md", idle ? "pointer-events-none" : "pointer-events-auto")}>
                 {controls}
               </div>
             </div>
