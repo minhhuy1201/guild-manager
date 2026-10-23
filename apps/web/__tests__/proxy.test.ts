@@ -245,6 +245,79 @@ describe("proxy", () => {
     });
   });
 
+  describe("khi người đã đăng nhập mở trang đăng nhập", () => {
+    /**
+     * Run the proxy for the login page with a valid session.
+     * @param redirect - The `redirect` query value, omitted when undefined
+     * @returns Where the proxy sends the visitor, as a path
+     */
+    async function onwardTarget(redirect?: string): Promise<string | null> {
+      const path =
+        redirect === undefined
+          ? ROUTES.login
+          : `${ROUTES.login}?redirect=${encodeURIComponent(redirect)}`;
+      const response = await proxy(request(path, { access: await token(3600) }));
+
+      expect(response.status).toBe(307);
+      const location = response.headers.get("location");
+      return location && new URL(location).pathname;
+    }
+
+    it("đưa thẳng tới nơi người ta định tới", async () => {
+      expect(await onwardTarget(ROUTES.attendanceHistory)).toBe(
+        ROUTES.attendanceHistory
+      );
+    });
+
+    it("không nói đi đâu thì về màn điểm danh", async () => {
+      expect(await onwardTarget()).toBe(ROUTES.attendance);
+    });
+
+    // `redirect` is a URL parameter, and anyone in Discord can repost that button.
+    it("không đá người ta ra khỏi tên miền của mình", async () => {
+      const response = await proxy(
+        request(`${ROUTES.login}?redirect=${encodeURIComponent("//evil.example")}`, {
+          access: await token(3600),
+        })
+      );
+
+      expect(new URL(response.headers.get("location") ?? "").host).toBe(
+        "guild.test"
+      );
+      expect(await onwardTarget("https://evil.example")).toBe(ROUTES.attendance);
+      // A browser reads a backslash exactly as two slashes, so this leaves the domain too.
+      expect(await onwardTarget("/\\evil.example")).toBe(ROUTES.attendance);
+    });
+
+    it("vừa gia hạn phiên thì redirect vẫn mang cặp cookie mới", async () => {
+      refreshRequest.mockResolvedValue(RENEWED);
+
+      const response = await proxy(
+        request(ROUTES.login, {
+          access: await token(-10),
+          refresh: await token(3600),
+        })
+      );
+
+      expect(response.status).toBe(307);
+      expect(response.cookies.get(ACCESS_TOKEN_COOKIE)?.value).toBe(
+        RENEWED.accessToken
+      );
+      expect(response.cookies.get(REFRESH_TOKEN_COOKIE)?.value).toBe(
+        RENEWED.refreshToken
+      );
+    });
+
+    it("vẫn cho callback OAuth chạy", async () => {
+      const response = await proxy(
+        request(ROUTES.loginCallback, { access: await token(3600) })
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get("location")).toBeNull();
+    });
+  });
+
   it("vẫn cho khách vào trang đăng nhập", async () => {
     const response = await proxy(request(ROUTES.login));
 

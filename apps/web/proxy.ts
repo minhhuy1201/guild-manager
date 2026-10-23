@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { assertNever } from "@guild/shared/lib";
+import { assertNever, safeRedirect } from "@guild/shared/lib";
 import type { AuthTokens } from "@guild/shared/schemas";
 
 import {
@@ -48,7 +48,8 @@ function readAuthSecret(): string | undefined {
  *    refreshing belongs here rather than in a Server Component.
  * 2. Deciding whether the request goes through and where it is sent otherwise — the default is
  *    **sign-in required**; `/dang-nhap` and `/trang-chu` are the exceptions, and a signed-out
- *    request for `/` goes to the latter rather than to a login form.
+ *    request for `/` goes to the latter rather than to a login form. A signed-in request for
+ *    `/dang-nhap` is sent on to its `redirect` target.
  * @param request - The request being handled
  * @returns The response continuing the request (with new cookies after a refresh), or a redirect
  */
@@ -135,6 +136,8 @@ function signedOutResponse(
         : NextResponse.redirect(new URL(ROUTES.landing, request.url));
     case "login":
       return NextResponse.redirect(loginUrl(request, isMisconfigured));
+    case "onward":
+      return NextResponse.redirect(onwardUrl(request));
     default:
       return assertNever(decision);
   }
@@ -164,9 +167,37 @@ function decide(request: NextRequest, allowed: NextResponse): NextResponse {
       return NextResponse.redirect(new URL(ROUTES.landing, request.url));
     case "login":
       return NextResponse.redirect(loginUrl(request, false));
+    case "onward":
+      return withCookies(NextResponse.redirect(onwardUrl(request)), allowed);
     default:
       return assertNever(decision);
   }
+}
+
+/**
+ * Where a signed-in visitor at the login page goes: the `redirect` they carried, when it is a path on
+ * this site. It is a query parameter anyone in Discord can repost, so `safeRedirect` stands between
+ * it and an open redirect.
+ * @param request - The request being handled
+ * @returns The absolute URL to send them on to
+ */
+function onwardUrl(request: NextRequest): URL {
+  const target = request.nextUrl.searchParams.get("redirect") ?? undefined;
+
+  return new URL(safeRedirect(target), request.url);
+}
+
+/**
+ * Carry the cookies a response set (a refreshed token pair) onto a redirect replacing it, so a
+ * session renewed on this request is not lost with the response that held it.
+ * @param redirect - The response sent instead
+ * @param source - The response whose cookies are kept
+ * @returns The redirect carrying those cookies
+ */
+function withCookies(redirect: NextResponse, source: NextResponse): NextResponse {
+  for (const cookie of source.cookies.getAll()) redirect.cookies.set(cookie);
+
+  return redirect;
 }
 
 /**

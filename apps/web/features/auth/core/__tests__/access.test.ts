@@ -15,6 +15,18 @@ describe("decideAccess", () => {
     );
   });
 
+  // The page cannot redirect promptly behind the root loading boundary: its redirect is streamed after
+  // a 200 and a skeleton. The proxy answers before any render.
+  it("người đã đăng nhập mở trang đăng nhập thì được đưa đi tiếp", () => {
+    expect(decideAccess({ pathname: "/dang-nhap", isSignedIn: true })).toBe(
+      "onward"
+    );
+    // The OAuth callback lives under the login page and still has to run.
+    expect(
+      decideAccess({ pathname: "/dang-nhap/discord", isSignedIn: true })
+    ).toBe("allow");
+  });
+
   // Typing the bare domain is how a stranger arrives, so that address gives them the landing page
   // rather than a login form for an app they know nothing about yet. Every other path is one
   // somebody typed deliberately.

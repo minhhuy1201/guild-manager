@@ -1,7 +1,4 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
-
-import { safeRedirect } from "@guild/shared/lib";
 
 import { BannerImage } from "@/components/shared/banner-image";
 import { ErrorNotice } from "@/components/shared/error-notice";
@@ -9,7 +6,6 @@ import { GuildSeal } from "@/components/shared/guild-seal";
 import { OrnamentDivider } from "@/components/shared/ornament-divider";
 import { Card, CardContent } from "@/components/ui/card";
 import { DiscordLoginButton, loginErrorMessage } from "@/features/auth";
-import { getSession } from "@/features/auth/server";
 import { LOGIN_BACKDROP } from "@/lib/page-banners";
 
 export const metadata: Metadata = {
@@ -18,8 +14,10 @@ export const metadata: Metadata = {
 };
 
 /**
- * Route "/dang-nhap" — where signing in starts. A visitor who already has a session is sent on to
- * wherever they were heading rather than shown a form they have no use for.
+ * Route "/dang-nhap" - where signing in starts. A visitor who already has a session never reaches
+ * it: `proxy.ts` sends them on to wherever they were heading. The Discord bot's "Mở website" button
+ * sends every member through here, and a redirect from this page would be streamed behind the root
+ * loading boundary instead of answering 307.
  * @param props.searchParams - `error` (code from the API) and `redirect` (intended page)
  * @returns The login page
  */
@@ -29,13 +27,6 @@ export default async function LoginPage({
   searchParams: Promise<{ error?: string; redirect?: string }>;
 }) {
   const { error, redirect: target } = await searchParams;
-
-  // Somebody already signed in has nothing to do here, and the Discord bot's "Mở website" button
-  // sends every member through this page on its way to attendance. Send them on instead of showing
-  // a login form to someone who is logged in. `safeRedirect` because `target` is a query parameter:
-  // an unchecked one turns this into an open redirect anyone can hand a member in Discord.
-  const session = await getSession();
-  if (session) redirect(safeRedirect(target));
 
   const message = loginErrorMessage(error);
 
