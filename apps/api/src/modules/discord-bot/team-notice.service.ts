@@ -101,6 +101,7 @@ export class TeamNoticeService {
    *   A pair the formation does not hold is ignored, and the rest of the rules still apply to it.
    * @param teamImages - Card image of each (match, team) that has one. A team without one gets the
    *   text notice; an image for a pair nobody is notified in is never sent.
+   * @param note - Announcement note shown under every notice's headline; omitted when there is none
    * @returns Who was messaged and, for everyone else, why not
    * @throws NotFoundException when the battle day does not exist
    * @throws BadRequestException when the day's attendance is still open (nothing announced yet)
@@ -109,6 +110,7 @@ export class TeamNoticeService {
     sessionId: string,
     only?: NotifyMembersInput['notices'],
     teamImages: NotifyMembersInput['teamImages'] = [],
+    note?: string,
   ): Promise<TeamNoticeReport> {
     const session = await this.battleSessions.findById(sessionId);
 
@@ -193,6 +195,7 @@ export class TeamNoticeService {
             teamName: saved.teamNames[String(placement.team)] ?? null,
             hasImage: file !== undefined,
             bangChienChannelId,
+            note: note ?? null,
           }),
           file ? [file] : [],
         );

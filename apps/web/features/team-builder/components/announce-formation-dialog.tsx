@@ -1,6 +1,6 @@
 "use client";
 
-import { MessageCircle, RefreshCw, Send, X } from "lucide-react";
+import { MessageCircle, Pin, RefreshCw, Send, X } from "lucide-react";
 
 import { FieldLabel } from "@/components/shared/field-label";
 import { Spinner } from "@/components/shared/spinner";
@@ -13,10 +13,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { ANNOUNCEMENT_NOTE_MAX_CHARS } from "@guild/shared/schemas";
 import type { TeamNoticeOutcome } from "../hooks/use-formation-announce";
+import type { PreviewSession } from "../lib/discord-preview";
+import { AnnouncePreview } from "./announce-preview";
 import { TeamNoticeReportView } from "./team-notice-report";
 
 const NOTIFY_MEMBERS_ID = "announce-notify-members";
+const NOTE_ID = "announce-note";
 
 interface AnnounceFormationDialogProps {
   /** Whether the dialog is open */
@@ -31,8 +36,14 @@ interface AnnounceFormationDialogProps {
   sending: boolean;
   /** Whether each placed member gets a direct message after the announcement */
   notifyMembers: boolean;
+  /** The battle day being announced, for the preview's wording */
+  session: PreviewSession;
+  /** The Announcement note typed so far */
+  note: string;
   /** Null until the announcement went out with the direct messages switched on */
   outcome: TeamNoticeOutcome | null;
+  /** Called when the user edits the note */
+  onNoteChange: (note: string) => void;
   /** Called when the user toggles the direct messages */
   onNotifyMembersChange: (notify: boolean) => void;
   /** Message again: the members who were unsent, or everyone after a failed request */
@@ -58,7 +69,10 @@ interface AnnounceFormationDialogProps {
  * @param blocked - Whether unsaved changes are refusing the send
  * @param sending - Whether the announcement is in flight
  * @param notifyMembers - Whether each placed member gets a direct message too
+ * @param session - The battle day being announced, for the preview
+ * @param note - The Announcement note typed so far
  * @param outcome - How the direct messages ended, null before the announcement went out
+ * @param onNoteChange - Called with the new text of the note
  * @param onNotifyMembersChange - Called with the new value of the switch
  * @param onRetry - Message the members who were left out, or everyone after a failed request
  * @param onOpenChange - Called when the user closes the dialog
@@ -72,7 +86,10 @@ export function AnnounceFormationDialog({
   blocked,
   sending,
   notifyMembers,
+  session,
+  note,
   outcome,
+  onNoteChange,
   onNotifyMembersChange,
   onRetry,
   onOpenChange,
@@ -142,42 +159,74 @@ export function AnnounceFormationDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent showCloseButton={!sending}>
-        <div className="grid gap-3">
+      <DialogContent showCloseButton={!sending} className="sm:max-w-xl lg:max-w-4xl">
+        <div className="grid gap-4">
           <DialogHeader>
             <DialogTitle>Gửi thông báo đội hình?</DialogTitle>
           </DialogHeader>
-          <ul className="grid gap-1 text-sm">
-            {filledCounts.map((filled, index) => (
-              <li key={index}>
-                {`Trận ${index + 1}: `}
-                {filled >= slotCount
-                  ? `đủ ${filled}/${slotCount}`
-                  : `thiếu ${slotCount - filled}/${slotCount}`}
-              </li>
-            ))}
-          </ul>
-          <p className="text-sm text-muted-foreground">
-            Ảnh đội hình của {filledCounts.length === 1 ? "trận" : "cả hai trận"}{" "}
-            sẽ được đăng vào channel bang chiến kèm thông báo tập hợp. Gửi xong,
-            ngày này khoá điểm danh: thành viên không tự đổi câu trả lời được
-            nữa, chỉ người có quyền điểm danh hộ sửa được.
-          </p>
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id={NOTIFY_MEMBERS_ID}
-              checked={notifyMembers}
-              onCheckedChange={(checked) => onNotifyMembersChange(checked)}
+          <div className="grid gap-4 lg:grid-cols-5 lg:gap-6">
+            <div className="grid content-start gap-3 lg:col-span-2">
+              <ul className="grid gap-1 text-sm tabular-nums">
+                {filledCounts.map((filled, index) => (
+                  <li key={index}>
+                    {`Trận ${index + 1}: `}
+                    {filled >= slotCount
+                      ? `đủ ${filled}/${slotCount}`
+                      : `thiếu ${slotCount - filled}/${slotCount}`}
+                  </li>
+                ))}
+              </ul>
+              <div className="grid gap-1.5">
+                <FieldLabel htmlFor={NOTE_ID} icon={<Pin />}>
+                  Lưu ý thêm
+                </FieldLabel>
+                <Textarea
+                  id={NOTE_ID}
+                  value={note}
+                  maxLength={ANNOUNCEMENT_NOTE_MAX_CHARS}
+                  disabled={sending}
+                  placeholder="VD: Trận 2 đổi map, mọi người xem lại vị trí."
+                  onChange={(event) => onNoteChange(event.target.value)}
+                />
+                <div className="flex justify-between gap-3 text-sm text-muted-foreground">
+                  <span>
+                    {notifyMembers
+                      ? "Hiện đầu tin trong kênh và mọi tin nhắn riêng."
+                      : "Hiện đầu tin trong kênh."}
+                  </span>
+                  <span className="tabular-nums">
+                    {note.length}/{ANNOUNCEMENT_NOTE_MAX_CHARS}
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id={NOTIFY_MEMBERS_ID}
+                  checked={notifyMembers}
+                  onCheckedChange={(checked) => onNotifyMembersChange(checked)}
+                />
+                <FieldLabel htmlFor={NOTIFY_MEMBERS_ID} icon={<MessageCircle />}>
+                  Nhắn riêng từng người
+                </FieldLabel>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Gửi xong, ngày này khoá điểm danh: thành viên không tự đổi câu
+                trả lời được nữa, chỉ người có quyền điểm danh hộ sửa được.
+              </p>
+              {blocked ? (
+                <p className="text-sm text-destructive">
+                  Đội hình còn thay đổi chưa lưu. Bấm Lưu trước rồi gửi lại.
+                </p>
+              ) : null}
+            </div>
+            <AnnouncePreview
+              className="lg:col-span-3"
+              session={session}
+              imageCount={filledCounts.length}
+              note={note}
+              notifyMembers={notifyMembers}
             />
-            <FieldLabel htmlFor={NOTIFY_MEMBERS_ID} icon={<MessageCircle />}>
-              Nhắn riêng từng người
-            </FieldLabel>
           </div>
-          {blocked ? (
-            <p className="text-sm text-destructive">
-              Đội hình còn thay đổi chưa lưu. Bấm Lưu trước rồi gửi lại.
-            </p>
-          ) : null}
           <DialogFooter>
             <Button
               variant="ghost"

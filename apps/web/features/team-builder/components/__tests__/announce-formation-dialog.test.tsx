@@ -1,10 +1,17 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { AnnounceFormationDialog } from "../announce-formation-dialog";
 
 afterEach(cleanup);
+
+/** A 20:30 scrim played over two matches, the fields the preview reads. */
+const SESSION = {
+  isGuildWar: false,
+  dateTime: "2026-08-19T13:30:00.000Z",
+  matchCount: 2,
+};
 
 /**
  * Render the dialog of a saved day whose two matches are partly filled.
@@ -22,6 +29,9 @@ function renderDialog(
       blocked={false}
       sending={false}
       notifyMembers
+      session={SESSION}
+      note=""
+      onNoteChange={vi.fn()}
       outcome={null}
       onNotifyMembersChange={vi.fn()}
       onRetry={vi.fn()}
@@ -41,6 +51,93 @@ function confirmButton(): HTMLButtonElement {
     name: /Gửi thông báo|Đang gửi/,
   }) as HTMLButtonElement;
 }
+
+describe("AnnounceFormationDialog - xem trước", () => {
+  it("tin kênh hiện lưu ý dạng quote dưới tiêu đề, trên các dòng luật", () => {
+    renderDialog({ note: "Đổi map trận 2" });
+
+    const preview = screen.getByRole("region", { name: "Xem trước tin Discord" });
+    const quote = within(preview).getByText("Đổi map trận 2").closest("blockquote");
+    const text = preview.textContent ?? "";
+
+    expect(quote).toBeTruthy();
+    expect(text.indexOf("SCRIM 20:30 19/08")).toBeLessThan(text.indexOf("Đổi map trận 2"));
+    expect(text.indexOf("Đổi map trận 2")).toBeLessThan(text.indexOf("Các thành viên"));
+  });
+
+  it("không có lưu ý thì không có khung quote", () => {
+    renderDialog();
+
+    expect(document.querySelector("blockquote")).toBeNull();
+  });
+
+  it("mention kênh và role hiện thành pill, không lộ id giữ chỗ", () => {
+    renderDialog();
+
+    expect(screen.getByText("#🤒│báo-bận")).toBeTruthy();
+    expect(screen.getByText("@Bang")).toBeTruthy();
+    expect(document.body.textContent).not.toContain("preview-");
+  });
+
+  it("ô giữ chỗ ảnh: một ô mỗi trận dưới tin kênh", () => {
+    renderDialog();
+
+    expect(screen.getByText("doi-hinh-1.webp")).toBeTruthy();
+    expect(screen.getByText("doi-hinh-2.webp")).toBeTruthy();
+  });
+
+  it("tab nhắn riêng chỉ có khi bật nhắn riêng từng người", () => {
+    renderDialog({ notifyMembers: false });
+    expect(screen.queryByRole("tab", { name: /Nhắn riêng/ })).toBeNull();
+
+    cleanup();
+    renderDialog({ notifyMembers: true });
+    expect(screen.getByRole("tab", { name: /Nhắn riêng/ })).toBeTruthy();
+  });
+
+  it("tab nhắn riêng hiện DM mẫu của team 1 trận 1 kèm lưu ý và ảnh card", () => {
+    renderDialog({ note: "Mang giáp" });
+
+    fireEvent.click(screen.getByRole("tab", { name: /Nhắn riêng/ }));
+
+    const preview = screen.getByRole("region", { name: "Xem trước tin Discord" });
+
+    expect(within(preview).getByText(/Bạn ở/)).toBeTruthy();
+    expect(within(preview).getByText("Mang giáp").closest("blockquote")).toBeTruthy();
+    expect(within(preview).getByText("team-1-tran-1.webp")).toBeTruthy();
+  });
+});
+
+describe("AnnounceFormationDialog - lưu ý thêm", () => {
+  it("có ô Lưu ý thêm với bộ đếm theo giới hạn 500", () => {
+    renderDialog({ note: "Đổi map" });
+
+    const field = screen.getByLabelText("Lưu ý thêm") as HTMLTextAreaElement;
+
+    expect(field.value).toBe("Đổi map");
+    expect(field.maxLength).toBe(500);
+    expect(screen.getByText("7/500")).toBeTruthy();
+  });
+
+  it("gõ vào ô thì báo lên onNoteChange", () => {
+    const onNoteChange = vi.fn();
+    renderDialog({ onNoteChange });
+
+    fireEvent.change(screen.getByLabelText("Lưu ý thêm"), {
+      target: { value: "Online sớm" },
+    });
+
+    expect(onNoteChange).toHaveBeenCalledWith("Online sớm");
+  });
+
+  it("đang gửi thì khoá ô lưu ý", () => {
+    renderDialog({ sending: true });
+
+    expect((screen.getByLabelText("Lưu ý thêm") as HTMLTextAreaElement).disabled).toBe(
+      true
+    );
+  });
+});
 
 describe("AnnounceFormationDialog", () => {
   it("nói số người còn thiếu của từng trận", () => {

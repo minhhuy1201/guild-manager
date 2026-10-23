@@ -117,6 +117,20 @@ describe('FormationAnnouncerService', () => {
     ]);
   });
 
+  it('lưu ý thêm nằm dưới tiêu đề tin kênh và vẫn chỉ ping role bang', async () => {
+    const { service, rest } = build();
+
+    await service.announce('session-1', [IMAGE], 'Đổi map trận 2');
+
+    const [, payload] = rest.postMessageWithFiles.mock.calls[0] as [
+      string,
+      { content: string; allowed_mentions: unknown },
+    ];
+
+    expect(payload.content.split('\n')[1]).toBe('> Đổi map trận 2');
+    expect(payload.allowed_mentions).toEqual({ roles: ['999888777'] });
+  });
+
   it('gửi xong thì khoá điểm danh của ngày đó', async () => {
     // Once the line-up is on Discord the list counts as final: leaving the form open lets a member
     // change their answer afterwards and contradict the message the whole guild just read.

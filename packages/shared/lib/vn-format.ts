@@ -1,4 +1,4 @@
-import { vnParts } from '@guild/shared/lib';
+import { vnParts } from './vn-time';
 
 /**
  * Two-digit string of a number, for a wall clock or a calendar field.

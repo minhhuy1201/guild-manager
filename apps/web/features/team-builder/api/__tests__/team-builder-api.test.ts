@@ -99,6 +99,21 @@ describe("team builder API", () => {
     });
   });
 
+  it("posts the note next to the images when announcing", async () => {
+    const fetchMock = mockFetch({ status: 200, body: { data: {} } });
+
+    await announceFormation({
+      sessionId: "s1",
+      images: ["data:image/webp;base64,AQID"],
+      note: "Đổi map trận 2",
+    });
+
+    expect(JSON.parse(String(requestOf(fetchMock).init.body))).toEqual({
+      images: ["data:image/webp;base64,AQID"],
+      note: "Đổi map trận 2",
+    });
+  });
+
   it("posts only the notices when notifying members", async () => {
     const fetchMock = mockFetch({ status: 200, body: { data: {} } });
 
@@ -107,6 +122,16 @@ describe("team builder API", () => {
     const { url, init } = requestOf(fetchMock);
     expect(url).toContain("/team-builder/formations/a%20b/notify-members");
     expect(JSON.parse(String(init.body))).toEqual({ notices: [] });
+  });
+
+  it("posts the note next to the notices when notifying members", async () => {
+    const fetchMock = mockFetch({ status: 200, body: { data: {} } });
+
+    await notifyTeamMembers({ sessionId: "s1", note: "Mang giáp" });
+
+    expect(JSON.parse(String(requestOf(fetchMock).init.body))).toEqual({
+      note: "Mang giáp",
+    });
   });
 
   it("posts the team images next to the notices when notifying members", async () => {

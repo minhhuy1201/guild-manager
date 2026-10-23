@@ -160,15 +160,36 @@ const announcementImageSchema = z
   .max(ANNOUNCEMENT_IMAGE_MAX_CHARS, "Ảnh đội hình quá lớn.");
 
 /**
+ * Longest Announcement note, counted after trimming. The channel message is about 500 characters
+ * and Discord allows 2000, so the note and its quote prefixes fit with room to spare.
+ */
+export const ANNOUNCEMENT_NOTE_MAX_CHARS = 500;
+
+/**
+ * The Announcement note an admin writes for one send. Trimmed at both ends; a note that is empty
+ * after trimming is no note, so `undefined` is the one "absent" value the wording has to handle.
+ */
+export const announcementNoteSchema = z
+  .string()
+  .trim()
+  .max(
+    ANNOUNCEMENT_NOTE_MAX_CHARS,
+    `Lưu ý thêm tối đa ${ANNOUNCEMENT_NOTE_MAX_CHARS} ký tự.`,
+  )
+  .transform((note) => (note === "" ? undefined : note))
+  .optional();
+
+/**
  * Body of POST /team-builder/formations/:sessionId/announce — one image per match laid out, in
  * match order. `min(1)` because an announcement with no line-up is not one; `max(2)` is the same
- * ceiling a day's match count carries.
+ * ceiling a day's match count carries. `note` opens the message under its headline.
  */
 export const announceFormationSchema = z.object({
   images: z
     .array(announcementImageSchema)
     .min(1, "Chưa có ảnh đội hình nào để gửi.")
     .max(2, "Một ngày nhiều nhất 2 trận."),
+  note: announcementNoteSchema,
 });
 
 /** What the announce endpoint answers: how many images reached Discord. */
@@ -256,7 +277,8 @@ const teamImageSchema = z.object({
  * Body of POST /team-builder/formations/:sessionId/notify-members. `notices` narrows the send to
  * those members and matches, the retry of whoever did not get theirs. Left out, everyone the day
  * calls for is messaged. `teamImages` holds the card image of each (match, team); a team without
- * one is messaged in text, so leaving it out is valid.
+ * one is messaged in text, so leaving it out is valid. `note` is the Announcement note, the same
+ * one the announcement carried: a retry sends it again so every member reads the same DM.
  */
 export const notifyMembersSchema = z.object({
   notices: z
@@ -278,6 +300,7 @@ export const notifyMembersSchema = z.object({
       "Mỗi team chỉ được có một ảnh cho mỗi trận.",
     )
     .optional(),
+  note: announcementNoteSchema,
 });
 
 export type NotifyMembersInput = z.infer<typeof notifyMembersSchema>;

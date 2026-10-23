@@ -1,6 +1,7 @@
 import { TEAM_COUNT } from '@guild/shared/lib';
 import {
   TEAM_IMAGE_MAX_CHARS,
+  ANNOUNCEMENT_NOTE_MAX_CHARS,
   announceFormationSchema,
   notifyMembersSchema,
 } from '@guild/shared/schemas';
@@ -68,7 +69,7 @@ describe('FormationAnnounceController', () => {
     });
   });
 
-  it('chuyển thẳng sessionId và ảnh xuống announcer', async () => {
+  it('chuyển thẳng sessionId, ảnh và lưu ý xuống announcer', async () => {
     const announcer = {
       announce: jest.fn().mockResolvedValue({ imageCount: 2 }),
     };
@@ -79,10 +80,14 @@ describe('FormationAnnounceController', () => {
     const images = [IMAGE, 'data:image/webp;base64,BAUG'];
 
     await expect(
-      controller.announceFormation('session-1', { images }),
+      controller.announceFormation('session-1', { images, note: 'Đổi map' }),
     ).resolves.toEqual({ imageCount: 2 });
 
-    expect(announcer.announce).toHaveBeenCalledWith('session-1', images);
+    expect(announcer.announce).toHaveBeenCalledWith(
+      'session-1',
+      images,
+      'Đổi map',
+    );
   });
 
   it('nhắn riêng chuyển sessionId và danh sách nhắn lại xuống TeamNoticeService, trả nguyên báo cáo', async () => {
@@ -105,6 +110,7 @@ describe('FormationAnnounceController', () => {
     );
     expect(notices.notifyMembers).toHaveBeenCalledWith(
       'session-1',
+      undefined,
       undefined,
       undefined,
     );
@@ -197,5 +203,51 @@ describe('notifyMembersSchema - ảnh team', () => {
     }));
 
     expect(notifyMembersSchema.safeParse({ teamImages }).success).toBe(false);
+  });
+});
+
+describe('announceFormationSchema — lưu ý thêm', () => {
+  const parse = (note: unknown) =>
+    announceFormationSchema.safeParse({ images: [IMAGE], note });
+
+  it('không bắt buộc', () => {
+    const result = announceFormationSchema.safeParse({ images: [IMAGE] });
+
+    expect(result.success && result.data.note).toBeUndefined();
+  });
+
+  it('cắt khoảng trắng hai đầu, giữ xuống dòng ở giữa', () => {
+    const result = parse('  Dòng một\nDòng hai \n');
+
+    expect(result.success && result.data.note).toBe('Dòng một\nDòng hai');
+  });
+
+  it.each(['', '   ', '\n \n'])('%j coi như không có lưu ý', (note) => {
+    const result = parse(note);
+
+    expect(result.success && result.data.note).toBeUndefined();
+  });
+
+  it('nhận đúng giới hạn và từ chối vượt một ký tự', () => {
+    expect(parse('a'.repeat(ANNOUNCEMENT_NOTE_MAX_CHARS)).success).toBe(true);
+    expect(parse('a'.repeat(ANNOUNCEMENT_NOTE_MAX_CHARS + 1)).success).toBe(
+      false,
+    );
+  });
+});
+
+describe('notifyMembersSchema — lưu ý thêm', () => {
+  it('dùng chung luật với announce: cắt hai đầu, rỗng là không có, tối đa 500', () => {
+    const parse = (note: string) => notifyMembersSchema.safeParse({ note });
+
+    const trimmed = parse('  Mang giáp \n');
+    const empty = parse('   ');
+
+    expect(trimmed.success && trimmed.data.note).toBe('Mang giáp');
+    expect(empty.success && empty.data.note).toBeUndefined();
+    expect(parse('a'.repeat(ANNOUNCEMENT_NOTE_MAX_CHARS)).success).toBe(true);
+    expect(parse('a'.repeat(ANNOUNCEMENT_NOTE_MAX_CHARS + 1)).success).toBe(
+      false,
+    );
   });
 });

@@ -67,6 +67,66 @@ beforeEach(() => {
   notifyMock.mockResolvedValue({ ok: true, data: REPORT });
 });
 
+describe("useFormationAnnounce - lưu ý thêm", () => {
+  it("gửi lưu ý cùng request đăng channel", async () => {
+    const { result } = renderAnnounce();
+
+    act(() => result.current.setOpen(true));
+    act(() => result.current.setNote("Đổi map trận 2"));
+    await act(() => result.current.confirm());
+
+    expect(announceMock).toHaveBeenCalledWith({
+      sessionId: "session-1",
+      images: ["data:image/webp;base64,AQID"],
+      note: "Đổi map trận 2",
+    });
+  });
+
+  it("gửi cùng lưu ý trong request nhắn riêng", async () => {
+    const { result } = renderAnnounce();
+
+    act(() => result.current.setOpen(true));
+    act(() => result.current.setNote("Mang giáp"));
+    await act(() => result.current.confirm());
+
+    expect(notifyMock).toHaveBeenCalledWith(
+      expect.objectContaining({ sessionId: "session-1", note: "Mang giáp" })
+    );
+  });
+
+  it("nhắn lại người lỗi vẫn gửi đúng lưu ý đó", async () => {
+    const unsent = { characterId: "kirito", name: "Kirito", matchIndex: 1 };
+    notifyMock.mockResolvedValueOnce({
+      ok: true,
+      data: { ...REPORT, unsent: [unsent] },
+    });
+    const { result } = renderAnnounce();
+
+    act(() => result.current.setOpen(true));
+    act(() => result.current.setNote("Mang giáp"));
+    await act(() => result.current.confirm());
+    await act(() => result.current.retry());
+
+    expect(notifyMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        notices: [{ characterId: "kirito", matchIndex: 1 }],
+        note: "Mang giáp",
+      })
+    );
+  });
+
+  it("mỗi lần mở dialog bắt đầu với lưu ý trống", () => {
+    const { result } = renderAnnounce();
+
+    act(() => result.current.setOpen(true));
+    act(() => result.current.setNote("Lưu ý hôm qua"));
+    act(() => result.current.setOpen(false));
+    act(() => result.current.setOpen(true));
+
+    expect(result.current.note).toBe("");
+  });
+});
+
 describe("useFormationAnnounce - nhắn riêng", () => {
   it("bật theo mặc định, và bật lại mỗi lần mở dialog", () => {
     const { result } = renderAnnounce();

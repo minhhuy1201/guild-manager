@@ -24,6 +24,7 @@ function input(
     dateTime: SCRIM_AT_2030,
     matchCount: 2,
     now: MORNING_OF_BATTLE,
+    note: null,
     ...overrides,
   };
 }
@@ -119,5 +120,50 @@ describe('buildFormationAnnouncement — mention', () => {
     );
 
     expect(content.split('\n')[0]).toContain('- 1 TRẬN');
+  });
+});
+
+describe('buildFormationAnnouncement — lưu ý thêm', () => {
+  it('lưu ý nằm ngay dưới tiêu đề, trên các dòng luật, dạng quote', () => {
+    const { content } = buildFormationAnnouncement(
+      input({ note: 'Đổi map trận 2' }),
+      LINKS,
+    );
+    const lines = content.split('\n');
+
+    expect(lines[0]).toBe('# SCRIM 20:30 19/08 TỐI NAY - 2 TRẬN');
+    expect(lines[1]).toBe('> Đổi map trận 2');
+    expect(lines[2]).toMatch(/^## - Các thành viên/);
+  });
+
+  it('lưu ý nhiều dòng vẫn là một khối quote, dòng trống thành ">"', () => {
+    const { content } = buildFormationAnnouncement(
+      input({ note: 'Dòng một\n\nDòng ba' }),
+      LINKS,
+    );
+
+    expect(content.split('\n').slice(1, 4)).toEqual([
+      '> Dòng một',
+      '>',
+      '> Dòng ba',
+    ]);
+  });
+
+  it('không có lưu ý thì giống hệt tin không lưu ý', () => {
+    const { content } = buildFormationAnnouncement(input(), LINKS);
+
+    expect(content.split('\n')).toHaveLength(7);
+    expect(content.split('\n').some((line) => line.startsWith('>'))).toBe(
+      false,
+    );
+  });
+
+  it('lưu ý không mở thêm mention nào', () => {
+    const payload = buildFormationAnnouncement(
+      input({ note: '@everyone <@123>' }),
+      LINKS,
+    );
+
+    expect(payload.allowed_mentions).toEqual({ roles: ['999888777'] });
   });
 });

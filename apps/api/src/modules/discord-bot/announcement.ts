@@ -1,11 +1,10 @@
-import { shiftVnDate } from '@guild/shared/lib';
+import { formatVnDayMonth, shiftVnDate } from '@guild/shared/lib';
 import type { BattleSession } from '@guild/shared/schemas';
 
 import type { CommandLinks, MessagePayload } from './commands/command.types';
 import { EMBED_COLOR, MAX_EMBED_DESCRIPTION_LENGTH } from './discord.constants';
 import { buildEntryButtons } from './entry-buttons';
 import { takeWithinLimit } from './message-limits';
-import { formatVnDayMonth } from './vn-format';
 
 const TITLE = '📢 LỊCH ĐÁNH TUẦN NÀY';
 
