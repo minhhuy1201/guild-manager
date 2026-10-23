@@ -18,7 +18,16 @@ const BOB_DIVISOR = 14;
  * @returns Ticks so far
  */
 export function legClock(u: number, durationSeconds: number): number {
-  return u * durationSeconds * LEG_CLOCK_RATE;
+  return legClockAt(u * durationSeconds);
+}
+
+/**
+ * The leg clock on wall time, for cats that trot outside a race (a lane shuffle).
+ * @param seconds - Seconds on any running clock
+ * @returns Ticks so far
+ */
+export function legClockAt(seconds: number): number {
+  return seconds * LEG_CLOCK_RATE;
 }
 
 /**

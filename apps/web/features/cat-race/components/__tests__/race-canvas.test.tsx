@@ -16,6 +16,7 @@ vi.mock("@/features/auth", () => ({
     hash ? `https://cdn.test/${id}/${hash}.png` : null,
 }));
 
+import { LANE_SHUFFLE_MS } from "../../lib/lane-shuffle";
 import { laneLayout, markX } from "../../lib/race-layout";
 import type { RaceStanding } from "../../lib/race-board";
 import { buildRaceScript, rankAt } from "../../lib/race-script";
@@ -576,6 +577,76 @@ describe("RaceCanvas", () => {
 
     runFrame(0);
 
+    expect(frames).toHaveLength(0);
+  });
+
+  it("trots the cats to their new lanes on a shuffle, without rebuilding the stage", () => {
+    const { script, racers } = bigField(4);
+    const keys = script.cats.map((cat) => cat.key);
+    const backdrops: number[] = [];
+    const original = document.createElement.bind(document);
+    vi.spyOn(document, "createElement").mockImplementation((tag: string) => {
+      if (tag === "canvas") backdrops.push(backdrops.length);
+
+      return original(tag);
+    });
+    vi.spyOn(performance, "now").mockReturnValue(START_MS);
+    const canvas = (order: string[] | null) => (
+      <RaceCanvas
+        mode="start"
+        script={script}
+        participants={racers}
+        onFinish={vi.fn()}
+        skipSignal={0}
+        onStandings={vi.fn()}
+        onCue={vi.fn()}
+        laneOrder={order}
+      />
+    );
+    const { rerender } = render(canvas(null));
+    runFrame(START_MS);
+    const settled = new Set(sprites.filter((sprite) => sprite.x > 0).map((sprite) => sprite.y));
+    const afterMount = backdrops.length;
+
+    rerender(canvas([keys[1], keys[2], keys[3], keys[0]]));
+    sprites.length = 0;
+    runFrame(START_MS + LANE_SHUFFLE_MS / 2);
+    const halfway = sprites.filter((sprite) => sprite.x > 0).map((sprite) => sprite.y);
+    sprites.length = 0;
+    runFrame(START_MS + LANE_SHUFFLE_MS);
+    const arrived = sprites.filter((sprite) => sprite.x > 0).map((sprite) => sprite.y);
+
+    expect(backdrops).toHaveLength(afterMount);
+    expect(halfway.some((y) => !settled.has(y))).toBe(true);
+    expect(new Set(arrived)).toEqual(settled);
+    vi.restoreAllMocks();
+  });
+
+  it("moves the cats to their new lanes at once under reduced motion", () => {
+    stubReducedMotion(true);
+    const { script, racers } = bigField(4);
+    const keys = script.cats.map((cat) => cat.key);
+    const canvas = (order: string[] | null) => (
+      <RaceCanvas
+        mode="start"
+        script={script}
+        participants={racers}
+        onFinish={vi.fn()}
+        skipSignal={0}
+        onStandings={vi.fn()}
+        onCue={vi.fn()}
+        laneOrder={order}
+      />
+    );
+    const { rerender } = render(canvas(null));
+    runFrame(START_MS);
+    const settled = new Set(sprites.filter((sprite) => sprite.x > 0).map((sprite) => sprite.y));
+
+    rerender(canvas([keys[1], keys[2], keys[3], keys[0]]));
+    sprites.length = 0;
+    runFrame(START_MS + 16);
+
+    expect(new Set(sprites.filter((sprite) => sprite.x > 0).map((sprite) => sprite.y))).toEqual(settled);
     expect(frames).toHaveLength(0);
   });
 

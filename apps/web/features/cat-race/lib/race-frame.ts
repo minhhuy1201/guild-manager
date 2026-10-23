@@ -72,14 +72,19 @@ export function planRace(
  * Position of every cat at one moment. Past `u = 1` the winner has crossed and nothing moves.
  * @param plan - The race plan
  * @param u - Race time, 0..1
- * @returns Every cat, from the top lane down
+ * @param lanes - Lane of every cat, fractional while a shuffle moves it; the plan's lanes by default
+ * @returns Every cat, in the plan's lane order
  */
-export function frameAt(plan: RacePlan, u: number): FrameCat[] {
+export function frameAt(
+  plan: RacePlan,
+  u: number,
+  lanes: ReadonlyMap<string, number> = plan.laneOf
+): FrameCat[] {
   const { script, layout } = plan;
 
   return plan.laneOrder.map((key) => ({
     key,
     x: progressX(progressAt(script.curves.get(key)!, u), layout),
-    y: laneCenterY(plan.laneOf.get(key)!, layout),
+    y: laneCenterY(lanes.get(key)!, layout),
   }));
 }
