@@ -10,8 +10,6 @@ describe("Khung chờ khi chuyển trang", () => {
   it("báo cho trình đọc màn hình là trang đang tải", () => {
     render(<Loading />);
 
-    expect(screen.getByRole("status").getAttribute("aria-label")).toBe(
-      "Đang tải trang"
-    );
+    expect(screen.getByRole("status").textContent).toBe("Đang tải trang");
   });
 });

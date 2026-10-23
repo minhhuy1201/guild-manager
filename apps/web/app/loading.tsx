@@ -13,9 +13,14 @@ import { Skeleton } from "@/components/ui/skeleton";
  */
 export default function Loading() {
   return (
-    <div role="status" aria-label="Đang tải trang" className="flex flex-col gap-6">
-      <Skeleton className="min-h-24 rounded-container sm:min-h-28 lg:min-h-32" />
-      <Skeleton className="h-64 rounded-container" />
+    <div role="status" className="flex flex-col gap-6">
+      {/* A live region announces its text, not its aria-label. */}
+      <span className="sr-only">Đang tải trang</span>
+      <Skeleton
+        aria-hidden
+        className="min-h-24 rounded-container sm:min-h-28 lg:min-h-32"
+      />
+      <Skeleton aria-hidden className="h-64 rounded-container" />
     </div>
   );
 }
