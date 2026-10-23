@@ -14,9 +14,6 @@ import {
 const PRESSED_CLASS =
   "border-primary bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground";
 
-/** On a phone the two quick filters share one row and split it evenly. */
-const QUICK_FILTER_CLASS = "max-sm:flex-1";
-
 interface AttendanceFiltersProps {
   /** The screen using the filters — each screen keeps its own state. */
   scope: AttendanceFilterScope;
@@ -63,14 +60,15 @@ export function AttendanceFilters({
         className="flex-1"
       />
       {scope === "attendance" ? (
-        <div className="flex gap-2">
+        // Wraps instead of squeezing: the two labels together are wider than a phone's card.
+        <div className="flex flex-wrap gap-2">
           <Button
             type="button"
             variant="outline"
             size="lg"
             aria-pressed={unansweredOnly}
             onClick={() => setUnansweredOnly(!unansweredOnly)}
-            className={cn(QUICK_FILTER_CLASS, unansweredOnly && PRESSED_CLASS)}
+            className={cn(unansweredOnly && PRESSED_CLASS)}
           >
             <Hourglass />
             Chưa điểm danh
@@ -82,7 +80,7 @@ export function AttendanceFilters({
               size="lg"
               aria-pressed={showFought}
               onClick={() => setShowFought(!showFought)}
-              className={cn(QUICK_FILTER_CLASS, showFought && PRESSED_CLASS)}
+              className={cn(showFought && PRESSED_CLASS)}
             >
               <History />
               Đã đánh ({foughtCount})

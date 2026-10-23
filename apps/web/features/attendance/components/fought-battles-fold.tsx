@@ -40,7 +40,9 @@ export function FoughtBattlesFold({
         aria-expanded={isOpen}
         aria-controls={contentId}
         onClick={() => setIsOpen((open) => !open)}
-        className="w-full justify-between"
+        // `h-auto`: on a phone the answer marks wrap to a second line once a few battles are
+        // fought, and a fixed height would let them spill out of the button.
+        className="h-auto min-h-11 w-full justify-between py-2"
       >
         <span className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
           <span>Đã đánh · {count} trận</span>

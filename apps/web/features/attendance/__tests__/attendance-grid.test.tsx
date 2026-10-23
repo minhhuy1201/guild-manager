@@ -398,6 +398,19 @@ describe("AttendanceGrid - trận đã đánh", () => {
     expect(screen.getByText("Trận c")).toBeTruthy();
   });
 
+  // The save bar counts the whole draft; a change in a column that is folded away must say so, or
+  // the bar shows a number with nothing on screen behind it.
+  it("sửa một ô ở cột đã đánh rồi ẩn cột đi thì thanh lưu nói rõ ô đó đang ẩn", () => {
+    render(<AttendanceGrid canManageOthers />);
+    fireEvent.click(screen.getByRole("button", { name: /^Đã đánh \(2\)/ }));
+    fireEvent.click(cell("1"));
+    expect(screen.getByText("1 ô đã đổi")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: /^Đã đánh \(2\)/ }));
+
+    expect(screen.getByText("1 ô đã đổi (1 ở cột đã ẩn)")).toBeTruthy();
+  });
+
   it("tới giờ đánh khi trang đang mở thì cột đó tự ẩn", () => {
     render(<AttendanceGrid canManageOthers />);
     expect(screen.getByText("Trận c")).toBeTruthy();

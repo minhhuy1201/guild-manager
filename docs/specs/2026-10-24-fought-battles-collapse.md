@@ -44,12 +44,12 @@ thu gọn. Khi trang đang mở mà tới giờ đánh, trận đó tự chuyể
 11. Là member chưa được gán nhân vật, tôi muốn các tile chỉ xem cũng được thu gọn như vậy, để lịch tuần đọc giống nhau.
 12. Là member dùng điện thoại, tôi muốn bảng cả bang mặc định ẩn cột các trận đã đánh, để vuốt ít hơn tới các ngày sắp tới.
 13. Là admin, tôi muốn có nút "Đã đánh (N)" cạnh "Chưa điểm danh", để hiện lại cột đã đánh khi cần sửa câu trả lời cũ.
-14. Là admin, tôi muốn nút ghi số cột đang ẩn, để biết dữ liệu đang được ẩn chứ không phải bị mất.
+14. Là admin, tôi muốn nút ghi số trận đã đánh, để biết có dữ liệu đang được ẩn chứ không phải bị mất.
 15. Là admin, tôi muốn nút vẫn bật khi tôi chuyển trang trong app, để không phải bật lại sau mỗi lần chuyển trang.
 16. Là người xem, tôi muốn hàng tổng "Cả bang" theo đúng các cột đang hiện, để mỗi con số nằm dưới đúng ngày của nó.
 17. Là người xem, tôi muốn nút không hiện khi chưa có trận nào đã đánh, để hàng bộ lọc gọn.
 18. Là người xem, tôi muốn bộ lọc "Chưa điểm danh" giữ nguyên cách lọc, để việc ẩn cột không đổi ai bị tính là chưa điểm danh.
-19. Là người xem dùng điện thoại, tôi muốn hai nút lọc nhanh nằm chung một hàng, để dải bộ lọc không cao thêm.
+19. Là người xem dùng điện thoại, tôi muốn hai nút lọc nhanh tự xuống dòng khi không vừa một hàng, để trang không bao giờ phải cuộn ngang.
 20. Là người dùng trình đọc màn hình, tôi muốn thanh báo đang mở hay đóng và nút báo đang bật hay tắt, để biết mỗi điều khiển làm gì.
 21. Là member xem màn Lịch sử ở tuần này, tôi muốn card biểu đồ của trận đã đánh thu gọn dưới các trận sắp tới, để trang mở ra ở các trận còn lại.
 22. Là member xem màn Lịch sử, tôi muốn tuần cũ hiện đầy đủ, để một tuần đã xong không bị thu gọn hết.
@@ -77,8 +77,9 @@ thu gọn. Khi trang đang mở mà tới giờ đánh, trận đó tự chuyể
   bộ nhớ, cùng vòng đời với `unansweredOnly`). Bảng lấy danh sách trận đang hiện từ helper và cờ
   này; header, hàng tổng, các hàng dữ liệu và số `columns` đều đọc chung danh sách đó. Nút nằm trong
   attendance filters, cùng kiểu "Chưa điểm danh" (outline `lg`, nền primary khi bật,
-  `aria-pressed`). Trên điện thoại dùng label ngắn, `aria-label` đầy đủ "Hiện trận đã đánh". Nút chỉ
-  hiện khi có ít nhất một trận đã đánh. Dưới `sm` hai nút lọc nhanh nằm chung một hàng.
+  `aria-pressed`). Con số là số trận đã đánh và không đổi khi bật nút. Nút chỉ hiện khi có ít nhất một trận
+  đã đánh. Hai nút lọc nhanh xuống dòng khi không vừa một hàng trên điện thoại (hai nhãn cộng lại
+  rộng hơn card ở khổ 360-420). Thanh lưu nói rõ khi có ô đã sửa nằm ở cột đang ẩn.
 - **Dashboard Lịch sử**: chỉ thu gọn khi tuần đang chọn là tuần này và chưa chọn trận cụ thể. Bảng
   log giữ nguyên.
 - Không đổi API, schema hay package shared.

@@ -119,6 +119,10 @@ export function AttendanceGrid({ canManageOthers }: AttendanceGridProps) {
   const now = useBattleClock(battleSessions);
   const { upcoming, fought } = splitFoughtBattles(battleSessions, now);
   const shownSessions = showFought ? battleSessions : upcoming;
+  const shownIds = new Set(shownSessions.map((session) => session.id));
+  const hiddenChangeCount = Object.values(draft).filter(
+    (change) => !shownIds.has(change.sessionId)
+  ).length;
 
   const visibleCharacters = useMemo(
     () =>
@@ -334,7 +338,11 @@ export function AttendanceGrid({ canManageOthers }: AttendanceGridProps) {
         />
         {changeCount > 0 ? (
           <UnsavedChangesBar
-            message={`${changeCount} ô đã đổi`}
+            message={
+              hiddenChangeCount > 0
+                ? `${changeCount} ô đã đổi (${hiddenChangeCount} ở cột đã ẩn)`
+                : `${changeCount} ô đã đổi`
+            }
             resetLabel="Huỷ"
             saving={saving}
             errorMessages={saveError ? [saveError] : []}

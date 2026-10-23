@@ -10,7 +10,7 @@ Spec: [`docs/specs/2026-10-24-fought-battles-collapse.md`](../../specs/2026-10-2
 
 - [x] Helper thuần tách các trận của tuần thành sắp tới và đã đánh tại một thời điểm, theo `dateTime`, giữ thứ tự; khi không còn trận sắp tới thì trả hết về sắp tới. Có unit test: giữ thứ tự, trận đã khoá nhưng chưa đánh vẫn là sắp tới, tất cả đã đánh, tuần rỗng
 - [x] Hook đồng hồ trả về thời điểm hiện tại và render lại đúng lúc giờ đánh gần nhất trong tương lai trôi qua (một `setTimeout`, cùng dạng hook refresh theo deadline)
-- [x] Component thanh dùng chung: nút ghost full-width, label "Đã đánh · N trận", chỗ tuỳ chọn cho icon câu trả lời, chevron xoay bằng transform, `aria-expanded` + `aria-controls`, đóng khi mount; nội dung mở ra dùng helper reveal, không animate chiều cao
+- [x] Component thanh dùng chung: nút ghost full-width (cao tự giãn khi các icon câu trả lời xuống dòng), label "Đã đánh · N trận", chỗ tuỳ chọn cho icon câu trả lời, chevron xoay bằng transform, `aria-expanded` + `aria-controls`, đóng khi mount; nội dung mở ra dùng helper reveal, không animate chiều cao
 - [x] Card chỉ hiện tile sắp tới trong dải tile, sau đó là đường kẻ và thanh; thanh hiện icon câu trả lời (Có / Không / chưa trả lời) của từng trận đã đánh
 - [x] Tile đã đánh giữ màu câu trả lời, mờ `opacity-70`, badge "Đã đánh" tone `muted` thay "Đã khoá" / "Còn hạn"; lý do "Không" đã ghi vẫn đọc được
 - [x] Không có trận đã đánh thì không có thanh; tất cả đã đánh thì hiện mọi tile như cũ, không có thanh

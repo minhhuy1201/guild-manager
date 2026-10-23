@@ -10,9 +10,10 @@ Spec: [`docs/specs/2026-10-24-fought-battles-collapse.md`](../../specs/2026-10-2
 
 - [x] Attendance filter store có boolean `showFought`, mặc định false, cùng vòng đời với `unansweredOnly`
 - [x] Bảng lấy một danh sách trận đang hiện từ helper và `showFought`; header, hàng tổng "Cả bang", các hàng dữ liệu và số `columns` đều đọc chung danh sách đó
-- [x] Nút cùng kiểu "Chưa điểm danh" (outline `lg`, nền primary khi bật, `aria-pressed`), ghi số cột đang ẩn ("Đã đánh (N)"); label đủ ngắn nên không cần `aria-label` riêng
+- [x] Nút cùng kiểu "Chưa điểm danh" (outline `lg`, nền primary khi bật, `aria-pressed`), ghi số trận đã đánh ("Đã đánh (N)", không đổi khi bật); label đủ ngắn nên không cần `aria-label` riêng
 - [x] Không có trận đã đánh thì không có nút; tất cả đã đánh thì hiện mọi cột (theo helper)
-- [x] Dưới `sm` hai nút lọc nhanh nằm chung một hàng, mỗi nút cao tối thiểu 44px, không tràn ngang ở 360 rộng
+- [x] Dưới `sm` hai nút lọc nhanh xuống dòng khi không vừa một hàng, mỗi nút cao tối thiểu 44px, không tràn ngang ở 360 rộng
 - [x] Bộ lọc "Chưa điểm danh" lọc như cũ
+- [x] Thanh lưu ghi rõ số ô đã sửa nằm ở cột đang ẩn
 - [x] Tới giờ đánh khi trang đang mở thì cột đó tự ẩn (khi nút đang tắt)
 - [x] Test `AttendanceGrid` / `AttendanceFilters`: mặc định không có cột đã đánh; nút ghi đúng số; bấm thì cột và số tổng hiện lại; không có nút khi chưa có trận đã đánh
