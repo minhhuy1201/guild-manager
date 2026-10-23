@@ -39,7 +39,9 @@ vi.mock("@/components/shared/confirm-delete-dialog", () => ({
       </div>
     ) : null,
 }));
-vi.mock("../end-event-button", () => ({ EndEventButton: () => <button>END</button> }));
+vi.mock("../end-event-button", () => ({
+  EndEventButton: ({ disabled }: { disabled?: boolean }) => <button disabled={disabled}>END</button>,
+}));
 vi.mock("../announce-button", () => ({ AnnounceButton: () => <button>ANNOUNCE</button> }));
 vi.mock("../race-stage", () => ({
   RaceStage: ({ prize, isDurationValid }: { prize?: { name: string }; isDurationValid: boolean }) => (
@@ -59,6 +61,7 @@ vi.mock("../race-controls", () => ({
     </div>
   ),
 }));
+vi.mock("../cat-race-results", () => ({ CatRaceResults: () => <div>RESULTS</div> }));
 vi.mock("../winners-panel", () => ({
   WinnersPanel: ({ canVoid, onVoid }: { canVoid: boolean; onVoid: (round: unknown) => void }) => (
     <div>
@@ -216,16 +219,35 @@ describe("CatRaceEventScreen", () => {
     expect(screen.getByText(/STAGE Tiền mặt/)).toBeTruthy();
   });
 
+  it("shows the results board instead of the race area on an ended event", () => {
+    loaded(makeEvent({ status: "ENDED" }));
+    render(<CatRaceEventScreen id="e1" />);
+
+    expect(screen.getByText("RESULTS")).toBeTruthy();
+    expect(screen.queryByText(/STAGE/)).toBeNull();
+    expect(screen.queryByText(/CHIPS/)).toBeNull();
+    expect(screen.queryByText(/DURATION/)).toBeNull();
+  });
+
   it("offers the Discord post on an ended event, and says when it was done", () => {
     loaded(makeEvent({ status: "ENDED" }));
     const { unmount } = render(<CatRaceEventScreen id="e1" />);
     expect(screen.getByText("ANNOUNCE")).toBeTruthy();
-    expect(screen.getByText(/CHIPS p1 false/)).toBeTruthy();
+    expect(screen.queryByText("END")).toBeNull();
     unmount();
 
     loaded(makeEvent({ status: "ENDED", discordPostedAt: "2026-10-12T03:00:00.000Z" }));
     render(<CatRaceEventScreen id="e1" />);
     expect(screen.getByText("Đã đăng lên Discord.")).toBeTruthy();
+  });
+
+  it("locks the end button while a race runs", () => {
+    render(<CatRaceEventScreen id="e1" />);
+    expect((screen.getByText("END") as HTMLButtonElement).disabled).toBe(false);
+
+    act(() => useRaceStore.setState({ stage: "racing" }));
+
+    expect((screen.getByText("END") as HTMLButtonElement).disabled).toBe(true);
   });
 
   it("selects a prize unless a round is busy", () => {

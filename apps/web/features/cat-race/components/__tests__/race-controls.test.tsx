@@ -20,7 +20,6 @@ function renderControls(props: Partial<React.ComponentProps<typeof RaceControls>
       onDurationTextChange={() => {}}
       isDurationValid
       isLocked={false}
-      canEdit
       hasPrize
       entrantCount={2}
       participantCount={5}
@@ -44,13 +43,6 @@ describe("RaceControls", () => {
 
     expect(onEditEntrants).toHaveBeenCalled();
     expect(onEditParticipants).toHaveBeenCalled();
-  });
-
-  it("hides the edit buttons for a read-only event", () => {
-    renderControls({ canEdit: false });
-
-    expect(screen.queryByRole("button", { name: /Danh sách đua/ })).toBeNull();
-    expect(screen.queryByRole("button", { name: /Người tham gia/ })).toBeNull();
   });
 
   it("disables the entrants button without a prize", () => {

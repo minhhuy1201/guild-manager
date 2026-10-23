@@ -94,6 +94,15 @@ describe("EndEventButton", () => {
   });
 });
 
+describe("EndEventButton while a race runs", () => {
+  it("locks the button and says why", () => {
+    render(<EndEventButton eventId="e1" disabled />);
+
+    expect((screen.getByRole("button", { name: /Kết thúc đợt/ }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByText("Đợi xong vòng này rồi hãy kết thúc.")).toBeTruthy();
+  });
+});
+
 describe("VoidRoundDialog", () => {
   it("renders nothing without a round", () => {
     render(<VoidRoundDialog eventId="e1" round={null} onOpenChange={vi.fn()} />);

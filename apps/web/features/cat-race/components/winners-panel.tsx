@@ -12,7 +12,7 @@ import { PrizeTierBadge } from "./prize-tier-badge";
 
 interface WinnersPanelProps {
   event: CatRaceEventDetail;
-  /** Voiding is off once the event ended */
+  /** Voiding is off while a race runs */
   canVoid: boolean;
   onVoid: (round: CatRaceRound) => void;
 }
