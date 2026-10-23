@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   ACCESS_TOKEN_COOKIE,
+  ACCESS_TOKEN_MAX_AGE,
   REFRESH_TOKEN_COOKIE,
   WEB_AUTH_ERROR,
 } from "@/features/auth/core";
@@ -306,6 +307,11 @@ describe("proxy", () => {
       expect(response.cookies.get(REFRESH_TOKEN_COOKIE)?.value).toBe(
         RENEWED.refreshToken
       );
+      // Copying only name and value would leave the session readable by scripts and expiring with
+      // the tab.
+      const access = response.cookies.get(ACCESS_TOKEN_COOKIE);
+      expect(access?.httpOnly).toBe(true);
+      expect(access?.maxAge).toBe(ACCESS_TOKEN_MAX_AGE);
     });
 
     it("vẫn cho callback OAuth chạy", async () => {
