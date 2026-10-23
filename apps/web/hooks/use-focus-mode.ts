@@ -8,7 +8,7 @@ import {
   isTypingTarget,
 } from "@/lib/keyboard-target";
 
-/** Tailwind's `lg` breakpoint: below it the screen shows one team at a time and has no focus mode. */
+/** Tailwind's `lg` breakpoint: below it a screen has no focus mode. */
 const FOCUS_MODE_MEDIA_QUERY = "(min-width: 64rem)";
 
 /**
@@ -22,7 +22,7 @@ async function requestBrowserFullscreen() {
     await document.documentElement.requestFullscreen?.();
   } catch {
     // Fullscreen is a bonus. The browser may refuse it (no user gesture, a policy, an iframe), and
-    // the overlay already fills the window, so the mode works the same without it.
+    // the frame already fills the window, so the mode works the same without it.
   }
 }
 
@@ -52,40 +52,40 @@ function isPlainKey(event: KeyboardEvent) {
 }
 
 /** Where focus goes when the mode closes. */
-interface FocusReturn {
+export interface FocusReturn {
   /** The entry button, focused again on close */
   button: React.RefObject<HTMLElement | null>;
   /** Used when the button is gone - a battle that turned read-only drops it */
   fallback: React.RefObject<HTMLElement | null>;
 }
 
-interface FocusMode {
-  /** Whether the focus mode overlay is showing */
+export interface FocusMode {
+  /** Whether the focus mode is on */
   active: boolean;
-  /** Open the overlay and ask the browser for fullscreen */
+  /** Enter the mode and ask the browser for fullscreen */
   enter: () => void;
-  /** Close the overlay; browser fullscreen ends with it */
+  /** Leave the mode; browser fullscreen ends with it */
   exit: () => void;
 }
 
 /**
- * The state behind the team builder's focus mode: a local flag, kept in step with the browser's
+ * The state behind a screen's focus mode: a local flag, kept in step with the browser's
  * fullscreen, and driven by `F` / `Esc`.
  *
  * The flag is plain React state - nothing persists a reload, which returns to the normal page.
  * Both keys stand down for a text field, a modified key, and a key an earlier handler already took
  * (`defaultPrevented`); `F` also for a dialog, `Esc` also while another dialog is open over the
- * overlay, so that dialog closes alone, and `Esc` during a drag, which cancels only the drag. `F`
- * does nothing below `lg`, where the entry button is hidden too. Closing returns focus to the
- * button that opened it.
+ * mode, so that dialog closes alone, and `Esc` while something else on the screen owns it (a
+ * drag, which cancels only the drag). `F` does nothing below `lg`, where the entry button is
+ * hidden too. Closing returns focus to the button that opened it.
  * @param enabled - Whether focus mode may be on; turning false closes it
- * @param dragging - Whether a member card is being dragged
+ * @param escapeClaimed - Whether something else on the screen owns `Esc` right now
  * @param returnFocusTo - Where focus goes on close
  * @returns The flag and its two actions
  */
 export function useFocusMode(
   enabled: boolean,
-  dragging: boolean,
+  escapeClaimed: boolean,
   returnFocusTo: FocusReturn
 ): FocusMode {
   const [open, setOpen] = useState(false);
@@ -115,7 +115,7 @@ export function useFocusMode(
       return;
     }
 
-    if (event.key !== "Escape" || dragging) return;
+    if (event.key !== "Escape" || escapeClaimed) return;
     if (isTypingTarget(event.target)) return;
     if (document.querySelector(BLOCKING_DIALOG_SELECTOR)) return;
 

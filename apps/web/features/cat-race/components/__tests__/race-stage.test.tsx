@@ -1,10 +1,12 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { useEffect } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CatRaceMode, GuildClass, PrizeTier } from "@guild/shared/enums";
 import type { CatRaceDrawResult, CatRaceEventDetail } from "@guild/shared/schemas";
 
-const { mutateAsync, invalidate, recover, toastError, reducedMotion } = vi.hoisted(() => ({
+const { mutateAsync, invalidate, recover, toastError, reducedMotion, canvasMounts } = vi.hoisted(() => ({
+  canvasMounts: { count: 0 },
   mutateAsync: vi.fn(),
   invalidate: vi.fn(),
   recover: vi.fn(() => false),
@@ -42,7 +44,13 @@ vi.mock("../race-canvas", () => ({
     skipSignal: number;
     mode?: string;
     laneOrder: string[] | null;
-  }) => (
+  }) => {
+    // Counts real mounts: a remount of the canvas would restart the race.
+    useEffect(() => {
+      canvasMounts.count += 1;
+    }, []);
+
+    return (
     <div>
       {mode === "start" ? "PREVIEW" : mode === "finish" ? "FINISH LINE" : `CANVAS ${skipSignal}`}
       <span>{`LANES ${laneOrder?.join(",") ?? "none"}`}</span>
@@ -75,7 +83,8 @@ vi.mock("../race-canvas", () => ({
         cue finish
       </button>
     </div>
-  ),
+    );
+  },
 }));
 vi.mock("../race-result-overlay", () => ({
   RaceResultOverlay: ({
@@ -141,12 +150,23 @@ const RESULT = {
  * @param event - Event shown
  * @param prize - Prize for the next round
  */
-function renderStage(event = EVENT, prize = PRIZE, isDurationValid = true) {
-  render(<RaceStage event={event} prize={prize} isDurationValid={isDurationValid} />);
+function renderStage(event = EVENT, prize = PRIZE, isDurationValid = true, active = false) {
+  const stage = (isActive: boolean) => (
+    <RaceStage
+      event={event}
+      prize={prize}
+      isDurationValid={isDurationValid}
+      focus={{ active: isActive, exit: vi.fn() }}
+      onSelectPrize={vi.fn()}
+    />
+  );
+  const view = render(stage(active));
+  return { setFocus: (isActive: boolean) => view.rerender(stage(isActive)) };
 }
 
 beforeEach(() => {
   reducedMotion.current = false;
+  canvasMounts.count = 0;
   HTMLCanvasElement.prototype.getContext = vi.fn(() => null) as never;
   useRaceStore.getState().reset();
   useRaceStore.setState({ laneOrder: null });
@@ -154,6 +174,46 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("RaceStage", () => {
+  it("keeps the canvas mounted once when focus mode flips on and off mid-race", async () => {
+    mutateAsync.mockResolvedValue(RESULT);
+    const { setFocus } = renderStage();
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /ĐUA/ }));
+    });
+    expect(useRaceStore.getState().stage).toBe("racing");
+    const mountsBefore = canvasMounts.count;
+
+    setFocus(true);
+    expect(screen.getByRole("dialog", { name: "Đua mèo toàn màn hình" })).toBeTruthy();
+    setFocus(false);
+
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(canvasMounts.count).toBe(mountsBefore);
+    expect(screen.getByText(/CANVAS/)).toBeTruthy();
+  });
+
+  it("carries the broadcast bar and the controls into the focus dialog, once each", () => {
+    renderStage(EVENT, PRIZE, true, true);
+
+    const dialog = screen.getByRole("dialog", { name: "Đua mèo toàn màn hình" });
+    expect(dialog.querySelector('[data-slot="cat-race-hud"]')).not.toBeNull();
+    expect(dialog.textContent).toContain("TRỰC TIẾP");
+    expect(screen.getAllByRole("button", { name: /ĐUA/ })).toHaveLength(1);
+    expect(dialog.contains(screen.getByRole("button", { name: /ĐUA/ }))).toBe(true);
+    expect(screen.getAllByText("TRỰC TIẾP")).toHaveLength(1);
+  });
+
+  it("exits through the shell's exit button", () => {
+    const exit = vi.fn();
+    render(
+      <RaceStage event={EVENT} prize={PRIZE} isDurationValid focus={{ active: true, exit }} onSelectPrize={vi.fn()} />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Thoát toàn màn hình" }));
+
+    expect(exit).toHaveBeenCalledTimes(1);
+  });
+
   it("does not draw while the prize is locked, and says why", () => {
     renderStage(EVENT, { ...PRIZE, awardedCount: 2 });
 
@@ -429,7 +489,7 @@ describe("RaceStage", () => {
   });
 
   it("says there is no prize and offers a bare ĐUA", () => {
-    render(<RaceStage event={EVENT} prize={undefined} isDurationValid />);
+    render(<RaceStage event={EVENT} prize={undefined} isDurationValid focus={{ active: false, exit: vi.fn() }} onSelectPrize={vi.fn()} />);
 
     expect(screen.getByText("Chưa có hạng mục.")).toBeTruthy();
     expect(screen.queryByText("Chưa có ai trong danh sách đua.")).toBeNull();
@@ -543,5 +603,148 @@ describe("RaceStage", () => {
       expect(document.querySelector(".race-countdown")).toBeNull();
       expect(screen.getByText(/RESULT/)).toBeTruthy();
     });
+  });
+});
+
+/**
+ * Start a round and wait for the replay to mount.
+ * @param active - Whether the stage renders in focus mode
+ */
+async function startRacing(active: boolean) {
+  mutateAsync.mockResolvedValue(RESULT);
+  renderStage(EVENT, PRIZE, true, active);
+  await act(async () => {
+    fireEvent.click(screen.getByRole("button", { name: /ĐUA/ }));
+  });
+  expect(useRaceStore.getState().stage).toBe("racing");
+}
+
+describe("RaceStage skip key", () => {
+  it.each([false, true])("skips on S while racing (focus mode %s), in either case", async (active) => {
+    await startRacing(active);
+
+    fireEvent.keyDown(window, { key: "s" });
+    expect(screen.getByText(/CANVAS 1/)).toBeTruthy();
+    fireEvent.keyDown(window, { key: "S" });
+    expect(screen.getByText(/CANVAS 2/)).toBeTruthy();
+  });
+
+  it("does nothing on S before the race starts", () => {
+    renderStage();
+
+    fireEvent.keyDown(window, { key: "s" });
+
+    expect(screen.queryByText(/CANVAS 1/)).toBeNull();
+  });
+
+  it("leaves S alone in a field, with a modifier, or once defaultPrevented", async () => {
+    await startRacing(false);
+    const input = document.createElement("input");
+    document.body.append(input);
+
+    fireEvent.keyDown(input, { key: "s" });
+    fireEvent.keyDown(window, { key: "s", ctrlKey: true });
+    fireEvent.keyDown(window, { key: "s", metaKey: true });
+    fireEvent.keyDown(window, { key: "s", altKey: true });
+    const prevented = new KeyboardEvent("keydown", { key: "s", cancelable: true });
+    prevented.preventDefault();
+    window.dispatchEvent(prevented);
+    input.remove();
+
+    expect(screen.getByText(/CANVAS 0/)).toBeTruthy();
+  });
+
+  it("shows the S cap on the skip button, hidden from assistive tech", async () => {
+    await startRacing(false);
+
+    const cap = screen.getByRole("button", { name: "Bỏ qua" }).querySelector("kbd");
+
+    expect(cap?.textContent).toBe("S");
+    expect(cap?.getAttribute("aria-hidden")).toBe("true");
+  });
+});
+
+describe("RaceStage auto-hide", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  /** The focus plate wrapper and the exit button, the two things that fade. */
+  function chrome() {
+    const plate = screen.getByRole("button", { name: "Bỏ qua" }).closest("[data-slot='cat-race-plate']");
+    return { plate, exit: screen.getByRole("button", { name: "Thoát toàn màn hình" }) };
+  }
+
+  const idle = (element: Element | null) => element?.hasAttribute("data-idle");
+
+  it("hides the plate and the exit button after 2s without a pointer move, and a move brings them back", async () => {
+    await startRacing(true);
+    const { plate, exit } = chrome();
+    expect(idle(plate)).toBe(false);
+
+    act(() => void vi.advanceTimersByTime(1999));
+    expect(idle(plate)).toBe(false);
+    act(() => void vi.advanceTimersByTime(1));
+    expect(idle(plate)).toBe(true);
+    expect(idle(exit)).toBe(true);
+
+    act(() => void window.dispatchEvent(new Event("pointermove")));
+    expect(idle(plate)).toBe(false);
+    expect(idle(exit)).toBe(false);
+
+    act(() => void vi.advanceTimersByTime(2000));
+    expect(idle(plate)).toBe(true);
+  });
+
+  it("keeps hidden buttons focusable and shows them again when one takes focus", async () => {
+    await startRacing(true);
+    act(() => void vi.advanceTimersByTime(2000));
+    const { plate } = chrome();
+    expect(idle(plate)).toBe(true);
+    expect(plate?.hasAttribute("inert")).toBe(false);
+    expect(plate?.closest("[aria-hidden]")).toBeNull();
+
+    act(() => screen.getByRole("button", { name: "Bỏ qua" }).focus());
+
+    expect(idle(plate)).toBe(false);
+  });
+
+  it("shows the exit button again when Tab lands on it while hidden", async () => {
+    await startRacing(true);
+    act(() => void vi.advanceTimersByTime(2000));
+    const { exit } = chrome();
+    expect(idle(exit)).toBe(true);
+
+    act(() => exit.focus());
+
+    expect(idle(exit)).toBe(false);
+  });
+
+  it("keeps the controls shown while one has focus, and hides them 2s after focus leaves", async () => {
+    await startRacing(true);
+    const skip = screen.getByRole("button", { name: "Bỏ qua" });
+    act(() => skip.focus());
+
+    act(() => void vi.advanceTimersByTime(5000));
+    expect(idle(chrome().plate)).toBe(false);
+
+    act(() => skip.blur());
+    act(() => void vi.advanceTimersByTime(2000));
+    expect(idle(chrome().plate)).toBe(true);
+  });
+
+  it("never hides outside focus mode", async () => {
+    await startRacing(false);
+
+    act(() => void vi.advanceTimersByTime(5000));
+
+    expect(document.querySelector("[data-idle]")).toBeNull();
+  });
+
+  it("never hides while the race has not started", () => {
+    renderStage(EVENT, PRIZE, true, true);
+
+    act(() => void vi.advanceTimersByTime(5000));
+
+    expect(document.querySelector("[data-idle]")).toBeNull();
   });
 });

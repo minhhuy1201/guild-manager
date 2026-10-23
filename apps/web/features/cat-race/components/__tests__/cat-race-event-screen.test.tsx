@@ -9,11 +9,25 @@ const m = vi.hoisted(() => ({
   event: { current: {} as Record<string, unknown> },
   deletePrize: vi.fn(),
   invalidate: vi.fn(),
+  realStage: { current: false },
+  fullscreenElement: { current: null as Element | null },
+  isWide: { current: true },
 }));
+
+// next/font only works through the Next compiler; the stage font is a stand-in here.
+vi.mock("next/font/google", () => ({
+  Bungee: () => ({ variable: "bungee-variable", style: { fontFamily: "Bungee" } }),
+}));
+vi.mock("../race-canvas", () => ({ RaceCanvas: () => <div>CANVAS</div> }));
+vi.mock("../race-result-overlay", () => ({ RaceResultOverlay: () => <div>RESULT</div> }));
+vi.mock("@/hooks/use-session-recovery", () => ({ useSessionRecovery: () => () => false }));
+vi.mock("@/hooks/use-reduced-motion", () => ({ useReducedMotion: () => false }));
+vi.mock("@/components/shared/toast", () => ({ toastError: vi.fn() }));
 
 vi.mock("../../hooks/use-cat-races", () => ({ useCatRaceEvent: () => m.event.current }));
 vi.mock("../../hooks/use-cat-race-mutations", () => ({
   useDeleteCatRacePrize: () => ({ mutateAsync: m.deletePrize }),
+  useDrawCatRaceRound: () => ({ mutateAsync: vi.fn() }),
 }));
 vi.mock("@/features/attendance", () => ({
   useCharacters: () => ({ data: [{ id: "a" }] }),
@@ -43,13 +57,20 @@ vi.mock("../end-event-button", () => ({
   EndEventButton: ({ disabled }: { disabled?: boolean }) => <button disabled={disabled}>END</button>,
 }));
 vi.mock("../announce-button", () => ({ AnnounceButton: () => <button>ANNOUNCE</button> }));
-vi.mock("../race-stage", () => ({
-  RaceStage: ({ prize, isDurationValid }: { prize?: { name: string }; isDurationValid: boolean }) => (
-    <div>
-      STAGE {prize?.name} valid:{String(isDurationValid)}
-    </div>
-  ),
-}));
+// The focus tests need the real stage (the bar and ĐUA live in it); the rest keep the stand-in.
+vi.mock("../race-stage", async () => {
+  const actual = await vi.importActual<typeof import("../race-stage")>("../race-stage");
+  return {
+    RaceStage: (props: React.ComponentProps<typeof actual.RaceStage>) =>
+      m.realStage.current ? (
+        <actual.RaceStage {...props} />
+      ) : (
+        <div>
+          STAGE {props.prize?.name} valid:{String(props.isDurationValid)}
+        </div>
+      ),
+  };
+});
 vi.mock("../race-controls", () => ({
   RaceControls: ({ durationText, onDurationTextChange, onEditEntrants, onEditParticipants }: { durationText: string; onDurationTextChange: (text: string) => void; onEditEntrants: () => void; onEditParticipants: () => void }) => (
     <div>
@@ -144,10 +165,40 @@ function loaded(event: CatRaceEventDetail) {
 }
 
 beforeEach(() => {
+  vi.stubGlobal("matchMedia", () => ({ matches: m.isWide.current }));
+  m.realStage.current = false;
   useRaceStore.setState({ stage: "idle", pendingResult: null, selectedPrizeId: null });
   loaded(makeEvent({ prizes: [PRIZE, SECOND_PRIZE] }));
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  m.fullscreenElement.current = null;
+  m.isWide.current = true;
+  vi.unstubAllGlobals();
+});
+
+/**
+ * Stub the Fullscreen API, which jsdom lacks.
+ * @param request - What `requestFullscreen` does
+ * @returns The two stubs, to assert against
+ */
+function stubFullscreen(request: () => Promise<void> = () => Promise.resolve()) {
+  const requestFullscreen = vi.fn(request);
+  const exitFullscreen = vi.fn(() => Promise.resolve());
+  Object.defineProperty(document.documentElement, "requestFullscreen", {
+    configurable: true,
+    value: requestFullscreen,
+  });
+  Object.defineProperty(document, "exitFullscreen", {
+    configurable: true,
+    value: exitFullscreen,
+  });
+  Object.defineProperty(document, "fullscreenElement", {
+    configurable: true,
+    get: () => m.fullscreenElement.current,
+  });
+  return { requestFullscreen, exitFullscreen };
+}
 
 describe("CatRaceEventScreen", () => {
   it("shows a skeleton while loading and the error when it fails", () => {
@@ -354,5 +405,173 @@ describe("CatRaceEventScreen", () => {
     unmount();
 
     expect(m.invalidate).not.toHaveBeenCalled();
+  });
+
+  describe("focus mode", () => {
+    const ENTER_NAME = /Toàn màn hình/;
+    const DIALOG_NAME = "Đua mèo toàn màn hình";
+
+    beforeEach(() => {
+      m.realStage.current = true;
+      stubFullscreen();
+    });
+
+    /**
+     * The entry button, which is the only one named "Toàn màn hình" while the mode is off.
+     * @returns The button
+     */
+    const enterButton = () => screen.getByRole("button", { name: ENTER_NAME });
+
+    it("offers the entry button on an open event, and none on an ended one", () => {
+      const { unmount } = render(<CatRaceEventScreen id="e1" />);
+      expect(enterButton()).toBeTruthy();
+      unmount();
+
+      loaded(makeEvent({ status: "ENDED" }));
+      render(<CatRaceEventScreen id="e1" />);
+      expect(screen.queryByRole("button", { name: ENTER_NAME })).toBeNull();
+    });
+
+    it("opens a dialog with the broadcast bar and ĐUA, and hides the header and winners", () => {
+      render(<CatRaceEventScreen id="e1" />);
+      expect(screen.getByText("WINNERS true")).toBeTruthy();
+
+      fireEvent.click(enterButton());
+
+      const dialog = screen.getByRole("dialog", { name: DIALOG_NAME });
+      expect(dialog.querySelector('[data-slot="cat-race-hud"]')).not.toBeNull();
+      expect(dialog.textContent).toContain("TRỰC TIẾP");
+      expect(dialog.contains(screen.getByRole("button", { name: /ĐUA/ }))).toBe(true);
+      expect(screen.queryByRole("heading", { name: "Đợt 1" })).toBeNull();
+      expect(screen.queryByText(/WINNERS/)).toBeNull();
+      expect(screen.queryByText(/CHIPS/)).toBeNull();
+      expect(screen.queryByText(/DURATION/)).toBeNull();
+    });
+
+    it("opens on the F key, not from a field, and not with a modifier", () => {
+      render(<CatRaceEventScreen id="e1" />);
+      const input = document.createElement("input");
+      document.body.appendChild(input);
+      fireEvent.keyDown(input, { key: "f" });
+      fireEvent.keyDown(document.body, { key: "f", ctrlKey: true });
+      input.remove();
+      expect(screen.queryByRole("dialog", { name: DIALOG_NAME })).toBeNull();
+
+      fireEvent.keyDown(document.body, { key: "f" });
+
+      expect(screen.getByRole("dialog", { name: DIALOG_NAME })).toBeTruthy();
+    });
+
+    it("closes on Esc and on the exit button, handing focus back to the entry button", () => {
+      render(<CatRaceEventScreen id="e1" />);
+
+      fireEvent.click(enterButton());
+      fireEvent.keyDown(screen.getByRole("dialog", { name: DIALOG_NAME }), { key: "Escape" });
+      expect(screen.queryByRole("dialog", { name: DIALOG_NAME })).toBeNull();
+      expect(document.activeElement).toBe(enterButton());
+
+      fireEvent.click(enterButton());
+      fireEvent.click(screen.getByRole("button", { name: "Thoát toàn màn hình" }));
+      expect(screen.queryByRole("dialog", { name: DIALOG_NAME })).toBeNull();
+      expect(document.activeElement).toBe(enterButton());
+    });
+
+    it("asks for fullscreen on the document, and still opens when refused", async () => {
+      const { requestFullscreen } = stubFullscreen(() => Promise.reject(new Error("denied")));
+      render(<CatRaceEventScreen id="e1" />);
+
+      await act(async () => {
+        fireEvent.click(enterButton());
+      });
+
+      expect(requestFullscreen).toHaveBeenCalledTimes(1);
+      expect(screen.getByRole("dialog", { name: DIALOG_NAME })).toBeTruthy();
+    });
+
+    describe("prize picker", () => {
+      const LOCKED_PRIZE = { ...PRIZE, id: "p3", name: "Đã hết", quantity: 1, awardedCount: 1 };
+      const PICKER_NAME = "Chọn hạng mục";
+
+      beforeEach(() => {
+        loaded(makeEvent({ prizes: [PRIZE, SECOND_PRIZE, LOCKED_PRIZE] }));
+      });
+
+      /**
+       * Enter focus mode and open the picker's list.
+       * @returns The picker trigger
+       */
+      const openPicker = () => {
+        render(<CatRaceEventScreen id="e1" />);
+        fireEvent.click(enterButton());
+        const trigger = screen.getByRole("combobox", { name: PICKER_NAME });
+        fireEvent.click(trigger);
+        return trigger;
+      };
+
+      it("switches the bar and the ĐUA button to the chosen prize", async () => {
+        openPicker();
+
+        // Base UI only commits a click that began with a pointer press on the item.
+        const option = await screen.findByRole("option", { name: /Vé/ });
+        fireEvent.pointerDown(option);
+        fireEvent.click(option);
+
+        const dialog = screen.getByRole("dialog", { name: DIALOG_NAME });
+        expect(screen.getByRole("combobox", { name: PICKER_NAME }).textContent).toContain("Vé");
+        expect(dialog.contains(screen.getByRole("button", { name: /ĐUA: Vé/ }))).toBe(true);
+      });
+
+      it("lists a locked prize as disabled, with its reason", async () => {
+        openPicker();
+
+        const option = await screen.findByRole("option", { name: /Đã hết/ });
+
+        expect(option.getAttribute("aria-disabled")).toBe("true");
+        expect(option.textContent).toContain("Hạng mục đã đủ giải.");
+        expect(screen.getByRole("option", { name: /Vé/ }).getAttribute("aria-disabled")).not.toBe(
+          "true"
+        );
+      });
+
+      it.each(["drawing", "racing", "result"] as const)(
+        "is disabled while the stage is %s",
+        (stage) => {
+          render(<CatRaceEventScreen id="e1" />);
+          fireEvent.click(enterButton());
+          act(() => useRaceStore.setState({ stage }));
+
+          const trigger = screen.getByRole("combobox", { name: PICKER_NAME });
+          fireEvent.click(trigger);
+
+          expect(trigger.hasAttribute("disabled") || trigger.getAttribute("aria-disabled") === "true").toBe(true);
+          expect(screen.queryByRole("option")).toBeNull();
+        }
+      );
+
+      it("is absent outside focus mode", () => {
+        render(<CatRaceEventScreen id="e1" />);
+
+        expect(screen.queryByRole("combobox", { name: PICKER_NAME })).toBeNull();
+      });
+    });
+
+    it("closes when the browser leaves fullscreen", async () => {
+      render(<CatRaceEventScreen id="e1" />);
+      await act(async () => {
+        fireEvent.click(enterButton());
+      });
+      m.fullscreenElement.current = document.documentElement;
+      act(() => {
+        document.dispatchEvent(new Event("fullscreenchange"));
+      });
+      expect(screen.getByRole("dialog", { name: DIALOG_NAME })).toBeTruthy();
+
+      m.fullscreenElement.current = null;
+      act(() => {
+        document.dispatchEvent(new Event("fullscreenchange"));
+      });
+
+      expect(screen.queryByRole("dialog", { name: DIALOG_NAME })).toBeNull();
+    });
   });
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type {
   CatRaceEventDetail,
   CatRacePrize,
@@ -9,8 +9,11 @@ import type {
 
 import { ConfirmDeleteDialog } from "@/components/shared/confirm-delete-dialog";
 import { QueryBoundary } from "@/components/shared/query-boundary";
+import { Button } from "@/components/ui/button";
+import { Kbd } from "@/components/ui/kbd";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCharacters } from "@/features/attendance";
+import { useFocusMode } from "@/hooks/use-focus-mode";
 import { useInvalidate } from "@/hooks/use-invalidate";
 import { combineQueries } from "@/lib/query-group";
 import { useDeleteCatRacePrize } from "../hooks/use-cat-race-mutations";
@@ -81,6 +84,13 @@ function EventBody({ event }: { event: CatRaceEventDetail }) {
   const [voiding, setVoiding] = useState<CatRaceRound | null>(null);
   const [durationText, setDurationText] = useState(String(durationSeconds));
   const invalidate = useInvalidate("cat-race");
+  const focusButtonRef = useRef<HTMLButtonElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const focusReturn = useMemo(
+    () => ({ button: focusButtonRef, fallback: bodyRef }),
+    []
+  );
+  const focus = useFocusMode(true, false, focusReturn);
 
   // The store outlives this screen. Leaving mid-race or on the winner card must not replay that
   // round on the next event, and a round drawn but never shown to the end still needs the winners
@@ -103,6 +113,9 @@ function EventBody({ event }: { event: CatRaceEventDetail }) {
     event.prizes.find((prize) => prize.id === selectedPrizeId) ??
     event.prizes.find((prize) => !prizeLockReason(prize, event.status)) ??
     event.prizes[0];
+  const choosePrize = (prizeId: string) => {
+    if (!isBusy) selectPrize(prizeId);
+  };
   const close = () => setDialog({ kind: "none" });
   const isDurationValid = parseRaceDuration(durationText) !== null;
   const changeDuration = (text: string) => {
@@ -112,41 +125,65 @@ function EventBody({ event }: { event: CatRaceEventDetail }) {
   };
 
   return (
-    <div className="flex flex-col gap-4">
-      <CatRaceHeader
-        event={event}
-        actions={<EndEventButton eventId={event.id} disabled={isBusy} />}
-      />
-
-      <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
-        <PrizeChips
+    <div ref={bodyRef} tabIndex={-1} className="flex flex-col gap-4 outline-none">
+      {/* While focus mode is on, the siblings of the stage hide in their own slots: the stage keeps
+          its position in this list, so it never remounts and a running race goes on. */}
+      {focus.active ? null : (
+        <CatRaceHeader
           event={event}
-          selectedPrizeId={selected?.id ?? null}
-          canEdit={!isBusy}
-          onSelect={(prize) => !isBusy && selectPrize(prize.id)}
-          onEdit={(prize) => setDialog({ kind: "prize", prize })}
-          onDelete={(prize) => setDialog({ kind: "delete-prize", prize })}
-          onAdd={() => setDialog({ kind: "prize", prize: null })}
+          actions={
+            <>
+              <Button
+                ref={focusButtonRef}
+                type="button"
+                variant="outline"
+                className="hidden lg:inline-flex"
+                onClick={focus.enter}
+              >
+                Toàn màn hình
+                <Kbd aria-hidden>F</Kbd>
+              </Button>
+              <EndEventButton eventId={event.id} disabled={isBusy} />
+            </>
+          }
         />
-        <RaceControls
-          durationText={durationText}
-          onDurationTextChange={changeDuration}
-          isDurationValid={isDurationValid}
-          isLocked={isBusy}
-          hasPrize={selected !== undefined}
-          entrantCount={selected?.entrantIds.length ?? 0}
-          participantCount={event.participants.length}
-          onEditEntrants={() => setDialog({ kind: "entrants" })}
-          onEditParticipants={() => setDialog({ kind: "participants" })}
-        />
-      </div>
+      )}
+
+      {focus.active ? null : (
+        <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+          <PrizeChips
+            event={event}
+            selectedPrizeId={selected?.id ?? null}
+            canEdit={!isBusy}
+            onSelect={(prize) => choosePrize(prize.id)}
+            onEdit={(prize) => setDialog({ kind: "prize", prize })}
+            onDelete={(prize) => setDialog({ kind: "delete-prize", prize })}
+            onAdd={() => setDialog({ kind: "prize", prize: null })}
+          />
+          <RaceControls
+            durationText={durationText}
+            onDurationTextChange={changeDuration}
+            isDurationValid={isDurationValid}
+            isLocked={isBusy}
+            hasPrize={selected !== undefined}
+            entrantCount={selected?.entrantIds.length ?? 0}
+            participantCount={event.participants.length}
+            onEditEntrants={() => setDialog({ kind: "entrants" })}
+            onEditParticipants={() => setDialog({ kind: "participants" })}
+          />
+        </div>
+      )}
 
       <RaceStage
         event={event}
         prize={selected}
         isDurationValid={isDurationValid}
+        focus={focus}
+        onSelectPrize={choosePrize}
       />
-      <WinnersPanel event={event} canVoid={!isBusy} onVoid={setVoiding} />
+      {focus.active ? null : (
+        <WinnersPanel event={event} canVoid={!isBusy} onVoid={setVoiding} />
+      )}
 
       <ParticipantsDialog
         event={event}

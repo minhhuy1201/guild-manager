@@ -16,7 +16,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { UnsavedChangesBar } from "@/components/shared/unsaved-changes-bar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useFocusMode } from "../hooks/use-focus-mode";
+import { useFocusMode } from "@/hooks/use-focus-mode";
 import { useFormationAnnounce } from "../hooks/use-formation-announce";
 import { useFormationScreen } from "../hooks/use-formation-screen";
 import { useSaveShortcut } from "../hooks/use-save-shortcut";

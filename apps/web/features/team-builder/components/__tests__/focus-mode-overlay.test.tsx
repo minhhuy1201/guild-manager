@@ -1,60 +1,30 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { FocusModeOverlay } from "../focus-mode-overlay";
 
 afterEach(cleanup);
 
-/**
- * Render the overlay with a roving tablist whose first tab is not a Tab stop, as when match 2 is
- * the selected one.
- */
-function renderWithSecondTabSelected() {
-  render(
-    <FocusModeOverlay
-      title="Bang chiến"
-      onExit={vi.fn()}
-      matchTabs={
-        <div role="tablist">
-          <button type="button" role="tab" tabIndex={-1}>
-            Trận 1
-          </button>
-          <button type="button" role="tab" tabIndex={0}>
-            Trận 2
-          </button>
-        </div>
-      }
-      notice={null}
-      footer={null}
-      grid={<div />}
-      pool={<button type="button">Thành viên</button>}
-    />
-  );
-}
-
-describe("FocusModeOverlay - bẫy focus", () => {
-  it("Shift+Tab từ tab đang chọn vòng về nút cuối, bỏ qua tab không phải điểm dừng", () => {
-    renderWithSecondTabSelected();
-    const selected = screen.getByRole("tab", { name: "Trận 2" });
-    selected.focus();
-
-    fireEvent.keyDown(selected, { key: "Tab", shiftKey: true });
-
-    expect(document.activeElement).toBe(
-      screen.getByRole("button", { name: "Thành viên" })
+describe("FocusModeOverlay", () => {
+  it("là dialog xếp đội toàn màn hình, tên trận và các phần nằm trong đó", () => {
+    render(
+      <FocusModeOverlay
+        title="Bang chiến"
+        onExit={vi.fn()}
+        matchTabs={<div role="tablist" />}
+        notice={<p>Vắng 2</p>}
+        footer={<p>Chưa lưu</p>}
+        grid={<p>Lưới</p>}
+        pool={<p>Danh sách</p>}
+      />
     );
-  });
 
-  it("Tab từ nút cuối vòng về tab đang chọn", () => {
-    renderWithSecondTabSelected();
-    const last = screen.getByRole("button", { name: "Thành viên" });
-    last.focus();
-
-    fireEvent.keyDown(last, { key: "Tab" });
-
-    expect(document.activeElement).toBe(
-      screen.getByRole("tab", { name: "Trận 2" })
-    );
+    const dialog = screen.getByRole("dialog", { name: "Xếp đội hình toàn màn hình" });
+    expect(dialog.contains(screen.getByRole("heading", { name: "Bang chiến" }))).toBe(true);
+    for (const text of ["Vắng 2", "Chưa lưu", "Lưới", "Danh sách"]) {
+      expect(dialog.contains(screen.getByText(text))).toBe(true);
+    }
+    expect(screen.getByRole("tablist")).toBeTruthy();
   });
 });

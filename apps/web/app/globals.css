@@ -467,7 +467,8 @@
    (interaction.md, Motion). Reduced motion is answered by the rule at the end of this file. */
 /* The bar and the board sit beside the stage, not inside it, so they carry the palette too. */
 [data-slot="cat-race-stage"],
-[data-slot="cat-race-hud"] {
+[data-slot="cat-race-hud"],
+[data-slot="cat-race-focus"] {
   --stage-night: #1b1424;
   --stage-paper: #f3e9d2;
   --stage-paper-dim: #b9ab90;
@@ -764,6 +765,22 @@
   font-variant-numeric: tabular-nums;
   color: var(--stage-gold);
 }
+
+/* In the full-screen mode the bar is the top edge of the overlay: the shell draws the frame, so the
+   bar drops its own box and grows its type. */
+.race-bar[data-size="focus"] {
+  flex: 1;
+  gap: 10px 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
+
+.race-bar[data-size="focus"] .race-live { padding: 5px 12px 4px; font-size: 17px; }
+.race-bar[data-size="focus"] .race-tier { padding: 4px 12px; font-size: 18px; }
+.race-bar[data-size="focus"] .race-meta { font-size: 17px; }
+.race-bar[data-size="focus"] .race-clock { font-size: 30px; }
 
 /* The live board beside the track. */
 .race-board {
