@@ -150,6 +150,8 @@ tin trong kênh và một DM mẫu, rồi gửi. Lưu ý là phần ưu tiên: t
 - Chụp ảnh đội hình thật cho preview.
 - Màu Discord chính xác từng pixel; preview dùng token tối của app.
 - Mở mention từ lưu ý.
+- Preview của markdown gõ trong lưu ý ngoài đậm, nghiêng và quote (tiêu đề, danh sách, mention thật):
+  Discord vẽ chúng, preview hiện chữ thô.
 
 ## Further Notes
 

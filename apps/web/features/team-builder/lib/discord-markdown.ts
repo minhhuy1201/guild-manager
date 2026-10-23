@@ -33,8 +33,11 @@ export function parseDiscordBlocks(content: string): DiscordBlock[] {
     if (line.startsWith(">")) {
       const text = line.replace(/^> ?/, "");
 
-      if (last?.kind === "quote") last.lines.push(text);
-      else blocks.push({ kind: "quote", lines: [text] });
+      if (last?.kind === "quote") {
+        blocks[blocks.length - 1] = { kind: "quote", lines: [...last.lines, text] };
+      } else {
+        blocks.push({ kind: "quote", lines: [text] });
+      }
     } else if (line.startsWith("## ")) {
       blocks.push({ kind: "heading", level: 2, text: line.slice(3) });
     } else if (line.startsWith("# ")) {

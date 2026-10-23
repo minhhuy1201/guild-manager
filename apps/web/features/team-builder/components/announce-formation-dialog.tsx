@@ -189,7 +189,11 @@ export function AnnounceFormationDialog({
                   onChange={(event) => onNoteChange(event.target.value)}
                 />
                 <div className="flex justify-between gap-3 text-sm text-muted-foreground">
-                  <span>Hiện đầu tin trong kênh và mọi tin nhắn riêng.</span>
+                  <span>
+                    {notifyMembers
+                      ? "Hiện đầu tin trong kênh và mọi tin nhắn riêng."
+                      : "Hiện đầu tin trong kênh."}
+                  </span>
                   <span className="tabular-nums">
                     {note.length}/{ANNOUNCEMENT_NOTE_MAX_CHARS}
                   </span>

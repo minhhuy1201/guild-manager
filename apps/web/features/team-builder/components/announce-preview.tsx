@@ -16,6 +16,9 @@ import { DiscordMessageFrame } from "./discord-message-frame";
 
 type PreviewTab = "channel" | "direct";
 
+/** A panel fades in when its tab is picked: opacity only, on the app's show/hide duration. */
+const PANEL_FADE = "animate-in fade-in-0 duration-[var(--duration-base)]";
+
 interface AnnouncePreviewProps {
   /** The battle day being announced */
   session: PreviewSession;
@@ -63,7 +66,7 @@ export function AnnouncePreview({
           {notifyMembers ? <TabsTrigger value="direct">Nhắn riêng (mẫu)</TabsTrigger> : null}
         </TabsList>
         <div className="max-h-80 overflow-y-auto lg:max-h-none">
-          <TabsContent value="channel">
+          <TabsContent value="channel" className={PANEL_FADE}>
             <DiscordMessageFrame
               time={time}
               attachments={Array.from({ length: imageCount }, (_, index) => `doi-hinh-${index + 1}.webp`)}
@@ -71,7 +74,7 @@ export function AnnouncePreview({
               <DiscordMessageContent content={previewChannelContent(session, noteOrNull, now)} />
             </DiscordMessageFrame>
           </TabsContent>
-          <TabsContent value="direct">
+          <TabsContent value="direct" className={PANEL_FADE}>
             <DiscordMessageFrame
               time={time}
               attachments={[`team-${SAMPLE_TEAM}-tran-${SAMPLE_MATCH}.webp`]}
