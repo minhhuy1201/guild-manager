@@ -92,9 +92,11 @@ export function useFocusMode(
   const active = open && enabled;
   const wasActive = useRef(false);
   const fullscreenRequest = useRef<Promise<void>>(Promise.resolve());
+  const openCount = useRef(0);
 
   const enter = useCallback(() => {
     setOpen(true);
+    openCount.current += 1;
     fullscreenRequest.current = requestBrowserFullscreen();
   }, []);
 
@@ -143,12 +145,17 @@ export function useFocusMode(
 
   // Leaves the fullscreen this mode asked for however the mode ends - ✕, Esc, a read-only battle,
   // or the screen unmounting on a navigation - and never one the mode did not start. It waits for
-  // the request, which may still be pending when the mode closes, and would land after the exit.
+  // the request, which may still be pending when the mode closes, and would land after the exit -
+  // unless the mode has opened again meanwhile, whose fullscreen is not this one's to leave.
   useEffect(() => {
     if (!active) return;
 
     const request = fullscreenRequest.current;
-    return () => void request.then(exitBrowserFullscreen);
+    const opening = openCount.current;
+    return () =>
+      void request.then(() => {
+        if (openCount.current === opening) return exitBrowserFullscreen();
+      });
   }, [active]);
 
   useEffect(() => {

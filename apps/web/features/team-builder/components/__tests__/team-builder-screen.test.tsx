@@ -407,6 +407,29 @@ describe("TeamBuilderScreen - chế độ toàn màn hình", () => {
     expect(exitFullscreen).toHaveBeenCalledTimes(1);
   });
 
+  it("tắt rồi mở lại nhanh thì lời xin cũ không đẩy lần mở mới ra khỏi toàn màn hình", async () => {
+    const grants: (() => void)[] = [];
+    const { exitFullscreen } = stubFullscreen(
+      () =>
+        new Promise<void>((resolve) => {
+          grants.push(resolve);
+        })
+    );
+    formationScreen.value = editableScreen();
+
+    render(<TeamBuilderScreen />);
+    fireEvent.click(screen.getByRole("button", { name: ENTER_NAME }));
+    fireEvent.click(screen.getByRole("button", { name: /Thoát toàn màn hình/ }));
+    fireEvent.click(screen.getByRole("button", { name: ENTER_NAME }));
+    await act(async () => {
+      fullscreen.element = document.documentElement;
+      grants.forEach((grant) => grant());
+    });
+
+    expect(exitFullscreen).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog", { name: DIALOG_NAME })).toBeTruthy();
+  });
+
   it("trận chỉ xem không thoát toàn màn hình mà chế độ không mở", () => {
     const { exitFullscreen } = stubFullscreen();
     fullscreen.element = document.documentElement;

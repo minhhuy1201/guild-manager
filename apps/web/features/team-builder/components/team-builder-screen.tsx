@@ -53,9 +53,7 @@ export function TeamBuilderScreen() {
   // the cards cover most of the screen - it could not do while any touch on a card was a drag.
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(TouchSensor, {
-      activationConstraint: { delay: 250, tolerance: 5 },
-    }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } })
   );
 
   // The team names are global, so an unsaved name is unsaved work on every day
@@ -87,7 +85,7 @@ export function TeamBuilderScreen() {
   const announce = useFormationAnnounce(
     screen.selection.activeSessionId,
     screen.draft.matches.length,
-    dirty,
+    dirty
   );
 
   /**
@@ -101,7 +99,7 @@ export function TeamBuilderScreen() {
 
   // An empty match has nothing to lose, so it is copied over without a dialog.
   const activeMatchHasMembers = Object.values(screen.draft.assignment).some(
-    Boolean,
+    Boolean
   );
 
   /** Copy straight into an empty match; ask first when it still holds people. */
@@ -203,7 +201,7 @@ export function TeamBuilderScreen() {
       matchCount={screen.draft.matchCount}
       activeMatchIndex={screen.draft.activeMatchIndex}
       secondMatchHasMembers={Object.values(
-        screen.draft.matches[1]?.assignment ?? {},
+        screen.draft.matches[1]?.assignment ?? {}
       ).some(Boolean)}
       canAddMatch={screen.draft.canAddMatch}
       onSelect={screen.draft.setActiveMatch}
@@ -307,7 +305,7 @@ export function TeamBuilderScreen() {
         <AnnounceFormationDialog
           open={announce.open}
           filledCounts={screen.draft.matches.map(
-            (match) => Object.values(match.assignment).filter(Boolean).length,
+            (match) => Object.values(match.assignment).filter(Boolean).length
           )}
           slotCount={screen.draft.slotCount}
           blocked={dirty}
