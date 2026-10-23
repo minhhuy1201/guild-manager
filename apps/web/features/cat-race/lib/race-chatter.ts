@@ -219,7 +219,7 @@ function addBubble(state: ChatterState, draft: Draft, limits: Limits, time: numb
   if (group.length < limits[kind]) return next(others);
 
   const candidates = group.some((b) => !b.isCue) ? group.filter((b) => !b.isCue) : group;
-  const oldest = candidates.reduce((a, b) => (b.bornAt < a.bornAt ? b : a));
+  const oldest = candidates.reduce((a, b) => (b.bornAt < a.bornAt ? b : a), candidates[0]);
 
   return next(others.filter((b) => b.id !== oldest.id));
 }
