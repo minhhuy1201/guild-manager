@@ -1,6 +1,6 @@
 import { GuildRole } from '@guild/shared/enums';
 
-import { TOKEN_TYPE, type JwtPayload } from '../../../common';
+import { TOKEN_TYPE, type RequestActor } from '../../../common';
 import { buildAttendanceBoard } from '../attendance-board';
 import { BUTTON_STYLE } from '../discord.constants';
 import type {
@@ -75,8 +75,14 @@ function makeDeps(options: {
  * @param role - Role to act with
  * @returns The payload
  */
-function actorOf(role: GuildRole): JwtPayload {
-  return { sub: '111', role, type: TOKEN_TYPE.access };
+function actorOf(role: GuildRole): RequestActor {
+  return {
+    sub: '111',
+    role,
+    type: TOKEN_TYPE.access,
+    capabilities: [],
+    grantedCommands: [],
+  };
 }
 
 describe('buildAttendanceBoard', () => {

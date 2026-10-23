@@ -1,5 +1,7 @@
 export * from "./attendance.enum";
+export * from "./capability.enum";
 export * from "./cat-race-mode.enum";
+export * from "./grantable-command.enum";
 export * from "./guild-class.enum";
 export * from "./prize-tier.enum";
 export * from "./role.enum";

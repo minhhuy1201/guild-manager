@@ -12,13 +12,14 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Capability } from '@guild/shared/enums';
 import type {
   TacticDetail,
   TacticSummary,
   TacticTokenPreset,
 } from '@guild/shared/schemas';
 
-import { AdminGuard, JwtAuthGuard } from '../../common';
+import { CapabilityGuard, JwtAuthGuard, RequireCapability } from '../../common';
 import {
   CreateTacticDto,
   CreateTokenPresetDto,
@@ -29,7 +30,7 @@ import { TacticsService } from './tactics.service';
 
 /**
  * The tactics board. The whole guild reads it, only an admin writes it, so the session guard sits at
- * controller level and `AdminGuard` is attached to each write route.
+ * controller level and `CapabilityGuard` is attached to each write route.
  */
 @ApiTags('tactics')
 @ApiBearerAuth()
@@ -65,7 +66,8 @@ export class TacticsController {
    * @returns The preset just created
    */
   @Post('token-presets')
-  @UseGuards(AdminGuard)
+  @UseGuards(CapabilityGuard)
+  @RequireCapability(Capability.TACTICS)
   @ApiOperation({ summary: 'Thêm quân cờ' })
   createPreset(@Body() body: CreateTokenPresetDto): Promise<TacticTokenPreset> {
     return this.tactics.createPreset(body);
@@ -76,7 +78,8 @@ export class TacticsController {
    * @param id - Preset id
    */
   @Delete('token-presets/:id')
-  @UseGuards(AdminGuard)
+  @UseGuards(CapabilityGuard)
+  @RequireCapability(Capability.TACTICS)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Xoá quân cờ' })
   removePreset(@Param('id') id: string): Promise<void> {
@@ -100,7 +103,8 @@ export class TacticsController {
    * @returns The tactic just created
    */
   @Post()
-  @UseGuards(AdminGuard)
+  @UseGuards(CapabilityGuard)
+  @RequireCapability(Capability.TACTICS)
   @ApiOperation({ summary: 'Tạo chiến thuật' })
   create(@Body() body: CreateTacticDto): Promise<TacticDetail> {
     return this.tactics.create(body);
@@ -113,7 +117,8 @@ export class TacticsController {
    * @returns The updated summary
    */
   @Patch(':id')
-  @UseGuards(AdminGuard)
+  @UseGuards(CapabilityGuard)
+  @RequireCapability(Capability.TACTICS)
   @ApiOperation({ summary: 'Đổi tên, mô tả hoặc ghi chú chiến thuật' })
   update(
     @Param('id') id: string,
@@ -129,7 +134,8 @@ export class TacticsController {
    * @returns The tactic with the scene just written
    */
   @Put(':id/stages')
-  @UseGuards(AdminGuard)
+  @UseGuards(CapabilityGuard)
+  @RequireCapability(Capability.TACTICS)
   @ApiOperation({ summary: 'Lưu toàn bộ bản vẽ' })
   saveStages(
     @Param('id') id: string,
@@ -143,7 +149,8 @@ export class TacticsController {
    * @param id - Tactic id
    */
   @Delete(':id')
-  @UseGuards(AdminGuard)
+  @UseGuards(CapabilityGuard)
+  @RequireCapability(Capability.TACTICS)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Xoá chiến thuật' })
   remove(@Param('id') id: string): Promise<void> {

@@ -1,14 +1,21 @@
-import { AdminGuard, JwtAuthGuard } from '../../../common';
+import { Capability } from '@guild/shared/enums';
+
+import { CapabilityGuard, JwtAuthGuard } from '../../../common';
+import { accessOf } from '../../../__tests__/guards-of';
 import { CatRaceAnnounceController } from '../cat-race-announce.controller';
 
 describe('CatRaceAnnounceController', () => {
-  it('is admin-only', () => {
+  it('needs the cat race Capability', () => {
     const guards = Reflect.getMetadata(
       '__guards__',
       CatRaceAnnounceController,
     ) as unknown[];
 
-    expect(guards).toEqual(expect.arrayContaining([JwtAuthGuard, AdminGuard]));
+    expect(guards).toEqual([JwtAuthGuard, CapabilityGuard]);
+    expect(accessOf(CatRaceAnnounceController)).toEqual({
+      kind: 'capability',
+      capability: Capability.CAT_RACE,
+    });
   });
 
   it('posts first, then returns the event as it stands after the post', async () => {

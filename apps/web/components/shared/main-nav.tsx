@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLayoutEffect, useRef, useState } from "react";
 
+import type { Actor } from "@guild/shared/lib";
+
 import { navItemsFor } from "@/components/shared/nav-items";
 import { buttonVariants } from "@/components/ui/button";
 import { PAGE_NAV_TRANSITION } from "@/lib/page-transition";
@@ -20,29 +22,29 @@ interface IndicatorBox {
 const INDICATOR_INSET_PX = 12;
 
 interface MainNavProps {
-  /** Whether the current user is an admin (determined on the server) */
-  isAdmin: boolean;
+  /** Role and Grants of the current user (determined on the server) */
+  actor: Actor;
 }
 
 /**
  * The main navigation bar in the header, highlighting the active item by pathname.
- * `adminOnly` items only render for an admin - the actual access control is the proxy's and the
+ * Items needing a Capability only render for a viewer who holds one - the actual access control is the proxy's and the
  * server layout's job.
  *
  * From `sm` up only: on a phone four icons without words were hard to tell apart, so there the
  * same entries move to `MobileTabBar` at the bottom of the screen, each with its name. Up to `lg`
  * the entries show their short names, which is what leaves room for the rest of the header.
- * @param props.isAdmin - Whether to show the admin-only items
+ * @param props.actor - Whose entries to show
  * @returns The navigation bar
  */
-export function MainNav({ isAdmin }: MainNavProps) {
+export function MainNav({ actor }: MainNavProps) {
   const pathname = usePathname();
   const navRef = useRef<HTMLElement>(null);
   const [box, setBox] = useState<IndicatorBox | null>(null);
   // Off for the first placement, so the bar appears under the active link instead of sliding in
   // from the left edge on every full page load.
   const [isSettled, setIsSettled] = useState(false);
-  const items = navItemsFor(isAdmin);
+  const items = navItemsFor(actor);
   const activeHref = items.find(({ href }) => href === pathname)?.href;
 
   // Layout, not just the route, moves the bar: the labels switch between short and full at `lg`,

@@ -1,3 +1,4 @@
+import { NOT_GRANTED } from '../require-command';
 import { GuildRole } from '@guild/shared/enums';
 
 import { TOKEN_TYPE } from '../../../common';
@@ -96,7 +97,7 @@ describe('/chao-mung', () => {
     );
 
     expect(reply.data.flags).toBe(MESSAGE_FLAG.ephemeral);
-    expect(reply.data.content).toBe('Chỉ admin mới chào thành viên mới được.');
+    expect(reply.data.content).toBe(NOT_GRANTED);
   });
 
   it('người gọi chưa được gán nhân vật thì nhận NOT_LINKED', async () => {

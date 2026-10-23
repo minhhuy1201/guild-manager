@@ -1,6 +1,7 @@
 import Link from "next/link";
 
-import { canManageGuild } from "@guild/shared/lib";
+import { Capability } from "@guild/shared/enums";
+import { can } from "@guild/shared/lib";
 
 import { GuildSeal } from "@/components/shared/guild-seal";
 import { HeaderLoginButton } from "@/components/shared/header-login-button";
@@ -9,7 +10,7 @@ import { MobileTabBar } from "@/components/shared/mobile-tab-bar";
 import { ThemeMenu } from "@/components/shared/theme-menu";
 import { ROUTES } from "@/config/routes";
 import { UserMenu } from "@/features/auth";
-import { fetchMe, getSession } from "@/features/auth/server";
+import { getActor, getMe } from "@/features/auth/server";
 import { APP_SHELL_WIDTH } from "@/lib/layout";
 import { PAGE_NAV_TRANSITION } from "@/lib/page-transition";
 import { cn } from "@/lib/utils";
@@ -55,16 +56,17 @@ function GuildName() {
  * The app's top header: the guild name "Mèo Mập Giang Hồ" and, once signed in, the main nav - in
  * the header from `sm` up, in the tab bar at the bottom of a phone's screen below it. A visitor gets
  * the guild's public page behind the mark and a way to sign in.
- * Reads the session on the server to decide whether to show the nav at all, and whether it carries
- * the admin items. The theme is picked from the account menu, or from `ThemeMenu` when signed out.
+ * Reads the actor on the server to decide whether to show the nav at all, and which items it
+ * carries. The theme is picked from the account menu, or from `ThemeMenu` when signed out.
  * @returns The styled header, followed by the phone's tab bar when signed in
  */
 export async function SiteHeader() {
-  const session = await getSession();
   // The login page renders this header too, so a broken session just means "signed out".
-  const meResult = session ? await fetchMe() : null;
+  // The actor carries the role and Grants `/auth/me` reports today, not the token's older role, and
+  // shares that one read with `getMe` below and with the page being rendered.
+  const actor = await getActor();
+  const meResult = actor ? await getMe() : null;
   const me = meResult?.ok ? meResult.data : null;
-  const isAdmin = session ? canManageGuild(session.role) : false;
 
   return (
     <>
@@ -91,27 +93,27 @@ export async function SiteHeader() {
           {/* Signed in the mark leads to the week's attendance, signed out to the guild's public
               page - the one route besides the login screen a visitor can actually reach. */}
           <Link
-            href={session ? ROUTES.attendance : ROUTES.landing}
+            href={actor ? ROUTES.attendance : ROUTES.landing}
             transitionTypes={PAGE_NAV_TRANSITION}
             className={BRAND}
           >
             <GuildName />
           </Link>
           {/* Signed out there is nothing to navigate between, only a way in. */}
-          {!session && (
+          {!actor && (
             <div className="ml-auto flex shrink-0 items-center gap-2">
               <ThemeMenu />
               <HeaderLoginButton />
             </div>
           )}
-          {session && (
+          {actor && (
             <div className="ml-auto flex shrink-0 items-center gap-2.5">
-              <MainNav isAdmin={isAdmin} />
+              <MainNav actor={actor} />
               <UserMenu
                 label={me?.character?.name ?? me?.discordUsername ?? null}
-                discordId={session.discordId}
+                discordId={actor.discordId}
                 avatarHash={me?.discordAvatar ?? null}
-                isAdmin={isAdmin}
+                canRaceCats={can(actor, Capability.CAT_RACE)}
               />
             </div>
           )}
@@ -120,7 +122,7 @@ export async function SiteHeader() {
       {/* A sibling of the header, not a child: the header's backdrop blur would become the
           containing block of the bar's `position: fixed` and pin it to the header instead of the
           bottom of the screen. */}
-      {session && <MobileTabBar isAdmin={isAdmin} />}
+      {actor && <MobileTabBar actor={actor} />}
     </>
   );
 }

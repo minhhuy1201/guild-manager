@@ -109,7 +109,7 @@ export interface EditorToolbarProps {
   /** Whether the draft holds unsaved edits */
   dirty: boolean;
   /** Whether the viewer may write — a member gets the toolbar read-only, with no export */
-  isAdmin: boolean;
+  canEdit: boolean;
   onToolChange: (tool: TacticTool) => void;
   onColorChange: (color: TacticColor) => void;
   onStrokeWidthChange: (strokeWidth: TacticStrokeWidth) => void;
@@ -139,7 +139,7 @@ export function EditorToolbar({
   canRedo,
   saving,
   dirty,
-  isAdmin,
+  canEdit,
   onToolChange,
   onColorChange,
   onStrokeWidthChange,
@@ -260,7 +260,7 @@ export function EditorToolbar({
           <ShortcutKeys shortcut={ACTION_SHORTCUTS.redo} modifier={modifier} />
         </Button>
 
-        {isAdmin ? (
+        {canEdit ? (
           <>
             <Button
               type="button"

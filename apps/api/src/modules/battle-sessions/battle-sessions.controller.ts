@@ -11,9 +11,15 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Capability } from '@guild/shared/enums';
 import type { BattleSession, Week } from '@guild/shared/schemas';
 
-import { AdminGuard, JwtAuthGuard, WeekStartQueryDto } from '../../common';
+import {
+  CapabilityGuard,
+  JwtAuthGuard,
+  WeekStartQueryDto,
+  RequireCapability,
+} from '../../common';
 import { BattleSessionsService } from './battle-sessions.service';
 import {
   CreateBattleSessionDto,
@@ -22,7 +28,7 @@ import {
 
 /**
  * The battle schedule — reading needs only a session, writing needs an admin, so the auth guard sits
- * at controller level and `AdminGuard` is attached to each write route.
+ * at controller level and `CapabilityGuard` is attached to each write route.
  */
 @ApiTags('battle-sessions')
 @ApiBearerAuth()
@@ -36,7 +42,8 @@ export class BattleSessionsController {
    * @returns The open week and the next one
    */
   @Get('weeks')
-  @UseGuards(AdminGuard)
+  @UseGuards(CapabilityGuard)
+  @RequireCapability(Capability.SCHEDULE)
   @ApiOperation({ summary: 'Tuần đang mở và tuần kế tiếp' })
   getWeeks(): Week[] {
     return this.battleSessions.getEditableWeeks();
@@ -69,7 +76,8 @@ export class BattleSessionsController {
    * @returns The created session
    */
   @Post()
-  @UseGuards(AdminGuard)
+  @UseGuards(CapabilityGuard)
+  @RequireCapability(Capability.SCHEDULE)
   @ApiOperation({ summary: 'Thêm một trận scrim' })
   create(@Body() body: CreateBattleSessionDto): Promise<BattleSession> {
     return this.battleSessions.create(body);
@@ -82,7 +90,8 @@ export class BattleSessionsController {
    * @returns The updated session
    */
   @Patch(':id')
-  @UseGuards(AdminGuard)
+  @UseGuards(CapabilityGuard)
+  @RequireCapability(Capability.SCHEDULE)
   @ApiOperation({ summary: 'Sửa một trận' })
   update(
     @Param('id') id: string,
@@ -97,7 +106,8 @@ export class BattleSessionsController {
    * @returns The session, attendance open again
    */
   @Post(':id/reopen-attendance')
-  @UseGuards(AdminGuard)
+  @UseGuards(CapabilityGuard)
+  @RequireCapability(Capability.SCHEDULE)
   @ApiOperation({ summary: 'Mở lại điểm danh của một ngày đã gửi đội hình' })
   reopenAttendance(@Param('id') id: string): Promise<BattleSession> {
     return this.battleSessions.reopenAttendance(id);
@@ -110,7 +120,8 @@ export class BattleSessionsController {
    */
   @Delete(':id')
   @HttpCode(204)
-  @UseGuards(AdminGuard)
+  @UseGuards(CapabilityGuard)
+  @RequireCapability(Capability.SCHEDULE)
   @ApiOperation({ summary: 'Xoá một trận scrim' })
   remove(@Param('id') id: string): Promise<void> {
     return this.battleSessions.remove(id);

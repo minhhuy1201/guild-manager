@@ -4,7 +4,8 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { canManageGuild } from '@guild/shared/lib';
+import { Capability } from '@guild/shared/enums';
+import { can } from '@guild/shared/lib';
 import {
   attendanceSummarySchema,
   type AttendanceRecord,
@@ -13,7 +14,7 @@ import {
   type MarkAttendanceInput,
 } from '@guild/shared/schemas';
 
-import { Clock, type JwtPayload } from '../../common';
+import { Clock, type RequestActor } from '../../common';
 import { verifyResponse } from '../../config';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import {
@@ -167,11 +168,11 @@ export class AttendanceService {
    */
   async mark(
     input: MarkAttendanceInput,
-    actor: JwtPayload,
+    actor: RequestActor,
   ): Promise<AttendanceRecord> {
     const now = this.clock.now();
     const { characterId, sessionId, isPresent, reason } = input;
-    const isAdmin = canManageGuild(actor.role);
+    const isAdmin = can(actor, Capability.ATTENDANCE);
 
     // Three independent reads, so one round trip rather than three: a Discord button press answers
     // inside the interaction's 3-second window, and this method sits on that path.
@@ -257,7 +258,7 @@ export class AttendanceService {
    * @param actor - JWT payload of the caller
    * @returns The character id, or null when the account has no character (rescue admin)
    */
-  private async ownCharacterId(actor: JwtPayload): Promise<string | null> {
+  private async ownCharacterId(actor: RequestActor): Promise<string | null> {
     const member = await this.characters.findByDiscordId(actor.sub);
 
     return member?.id ?? null;

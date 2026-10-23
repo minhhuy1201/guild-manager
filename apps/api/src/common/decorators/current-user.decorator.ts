@@ -1,6 +1,6 @@
 import { createParamDecorator, type ExecutionContext } from '@nestjs/common';
 
-import type { JwtPayload } from '../constants/auth.constant';
+import type { RequestActor } from '../constants/auth.constant';
 import type { AuthenticatedRequest } from '../guards/jwt-auth.guard';
 
 /**
@@ -12,8 +12,8 @@ export const CurrentUser = createParamDecorator(
    * Read `request.user` set by JwtAuthGuard.
    * @param _data - Decorator argument (unused)
    * @param context - Execution context of the request
-   * @returns JWT payload of the signed-in user
+   * @returns The signed-in user, with a Manager's Grants
    */
-  (_data: unknown, context: ExecutionContext): JwtPayload | undefined =>
+  (_data: unknown, context: ExecutionContext): RequestActor | undefined =>
     context.switchToHttp().getRequest<AuthenticatedRequest>().user,
 );

@@ -11,16 +11,16 @@ import { MyLeaveBanner } from "./my-leave-banner";
 
 interface LeaveSectionProps {
   /** Whether the viewer may file leaves for others */
-  isAdmin: boolean;
+  canManageOthers: boolean;
 }
 
 /**
  * The attendance screen's leave entry: the button that opens the dialog, and the viewer's own
  * leaves under it.
- * @param isAdmin - Whether the viewer may file leaves for others
+ * @param canManageOthers - Whether the viewer may file leaves for others
  * @returns The section
  */
-export function LeaveSection({ isAdmin }: LeaveSectionProps) {
+export function LeaveSection({ canManageOthers }: LeaveSectionProps) {
   const [isOpen, setIsOpen] = useState(false);
   const { data: session } = useSession();
   const { data: characters } = useCharacters();
@@ -37,7 +37,7 @@ export function LeaveSection({ isAdmin }: LeaveSectionProps) {
       <LeaveDialog
         open={isOpen}
         onOpenChange={setIsOpen}
-        isAdmin={isAdmin}
+        canManageOthers={canManageOthers}
         ownCharacterId={session?.character?.id ?? null}
         characters={characters ?? []}
       />

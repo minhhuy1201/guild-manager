@@ -1,9 +1,10 @@
-import { GuildRole } from '@guild/shared/enums';
+import { GrantableCommand, GuildRole } from '@guild/shared/enums';
 
-import { TOKEN_TYPE } from '../../../common';
+import { TOKEN_TYPE, type RequestActor } from '../../../common';
 import type { CommandDeps } from '../commands/command.types';
 import { diemDanhHoCommand } from '../commands/diem-danh-ho.command';
 import { MESSAGE_FLAG } from '../discord.constants';
+import { NOT_GRANTED } from '../require-command';
 
 const INTERACTION = {
   type: 2 as const,
@@ -29,7 +30,13 @@ const TARGET_ROW = {
  * @param options.target - The mentioned user's row, as findByDiscordId returns it
  * @returns The deps, plus the CharactersService stub so a test can count its calls
  */
-function makeDeps(options: { callerRole: GuildRole; target: unknown }): {
+function makeDeps(options: {
+  callerRole: GuildRole;
+  target: unknown;
+  callerGrants?: Partial<RequestActor>;
+  callerCharacterId?: string;
+  isAttendanceClosed?: boolean;
+}): {
   deps: CommandDeps;
   characters: Record<string, jest.Mock>;
 } {
@@ -38,7 +45,7 @@ function makeDeps(options: { callerRole: GuildRole; target: unknown }): {
     id: 'session-1',
     label: 'Thứ 5 · 20:30',
     dateTime: '2026-09-03T13:30:00.000Z',
-    isAttendanceClosed: false,
+    isAttendanceClosed: options.isAttendanceClosed ?? false,
     canReopenAttendance: false,
     isGuildWar: false,
     opponent: null,
@@ -55,8 +62,15 @@ function makeDeps(options: { callerRole: GuildRole; target: unknown }): {
           sub: '111',
           role: options.callerRole,
           type: TOKEN_TYPE.access,
+          capabilities: [],
+          grantedCommands: [],
+          ...options.callerGrants,
         },
-        character: { id: 'admin-abc123', name: 'Admin', discordId: '111' },
+        character: {
+          id: options.callerCharacterId ?? 'admin-abc123',
+          name: 'Admin',
+          discordId: '111',
+        },
       }),
     },
     characters,
@@ -149,7 +163,7 @@ describe('/diem-danh-ho', () => {
 
     const reply = await diemDanhHoCommand.execute(INTERACTION, deps);
 
-    expect(reply.data.content).toContain('Chỉ admin');
+    expect(reply.data.content).toBe(NOT_GRANTED);
     expect(reply.data.components).toBeUndefined();
   });
 
@@ -160,5 +174,41 @@ describe('/diem-danh-ho', () => {
 
     expect(reply.data.content).toContain('<@999>');
     expect(reply.data.content).toContain('chưa được gán nhân vật');
+  });
+});
+
+describe('/diem-danh-ho - Grant chỉ để điểm danh hộ người khác', () => {
+  const GRANTED = { grantedCommands: [GrantableCommand.DIEM_DANH_HO] };
+
+  /**
+   * Whether the board the command drew offers any button.
+   * @param target - Whose board it is
+   * @param callerCharacterId - The caller's own character
+   * @returns true when at least one attendance button is on the board
+   */
+  async function offersButtons(
+    target: typeof TARGET_ROW,
+    callerCharacterId: string,
+  ): Promise<boolean> {
+    const { deps } = makeDeps({
+      callerRole: GuildRole.MANAGER,
+      callerGrants: GRANTED,
+      callerCharacterId,
+      target,
+      // A closed day: only someone marking on behalf of others still gets buttons for it.
+      isAttendanceClosed: true,
+    });
+
+    const reply = await diemDanhHoCommand.execute(INTERACTION, deps);
+
+    return (reply.data.components?.length ?? 0) > 0;
+  }
+
+  it('Quản lý có Grant điểm danh hộ người khác: ngày đã khoá vẫn có nút', async () => {
+    expect(await offersButtons(TARGET_ROW, 'quan-ly-1')).toBe(true);
+  });
+
+  it('Quản lý có Grant tự mở bảng của chính mình: ngày đã khoá không có nút, như Member', async () => {
+    expect(await offersButtons(TARGET_ROW, TARGET_ROW.id)).toBe(false);
   });
 });

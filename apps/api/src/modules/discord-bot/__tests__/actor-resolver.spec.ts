@@ -1,7 +1,13 @@
-import { GuildClass, GuildRole } from '@guild/shared/enums';
+import {
+  Capability,
+  GrantableCommand,
+  GuildClass,
+  GuildRole,
+} from '@guild/shared/enums';
 
 import { TOKEN_TYPE } from '../../../common';
 import type { GuildMemberRow } from '../../characters/characters.public';
+import { ActorLookupService } from '../../auth/auth.public';
 import { ActorResolver } from '../actor-resolver';
 
 /** A Character row as `findByDiscordId` now returns it. */
@@ -14,6 +20,8 @@ const ROW: GuildMemberRow = {
   discordAvatar: null,
   lastLoginAt: null,
   role: GuildRole.MEMBER,
+  capabilities: [],
+  grantedCommands: [],
 };
 
 /**
@@ -31,7 +39,9 @@ function makeResolver(options: {
   };
   const config = { get: jest.fn().mockReturnValue(options.adminIds) };
 
-  return new ActorResolver(characters as never, config as never);
+  return new ActorResolver(
+    new ActorLookupService(characters as never, config as never),
+  );
 }
 
 describe('ActorResolver', () => {
@@ -41,7 +51,13 @@ describe('ActorResolver', () => {
     // The whole row, not just the id: every caller needed the name and the Discord ID too, and was
     // reading the same row again to get them.
     await expect(resolver.resolve('111')).resolves.toEqual({
-      actor: { sub: '111', role: GuildRole.MEMBER, type: TOKEN_TYPE.access },
+      actor: {
+        sub: '111',
+        role: GuildRole.MEMBER,
+        type: TOKEN_TYPE.access,
+        capabilities: [],
+        grantedCommands: [],
+      },
       character: ROW,
     });
   });
@@ -58,7 +74,13 @@ describe('ActorResolver', () => {
     const resolver = makeResolver({ member: null, adminIds: '111' });
 
     await expect(resolver.resolve('111')).resolves.toEqual({
-      actor: { sub: '111', role: GuildRole.ADMIN, type: TOKEN_TYPE.access },
+      actor: {
+        sub: '111',
+        role: GuildRole.ADMIN,
+        type: TOKEN_TYPE.access,
+        capabilities: [],
+        grantedCommands: [],
+      },
       character: null,
     });
   });
@@ -69,5 +91,55 @@ describe('ActorResolver', () => {
     const resolver = makeResolver({ member: null, adminIds: '999' });
 
     await expect(resolver.resolve('111')).resolves.toBeNull();
+  });
+
+  it('Quản lý mang Grant của hàng mình, đọc từ cùng lần đọc nhân vật', async () => {
+    const manager = {
+      ...ROW,
+      role: GuildRole.MANAGER,
+      capabilities: [Capability.ATTENDANCE],
+      grantedCommands: [GrantableCommand.THONG_BAO],
+    };
+    const resolver = makeResolver({ member: manager, adminIds: '' });
+
+    await expect(resolver.resolve('111')).resolves.toEqual({
+      actor: {
+        sub: '111',
+        role: GuildRole.MANAGER,
+        type: TOKEN_TYPE.access,
+        capabilities: [Capability.ATTENDANCE],
+        grantedCommands: [GrantableCommand.THONG_BAO],
+      },
+      character: manager,
+    });
+  });
+
+  it('Quản lý chưa được tick gì thì mang hai mảng rỗng', async () => {
+    const resolver = makeResolver({
+      member: { ...ROW, role: GuildRole.MANAGER },
+      adminIds: '',
+    });
+
+    const resolved = await resolver.resolve('111');
+
+    expect(resolved?.actor.capabilities).toEqual([]);
+    expect(resolved?.actor.grantedCommands).toEqual([]);
+  });
+
+  it('Admin cứu hộ có hàng Quản lý vẫn là Admin, không mang Grant', async () => {
+    const resolver = makeResolver({
+      member: {
+        ...ROW,
+        role: GuildRole.MANAGER,
+        capabilities: [Capability.ATTENDANCE],
+      },
+      adminIds: '111',
+    });
+
+    const resolved = await resolver.resolve('111');
+
+    expect(resolved?.actor.role).toBe(GuildRole.ADMIN);
+    expect(resolved?.actor.capabilities).toEqual([]);
+    expect(resolved?.actor.grantedCommands).toEqual([]);
   });
 });

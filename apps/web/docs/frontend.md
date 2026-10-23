@@ -42,7 +42,7 @@ apps/web/
 │   ├── thiet-lap/page.tsx          # settings (admin)
 │   └── globals.css                 # Tailwind 4 + theme variables
 │
-├── proxy.ts                        # ⭐ session refresh + admin route guard, before every page request
+├── proxy.ts                        # ⭐ session refresh + sign-in requirement, before every page request
 │
 ├── features/                       # ⭐ all the logic
 │   └── <feature>/
@@ -212,11 +212,12 @@ cookies. `proxy.ts` runs before every page request and does two things:
   the only place in Next.js that can write cookies for an arbitrary request, which is why refresh
   cannot live in a Server Component. It writes the new tokens onto both the request (so this
   render sees them) and the response (so the browser keeps them).
-- **Redirects anonymous visitors away from admin routes** — the prefixes in `ADMIN_PATH_PREFIXES`
-  (`/xep-team`, `/thiet-lap`).
+- **Redirects anonymous visitors** to the login page or, at the root, the landing page.
 
-Hiding a nav link is cosmetic. Real enforcement is the proxy, plus a `getSession()` check inside each
-admin page's server component, plus the guards on the API. A new admin route needs all three.
+The proxy does not judge management routes: the token's role can be a day old, so a Member promoted
+since would be turned away. Hiding a nav link is cosmetic. Real enforcement is a `getActor()` check
+inside each management page's server component (role and Grants from `/auth/me`), plus the guards on
+the API. A new management route needs both.
 
 ### Time and deadlines
 

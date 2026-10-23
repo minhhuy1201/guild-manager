@@ -1,19 +1,13 @@
+import { GrantableCommand } from '@guild/shared/enums';
 import { COMMAND_OPTION_TYPE } from '../discord.constants';
 import { commandOptionValue } from '../interaction.schema';
 import { publicMessage } from '../reply';
-import { requireAdmin } from '../require-admin';
+import { requireCommand } from '../require-command';
 import type { CommandLinks, CommandReply, SlashCommand } from './command.types';
 
 /** Option names, used both when registering and when reading the invocation. */
 const MEMBER_OPTION = 'nguoi';
 const SECT_OPTION = 'luu-phai';
-
-/**
- * Shown to a member who tried to welcome somebody.
- * The refusal stays ephemeral even though the welcome itself is public: a channel does not need to
- * watch someone be told no.
- */
-const ADMIN_ONLY = 'Chỉ admin mới chào thành viên mới được.';
 
 /**
  * The welcome itself.
@@ -41,7 +35,7 @@ function buildWelcome(
 }
 
 /**
- * Welcome a new member and point them at the channels they need — admins only.
+ * Welcome a new member and point them at the channels they need — an Admin, or a Manager granted this command.
  *
  * The role is checked here rather than left to a service, because the reply *is* the effect — by
  * the time anything downstream could refuse, the message would already be in the channel. Same
@@ -52,7 +46,7 @@ export const chaoMungCommand: SlashCommand = {
   definition: {
     name: 'chao-mung',
     description:
-      'Chào một thành viên mới và chỉ họ các channel cần biết (chỉ admin)',
+      'Chào một thành viên mới và chỉ họ các channel cần biết (cần được cấp quyền)',
     options: [
       {
         name: MEMBER_OPTION,
@@ -70,7 +64,11 @@ export const chaoMungCommand: SlashCommand = {
   },
 
   execute: async (interaction, deps): Promise<CommandReply> => {
-    const check = await requireAdmin(interaction, deps, ADMIN_ONLY);
+    const check = await requireCommand(
+      interaction,
+      deps,
+      GrantableCommand.CHAO_MUNG,
+    );
 
     if (!check.ok) return check.reply;
 

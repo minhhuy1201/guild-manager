@@ -3,22 +3,24 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import type { Actor } from "@guild/shared/lib";
+
 import { navItemsFor, type NavItem } from "@/components/shared/nav-items";
 import { PAGE_NAV_TRANSITION } from "@/lib/page-transition";
 import { cn } from "@/lib/utils";
 
 /**
  * The entries that fit a phone.
- * @param isAdmin - Whether the viewer is an admin
+ * @param actor - The viewer's role and Grants
  * @returns The viewer's entries minus the desktop-only ones
  */
-function mobileNavItems(isAdmin: boolean): NavItem[] {
-  return navItemsFor(isAdmin).filter((item) => !item.desktopOnly);
+function mobileNavItems(actor: Actor): NavItem[] {
+  return navItemsFor(actor).filter((item) => !item.desktopOnly);
 }
 
 interface MobileTabBarProps {
-  /** Whether the current user is an admin (determined on the server) */
-  isAdmin: boolean;
+  /** Role and Grants of the current user (determined on the server) */
+  actor: Actor;
 }
 
 /**
@@ -38,10 +40,10 @@ interface MobileTabBarProps {
  *
  * Entries flagged `desktopOnly` (the team builder, the tactic map) are left out: they need a wide
  * screen. The header nav still lists them from `sm` up, and their pages stay reachable by link.
- * @param props.isAdmin - Whether to show the admin-only entries
+ * @param props.actor - Whose entries to show
  * @returns The tab bar
  */
-export function MobileTabBar({ isAdmin }: MobileTabBarProps) {
+export function MobileTabBar({ actor }: MobileTabBarProps) {
   const pathname = usePathname();
 
   return (
@@ -54,7 +56,7 @@ export function MobileTabBar({ isAdmin }: MobileTabBarProps) {
       className="dark fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-card/80 text-foreground shadow-[0_-8px_24px_-12px_rgb(0_0_0/0.5)] backdrop-blur-xl backdrop-saturate-150 pb-[env(safe-area-inset-bottom)] sm:hidden"
     >
       <ul className="flex h-16">
-        {mobileNavItems(isAdmin).map(({ href, shortLabel, icon: Icon }) => {
+        {mobileNavItems(actor).map(({ href, shortLabel, icon: Icon }) => {
           const isActive = pathname === href;
           return (
             <li key={href} className="flex-1">

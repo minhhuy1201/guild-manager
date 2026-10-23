@@ -50,8 +50,8 @@ vi.mock("@/features/auth", () => ({
 }));
 vi.mock("@/components/shared/toast", () => ({ toastSuccess, toastError }));
 vi.mock("../components/leave-dialog", () => ({
-  LeaveDialog: ({ open, isAdmin }: { open: boolean; isAdmin: boolean }) =>
-    open ? <div data-testid="leave-dialog" data-admin={String(isAdmin)} /> : null,
+  LeaveDialog: ({ open, canManageOthers }: { open: boolean; canManageOthers: boolean }) =>
+    open ? <div data-testid="leave-dialog" data-admin={String(canManageOthers)} /> : null,
 }));
 
 import { LeavePanel } from "../components/leave-panel";

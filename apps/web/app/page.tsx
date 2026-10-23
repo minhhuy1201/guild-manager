@@ -4,7 +4,7 @@ import { ErrorNotice } from "@/components/shared/error-notice";
 import { ROUTES } from "@/config/routes";
 import { AttendanceScreen } from "@/features/attendance";
 import { loginErrorMessage } from "@/features/auth";
-import { getSession } from "@/features/auth/server";
+import { getActor } from "@/features/auth/server";
 
 /**
  * Root route "/" — composes the attendance feature's screen.
@@ -17,7 +17,7 @@ export default async function Home({
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
-  const session = await getSession();
+  const session = await getActor();
 
   // proxy.ts already blocked visitors; this branch only tells TypeScript `session` is not null.
   if (!session) redirect(ROUTES.login);
@@ -28,7 +28,7 @@ export default async function Home({
   return (
     <>
       {message && <ErrorNotice message={message} />}
-      <AttendanceScreen role={session.role} />
+      <AttendanceScreen actor={session} />
     </>
   );
 }

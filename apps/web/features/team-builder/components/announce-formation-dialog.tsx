@@ -161,7 +161,7 @@ export function AnnounceFormationDialog({
             Ảnh đội hình của {filledCounts.length === 1 ? "trận" : "cả hai trận"}{" "}
             sẽ được đăng vào channel bang chiến kèm thông báo tập hợp. Gửi xong,
             ngày này khoá điểm danh: thành viên không tự đổi câu trả lời được
-            nữa, chỉ quản trị viên sửa hộ.
+            nữa, chỉ người có quyền điểm danh hộ sửa được.
           </p>
           <div className="flex items-center gap-2">
             <Checkbox

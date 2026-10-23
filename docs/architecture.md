@@ -108,13 +108,13 @@ sequenceDiagram
     participant DB as Prisma → PostgreSQL
 
     B->>PX: GET /xep-team
-    Note over PX: refreshes the token pair if the access<br/>token expired, then decideAccess:<br/>session required, ADMIN for admin routes
+    Note over PX: refreshes the token pair if the access<br/>token expired, then decideAccess:<br/>session required; the page checks<br/>the Capability via /auth/me
     PX-->>B: rendered page
     B->>SA: TanStack Query hook calls the action
     Note over SA: reads the httpOnly cookie,<br/>builds Authorization: Bearer
     SA->>AC: apiFetch
     AC->>NP: HTTP
-    Note over NP: requestIdMiddleware → JwtAuthGuard →<br/>AdminGuard → ZodValidationPipe → controller
+    Note over NP: requestIdMiddleware → JwtAuthGuard →<br/>CapabilityGuard → ZodValidationPipe → controller
     NP->>SV: validated DTO
     SV->>DB: query
     DB-->>SV: rows
@@ -163,9 +163,9 @@ the sources after compiling — see [`production.md`](production.md) §4.
 
 | Import | Contents |
 |---|---|
-| `@guild/shared/enums` | `GuildClass`, `GuildRole`, `attendanceLabel(isPresent)` — the Vietnamese "Có"/"Không" label — and the tactic enums (`TACTIC_COLORS`, `TACTIC_STROKE_WIDTHS`, `TACTIC_TOKEN_SIZES`, `TACTIC_TOKEN_ICONS`) |
+| `@guild/shared/enums` | `GuildClass`, `GuildRole`, `Capability`, `GrantableCommand`, `attendanceLabel(isPresent)` — the Vietnamese "Có"/"Không" label — and the tactic enums (`TACTIC_COLORS`, `TACTIC_STROKE_WIDTHS`, `TACTIC_TOKEN_SIZES`, `TACTIC_TOKEN_ICONS`) |
 | `@guild/shared/schemas` | Zod schemas for attendance, auth, battle sessions, characters, formations, cat races, tactics (the scene document, plus `liftTacticScene` for older `schemaVersion`s) |
-| `@guild/shared/lib` | The Vietnam clock (`vnWeekday`, `vnParts`, `shiftVnDate`, `atVnTime`), the deadline-cap rules both sides share, `canManageGuild(role)`, `safeRedirect` and `assertNever` |
+| `@guild/shared/lib` | The Vietnam clock (`vnWeekday`, `vnParts`, `shiftVnDate`, `atVnTime`), the deadline-cap rules both sides share, `can(actor, capability)` and `canRunCommand(actor, command)`, `safeRedirect` and `assertNever` |
 
 The package is intentionally **not** `"type": "module"`: `apps/api` is CommonJS under `nodenext`,
 which would force `.js` suffixes on relative imports, and Turbopack in `apps/web` cannot resolve
@@ -262,12 +262,12 @@ no-op in it. `attendance`, `battle-sessions`, `cat-race`, `characters` and `tact
 |---|---|---|
 | `health` | Liveness + a database ping | Public |
 | `auth` | Discord OAuth2 sign-in, the single-use code exchange, refresh, `me` | Public except `me` |
-| `characters` | Member CRUD, Discord identity and guild role | Admin (`JwtAuthGuard, AdminGuard` on the controller) |
-| `battle-sessions` | The week's schedule, deadlines, the Guild War session, time rules | Reads signed-in, writes admin |
+| `characters` | Member CRUD, Discord identity and guild role | Capability `MEMBERS` (`JwtAuthGuard, CapabilityGuard` on the controller); deleting a member is `@RequireAdmin()`. A Manager adds members (always `MEMBER`) and edits name, class and Discord ID of `MEMBER` rows only; role, Grants and every write on a Manager or Admin row are an Admin's, enforced in `CharactersService.update` |
+| `battle-sessions` | The week's schedule, deadlines, the Guild War session, time rules | Reads signed-in, writes need Capability `SCHEDULE` |
 | `attendance` | Marking attendance and reading records; a "Không" answer also releases that member from the day's formation, through `team-builder`. Also **leaves** (`LeaveService`): a member's declared stretch of days away, merged into the records at read time | Bearer required; reads are guild-wide for everyone, admin bypasses the deadline and marks for others |
-| `team-builder` | Per-match formations, and the team names shown on the grid | Admin |
-| `tactics` | Guild war tactic drawings and the shared token palette. The scene is one JSON document per tactic, parsed with Zod on every read (`tactics.codec.ts`) | Reads signed-in, writes admin (`AdminGuard` per handler) |
-| `cat-race` | The admin-only prize draw ("Đua mèo"): an event holds prizes, a roster and rounds. The server picks each winner with `crypto.randomInt` inside one transaction that first locks the event row, and stores the round before the web app animates it; the draw rules are pure functions in `cat-race.rules.ts`. The Discord summary post lives in `discord-bot` and reads the winners through `cat-race.public.ts` | Admin (`JwtAuthGuard, AdminGuard` on the controller) |
+| `team-builder` | Per-match formations, and the team names shown on the grid | Capability `TEAM_BUILDER` |
+| `tactics` | Guild war tactic drawings and the shared token palette. The scene is one JSON document per tactic, parsed with Zod on every read (`tactics.codec.ts`) | Reads signed-in, writes need Capability `TACTICS` (`CapabilityGuard` per handler) |
+| `cat-race` | The prize draw ("Đua mèo"): an event holds prizes, a roster and rounds. The server picks each winner with `crypto.randomInt` inside one transaction that first locks the event row, and stores the round before the web app animates it; the draw rules are pure functions in `cat-race.rules.ts`. The Discord summary post lives in `discord-bot` and reads the winners through `cat-race.public.ts` | Capability `CAT_RACE` (`JwtAuthGuard, CapabilityGuard` on the controller) |
 | `discord-bot` | The Discord interactions endpoint, the slash command registry, attendance recorded from Discord — by command (`/diem-danh`, `/diem-danh-ho`) **and by button**: the private attendance board answers with a Có/Không button per match, and the two guild-wide messages carry an "Điểm danh ngay" button that opens that board and a "Xin nghỉ" button that opens a leave form (a modal, whose submission reaches the router as a modal-submit interaction), both reaching the router as message-component interactions — the weekly schedule announcement (`/thong-bao`), the channels the bot posts to — reminder, admin alert and general notices (`/cau-hinh-kenh`), and the cat race summary post posted to the general-notice channel, the Team notices (a direct message per placed member and match, sent after the formation announcement), the daily attendance reminder — run by Vercel Cron, or by hand with `/nhac-diem-danh` — and the welcome for a new member (`/chao-mung`), which links three channels configured in the environment plus the sect channel picked when the command is typed. The last four are admin only | Discord's Ed25519 signature for interactions; `CRON_SECRET` in a bearer header for the scheduled reminder — no JWT, no session; the identity comes from the signed payload and the write rules stay `AttendanceService`'s |
 
 Endpoints, all behind the `/api` prefix:
@@ -373,8 +373,10 @@ is one file in `commands/` plus one line in `commands/index.ts`; see §7.
 - **Auth.** Identity comes from Discord OAuth2; the API owns the whole flow and is the only side that
   talks to Discord. A login is a lookup of `Character.discordId`, a column an admin fills in by hand —
   no match means no access, except for the rescue IDs in `DISCORD_ADMIN_IDS`, which always sign in as
-  `ADMIN`. `JwtAuthGuard` requires a session; `AdminGuard` (always after it) requires the `ADMIN`
-  role. No password is stored anywhere. Because the two apps live on different domains, the API hands
+  `ADMIN`. `JwtAuthGuard` requires a session and re-reads the role and Grants from the database on every
+  request, for every token (a token's role can be a day old). `CapabilityGuard` (always after it)
+  requires the Capability the route declares with `@RequireCapability(...)`, or the `ADMIN` role for
+  `@RequireAdmin()`. No password is stored anywhere. Because the two apps live on different domains, the API hands
   the token pair over through a single-use code (`AuthExchange`, 60-second TTL) rather than a cookie.
 
 ### 3.5 Build notes
@@ -404,7 +406,7 @@ All user-facing copy is **Vietnamese**.
 ```
 apps/web/
 ├── app/              # routing and layout ONLY — one thin page per route
-├── proxy.ts          # session refresh + admin route guard, runs before every page request
+├── proxy.ts          # session refresh + sign-in requirement, runs before every page request
 ├── features/         # all the logic, one folder per feature
 │   └── <feature>/
 │       ├── api/      # "use server" request functions (through apiFetch) + query key factory
@@ -489,8 +491,7 @@ carries the Discord ID (`sub`) and the guild role.
 `proxy.ts` runs before every page request and does two things: it renews the pair when the access
 token has expired but the refresh token has not (the proxy is the only place in Next.js that can
 write cookies for any request), and it applies `decideAccess` — **every page needs a session** except
-`/dang-nhap` and `/trang-chu`, and admin routes (`/xep-team`, `/thiet-lap`) additionally need the
-`ADMIN` role.
+`/dang-nhap` and `/trang-chu`. The proxy does not judge roles: the token's role can be a day old.
 
 One path is answered specially. A signed-out request for **`/`** is sent to `/trang-chu`, not to the
 login page: the bare domain is the address people are given, so somebody who has never signed in
@@ -525,8 +526,9 @@ sequenceDiagram
 The single-use code exists because the two apps live on different domains: the API cannot set a
 cookie the web app will read, so it hands the pair over through `AuthExchange` instead.
 
-Hiding nav links is cosmetic. Real enforcement is the proxy plus a `getSession()` check inside each
-admin page's server component — and, ultimately, the guards on the API.
+Hiding nav links is cosmetic. Real enforcement is a `can(await getActor(), Capability.X)` check in
+each management page's server component, which reads the live role and Grants from `/auth/me` - and,
+ultimately, the guards on the API.
 
 ## 5. Data model
 
@@ -564,7 +566,7 @@ than a foreign key, because a rescue admin may match no `Character` at all.
 
 | Model | Notes |
 |---|---|
-| `Character` | Member. Id is a slug of the name plus a random suffix (`meo-beo-k7ma3x`), not a game id. `discordId` is nullable and unique — an admin types it in, and it is what a login resolves against; `role` is `GuildRole` — `ADMIN` or `MEMBER`, the only two roles, defaulting to `MEMBER`; `discordUsername`, `discordAvatar` and `lastLoginAt` are written on each sign-in so an admin can confirm the right person was linked. `discordAvatar` holds Discord's avatar **hash**, not a URL — the CDN URL format belongs to Discord and the web app builds it; it reaches the browser through `/auth/me` only, never through the members list. |
+| `Character` | Member. Id is a slug of the name plus a random suffix (`meo-beo-k7ma3x`), not a game id. `discordId` is nullable and unique — an admin types it in, and it is what a login resolves against; `role` is `GuildRole` — `ADMIN`, `MANAGER` or `MEMBER`, defaulting to `MEMBER`; `capabilities` and `grantedCommands` are the Grants of a Manager (empty for every other role, which the member service keeps true on every write); `discordUsername`, `discordAvatar` and `lastLoginAt` are written on each sign-in so an admin can confirm the right person was linked. `discordAvatar` holds Discord's avatar **hash**, not a URL — the CDN URL format belongs to Discord and the web app builds it; it reaches the browser through `/auth/me` only, never through the members list. |
 | `BattleSession` | One match in a week. `weekStart` (Monday 00:00 VN) groups matches into weeks. Guild War uses the deterministic id `gw-<YYYY-MM-DD>` so it can be upserted idempotently; scrims get a `cuid()`. `deadline` is the admin's value for a scrim, capped at 11:00 on the match day and prefilled by the form with that cap; for Guild War it is system-owned (11:00 Saturday). `formationVersion` is the roster's optimistic lock: every roster save and every server-side release of a member bumps it, and only `team-builder` writes it. `matchCount` is how many matches the day holds (1 or 2): an admin picks it for a scrim, defaulting to 2, while the system derives it for Guild War from the week's alternating rule. It is an **upper bound** on the number of `FormationMatch` rows, not an instruction — a two-match day may perfectly well be rostered with one formation shared by both. `attendanceClosedAt` is when an admin announced the line-up in Discord, which closes attendance regardless of `deadline`; null means the deadline alone still governs. |
 | `Leave` | A stretch of Vietnam calendar days (`startDate`..`endDate`, both inclusive, `@db.Date`) a character will be away. It **never writes `AttendanceRecord` rows**: the effective answer is computed on read (§6). `createdAt` is the moment the coverage rule compares with a day's closing moment; `cancelledAt` is stamped instead of deleting, so days that closed before the cancel stay "Không". `createdByAdmin` / `cancelledByAdmin` capture the role at that moment (an admin's leave also covers closed days, an admin's cancel also releases them). `createdByCharacterId` / `cancelledByCharacterId` are plain ids, no relation, for the same reason as `markedByCharacterId`. |
 | `AttendanceRecord` | One `(character, session)` pair, unique. The answer is `isPresent Boolean` — `true` = "Có", `false` = "Không"; not answered at all is the absence of a row. `markedAt` updates whenever the answer flips. `markedByCharacterId` records who pressed the button — no relation on purpose, so deleting that person cannot take someone else's entry with them. `reason` is the explanation (≤255 characters) attached to a "Không" answer; it is always `null` when `isPresent = true`, and the server decides that value itself rather than trusting the body. |
@@ -643,7 +645,7 @@ one exception is `prisma/fix-deadlines.ts`, a one-off migration of rows written 
 | **A new backend domain** | `src/modules/<domain>/` with `<domain>.module.ts`, `.controller.ts`, `.service.ts`, plus `dto/`. Register it in `app.module.ts`. Its request **and** response shapes go in `packages/shared/schemas/`. Add a `<domain>.repository.ts` only once the queries are complex or repeated; simple CRUD calls `PrismaService` from the service. |
 | **A database column or table** | `prisma/schema.prisma` → `pnpm --filter api prisma:migrate` → commit the migration folder. Enums must stay in step with `packages/shared/enums`. Then check the Data API grants ([`production.md`](production.md) §5). |
 | **A request/response shape, an enum, a validation rule** | `packages/shared` — never re-declared per app. |
-| **A new page** | A thin `app/<route>/page.tsx` that renders one feature component, the path added to `config/routes.ts`. Admin-only? Add the prefix to `ADMIN_PATH_PREFIXES` in `features/auth/core/access.ts` **and** re-check `getSession()` in the page. Readable without signing in? Add it to `PUBLIC_PATH_PREFIXES` in `features/auth/core/access.ts`, and remember every visitor on the internet can then read it. |
+| **A new page** | A thin `app/<route>/page.tsx` that renders one feature component, the path added to `config/routes.ts`. Needs a Capability? Check `can(await getActor(), Capability.X)` in the page and guard the API; the proxy only requires a session. Readable without signing in? Add it to `PUBLIC_PATH_PREFIXES` in `features/auth/core/access.ts`, and remember every visitor on the internet can then read it. |
 | **Frontend behavior for an existing feature** | Inside that `features/<feature>/`: request function in `api/`, hook in `hooks/`, UI state in `store/`, pure logic in `lib/`. Export it from `index.ts` only if another feature needs it. |
 | **A new frontend feature** | A new `features/<feature>/` with the same folders and an `index.ts`. Do not reach into another feature's files. |
 | **A component used by two or more features** | `components/shared/`. If it is a stock shadcn component, generate it into `components/ui/` with the CLI and wrap it. |

@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { GuildClass, GuildRole } from '@guild/shared/enums';
 
-import { FixedClock, TOKEN_TYPE, type JwtPayload } from '../../../common';
+import { FixedClock, TOKEN_TYPE, type RequestActor } from '../../../common';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { BattleSessionsService } from '../../battle-sessions/battle-sessions.public';
 import { CharactersService } from '../../characters/characters.public';
@@ -30,17 +30,21 @@ const OWN_ROW = {
 const OTHER_CHARACTER_ID = 'char-2';
 
 /** Signed-in admin — may fix past-deadline sessions and mark for others. */
-const ADMIN: JwtPayload = {
+const ADMIN: RequestActor = {
   sub: '999888777666555444',
   role: GuildRole.ADMIN,
   type: TOKEN_TYPE.access,
+  capabilities: [],
+  grantedCommands: [],
 };
 
 /** Signed-in member, bound to CHARACTER_ID. */
-const MEMBER: JwtPayload = {
+const MEMBER: RequestActor = {
   sub: '123456789012345678',
   role: GuildRole.MEMBER,
   type: TOKEN_TYPE.access,
+  capabilities: [],
+  grantedCommands: [],
 };
 
 /** Session ids in the fake schedule, keyed by label for readability. */

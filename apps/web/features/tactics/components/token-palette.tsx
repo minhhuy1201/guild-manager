@@ -58,7 +58,7 @@ interface TokenPaletteProps {
   /** Whether the palette is folded away */
   collapsed: boolean;
   /** Whether the viewer may write */
-  isAdmin: boolean;
+  canEdit: boolean;
   /** Palette entry the next click on the map drops */
   selected: BuiltInToken | null;
   onToggle: () => void;
@@ -85,7 +85,7 @@ interface TokenPaletteProps {
  */
 export function TokenPalette({
   collapsed,
-  isAdmin,
+  canEdit,
   selected,
   onToggle,
   onSelect,
@@ -232,7 +232,7 @@ export function TokenPalette({
       </div>
 
       {/* Outside the scrolling list, so it stays reachable however long the palette grows. */}
-      {isAdmin ? (
+      {canEdit ? (
         <div
           inert={collapsed}
           className={cn(

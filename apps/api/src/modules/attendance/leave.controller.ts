@@ -2,7 +2,7 @@ import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Leave } from '@guild/shared/schemas';
 
-import { CurrentUser, JwtAuthGuard, type JwtPayload } from '../../common';
+import { CurrentUser, JwtAuthGuard, type RequestActor } from '../../common';
 import { CreateLeaveDto } from './dto/create-leave.dto';
 import { LeaveService } from './leave.service';
 
@@ -34,7 +34,7 @@ export class LeaveController {
   @ApiOperation({ summary: 'Khai nghỉ phép' })
   create(
     @Body() body: CreateLeaveDto,
-    @CurrentUser() user: JwtPayload,
+    @CurrentUser() user: RequestActor,
   ): Promise<Leave> {
     return this.leaves.create(body, user);
   }
@@ -49,7 +49,7 @@ export class LeaveController {
   @ApiOperation({ summary: 'Hủy một lần nghỉ phép' })
   cancel(
     @Param('id') id: string,
-    @CurrentUser() user: JwtPayload,
+    @CurrentUser() user: RequestActor,
   ): Promise<Leave> {
     return this.leaves.cancel(id, user);
   }

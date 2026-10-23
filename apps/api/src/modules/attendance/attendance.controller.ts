@@ -10,7 +10,7 @@ import {
   CurrentUser,
   JwtAuthGuard,
   WeekStartQueryDto,
-  type JwtPayload,
+  type RequestActor,
 } from '../../common';
 import { AttendanceService } from './attendance.service';
 import { MarkAttendanceDto } from './dto/mark-attendance.dto';
@@ -70,7 +70,7 @@ export class AttendanceController {
   @ApiOperation({ summary: 'Điểm danh cho một nhân vật ở một trận' })
   mark(
     @Body() body: MarkAttendanceDto,
-    @CurrentUser() user: JwtPayload,
+    @CurrentUser() user: RequestActor,
   ): Promise<AttendanceRecord> {
     return this.attendance.mark(body, user);
   }

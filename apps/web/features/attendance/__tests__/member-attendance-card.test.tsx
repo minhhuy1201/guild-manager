@@ -173,7 +173,7 @@ describe("MemberAttendanceCard", () => {
 
     expect(
       screen.getByText(
-        "Tài khoản chưa được gán nhân vật, liên hệ quản trị viên."
+        "Tài khoản chưa được gán nhân vật, liên hệ ADMIN."
       )
     ).toBeTruthy();
     expect(screen.getByText("Trận sess-1")).toBeTruthy();

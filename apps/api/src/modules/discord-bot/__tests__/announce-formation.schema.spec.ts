@@ -5,8 +5,10 @@ import {
   notifyMembersSchema,
 } from '@guild/shared/schemas';
 
-import { AdminGuard, JwtAuthGuard } from '../../../common';
-import { guardsOf } from '../../../__tests__/guards-of';
+import { Capability } from '@guild/shared/enums';
+
+import { CapabilityGuard, JwtAuthGuard } from '../../../common';
+import { accessOf, guardsOf } from '../../../__tests__/guards-of';
 import { FormationAnnounceController } from '../formation-announce.controller';
 import { FormationAnnouncerService } from '../formation-announcer.service';
 import { TeamNoticeService } from '../team-notice.service';
@@ -55,11 +57,15 @@ describe('announceFormationSchema', () => {
 });
 
 describe('FormationAnnounceController', () => {
-  it('khoá endpoint cho quản trị viên ở cấp controller', () => {
+  it('khoá endpoint theo Capability xếp team ở cấp controller', () => {
     expect(guardsOf(FormationAnnounceController)).toEqual([
       JwtAuthGuard,
-      AdminGuard,
+      CapabilityGuard,
     ]);
+    expect(accessOf(FormationAnnounceController)).toEqual({
+      kind: 'capability',
+      capability: Capability.TEAM_BUILDER,
+    });
   });
 
   it('chuyển thẳng sessionId và ảnh xuống announcer', async () => {

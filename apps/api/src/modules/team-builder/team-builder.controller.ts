@@ -8,20 +8,27 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Capability } from '@guild/shared/enums';
 import type {
   FormationWeek,
   SessionFormation,
   TeamNamesState,
 } from '@guild/shared/schemas';
 
-import { AdminGuard, JwtAuthGuard, WeekStartQueryDto } from '../../common';
+import {
+  CapabilityGuard,
+  JwtAuthGuard,
+  WeekStartQueryDto,
+  RequireCapability,
+} from '../../common';
 import { SaveFormationDto } from './dto/save-formation.dto';
 import { SaveTeamNamesDto } from './dto/save-team-names.dto';
 import { TeamBuilderService } from './team-builder.service';
 
 @ApiTags('team-builder')
 @Controller('team-builder')
-@UseGuards(JwtAuthGuard, AdminGuard)
+@UseGuards(JwtAuthGuard, CapabilityGuard)
+@RequireCapability(Capability.TEAM_BUILDER)
 export class TeamBuilderController {
   constructor(private readonly teamBuilder: TeamBuilderService) {}
 

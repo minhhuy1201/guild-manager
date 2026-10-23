@@ -1,17 +1,11 @@
+import { GrantableCommand } from '@guild/shared/enums';
 import { buildAnnouncement } from '../announcement';
 import { publicMessage } from '../reply';
-import { requireAdmin } from '../require-admin';
+import { requireCommand } from '../require-command';
 import type { CommandReply, SlashCommand } from './command.types';
 
 /**
- * Shown to a member who tried to announce.
- * The refusal stays ephemeral even though the announcement itself is public: a channel does not
- * need to watch someone be told no.
- */
-const ADMIN_ONLY = 'Chỉ admin mới đăng thông báo được.';
-
-/**
- * Post this week's schedule for the whole guild — admins only.
+ * Post this week's schedule for the whole guild — an Admin, or a Manager granted this command.
  *
  * It never runs on its own. There is no scheduler behind it and none is planned: the announcement
  * carries a mention that pings every member, and who gets pinged when is a decision an admin makes,
@@ -23,11 +17,15 @@ const ADMIN_ONLY = 'Chỉ admin mới đăng thông báo được.';
 export const thongBaoCommand: SlashCommand = {
   definition: {
     name: 'thong-bao',
-    description: 'Đăng lịch đánh tuần này cho cả bang (chỉ admin)',
+    description: 'Đăng lịch đánh tuần này cho cả bang (cần được cấp quyền)',
   },
 
   execute: async (interaction, deps): Promise<CommandReply> => {
-    const check = await requireAdmin(interaction, deps, ADMIN_ONLY);
+    const check = await requireCommand(
+      interaction,
+      deps,
+      GrantableCommand.THONG_BAO,
+    );
 
     if (!check.ok) return check.reply;
 

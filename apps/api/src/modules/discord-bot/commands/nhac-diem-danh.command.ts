@@ -1,3 +1,4 @@
+import { GrantableCommand } from '@guild/shared/enums';
 import { assertNever } from '../../../common';
 import type { ReminderScope } from '../../battle-sessions/battle-sessions.public';
 import { COMMAND_OPTION_TYPE } from '../discord.constants';
@@ -8,7 +9,7 @@ import {
 } from '../interaction.schema';
 import { ephemeralText } from '../reply';
 import type { ReminderOutcome } from '../reminder.service';
-import { requireAdmin } from '../require-admin';
+import { requireCommand } from '../require-command';
 import type { CommandReply, SlashCommand } from './command.types';
 
 /** Name of the option, used both when registering and when reading the invocation. */
@@ -25,9 +26,6 @@ const SCOPE_CHOICES = [
 
 /** Left empty, the command runs the cron's own rule - what it did before the option existed. */
 const DEFAULT_SCOPE: ReminderScope = 'today';
-
-/** Shown to a member who tried to run the reminder. */
-const ADMIN_ONLY = 'Chỉ admin mới chạy được lệnh nhắc.';
 
 /** Shown when no channel has been configured yet — the fix is one command away. */
 const NO_CHANNEL =
@@ -78,7 +76,7 @@ function scopeOf(interaction: ApplicationCommandInteraction): ReminderScope {
 }
 
 /**
- * Run the attendance reminder right now - admins only.
+ * Run the attendance reminder right now - an Admin, or a Manager granted this command.
  *
  * It calls the very same `ReminderService.run` the cron endpoint calls, so a hand-run reminder and
  * a scheduled one cannot disagree about who is missing. It exists for two reasons: the scheduled
@@ -91,7 +89,7 @@ function scopeOf(interaction: ApplicationCommandInteraction): ReminderScope {
 export const nhacDiemDanhCommand: SlashCommand = {
   definition: {
     name: 'nhac-diem-danh',
-    description: 'Nhắc ngay những ai chưa điểm danh (chỉ admin)',
+    description: 'Nhắc ngay những ai chưa điểm danh (cần được cấp quyền)',
     options: [
       {
         name: SCOPE_OPTION,
@@ -105,7 +103,11 @@ export const nhacDiemDanhCommand: SlashCommand = {
   },
 
   execute: async (interaction, deps): Promise<CommandReply> => {
-    const check = await requireAdmin(interaction, deps, ADMIN_ONLY);
+    const check = await requireCommand(
+      interaction,
+      deps,
+      GrantableCommand.NHAC_DIEM_DANH,
+    );
 
     if (!check.ok) return check.reply;
 

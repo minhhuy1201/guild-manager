@@ -1,11 +1,12 @@
 import { Body, Controller, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Capability } from '@guild/shared/enums';
 import type {
   AnnouncementResult,
   TeamNoticeReport,
 } from '@guild/shared/schemas';
 
-import { AdminGuard, JwtAuthGuard } from '../../common';
+import { CapabilityGuard, JwtAuthGuard, RequireCapability } from '../../common';
 import { AnnounceFormationDto } from './dto/announce-formation.dto';
 import { NotifyMembersDto } from './dto/notify-members.dto';
 import { FormationAnnouncerService } from './formation-announcer.service';
@@ -27,7 +28,8 @@ import { TeamNoticeService } from './team-notice.service';
  */
 @ApiTags('team-builder')
 @Controller('team-builder')
-@UseGuards(JwtAuthGuard, AdminGuard)
+@UseGuards(JwtAuthGuard, CapabilityGuard)
+@RequireCapability(Capability.TEAM_BUILDER)
 export class FormationAnnounceController {
   constructor(
     private readonly announcer: FormationAnnouncerService,

@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -11,12 +12,16 @@ import type {
   UpdateCharacterInput,
 } from '@guild/shared/schemas';
 
+import type { JwtPayload } from '../../common';
 import {
   PrismaService,
   type PrismaTransactionClient,
 } from '../../infrastructure/prisma/prisma.service';
 import { toGuildMember, type GuildMemberRow } from './characters.codec';
 import { generateId } from './characters.lib';
+
+/** Prisma error code for a write whose `where` matched no row. */
+const RECORD_NOT_FOUND = 'P2025';
 
 /** Prisma error code for a unique constraint violation (here, a primary key collision). */
 const UNIQUE_VIOLATION = 'P2002';
@@ -42,7 +47,21 @@ const DISCORD_ID_TAKEN = 'Discord ID này đã được gán cho thành viên kh
 
 /** Message when the change would leave the guild with no admin at all. */
 const LAST_ADMIN =
-  'Đây là quản trị viên cuối cùng. Hãy chỉ định một quản trị viên khác trước khi hạ quyền hoặc xoá.';
+  'Đây là ADMIN cuối cùng. Hãy chỉ định một ADMIN khác trước khi hạ quyền hoặc xoá.';
+
+/** Message when the row's role changed between reading it and writing it. */
+const ROW_CHANGED =
+  'Thành viên vừa được thay đổi bởi người khác. Hãy tải lại rồi thử lại.';
+
+/** Message when a non-Admin tries to change a role or a Grant. */
+const ADMIN_ONLY_FIELDS = 'Chỉ ADMIN được đổi vai và quyền của thành viên.';
+
+/** Message when a Manager tries to write the row of another Manager or an Admin. */
+const MEMBER_ROWS_ONLY =
+  'Bạn chỉ được sửa thành viên thường, không sửa hàng của Quản lý hay ADMIN.';
+
+/** Message when Grants are sent for someone who is not, or is not becoming, a Manager. */
+const GRANTS_NEED_MANAGER = 'Chỉ vai Quản lý mới được cấp quyền riêng.';
 
 /** Member CRUD for admins — the controller locks every endpoint behind JwtAuthGuard. */
 @Injectable()
@@ -124,24 +143,54 @@ export class CharactersService {
   }
 
   /**
-   * Edit the name, class, Discord ID and/or role. The id never changes because other tables point at it.
+   * Edit a member. The id never changes because other tables point at it.
+   *
+   * The role and the Grants are an Admin's alone, and Grants live only on a Manager: a member who
+   * leaves that role has both lists emptied in the same write, so promoting them again starts from
+   * nothing instead of quietly handing back what they once had.
    * @param id - Member id
    * @param input - Fields to change
+   * @param actor - JWT payload of the caller
    * @returns The updated member
    * @throws NotFoundException when no such member exists
-   * @throws ConflictException when the Discord ID already belongs to another member
+   * @throws ForbiddenException when a non-Admin sends a role or a Grant, or writes the row of a
+   * Manager or an Admin
+   * @throws BadRequestException when Grants are sent for someone who is not a Manager, or this
+   * would demote the last admin
+   * @throws ConflictException when the Discord ID already belongs to another member, or the
+   * member's role changed between the checks and the write
    */
-  async update(id: string, input: UpdateCharacterInput): Promise<GuildMember> {
-    await this.ensureExists(id);
+  async update(
+    id: string,
+    input: UpdateCharacterInput,
+    actor: JwtPayload,
+  ): Promise<GuildMember> {
+    const current = await this.prisma.character.findUnique({
+      where: { id },
+      select: { role: true },
+    });
+    if (!current) throw new NotFoundException(NOT_FOUND);
+
+    if (touchesAdminFields(input) && actor.role !== GuildRole.ADMIN) {
+      throw new ForbiddenException(ADMIN_ONLY_FIELDS);
+    }
+    const currentRole = current.role as GuildRole;
+    if (actor.role !== GuildRole.ADMIN && currentRole !== GuildRole.MEMBER) {
+      throw new ForbiddenException(MEMBER_ROWS_ONLY);
+    }
+
+    const data = withGrantInvariant(input, currentRole);
 
     try {
-      const row = await this.write(id, input);
+      const row = await this.write(id, data, currentRole);
 
       return toGuildMember(row);
     } catch (error) {
       // The only unique constraint that can break here is discordId — the id is not in `data`.
       if (isUniqueViolation(error))
         throw new ConflictException(DISCORD_ID_TAKEN);
+      // `write` filters on the role that was judged; a miss means someone changed it in between.
+      if (isRecordNotFound(error)) throw new ConflictException(ROW_CHANGED);
       throw error;
     }
   }
@@ -150,22 +199,27 @@ export class CharactersService {
    * Apply the update, guarding the admin count only when the change can drop it.
    * A rename must not cost a COUNT over the whole table, and a role staying `ADMIN` removes nobody.
    * @param id - Member id
-   * @param input - Fields to change
+   * @param data - Fields to write, already checked
+   * @param judgedRole - The role the checks were made against; the write only lands while the row
+   * still holds it, so the Manager-row rule and the Grant invariant judge the row that changes
    * @returns The updated Character row
    * @throws BadRequestException when this would demote the last admin
    */
   private async write(
     id: string,
-    input: UpdateCharacterInput,
+    data: UpdateCharacterInput,
+    judgedRole: GuildRole,
   ): Promise<GuildMemberRow> {
-    if (input.role === undefined || input.role === GuildRole.ADMIN) {
-      return this.prisma.character.update({ where: { id }, data: input });
+    const where = { id, role: judgedRole };
+
+    if (data.role === undefined || data.role === GuildRole.ADMIN) {
+      return this.prisma.character.update({ where, data });
     }
 
     return this.prisma.$transaction(async (tx) => {
       await this.ensureNotLastAdmin(tx, id);
 
-      return tx.character.update({ where: { id }, data: input });
+      return tx.character.update({ where, data });
     });
   }
 
@@ -329,6 +383,62 @@ export class CharactersService {
 }
 
 /**
+ * Whether the input carries a field only an Admin may write.
+ * @param input - Fields the caller sent
+ * @returns true when it holds a role or a Grant, even one equal to what is stored
+ */
+function touchesAdminFields(input: UpdateCharacterInput): boolean {
+  return (
+    input.role !== undefined ||
+    input.capabilities !== undefined ||
+    input.grantedCommands !== undefined
+  );
+}
+
+/**
+ * Apply the rule that only a Manager holds Grants: duplicates dropped, Grants for anyone else
+ * refused, and both lists emptied when the role is being changed to something other than Manager.
+ * @param input - Fields the caller sent
+ * @param currentRole - The member's role before this write
+ * @returns The fields to store
+ * @throws BadRequestException when non-empty Grants meet a role that is not Manager
+ */
+function withGrantInvariant(
+  input: UpdateCharacterInput,
+  currentRole: GuildRole,
+): UpdateCharacterInput {
+  const role = input.role ?? currentRole;
+  const capabilities = input.capabilities && uniqueOf(input.capabilities);
+  const grantedCommands =
+    input.grantedCommands && uniqueOf(input.grantedCommands);
+
+  if (role === GuildRole.MANAGER) {
+    return {
+      ...input,
+      ...(capabilities && { capabilities }),
+      ...(grantedCommands && { grantedCommands }),
+    };
+  }
+
+  if (capabilities?.length || grantedCommands?.length) {
+    throw new BadRequestException(GRANTS_NEED_MANAGER);
+  }
+
+  return input.role === undefined
+    ? input
+    : { ...input, capabilities: [], grantedCommands: [] };
+}
+
+/**
+ * Drop repeated values, keeping first occurrence order.
+ * @param values - Values that may repeat
+ * @returns The distinct values
+ */
+function uniqueOf<T>(values: readonly T[]): T[] {
+  return [...new Set(values)];
+}
+
+/**
  * Whether a unique violation is the one on `discordId` rather than on the primary key.
  * Only the id collision is worth retrying — a taken Discord ID is the caller's to fix.
  * @param error - The caught error
@@ -349,6 +459,20 @@ function isDiscordIdViolation(error: unknown): boolean {
   return (
     (constraintName ?? '').includes(DISCORD_ID_COLUMN) ||
     (columns ?? []).includes(DISCORD_ID_COLUMN)
+  );
+}
+
+/**
+ * Whether this error is Prisma's "the row to update does not exist".
+ * @param error - The caught error
+ * @returns true for P2025
+ */
+function isRecordNotFound(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    error.code === RECORD_NOT_FOUND
   );
 }
 

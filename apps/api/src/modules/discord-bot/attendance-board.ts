@@ -1,7 +1,8 @@
-import { canManageGuild } from '@guild/shared/lib';
+import { Capability, GrantableCommand } from '@guild/shared/enums';
+import { can, canRunCommand } from '@guild/shared/lib';
 import type { AttendanceRecord, BattleSession } from '@guild/shared/schemas';
 
-import type { JwtPayload } from '../../common';
+import type { RequestActor } from '../../common';
 import type {
   ActionRow,
   ButtonComponent,
@@ -42,11 +43,11 @@ const STALE_BUTTON =
  * Exported so the two commands say it in the same words: three copies of one sentence drift.
  */
 export const NOT_LINKED =
-  'Bạn chưa được gán nhân vật nào. Nhờ admin thêm Discord ID của bạn.';
+  'Bạn chưa được gán nhân vật nào. Nhờ ADMIN thêm Discord ID của bạn.';
 
 /** Shown to a rescue admin who has no character of their own to mark. */
 export const NO_OWN_CHARACTER =
-  'Tài khoản admin này không gắn với nhân vật nào — dùng /diem-danh-ho.';
+  'Tài khoản ADMIN này không gắn với nhân vật nào — dùng /diem-danh-ho.';
 
 /**
  * What one button press produced.
@@ -73,6 +74,32 @@ const STATUS_ICON = {
   present: '✅',
   absent: '❌',
 } as const;
+
+/**
+ * The actor for marking attendance through the bot.
+ *
+ * Running `/diem-danh-ho` is the Grant to mark on behalf of OTHERS, with no web Capability needed,
+ * so a caller holding it marks someone else like a person with the attendance Capability. Marking
+ * their own character stays under the Member rules, deadline included, so the board a press
+ * rebuilds matches the one the command first drew. Every other check keeps the actor's real Grants.
+ * @param actor - The caller as resolved
+ * @param ownCharacterId - The caller's own character, null when they have none (a rescue admin)
+ * @param targetCharacterId - The character being marked
+ * @returns The actor to hand to the board and to `AttendanceService.mark`
+ */
+export function withOnBehalfAttendance(
+  actor: RequestActor,
+  ownCharacterId: string | null | undefined,
+  targetCharacterId: string,
+): RequestActor {
+  if (!canRunCommand(actor, GrantableCommand.DIEM_DANH_HO)) return actor;
+  if (ownCharacterId === targetCharacterId) return actor;
+
+  return {
+    ...actor,
+    capabilities: [...actor.capabilities, Capability.ATTENDANCE],
+  };
+}
 
 /**
  * Whether this actor may still record an answer for this session.
@@ -184,7 +211,7 @@ function buildHeading(target: BoardTarget): string {
  */
 export async function buildAttendanceBoard(
   target: BoardTarget,
-  actor: JwtPayload,
+  actor: RequestActor,
   deps: CommandDeps,
 ): Promise<MessagePayload> {
   const sessions = await deps.battleSessions.listByWeek();
@@ -204,7 +231,7 @@ export async function buildAttendanceBoard(
       .map((record) => [record.sessionId, record]),
   );
 
-  const isAdmin = canManageGuild(actor.role);
+  const isAdmin = can(actor, Capability.ATTENDANCE);
   const actionable = sessions.filter((session) => canAct(session, isAdmin));
   const shown = actionable.slice(0, MAX_ACTION_ROWS);
   const dropped = actionable.slice(MAX_ACTION_ROWS);
@@ -291,6 +318,12 @@ export async function handleAttendanceButton(
 
   if (!resolved) return { kind: 'refusal', message: NOT_LINKED };
 
+  const actor = withOnBehalfAttendance(
+    resolved.actor,
+    resolved.character?.id,
+    pressed.characterId,
+  );
+
   // The character row is only needed for the heading, and `mark` never touches that table — so the
   // read rides alongside the write instead of waiting for it.
   const [, row] = await Promise.all([
@@ -300,7 +333,7 @@ export async function handleAttendanceButton(
         sessionId: pressed.sessionId,
         isPresent: pressed.isPresent,
       },
-      resolved.actor,
+      actor,
     ),
     deps.characters.findById(pressed.characterId),
   ]);
@@ -309,7 +342,7 @@ export async function handleAttendanceButton(
 
   const board = await buildAttendanceBoard(
     { characterId: row.id, characterName: row.name, discordId: row.discordId },
-    resolved.actor,
+    actor,
     deps,
   );
 

@@ -110,7 +110,7 @@ export function LeavePanel() {
       <LeaveDialog
         open={isOpen}
         onOpenChange={setIsOpen}
-        isAdmin
+        canManageOthers
         ownCharacterId={session?.character?.id ?? null}
         characters={characters ?? []}
       />

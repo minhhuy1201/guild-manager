@@ -41,11 +41,11 @@ const FOREIGN_KEY_VIOLATION = 'P2003';
 
 /** A save based on a version someone else has already moved past. */
 const FORMATION_STALE =
-  'Đội hình ngày này vừa được lưu ở nơi khác (admin khác, hoặc có người báo vắng). Tải bản mới nhất hoặc ghi đè.';
+  'Đội hình ngày này vừa được lưu ở nơi khác (ADMIN khác, hoặc có người báo vắng). Tải bản mới nhất hoặc ghi đè.';
 
 /** A team name save based on a version someone else has already moved past. */
 const TEAM_NAMES_STALE =
-  'Tên đội vừa được admin khác lưu. Tải bản mới nhất hoặc ghi đè.';
+  'Tên đội vừa được ADMIN khác lưu. Tải bản mới nhất hoặc ghi đè.';
 
 /** Id of the one TeamNameVersion row - see the model's comment. */
 const TEAM_NAME_VERSION_ID = 1;

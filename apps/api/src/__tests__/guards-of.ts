@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import { ACCESS_REQUIREMENT_METADATA, type AccessRequirement } from '../common';
 
 /** Metadata key Nest uses to store a class's or method's guard list. */
 const GUARDS_METADATA = '__guards__';
@@ -19,4 +20,25 @@ export function guardsOf(target: object, method?: string): unknown[] {
     : target;
 
   return (Reflect.getMetadata(GUARDS_METADATA, source) as unknown[]) ?? [];
+}
+
+/**
+ * Read what a route demands of its caller, the way `CapabilityGuard` resolves it: the route's own
+ * declaration wins over the controller's.
+ * @param target - The controller class
+ * @param method - Method name to read; omit for the controller's own declaration
+ * @returns The requirement, undefined when neither declares one
+ */
+export function accessOf(
+  target: object,
+  method?: string,
+): AccessRequirement | undefined {
+  const read = (source: object) =>
+    Reflect.getMetadata(ACCESS_REQUIREMENT_METADATA, source) as
+      AccessRequirement | undefined;
+  const own = method
+    ? read((target as { prototype: Record<string, object> }).prototype[method])
+    : undefined;
+
+  return own ?? read(target);
 }

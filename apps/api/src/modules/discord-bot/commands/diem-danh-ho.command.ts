@@ -1,22 +1,20 @@
-import { buildAttendanceBoard, withPressNote } from '../attendance-board';
+import { GrantableCommand } from '@guild/shared/enums';
+import {
+  buildAttendanceBoard,
+  withOnBehalfAttendance,
+  withPressNote,
+} from '../attendance-board';
 import { COMMAND_OPTION_TYPE } from '../discord.constants';
 import { commandOptionValue } from '../interaction.schema';
 import { ephemeralText, publicMessage } from '../reply';
-import { requireAdmin } from '../require-admin';
+import { requireCommand } from '../require-command';
 import type { CommandReply, SlashCommand } from './command.types';
 
 /** Name of the option, used both when registering and when reading the invocation. */
 const TARGET_OPTION = 'nguoi';
 
 /**
- * Shown to a member who tried to mark on someone else's behalf.
- * Refusals stay ephemeral even though the board is public: only the caller needs them, and a channel
- * does not need to watch someone be told no.
- */
-const ADMIN_ONLY = 'Chỉ admin mới điểm danh hộ được.';
-
-/**
- * Attendance on behalf of somebody else — admins only.
+ * Attendance on behalf of somebody else — an Admin, or a Manager granted this command.
  *
  * The role is checked here rather than left to `AttendanceService`, which only refuses at write
  * time: the board appears before anyone presses anything, and showing a board whose every button
@@ -26,7 +24,7 @@ const ADMIN_ONLY = 'Chỉ admin mới điểm danh hộ được.';
 export const diemDanhHoCommand: SlashCommand = {
   definition: {
     name: 'diem-danh-ho',
-    description: 'Điểm danh hộ một thành viên khác (chỉ admin)',
+    description: 'Điểm danh hộ một thành viên khác (cần được cấp quyền)',
     options: [
       {
         name: TARGET_OPTION,
@@ -38,7 +36,11 @@ export const diemDanhHoCommand: SlashCommand = {
   },
 
   execute: async (interaction, deps): Promise<CommandReply> => {
-    const check = await requireAdmin(interaction, deps, ADMIN_ONLY);
+    const check = await requireCommand(
+      interaction,
+      deps,
+      GrantableCommand.DIEM_DANH_HO,
+    );
 
     if (!check.ok) return check.reply;
 
@@ -62,7 +64,11 @@ export const diemDanhHoCommand: SlashCommand = {
         characterName: row.name,
         discordId: row.discordId,
       },
-      check.caller.actor,
+      withOnBehalfAttendance(
+        check.caller.actor,
+        check.caller.character?.id,
+        row.id,
+      ),
       deps,
     );
 

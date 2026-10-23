@@ -17,7 +17,7 @@ interface StageBarProps {
   /** Stage whose tab is open */
   activeStageId: string | null;
   /** Whether the viewer may write */
-  isAdmin: boolean;
+  canEdit: boolean;
   /** The play and onion-skin buttons, built by the screen so this strip stays about stages */
   playbackControls?: React.ReactNode;
   onSelect: (stageId: string) => void;
@@ -40,7 +40,7 @@ interface StageBarProps {
 export function StageBar({
   stages,
   activeStageId,
-  isAdmin,
+  canEdit,
   playbackControls,
   onSelect,
   onAdd,
@@ -88,7 +88,7 @@ export function StageBar({
             active={stage.id === activeStageId}
             onSelect={() => onSelect(stage.id)}
             onRename={() => {
-              if (isAdmin) setRenamingId(stage.id);
+              if (canEdit) setRenamingId(stage.id);
             }}
           />
         )
@@ -98,7 +98,7 @@ export function StageBar({
 
       {playbackControls}
 
-      {isAdmin ? (
+      {canEdit ? (
         <div className="ml-auto flex items-center gap-1">
           <Button
             type="button"

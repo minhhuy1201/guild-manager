@@ -12,6 +12,11 @@ import { GuildClassIcon } from "@/components/shared/guild-class-icon";
 import { Badge } from "@/components/ui/badge";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { formatDateTime } from "@/lib/format";
+import type { MemberAccess } from "../lib/member-access";
+import { ViewOnlyMark } from "./view-only-mark";
+
+/** Why a row shows a lock where its buttons would be. */
+const VIEW_ONLY_REASON = "Chỉ ADMIN sửa được hàng của Quản lý và ADMIN";
 
 /** Badge variant per role: the administrator stands out, everyone else stays quiet. */
 const ROLE_BADGE_VARIANT: Record<
@@ -19,6 +24,7 @@ const ROLE_BADGE_VARIANT: Record<
   React.ComponentProps<typeof Badge>["variant"]
 > = {
   [GuildRole.ADMIN]: "default",
+  [GuildRole.MANAGER]: "secondary",
   [GuildRole.MEMBER]: "outline",
 };
 
@@ -27,6 +33,8 @@ interface MemberRowProps {
   member: GuildMember;
   /** Whether deleting this member would leave the guild with no admin */
   isLastAdmin: boolean;
+  /** What the viewer may do to this row */
+  access: MemberAccess;
   /** Called on Edit */
   onEdit: (member: GuildMember) => void;
   /** Called on Delete */
@@ -37,6 +45,7 @@ interface MemberRowProps {
  * One member row in the management table. Read-only: every change goes through the member form.
  * @param props.member - Member of this row
  * @param props.isLastAdmin - Whether deleting this member would leave the guild with no admin
+ * @param props.access - What the viewer may do to this row
  * @param props.onEdit - Called on Edit
  * @param props.onDelete - Called on Delete
  * @returns The table row
@@ -44,6 +53,7 @@ interface MemberRowProps {
 export function MemberRow({
   member,
   isLastAdmin,
+  access,
   onEdit,
   onDelete,
 }: MemberRowProps) {
@@ -75,21 +85,27 @@ export function MemberRow({
         </Badge>
       </TableCell>
       <TableCell className="text-center">
-        <RowActions>
-          <EditAction
-            label={`Sửa ${member.name}`}
-            onClick={() => onEdit(member)}
-          />
-          <DeleteAction
-            label={
-              isLastAdmin
-                ? `Không thể xoá ${member.name}: đây là quản trị viên cuối cùng`
-                : `Xoá ${member.name}`
-            }
-            disabled={isLastAdmin}
-            onClick={() => onDelete(member)}
-          />
-        </RowActions>
+        {access.canEdit ? (
+          <RowActions>
+            <EditAction
+              label={`Sửa ${member.name}`}
+              onClick={() => onEdit(member)}
+            />
+            {access.canDelete && (
+              <DeleteAction
+                label={
+                  isLastAdmin
+                    ? `Không thể xoá ${member.name}: đây là ADMIN cuối cùng`
+                    : `Xoá ${member.name}`
+                }
+                disabled={isLastAdmin}
+                onClick={() => onDelete(member)}
+              />
+            )}
+          </RowActions>
+        ) : (
+          <ViewOnlyMark reason={VIEW_ONLY_REASON} />
+        )}
       </TableCell>
     </TableRow>
   );

@@ -2,7 +2,11 @@
  * JWT constants and types shared by the guards (`common/`) and the auth module (`modules/auth`).
  * They live in `common/` because guards may not import from `modules/`.
  */
-import type { GuildRole } from '@guild/shared/enums';
+import type {
+  Capability,
+  GrantableCommand,
+  GuildRole,
+} from '@guild/shared/enums';
 
 /**
  * Guild role. The real definition is in `@guild/shared/enums` because the value crosses the network
@@ -30,4 +34,17 @@ export interface JwtPayload {
   role: GuildRole;
   /** Whether this is an access or a refresh token */
   type: TokenType;
+}
+
+/**
+ * The caller as a request sees them. The `role` is the one stored today, not the one the token was
+ * issued with, and a Manager's Grants come with it; both are read on this very request for every
+ * token, so a demotion or a revoked Grant stops working at the next request instead of at the
+ * token's expiry.
+ */
+export interface RequestActor extends JwtPayload {
+  /** Capabilities granted to this Manager; empty for every other role */
+  capabilities: Capability[];
+  /** Admin Discord commands granted to this Manager; empty for every other role */
+  grantedCommands: GrantableCommand[];
 }

@@ -1,3 +1,4 @@
+import { GrantableCommand } from '@guild/shared/enums';
 import { Logger } from '@nestjs/common';
 
 import type { BotChannelPurpose } from '../bot-channel.service';
@@ -8,11 +9,8 @@ import {
   commandOptionValue,
 } from '../interaction.schema';
 import { ephemeralText } from '../reply';
-import { requireAdmin } from '../require-admin';
+import { requireCommand } from '../require-command';
 import type { CommandReply, SlashCommand } from './command.types';
-
-/** Shown to a member who tried to configure the channel. */
-const ADMIN_ONLY = 'Chỉ admin mới đặt được channel thông báo.';
 
 /** Name of the option, used both when registering and when reading the invocation. */
 const PURPOSE_OPTION = 'muc-dich';
@@ -95,7 +93,7 @@ function purposeOf(
 
 /**
  * Point the daily attendance reminder, or the admin failure alert, at the channel this command was
- * typed in — admins only.
+ * typed in — an Admin, or a Manager granted this command.
  *
  * No channel option: the channel is already inside the signed interaction, and asking an admin to
  * enable Developer Mode and copy an id adds three steps and a place to mistype.
@@ -109,7 +107,7 @@ export const cauHinhKenhCommand: SlashCommand = {
   definition: {
     name: 'cau-hinh-kenh',
     description:
-      'Đặt channel này làm nơi bot nhắc điểm danh hoặc báo lỗi (chỉ admin)',
+      'Đặt channel này làm nơi bot nhắc điểm danh hoặc báo lỗi (cần được cấp quyền)',
     options: [
       {
         name: PURPOSE_OPTION,
@@ -123,7 +121,11 @@ export const cauHinhKenhCommand: SlashCommand = {
   },
 
   execute: async (interaction, deps): Promise<CommandReply> => {
-    const check = await requireAdmin(interaction, deps, ADMIN_ONLY);
+    const check = await requireCommand(
+      interaction,
+      deps,
+      GrantableCommand.CAU_HINH_KENH,
+    );
 
     if (!check.ok) return check.reply;
 

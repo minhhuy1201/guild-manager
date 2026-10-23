@@ -38,11 +38,11 @@ function elements(): TacticElement[] {
 
 /**
  * Render the editor over a loaded tactic.
- * @param isAdmin - Whether the viewer may write
+ * @param canEdit - Whether the viewer may write
  * @returns The render result, once the saved scene has reached the store
  */
-async function renderEditor(isAdmin = true) {
-  const rendered = renderTacticHook(() => useTacticEditor("t1", isAdmin));
+async function renderEditor(canEdit = true) {
+  const rendered = renderTacticHook(() => useTacticEditor("t1", canEdit));
 
   await waitFor(() =>
     expect(useTacticEditorStore.getState().scene).not.toBeNull()

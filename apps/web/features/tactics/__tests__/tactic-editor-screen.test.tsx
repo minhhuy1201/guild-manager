@@ -119,10 +119,10 @@ beforeEach(() => {
 
 /**
  * Render the editor screen inside a fresh QueryClient.
- * @param isAdmin - Whether the viewer may write
+ * @param canEdit - Whether the viewer may write
  * @returns Nothing
  */
-function renderScreen(isAdmin: boolean) {
+function renderScreen(canEdit: boolean) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
@@ -133,7 +133,7 @@ function renderScreen(isAdmin: boolean) {
       { client: queryClient },
       createElement(TacticEditorScreen, {
         tacticId: "t1",
-        isAdmin,
+        canEdit,
       }) as ReactNode
     )
   );
