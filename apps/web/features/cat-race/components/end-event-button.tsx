@@ -29,7 +29,7 @@ export function EndEventButton({ eventId, disabled = false }: EndEventButtonProp
         <Flag />
         Kết thúc đợt
       </Button>
-      {disabled ? <span className="text-sm">Đợi đua xong rồi hãy kết thúc.</span> : null}
+      {disabled ? <span className="text-sm">Đợi xong vòng này rồi hãy kết thúc.</span> : null}
       <MutationDialog
         open={open}
         onOpenChange={setOpen}

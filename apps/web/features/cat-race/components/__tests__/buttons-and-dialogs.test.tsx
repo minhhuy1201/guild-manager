@@ -99,7 +99,7 @@ describe("EndEventButton while a race runs", () => {
     render(<EndEventButton eventId="e1" disabled />);
 
     expect((screen.getByRole("button", { name: /Kết thúc đợt/ }) as HTMLButtonElement).disabled).toBe(true);
-    expect(screen.getByText("Đợi đua xong rồi hãy kết thúc.")).toBeTruthy();
+    expect(screen.getByText("Đợi xong vòng này rồi hãy kết thúc.")).toBeTruthy();
   });
 });
 
