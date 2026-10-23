@@ -1,3 +1,5 @@
+import { assertNever } from "@guild/shared/lib";
+
 import { PREVIEW_MENTION_LABELS } from "../lib/discord-preview";
 import { parseDiscordBlocks, parseDiscordInline } from "../lib/discord-markdown";
 
@@ -29,6 +31,8 @@ function DiscordInlineText({ text }: DiscordInlineTextProps) {
         );
       case "text":
         return <span key={index}>{run.text}</span>;
+      default:
+        return assertNever(run);
     }
   });
 }
@@ -79,6 +83,8 @@ export function DiscordMessageContent({ content }: DiscordMessageContentProps) {
                 <DiscordInlineText text={block.text} />
               </p>
             );
+          default:
+            return assertNever(block);
         }
       })}
     </div>
