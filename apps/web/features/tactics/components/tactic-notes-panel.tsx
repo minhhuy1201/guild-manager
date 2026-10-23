@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import { TACTIC_LIMITS } from "@guild/shared/schemas";
-import { ChevronRight, NotebookText, Pencil, Save } from "lucide-react";
+import { Pencil, Save } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
 import type { TacticNotesDraft } from "../hooks/use-tactic-notes-draft";
+import { NotesRail } from "./notes-rail";
 
 interface TacticNotesTextProps {
   /** The saved notes */
@@ -43,70 +43,35 @@ interface TacticNotesPanelProps {
  */
 export function TacticNotesPanel({ notes, draft }: TacticNotesPanelProps) {
   const [open, setOpen] = useState(notes !== null);
-  const toggleLabel = open ? "Thu ghi chú chiến thuật" : "Mở ghi chú chiến thuật";
 
   return (
-    <aside
-      aria-label="Ghi chú chiến thuật"
-      className={cn(
-        "flex shrink-0 flex-col border-l transition-[width] duration-300 ease-out",
-        open ? "w-72" : "w-12"
-      )}
+    <NotesRail
+      open={open}
+      onToggle={() => setOpen((wasOpen) => !wasOpen)}
+      className="transition-[width] duration-300 ease-out"
     >
-      <div
-        className={cn(
-          "flex items-center gap-1 py-2",
-          open ? "justify-between pr-1 pl-3" : "justify-center px-1"
-        )}
-      >
-        {open ? (
-          <h2 className="text-[11px] font-medium tracking-wide whitespace-nowrap text-muted-foreground uppercase">
-            Ghi chú chiến thuật
-          </h2>
-        ) : null}
-        <Button
-          type="button"
-          size="icon-xs"
-          variant="ghost"
-          className="shrink-0"
-          aria-label={toggleLabel}
-          title={toggleLabel}
-          onClick={() => setOpen((wasOpen) => !wasOpen)}
-        >
-          {open ? <ChevronRight /> : <NotebookText />}
-        </Button>
-      </div>
-
-      {open ? (
-        <div className="relative min-h-0 flex-1">
-          <div className="absolute inset-0 flex flex-col gap-2 overflow-y-auto px-3 pb-3">
-            {draft.editing ? (
-              <NotesEditor draft={draft} />
-            ) : (
-              <>
-                {notes === null ? (
-                  <p className="text-sm text-muted-foreground">
-                    Chưa có ghi chú.
-                  </p>
-                ) : (
-                  <TacticNotesText notes={notes} />
-                )}
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className="self-start"
-                  onClick={draft.start}
-                >
-                  <Pencil />
-                  Sửa
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
-      ) : null}
-    </aside>
+      {draft.editing ? (
+        <NotesEditor draft={draft} />
+      ) : (
+        <>
+          {notes === null ? (
+            <p className="text-sm text-muted-foreground">Chưa có ghi chú.</p>
+          ) : (
+            <TacticNotesText notes={notes} />
+          )}
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="self-start"
+            onClick={draft.start}
+          >
+            <Pencil />
+            Sửa
+          </Button>
+        </>
+      )}
+    </NotesRail>
   );
 }
 
