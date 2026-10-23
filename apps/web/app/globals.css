@@ -108,7 +108,7 @@
     --color-destructive-foreground: var(--destructive-foreground);
 }
 
-/* Two themes, switched by next-themes (`components/providers.tsx`, `components/shared/theme-menu.tsx`):
+/* Two themes, switched by next-themes (`components/providers.tsx`, `components/shared/theme-switch.tsx`):
    light is the default, `.dark` is the night one. Both keep one rule: the plane is darker than the
    card, far enough apart that a card reads as lifted without looking for its border. */
 :root {

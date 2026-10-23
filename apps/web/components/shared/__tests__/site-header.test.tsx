@@ -104,21 +104,23 @@ describe("SiteHeader - theme", () => {
     expect(screen.getByRole("banner").classList.contains("dark")).toBe(true);
   });
 
-  it("khách chưa đăng nhập có nút Giao diện để đổi theme", async () => {
+  it("khách chưa đăng nhập có công tắc chế độ tối", async () => {
     getSession.mockResolvedValue(null);
 
     await renderHeader();
 
-    expect(screen.getByRole("button", { name: "Giao diện" })).toBeTruthy();
+    expect(screen.getByRole("switch", { name: "Chế độ tối" })).toBeTruthy();
   });
 
-  it("đã đăng nhập thì đổi theme trong menu tài khoản, header không có nút Giao diện riêng", async () => {
+  it("đã đăng nhập vẫn có công tắc ngay cạnh tên bang, không nằm trong menu tài khoản", async () => {
     getSession.mockResolvedValue({ discordId: "1", role: GuildRole.MEMBER });
     fetchMe.mockResolvedValue(MEMBER_ME);
 
     await renderHeader();
 
-    expect(screen.queryByRole("button", { name: "Giao diện" })).toBeNull();
+    const brand = screen.getByRole("link", { name: /Mèo Mập Giang Hồ/ });
+    const toggle = screen.getByRole("switch", { name: "Chế độ tối" });
+    expect(brand.nextElementSibling).toBe(toggle);
   });
 });
 
