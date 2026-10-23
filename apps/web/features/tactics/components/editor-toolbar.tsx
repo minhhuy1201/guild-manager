@@ -8,10 +8,12 @@ import {
   Redo2,
   Save,
   Image as ImageIcon,
+  Maximize2,
   Type,
   Undo2,
   Users,
 } from "lucide-react";
+import type { Ref } from "react";
 import {
   TACTIC_COLORS,
   TACTIC_STROKE_WIDTHS,
@@ -119,6 +121,10 @@ export interface EditorToolbarProps {
   onRedo: () => void;
   onSave: () => void;
   onExport: () => void;
+  /** Enter the focus mode; left out while the mode is on, when the exit button replaces the entry */
+  onEnterFocus?: () => void;
+  /** Ref of the entry button, so the mode can return focus to it on exit */
+  focusButtonRef?: Ref<HTMLButtonElement>;
 }
 
 /**
@@ -148,6 +154,8 @@ export function EditorToolbar({
   onRedo,
   onSave,
   onExport,
+  onEnterFocus,
+  focusButtonRef,
 }: EditorToolbarProps) {
   const modifier = useModifierKey();
 
@@ -262,6 +270,23 @@ export function EditorToolbar({
 
         {canEdit ? (
           <>
+            {onEnterFocus ? (
+              <Button
+                ref={focusButtonRef}
+                type="button"
+                size="xs"
+                variant="outline"
+                title="Toàn màn hình (F)"
+                onClick={onEnterFocus}
+                className="max-lg:hidden"
+              >
+                <Maximize2 />
+                <span className="max-xl:sr-only">Toàn màn hình</span>
+                <Kbd aria-hidden className={KEY_CAP_CLASS}>
+                  F
+                </Kbd>
+              </Button>
+            ) : null}
             <Button
               type="button"
               size="xs"
