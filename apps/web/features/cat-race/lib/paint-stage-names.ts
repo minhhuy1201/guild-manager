@@ -22,6 +22,8 @@ const MEDAL_RANKS = 3;
 export interface NameColumn extends StageView {
   /** Cat keys from the top lane down */
   readonly laneOrder: readonly string[];
+  /** Lane of each name while a shuffle moves it, fractional between lanes; null when settled */
+  readonly shuffledLanes: ReadonlyMap<string, number> | null;
   readonly fitted: ReadonlyMap<string, string>;
   readonly colors: ReadonlyMap<string, string>;
   /** Place of each cat while racing, 1 for the leader; null hides the numbers */
@@ -64,7 +66,9 @@ export function paintStageNames(context: CanvasRenderingContext2D, column: NameC
   context.textBaseline = "middle";
   for (let lane = lanes.first; lane <= lanes.last; lane += 1) {
     const key = column.laneOrder[lane];
-    const centre = layout.band + (lane + 0.5) * layout.laneHeight - top;
+    const centre = layout.band + ((column.shuffledLanes?.get(key) ?? lane) + 0.5) * layout.laneHeight - top;
+    // A shuffle paints every lane, so skip the names that are off screen.
+    if (centre < layout.band - layout.laneHeight || centre > column.height + layout.laneHeight) continue;
     const isLeader = key === column.leaderKey;
     context.fillStyle = column.colors.get(key)!;
     context.fillRect(MARK_X, centre - MARK_SIZE / 2, MARK_SIZE, MARK_SIZE);

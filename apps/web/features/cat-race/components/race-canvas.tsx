@@ -7,8 +7,9 @@ import type { GuildClass } from "@guild/shared/enums";
 
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { GUILD_CLASS_COLOR } from "@/lib/guild-class";
-import { bobOffset, legClock, legFrame, speedAt } from "../lib/cat-motion";
+import { bobOffset, legClock, legClockAt, legFrame, speedAt } from "../lib/cat-motion";
 import { catLabels } from "../lib/cat-label";
+import { isShuffling, isTrotting, lanesAt, type LaneShuffle } from "../lib/lane-shuffle";
 import { INITIAL_CUE_CURSOR, nextCues, type FinishCue, type RaceCue } from "../lib/race-cue";
 import { paintCrown, paintDust, paintSpeedLines } from "../lib/paint-cat-effects";
 import { paintChatBubble } from "../lib/paint-chat-bubbles";
@@ -126,6 +127,10 @@ export function RaceCanvas({
   const doneRef = useRef(false);
   // The gaps are in cat bodies of the current canvas width, which only the canvas effect knows.
   const layoutRef = useRef<LaneLayout | null>(null);
+  // A shuffle moves the cats on the running stage instead of rebuilding it, so the order stays out
+  // of the canvas effect's dependencies and reaches it through these two refs.
+  const orderRef = useRef(shuffledOrder);
+  const reorderRef = useRef<((order: readonly string[] | null) => void) | null>(null);
 
   useEffect(() => {
     finishRef.current = onFinish;
@@ -141,6 +146,11 @@ export function RaceCanvas({
     standingsRef.current(standingsAt(script, RACE_END_U, layoutRef.current));
     finishRef.current();
   }, [skipSignal, script]);
+
+  useEffect(() => {
+    orderRef.current = shuffledOrder;
+    reorderRef.current?.(shuffledOrder);
+  }, [shuffledOrder]);
 
   useEffect(() => {
     const scroller = scrollRef.current;
@@ -176,6 +186,7 @@ export function RaceCanvas({
     let lastTime = 0;
     let dust: readonly DustParticle[] = [];
     let chatter: ChatterState = INITIAL_CHATTER;
+    let shuffle: LaneShuffle | null = null;
     let isDisposed = false;
     doneRef.current = false;
 
@@ -190,7 +201,7 @@ export function RaceCanvas({
       canvas.width = Math.round(width * ratio);
       canvas.height = Math.round(viewHeight * ratio);
       context.setTransform(ratio, 0, 0, ratio, 0, 0);
-      const nextPlan = planRace(script, { width, height: viewHeight }, labels, shuffledOrder);
+      const nextPlan = planRace(script, { width, height: viewHeight }, labels, orderRef.current);
       const { layout } = nextPlan;
       plan = nextPlan;
       layoutRef.current = layout;
@@ -215,27 +226,34 @@ export function RaceCanvas({
     /**
      * Paint every cat that is in view, with its crown, speed lines and the dust it kicks up.
      * @param current - The plan being painted
-     * @param cats - Every cat's position this frame, from the top lane down
-     * @param motion - Race time, whether the cats run, the leader's key and seconds since the last frame
-     * @param lanes - The lanes in view
+     * @param cats - Every cat's position this frame, in the plan's lane order
+     * @param motion - Race time, whether the cats run, the leader's key, seconds since the last
+     * frame and the animation clock in seconds
+     * @param lanes - The lanes to paint: those in view, or every lane while a shuffle moves the cats
      * @param top - How far the lanes are scrolled, in px
      * @returns The dust the cats kicked up this frame
      */
     const drawCats = (
       current: RacePlan,
       cats: readonly FrameCat[],
-      motion: { u: number; isRunning: boolean; leaderKey: string | null; dt: number },
+      motion: { u: number; isRunning: boolean; leaderKey: string | null; dt: number; time: number },
       lanes: LaneRange,
       top: number
     ): DustParticle[] => {
       const { layout, script: raced } = current;
       const height = (layout.catWidth * SPRITE_ROWS) / SPRITE_COLUMNS;
       const clock = legClock(motion.u, raced.durationSeconds);
+      const now = motion.time * MS_PER_SECOND;
       const kicked: DustParticle[] = [];
       for (let lane = lanes.first; lane <= lanes.last; lane += 1) {
         const cat = cats[lane];
-        const frame = legFrame(clock, lane, motion.isRunning);
-        const bob = bobOffset(frame, layout.catHeight, motion.isRunning);
+        // A shuffle paints every lane, so skip the cats that are off screen.
+        if (cat.y - top < layout.band - height || cat.y - top > viewHeight + height) continue;
+        const isTrot = !motion.isRunning && isTrotting(shuffle, cat.key, now);
+        const frame = isTrot
+          ? legFrame(legClockAt(motion.time), lane, true)
+          : legFrame(clock, lane, motion.isRunning);
+        const bob = bobOffset(frame, layout.catHeight, motion.isRunning || isTrot);
         const box = { x: cat.x, y: cat.y, width: layout.catWidth, height };
         if (motion.isRunning) {
           paintSpeedLines(context, { ...box, y: cat.y - top }, speedAt(raced.curves.get(cat.key)!, motion.u), clock);
@@ -259,7 +277,7 @@ export function RaceCanvas({
     /**
      * Paint the meow bubbles of the cats in view, above and right of each head.
      * @param current - The plan being painted
-     * @param cats - Every cat's position this frame, from the top lane down
+     * @param cats - Every cat's position this frame, in the plan's lane order
      * @param view - The animation clock, how far the lanes are scrolled and the lanes in view
      */
     const paintCatBubbles = (
@@ -299,6 +317,10 @@ export function RaceCanvas({
       const top = scroller.scrollTop;
       const lanes = visibleLanes(layout, current.laneOrder.length, top, viewHeight);
       const view = { layout, width: viewWidth, height: viewHeight, top, lanes };
+      const now = frame.time * MS_PER_SECOND;
+      const shuffledLanes = shuffle && isShuffling(shuffle, now) ? lanesAt(shuffle, now) : null;
+      // A cat on its way may be anywhere between its two lanes, so a shuffle paints them all.
+      const drawn = shuffledLanes ? { first: 0, last: current.laneOrder.length - 1 } : lanes;
       const leaderKey = ranks?.[0] ?? null;
       const excitement = excitementAt(frame.phase, frame.isSprint);
       // A preview stands still: no one talks until a round is replayed.
@@ -330,19 +352,21 @@ export function RaceCanvas({
       });
       dust = stepDust(dust, frame.dt);
       paintDust(context, dust, top);
-      const cats = frameAt(current, frame.u);
+      const cats = frameAt(current, frame.u, shuffledLanes ?? current.laneOf);
       const kicked = drawCats(
         current,
         cats,
-        { u: frame.u, isRunning: frame.phase === "running", leaderKey, dt: frame.dt },
-        lanes,
+        { u: frame.u, isRunning: frame.phase === "running", leaderKey, dt: frame.dt, time: frame.time },
+        drawn,
         top
       );
       dust = [...dust, ...kicked];
       paintCatBubbles(current, cats, { time: frame.time, top, lanes });
       paintStageNames(context, {
         ...view,
+        lanes: drawn,
         laneOrder: current.laneOrder,
+        shuffledLanes,
         fitted,
         colors: colorOf,
         places: ranks && new Map(ranks.map((key, index) => [key, index + 1])),
@@ -420,7 +444,25 @@ export function RaceCanvas({
       frameId = requestAnimationFrame(tick);
     };
 
+    /**
+     * Move the cats to a new lane order: they trot there from wherever they stand, even halfway
+     * through the last shuffle, unless the stage stands still.
+     * @param order - Cat keys from the top lane down, or null for A to Z
+     */
+    const reorder = (order: readonly string[] | null) => {
+      const current = plan;
+      if (!current) return;
+      const nextPlan = planRace(script, { width: viewWidth, height: viewHeight }, labels, order);
+      if (nextPlan.laneOrder.every((key, index) => key === current.laneOrder[index])) return;
+      const now = performance.now();
+      const from = shuffle && isShuffling(shuffle, now) ? lanesAt(shuffle, now) : current.laneOf;
+      shuffle = isStill ? null : { from, to: nextPlan.laneOf, startedAt: now };
+      plan = nextPlan;
+      repaint();
+    };
+
     resize();
+    reorderRef.current = reorder;
     // The first paint may land before the lettering has downloaded; paint again when it has.
     document.fonts
       ?.load(displayFont(FONT_PROBE_PX, fonts), `${GATE_TEXT} ${TITLE_TEXT}`)
@@ -438,11 +480,12 @@ export function RaceCanvas({
 
     return () => {
       isDisposed = true;
+      reorderRef.current = null;
       cancelAnimationFrame(frameId);
       scroller.removeEventListener("scroll", repaint);
       observer.disconnect();
     };
-  }, [script, participants, mode, isPreview, shuffledOrder, isStill]);
+  }, [script, participants, mode, isPreview, isStill]);
 
   return (
     <div

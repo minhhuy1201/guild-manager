@@ -11,14 +11,22 @@ vi.mock("next/font/google", () => ({
 // The bubbles are painted by their own module; a spy keeps their text apart from the canvas's own lettering.
 const { paintChatBubble } = vi.hoisted(() => ({ paintChatBubble: vi.fn() }));
 vi.mock("../../lib/paint-chat-bubbles", () => ({ paintChatBubble }));
+// A pass-through spy: the sky is drawn once per size, which a shuffle must not repeat.
+vi.mock("../../lib/stage-backdrop", async (importOriginal) => {
+  const original = await importOriginal<typeof import("../../lib/stage-backdrop")>();
+
+  return { ...original, renderBackdrop: vi.fn(original.renderBackdrop) };
+});
 vi.mock("@/features/auth", () => ({
   discordAvatarUrl: (id: string, hash: string | null) =>
     hash ? `https://cdn.test/${id}/${hash}.png` : null,
 }));
 
-import { laneLayout, markX } from "../../lib/race-layout";
+import { LANE_SHUFFLE_MS } from "../../lib/lane-shuffle";
+import { laneCenterY, laneLayout, markX } from "../../lib/race-layout";
 import type { RaceStanding } from "../../lib/race-board";
 import { buildRaceScript, rankAt } from "../../lib/race-script";
+import { renderBackdrop } from "../../lib/stage-backdrop";
 import { STAGE_PALETTE } from "../../lib/stage-palette";
 import { seededRandom } from "../../lib/__tests__/seeded-random";
 import { RaceCanvas } from "../race-canvas";
@@ -165,6 +173,7 @@ afterEach(() => {
   fillText.mockClear();
   paintChatBubble.mockClear();
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
   window.history.replaceState(null, "", "/");
 });
 
@@ -190,6 +199,45 @@ function bigField(people: number) {
   }));
 
   return { script, racers };
+}
+
+/**
+ * A start-line preview with a chosen lane order.
+ * @param script - The race
+ * @param racers - Who ran
+ * @param order - Cat keys from the top lane down, or null for A to Z
+ */
+function shuffleCanvas(
+  script: ReturnType<typeof bigField>["script"],
+  racers: ReturnType<typeof bigField>["racers"],
+  order: string[] | null
+) {
+  return (
+    <RaceCanvas
+      mode="start"
+      script={script}
+      participants={racers}
+      onFinish={vi.fn()}
+      skipSignal={0}
+      onStandings={vi.fn()}
+      onCue={vi.fn()}
+      laneOrder={order}
+    />
+  );
+}
+
+/** The y of every cat sprite painted since `sprites` was cleared, in paint order (the plan's lane order). */
+function catYs(): number[] {
+  return sprites.filter((sprite) => sprite.x > 0).map((sprite) => sprite.y);
+}
+
+/** The y each "Người n" name was last painted at since `fillText` was cleared. */
+function nameYs(): Map<string, number> {
+  return new Map(
+    fillText.mock.calls
+      .filter(([text]) => typeof text === "string" && text.startsWith("Người "))
+      .map(([text, , y]) => [text as string, y as number])
+  );
 }
 
 describe("RaceCanvas", () => {
@@ -576,6 +624,57 @@ describe("RaceCanvas", () => {
 
     runFrame(0);
 
+    expect(frames).toHaveLength(0);
+  });
+
+  it("trots the cats to their new lanes on a shuffle, without rebuilding the stage", () => {
+    vi.spyOn(performance, "now").mockReturnValue(START_MS);
+    const { script, racers } = bigField(4);
+    const keys = script.cats.map((cat) => cat.key);
+    const layout = laneLayout(4, { width: 800, height: 400 });
+    const { rerender } = render(shuffleCanvas(script, racers, null));
+    runFrame(START_MS);
+    const drawn = vi.mocked(renderBackdrop).mock.calls.length;
+    const lanesBefore = nameYs();
+    const settled = catYs();
+
+    rerender(shuffleCanvas(script, racers, [keys[1], keys[2], keys[3], keys[0]]));
+    fillText.mockClear();
+    sprites.length = 0;
+    runFrame(START_MS + LANE_SHUFFLE_MS / 2);
+    const halfway = nameYs().get("Người 0")!;
+    // Cats are painted in the plan's lane order, so the last sprite is keys[0] now.
+    const catHalfway = catYs()[3];
+    fillText.mockClear();
+    sprites.length = 0;
+    runFrame(START_MS + LANE_SHUFFLE_MS);
+
+    expect(vi.mocked(renderBackdrop)).toHaveBeenCalledTimes(drawn);
+    expect(lanesBefore.get("Người 0")).toBe(laneCenterY(0, layout));
+    expect(halfway).toBeGreaterThan(laneCenterY(0, layout));
+    expect(halfway).toBeLessThan(laneCenterY(3, layout));
+    expect(nameYs().get("Người 0")).toBe(laneCenterY(3, layout));
+    expect(nameYs().get("Người 1")).toBe(laneCenterY(0, layout));
+    // Halfway through an ease-in-out the cat is mid-way between its lanes, give or take the leg bob.
+    expect(Math.abs(catHalfway - (settled[0] + settled[3]) / 2)).toBeLessThan((settled[3] - settled[0]) / 4);
+    expect(catYs()[3]).toBe(settled[3]);
+    expect(catYs()[0]).toBe(settled[0]);
+  });
+
+  it("moves the cats to their new lanes at once under reduced motion", () => {
+    stubReducedMotion(true);
+    const { script, racers } = bigField(4);
+    const keys = script.cats.map((cat) => cat.key);
+    const layout = laneLayout(4, { width: 800, height: 400 });
+    const { rerender } = render(shuffleCanvas(script, racers, null));
+    runFrame(START_MS);
+
+    rerender(shuffleCanvas(script, racers, [keys[1], keys[2], keys[3], keys[0]]));
+    fillText.mockClear();
+    runFrame(START_MS + 16);
+
+    expect(nameYs().get("Người 0")).toBe(laneCenterY(3, layout));
+    expect(nameYs().get("Người 1")).toBe(laneCenterY(0, layout));
     expect(frames).toHaveLength(0);
   });
 
