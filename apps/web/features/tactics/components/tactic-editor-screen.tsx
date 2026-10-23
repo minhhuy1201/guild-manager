@@ -292,7 +292,11 @@ export function TacticEditorScreen({
           ) : null}
 
           {isDesktop !== null && !canDraw ? (
-            <TacticViewer stages={stages} notes={editor.notes} />
+            <TacticViewer
+              name={editor.name}
+              stages={stages}
+              notes={editor.notes}
+            />
           ) : null}
         </div>
       </QueryBoundary>

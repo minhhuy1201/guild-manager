@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { createElement, type ReactNode } from "react";
+import { createElement, useEffect, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   act,
@@ -27,10 +27,15 @@ vi.mock("../hooks/use-is-desktop", () => ({
 
 /** Props the canvas was last rendered with, so a test can fire its drag callbacks. */
 const canvasProps: { current: Record<string, unknown> } = { current: {} };
+/** How many times the screen mounted the canvas, to prove a mode switch keeps it. */
+const canvasMounts = { count: 0 };
 
 vi.mock("../components/tactic-canvas", () => ({
   TacticCanvas: (props: { frame: StageFrame }) => {
     canvasProps.current = props;
+    useEffect(() => {
+      canvasMounts.count += 1;
+    }, []);
 
     return (
       <div data-testid="canvas">{props.frame.tokens[0]?.token.label ?? "trống"}</div>
@@ -69,6 +74,7 @@ vi.mock("../api/tactics-api", () => ({
   updateTactic: (input: unknown) => updateTactic(input),
 }));
 
+import { fetchTactic } from "../api/tactics-api";
 import { useTacticEditorStore } from "../store/editor-store";
 import { TacticEditorScreen } from "../components/tactic-editor-screen";
 
@@ -90,6 +96,7 @@ afterEach(() => {
 });
 
 beforeEach(() => {
+  canvasMounts.count = 0;
   isDesktop = true;
   push.mockReset();
   updateTactic.mockReset();
@@ -563,5 +570,197 @@ describe("TacticEditorScreen", () => {
       id: "t1",
       notes: "Rút về cổng đông.",
     });
+  });
+});
+
+describe("TacticEditorScreen - viewer focus mode", () => {
+  const DIALOG = "Xem chiến thuật toàn màn hình";
+  const fullscreenElement: { current: Element | null } = { current: null };
+
+  beforeEach(() => {
+    fullscreenElement.current = null;
+    // `F` reads the `lg` query itself; the default stub above answers no to everything.
+    vi.stubGlobal("matchMedia", () => ({
+      matches: true,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }));
+  });
+
+  /**
+   * Stub the Fullscreen API, which jsdom lacks.
+   * @param request - What `requestFullscreen` does
+   * @returns The request stub, to assert against
+   */
+  function stubFullscreen(request: () => Promise<void> = () => Promise.resolve()) {
+    const requestFullscreen = vi.fn(request);
+    Object.defineProperty(document.documentElement, "requestFullscreen", {
+      configurable: true,
+      value: requestFullscreen,
+    });
+    Object.defineProperty(document, "exitFullscreen", {
+      configurable: true,
+      value: vi.fn(() => Promise.resolve()),
+    });
+    Object.defineProperty(document, "fullscreenElement", {
+      configurable: true,
+      get: () => fullscreenElement.current,
+    });
+
+    return requestFullscreen;
+  }
+
+  /**
+   * Render the viewer (no write access) and wait for the map.
+   * @returns The entry button
+   */
+  async function renderViewer() {
+    renderScreen(false);
+    await screen.findByTestId("canvas");
+
+    // jsdom applies no CSS, so the button is found even where `max-lg:hidden` hides it.
+    return screen.getByRole("button", { name: /Toàn màn hình/ });
+  }
+
+  it("has the button with an F cap, also for a one-stage tactic", async () => {
+    vi.mocked(fetchTactic).mockResolvedValueOnce({
+      ok: true,
+      data: {
+        id: "t1",
+        name: "Thủ cổng tây",
+        description: null,
+        notes: null,
+        stageCount: 1,
+        updatedAt: "2026-09-20T10:00:00.000Z",
+        scene: {
+          schemaVersion: TACTIC_SCHEMA_VERSION,
+          stages: [{ id: "s1", name: "Giai đoạn 1", elements: [] }],
+        },
+      },
+    });
+
+    const button = await renderViewer();
+
+    expect(button.textContent).toContain("F");
+    expect(screen.queryByRole("tablist")).toBeNull();
+  });
+
+  it("opens a dialog with the name and the stage tabs on the top bar", async () => {
+    stubFullscreen();
+    fireEvent.click(await renderViewer());
+
+    const dialog = screen.getByRole("dialog", { name: DIALOG });
+    expect(within(dialog).getByText("Thủ cổng tây")).toBeTruthy();
+    expect(within(dialog).getByRole("tablist", { name: "Giai đoạn" })).toBeTruthy();
+    expect(screen.getAllByRole("tablist")).toHaveLength(1);
+    expect(
+      within(dialog).getByRole("button", { name: "Chạy các giai đoạn" })
+    ).toBeTruthy();
+  });
+
+  it("opens on F, but not while typing in a field", async () => {
+    stubFullscreen();
+    await renderViewer();
+    const field = document.createElement("input");
+    document.body.append(field);
+
+    fireEvent.keyDown(field, { key: "f" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+
+    fireEvent.keyDown(window, { key: "f" });
+    expect(screen.getByRole("dialog", { name: DIALOG })).toBeTruthy();
+
+    field.remove();
+  });
+
+  it("ignores F below lg", async () => {
+    vi.stubGlobal("matchMedia", () => ({
+      matches: false,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }));
+    stubFullscreen();
+    await renderViewer();
+
+    fireEvent.keyDown(window, { key: "f" });
+
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("closes on Esc and returns focus to the button", async () => {
+    stubFullscreen();
+    fireEvent.click(await renderViewer());
+
+    fireEvent.keyDown(window, { key: "Escape" });
+
+    expect(screen.queryByRole("dialog")).toBeNull();
+    // The button is not in the page while the mode is on, so focus lands on the one that returns.
+    expect(document.activeElement).toBe(
+      screen.getByRole("button", { name: /Toàn màn hình/ })
+    );
+  });
+
+  it("closes from the exit button and when the browser leaves fullscreen", async () => {
+    stubFullscreen();
+    fireEvent.click(await renderViewer());
+
+    fireEvent.click(screen.getByRole("button", { name: "Thoát toàn màn hình" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: /Toàn màn hình/ }));
+    act(() => {
+      document.dispatchEvent(new Event("fullscreenchange"));
+    });
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("asks the document element for fullscreen, and stays on when refused", async () => {
+    const requestFullscreen = stubFullscreen(() =>
+      Promise.reject(new Error("denied"))
+    );
+
+    fireEvent.click(await renderViewer());
+
+    expect(requestFullscreen).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("dialog", { name: DIALOG })).toBeTruthy();
+  });
+
+  it("does not remount the canvas going in and out", async () => {
+    stubFullscreen();
+    const button = await renderViewer();
+    expect(canvasMounts.count).toBe(1);
+
+    fireEvent.click(button);
+    fireEvent.keyDown(window, { key: "Escape" });
+
+    expect(canvasMounts.count).toBe(1);
+  });
+
+  it("folds and reopens the notes in the mode, open by default", async () => {
+    stubFullscreen();
+    fireEvent.click(await renderViewer());
+    const dialog = screen.getByRole("dialog", { name: DIALOG });
+    const notes = "Giữ cổng tây tới khi có lệnh.";
+
+    expect(within(dialog).getByText(notes)).toBeTruthy();
+
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "Thu ghi chú chiến thuật" })
+    );
+    expect(within(dialog).queryByText(notes)).toBeNull();
+
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "Mở ghi chú chiến thuật" })
+    );
+    expect(within(dialog).getByText(notes)).toBeTruthy();
+  });
+
+  it("keeps the plain notes block, without a fold button, outside the mode", async () => {
+    await renderViewer();
+
+    expect(screen.getByText("Giữ cổng tây tới khi có lệnh.")).toBeTruthy();
+    expect(
+      screen.queryByRole("button", { name: "Thu ghi chú chiến thuật" })
+    ).toBeNull();
   });
 });

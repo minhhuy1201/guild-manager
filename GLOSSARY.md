@@ -58,3 +58,10 @@ _Avoid_: decoy, dark horse, runner-up role
 **Photo finish** (UI: "Ảnh đích"):
 The close-up of the first two cats at the line, shown after every race.
 _Avoid_: finish shot, close finish
+
+## Screens
+
+**Focus mode** (UI: "Toàn màn hình"):
+A screen's own view that covers the whole window and keeps only that screen's main work, such as
+the team grid, the race, or the tactic map.
+_Avoid_: fullscreen mode, cinema mode, presentation mode

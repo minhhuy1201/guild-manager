@@ -24,6 +24,23 @@ export function stageScale(stageWidth: number): number {
 }
 
 /**
+ * The width the map takes in an area that must show all of it, whichever side runs out first.
+ * The page fits the map by width alone; a focus mode has a fixed window, so the map is the largest
+ * one of its aspect ratio that fits both sides.
+ * @param areaWidth - Width of the area, in CSS pixels
+ * @param areaHeight - Height of the area, in CSS pixels
+ * @returns The width to render the map at; 0 while the area has no size yet
+ */
+export function fitStageWidth(areaWidth: number, areaHeight: number): number {
+  const width = Math.min(
+    areaWidth,
+    (areaHeight * TACTIC_MAP_WIDTH) / TACTIC_MAP_HEIGHT
+  );
+
+  return Number.isFinite(width) ? Math.max(0, width) : 0;
+}
+
+/**
  * Convert a pointer position on the stage back into map coordinates.
  * @param pointer - Pointer position as Konva reports it, in stage pixels
  * @param scale - The factor `stageScale` returned

@@ -43,3 +43,14 @@ export const CANVAS_GRID_STYLE: CSSProperties = {
     `${CELL}px ${CELL}px`,
   ].join(", "),
 };
+
+const VIGNETTE =
+  "radial-gradient(ellipse at center, transparent 55%, rgb(0 0 0 / 0.1) 100%)";
+
+/**
+ * The grid with a vignette over it: the board a focus mode lays its map on.
+ */
+export const FOCUS_CANVAS_STYLE: CSSProperties = {
+  backgroundImage: `${VIGNETTE}, ${CANVAS_GRID_STYLE.backgroundImage}`,
+  backgroundSize: `100% 100%, ${CANVAS_GRID_STYLE.backgroundSize}`,
+};
