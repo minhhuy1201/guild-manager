@@ -57,20 +57,35 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("RaceOverlays", () => {
-  it("lights the lanterns up to the step and shows the number counting down", () => {
+  it("lights only the lamp of the current step, red then amber then green", () => {
+    const lampsAt = (step: number) => {
+      const { container } = renderOverlays({ countdownStep: step, isCountingDown: true });
+      const lamps = [...container.querySelectorAll(".race-lantern")];
+      cleanup();
+
+      return lamps.map((lamp) => `${lamp.getAttribute("data-signal")}:${lamp.getAttribute("data-lit")}`);
+    };
+
+    expect(lampsAt(0)).toEqual(["red:true", "amber:false", "green:false"]);
+    expect(lampsAt(1)).toEqual(["red:false", "amber:true", "green:false"]);
+    expect(lampsAt(2)).toEqual(["red:false", "amber:false", "green:true"]);
+  });
+
+  it("counts down in the colour of the lit lamp", () => {
     const { container } = renderOverlays({ countdownStep: 1, isCountingDown: true });
 
-    const lit = [...container.querySelectorAll(".race-lantern")].map((el) => el.getAttribute("data-lit"));
-    expect(lit).toEqual(["true", "true", "false"]);
-    expect(container.querySelector(".race-digit")?.textContent).toBe("2");
+    const digit = container.querySelector(".race-digit");
+    expect(digit?.textContent).toBe("2");
+    expect(digit?.getAttribute("data-signal")).toBe("amber");
     expect(container.querySelector(".race-countdown")?.getAttribute("data-on")).toBe("true");
   });
 
-  it("makes the third lantern the gold one and hides the countdown after go", () => {
-    const { container } = renderOverlays({ countdownStep: 2, isCountingDown: false });
+  it("lights no lamp before the first step and hides the countdown after go", () => {
+    const { container } = renderOverlays({ countdownStep: -1, isCountingDown: false });
 
-    const gold = [...container.querySelectorAll(".race-lantern")].map((el) => el.getAttribute("data-gold"));
-    expect(gold).toEqual(["false", "false", "true"]);
+    const lit = [...container.querySelectorAll(".race-lantern")].map((el) => el.getAttribute("data-lit"));
+    expect(lit).toEqual(["false", "false", "false"]);
+    expect(container.querySelector(".race-digit")?.hasAttribute("data-signal")).toBe(false);
     expect(container.querySelector(".race-countdown")?.getAttribute("data-on")).toBe("false");
   });
 
