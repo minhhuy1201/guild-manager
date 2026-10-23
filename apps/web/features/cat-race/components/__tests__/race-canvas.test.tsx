@@ -226,6 +226,11 @@ function shuffleCanvas(
   );
 }
 
+/** The y of every cat sprite painted since `sprites` was cleared, in paint order (the plan's lane order). */
+function catYs(): number[] {
+  return sprites.filter((sprite) => sprite.x > 0).map((sprite) => sprite.y);
+}
+
 /** The y each "Người n" name was last painted at since `fillText` was cleared. */
 function nameYs(): Map<string, number> {
   return new Map(
@@ -631,12 +636,17 @@ describe("RaceCanvas", () => {
     runFrame(START_MS);
     const drawn = vi.mocked(renderBackdrop).mock.calls.length;
     const lanesBefore = nameYs();
+    const settled = catYs();
 
     rerender(shuffleCanvas(script, racers, [keys[1], keys[2], keys[3], keys[0]]));
     fillText.mockClear();
+    sprites.length = 0;
     runFrame(START_MS + LANE_SHUFFLE_MS / 2);
     const halfway = nameYs().get("Người 0")!;
+    // Cats are painted in the plan's lane order, so the last sprite is keys[0] now.
+    const catHalfway = catYs()[3];
     fillText.mockClear();
+    sprites.length = 0;
     runFrame(START_MS + LANE_SHUFFLE_MS);
 
     expect(vi.mocked(renderBackdrop)).toHaveBeenCalledTimes(drawn);
@@ -645,6 +655,10 @@ describe("RaceCanvas", () => {
     expect(halfway).toBeLessThan(laneCenterY(3, layout));
     expect(nameYs().get("Người 0")).toBe(laneCenterY(3, layout));
     expect(nameYs().get("Người 1")).toBe(laneCenterY(0, layout));
+    // Halfway through an ease-in-out the cat is mid-way between its lanes, give or take the leg bob.
+    expect(Math.abs(catHalfway - (settled[0] + settled[3]) / 2)).toBeLessThan((settled[3] - settled[0]) / 4);
+    expect(catYs()[3]).toBe(settled[3]);
+    expect(catYs()[0]).toBe(settled[0]);
   });
 
   it("moves the cats to their new lanes at once under reduced motion", () => {
