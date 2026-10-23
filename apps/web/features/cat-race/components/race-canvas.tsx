@@ -226,7 +226,7 @@ export function RaceCanvas({
     /**
      * Paint every cat that is in view, with its crown, speed lines and the dust it kicks up.
      * @param current - The plan being painted
-     * @param cats - Every cat's position this frame, from the top lane down
+     * @param cats - Every cat's position this frame, in the plan's lane order
      * @param motion - Race time, whether the cats run, the leader's key, seconds since the last
      * frame and the animation clock in seconds
      * @param lanes - The lanes to paint: those in view, or every lane while a shuffle moves the cats
@@ -277,7 +277,7 @@ export function RaceCanvas({
     /**
      * Paint the meow bubbles of the cats in view, above and right of each head.
      * @param current - The plan being painted
-     * @param cats - Every cat's position this frame, from the top lane down
+     * @param cats - Every cat's position this frame, in the plan's lane order
      * @param view - The animation clock, how far the lanes are scrolled and the lanes in view
      */
     const paintCatBubbles = (
