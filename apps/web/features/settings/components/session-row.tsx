@@ -17,9 +17,14 @@ import { getSessionSubtitle } from "@/features/attendance";
 import { cn } from "@/lib/utils";
 import { ReopenAttendanceAction } from "./reopen-attendance-action";
 
+/** Tooltip of the disabled Edit and Delete buttons of a fought scrim. */
+const FOUGHT_REASON = "Trận đã đánh, không sửa hay xoá được";
+
 interface SessionRowProps {
   /** Session to display */
   session: BattleSession;
+  /** Whether the battle time has passed; a fought battle can be neither edited nor deleted */
+  isFought: boolean;
   /** Called on Edit */
   onEdit: (session: BattleSession) => void;
   /** Called on Delete */
@@ -31,12 +36,19 @@ interface SessionRowProps {
  * A Guild War always falls on Saturday with a fixed deadline, so it can be neither edited nor deleted.
  * Reopening its attendance is the one action it does take: the Guild War is the day whose line-up
  * gets announced most, and the announcement is what closes it.
+ * A fought scrim keeps its buttons but disabled, with the reason as their tooltip.
  * @param session - Session to display
+ * @param isFought - Whether the battle time has passed
  * @param onEdit - Called on Edit
  * @param onDelete - Called on Delete
  * @returns One row of the session list
  */
-export function SessionRow({ session, onEdit, onDelete }: SessionRowProps) {
+export function SessionRow({
+  session,
+  isFought,
+  onEdit,
+  onDelete,
+}: SessionRowProps) {
   // A Guild War with nothing to reopen has no actions at all, and an empty group would still take
   // the row's gap after the content.
   const hasActions = !session.isGuildWar || session.canReopenAttendance;
@@ -73,8 +85,16 @@ export function SessionRow({ session, onEdit, onDelete }: SessionRowProps) {
           )}
           {!session.isGuildWar && (
             <>
-              <EditAction onClick={() => onEdit(session)} />
-              <DeleteAction onClick={() => onDelete(session)} />
+              <EditAction
+                disabled={isFought}
+                disabledReason={FOUGHT_REASON}
+                onClick={() => onEdit(session)}
+              />
+              <DeleteAction
+                disabled={isFought}
+                disabledReason={FOUGHT_REASON}
+                onClick={() => onDelete(session)}
+              />
             </>
           )}
         </RowActions>

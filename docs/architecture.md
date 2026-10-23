@@ -296,7 +296,7 @@ Endpoints, all behind the `/api` prefix:
 | `GET` | `/attendance/records?weekStart=` | Attendance entries of a week, the open one by default (the whole guild, any role) | Bearer |
 | `GET` | `/attendance/summary?weekStart=` | Yes/no counts per match of a week, the open one by default, no identities. **No caller today** — kept for the attendance dashboard | Bearer |
 | `GET` | `/leaves` | Leaves that are not cancelled and have not ended, soonest first (the whole guild, any role) | Bearer |
-| `POST` | `/leaves` | File a leave; clears the answers and line-up slots it covers | Bearer (own character; admin files for anyone, and for past days) |
+| `POST` | `/leaves` | File a leave; clears the answers and line-up slots it covers | Bearer (own character; admin files for anyone; never for a day before today) |
 | `POST` | `/leaves/:id/cancel` | Cancel a leave (stamps `cancelledAt`; a second call returns it unchanged) | Bearer (own leave, or admin) |
 | `POST` | `/attendance` | Mark one character for one match (with a reason when the answer is "Không") | Bearer (own character; admin marks for anyone and bypasses the deadline) |
 | `GET` | `/team-builder/weeks` | Weeks that still have roster data | Admin |

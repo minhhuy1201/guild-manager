@@ -9,3 +9,4 @@ export {
   useBattleSessions,
   useAttendanceRecords,
 } from "./hooks/use-attendance";
+export { useBattleClock } from "./hooks/use-battle-clock";

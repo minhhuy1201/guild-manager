@@ -3,6 +3,7 @@
 import type { BattleSession } from "@guild/shared/schemas";
 
 import { EmptyState } from "@/components/shared/empty-state";
+import { useBattleClock } from "@/features/attendance";
 import { REVEAL_CLASS, revealStyle } from "@/lib/motion";
 import { SessionRow } from "./session-row";
 
@@ -28,6 +29,7 @@ export function SessionList({
   onEdit,
   onDelete,
 }: SessionListProps) {
+  const now = useBattleClock(sessions);
   const hasScrim = sessions.some((session) => !session.isGuildWar);
 
   return (
@@ -38,7 +40,12 @@ export function SessionList({
           className={REVEAL_CLASS}
           style={revealStyle(index)}
         >
-          <SessionRow session={session} onEdit={onEdit} onDelete={onDelete} />
+          <SessionRow
+            session={session}
+            isFought={new Date(session.dateTime).getTime() <= now.getTime()}
+            onEdit={onEdit}
+            onDelete={onDelete}
+          />
         </div>
       ))}
 

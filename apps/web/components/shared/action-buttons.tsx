@@ -89,6 +89,8 @@ interface RowActionButtonProps {
   variant?: ButtonVariant;
   /** Disable the button (e.g. past the editing deadline) */
   disabled?: boolean;
+  /** Why the button is disabled; shown as the tooltip while it is */
+  disabledReason?: string;
   /** Extra classes */
   className?: string;
   /** Called on click */
@@ -103,6 +105,7 @@ interface RowActionButtonProps {
  * @param icon - Button icon
  * @param variant - Button variant
  * @param disabled - Disable the button
+ * @param disabledReason - Tooltip text while disabled
  * @param className - Extra classes
  * @param onClick - Called on click
  * @returns The icon button with its tooltip
@@ -112,9 +115,31 @@ export function RowActionButton({
   icon,
   variant = "ghost",
   disabled,
+  disabledReason,
   className,
   onClick,
 }: RowActionButtonProps) {
+  if (disabled && disabledReason) {
+    // A disabled button gets no pointer events, so the tooltip hangs on a focusable wrapper.
+    return (
+      <Tooltip>
+        <TooltipTrigger render={<span tabIndex={0} className="inline-flex" />}>
+          <Button
+            variant={variant}
+            size="icon-sm"
+            disabled
+            className={className}
+            onClick={onClick}
+          >
+            {icon}
+            <span className="sr-only">{label}</span>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{disabledReason}</TooltipContent>
+      </Tooltip>
+    );
+  }
+
   return (
     <Tooltip>
       <TooltipTrigger

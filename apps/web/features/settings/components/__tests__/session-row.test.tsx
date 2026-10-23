@@ -73,13 +73,18 @@ function session(overrides: Partial<BattleSession> = {}): BattleSession {
  * @param value - The session to draw
  * @returns The testing-library render result
  */
-function renderRow(value: BattleSession) {
+function renderRow(value: BattleSession, isFought = false) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
 
   return render(
-    <SessionRow session={value} onEdit={vi.fn()} onDelete={vi.fn()} />,
+    <SessionRow
+      session={value}
+      isFought={isFought}
+      onEdit={vi.fn()}
+      onDelete={vi.fn()}
+    />,
     {
       /**
        * Provide the QueryClient the reopen mutation reads from.
@@ -112,6 +117,24 @@ describe("SessionRow", () => {
 
     expect(row.classList.contains("bg-card")).toBe(true);
     expect(row.classList.contains("hover:border-jade/50")).toBe(true);
+  });
+
+  it("scrim đã đánh thì nút Sửa và Xoá bị disable", () => {
+    renderRow(session(), true);
+
+    for (const name of ["Sửa", "Xoá"]) {
+      const button = screen.getByText(name).closest("button");
+      expect(button?.hasAttribute("disabled")).toBe(true);
+    }
+  });
+
+  it("scrim chưa đánh thì nút Sửa và Xoá dùng được", () => {
+    renderRow(session());
+
+    for (const name of ["Sửa", "Xoá"]) {
+      const button = screen.getByText(name).closest("button");
+      expect(button?.hasAttribute("disabled")).toBe(false);
+    }
   });
 
   it("ngày chưa gửi đội hình thì không có nút mở lại", () => {
