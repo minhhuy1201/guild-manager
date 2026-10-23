@@ -488,6 +488,73 @@ describe("CatRaceEventScreen", () => {
       expect(screen.getByRole("dialog", { name: DIALOG_NAME })).toBeTruthy();
     });
 
+    describe("prize picker", () => {
+      const LOCKED_PRIZE = { ...PRIZE, id: "p3", name: "Đã hết", quantity: 1, awardedCount: 1 };
+      const PICKER_NAME = "Chọn hạng mục";
+
+      beforeEach(() => {
+        loaded(makeEvent({ prizes: [PRIZE, SECOND_PRIZE, LOCKED_PRIZE] }));
+      });
+
+      /**
+       * Enter focus mode and open the picker's list.
+       * @returns The picker trigger
+       */
+      const openPicker = () => {
+        render(<CatRaceEventScreen id="e1" />);
+        fireEvent.click(enterButton());
+        const trigger = screen.getByRole("combobox", { name: PICKER_NAME });
+        fireEvent.click(trigger);
+        return trigger;
+      };
+
+      it("switches the bar and the ĐUA button to the chosen prize", async () => {
+        openPicker();
+
+        // Base UI only commits a click that began with a pointer press on the item.
+        const option = await screen.findByRole("option", { name: /Vé/ });
+        fireEvent.pointerDown(option);
+        fireEvent.click(option);
+
+        const dialog = screen.getByRole("dialog", { name: DIALOG_NAME });
+        expect(screen.getByRole("combobox", { name: PICKER_NAME }).textContent).toContain("Vé");
+        expect(dialog.contains(screen.getByRole("button", { name: /ĐUA: Vé/ }))).toBe(true);
+      });
+
+      it("lists a locked prize as disabled, with its reason", async () => {
+        openPicker();
+
+        const option = await screen.findByRole("option", { name: /Đã hết/ });
+
+        expect(option.getAttribute("aria-disabled")).toBe("true");
+        expect(option.textContent).toContain("Hạng mục đã đủ giải.");
+        expect(screen.getByRole("option", { name: /Vé/ }).getAttribute("aria-disabled")).not.toBe(
+          "true"
+        );
+      });
+
+      it.each(["drawing", "racing", "result"] as const)(
+        "is disabled while the stage is %s",
+        (stage) => {
+          render(<CatRaceEventScreen id="e1" />);
+          fireEvent.click(enterButton());
+          act(() => useRaceStore.setState({ stage }));
+
+          const trigger = screen.getByRole("combobox", { name: PICKER_NAME });
+          fireEvent.click(trigger);
+
+          expect(trigger.hasAttribute("disabled") || trigger.getAttribute("aria-disabled") === "true").toBe(true);
+          expect(screen.queryByRole("option")).toBeNull();
+        }
+      );
+
+      it("is absent outside focus mode", () => {
+        render(<CatRaceEventScreen id="e1" />);
+
+        expect(screen.queryByRole("combobox", { name: PICKER_NAME })).toBeNull();
+      });
+    });
+
     it("closes when the browser leaves fullscreen", async () => {
       render(<CatRaceEventScreen id="e1" />);
       await act(async () => {

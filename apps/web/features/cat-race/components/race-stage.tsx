@@ -28,6 +28,7 @@ import { buildRaceScript, shuffled } from "../lib/race-script";
 import { RACE_END_U } from "../lib/race-timeline";
 import { useRaceStore } from "../store/race-store";
 import { RaceBroadcastBar } from "./race-broadcast-bar";
+import { RacePrizePicker } from "./race-prize-picker";
 import { RaceCanvas } from "./race-canvas";
 import { RaceOverlays } from "./race-overlays";
 import { RaceResultOverlay } from "./race-result-overlay";
@@ -48,6 +49,8 @@ interface RaceStageProps {
   isDurationValid: boolean;
   /** The screen's focus mode: while active the stage covers the window in place */
   focus: Pick<FocusMode, "active" | "exit">;
+  /** Chooses the prize for the next round; the focus mode's picker calls it */
+  onSelectPrize: (prizeId: string) => void;
 }
 
 /**
@@ -59,6 +62,7 @@ interface RaceStageProps {
  * @param prize - Prize the next round is for
  * @param isDurationValid - Whether the typed duration is in range
  * @param focus - The focus mode's flag and its exit
+ * @param onSelectPrize - Chooses the prize for the next round
  * @returns The race area
  */
 export function RaceStage({
@@ -66,6 +70,7 @@ export function RaceStage({
   prize,
   isDurationValid,
   focus,
+  onSelectPrize,
 }: RaceStageProps) {
   const { stage, durationSeconds, pendingResult, laneOrder } = useRaceStore();
   const store = useRaceStore.getState;
@@ -199,6 +204,16 @@ export function RaceStage({
       isLive={stage === "racing"}
       clock={clock}
       size={isFocused ? "focus" : "default"}
+      tierSlot={
+        isFocused ? (
+          <RacePrizePicker
+            event={event}
+            prize={prize}
+            disabled={stage !== "idle"}
+            onSelect={onSelectPrize}
+          />
+        ) : undefined
+      }
       className={stageFont.variable}
     />
   ) : null;

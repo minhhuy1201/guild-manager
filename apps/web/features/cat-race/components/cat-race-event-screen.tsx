@@ -113,6 +113,9 @@ function EventBody({ event }: { event: CatRaceEventDetail }) {
     event.prizes.find((prize) => prize.id === selectedPrizeId) ??
     event.prizes.find((prize) => !prizeLockReason(prize, event.status)) ??
     event.prizes[0];
+  const choosePrize = (prizeId: string) => {
+    if (!isBusy) selectPrize(prizeId);
+  };
   const close = () => setDialog({ kind: "none" });
   const isDurationValid = parseRaceDuration(durationText) !== null;
   const changeDuration = (text: string) => {
@@ -152,7 +155,7 @@ function EventBody({ event }: { event: CatRaceEventDetail }) {
             event={event}
             selectedPrizeId={selected?.id ?? null}
             canEdit={!isBusy}
-            onSelect={(prize) => !isBusy && selectPrize(prize.id)}
+            onSelect={(prize) => choosePrize(prize.id)}
             onEdit={(prize) => setDialog({ kind: "prize", prize })}
             onDelete={(prize) => setDialog({ kind: "delete-prize", prize })}
             onAdd={() => setDialog({ kind: "prize", prize: null })}
@@ -176,6 +179,7 @@ function EventBody({ event }: { event: CatRaceEventDetail }) {
         prize={selected}
         isDurationValid={isDurationValid}
         focus={focus}
+        onSelectPrize={choosePrize}
       />
       {focus.active ? null : (
         <WinnersPanel event={event} canVoid={!isBusy} onVoid={setVoiding} />

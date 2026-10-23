@@ -157,6 +157,7 @@ function renderStage(event = EVENT, prize = PRIZE, isDurationValid = true, activ
       prize={prize}
       isDurationValid={isDurationValid}
       focus={{ active: isActive, exit: vi.fn() }}
+      onSelectPrize={vi.fn()}
     />
   );
   const view = render(stage(active));
@@ -205,7 +206,7 @@ describe("RaceStage", () => {
   it("exits through the shell's exit button", () => {
     const exit = vi.fn();
     render(
-      <RaceStage event={EVENT} prize={PRIZE} isDurationValid focus={{ active: true, exit }} />
+      <RaceStage event={EVENT} prize={PRIZE} isDurationValid focus={{ active: true, exit }} onSelectPrize={vi.fn()} />
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Thoát toàn màn hình" }));
@@ -488,7 +489,7 @@ describe("RaceStage", () => {
   });
 
   it("says there is no prize and offers a bare ĐUA", () => {
-    render(<RaceStage event={EVENT} prize={undefined} isDurationValid focus={{ active: false, exit: vi.fn() }} />);
+    render(<RaceStage event={EVENT} prize={undefined} isDurationValid focus={{ active: false, exit: vi.fn() }} onSelectPrize={vi.fn()} />);
 
     expect(screen.getByText("Chưa có hạng mục.")).toBeTruthy();
     expect(screen.queryByText("Chưa có ai trong danh sách đua.")).toBeNull();

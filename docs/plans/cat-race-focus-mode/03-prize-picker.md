@@ -10,10 +10,10 @@ của hạng mục đó, giống như bấm chip hạng mục ngoài trang. Ô c
 
 **Blocked by:** 02
 
-**Status:** todo
+**Status:** done
 
-- [ ] Trong chế độ: chọn một hạng mục khác thì thanh phát sóng và nút ĐUA đổi theo hạng mục đó
-- [ ] Hạng mục bị khoá có trong danh sách, không chọn được, và có kèm lý do
-- [ ] Ô chọn bị khoá khi `stage` khác `idle`
-- [ ] Ngoài chế độ thì không có ô chọn
-- [ ] Test ở `CatRaceEventScreen`. Typecheck, lint, test xanh.
+- [x] Trong chế độ: chọn một hạng mục khác thì thanh phát sóng và nút ĐUA đổi theo hạng mục đó
+- [x] Hạng mục bị khoá có trong danh sách, không chọn được, và có kèm lý do
+- [x] Ô chọn bị khoá khi `stage` khác `idle`
+- [x] Ngoài chế độ thì không có ô chọn
+- [x] Test ở `CatRaceEventScreen`. Typecheck, lint, test xanh.
