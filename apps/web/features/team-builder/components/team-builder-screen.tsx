@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -74,7 +74,16 @@ export function TeamBuilderScreen() {
     screen.teamNames.saveErrorMessage,
   ].filter((message): message is string => Boolean(message));
   const focusButtonRef = useRef<HTMLButtonElement>(null);
-  const focusMode = useFocusMode(editable, focusButtonRef);
+  const controlsRef = useRef<HTMLElement>(null);
+  const focusReturn = useMemo(
+    () => ({ button: focusButtonRef, fallback: controlsRef }),
+    []
+  );
+  const focusMode = useFocusMode(
+    editable,
+    Boolean(screen.dnd.activeCharacter),
+    focusReturn
+  );
   const announce = useFormationAnnounce(
     screen.selection.activeSessionId,
     screen.draft.matches.length,
@@ -257,8 +266,10 @@ export function TeamBuilderScreen() {
             the left and what to do with the line-up on the right. The DOM order is the visual order,
             so focus follows the eye. */}
         <section
+          ref={controlsRef}
           aria-label="Điều khiển đội hình"
-          className="flex flex-col gap-3 rounded-container border border-border/60 bg-muted/60 p-3"
+          tabIndex={-1}
+          className="flex flex-col gap-3 rounded-container border border-border/60 bg-muted/60 p-3 outline-none"
         >
           <SessionTabs
             sessions={screen.selection.sessions}

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { TeamBuilderScreen } from "../team-builder-screen";
 
@@ -59,11 +59,19 @@ vi.mock("../announce-formation-dialog", () => ({
 }));
 
 const fullscreen = vi.hoisted(() => ({ element: null as Element | null }));
+const viewport = vi.hoisted(() => ({ isWide: true }));
+
+// jsdom has no matchMedia, which the `F` key reads to stay off below `lg`.
+beforeEach(() => {
+  vi.stubGlobal("matchMedia", () => ({ matches: viewport.isWide }));
+});
 
 afterEach(() => {
   cleanup();
   announceState.open = false;
   fullscreen.element = null;
+  viewport.isWide = true;
+  vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
 
@@ -236,6 +244,32 @@ describe("TeamBuilderScreen - chế độ toàn màn hình", () => {
     expect(screen.queryByRole("dialog", { name: DIALOG_NAME })).toBeNull();
   });
 
+  it("phím F dưới lg thì không mở", () => {
+    stubFullscreen();
+    viewport.isWide = false;
+    formationScreen.value = editableScreen();
+
+    render(<TeamBuilderScreen />);
+    fireEvent.keyDown(document.body, { key: "f" });
+
+    expect(screen.queryByRole("dialog", { name: DIALOG_NAME })).toBeNull();
+  });
+
+  it("Esc lúc đang kéo chỉ huỷ kéo, không đóng chế độ", () => {
+    stubFullscreen();
+    formationScreen.value = editableScreen();
+
+    const { rerender } = render(<TeamBuilderScreen />);
+    fireEvent.keyDown(document.body, { key: "f" });
+    const dragging = editableScreen();
+    dragging.dnd = { activeCharacter: { id: "c1", name: "A" } } as never;
+    formationScreen.value = dragging;
+    rerender(<TeamBuilderScreen />);
+    fireEvent.keyDown(screen.getByRole("dialog", { name: DIALOG_NAME }), { key: "Escape" });
+
+    expect(screen.getByRole("dialog", { name: DIALOG_NAME })).toBeTruthy();
+  });
+
   it("Esc đóng chế độ và trả focus về nút", () => {
     stubFullscreen();
     formationScreen.value = editableScreen();
@@ -334,6 +368,48 @@ describe("TeamBuilderScreen - chế độ toàn màn hình", () => {
     fireEvent.keyDown(screen.getByRole("dialog", { name: DIALOG_NAME }), { key: "Escape" });
 
     expect(exitFullscreen).toHaveBeenCalledTimes(1);
+  });
+
+  it("rời màn khi đang toàn màn hình thì thoát toàn màn hình", async () => {
+    const { exitFullscreen } = stubFullscreen();
+    formationScreen.value = editableScreen();
+
+    const { unmount } = render(<TeamBuilderScreen />);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: ENTER_NAME }));
+    });
+    fullscreen.element = document.documentElement;
+    unmount();
+
+    expect(exitFullscreen).toHaveBeenCalledTimes(1);
+  });
+
+  it("trận chỉ xem không thoát toàn màn hình mà chế độ không mở", () => {
+    const { exitFullscreen } = stubFullscreen();
+    fullscreen.element = document.documentElement;
+    const readOnly = editableScreen();
+    readOnly.selection.editable = false;
+    formationScreen.value = readOnly;
+
+    render(<TeamBuilderScreen />);
+
+    expect(exitFullscreen).not.toHaveBeenCalled();
+  });
+
+  it("trận chuyển sang chỉ xem thì focus về vùng điều khiển", () => {
+    stubFullscreen();
+    formationScreen.value = editableScreen();
+
+    const { rerender } = render(<TeamBuilderScreen />);
+    fireEvent.click(screen.getByRole("button", { name: ENTER_NAME }));
+    const readOnly = editableScreen();
+    readOnly.selection.editable = false;
+    formationScreen.value = readOnly;
+    rerender(<TeamBuilderScreen />);
+
+    expect(document.activeElement).toBe(
+      screen.getByRole("region", { name: "Điều khiển đội hình" })
+    );
   });
 
   it("trận chuyển sang chỉ xem khi đang mở thì chế độ tắt", () => {

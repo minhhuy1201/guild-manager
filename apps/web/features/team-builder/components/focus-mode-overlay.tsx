@@ -5,7 +5,7 @@ import { useEffect, useRef, type KeyboardEvent, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/kbd";
-import { FOCUS_MODE_ATTRIBUTE } from "../hooks/use-focus-mode";
+import { SCREEN_DIALOG_ATTRIBUTE } from "@/lib/keyboard-target";
 
 /** Everything inside the overlay a Tab key can land on. */
 const TABBABLE_SELECTOR =
@@ -73,9 +73,14 @@ export function FocusModeOverlay({
   function trapTab(event: KeyboardEvent<HTMLDivElement>) {
     if (event.key !== "Tab" || !rootRef.current) return;
 
+    // A roving tablist keeps its unselected tabs at -1, and a team column is hidden below `md`:
+    // neither is a Tab stop, and counting one as the edge lets focus slip out behind the overlay.
     const tabbables = [
       ...rootRef.current.querySelectorAll<HTMLElement>(TABBABLE_SELECTOR),
-    ];
+    ].filter(
+      (element) =>
+        element.tabIndex >= 0 && element.checkVisibility?.() !== false
+    );
     const first = tabbables[0];
     const last = tabbables[tabbables.length - 1];
     if (!first || !last) return;
@@ -92,7 +97,7 @@ export function FocusModeOverlay({
   return (
     <div
       ref={rootRef}
-      {...{ [FOCUS_MODE_ATTRIBUTE]: "" }}
+      {...{ [SCREEN_DIALOG_ATTRIBUTE]: "" }}
       role="dialog"
       aria-modal="true"
       aria-label="Xếp đội hình toàn màn hình"

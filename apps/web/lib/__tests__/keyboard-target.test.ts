@@ -5,6 +5,7 @@ import {
   belongsElsewhere,
   isInsideDialog,
   isTypingTarget,
+  SCREEN_DIALOG_ATTRIBUTE,
 } from "../keyboard-target";
 
 /**
@@ -39,6 +40,13 @@ describe("isInsideDialog", () => {
   it("finds a dialog or an alert dialog above the target", () => {
     expect(isInsideDialog(buttonInside("dialog"))).toBe(true);
     expect(isInsideDialog(buttonInside("alertdialog"))).toBe(true);
+  });
+
+  it("lets a key through inside a dialog marked as the screen itself", () => {
+    const button = buttonInside("dialog");
+    button.parentElement?.setAttribute(SCREEN_DIALOG_ATTRIBUTE, "");
+
+    expect(isInsideDialog(button)).toBe(false);
   });
 
   it("says no for anything outside one", () => {

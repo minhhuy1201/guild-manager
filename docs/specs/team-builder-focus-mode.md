@@ -63,8 +63,8 @@ Thoát bằng `Esc` hoặc nút ✕. Draft vẫn giữ nguyên khi thoát.
 21. Là admin, tôi muốn hộp thoại xung đột khi lưu vẫn hiện phía trên chế độ này, để xử lý được ngay
     tại chỗ.
 22. Là admin, tôi muốn bấm `Esc` hoặc nút ✕ để thoát, và nút ✕ có cap `Esc`.
-23. Là admin, tôi muốn `Esc` khi đang gõ trong một ô, hoặc khi một hộp thoại đang mở, chỉ đóng thứ
-    đó chứ không thoát chế độ toàn màn hình.
+23. Là admin, tôi muốn `Esc` khi đang gõ trong một ô, khi một hộp thoại đang mở, hoặc khi đang kéo
+    một người, chỉ đóng hoặc huỷ thứ đó chứ không thoát chế độ toàn màn hình.
 24. Là admin, tôi muốn thoát toàn màn hình của trình duyệt (`Esc`, `F11`) thì cũng thoát luôn chế
     độ này, để hai thứ không bị lệch nhau.
 25. Là admin, tôi muốn thoát mà không bị hỏi gì và không mất draft, vì thanh lưu ngoài trang vẫn
@@ -96,11 +96,16 @@ Thoát bằng `Esc` hoặc nút ✕. Draft vẫn giữ nguyên khi thoát.
   element con thì sẽ giấu chúng. Gọi API chỉ là "nếu được": nếu không có hoặc bị từ chối thì bỏ qua
   im lặng, chế độ vẫn chạy bằng lớp phủ. Đây là catch rỗng có lý do, phải ghi rõ trong code.
 - **Đồng bộ với trình duyệt:** khi document rời toàn màn hình (`fullscreenchange` mà không còn
-  `fullscreenElement`) thì chế độ tắt. Khi chế độ tắt bằng ✕ hoặc `Esc` mà document vẫn đang toàn
-  màn hình thì gọi `exitFullscreen`.
+  `fullscreenElement`) thì chế độ tắt. Chế độ kết thúc bằng bất kỳ đường nào (✕, `Esc`, trận chuyển
+  sang read-only, hoặc rời màn khi điều hướng) mà document vẫn đang toàn màn hình thì gọi
+  `exitFullscreen`. Không bao giờ thoát một toàn màn hình mà chế độ không tự yêu cầu.
 - **Phím:** `F` bật, `Esc` tắt. Cả hai bỏ qua khi focus đang ở ô nhập (dùng helper `isTypingTarget`
-  có sẵn), khi có phím bổ trợ, và khi sự kiện đã bị chặn trước (một hộp thoại đã xử lý `Esc`). Cap
-  `Kbd` hiện trên nút, theo quy ước shortcut.
+  có sẵn), khi có phím bổ trợ, và khi sự kiện đã bị chặn trước (một hộp thoại đã xử lý `Esc`). `F`
+  không chạy dưới `lg`, giống nút. `Esc` lúc đang kéo chỉ huỷ kéo. Cap `Kbd` hiện trên nút, theo
+  quy ước shortcut.
+- **Phím tắt màn hình chạy bên trong chế độ:** `Ctrl/Cmd+S` và `Ctrl/Cmd+Z` vốn đứng yên trong mọi
+  dialog. Lớp phủ được đánh dấu là "dialog chính là màn hình", nên hai phím vẫn chạy trong đó, còn
+  một dialog thật mở phía trên (xung đột, xoá trận) vẫn chặn chúng.
 - **Điều kiện hiện nút:** chỉ khi trận còn sửa được, và chỉ từ breakpoint `lg` (ẩn bằng CSS). Nếu
   trận chuyển sang read-only trong lúc đang bật thì chế độ tắt. Dưới `lg` không có nút. Nếu cửa sổ
   bị thu nhỏ dưới `lg` trong lúc đang bật thì bố cục xếp chồng và cuộn trong lớp phủ, không tự
