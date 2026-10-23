@@ -33,27 +33,27 @@ export function ThemeSwitch() {
       aria-checked={isDark}
       aria-label="Chế độ tối"
       onClick={() => setTheme(isDark ? "light" : "dark")}
-      className="group relative grid h-8 w-14 shrink-0 grid-cols-2 place-items-center rounded-full border border-white/10 bg-card p-1 outline-none hover:bg-foreground/5 max-sm:h-10 focus-visible:ring-3 focus-visible:ring-ring/50"
+      className="group relative grid h-9 w-14 shrink-0 grid-cols-2 place-items-center rounded-full ring-1 ring-white/10 ring-inset bg-card p-1 outline-none hover:bg-foreground/5 max-sm:h-10 focus-visible:ring-3 focus-visible:ring-ring/50"
     >
       <span
         aria-hidden
         className={cn(
-          "absolute inset-y-0 left-1 my-auto size-6 rounded-full bg-primary shadow-sm motion-reduce:transition-none",
-          mounted && "transition-transform duration-[var(--duration-base)] ease-[var(--ease-out-soft)]",
+          "absolute inset-y-0 left-1 my-auto size-6 rounded-full bg-primary shadow-sm",
+          mounted && "transition-transform duration-[var(--duration-base)] ease-out-soft",
           isDark && "translate-x-6"
         )}
       />
       <Sun
         aria-hidden
         className={cn(
-          "relative size-3.5 transition-colors",
+          "relative size-4 transition-colors duration-[var(--duration-fast)] ease-out-soft",
           isDark ? "text-muted-foreground" : "text-primary-foreground"
         )}
       />
       <Moon
         aria-hidden
         className={cn(
-          "relative size-3.5 transition-colors",
+          "relative size-4 transition-colors duration-[var(--duration-fast)] ease-out-soft",
           isDark ? "text-primary-foreground" : "text-muted-foreground"
         )}
       />

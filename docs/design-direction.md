@@ -46,9 +46,10 @@ immersion.
     one white sheet; the guild asked for more contrast on 2026-09-23.
 - **The header and the phone's tab bar are always an ink-navy band**, in both themes: the navigation
   frames the page, and on the light theme it is the strongest contrast on the screen.
-- The theme is picked from the account menu ("Giao diện": Sáng / Tối), or from a small palette
-  button in the header when signed out. Never a sun/moon toggle, and never the operating system's
-  preference: light stays the default until a member picks otherwise.
+- The theme is picked with a sun/moon pill (`ThemeSwitch`) right of the guild's name in the header,
+  signed in or out. Never the operating system's preference: light stays the default until a member
+  picks otherwise. The earlier "never a sun/moon toggle" rule was dropped on the guild's request, so
+  the switch sits one tap away instead of inside the account menu.
 - A minimal palette with fixed roles, the same in both themes:
 
 | Colour | Role |
