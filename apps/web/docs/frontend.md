@@ -219,6 +219,10 @@ since would be turned away. Hiding a nav link is cosmetic. Real enforcement is a
 inside each management page's server component (role and Grants from `/auth/me`), plus the guards on
 the API. A new management route needs both.
 
+Reading that cookie makes every route dynamic, and Next prefetches a dynamic route only up to its
+nearest `loading.js`. `app/loading.tsx` is that boundary for the whole app: without it a nav click
+waits for the full server render before the page changes, which in production reads as a dead click.
+
 ### Time and deadlines
 
 The week boundaries, the Saturday 22:00 rollover and every deadline rule are **the backend's
