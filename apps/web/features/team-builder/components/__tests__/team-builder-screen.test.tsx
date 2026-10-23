@@ -365,7 +365,9 @@ describe("TeamBuilderScreen - chế độ toàn màn hình", () => {
       fireEvent.click(screen.getByRole("button", { name: ENTER_NAME }));
     });
     fullscreen.element = document.documentElement;
-    fireEvent.keyDown(screen.getByRole("dialog", { name: DIALOG_NAME }), { key: "Escape" });
+    await act(async () => {
+      fireEvent.keyDown(screen.getByRole("dialog", { name: DIALOG_NAME }), { key: "Escape" });
+    });
 
     expect(exitFullscreen).toHaveBeenCalledTimes(1);
   });
@@ -379,7 +381,28 @@ describe("TeamBuilderScreen - chế độ toàn màn hình", () => {
       fireEvent.click(screen.getByRole("button", { name: ENTER_NAME }));
     });
     fullscreen.element = document.documentElement;
-    unmount();
+    await act(async () => unmount());
+
+    expect(exitFullscreen).toHaveBeenCalledTimes(1);
+  });
+
+  it("đóng trước khi trình duyệt kịp vào toàn màn hình thì vẫn thoát sau đó", async () => {
+    let grant = () => {};
+    const { exitFullscreen } = stubFullscreen(
+      () =>
+        new Promise<void>((resolve) => {
+          grant = resolve;
+        })
+    );
+    formationScreen.value = editableScreen();
+
+    render(<TeamBuilderScreen />);
+    fireEvent.click(screen.getByRole("button", { name: ENTER_NAME }));
+    fireEvent.click(screen.getByRole("button", { name: /Thoát toàn màn hình/ }));
+    await act(async () => {
+      fullscreen.element = document.documentElement;
+      grant();
+    });
 
     expect(exitFullscreen).toHaveBeenCalledTimes(1);
   });
