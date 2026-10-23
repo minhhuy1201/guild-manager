@@ -250,9 +250,9 @@ describe("proxy", () => {
     /**
      * Run the proxy for the login page with a valid session.
      * @param redirect - The `redirect` query value, omitted when undefined
-     * @returns Where the proxy sends the visitor, as a path
+     * @returns The URL the proxy sends the visitor to
      */
-    async function onwardTarget(redirect?: string): Promise<string | null> {
+    async function onwardUrl(redirect?: string): Promise<URL> {
       const path =
         redirect === undefined
           ? ROUTES.login
@@ -260,35 +260,31 @@ describe("proxy", () => {
       const response = await proxy(request(path, { access: await token(3600) }));
 
       expect(response.status).toBe(307);
-      const location = response.headers.get("location");
-      return location && new URL(location).pathname;
+      return new URL(response.headers.get("location") ?? "");
     }
 
     it("đưa thẳng tới nơi người ta định tới", async () => {
-      expect(await onwardTarget(ROUTES.attendanceHistory)).toBe(
+      expect((await onwardUrl(ROUTES.attendanceHistory)).pathname).toBe(
         ROUTES.attendanceHistory
       );
     });
 
     it("không nói đi đâu thì về màn điểm danh", async () => {
-      expect(await onwardTarget()).toBe(ROUTES.attendance);
+      expect((await onwardUrl()).pathname).toBe(ROUTES.attendance);
     });
 
-    // `redirect` is a URL parameter, and anyone in Discord can repost that button.
-    it("không đá người ta ra khỏi tên miền của mình", async () => {
-      const response = await proxy(
-        request(`${ROUTES.login}?redirect=${encodeURIComponent("//evil.example")}`, {
-          access: await token(3600),
-        })
-      );
+    // `redirect` is a URL parameter, and anyone in Discord can repost that button. A browser reads a
+    // backslash exactly as a slash, so `/\host` leaves the domain just as `//host` does. The host is
+    // asserted, not the path: every one of these resolves to the path `/` on the attacker's host.
+    it.each(["//evil.example", "/\\evil.example", "https://evil.example"])(
+      "không đá người ta ra khỏi tên miền của mình (%s)",
+      async (redirect) => {
+        const url = await onwardUrl(redirect);
 
-      expect(new URL(response.headers.get("location") ?? "").host).toBe(
-        "guild.test"
-      );
-      expect(await onwardTarget("https://evil.example")).toBe(ROUTES.attendance);
-      // A browser reads a backslash exactly as two slashes, so this leaves the domain too.
-      expect(await onwardTarget("/\\evil.example")).toBe(ROUTES.attendance);
-    });
+        expect(url.host).toBe("guild.test");
+        expect(url.pathname).toBe(ROUTES.attendance);
+      }
+    );
 
     it("vừa gia hạn phiên thì redirect vẫn mang cặp cookie mới", async () => {
       refreshRequest.mockResolvedValue(RENEWED);
