@@ -105,9 +105,10 @@ Zoom, giai đoạn đang mở, việc đang phát và các thay đổi chưa lư
   `lg`), focus mode của nửa cũ tắt theo `enabled` của hook. Viewer không tự thoát khi cửa sổ nhỏ
   lại.
 - **Nút vào:**
-  - Editor: nút `ghost` `sm` ở cụm phải của toolbar, trước "Xuất ảnh". Gồm icon `Maximize2`, chữ
-    "Toàn màn hình" (ẩn dưới `xl`, `aria-label` luôn có tên đầy đủ) và cap `Kbd` `F`. Nút ẩn trong
-    chế độ toàn màn hình, và ẩn dưới `lg`.
+  - Editor: nút `outline` `xs` (cùng cỡ với "Xuất ảnh") ở cụm phải của toolbar, trước "Xuất ảnh".
+    Gồm icon `Maximize2`, chữ "Toàn màn hình" (dưới `xl` chỉ còn `sr-only`, nên tên đầy đủ vẫn đọc
+    được) và cap `Kbd` `F`. Nút ẩn trong chế độ toàn màn hình, và ẩn dưới `lg`. Chế độ chỉ bật được
+    sau khi chiến thuật đã tải xong, vì khi đó khung mới tồn tại.
   - Viewer: luôn có một hàng điều khiển, kể cả khi chỉ có một giai đoạn. Hàng gồm tab, gợi ý `←` `→`
     và play / onion-skin khi có từ hai giai đoạn trở lên, cùng nút "Toàn màn hình" (`outline`
     `sm`, cap `F`) căn phải, giống nút của màn xếp đội.

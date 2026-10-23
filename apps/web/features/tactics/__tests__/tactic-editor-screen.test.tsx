@@ -858,6 +858,16 @@ describe("TacticEditorScreen - editor focus mode", () => {
     expect(enter).toBeLessThan(exportAt);
   });
 
+  it("ignores F while the tactic is still loading, so the page never goes fullscreen without a way out", async () => {
+    vi.mocked(fetchTactic).mockReturnValueOnce(new Promise(() => {}));
+    renderScreen(true);
+
+    fireEvent.keyDown(window, { key: "f" });
+
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(document.documentElement.requestFullscreen).not.toHaveBeenCalled();
+  });
+
   it("opens a dialog holding the toolbar and the stage bar, without the page header", async () => {
     fireEvent.click(await renderEditor());
 

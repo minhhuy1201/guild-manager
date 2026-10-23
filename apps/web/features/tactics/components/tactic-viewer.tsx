@@ -172,8 +172,10 @@ export function TacticViewer({ name, stages, notes }: TacticViewerProps) {
 
       <div
         ref={bodyRef}
+        // Focusable so it can take the focus back when the entry button is gone.
+        tabIndex={-1}
         className={cn(
-          "flex flex-col gap-3 lg:flex-row",
+          "flex flex-col gap-3 outline-none lg:flex-row",
           focus.active
             ? "min-h-0 flex-1 flex-row gap-0"
             : "lg:items-start"

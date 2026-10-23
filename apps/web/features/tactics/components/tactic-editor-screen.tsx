@@ -157,8 +157,10 @@ export function TacticEditorScreen({
     []
   );
   // A palette entry mid-drag owns Esc: the browser cancels the drag with it.
+  // Off until the tactic has loaded: the shell only renders then, and fullscreen without it has no
+  // exit button.
   const focus = useFocusMode(
-    canDraw,
+    canDraw && scene !== null,
     editor.draggedPaletteToken !== null,
     focusReturn
   );
@@ -200,9 +202,11 @@ export function TacticEditorScreen({
             >
               <div
                 ref={frameRef}
+                // Focusable so it can take the focus back when the entry button is gone.
+                tabIndex={-1}
                 data-testid="editor-frame"
                 className={cn(
-                  "flex flex-col",
+                  "flex flex-col outline-none",
                   focus.active
                     ? "min-h-0 flex-1 bg-card"
                     : "overflow-hidden rounded-container border bg-card shadow-sm"
@@ -282,7 +286,9 @@ export function TacticEditorScreen({
                       style={{ ...CANVAS_GRID_STYLE, width: mapWidth }}
                       className={cn(
                         "relative min-w-0 overflow-hidden bg-muted/30",
-                        focus.active ? "shrink-0 ring-1 ring-border" : "flex-1",
+                        focus.active
+                        ? "shrink-0 rounded-inner ring-1 ring-border"
+                        : "flex-1",
                         // Konva writes the hover cursor inline on its own container, so the drag cursor
                         // has to be marked important to be seen at all while panning.
                         stageZoom.panning &&
