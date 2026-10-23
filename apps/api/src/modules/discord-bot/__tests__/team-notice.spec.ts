@@ -54,14 +54,19 @@ describe('buildTeamNotice', () => {
     expect(content).not.toContain('(team 3)');
   });
 
-  it('nhắc giờ online bằng đúng mốc của tin channel: 45 phút trước giờ đánh', () => {
+  it('nhắc giờ online bằng đúng mốc của tin channel: 30 phút trước giờ đánh', () => {
     const { content } = buildTeamNotice(input());
 
-    expect(content).toContain('Online trước 19:45.');
+    expect(content).toContain('Online trước 20:00.');
   });
 
-  it('Guild War nhắc 19:30', () => {
-    const { content } = buildTeamNotice(input({ isGuildWar: true }));
+  it('Guild War 20:00 nhắc 19:30', () => {
+    const { content } = buildTeamNotice(
+      input({
+        isGuildWar: true,
+        dateTime: new Date('2026-08-08T13:00:00.000Z'),
+      }),
+    );
 
     expect(content).toContain('Online trước 19:30.');
   });
@@ -71,7 +76,7 @@ describe('buildTeamNotice', () => {
 
     expect(content.split('\n')).toEqual([
       '**SCRIM 20:30 19/08 - Trận 1/2**',
-      'Bạn ở **Hổ Báo** (team 3). Online trước 19:45.',
+      'Bạn ở **Hổ Báo** (team 3). Online trước 20:00.',
     ]);
   });
 
@@ -80,7 +85,7 @@ describe('buildTeamNotice', () => {
 
     expect(content.split('\n')).toEqual([
       '**SCRIM 20:30 19/08 - Trận 1/2**',
-      'Bạn ở **Hổ Báo** (team 3). Online trước 19:45.',
+      'Bạn ở **Hổ Báo** (team 3). Online trước 20:00.',
       `Xem đội hình trong <#${CHANNEL_ID}>.`,
     ]);
   });
@@ -119,7 +124,7 @@ describe('buildTeamNotice — lưu ý thêm', () => {
       '**SCRIM 20:30 19/08 - Trận 1/2**',
       '> Mang giáp',
       '> Vào sớm',
-      'Bạn ở **Hổ Báo** (team 3). Online trước 19:45.',
+      'Bạn ở **Hổ Báo** (team 3). Online trước 20:00.',
     ]);
   });
 

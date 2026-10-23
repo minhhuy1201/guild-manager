@@ -86,7 +86,7 @@ Online trước HH:mm.
 
 - "Trận i/n" dùng số trận theo lịch của ngày. Một đội hình dùng chung cho cả ngày 2 trận vẫn ghi theo quy tắc đã có của tiêu đề banner.
 - Tên team rỗng thì ghi "Team N".
-- Giờ online lấy từ cùng quy tắc giờ tập trung của Formation announcement (Guild War cố định, scrim lùi 45 phút); quy tắc đó được dùng chung, không viết lại.
+- Giờ online lấy từ cùng quy tắc giờ tập trung của Formation announcement (lùi 30 phút so với giờ đánh, chung cho scrim và Guild War); quy tắc đó được dùng chung, không viết lại.
 - `allowed_mentions` đóng hết (`parse: []`), vì note và tên team do admin gõ.
 - Nội dung luôn dưới 2000 ký tự: 6 dòng, tên và note đều đã có giới hạn độ dài. Test khẳng định điều này với tên và note dài nhất.
 
