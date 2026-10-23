@@ -29,7 +29,9 @@ export type AccessDecision =
   /** Send to the login page (carrying a return redirect) */
   | "login"
   /** Signed out at the site's root - send to the guild's public page */
-  | "landing";
+  | "landing"
+  /** Signed in at the login page - send on to where they were heading */
+  | "onward";
 
 /**
  * Decide whether a page request goes through, and where it is sent otherwise.
@@ -48,6 +50,11 @@ export function decideAccess({
   pathname: string;
   isSignedIn: boolean;
 }): AccessDecision {
+  // The login page has nothing for someone signed in. Answering here, not in the page, keeps it an
+  // immediate 307: behind the root loading boundary a page's redirect is streamed after a 200 and a
+  // skeleton. Exact path only - the OAuth callback under it still has to run.
+  if (isSignedIn && pathname === ROUTES.login) return "onward";
+
   const isPublic = PUBLIC_PATH_PREFIXES.some((prefix) =>
     isUnder(pathname, prefix)
   );

@@ -144,9 +144,15 @@ Directory. The full reasoning is in the
 `apps/api` runs as a Vercel Function, **not** as a long-lived process — an earlier version of this
 document said it needed one. Two things make that work: Vercel's zero-config NestJS detection (it
 builds `src/main.ts` as-is, no build config and no serverless handler to write — the `vercel.json`
-there only turns Vercel's own git deploys off), and Fluid compute,
+there only turns Vercel's own git deploys off and pins the region), and Fluid compute,
 which keeps the instance alive between invocations so the pg pool is reused. That is why the pooler
 choice in section 5 does not change.
+
+**Both projects run their functions in `hnd1` (Tokyo, AWS `ap-northeast-1`)**, pinned by `regions`
+in each app's `vercel.json`. That is the Supabase region, and the closest compute region to the guild
+in Vietnam. Vercel's default is `iad1` (Washington, D.C.), where every page render crossed the
+Pacific twice: web to API, then API to the database for each query. Keep the two projects and the
+database in one region; moving one alone brings the round trips back.
 
 ### Deploying
 

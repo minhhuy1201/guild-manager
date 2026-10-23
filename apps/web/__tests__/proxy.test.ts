@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   ACCESS_TOKEN_COOKIE,
+  ACCESS_TOKEN_MAX_AGE,
   REFRESH_TOKEN_COOKIE,
   WEB_AUTH_ERROR,
 } from "@/features/auth/core";
@@ -242,6 +243,80 @@ describe("proxy", () => {
 
       const location = new URL(response.headers.get("location") ?? "");
       expect(location.searchParams.get("error")).toBeNull();
+    });
+  });
+
+  describe("khi người đã đăng nhập mở trang đăng nhập", () => {
+    /**
+     * Run the proxy for the login page with a valid session.
+     * @param redirect - The `redirect` query value, omitted when undefined
+     * @returns The URL the proxy sends the visitor to
+     */
+    async function onwardUrl(redirect?: string): Promise<URL> {
+      const path =
+        redirect === undefined
+          ? ROUTES.login
+          : `${ROUTES.login}?redirect=${encodeURIComponent(redirect)}`;
+      const response = await proxy(request(path, { access: await token(3600) }));
+
+      expect(response.status).toBe(307);
+      return new URL(response.headers.get("location") ?? "");
+    }
+
+    it("đưa thẳng tới nơi người ta định tới", async () => {
+      expect((await onwardUrl(ROUTES.attendanceHistory)).pathname).toBe(
+        ROUTES.attendanceHistory
+      );
+    });
+
+    it("không nói đi đâu thì về màn điểm danh", async () => {
+      expect((await onwardUrl()).pathname).toBe(ROUTES.attendance);
+    });
+
+    // `redirect` is a URL parameter, and anyone in Discord can repost that button. A browser reads a
+    // backslash exactly as a slash, so `/\host` leaves the domain just as `//host` does. The host is
+    // asserted, not the path: every one of these resolves to the path `/` on the attacker's host.
+    it.each(["//evil.example", "/\\evil.example", "https://evil.example"])(
+      "không đá người ta ra khỏi tên miền của mình (%s)",
+      async (redirect) => {
+        const url = await onwardUrl(redirect);
+
+        expect(url.host).toBe("guild.test");
+        expect(url.pathname).toBe(ROUTES.attendance);
+      }
+    );
+
+    it("vừa gia hạn phiên thì redirect vẫn mang cặp cookie mới", async () => {
+      refreshRequest.mockResolvedValue(RENEWED);
+
+      const response = await proxy(
+        request(ROUTES.login, {
+          access: await token(-10),
+          refresh: await token(3600),
+        })
+      );
+
+      expect(response.status).toBe(307);
+      expect(response.cookies.get(ACCESS_TOKEN_COOKIE)?.value).toBe(
+        RENEWED.accessToken
+      );
+      expect(response.cookies.get(REFRESH_TOKEN_COOKIE)?.value).toBe(
+        RENEWED.refreshToken
+      );
+      // Copying only name and value would leave the session readable by scripts and expiring with
+      // the tab.
+      const access = response.cookies.get(ACCESS_TOKEN_COOKIE);
+      expect(access?.httpOnly).toBe(true);
+      expect(access?.maxAge).toBe(ACCESS_TOKEN_MAX_AGE);
+    });
+
+    it("vẫn cho callback OAuth chạy", async () => {
+      const response = await proxy(
+        request(ROUTES.loginCallback, { access: await token(3600) })
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get("location")).toBeNull();
     });
   });
 

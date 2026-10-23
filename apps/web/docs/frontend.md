@@ -213,11 +213,29 @@ cookies. `proxy.ts` runs before every page request and does two things:
   cannot live in a Server Component. It writes the new tokens onto both the request (so this
   render sees them) and the response (so the browser keeps them).
 - **Redirects anonymous visitors** to the login page or, at the root, the landing page.
+- **Sends a signed-in visitor at `/dang-nhap` on** to its `redirect` target (through `safeRedirect`).
+  The Discord bot's "Mở website" button routes every member through that page, and only the proxy
+  can answer it with an immediate 307.
 
 The proxy does not judge management routes: the token's role can be a day old, so a Member promoted
 since would be turned away. Hiding a nav link is cosmetic. Real enforcement is a `getActor()` check
 inside each management page's server component (role and Grants from `/auth/me`), plus the guards on
 the API. A new management route needs both.
+
+Reading that cookie makes every route dynamic, and Next prefetches a dynamic route only up to its
+nearest `loading.js`. `app/loading.tsx` is that boundary for the whole app: without it a nav click
+waits for the full server render before the page changes, which in production reads as a dead click.
+
+The cost: a `redirect()` or `notFound()` thrown in a page under that boundary is streamed after a
+`200` and the skeleton, not answered with a 307 or 404. That is accepted for the Capability redirects
+and for `notFound` in the `[id]` routes, which only reach someone without a Grant or holding a dead
+link. A redirect that most visitors hit belongs in `proxy.ts`, as the login page's does.
+
+The root boundary is also the first one a prefetch meets, so a `loading.tsx` nested in a route (the
+login or landing page, say) is never prefetched: the click shows the root shell, and the nested one
+only appears after it. Checked on a production build: with `app/loading.tsx` present the prefetch of
+`/trang-chu` carried the root shell, and with it removed the route's own. A page whose shape differs
+from the root shell therefore shows a brief mismatch; that is accepted.
 
 ### Time and deadlines
 

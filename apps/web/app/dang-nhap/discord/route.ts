@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { safeRedirect } from "@guild/shared/lib";
 
 import { ROUTES } from "@/config/routes";
 import { createSession } from "@/features/auth/server";
@@ -17,8 +18,7 @@ const EXPIRED_ERROR = "phien-het-han";
  */
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const code = request.nextUrl.searchParams.get("exchange");
-  const redirect =
-    request.nextUrl.searchParams.get("redirect") ?? ROUTES.attendance;
+  const redirect = request.nextUrl.searchParams.get("redirect") ?? undefined;
 
   const tokens = code ? await exchangeRequest(code).catch(() => null) : null;
   if (!tokens) {
@@ -29,11 +29,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   await createSession(tokens);
 
-  // Relative paths only — the same reason as `safeRedirect` on the API.
-  const target =
-    redirect.startsWith("/") && !redirect.startsWith("//")
-      ? redirect
-      : ROUTES.attendance;
-
-  return NextResponse.redirect(new URL(target, request.url));
+  // `redirect` is a query parameter. The hand-written check this replaced let `/\host` through, which
+  // a browser reads as `//host`; `safeRedirect` is the one rule the API and the proxy apply too.
+  return NextResponse.redirect(new URL(safeRedirect(redirect), request.url));
 }
