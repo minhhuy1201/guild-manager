@@ -21,6 +21,7 @@ import { useTablePagination } from "@/hooks/use-table-pagination";
 import { errorMessageOf } from "@/lib/error-message";
 import { cn } from "@/lib/utils";
 import { useAttendanceBoard } from "../hooks/use-attendance-board";
+import { useBattleClock } from "../hooks/use-battle-clock";
 import { useDeadlineRefresh } from "../hooks/use-deadline-refresh";
 import {
   useAttendanceRecords,
@@ -30,6 +31,7 @@ import {
   useMarkAttendance,
 } from "../hooks/use-attendance";
 import { countDayTotals, type DayTotals } from "../lib/day-totals";
+import { splitFoughtBattles } from "../lib/fought-battles";
 import { clickCell, type GridDraft } from "../lib/grid-draft";
 import { recordKey } from "../lib/record-key";
 import { getSessionSubtitle } from "../lib/session-subtitle";
@@ -102,6 +104,7 @@ export function AttendanceGrid({ canManageOthers }: AttendanceGridProps) {
   const recoverSession = useSessionRecovery();
   const state = useAttendanceBoard();
   const unansweredOnly = useAttendanceFilterStore((s) => s.unansweredOnly);
+  const showFought = useAttendanceFilterStore((s) => s.showFought);
 
   const [draft, setDraft] = useState<GridDraft>(EMPTY_DRAFT);
   const [saving, setSaving] = useState(false);
@@ -110,6 +113,12 @@ export function AttendanceGrid({ canManageOthers }: AttendanceGridProps) {
   const battleSessions = sessions ?? EMPTY_SESSIONS;
   const recordMap = records ?? EMPTY_RECORDS;
   const changeCount = Object.keys(draft).length;
+
+  // The columns on screen: the battles still to come, plus the fought ones when asked for. The
+  // header, the totals row, the rows and the column count all read this one list.
+  const now = useBattleClock(battleSessions);
+  const { upcoming, fought } = splitFoughtBattles(battleSessions, now);
+  const shownSessions = showFought ? battleSessions : upcoming;
 
   const visibleCharacters = useMemo(
     () =>
@@ -151,7 +160,7 @@ export function AttendanceGrid({ canManageOthers }: AttendanceGridProps) {
   // about how many columns there are, or the whole width recomputes when data lands.
   const dayColumns = state.isPending
     ? PLACEHOLDER_DAY_COLUMNS
-    : battleSessions.length;
+    : shownSessions.length;
   const columns = dayColumns + 1; // name + days
 
   useDeadlineRefresh(battleSessions);
@@ -236,7 +245,7 @@ export function AttendanceGrid({ canManageOthers }: AttendanceGridProps) {
     <Card>
       <CardHeader className="gap-4">
         <SectionTitle>Điểm danh theo ngày đánh</SectionTitle>
-        <AttendanceFilters scope="attendance" />
+        <AttendanceFilters scope="attendance" foughtCount={fought.length} />
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         {!state.isError && !state.isPending && battleSessions.length > 0 && (
@@ -257,7 +266,7 @@ export function AttendanceGrid({ canManageOthers }: AttendanceGridProps) {
                         <Skeleton className="mx-auto h-5 w-20" />
                       </TableHead>
                     ))
-                  : battleSessions.map((session) => {
+                  : shownSessions.map((session) => {
                       const subtitle = getSessionSubtitle(session);
                       return (
                         <TableHead key={session.id} className={DAY_COLUMN}>
@@ -294,7 +303,7 @@ export function AttendanceGrid({ canManageOthers }: AttendanceGridProps) {
                         <Skeleton className="mx-auto h-6 w-24" />
                       </TableCell>
                     ))
-                  : battleSessions.map((session) => (
+                  : shownSessions.map((session) => (
                       <DayTotalsCell
                         key={session.id}
                         session={session}
@@ -312,7 +321,7 @@ export function AttendanceGrid({ canManageOthers }: AttendanceGridProps) {
             <AttendanceRow
               key={character.id}
               character={character}
-              sessions={battleSessions}
+              sessions={shownSessions}
               recordMap={recordMap}
               canEdit={canManageOthers}
               disabled={saving}

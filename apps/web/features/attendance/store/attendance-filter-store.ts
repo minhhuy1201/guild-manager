@@ -16,6 +16,12 @@ interface AttendanceFilterState {
    */
   unansweredOnly: boolean;
   setUnansweredOnly: (value: boolean) => void;
+  /**
+   * The Attendance grid only: bring back the columns of battles already fought. Off by default, so
+   * the grid opens on the battles still to come.
+   */
+  showFought: boolean;
+  setShowFought: (value: boolean) => void;
   /** Presence filter of the History screen only — the Attendance grid shows both answers at once. */
   presence: AttendancePresenceFilter;
   setPresence: (value: AttendancePresenceFilter) => void;
@@ -54,6 +60,8 @@ export const useAttendanceFilterStore = create<AttendanceFilterState>((set) => (
     set((state) => ({ filters: { ...state.filters, [scope]: value } })),
   unansweredOnly: false,
   setUnansweredOnly: (value) => set({ unansweredOnly: value }),
+  showFought: false,
+  setShowFought: (value) => set({ showFought: value }),
   presence: "all",
   setPresence: (value) => set({ presence: value }),
   sessionId: null,

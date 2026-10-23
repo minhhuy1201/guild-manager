@@ -130,7 +130,7 @@ beforeEach(() => {
   records = {};
   mutateAsync.mockReset();
   mutateAsync.mockResolvedValue(undefined);
-  useAttendanceFilterStore.setState({ unansweredOnly: false });
+  useAttendanceFilterStore.setState({ unansweredOnly: false, showFought: false });
 });
 
 describe("AttendanceGrid - bố cục", () => {
@@ -327,5 +327,89 @@ describe("AttendanceGrid - admin bấm thẳng vào ô", () => {
     render(<AttendanceGrid canManageOthers={false} />);
 
     expect(screen.queryAllByRole("button", { name: /Trận a/ })).toHaveLength(0);
+  });
+});
+
+describe("AttendanceGrid - trận đã đánh", () => {
+  // Wednesday noon: Monday's and Tuesday's battles are over, Thursday's is still to come.
+  const NOW = new Date("2026-08-26T12:00:00.000Z");
+
+  /**
+   * Build a battle at the given time.
+   * @param id - Session id
+   * @param dateTime - Battle time (ISO)
+   * @returns The session
+   */
+  function battleAt(id: string, dateTime: string): BattleSession {
+    return { ...makeSession(id), dateTime };
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date", "setTimeout", "clearTimeout"] });
+    vi.setSystemTime(NOW);
+    sessions = [
+      battleAt("a", "2026-08-24T20:00:00.000Z"),
+      battleAt("b", "2026-08-25T20:00:00.000Z"),
+      battleAt("c", "2026-08-27T20:00:00.000Z"),
+    ];
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("mặc định chỉ có cột trận sắp tới, hàng tổng theo cột đang hiện", () => {
+    const { container } = render(<AttendanceGrid canManageOthers />);
+
+    expect(screen.queryByText("Trận a")).toBeNull();
+    expect(screen.queryByText("Trận b")).toBeNull();
+    expect(screen.getByText("Trận c")).toBeTruthy();
+    expect(container.querySelectorAll("thead tr:first-child th")).toHaveLength(2);
+    expect(container.querySelectorAll("thead tr:nth-child(2) td")).toHaveLength(2);
+  });
+
+  it("nút Đã đánh ghi số cột ẩn, bật thì cột và số tổng của chúng hiện lại", () => {
+    const { container } = render(<AttendanceGrid canManageOthers />);
+
+    fireEvent.click(screen.getByRole("button", { name: /^Đã đánh \(2\)/ }));
+
+    expect(screen.getByText("Trận a")).toBeTruthy();
+    expect(screen.getByText("Trận b")).toBeTruthy();
+    expect(container.querySelectorAll("thead tr:first-child th")).toHaveLength(4);
+    expect(container.querySelectorAll("thead tr:nth-child(2) td")).toHaveLength(4);
+  });
+
+  it("chưa có trận nào đã đánh thì không có nút", () => {
+    vi.setSystemTime(new Date("2026-08-23T12:00:00.000Z"));
+
+    render(<AttendanceGrid canManageOthers />);
+
+    expect(screen.queryByRole("button", { name: /^Đã đánh/ })).toBeNull();
+    expect(screen.getByText("Trận a")).toBeTruthy();
+  });
+
+  it("tất cả đã đánh thì hiện hết cột, không có nút", () => {
+    vi.setSystemTime(new Date("2026-08-28T12:00:00.000Z"));
+
+    render(<AttendanceGrid canManageOthers />);
+
+    expect(screen.queryByRole("button", { name: /^Đã đánh/ })).toBeNull();
+    expect(screen.getByText("Trận a")).toBeTruthy();
+    expect(screen.getByText("Trận c")).toBeTruthy();
+  });
+
+  it("tới giờ đánh khi trang đang mở thì cột đó tự ẩn", () => {
+    render(<AttendanceGrid canManageOthers />);
+    expect(screen.getByText("Trận c")).toBeTruthy();
+    sessions = [...sessions, battleAt("d", "2026-08-28T20:00:00.000Z")];
+
+    act(() => {
+      vi.advanceTimersByTime(
+        new Date("2026-08-27T20:00:01.000Z").getTime() - NOW.getTime()
+      );
+    });
+
+    expect(screen.queryByText("Trận c")).toBeNull();
+    expect(screen.getByText("Trận d")).toBeTruthy();
   });
 });
