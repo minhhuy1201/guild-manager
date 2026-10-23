@@ -231,6 +231,12 @@ The cost: a `redirect()` or `notFound()` thrown in a page under that boundary is
 and for `notFound` in the `[id]` routes, which only reach someone without a Grant or holding a dead
 link. A redirect that most visitors hit belongs in `proxy.ts`, as the login page's does.
 
+The root boundary is also the first one a prefetch meets, so a `loading.tsx` nested in a route (the
+login or landing page, say) is never prefetched: the click shows the root shell, and the nested one
+only appears after it. Checked on a production build: with `app/loading.tsx` present the prefetch of
+`/trang-chu` carried the root shell, and with it removed the route's own. A page whose shape differs
+from the root shell therefore shows a brief mismatch; that is accepted.
+
 ### Time and deadlines
 
 The week boundaries, the Saturday 22:00 rollover and every deadline rule are **the backend's
