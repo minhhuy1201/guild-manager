@@ -287,8 +287,8 @@ export function TacticEditorScreen({
                       className={cn(
                         "relative min-w-0 overflow-hidden bg-muted/30",
                         focus.active
-                        ? "shrink-0 rounded-inner ring-1 ring-border"
-                        : "flex-1",
+                          ? "shrink-0 rounded-inner ring-1 ring-border"
+                          : "flex-1",
                         // Konva writes the hover cursor inline on its own container, so the drag cursor
                         // has to be marked important to be seen at all while panning.
                         stageZoom.panning &&
