@@ -311,6 +311,7 @@ export function TeamBuilderScreen() {
           blocked={dirty}
           sending={announce.sending}
           notifyMembers={announce.notifyMembers}
+          session={activeSession}
           note={announce.note}
           onNoteChange={announce.setNote}
           outcome={announce.outcome}
