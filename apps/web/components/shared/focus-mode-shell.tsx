@@ -142,7 +142,10 @@ export function FocusModeShell({
             onClick={onExit}
             aria-label="Thoát toàn màn hình"
             data-idle={hideExit ? "" : undefined}
-            className={cn(hideExit && "pointer-events-none opacity-0")}
+            className={cn(
+              "duration-[var(--duration-base)] ease-out-soft",
+              hideExit && "pointer-events-none opacity-0"
+            )}
           >
             <X />
             <Kbd aria-hidden>Esc</Kbd>

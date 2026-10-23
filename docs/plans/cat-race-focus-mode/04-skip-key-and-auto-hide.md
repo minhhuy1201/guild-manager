@@ -4,8 +4,8 @@ Spec: [`docs/specs/cat-race-focus-mode.md`](../../specs/cat-race-focus-mode.md).
 
 **What to build:** Admin bấm `S` khi đang đua để bỏ qua tới thẻ người thắng, ở cả trang thường lẫn
 toàn màn hình. Nút Bỏ qua hiện cap `S`. Trong chế độ toàn màn hình, khi đang đua mà chuột đứng yên 2
-giây thì tấm nút, nút ✕ và con trỏ mờ đi. Rê chuột hoặc focus bằng bàn phím vào tấm nút thì chúng
-hiện lại ngay và đếm lại từ đầu. Khi chưa đua hoặc đang rút thì tấm nút luôn hiện. Khi đang hiện kết quả thì tấm nút không có mặt
+giây thì tấm nút, nút ✕ và con trỏ mờ đi. Rê chuột thì chúng hiện lại ngay và đếm lại từ
+đầu. Focus bằng bàn phím vào tấm nút hoặc ✕ thì chúng hiện và giữ nguyên tới khi focus rời đi. Khi chưa đua hoặc đang rút thì tấm nút luôn hiện. Khi đang hiện kết quả thì tấm nút không có mặt
 (ticket 02 đã làm vậy).
 Nút đang ẩn vẫn focus được bằng bàn phím.
 

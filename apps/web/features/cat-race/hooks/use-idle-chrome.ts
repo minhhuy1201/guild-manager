@@ -1,51 +1,64 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 /** How long the pointer may rest before the focus mode's controls fade out. */
 export const CHROME_IDLE_MS = 2000;
 
-interface IdleChrome {
-  /** Whether the controls should be faded out right now */
-  idle: boolean;
-  /** Show the controls again and restart the countdown */
-  wake: () => void;
+/**
+ * Whether keyboard focus sits on a control. The focus mode frame itself takes focus with
+ * `tabIndex={-1}` when it opens; that is not a control and must not hold the controls up.
+ * @param target - The element that has focus
+ * @returns True for an element in the Tab order
+ */
+function isControl(target: EventTarget | null) {
+  return target instanceof HTMLElement && target.tabIndex >= 0;
 }
 
 /**
  * Tracks whether the pointer has rested long enough for a broadcast screen to hide its controls.
- * While disabled nothing listens and `idle` stays false.
+ * A pointer move shows them and restarts the countdown. While a control has focus they stay shown,
+ * so a keyboard user never tabs onto something invisible; the countdown restarts once focus leaves.
+ * While disabled nothing listens and the flag stays false.
  * @param enabled - Whether the controls may hide at all
- * @returns The idle flag and a way to wake the controls (a keyboard focus has to)
+ * @returns Whether the controls should be faded out right now
  */
-export function useIdleChrome(enabled: boolean): IdleChrome {
+export function useIdleChrome(enabled: boolean): boolean {
   const [idle, setIdle] = useState(false);
-  const timer = useRef<number | undefined>(undefined);
-
-  const arm = useCallback(() => {
-    window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(() => setIdle(true), CHROME_IDLE_MS);
-  }, []);
-
-  const wake = useCallback(() => {
-    if (!enabled) return;
-
-    setIdle(false);
-    arm();
-  }, [enabled, arm]);
 
   useEffect(() => {
     if (!enabled) return;
 
-    arm();
+    let timer: number | undefined;
+    let isHeld = isControl(document.activeElement);
+
+    const wake = () => {
+      setIdle(false);
+      window.clearTimeout(timer);
+      if (!isHeld) timer = window.setTimeout(() => setIdle(true), CHROME_IDLE_MS);
+    };
+    const holdOn = (event: FocusEvent) => {
+      isHeld = isControl(event.target);
+      wake();
+    };
+    const release = () => {
+      isHeld = false;
+      wake();
+    };
+
+    wake();
     window.addEventListener("pointermove", wake);
+    window.addEventListener("focusin", holdOn);
+    window.addEventListener("focusout", release);
 
     return () => {
       window.removeEventListener("pointermove", wake);
-      window.clearTimeout(timer.current);
+      window.removeEventListener("focusin", holdOn);
+      window.removeEventListener("focusout", release);
+      window.clearTimeout(timer);
       setIdle(false);
     };
-  }, [enabled, arm, wake]);
+  }, [enabled]);
 
-  return { idle: enabled && idle, wake };
+  return enabled && idle;
 }

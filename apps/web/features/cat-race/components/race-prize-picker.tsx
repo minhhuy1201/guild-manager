@@ -32,10 +32,13 @@ export function RacePrizePicker({ event, prize, disabled, onSelect }: RacePrizeP
       disabled={disabled}
       onValueChange={(prizeId) => prizeId && onSelect(prizeId)}
     >
+      {/* The broadcast bar is always `.dark`, so the trigger's `dark:` fills are what apply; they
+          are replaced with the neutral hover so viewers still see the plain tier label. */}
       <SelectTrigger
+        size="sm"
         aria-label="Chọn hạng mục"
         data-tier={prize.tier}
-        className="race-tier h-auto w-fit bg-transparent py-[inherit] pr-2 pl-[inherit] text-[length:inherit] font-[inherit] dark:bg-transparent dark:hover:bg-transparent"
+        className="race-tier w-fit py-[inherit] pr-2 pl-[inherit] text-[length:inherit] font-[inherit] dark:bg-transparent dark:hover:bg-foreground/5 dark:data-popup-open:bg-foreground/10"
       >
         <TierIcon aria-hidden className="size-4" />
         {PRIZE_TIER_LABEL[prize.tier]} · {prize.name}

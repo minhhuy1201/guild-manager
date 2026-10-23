@@ -137,7 +137,8 @@ Thoát bằng `Esc` hoặc nút ✕. Cuộc đua đang chạy vẫn chạy tiế
 - **Tự ẩn:**
   - Chỉ khi đang đua (`stage === "racing"`). Sau 2 giây chuột đứng yên, tấm nút và nút ✕ fade về
     opacity 0 và không nhận click. Con trỏ chuột ẩn trên lớp phủ.
-  - Rê chuột hoặc focus bằng bàn phím vào tấm nút thì hiện lại ngay và đếm lại từ đầu.
+  - Rê chuột thì hiện lại ngay và đếm lại từ đầu. Focus bằng bàn phím vào tấm nút hoặc nút ✕ thì
+    hiện lại và giữ nguyên chừng nào focus còn ở đó. Focus rời đi thì đếm lại từ đầu.
   - Khi chưa đua và khi đang rút thì luôn hiện. Khi đang hiện kết quả thì tấm nút không có mặt, vì
     ĐUA đang bị khoá và thẻ người thắng đã có "Đua tiếp". Đặt thời gian 2 giây thành một hằng số có
     tên.

@@ -88,7 +88,7 @@ export function RaceStage({
   const [overlay, setOverlay] = useState(INITIAL_OVERLAY);
 
   const isFocused = focus.active;
-  const { idle, wake } = useIdleChrome(isFocused && stage === "racing");
+  const idle = useIdleChrome(isFocused && stage === "racing");
 
   const skip = () => setSkipSignal((n) => n + 1);
 
@@ -367,7 +367,6 @@ export function RaceStage({
             <div
               data-slot="cat-race-plate"
               data-idle={idle ? "" : undefined}
-              onFocusCapture={wake}
               className={cn(
                 "pointer-events-none absolute inset-x-0 bottom-5 flex justify-center px-4 transition-opacity duration-[var(--duration-base)] ease-out-soft",
                 idle && "opacity-0"

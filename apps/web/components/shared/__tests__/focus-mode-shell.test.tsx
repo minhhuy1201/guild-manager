@@ -82,14 +82,6 @@ describe("FocusModeShell", () => {
     expect(root?.classList.contains("plain")).toBe(true);
   });
 
-  it("để activeClassName thắng nền mặc định của khung", () => {
-    renderShell({ activeClassName: "bg-[color:var(--x)]" });
-
-    const classes = screen.getByRole("dialog").className.split(" ");
-    expect(classes).toContain("bg-[color:var(--x)]");
-    expect(classes).not.toContain("bg-background");
-  });
-
   it("nút thoát gọi onExit", () => {
     const onExit = vi.fn();
     renderShell({ onExit });

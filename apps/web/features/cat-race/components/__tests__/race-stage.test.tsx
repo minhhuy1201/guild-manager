@@ -708,6 +708,30 @@ describe("RaceStage auto-hide", () => {
     expect(idle(plate)).toBe(false);
   });
 
+  it("shows the exit button again when Tab lands on it while hidden", async () => {
+    await startRacing(true);
+    act(() => void vi.advanceTimersByTime(2000));
+    const { exit } = chrome();
+    expect(idle(exit)).toBe(true);
+
+    act(() => exit.focus());
+
+    expect(idle(exit)).toBe(false);
+  });
+
+  it("keeps the controls shown while one has focus, and hides them 2s after focus leaves", async () => {
+    await startRacing(true);
+    const skip = screen.getByRole("button", { name: "Bỏ qua" });
+    act(() => skip.focus());
+
+    act(() => void vi.advanceTimersByTime(5000));
+    expect(idle(chrome().plate)).toBe(false);
+
+    act(() => skip.blur());
+    act(() => void vi.advanceTimersByTime(2000));
+    expect(idle(chrome().plate)).toBe(true);
+  });
+
   it("never hides outside focus mode", async () => {
     await startRacing(false);
 
