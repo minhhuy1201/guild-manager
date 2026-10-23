@@ -18,7 +18,7 @@ import { formatLeaveRange } from "../lib/leave-label";
 import { LeaveRangeField } from "./leave-range-field";
 import { MemberPicker } from "./member-picker";
 
-const PICK_START_ERROR = "Vui lòng chọn ngày nghỉ.";
+const PICK_DAYS_ERROR = "Vui lòng chọn ngày nghỉ.";
 const PICK_MEMBER_ERROR = "Vui lòng chọn thành viên.";
 
 interface LeaveDialogProps {
@@ -105,7 +105,7 @@ function LeaveForm({
    * @returns A promise resolving once saved
    */
   async function submitLeave() {
-    if (!startDay) throw new Error(PICK_START_ERROR);
+    if (!startDay) throw new Error(PICK_DAYS_ERROR);
     if (!characterId) throw new Error(PICK_MEMBER_ERROR);
 
     await createLeave.mutateAsync({

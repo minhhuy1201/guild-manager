@@ -1,13 +1,13 @@
-# 02: Leave range picked from today
+# 02: Chọn khoảng ngày nghỉ từ hôm nay
 
-**What to build:** The leave dialog picks the whole leave with one range calendar. Days before today (Vietnam time) cannot be picked by anyone, admins included. One click then filing is a one-day leave. The server refuses a leave starting before today for everyone, and `docs/architecture.md` states the new rule.
+**What to build:** Hộp thoại xin nghỉ chọn cả khoảng ngày bằng một lịch chọn khoảng. Không ai chọn được ngày trước hôm nay (giờ VN), admin cũng vậy. Bấm một ngày rồi khai là nghỉ một ngày. Server từ chối nghỉ bắt đầu trước hôm nay với mọi người, và `docs/architecture.md` nêu luật mới.
 
 **Blocked by:** None (can start immediately).
 
 **Status:** done
 
-- [x] One button opens a `range` calendar showing `dd/mm → dd/mm`; earlier days are disabled.
-- [x] Filing with no day picked shows the existing "pick a start day" error.
-- [x] `POST /leaves` returns 400 when `startDate` is before today, for members and admins.
-- [x] `docs/architecture.md` no longer grants admins past days.
-- [x] Web and API tests cover the new behaviour.
+- [x] Một nút mở lịch `range`, hiện `dd/mm → dd/mm`; các ngày trước hôm nay bị disable.
+- [x] Khai khi chưa chọn ngày thì hiện lỗi "Vui lòng chọn ngày nghỉ."
+- [x] `POST /leaves` trả 400 khi `startDate` trước hôm nay, với thành viên lẫn admin.
+- [x] `docs/architecture.md` không còn cho admin khai nghỉ ngày đã qua.
+- [x] Có test cho hành vi mới ở web và API.

@@ -1,13 +1,14 @@
-# 01: Lock fought scrims
+# 01: Khoá trận đã đánh
 
-**What to build:** In Settings > Lịch đánh, a scrim whose battle time has passed (a fought battle) can no longer be edited or deleted. Its Edit and Delete buttons are disabled and a tooltip gives the reason. The lock appears the moment the battle time passes, without a reload. The API refuses the same update and delete with a 400.
+**What to build:** Ở Thiết lập > Lịch đánh, trận đã qua giờ đánh (trận đã đánh) không còn sửa hay xoá được. Nút Sửa và Xoá bị disable, có tooltip nêu lý do và nhãn "Đã đánh" ngay trên dòng. Nút tự khoá đúng lúc qua giờ đánh mà không cần tải lại trang. API từ chối cùng thao tác bằng 400, và cũng từ chối tạo hoặc dời trận về giờ đã qua.
 
 **Blocked by:** None (can start immediately).
 
 **Status:** done
 
-- [x] A scrim with `dateTime <= now` has disabled Edit and Delete buttons; the tooltip still shows on a disabled button and says why.
-- [x] The buttons lock when the battle time passes while the page is open.
-- [x] `PATCH` and `DELETE` on such a session return 400 with a Vietnamese message; the opponent name cannot change either.
-- [x] Upcoming scrims and the Guild War rules are unchanged; the API lock covers any fought battle, a Guild War included.
-- [x] Web and API tests cover both sides.
+- [x] Trận có `dateTime <= now` có nút Sửa và Xoá bị disable; tooltip vẫn hiện trên nút disable và nói rõ lý do.
+- [x] Nút khoá khi qua giờ đánh lúc trang đang mở.
+- [x] `PATCH` và `DELETE` trên trận đó trả 400 kèm câu tiếng Việt; đổi tên đối thủ cũng bị chặn.
+- [x] Tạo hoặc dời trận về giờ đã qua trả 400.
+- [x] Trận chưa đánh và luật Bang Chiến giữ nguyên; khoá ở API áp cho mọi trận đã đánh, kể cả Bang Chiến.
+- [x] Có test cho cả web và API.
