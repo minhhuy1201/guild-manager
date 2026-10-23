@@ -489,6 +489,9 @@
   --stage-card-top: #2c2033;
   --stage-lantern-off: #3a2328;
   --stage-lantern-cap: #6b5333;
+  --stage-signal-red: #d9483c;
+  --stage-signal-amber: #e3a63c;
+  --stage-signal-green: #58b87c;
   --stage-silver: #c9ced6;
   --stage-bronze: #c98a52;
   /* The one place to point the overlay lettering at the stage's display face: Bungee, whose
@@ -566,23 +569,37 @@
   transition: opacity var(--stage-chip-duration) ease;
 }
 .race-countdown[data-on="true"] { opacity: 1; }
-.race-lanterns { display: flex; gap: 22px; }
+.race-lanterns {
+  display: flex;
+  gap: 16px;
+  padding: 14px 18px;
+  background: var(--stage-plate);
+  border: 3px solid var(--stage-lantern-cap);
+  border-radius: 22px;
+}
 .race-lantern {
-  width: 34px;
-  height: 44px;
-  border-radius: 12px;
-  background: var(--stage-lantern-off);
-  border-top: 5px solid var(--stage-lantern-cap);
-  border-bottom: 5px solid var(--stage-lantern-cap);
+  --lamp: var(--stage-lantern-off);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--lamp) 28%, var(--stage-lantern-off));
   transition: background var(--stage-lantern-duration) ease, box-shadow var(--stage-lantern-duration) ease;
 }
-.race-lantern[data-lit="true"] { background: var(--stage-lacquer); box-shadow: 0 0 28px 6px #c8372d99; }
-.race-lantern[data-gold="true"][data-lit="true"] { background: var(--stage-gold); box-shadow: 0 0 34px 8px #e8b84aaa; }
+.race-lantern[data-signal="red"],
+.race-digit[data-signal="red"] { --lamp: var(--stage-signal-red); }
+.race-lantern[data-signal="amber"],
+.race-digit[data-signal="amber"] { --lamp: var(--stage-signal-amber); }
+.race-lantern[data-signal="green"],
+.race-digit[data-signal="green"] { --lamp: var(--stage-signal-green); }
+.race-lantern[data-lit="true"] {
+  background: var(--lamp);
+  box-shadow: 0 0 28px 8px color-mix(in srgb, var(--lamp) 60%, transparent);
+}
 .race-digit {
   font-size: clamp(64px, 14vw, 132px);
   line-height: 1;
-  color: var(--stage-paper);
-  text-shadow: 0 6px 0 #0008, 0 0 30px #e8b84a66;
+  color: var(--lamp, var(--stage-paper));
+  text-shadow: 0 6px 0 #0008, 0 0 30px color-mix(in srgb, var(--lamp, var(--stage-gold)) 40%, transparent);
   animation: race-digit var(--stage-digit-duration) cubic-bezier(0.2, 1.6, 0.4, 1);
 }
 

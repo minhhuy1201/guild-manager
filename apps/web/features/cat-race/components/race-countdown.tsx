@@ -1,14 +1,20 @@
 import { COUNTDOWN_STEPS } from "../lib/race-timeline";
 
+type CountdownSignal = "red" | "amber" | "green";
+
+/** One colour per countdown step, in the order a traffic light shows them. */
+const SIGNALS: readonly CountdownSignal[] = ["red", "amber", "green"];
+
 interface RaceCountdownProps {
-  /** Last lantern lit, 0-based; -1 before the first */
+  /** Lamp lit now, 0-based; -1 before the first */
   step: number;
   isOn: boolean;
 }
 
 /**
- * Three lanterns lit one by one with the number popping in under them; the third is gold.
- * @param props.step - Last lantern lit
+ * A traffic light counting down: three lamps in a housing, one lit at a time red, amber, green,
+ * with the number popping in under them in the lit lamp's colour.
+ * @param props.step - Lamp lit now
  * @param props.isOn - Whether the countdown is on screen
  * @returns The countdown layer
  */
@@ -16,17 +22,12 @@ export function RaceCountdown({ step, isOn }: RaceCountdownProps) {
   return (
     <div className="race-ov race-countdown" data-on={isOn}>
       <div className="race-lanterns">
-        {Array.from({ length: COUNTDOWN_STEPS }, (_, index) => (
-          <div
-            key={index}
-            className="race-lantern"
-            data-lit={index <= step}
-            data-gold={index === COUNTDOWN_STEPS - 1}
-          />
+        {SIGNALS.map((signal, index) => (
+          <div key={signal} className="race-lantern" data-signal={signal} data-lit={index === step} />
         ))}
       </div>
       {/* Keyed by the step so each number pops in again. */}
-      <div key={step} className="race-display race-digit" aria-hidden>
+      <div key={step} className="race-display race-digit" data-signal={SIGNALS[step]} aria-hidden>
         {step < 0 ? "" : COUNTDOWN_STEPS - step}
       </div>
     </div>

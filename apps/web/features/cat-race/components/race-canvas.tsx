@@ -11,15 +11,17 @@ import { bobOffset, legClock, legFrame, speedAt } from "../lib/cat-motion";
 import { catLabels } from "../lib/cat-label";
 import { INITIAL_CUE_CURSOR, nextCues, type FinishCue, type RaceCue } from "../lib/race-cue";
 import { paintCrown, paintDust, paintSpeedLines } from "../lib/paint-cat-effects";
+import { paintChatBubble } from "../lib/paint-chat-bubbles";
 import { paintStageBand, type BandScene } from "../lib/paint-stage-band";
 import { nameFontPx, nameRoom, paintStageNames } from "../lib/paint-stage-names";
 import { paintStageTrack } from "../lib/paint-stage-track";
-import { frameAt, planRace, type RacePlan } from "../lib/race-frame";
+import { frameAt, planRace, type FrameCat, type RacePlan } from "../lib/race-frame";
 import { standingsAt, type RaceStanding } from "../lib/race-board";
 import { lengthsBehind } from "../lib/race-lengths";
 import { visibleLanes, type LaneLayout, type LaneRange } from "../lib/race-layout";
 import type { RaceScript } from "../lib/race-script";
 import { leaderAt, rankAt } from "../lib/race-script";
+import { INITIAL_CHATTER, stepChatter, type ChatterState } from "../lib/race-chatter";
 import { spawnDust, stepDust, type DustParticle } from "../lib/race-dust";
 import { catSprite } from "../lib/race-sprites";
 import { FALLBACK_SPRITE_CLASS, SPRITE_COLUMNS, SPRITE_ROWS } from "../lib/sprite-rows";
@@ -42,6 +44,9 @@ const FPS_FONT = "12px monospace";
 const FPS_X = 8;
 const FPS_BOTTOM_GAP = 8;
 const MS_PER_SECOND = 1000;
+/** A meow bubble's tail lands on the cat's head: this share of the sprite across, and down from its top. */
+const CAT_BUBBLE_X_SHARE = 0.75;
+const CAT_BUBBLE_Y_SHARE = 0.2;
 
 /**
  * What the canvas shows: the round being replayed, the cats waiting on the start line, or the
@@ -170,6 +175,7 @@ export function RaceCanvas({
     let frames = 0;
     let lastTime = 0;
     let dust: readonly DustParticle[] = [];
+    let chatter: ChatterState = INITIAL_CHATTER;
     let isDisposed = false;
     doneRef.current = false;
 
@@ -209,6 +215,7 @@ export function RaceCanvas({
     /**
      * Paint every cat that is in view, with its crown, speed lines and the dust it kicks up.
      * @param current - The plan being painted
+     * @param cats - Every cat's position this frame, from the top lane down
      * @param motion - Race time, whether the cats run, the leader's key and seconds since the last frame
      * @param lanes - The lanes in view
      * @param top - How far the lanes are scrolled, in px
@@ -216,6 +223,7 @@ export function RaceCanvas({
      */
     const drawCats = (
       current: RacePlan,
+      cats: readonly FrameCat[],
       motion: { u: number; isRunning: boolean; leaderKey: string | null; dt: number },
       lanes: LaneRange,
       top: number
@@ -223,7 +231,6 @@ export function RaceCanvas({
       const { layout, script: raced } = current;
       const height = (layout.catWidth * SPRITE_ROWS) / SPRITE_COLUMNS;
       const clock = legClock(motion.u, raced.durationSeconds);
-      const cats = frameAt(current, motion.u);
       const kicked: DustParticle[] = [];
       for (let lane = lanes.first; lane <= lanes.last; lane += 1) {
         const cat = cats[lane];
@@ -250,6 +257,32 @@ export function RaceCanvas({
     };
 
     /**
+     * Paint the meow bubbles of the cats in view, above and right of each head.
+     * @param current - The plan being painted
+     * @param cats - Every cat's position this frame, from the top lane down
+     * @param view - The animation clock, how far the lanes are scrolled and the lanes in view
+     */
+    const paintCatBubbles = (
+      current: RacePlan,
+      cats: readonly FrameCat[],
+      view: { time: number; top: number; lanes: LaneRange }
+    ) => {
+      const { layout } = current;
+      const spriteHeight = (layout.catWidth * SPRITE_ROWS) / SPRITE_COLUMNS;
+      for (const bubble of chatter.bubbles) {
+        if (bubble.anchor.kind !== "cat") continue;
+        const lane = current.laneOf.get(bubble.anchor.catKey)!;
+        if (lane < view.lanes.first || lane > view.lanes.last) continue;
+        const cat = cats[lane];
+        const tail = {
+          x: cat.x + layout.catWidth * CAT_BUBBLE_X_SHARE,
+          y: cat.y - view.top - spriteHeight / 2 + spriteHeight * CAT_BUBBLE_Y_SHARE,
+        };
+        paintChatBubble(context, bubble, tail, { time: view.time, fonts, width: viewWidth });
+      }
+    };
+
+    /**
      * Paint one frame of the stage: dirt and cats clipped under the sky, the name column, then the
      * sky band over the top.
      * @param current - The plan being painted
@@ -258,7 +291,7 @@ export function RaceCanvas({
      */
     const paintStage = (
       current: RacePlan,
-      frame: { phase: StagePhase; isSprint: boolean; u: number; time: number; dt: number },
+      frame: { phase: StagePhase; isSprint: boolean; u: number; time: number; dt: number; cues: readonly RaceCue[] },
       ranks: readonly string[] | null
     ) => {
       if (!scene) return;
@@ -267,6 +300,24 @@ export function RaceCanvas({
       const lanes = visibleLanes(layout, current.laneOrder.length, top, viewHeight);
       const view = { layout, width: viewWidth, height: viewHeight, top, lanes };
       const leaderKey = ranks?.[0] ?? null;
+      const excitement = excitementAt(frame.phase, frame.isSprint);
+      // A preview stands still: no one talks until a round is replayed.
+      if (!isPreview) {
+        chatter = stepChatter(
+          chatter,
+          {
+            time: frame.time,
+            dt: frame.dt,
+            cues: frame.cues,
+            excitement,
+            width: viewWidth,
+            crowdLeft: layout.nameColumn,
+            labels,
+            cats: { visible: current.laneOrder.slice(lanes.first, lanes.last + 1), ranks },
+          },
+          Math.random
+        );
+      }
       context.fillStyle = STAGE_PALETTE.wood;
       context.fillRect(0, 0, viewWidth, viewHeight);
       context.save();
@@ -279,13 +330,16 @@ export function RaceCanvas({
       });
       dust = stepDust(dust, frame.dt);
       paintDust(context, dust, top);
+      const cats = frameAt(current, frame.u);
       const kicked = drawCats(
         current,
+        cats,
         { u: frame.u, isRunning: frame.phase === "running", leaderKey, dt: frame.dt },
         lanes,
         top
       );
       dust = [...dust, ...kicked];
+      paintCatBubbles(current, cats, { time: frame.time, top, lanes });
       paintStageNames(context, {
         ...view,
         laneOrder: current.laneOrder,
@@ -296,7 +350,7 @@ export function RaceCanvas({
         fonts,
       });
       context.restore();
-      paintStageBand(context, scene, frame.time, excitementAt(frame.phase, frame.isSprint));
+      paintStageBand(context, scene, frame.time, excitement, chatter.bubbles);
     };
 
     /**
@@ -312,7 +366,7 @@ export function RaceCanvas({
         const isFinishLine = mode === "finish";
         paintStage(
           plan,
-          { phase: isFinishLine ? "done" : "idle", isSprint: false, u: isFinishLine ? RACE_END_U : 0, time, dt },
+          { phase: isFinishLine ? "done" : "idle", isSprint: false, u: isFinishLine ? RACE_END_U : 0, time, dt, cues: [] },
           isFinishLine ? rankAt(script, RACE_END_U) : null
         );
         if (!isStill) frameId = requestAnimationFrame(tick);
@@ -323,17 +377,21 @@ export function RaceCanvas({
       const elapsed = (now - startedAt) / MS_PER_SECOND;
       const moment = momentAt(elapsed, script.durationSeconds);
       const ranks = isRacing(moment.phase) ? rankAt(script, moment.u) : null;
-      paintStage(plan, { phase: moment.phase, isSprint: moment.isSprint, u: moment.u, time, dt }, ranks);
-      if (ranks && now - lastStandings >= STANDINGS_INTERVAL_MS) {
-        lastStandings = now;
-        standingsRef.current(standingsAt(script, moment.u, plan.layout));
-      }
       const finish: FinishCue = {
         kind: "finish",
         lengthsBehind: lengthsBehind(script.runnerUpGap, plan.layout),
       };
       const announced = nextCues(cursor, moment, leaderAt(script, moment.u), finish);
       cursor = announced.cursor;
+      paintStage(
+        plan,
+        { phase: moment.phase, isSprint: moment.isSprint, u: moment.u, time, dt, cues: announced.cues },
+        ranks
+      );
+      if (ranks && now - lastStandings >= STANDINGS_INTERVAL_MS) {
+        lastStandings = now;
+        standingsRef.current(standingsAt(script, moment.u, plan.layout));
+      }
       for (const cue of announced.cues) cueRef.current(cue);
       frames += 1;
       if (showFps) {
