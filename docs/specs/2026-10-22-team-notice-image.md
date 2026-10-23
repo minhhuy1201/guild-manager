@@ -23,7 +23,7 @@ Mỗi Team notice gửi kèm **ảnh chụp card team** của người nhận tr
 
 ```
 **SCRIM 20:30 19/08 - Trận 1/2**
-Bạn ở **Rồng Lửa** (team 3). Online trước 19:45.
+Bạn ở **Rồng Lửa** (team 3). Online trước 20:00.
 ```
 
 Formation announcement luôn đi trước và là bước bắt buộc. Chụp ảnh team chỉ bắt đầu sau khi

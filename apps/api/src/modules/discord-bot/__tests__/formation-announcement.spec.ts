@@ -8,6 +8,9 @@ const LINKS = { guildRoleId: '999888777', baoBanChannelId: '111222333' };
 /** 19/08/2026 20:30 Vietnam time. */
 const SCRIM_AT_2030 = new Date('2026-08-19T13:30:00.000Z');
 
+/** 19/08/2026 21:00 Vietnam time. */
+const SCRIM_AT_2100 = new Date('2026-08-19T14:00:00.000Z');
+
 /** 19/08/2026 09:00 Vietnam time - the same day as the match above. */
 const MORNING_OF_BATTLE = new Date('2026-08-19T02:00:00.000Z');
 
@@ -42,7 +45,7 @@ describe('buildFormationAnnouncement — scrim', () => {
 
   it('scrim 21:00 tập trung trước 20:30, thay thế sau 20:45', () => {
     const { content } = buildFormationAnnouncement(
-      input({ dateTime: new Date('2026-08-19T14:00:00.000Z') }),
+      input({ dateTime: SCRIM_AT_2100 }),
       LINKS,
     );
 
