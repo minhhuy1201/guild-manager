@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { TeamBuilderScreen } from "../team-builder-screen";
@@ -33,7 +33,9 @@ vi.mock("@/components/shared/page-header", () => ({
 }));
 vi.mock("../week-picker", () => ({ WeekPicker: () => null }));
 vi.mock("../session-tabs", () => ({ SessionTabs: () => null }));
-vi.mock("../match-tabs", () => ({ MatchTabs: () => null }));
+vi.mock("../match-tabs", () => ({
+  MatchTabs: () => <div data-testid="match-tabs" />,
+}));
 vi.mock("../formation-grid", () => ({
   FormationGrid: () => <div data-testid="grid" />,
 }));
@@ -41,7 +43,10 @@ vi.mock("../member-pool", () => ({
   MemberPool: () => <div data-testid="pool" />,
 }));
 vi.mock("../prefill-banner", () => ({ PrefillBanner: () => null }));
-vi.mock("../absent-banner", () => ({ AbsentBanner: () => null }));
+vi.mock("../absent-banner", () => ({
+  AbsentBanner: ({ count }: { count: number }) =>
+    count > 0 ? <div data-testid="absent-banner" /> : null,
+}));
 vi.mock("../copy-formation-dialog", () => ({ CopyFormationDialog: () => null }));
 vi.mock("../save-conflict-dialog", () => ({ SaveConflictDialog: () => null }));
 vi.mock("../formation-capture-sheet", () => ({
@@ -343,5 +348,57 @@ describe("TeamBuilderScreen - chế độ toàn màn hình", () => {
     rerender(<TeamBuilderScreen />);
 
     expect(screen.queryByRole("dialog", { name: DIALOG_NAME })).toBeNull();
+  });
+
+  it("thanh trên có chọn trận và tên trận", () => {
+    stubFullscreen();
+    formationScreen.value = editableScreen();
+
+    render(<TeamBuilderScreen />);
+    fireEvent.click(screen.getByRole("button", { name: ENTER_NAME }));
+
+    const dialog = screen.getByRole("dialog", { name: DIALOG_NAME });
+    expect(within(dialog).getByTestId("match-tabs")).toBeTruthy();
+    expect(within(dialog).getByRole("heading", { level: 2 }).textContent).toContain("BANG CHIẾN");
+  });
+
+  it("có người vắng thì dòng báo nằm trong dialog, chỉ một bản", () => {
+    stubFullscreen();
+    const absent = editableScreen();
+    absent.pool.absentIds = new Set(["a"]);
+    formationScreen.value = absent;
+
+    render(<TeamBuilderScreen />);
+    fireEvent.click(screen.getByRole("button", { name: ENTER_NAME }));
+
+    const dialog = screen.getByRole("dialog", { name: DIALOG_NAME });
+    expect(within(dialog).getByTestId("absent-banner")).toBeTruthy();
+  });
+
+  it("có thay đổi thì thanh lưu nằm trong dialog, chỉ một bản", () => {
+    stubFullscreen();
+    const dirty = editableScreen();
+    dirty.draft.dirty = true;
+    dirty.draft.changeCount = 3;
+    formationScreen.value = dirty;
+
+    render(<TeamBuilderScreen />);
+    expect(screen.getAllByRole("button", { name: "Lưu" })).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button", { name: ENTER_NAME }));
+
+    const dialog = screen.getByRole("dialog", { name: DIALOG_NAME });
+    expect(within(dialog).getByRole("button", { name: "Lưu" })).toBeTruthy();
+    expect(within(dialog).getByText("3 thay đổi chưa lưu")).toBeTruthy();
+    expect(screen.getAllByRole("button", { name: "Lưu" })).toHaveLength(1);
+  });
+
+  it("không có thay đổi thì không có thanh lưu trong dialog", () => {
+    stubFullscreen();
+    formationScreen.value = editableScreen();
+
+    render(<TeamBuilderScreen />);
+    fireEvent.click(screen.getByRole("button", { name: ENTER_NAME }));
+
+    expect(screen.queryByRole("button", { name: "Lưu" })).toBeNull();
   });
 });

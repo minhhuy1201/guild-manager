@@ -29,4 +29,15 @@ describe("AbsentBanner", () => {
 
     expect(onRemove).toHaveBeenCalledOnce();
   });
+
+  it("dạng gọn vẫn nói đủ câu và vẫn gỡ được", () => {
+    const onRemove = vi.fn();
+    render(<AbsentBanner count={2} onRemove={onRemove} compact />);
+
+    expect(
+      screen.getByText(/2 người đã báo nghỉ còn trong đội hình/)
+    ).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /Gỡ ra/ }));
+    expect(onRemove).toHaveBeenCalledOnce();
+  });
 });

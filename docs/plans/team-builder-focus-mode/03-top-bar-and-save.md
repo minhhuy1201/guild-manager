@@ -12,12 +12,12 @@ UI: chạy skill `redesign-skill` cho thanh trên và lớp hoàn thiện, giữ
 
 **Blocked by:** 02
 
-**Status:** todo
+**Status:** done
 
-- [ ] Đổi trận 1/2 ngay trong chế độ, không thoát ra
-- [ ] Có người vắng thì thấy dòng báo và gỡ được trong chế độ
-- [ ] Có thay đổi thì thanh lưu hiện trong lớp phủ. `Ctrl/Cmd+S`, `Ctrl/Cmd+Z` chạy. Lớp phủ "Đang lưu đội hình..." vẫn che grid khi lưu.
-- [ ] Hộp thoại xung đột khi lưu hiện trên lớp phủ
-- [ ] Grid không có hiệu ứng xuất hiện. Motion chỉ dùng token, và reduced motion được tôn trọng (rule chung ở `globals.css`).
-- [ ] `.claude/rules/web/interaction.md` có mục chế độ toàn màn hình
-- [ ] Test ở `TeamBuilderScreen`: match tabs, absent banner, thanh lưu nằm trong dialog. Typecheck, lint, test xanh.
+- [x] Đổi trận 1/2 ngay trong chế độ, không thoát ra
+- [x] Có người vắng thì thấy dòng báo và gỡ được trong chế độ
+- [x] Có thay đổi thì thanh lưu hiện trong lớp phủ. `Ctrl/Cmd+S`, `Ctrl/Cmd+Z` chạy. Lớp phủ "Đang lưu đội hình..." vẫn che grid khi lưu.
+- [x] Hộp thoại xung đột khi lưu hiện trên lớp phủ
+- [x] Grid không có hiệu ứng xuất hiện. Motion chỉ dùng token, và reduced motion được tôn trọng (rule chung ở `globals.css`).
+- [x] `.claude/rules/web/interaction.md` có mục chế độ toàn màn hình
+- [x] Test ở `TeamBuilderScreen`: match tabs, absent banner, thanh lưu nằm trong dialog. Typecheck, lint, test xanh.

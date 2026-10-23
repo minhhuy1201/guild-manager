@@ -53,7 +53,9 @@ export function TeamBuilderScreen() {
   // the cards cover most of the screen - it could not do while any touch on a card was a drag.
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } })
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 250, tolerance: 5 },
+    }),
   );
 
   // The team names are global, so an unsaved name is unsaved work on every day
@@ -76,7 +78,7 @@ export function TeamBuilderScreen() {
   const announce = useFormationAnnounce(
     screen.selection.activeSessionId,
     screen.draft.matches.length,
-    dirty
+    dirty,
   );
 
   /**
@@ -90,7 +92,7 @@ export function TeamBuilderScreen() {
 
   // An empty match has nothing to lose, so it is copied over without a dialog.
   const activeMatchHasMembers = Object.values(screen.draft.assignment).some(
-    Boolean
+    Boolean,
   );
 
   /** Copy straight into an empty match; ask first when it still holds people. */
@@ -175,6 +177,34 @@ export function TeamBuilderScreen() {
     draftMatchCount: screen.draft.matchCount,
     scheduledMatchCount: activeSession.matchCount,
   });
+  const saveBar = showSaveBar ? (
+    <UnsavedChangesBar
+      message={`${changeCount} thay đổi chưa lưu`}
+      resetLabel="Đặt lại"
+      saving={saving}
+      errorMessages={errorMessages}
+      onSave={handleSave}
+      onReset={handleReset}
+      // Ctrl+Z's twin for a phone. The bar itself locks it while saving, as the shortcut does.
+      undo={{ onUndo: screen.draft.undo, canUndo: screen.draft.canUndo }}
+    />
+  ) : null;
+  const matchTabs = (
+    <MatchTabs
+      matchCount={screen.draft.matchCount}
+      activeMatchIndex={screen.draft.activeMatchIndex}
+      secondMatchHasMembers={Object.values(
+        screen.draft.matches[1]?.assignment ?? {},
+      ).some(Boolean)}
+      canAddMatch={screen.draft.canAddMatch}
+      onSelect={screen.draft.setActiveMatch}
+      onAdd={screen.draft.addMatch}
+      onRemove={screen.draft.removeMatch}
+    />
+  );
+  const absentCount = editable ? screen.pool.absentIds.size : 0;
+  const removeAbsent = () =>
+    screen.draft.removeFromActiveMatch(screen.pool.absentIds);
   const grid = (layout: FormationLayout) => (
     <FormationGrid
       bannerTitle={bannerTitle}
@@ -239,17 +269,7 @@ export function TeamBuilderScreen() {
           />
 
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-            <MatchTabs
-              matchCount={screen.draft.matchCount}
-              activeMatchIndex={screen.draft.activeMatchIndex}
-              secondMatchHasMembers={Object.values(
-                screen.draft.matches[1]?.assignment ?? {}
-              ).some(Boolean)}
-              canAddMatch={screen.draft.canAddMatch}
-              onSelect={screen.draft.setActiveMatch}
-              onAdd={screen.draft.addMatch}
-              onRemove={screen.draft.removeMatch}
-            />
+            {matchTabs}
 
             <FormationToolbar
               dirty={dirty}
@@ -276,7 +296,7 @@ export function TeamBuilderScreen() {
         <AnnounceFormationDialog
           open={announce.open}
           filledCounts={screen.draft.matches.map(
-            (match) => Object.values(match.assignment).filter(Boolean).length
+            (match) => Object.values(match.assignment).filter(Boolean).length,
           )}
           slotCount={screen.draft.slotCount}
           blocked={dirty}
@@ -328,12 +348,7 @@ export function TeamBuilderScreen() {
           onClear={screen.draft.clearActiveDraft}
         />
 
-        <AbsentBanner
-          count={editable ? screen.pool.absentIds.size : 0}
-          onRemove={() =>
-            screen.draft.removeFromActiveMatch(screen.pool.absentIds)
-          }
-        />
+        <AbsentBanner count={absentCount} onRemove={removeAbsent} />
 
         {focusMode.active ? null : (
           <>
@@ -342,24 +357,18 @@ export function TeamBuilderScreen() {
           </>
         )}
 
-        {showSaveBar && !focusMode.active ? (
-          <UnsavedChangesBar
-            message={`${changeCount} thay đổi chưa lưu`}
-            resetLabel="Đặt lại"
-            saving={saving}
-            errorMessages={errorMessages}
-            onSave={handleSave}
-            onReset={handleReset}
-            // Ctrl+Z's twin for a phone. The bar itself locks it while saving, as the shortcut does.
-            undo={{ onUndo: screen.draft.undo, canUndo: screen.draft.canUndo }}
-          />
-        ) : null}
+        {focusMode.active ? null : saveBar}
       </div>
 
       {focusMode.active ? (
         <FocusModeOverlay
           title={bannerTitle}
           onExit={focusMode.exit}
+          matchTabs={matchTabs}
+          notice={
+            <AbsentBanner count={absentCount} onRemove={removeAbsent} compact />
+          }
+          footer={saveBar}
           grid={grid("focus")}
           pool={pool("column")}
         />
