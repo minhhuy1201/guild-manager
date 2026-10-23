@@ -16,7 +16,7 @@ export function isTypingTarget(target: EventTarget | null): boolean {
 }
 
 /**
- * Marks a dialog that is the screen itself in another frame (the team builder's focus mode), so a
+ * Marks a dialog that is the screen itself in another frame (a screen's focus mode), so a
  * screen shortcut still runs inside it. Any other dialog stands in front of the screen.
  */
 export const SCREEN_DIALOG_ATTRIBUTE = "data-screen-dialog";

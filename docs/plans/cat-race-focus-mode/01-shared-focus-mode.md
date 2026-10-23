@@ -27,11 +27,11 @@ interface FocusModeShellProps {
 
 **Blocked by:** None (can start immediately)
 
-**Status:** todo
+**Status:** done
 
-- [ ] Hook focus mode nằm ở chỗ dùng chung. Feature xếp đội không còn bản riêng.
-- [ ] Shell dùng chung có test riêng: là dialog có tên khi active, giữ Tab bên trong, ✕ gọi `onExit`, và khi inactive thì không có dialog.
-- [ ] Đổi `active` từ false sang true rồi về false thì một con của shell không bị mount lại
-- [ ] Test hiện có của `TeamBuilderScreen` xanh mà không sửa assertion nào
-- [ ] Quy ước focus mode trong `.claude/rules/web/interaction.md` được viết lại thành quy ước chung (hook + shell), không còn chỉ riêng cho màn xếp đội
-- [ ] Typecheck, lint, test của web xanh
+- [x] Hook focus mode nằm ở chỗ dùng chung. Feature xếp đội không còn bản riêng.
+- [x] Shell dùng chung có test riêng: là dialog có tên khi active, giữ Tab bên trong, ✕ gọi `onExit`, và khi inactive thì không có dialog.
+- [x] Đổi `active` từ false sang true rồi về false thì một con của shell không bị mount lại
+- [x] Test hiện có của `TeamBuilderScreen` xanh mà không sửa assertion nào
+- [x] Quy ước focus mode trong `.claude/rules/web/interaction.md` được viết lại thành quy ước chung (hook + shell), không còn chỉ riêng cho màn xếp đội
+- [x] Typecheck, lint, test của web xanh

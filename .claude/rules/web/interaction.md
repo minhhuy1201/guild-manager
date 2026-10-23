@@ -76,10 +76,11 @@ A new interaction convention goes here; its reason goes in `frontend.md`.
 - Keep non-save actions (copy a line-up, announce on Discord) in the top toolbar. Disable an action that must not run on dirty work and say why in a tooltip.
 - On a phone (below `md`) show one team at a time via `TeamSwitcher`. Hide the rest with `max-md:hidden`, not by leaving them out of the tree. Drag after 8px (mouse) or a 250ms press (touch). Never `touch-none` a card.
 - Keep `FormationLayout` `screen` to a one-line banner; `capture` keeps five columns, ten teams, the tall banner and no chips.
-- Open fullscreen arranging from the toolbar button (`Kbd` cap `F`) from `lg` up, on an editable battle only; `Esc` or the exit button (cap `Esc`) closes it. Skip both keys in a field, with a modifier, or once `defaultPrevented`; skip `Esc` during a drag.
-- Mark a dialog that is the screen itself with `SCREEN_DIALOG_ATTRIBUTE` (`lib/keyboard-target.ts`), so the save and undo shortcuts still run inside it.
-- Draw focus mode as one `fixed inset-0 z-40` `role="dialog"` over the page, with no new z value. Mount the grid and pool once, either in the page or in the overlay, never both (droppable ids). Ask for browser fullscreen on `document.documentElement`, never a child, and swallow a refusal.
-- Fade the overlay's opacity only. Never reveal the grid inside it. Reuse `UnsavedChangesBar` in the grid column; add no save logic.
+- Build a screen's focus mode from `useFocusMode` (`hooks/use-focus-mode.ts`) and `FocusModeShell` (`components/shared/focus-mode-shell.tsx`). Open it from a toolbar button (`Kbd` cap `F`) from `lg` up; `F` or `Esc` and the exit button (cap `Esc`, added by the shell) toggle it. Skip both keys in a field, with a modifier, or once `defaultPrevented`; pass `escapeClaimed` when something else on the screen owns `Esc` (a drag).
+- Mark a dialog that is the screen itself with `SCREEN_DIALOG_ATTRIBUTE` (`lib/keyboard-target.ts`), so the screen's shortcuts still run inside it. The shell does it while active.
+- Draw focus mode as one `fixed inset-0 z-40` `role="dialog"` over the page, with no new z value. Ask for browser fullscreen on `document.documentElement`, never a child, and swallow a refusal. Fade opacity only.
+- Mount the content once. When a remount would lose state (droppable ids, a canvas, a live feed), keep the shell around the content with `active` flipping in place: the shell keeps its root and child positions, so nothing remounts. A screen with nothing to lose may mount the shell only while on, with `active` always true (team builder overlay).
+- In the team builder's overlay, never reveal the grid, and reuse `UnsavedChangesBar` in the grid column; add no save logic. The editable battle only gets the entry button.
 
 ## Feedback after a write → a toast
 
