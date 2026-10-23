@@ -20,7 +20,7 @@ import { useCatRaceEvent } from "../hooks/use-cat-races";
 import { parseRaceDuration } from "../lib/race-duration";
 import { prizeLockReason } from "../lib/prize-lock";
 import { useRaceStore } from "../store/race-store";
-import { AnnounceButton } from "./announce-button";
+import { CatRaceEndedScreen } from "./cat-race-ended-screen";
 import { EndEventButton } from "./end-event-button";
 import { EntrantsDialog } from "./entrants-dialog";
 import { ParticipantsDialog } from "./participants-dialog";
@@ -49,7 +49,13 @@ export function CatRaceEventScreen({ id }: CatRaceEventScreenProps) {
       state={state}
       skeleton={<Skeleton className="h-96 w-full" />}
     >
-      {eventQuery.data ? <EventBody event={eventQuery.data} /> : null}
+      {eventQuery.data ? (
+        eventQuery.data.status === "ENDED" ? (
+          <CatRaceEndedScreen event={eventQuery.data} />
+        ) : (
+          <EventBody event={eventQuery.data} />
+        )
+      ) : null}
     </QueryBoundary>
   );
 }
@@ -63,7 +69,7 @@ type OpenDialog =
   | { kind: "delete-prize"; prize: CatRacePrize };
 
 /**
- * The loaded event: header, prize chips, race area and winners.
+ * The loaded open event: header, prize chips, race area and winners.
  * @param event - The event
  * @returns The screen body
  */
@@ -93,7 +99,6 @@ function EventBody({ event }: { event: CatRaceEventDetail }) {
     };
   }, [event.id, invalidate]);
 
-  const isOpen = event.status === "OPEN";
   const isBusy = stage !== "idle";
   const selected =
     event.prizes.find((prize) => prize.id === selectedPrizeId) ??
@@ -113,22 +118,14 @@ function EventBody({ event }: { event: CatRaceEventDetail }) {
         banner="teamBuilder"
         title={event.name}
         description={`Chế độ ${CAT_RACE_MODE_LABEL[event.mode]}`}
-        actions={
-          isOpen ? (
-            <EndEventButton eventId={event.id} />
-          ) : event.discordPostedAt ? (
-            <span className="text-sm">Đã đăng lên Discord.</span>
-          ) : (
-            <AnnounceButton eventId={event.id} />
-          )
-        }
+        actions={<EndEventButton eventId={event.id} />}
       />
 
       <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
         <PrizeChips
           event={event}
           selectedPrizeId={selected?.id ?? null}
-          canEdit={isOpen && !isBusy}
+          canEdit={!isBusy}
           onSelect={(prize) => !isBusy && selectPrize(prize.id)}
           onEdit={(prize) => setDialog({ kind: "prize", prize })}
           onDelete={(prize) => setDialog({ kind: "delete-prize", prize })}
@@ -139,7 +136,7 @@ function EventBody({ event }: { event: CatRaceEventDetail }) {
           onDurationTextChange={changeDuration}
           isDurationValid={isDurationValid}
           isLocked={isBusy}
-          canEdit={isOpen}
+          canEdit
           hasPrize={selected !== undefined}
           entrantCount={selected?.entrantIds.length ?? 0}
           participantCount={event.participants.length}
@@ -153,7 +150,7 @@ function EventBody({ event }: { event: CatRaceEventDetail }) {
         prize={selected}
         isDurationValid={isDurationValid}
       />
-      <WinnersPanel event={event} canVoid={isOpen && !isBusy} onVoid={setVoiding} />
+      <WinnersPanel event={event} canVoid={!isBusy} onVoid={setVoiding} />
 
       <ParticipantsDialog
         event={event}
