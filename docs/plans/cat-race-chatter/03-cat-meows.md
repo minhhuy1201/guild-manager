@@ -7,11 +7,11 @@ dẫn đầu "MEOW!!", nước rút vài con "MEEEOW!!", cuối đàn kêu mệt
 
 **Blocked by:** 02
 
-**Status:** todo
+**Status:** done (chưa xem bằng mắt: app cần DB và đăng nhập Discord)
 
-- [ ] `stepChatter` (mèo): chỉ chọn mèo trong tầm nhìn, giới hạn 4, `lead-change` neo đúng `catKey`,
+- [x] `stepChatter` (mèo): chỉ chọn mèo trong tầm nhìn, giới hạn 4, `lead-change` neo đúng `catKey`,
       20% cuối đàn dùng câu mệt.
-- [ ] Test `race-chatter` cho các ý trên.
-- [ ] Vẽ phía trên-phải đầu mèo, trong vùng làn, kẹp trong bề ngang canvas.
+- [x] Test `race-chatter` cho các ý trên.
+- [x] Vẽ phía trên-phải đầu mèo, trong vùng làn, kẹp trong bề ngang canvas.
 - [ ] Chạy app, xem một vòng 8 mèo và một vòng 240 mèo (cuộn giữa chừng).
-- [ ] `pnpm --filter web test`, `typecheck`, `lint` xanh.
+- [x] `pnpm --filter web test`, `typecheck`, `lint` xanh.

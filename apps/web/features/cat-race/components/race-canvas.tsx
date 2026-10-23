@@ -11,6 +11,7 @@ import { bobOffset, legClock, legFrame, speedAt } from "../lib/cat-motion";
 import { catLabels } from "../lib/cat-label";
 import { INITIAL_CUE_CURSOR, nextCues, type FinishCue, type RaceCue } from "../lib/race-cue";
 import { paintCrown, paintDust, paintSpeedLines } from "../lib/paint-cat-effects";
+import { paintChatBubble } from "../lib/paint-chat-bubbles";
 import { paintStageBand, type BandScene } from "../lib/paint-stage-band";
 import { nameFontPx, nameRoom, paintStageNames } from "../lib/paint-stage-names";
 import { paintStageTrack } from "../lib/paint-stage-track";
@@ -43,6 +44,9 @@ const FPS_FONT = "12px monospace";
 const FPS_X = 8;
 const FPS_BOTTOM_GAP = 8;
 const MS_PER_SECOND = 1000;
+/** A meow bubble's tail lands on the cat's head: this share of the sprite across, and down from its top. */
+const CAT_BUBBLE_X_SHARE = 0.75;
+const CAT_BUBBLE_Y_SHARE = 0.2;
 
 /**
  * What the canvas shows: the round being replayed, the cats waiting on the start line, or the
@@ -252,6 +256,33 @@ export function RaceCanvas({
     };
 
     /**
+     * Paint the meow bubbles of the cats in view, above and right of each head.
+     * @param current - The plan being painted
+     * @param view - Race time, the animation clock, how far the lanes are scrolled and the lanes in view
+     */
+    const paintCatBubbles = (
+      current: RacePlan,
+      view: { u: number; time: number; top: number; lanes: LaneRange }
+    ) => {
+      const meows = chatter.bubbles.filter((bubble) => bubble.anchor.kind === "cat");
+      if (meows.length === 0) return;
+      const { layout } = current;
+      const spriteHeight = (layout.catWidth * SPRITE_ROWS) / SPRITE_COLUMNS;
+      const cats = frameAt(current, view.u);
+      for (const bubble of meows) {
+        if (bubble.anchor.kind !== "cat") continue;
+        const lane = current.laneOf.get(bubble.anchor.catKey)!;
+        if (lane < view.lanes.first || lane > view.lanes.last) continue;
+        const cat = cats[lane];
+        const tail = {
+          x: cat.x + layout.catWidth * CAT_BUBBLE_X_SHARE,
+          y: cat.y - view.top - spriteHeight / 2 + spriteHeight * CAT_BUBBLE_Y_SHARE,
+        };
+        paintChatBubble(context, bubble, tail, { time: view.time, fonts, width: viewWidth });
+      }
+    };
+
+    /**
      * Paint one frame of the stage: dirt and cats clipped under the sky, the name column, then the
      * sky band over the top.
      * @param current - The plan being painted
@@ -269,6 +300,24 @@ export function RaceCanvas({
       const lanes = visibleLanes(layout, current.laneOrder.length, top, viewHeight);
       const view = { layout, width: viewWidth, height: viewHeight, top, lanes };
       const leaderKey = ranks?.[0] ?? null;
+      const excitement = excitementAt(frame.phase, frame.isSprint);
+      // A preview stands still: no one talks until a round is replayed.
+      if (!isPreview) {
+        chatter = stepChatter(
+          chatter,
+          {
+            time: frame.time,
+            dt: frame.dt,
+            cues: frame.cues,
+            excitement,
+            width: viewWidth,
+            crowdLeft: layout.nameColumn,
+            labels,
+            cats: { visible: current.laneOrder.slice(lanes.first, lanes.last + 1), ranks },
+          },
+          Math.random
+        );
+      }
       context.fillStyle = STAGE_PALETTE.wood;
       context.fillRect(0, 0, viewWidth, viewHeight);
       context.save();
@@ -288,6 +337,7 @@ export function RaceCanvas({
         top
       );
       dust = [...dust, ...kicked];
+      paintCatBubbles(current, { u: frame.u, time: frame.time, top, lanes });
       paintStageNames(context, {
         ...view,
         laneOrder: current.laneOrder,
@@ -298,23 +348,6 @@ export function RaceCanvas({
         fonts,
       });
       context.restore();
-      const excitement = excitementAt(frame.phase, frame.isSprint);
-      // A preview stands still: no one talks until a round is replayed.
-      if (!isPreview) {
-        chatter = stepChatter(
-          chatter,
-          {
-            time: frame.time,
-            dt: frame.dt,
-            cues: frame.cues,
-            excitement,
-            width: viewWidth,
-            crowdLeft: layout.nameColumn,
-            labels,
-          },
-          Math.random
-        );
-      }
       paintStageBand(context, scene, frame.time, excitement, chatter.bubbles);
     };
 

@@ -11,10 +11,14 @@ const LABELS = new Map([
   ["cat-long", "Nguyễn Văn Anh Tuấn Kiệt"],
 ]);
 const QUIET = () => 0.99;
+const NO_CATS = { visible: [], ranks: null };
+const KEYS = Array.from({ length: 10 }, (_, index) => `k${index}`);
+/** Ten cats in view, running in key order. */
+const PACK = { visible: KEYS, ranks: KEYS };
 
 /** A frame at `time` with no cue and a calm crowd, patched by the test. */
 function frameAt(time: number, patch: Partial<ChatFrame> = {}): ChatFrame {
-  return { time, dt: 1 / 60, cues: [], excitement: 0.5, width: WIDE, crowdLeft: 100, labels: LABELS, ...patch };
+  return { time, dt: 1 / 60, cues: [], excitement: 0.5, width: WIDE, crowdLeft: 100, labels: LABELS, cats: NO_CATS, ...patch };
 }
 
 /** Step through `seconds` of frames at 60 Hz. */
@@ -27,7 +31,9 @@ function run(state: ChatterState, seconds: number, patch: Partial<ChatFrame>, ra
   return current;
 }
 
-const texts = (state: ChatterState) => state.bubbles.map((bubble) => bubble.text);
+/** What the stands say; the cats' own bubbles are read apart. */
+const texts = (state: ChatterState) =>
+  state.bubbles.filter((bubble) => bubble.anchor.kind === "crowd").map((bubble) => bubble.text);
 
 describe("stepChatter cues", () => {
   it("has the crowd call each countdown number", () => {
@@ -81,6 +87,85 @@ describe("stepChatter cues", () => {
       expect(anchor.x).toBeGreaterThanOrEqual(100);
       expect(anchor.x).toBeLessThanOrEqual(WIDE);
     }
+  });
+});
+
+const catBubbles = (state: ChatterState) => state.bubbles.filter((bubble) => bubble.anchor.kind === "cat");
+
+describe("stepChatter cat meows", () => {
+  it("has the new leader meow loudly, anchored to that cat", () => {
+    const state = stepChatter(
+      INITIAL_CHATTER,
+      frameAt(0, { cues: [{ kind: "lead-change", catKey: "cat-2" }], cats: PACK }),
+      QUIET
+    );
+
+    expect(catBubbles(state)).toMatchObject([{ anchor: { kind: "cat", catKey: "cat-2" }, text: "MEOW!!", tone: "lead" }]);
+    expect(texts(state)).toContain("Bob lên rồi!");
+  });
+
+  it("has two or three cats in view howl at the sprint", () => {
+    for (const seed of [1, 2, 3, 4, 5, 6]) {
+      const state = stepChatter(INITIAL_CHATTER, frameAt(0, { cues: [{ kind: "sprint" }], cats: PACK }), seededRandom(seed));
+      const howls = catBubbles(state);
+
+      expect(howls.length).toBeGreaterThanOrEqual(2);
+      expect(howls.length).toBeLessThanOrEqual(3);
+      expect(howls.every((bubble) => bubble.text === "MEEEOW!!" && bubble.tone === "hype")).toBe(true);
+      expect(new Set(howls.map((bubble) => JSON.stringify(bubble.anchor))).size).toBe(howls.length);
+      for (const bubble of howls) {
+        expect(KEYS).toContain((bubble.anchor as { catKey: string }).catKey);
+      }
+    }
+  });
+
+  it("howls with no cat when none is in view", () => {
+    const state = stepChatter(INITIAL_CHATTER, frameAt(0, { cues: [{ kind: "sprint" }], cats: NO_CATS }), QUIET);
+
+    expect(catBubbles(state)).toEqual([]);
+  });
+
+  it("never holds more than four cat bubbles", () => {
+    const state = run(INITIAL_CHATTER, 30, { excitement: 4, cats: PACK }, seededRandom(9));
+    const sprint = stepChatter(state, frameAt(31, { cues: [{ kind: "sprint" }, { kind: "sprint" }], cats: PACK }), seededRandom(2));
+
+    expect(catBubbles(state).length).toBeLessThanOrEqual(4);
+    expect(catBubbles(sprint).length).toBeLessThanOrEqual(4);
+  });
+
+  it("only picks cats in view and gives one cat one bubble", () => {
+    const state = run(INITIAL_CHATTER, 30, { excitement: 4, cats: { visible: ["k3", "k4"], ranks: KEYS } }, seededRandom(4));
+    const keys = catBubbles(state).map((bubble) => (bubble.anchor as { catKey: string }).catKey);
+
+    expect(keys.length).toBeGreaterThan(0);
+    expect(keys.every((key) => key === "k3" || key === "k4")).toBe(true);
+    expect(new Set(keys).size).toBe(keys.length);
+  });
+
+  it("lets the last fifth of the pack complain of being tired", () => {
+    const tail = { visible: ["k9"], ranks: KEYS };
+    const front = { visible: ["k0"], ranks: KEYS };
+    const sayings = (cats: ChatFrame["cats"]) => {
+      const seen = new Set<string>();
+      const random = seededRandom(8);
+      let state = INITIAL_CHATTER;
+      for (let frame = 0; frame < 60 * 120; frame += 1) {
+        state = stepChatter(state, frameAt(frame / 60, { excitement: 4, cats }), random);
+        for (const bubble of catBubbles(state)) seen.add(bubble.text);
+      }
+
+      return seen;
+    };
+
+    expect(sayings(tail).has("hộc hộc")).toBe(true);
+    expect(sayings(front).has("hộc hộc")).toBe(false);
+    expect(sayings(front).has("meow")).toBe(true);
+  });
+
+  it("makes no cat meow before the race gives a ranking", () => {
+    const state = run(INITIAL_CHATTER, 10, { excitement: 4, cats: { visible: KEYS, ranks: null } }, seededRandom(6));
+
+    expect(catBubbles(state)).toEqual([]);
   });
 });
 
