@@ -5,6 +5,9 @@ import type { TeamNoticeInput } from '../team-notice';
 /** 19/08/2026 20:30 Vietnam time. */
 const SCRIM_AT_2030 = new Date('2026-08-19T13:30:00.000Z');
 
+/** 08/08/2026 20:00 Vietnam time, a Saturday. */
+const GUILD_WAR_AT_2000 = new Date('2026-08-08T13:00:00.000Z');
+
 /** Id of the guild war channel the no-image variant points at. */
 const CHANNEL_ID = '777000111';
 
@@ -64,7 +67,7 @@ describe('buildTeamNotice', () => {
     const { content } = buildTeamNotice(
       input({
         isGuildWar: true,
-        dateTime: new Date('2026-08-08T13:00:00.000Z'),
+        dateTime: GUILD_WAR_AT_2000,
       }),
     );
 

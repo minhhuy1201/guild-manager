@@ -11,6 +11,9 @@ const SCRIM_AT_2030 = new Date('2026-08-19T13:30:00.000Z');
 /** 19/08/2026 21:00 Vietnam time. */
 const SCRIM_AT_2100 = new Date('2026-08-19T14:00:00.000Z');
 
+/** 08/08/2026 20:00 Vietnam time, a Saturday. */
+const GUILD_WAR_AT_2000 = new Date('2026-08-08T13:00:00.000Z');
+
 /** 19/08/2026 09:00 Vietnam time - the same day as the match above. */
 const MORNING_OF_BATTLE = new Date('2026-08-19T02:00:00.000Z');
 
@@ -66,7 +69,7 @@ describe('buildFormationAnnouncement — bang chiến', () => {
     const { content } = buildFormationAnnouncement(
       input({
         isGuildWar: true,
-        dateTime: new Date('2026-08-08T13:00:00.000Z'),
+        dateTime: GUILD_WAR_AT_2000,
         now: new Date('2026-08-08T02:00:00.000Z'),
       }),
       LINKS,
