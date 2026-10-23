@@ -49,6 +49,14 @@ const DEADLINE_ALREADY_PASSED =
   'Hạn điểm danh của ngày này đã qua nên mở lại cũng không nhận thêm câu trả lời. ' +
   'Sửa hộ thành viên trong bảng điểm danh.';
 
+/** Shown when an admin edits or deletes a battle whose battle time has passed. */
+const BATTLE_ALREADY_FOUGHT =
+  'Trận này đã đánh xong nên không sửa hay xoá được.';
+
+/** Shown when a battle time is set to a moment that has already passed. */
+const BATTLE_TIME_IN_PAST =
+  'Giờ đánh đã qua. Chọn giờ đánh ở phía trước để còn sửa được.';
+
 /** What must be read alongside each session to build the entity. */
 const SESSION_INCLUDE = {
   _count: { select: { attendanceRecords: true, formationMatches: true } },
@@ -406,6 +414,7 @@ export class BattleSessionsService {
     const deadline = new Date(input.deadline);
 
     this.assertEditableWeek(weekStartOf(dateTime), now);
+    this.assertNotFought(dateTime, now, BATTLE_TIME_IN_PAST);
     this.assertDeadlineWithinCap(deadline, dateTime);
 
     const created = await this.prisma.battleSession.create({
@@ -433,7 +442,7 @@ export class BattleSessionsService {
    * @param input - Fields to change
    * @returns The updated session
    * @throws NotFoundException when the session no longer exists
-   * @throws BadRequestException when the week is not schedulable, the deadline exceeds the cap, or an opponent/deadline is set on a Guild War
+   * @throws BadRequestException when the week is not schedulable, the battle was already fought, the deadline exceeds the cap, or an opponent/deadline is set on a Guild War
    */
   async update(
     id: string,
@@ -449,6 +458,7 @@ export class BattleSessionsService {
     }
 
     this.assertEditableWeek(weekStartOf(current.weekStart), now);
+    this.assertNotFought(current.dateTime, now);
 
     const opponent =
       input.opponent === undefined
@@ -474,6 +484,9 @@ export class BattleSessionsService {
     const weekStart = weekStartOf(dateTime);
 
     this.assertEditableWeek(weekStart, now);
+    if (input.dateTime) {
+      this.assertNotFought(dateTime, now, BATTLE_TIME_IN_PAST);
+    }
 
     // Guild War: the system recomputes it from the week now containing the session, even if the
     // session was just moved. Scrim: merge the incoming values with the stored row.
@@ -513,7 +526,7 @@ export class BattleSessionsService {
    * @param id - Id of the session to delete
    * @returns A promise resolving once it is deleted
    * @throws NotFoundException when the session no longer exists
-   * @throws BadRequestException when it is a Guild War or belongs to a past week
+   * @throws BadRequestException when it is a Guild War, belongs to a past week or was already fought
    */
   async remove(id: string): Promise<void> {
     const now = this.clock.now();
@@ -528,6 +541,7 @@ export class BattleSessionsService {
     }
 
     this.assertEditableWeek(weekStartOf(current.weekStart), now);
+    this.assertNotFought(current.dateTime, now);
 
     await this.prisma.battleSession.delete({ where: { id } });
   }
@@ -582,6 +596,25 @@ export class BattleSessionsService {
       throw new BadRequestException(
         'Chỉ thiết lập được lịch của tuần này và tuần sau.',
       );
+    }
+  }
+
+  /**
+   * Reject a change to a battle whose battle time has passed: attendance, line-ups and the
+   * announcement already belong to a battle that was played.
+   * @param dateTime - Stored battle time
+   * @param now - Current moment
+   * @param message - Error text; defaults to the one for changing a fought battle
+   * @returns Nothing when the battle is still to come
+   * @throws BadRequestException when the battle time is not after `now`
+   */
+  private assertNotFought(
+    dateTime: Date,
+    now: Date,
+    message: string = BATTLE_ALREADY_FOUGHT,
+  ): void {
+    if (dateTime.getTime() <= now.getTime()) {
+      throw new BadRequestException(message);
     }
   }
 

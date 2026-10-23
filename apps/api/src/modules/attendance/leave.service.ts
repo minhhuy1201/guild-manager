@@ -23,7 +23,7 @@ import {
 
 const CHARACTER_NOT_FOUND = 'Không tìm thấy thành viên.';
 const NOT_YOUR_CHARACTER = 'Bạn chỉ khai nghỉ được cho nhân vật của mình.';
-const LEAVE_ENDED = 'Ngày kết thúc đã qua.';
+const LEAVE_STARTS_IN_PAST = 'Không khai nghỉ cho ngày đã qua.';
 const LEAVE_NOT_FOUND = 'Không tìm thấy lần nghỉ.';
 const NOT_YOUR_LEAVE = 'Bạn chỉ hủy được lần nghỉ của mình.';
 
@@ -93,7 +93,7 @@ export class LeaveService {
    * @returns The created leave
    * @throws NotFoundException when the character does not exist
    * @throws ForbiddenException when a member files for somebody else
-   * @throws BadRequestException when a member's leave already ended
+   * @throws BadRequestException when the leave starts before today, whoever files it
    * @throws ConflictException when it overlaps an active leave of the same character
    */
   async create(input: CreateLeaveInput, actor: RequestActor): Promise<Leave> {
@@ -109,8 +109,8 @@ export class LeaveService {
     if (!isAdmin && characterId !== own) {
       throw new ForbiddenException(NOT_YOUR_CHARACTER);
     }
-    if (!isAdmin && endDate < vnDateKey(now)) {
-      throw new BadRequestException(LEAVE_ENDED);
+    if (startDate < vnDateKey(now)) {
+      throw new BadRequestException(LEAVE_STARTS_IN_PAST);
     }
 
     const sessions = await this.battleSessions.readCoverageInRange(

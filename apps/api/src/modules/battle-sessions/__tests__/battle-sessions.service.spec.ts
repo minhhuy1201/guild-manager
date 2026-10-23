@@ -15,6 +15,8 @@ import { vn } from '../../../__tests__/vn-date';
 const WEDNESDAY = vn('2026-07-22T12:00');
 const WEEK_START = weekStartOf(vn('2026-07-20T00:00'));
 const NEXT_WEEK_START = weekStartOf(vn('2026-07-27T00:00'));
+/** Battle time after WEDNESDAY, so a row using it is still to be played. */
+const UPCOMING = vn('2026-07-23T20:30');
 const LAST_WEEK_START = weekStartOf(vn('2026-07-13T00:00'));
 
 /**
@@ -294,8 +296,8 @@ describe('BattleSessionsService', () => {
   describe('create', () => {
     it('tạo được trận cho tuần đang mở và tuần kế tiếp', async () => {
       await service.create({
-        dateTime: vn('2026-07-21T20:30').toISOString(),
-        deadline: vn('2026-07-21T10:00').toISOString(),
+        dateTime: vn('2026-07-23T20:30').toISOString(),
+        deadline: vn('2026-07-23T10:00').toISOString(),
         matchCount: 2,
         opponent: 'Hắc Long Đường',
       });
@@ -315,6 +317,17 @@ describe('BattleSessionsService', () => {
       });
     });
 
+    it('từ chối tạo trận ở giờ đã qua trong tuần đang mở', async () => {
+      await expect(
+        service.create({
+          dateTime: vn('2026-07-21T20:30').toISOString(),
+          deadline: vn('2026-07-21T10:00').toISOString(),
+          matchCount: 2,
+        }),
+      ).rejects.toThrow('Giờ đánh đã qua.');
+      expect(prisma.battleSession.create).not.toHaveBeenCalled();
+    });
+
     it('từ chối trận thuộc tuần đã qua', async () => {
       await expect(
         service.create({
@@ -328,8 +341,8 @@ describe('BattleSessionsService', () => {
     it('từ chối hạn chót muộn hơn 10:00 sáng ngày đánh', async () => {
       await expect(
         service.create({
-          dateTime: vn('2026-07-21T20:30').toISOString(),
-          deadline: vn('2026-07-21T17:00').toISOString(),
+          dateTime: vn('2026-07-23T20:30').toISOString(),
+          deadline: vn('2026-07-23T17:00').toISOString(),
           matchCount: 2,
         }),
       ).rejects.toThrow(BadRequestException);
@@ -337,8 +350,8 @@ describe('BattleSessionsService', () => {
 
     it('chấp nhận hạn chót đúng bằng trần', async () => {
       await service.create({
-        dateTime: vn('2026-07-21T20:30').toISOString(),
-        deadline: vn('2026-07-21T10:00').toISOString(),
+        dateTime: vn('2026-07-23T20:30').toISOString(),
+        deadline: vn('2026-07-23T10:00').toISOString(),
         matchCount: 2,
       });
 
@@ -348,8 +361,8 @@ describe('BattleSessionsService', () => {
     it('trận trước 10:00 lấy giờ đánh làm trần', async () => {
       await expect(
         service.create({
-          dateTime: vn('2026-07-21T08:00').toISOString(),
-          deadline: vn('2026-07-21T09:00').toISOString(),
+          dateTime: vn('2026-07-23T08:00').toISOString(),
+          deadline: vn('2026-07-23T09:00').toISOString(),
           matchCount: 2,
         }),
       ).rejects.toThrow(BadRequestException);
@@ -357,8 +370,8 @@ describe('BattleSessionsService', () => {
 
     it('quy tên bang rỗng về null', async () => {
       await service.create({
-        dateTime: vn('2026-07-21T20:30').toISOString(),
-        deadline: vn('2026-07-21T10:00').toISOString(),
+        dateTime: vn('2026-07-23T20:30').toISOString(),
+        deadline: vn('2026-07-23T10:00').toISOString(),
         matchCount: 2,
         opponent: '',
       });
@@ -403,7 +416,12 @@ describe('BattleSessionsService', () => {
 
     it('lỗi sửa hạn chót Guild War nêu đúng giờ hạn cố định', async () => {
       prisma.battleSession.findUnique.mockResolvedValue(
-        row({ id: 'gw-2026-07-20', isGuildWar: true, opponent: null }),
+        row({
+          id: 'gw-2026-07-20',
+          isGuildWar: true,
+          opponent: null,
+          dateTime: UPCOMING,
+        }),
       );
 
       await expect(
@@ -455,6 +473,10 @@ describe('BattleSessionsService', () => {
     });
 
     it('dời trận sang tuần khác thì cập nhật weekStart', async () => {
+      prisma.battleSession.findUnique.mockResolvedValue(
+        row({ dateTime: UPCOMING }),
+      );
+
       await service.update('session-tue', {
         dateTime: vn('2026-07-28T20:30').toISOString(),
       });
@@ -538,6 +560,45 @@ describe('BattleSessionsService', () => {
     });
   });
 
+  describe('trận đã đánh', () => {
+    it('không cho dời trận chưa đánh về giờ đã qua', async () => {
+      prisma.battleSession.findUnique.mockResolvedValue(
+        row({ dateTime: UPCOMING }),
+      );
+
+      await expect(
+        service.update('session-tue', {
+          dateTime: vn('2026-07-22T08:00').toISOString(),
+        }),
+      ).rejects.toThrow('Giờ đánh đã qua.');
+      expect(prisma.battleSession.update).not.toHaveBeenCalled();
+    });
+
+    it('không cho sửa scrim đã qua giờ đánh, kể cả chỉ đổi tên đối thủ', async () => {
+      await expect(
+        service.update('session-tue', { opponent: 'Tên mới' }),
+      ).rejects.toThrow('Trận này đã đánh xong nên không sửa hay xoá được.');
+      expect(prisma.battleSession.update).not.toHaveBeenCalled();
+    });
+
+    it('không cho xoá scrim đã qua giờ đánh', async () => {
+      await expect(service.remove('session-tue')).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(prisma.battleSession.delete).not.toHaveBeenCalled();
+    });
+
+    it('trận đúng giờ đánh đã tính là đã đánh', async () => {
+      prisma.battleSession.findUnique.mockResolvedValue(
+        row({ dateTime: WEDNESDAY }),
+      );
+
+      await expect(service.remove('session-tue')).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+  });
+
   describe('closeAttendance', () => {
     it('ghi mốc khoá bằng giờ hiện tại', async () => {
       await makeService(vn('2026-07-21T09:00')).closeAttendance('session-tue');
@@ -602,6 +663,10 @@ describe('BattleSessionsService', () => {
 
   describe('remove', () => {
     it('xoá được scrim của tuần đang mở', async () => {
+      prisma.battleSession.findUnique.mockResolvedValue(
+        row({ dateTime: UPCOMING }),
+      );
+
       await service.remove('session-tue');
 
       expect(prisma.battleSession.delete).toHaveBeenCalledWith({
@@ -633,8 +698,8 @@ describe('BattleSessionsService', () => {
   describe('số trận', () => {
     it('lưu số trận admin chọn khi tạo scrim', async () => {
       await service.create({
-        dateTime: vn('2026-07-21T20:30').toISOString(),
-        deadline: vn('2026-07-21T10:00').toISOString(),
+        dateTime: vn('2026-07-23T20:30').toISOString(),
+        deadline: vn('2026-07-23T10:00').toISOString(),
         matchCount: 1,
       });
 
@@ -671,6 +736,10 @@ describe('BattleSessionsService', () => {
     });
 
     it('hạ số trận thì xoá đội hình vượt trần, trong cùng transaction với lệnh update', async () => {
+      prisma.battleSession.findUnique.mockResolvedValue(
+        row({ dateTime: UPCOMING }),
+      );
+
       await service.update('session-tue', { matchCount: 1 });
 
       expect(prisma.$transaction).toHaveBeenCalled();
@@ -683,6 +752,10 @@ describe('BattleSessionsService', () => {
     });
 
     it('không đụng vào đội hình khi số trận giữ nguyên hoặc tăng', async () => {
+      prisma.battleSession.findUnique.mockResolvedValue(
+        row({ dateTime: UPCOMING }),
+      );
+
       await service.update('session-tue', { matchCount: 2 });
 
       expect(prisma.formationMatch.deleteMany).not.toHaveBeenCalled();

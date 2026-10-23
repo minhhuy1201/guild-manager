@@ -15,10 +15,10 @@ import { toastSuccess } from "@/components/shared/toast";
 import { Textarea } from "@/components/ui/textarea";
 import { useCreateLeave } from "../hooks/use-leaves";
 import { formatLeaveRange } from "../lib/leave-label";
-import { LeaveDayField } from "./leave-day-field";
+import { LeaveRangeField } from "./leave-range-field";
 import { MemberPicker } from "./member-picker";
 
-const PICK_START_ERROR = "Vui lòng chọn ngày bắt đầu nghỉ.";
+const PICK_DAYS_ERROR = "Vui lòng chọn ngày nghỉ.";
 const PICK_MEMBER_ERROR = "Vui lòng chọn thành viên.";
 
 interface LeaveDialogProps {
@@ -26,7 +26,7 @@ interface LeaveDialogProps {
   open: boolean;
   /** Called when the dialog closes */
   onOpenChange: (open: boolean) => void;
-  /** Admins may file for anyone and pick days already past; members only for themselves */
+  /** Admins may file for anyone; members only for themselves */
   canManageOthers: boolean;
   /** The viewer's own character, null for a rescue admin */
   ownCharacterId: string | null;
@@ -35,10 +35,11 @@ interface LeaveDialogProps {
 }
 
 /**
- * The file-a-leave dialog: two day fields, an optional reason and, for an admin, who it is for.
+ * The file-a-leave dialog: one range of days, an optional reason and, for an admin, who it is for.
+ * Nobody, admins included, can pick a day before today.
  * @param open - Whether the dialog is open
  * @param onOpenChange - Called when the dialog closes
- * @param canManageOthers - Whether the viewer may file for others and for past days
+ * @param canManageOthers - Whether the viewer may file for others
  * @param ownCharacterId - The viewer's own character
  * @param characters - Everyone an admin may file for
  * @returns The dialog
@@ -85,19 +86,17 @@ function LeaveForm({
   const [reason, setReason] = useState("");
   const createLeave = useCreateLeave();
 
-  // A member cannot file a leave that already ended; the server says so too, this only stops the
-  // pickers offering what would be refused. Admins fix past days, so for them nothing is bounded.
+  // The server refuses a leave starting before today too; this only stops the calendar offering it.
   const today = vnDateKey(new Date());
-  const earliestDay = canManageOthers ? undefined : today;
 
   /**
-   * Pick the first day. The last day follows it unless it is already on or after it, so one day off
-   * is a single pick and a longer leave only needs the end moved.
-   * @param day - The picked first day, `YYYY-MM-DD`
+   * Take the range the calendar reports.
+   * @param start - First day, `YYYY-MM-DD`
+   * @param end - Last day, `YYYY-MM-DD`
    */
-  function handleStartChange(day: string) {
-    setStartDay(day);
-    if (endDay === "" || endDay < day) setEndDay(day);
+  function handleRangeChange(start: string, end: string) {
+    setStartDay(start);
+    setEndDay(end);
   }
 
   /**
@@ -106,7 +105,7 @@ function LeaveForm({
    * @returns A promise resolving once saved
    */
   async function submitLeave() {
-    if (!startDay) throw new Error(PICK_START_ERROR);
+    if (!startDay) throw new Error(PICK_DAYS_ERROR);
     if (!characterId) throw new Error(PICK_MEMBER_ERROR);
 
     await createLeave.mutateAsync({
@@ -137,22 +136,14 @@ function LeaveForm({
         />
       )}
 
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <LeaveDayField
-          id="leave-start"
-          label="Từ ngày"
-          value={startDay}
-          onChange={handleStartChange}
-          minDay={earliestDay}
-        />
-        <LeaveDayField
-          id="leave-end"
-          label="Đến ngày"
-          value={endDay}
-          onChange={setEndDay}
-          minDay={startDay || earliestDay}
-        />
-      </div>
+      <LeaveRangeField
+        id="leave-range"
+        label="Ngày nghỉ"
+        start={startDay}
+        end={endDay}
+        onChange={handleRangeChange}
+        minDay={today}
+      />
 
       <div className="flex flex-col gap-1.5">
         <FieldLabel htmlFor="leave-reason" icon={<MessageSquareText />}>

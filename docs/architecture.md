@@ -288,15 +288,15 @@ Endpoints, all behind the `/api` prefix:
 | `GET` | `/battle-sessions/weeks` | Weeks an admin may edit | Admin |
 | `GET` | `/battle-sessions/current-week` | The open attendance week (every attendance screen reads it) | Bearer |
 | `GET` | `/battle-sessions` | Matches of a week with their deadlines | Bearer |
-| `POST` | `/battle-sessions` | Add a scrim | Admin |
-| `PATCH` | `/battle-sessions/:id` | Edit a match | Admin |
+| `POST` | `/battle-sessions` | Add a scrim (not at a battle time already passed) | Admin |
+| `PATCH` | `/battle-sessions/:id` | Edit a match not yet fought; the new battle time cannot be in the past | Admin |
 | `POST` | `/battle-sessions/:id/reopen-attendance` | Reopen a day an announcement closed, while its deadline is still ahead | Admin |
-| `DELETE` | `/battle-sessions/:id` | Delete a scrim (Guild War cannot be deleted) | Admin |
+| `DELETE` | `/battle-sessions/:id` | Delete a scrim not yet fought (Guild War cannot be deleted) | Admin |
 | `GET` | `/attendance/characters` | Characters for the attendance board (the whole guild, any role) | Bearer |
 | `GET` | `/attendance/records?weekStart=` | Attendance entries of a week, the open one by default (the whole guild, any role) | Bearer |
 | `GET` | `/attendance/summary?weekStart=` | Yes/no counts per match of a week, the open one by default, no identities. **No caller today** — kept for the attendance dashboard | Bearer |
 | `GET` | `/leaves` | Leaves that are not cancelled and have not ended, soonest first (the whole guild, any role) | Bearer |
-| `POST` | `/leaves` | File a leave; clears the answers and line-up slots it covers | Bearer (own character; admin files for anyone, and for past days) |
+| `POST` | `/leaves` | File a leave; clears the answers and line-up slots it covers | Bearer (own character; admin files for anyone; never for a day before today) |
 | `POST` | `/leaves/:id/cancel` | Cancel a leave (stamps `cancelledAt`; a second call returns it unchanged) | Bearer (own leave, or admin) |
 | `POST` | `/attendance` | Mark one character for one match (with a reason when the answer is "Không") | Bearer (own character; admin marks for anyone and bypasses the deadline) |
 | `GET` | `/team-builder/weeks` | Weeks that still have roster data | Admin |

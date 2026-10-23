@@ -202,25 +202,27 @@ describe('LeaveService', () => {
       });
     });
 
-    it('400 when a member ends the leave before today', async () => {
+    it('400 when a member starts the leave before today', async () => {
       await expect(
         service.create(
-          createInput({ startDate: '2026-10-01', endDate: '2026-10-03' }),
+          createInput({ startDate: '2026-10-03', endDate: '2026-10-05' }),
           MEMBER,
         ),
-      ).rejects.toThrow(new BadRequestException('Ngày kết thúc đã qua.'));
+      ).rejects.toThrow(
+        new BadRequestException('Không khai nghỉ cho ngày đã qua.'),
+      );
     });
 
-    it('accepts a member leave ending today', async () => {
+    it('accepts a member leave starting today', async () => {
       await expect(
         service.create(
-          createInput({ startDate: '2026-10-03', endDate: '2026-10-04' }),
+          createInput({ startDate: '2026-10-04', endDate: '2026-10-05' }),
           MEMBER,
         ),
       ).resolves.toMatchObject({ characterId: MEMBER_CHARACTER });
     });
 
-    it('accepts an admin leave in the past', async () => {
+    it('400 when an admin starts the leave before today too', async () => {
       signInAs('admin-char');
 
       await expect(
@@ -228,7 +230,7 @@ describe('LeaveService', () => {
           createInput({ startDate: '2026-10-01', endDate: '2026-10-03' }),
           ADMIN,
         ),
-      ).resolves.toBeDefined();
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('409 naming the range when it overlaps an active leave', async () => {
