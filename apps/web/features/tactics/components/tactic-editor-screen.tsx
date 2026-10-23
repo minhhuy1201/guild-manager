@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
+import { FocusModeShell } from "@/components/shared/focus-mode-shell";
 import { QueryBoundary } from "@/components/shared/query-boundary";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useFocusMode } from "@/hooks/use-focus-mode";
 import { cn } from "@/lib/utils";
 import { CANVAS_GRID_STYLE } from "../lib/canvas-grid";
 import { useEditorShortcuts } from "../hooks/use-editor-shortcuts";
@@ -50,6 +52,9 @@ interface TacticEditorScreenProps {
  *
  * The whole coordination lives in `useTacticEditor`, so this component only builds the tree and
  * decides which half of it a screen this wide should see.
+ *
+ * The drawing tools can fill the window (`FocusModeShell`): the frame is restyled in place, so the
+ * canvas, the zoom and the draft survive entering and leaving. Falling back to the viewer ends it.
  * @param tacticId - Id of the tactic being opened
  * @param canEdit - Whether the viewer may write
  * @returns The editor screen
@@ -137,11 +142,25 @@ export function TacticEditorScreen({
   const notesDraft = useTacticNotesDraft(tacticId, editor.notes);
   // The drawing and the notes save on separate requests, so leaving saves whichever is unsaved and
   // stops at the first that fails.
-  const leaveGuard = useLeaveGuard(dirty || notesDraft.dirty, async () => {
+  const unsaved = dirty || notesDraft.dirty;
+  const leaveGuard = useLeaveGuard(unsaved, async () => {
     if (dirty && !(await editor.onSave())) return false;
 
     return notesDraft.dirty ? notesDraft.save() : true;
   });
+
+  const focusButtonRef = useRef<HTMLButtonElement>(null);
+  const frameRef = useRef<HTMLDivElement>(null);
+  const focusReturn = useMemo(
+    () => ({ button: focusButtonRef, fallback: frameRef }),
+    []
+  );
+  // A palette entry mid-drag owns Esc: the browser cancels the drag with it.
+  const focus = useFocusMode(
+    canDraw,
+    editor.draggedPaletteToken !== null,
+    focusReturn
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -156,139 +175,167 @@ export function TacticEditorScreen({
 
           {/* A member, and anyone on a phone, reads the tactic through the viewer instead. */}
           {canDraw ? (
-            <div
-              data-testid="editor-frame"
-              className="flex flex-col overflow-hidden rounded-container border bg-card shadow-sm"
-            >
-              <div className="border-b">
-                <EditorToolbar
-                  tool={tool}
-                  color={color}
-                  strokeWidth={strokeWidth}
-                  tokenSize={tokenSize}
-                  canUndo={editor.canUndo}
-                  canRedo={editor.canRedo}
-                  saving={editor.saving}
-                  dirty={dirty}
-                  canEdit={canEdit}
-                  onToolChange={setTool}
-                  onColorChange={setColor}
-                  onStrokeWidthChange={setStrokeWidth}
-                  onTokenSizeChange={editor.onToolbarTokenSizeChange}
-                  onUndo={undo}
-                  onRedo={redo}
-                  onSave={editor.onSave}
-                  onExport={() => setExportOpen(true)}
-                />
-              </div>
-
-              <div className="flex">
-                <TokenPalette
-                  collapsed={paletteCollapsed}
-                  canEdit={canEdit}
-                  selected={editor.paletteToken}
-                  onToggle={togglePalette}
-                  onSelect={(token) => {
-                    editor.selectPaletteToken(token);
-                    setTool("token");
-                  }}
-                  onManagePresets={() => setPresetsOpen(true)}
-                  onDragStart={editor.onPaletteDragStart}
-                  onDragEnd={editor.onPaletteDragEnd}
-                />
-
-                <div
-                  ref={ref}
-                  // A palette entry lands here through the browser's own drag and drop, which the
-                  // Konva stage never hears about - so the drop is caught on the box around it.
-                  onDragOver={(event) => {
-                    if (!editor.isDraggingPaletteToken()) return;
-
-                    event.preventDefault();
-                    event.dataTransfer.dropEffect = "copy";
-                  }}
-                  onDrop={(event) => {
-                    event.preventDefault();
-
-                    const box = event.currentTarget.getBoundingClientRect();
-                    editor.onPaletteDrop(
-                      canvasToMapPoint(
-                        { x: event.clientX - box.left, y: event.clientY - box.top },
-                        stageZoom.zoom,
-                        stageZoom.viewport.fitScale
-                      )
-                    );
-                  }}
-                  style={CANVAS_GRID_STYLE}
-                  className={cn(
-                    "relative min-w-0 flex-1 overflow-hidden bg-muted/30",
-                    // Konva writes the hover cursor inline on its own container, so the drag cursor
-                    // has to be marked important to be seen at all while panning.
-                    stageZoom.panning &&
-                      "cursor-grabbing [&_.konvajs-content]:cursor-grabbing!"
-                  )}
-                >
-                  {frame ? (
-                    <>
-                      <TacticCanvas
-                        frame={frame}
-                        animating={animating}
-                        width={width}
-                        zoom={stageZoom.zoom}
-                        pickable={PICKING_TOOLS.has(tool)}
-                        selectedElementIds={selectedElementIds}
-                        marquee={editor.marquee}
-                        onPointerDown={editor.onPointerDown}
-                        onPointerMove={editor.onPointerMove}
-                        onPointerUp={editor.onPointerUp}
-                        onStageReady={editor.onStageReady}
-                        onWheel={stageZoom.onWheel}
-                        onStageMouseDown={stageZoom.onPanStart}
-                      />
-                      {placement ? (
-                        <SelectionActions
-                          placement={placement}
-                          tokenSizes={selection.flatMap((element) =>
-                            element.kind === "token" ? [element.size] : []
-                          )}
-                          onTokenSizeChange={editor.onSelectionTokenSizeChange}
-                          onDeleteSelected={editor.onDeleteSelected}
-                        />
-                      ) : null}
-                      <ZoomReadout
-                        zoom={stageZoom.zoom.zoom}
-                        onStep={stageZoom.step}
-                        onReset={stageZoom.reset}
-                      />
-                    </>
+            <FocusModeShell
+              active={focus.active}
+              label="Vẽ chiến thuật toàn màn hình"
+              onExit={focus.exit}
+              className="contents"
+              bar={
+                <div className="flex min-w-0 flex-1 items-center gap-3">
+                  <h2 className="min-w-0 truncate text-sm font-semibold">
+                    {editor.name}
+                  </h2>
+                  {unsaved ? (
+                    <span className="shrink-0 text-xs text-muted-foreground">
+                      Chưa lưu
+                    </span>
                   ) : null}
                 </div>
+              }
+            >
+              <div
+                ref={frameRef}
+                data-testid="editor-frame"
+                className={cn(
+                  "flex flex-col",
+                  focus.active
+                    ? "min-h-0 flex-1 bg-card"
+                    : "overflow-hidden rounded-container border bg-card shadow-sm"
+                )}
+              >
+                <div className="border-b">
+                  <EditorToolbar
+                    tool={tool}
+                    color={color}
+                    strokeWidth={strokeWidth}
+                    tokenSize={tokenSize}
+                    canUndo={editor.canUndo}
+                    canRedo={editor.canRedo}
+                    saving={editor.saving}
+                    dirty={dirty}
+                    canEdit={canEdit}
+                    onToolChange={setTool}
+                    onColorChange={setColor}
+                    onStrokeWidthChange={setStrokeWidth}
+                    onTokenSizeChange={editor.onToolbarTokenSizeChange}
+                    onUndo={undo}
+                    onRedo={redo}
+                    onSave={editor.onSave}
+                    onExport={() => setExportOpen(true)}
+                    onEnterFocus={focus.active ? undefined : focus.enter}
+                    focusButtonRef={focusButtonRef}
+                  />
+                </div>
 
-                <TacticNotesPanel notes={editor.notes} draft={notesDraft} />
-              </div>
+                <div className={cn("flex", focus.active && "min-h-0 flex-1")}>
+                  <TokenPalette
+                    collapsed={paletteCollapsed}
+                    canEdit={canEdit}
+                    selected={editor.paletteToken}
+                    onToggle={togglePalette}
+                    onSelect={(token) => {
+                      editor.selectPaletteToken(token);
+                      setTool("token");
+                    }}
+                    onManagePresets={() => setPresetsOpen(true)}
+                    onDragStart={editor.onPaletteDragStart}
+                    onDragEnd={editor.onPaletteDragEnd}
+                  />
 
-              <div className="border-t">
-                <StageBar
-                  stages={stages}
-                  activeStageId={activeStageId}
-                  canEdit={canEdit}
-                  playbackControls={
-                    <StagePlaybackControls
-                      playing={playback.playing}
-                      onionSkin={onionSkin}
-                      disabled={stages.length < 2}
-                      onTogglePlay={playback.toggle}
-                      onToggleOnionSkin={() => setOnionSkin((on) => !on)}
-                    />
-                  }
-                  onSelect={selectStage}
-                  onAdd={addStage}
-                  onDuplicate={duplicateStage}
-                  onRename={renameStage}
-                  onRemove={removeStage}
-                />
+                  <div
+                    ref={ref}
+                    // A palette entry lands here through the browser's own drag and drop, which the
+                    // Konva stage never hears about - so the drop is caught on the box around it.
+                    onDragOver={(event) => {
+                      if (!editor.isDraggingPaletteToken()) return;
+
+                      event.preventDefault();
+                      event.dataTransfer.dropEffect = "copy";
+                    }}
+                    onDrop={(event) => {
+                      event.preventDefault();
+
+                      const box = event.currentTarget.getBoundingClientRect();
+                      editor.onPaletteDrop(
+                        canvasToMapPoint(
+                          { x: event.clientX - box.left, y: event.clientY - box.top },
+                          stageZoom.zoom,
+                          stageZoom.viewport.fitScale
+                        )
+                      );
+                    }}
+                    style={CANVAS_GRID_STYLE}
+                    className={cn(
+                      "relative min-w-0 flex-1 bg-muted/30",
+                      focus.active ? "overflow-auto" : "overflow-hidden",
+                      // Konva writes the hover cursor inline on its own container, so the drag cursor
+                      // has to be marked important to be seen at all while panning.
+                      stageZoom.panning &&
+                        "cursor-grabbing [&_.konvajs-content]:cursor-grabbing!"
+                    )}
+                  >
+                    {frame ? (
+                      <>
+                        <TacticCanvas
+                          frame={frame}
+                          animating={animating}
+                          width={width}
+                          zoom={stageZoom.zoom}
+                          pickable={PICKING_TOOLS.has(tool)}
+                          selectedElementIds={selectedElementIds}
+                          marquee={editor.marquee}
+                          onPointerDown={editor.onPointerDown}
+                          onPointerMove={editor.onPointerMove}
+                          onPointerUp={editor.onPointerUp}
+                          onStageReady={editor.onStageReady}
+                          onWheel={stageZoom.onWheel}
+                          onStageMouseDown={stageZoom.onPanStart}
+                        />
+                        {placement ? (
+                          <SelectionActions
+                            placement={placement}
+                            tokenSizes={selection.flatMap((element) =>
+                              element.kind === "token" ? [element.size] : []
+                            )}
+                            onTokenSizeChange={editor.onSelectionTokenSizeChange}
+                            onDeleteSelected={editor.onDeleteSelected}
+                          />
+                        ) : null}
+                        <ZoomReadout
+                          zoom={stageZoom.zoom.zoom}
+                          onStep={stageZoom.step}
+                          onReset={stageZoom.reset}
+                        />
+                      </>
+                    ) : null}
+                  </div>
+
+                  <TacticNotesPanel notes={editor.notes} draft={notesDraft} />
+                </div>
+
+                <div className="border-t">
+                  <StageBar
+                    stages={stages}
+                    activeStageId={activeStageId}
+                    canEdit={canEdit}
+                    playbackControls={
+                      <StagePlaybackControls
+                        playing={playback.playing}
+                        onionSkin={onionSkin}
+                        disabled={stages.length < 2}
+                        onTogglePlay={playback.toggle}
+                        onToggleOnionSkin={() => setOnionSkin((on) => !on)}
+                      />
+                    }
+                    onSelect={selectStage}
+                    onAdd={addStage}
+                    onDuplicate={duplicateStage}
+                    onRename={renameStage}
+                    onRemove={removeStage}
+                  />
+                </div>
               </div>
-            </div>
+            </FocusModeShell>
           ) : null}
 
           {isDesktop !== null && !canDraw ? (

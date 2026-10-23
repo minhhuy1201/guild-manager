@@ -21,9 +21,24 @@ const updateTactic = vi.fn();
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 
-vi.mock("../hooks/use-is-desktop", () => ({
-  useIsDesktop: () => isDesktop,
-}));
+const desktopListeners = new Set<() => void>();
+
+vi.mock("../hooks/use-is-desktop", async () => {
+  const { useSyncExternalStore } = await import("react");
+
+  return {
+    useIsDesktop: () =>
+      useSyncExternalStore(
+        (listener) => {
+          desktopListeners.add(listener);
+
+          return () => desktopListeners.delete(listener);
+        },
+        () => isDesktop,
+        () => null
+      ),
+  };
+});
 
 /** Props the canvas was last rendered with, so a test can fire its drag callbacks. */
 const canvasProps: { current: Record<string, unknown> } = { current: {} };
@@ -762,5 +777,196 @@ describe("TacticEditorScreen - viewer focus mode", () => {
     expect(
       screen.queryByRole("button", { name: "Thu ghi chú chiến thuật" })
     ).toBeNull();
+  });
+});
+
+describe("TacticEditorScreen - editor focus mode", () => {
+  const DIALOG = "Vẽ chiến thuật toàn màn hình";
+  const fullscreenElement: { current: Element | null } = { current: null };
+
+  beforeEach(() => {
+    fullscreenElement.current = null;
+    vi.stubGlobal("matchMedia", () => ({
+      matches: true,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }));
+    Object.defineProperty(document.documentElement, "requestFullscreen", {
+      configurable: true,
+      value: vi.fn(() => Promise.resolve()),
+    });
+    Object.defineProperty(document, "exitFullscreen", {
+      configurable: true,
+      value: vi.fn(() => Promise.resolve()),
+    });
+    Object.defineProperty(document, "fullscreenElement", {
+      configurable: true,
+      get: () => fullscreenElement.current,
+    });
+  });
+
+  /**
+   * Render the editor and wait for the map.
+   * @returns The entry button
+   */
+  async function renderEditor() {
+    renderScreen(true);
+    await screen.findByTestId("canvas");
+
+    // jsdom applies no CSS, so the button is found even where `max-lg:hidden` hides it.
+    return screen.getByRole("button", { name: /Toàn màn hình/ });
+  }
+
+  it("has the toolbar button with an F cap, before Xuất ảnh", async () => {
+    const button = await renderEditor();
+
+    expect(button.textContent).toContain("F");
+    const toolbar = screen.getByTestId("editor-frame");
+    const labels = within(toolbar)
+      .getAllByRole("button")
+      .map((candidate) => candidate.textContent ?? "");
+    const enter = labels.findIndex((label) => label.includes("Toàn màn hình"));
+    const exportAt = labels.findIndex((label) => label.includes("Xuất ảnh"));
+    expect(enter).toBeGreaterThan(-1);
+    expect(enter).toBeLessThan(exportAt);
+  });
+
+  it("opens a dialog holding the toolbar and the stage bar, without the page header", async () => {
+    fireEvent.click(await renderEditor());
+
+    const dialog = screen.getByRole("dialog", { name: DIALOG });
+    expect(within(dialog).getByRole("button", { name: "Đội hình" })).toBeTruthy();
+    expect(within(dialog).getByRole("tablist", { name: "Giai đoạn" })).toBeTruthy();
+    expect(within(dialog).getByText("Thủ cổng tây")).toBeTruthy();
+    expect(within(dialog).queryByRole("heading", { level: 1 })).toBeNull();
+    expect(
+      within(dialog).queryByRole("button", { name: /Toàn màn hình$/ })
+    ).toBeNull();
+  });
+
+  it("opens on F, but not while typing in a field", async () => {
+    await renderEditor();
+    const field = document.createElement("input");
+    document.body.append(field);
+
+    fireEvent.keyDown(field, { key: "f" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+
+    fireEvent.keyDown(window, { key: "f" });
+    expect(screen.getByRole("dialog", { name: DIALOG })).toBeTruthy();
+
+    field.remove();
+  });
+
+  it("says Chưa lưu on the top bar once the drawing has unsaved changes", async () => {
+    fireEvent.click(await renderEditor());
+    const dialog = screen.getByRole("dialog", { name: DIALOG });
+    expect(within(dialog).queryByText("Chưa lưu")).toBeNull();
+
+    act(() => {
+      useTacticEditorStore.getState().commit("s1", [
+        {
+          kind: "text",
+          id: "n1",
+          x: 1,
+          y: 1,
+          text: "Tập kết",
+          color: "red",
+          fontSize: 24,
+        },
+      ]);
+    });
+
+    expect(within(dialog).getByText("Chưa lưu")).toBeTruthy();
+  });
+
+  it("keeps the editor shortcuts working inside the dialog", async () => {
+    fireEvent.click(await renderEditor());
+    const dialog = screen.getByRole("dialog", { name: DIALOG });
+
+    fireEvent.keyDown(window, { key: "3" });
+
+    expect(
+      within(dialog)
+        .getByRole("button", { name: "Mũi tên" })
+        .getAttribute("aria-pressed")
+    ).toBe("true");
+  });
+
+  it("closes on Esc, the exit button and fullscreenchange, with focus back on the button", async () => {
+    fireEvent.click(await renderEditor());
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(document.activeElement).toBe(
+      screen.getByRole("button", { name: /Toàn màn hình/ })
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Toàn màn hình/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Thoát toàn màn hình" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: /Toàn màn hình/ }));
+    act(() => {
+      document.dispatchEvent(new Event("fullscreenchange"));
+    });
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("lets Esc in the stage rename field only cancel the rename", async () => {
+    fireEvent.click(await renderEditor());
+    const dialog = screen.getByRole("dialog", { name: DIALOG });
+
+    fireEvent.doubleClick(
+      within(dialog).getByRole("tab", { name: "Giai đoạn 1" })
+    );
+    const field = within(dialog).getByRole("textbox", { name: "Tên giai đoạn" });
+    fireEvent.keyDown(field, { key: "Escape" });
+
+    expect(within(dialog).queryByRole("textbox", { name: "Tên giai đoạn" })).toBeNull();
+    expect(screen.getByRole("dialog", { name: DIALOG })).toBeTruthy();
+  });
+
+  it("does not ask to save when it closes", async () => {
+    fireEvent.click(await renderEditor());
+    act(() => {
+      useTacticEditorStore.getState().commit("s1", [
+        {
+          kind: "text",
+          id: "n1",
+          x: 1,
+          y: 1,
+          text: "Tập kết",
+          color: "red",
+          fontSize: 24,
+        },
+      ]);
+    });
+
+    fireEvent.keyDown(window, { key: "Escape" });
+
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(updateTactic).not.toHaveBeenCalled();
+  });
+
+  it("closes when the window narrows and the editor gives way to the viewer", async () => {
+    fireEvent.click(await renderEditor());
+    expect(screen.getByRole("dialog", { name: DIALOG })).toBeTruthy();
+
+    isDesktop = false;
+    act(() => {
+      desktopListeners.forEach((listener) => listener());
+    });
+
+    expect(screen.queryByRole("dialog", { name: DIALOG })).toBeNull();
+  });
+
+  it("does not remount the canvas going in and out", async () => {
+    const button = await renderEditor();
+    expect(canvasMounts.count).toBe(1);
+
+    fireEvent.click(button);
+    fireEvent.keyDown(window, { key: "Escape" });
+
+    expect(canvasMounts.count).toBe(1);
   });
 });
