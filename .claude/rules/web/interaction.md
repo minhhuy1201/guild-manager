@@ -82,6 +82,8 @@ A new interaction convention goes here; its reason goes in `frontend.md`.
 - Mark a dialog that is the screen itself with `SCREEN_DIALOG_ATTRIBUTE` (`lib/keyboard-target.ts`), so the screen's shortcuts still run inside it. The shell does it while active.
 - Draw focus mode as one `fixed inset-0 z-40` `role="dialog"` over the page, with no new z value. Ask for browser fullscreen on `document.documentElement`, never a child, and swallow a refusal. Fade opacity only.
 - Mount the content once. When a remount would lose state (droppable ids, a canvas, a live feed), keep the shell around the content with `active` flipping in place: the shell keeps its root and child positions, so nothing remounts. A screen with nothing to lose may mount the shell only while on, with `active` always true (team builder overlay).
+- Give each half of a screen that swaps between two trees its own `useFocusMode` and shell (tactic page: editor and viewer). Pass the half's own `enabled`, so the mode closes when the page falls back to the other half.
+- Fit a map in focus mode on both axes: wrap the map box in an area that is `contents` outside the mode, measure it with `useStageSize` (width and height), and size the box to `fitStageWidth`. Keep the box's `ref`, drop handlers and overlays on the box itself, so every coordinate stays relative to the fitted map.
 - In the team builder's overlay, never reveal the grid, and reuse `UnsavedChangesBar` in the grid column; add no save logic. The editable battle only gets the entry button.
 
 ## Feedback after a write → a toast

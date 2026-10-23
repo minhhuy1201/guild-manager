@@ -7,7 +7,7 @@ import { QueryBoundary } from "@/components/shared/query-boundary";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFocusMode } from "@/hooks/use-focus-mode";
 import { cn } from "@/lib/utils";
-import { CANVAS_GRID_STYLE } from "../lib/canvas-grid";
+import { CANVAS_GRID_STYLE, FOCUS_CANVAS_STYLE } from "../lib/canvas-grid";
 import { useEditorShortcuts } from "../hooks/use-editor-shortcuts";
 import { useIsDesktop } from "../hooks/use-is-desktop";
 import { useStagePlayback } from "../hooks/use-stage-playback";
@@ -21,7 +21,7 @@ import { useLeaveGuard } from "../hooks/use-leave-guard";
 import { useTacticEditorStore } from "../store/editor-store";
 import { elementBounds, unionBounds } from "../lib/element-geometry";
 import { selectionPlacement } from "../lib/selection-anchor";
-import { canvasToMapPoint } from "../lib/stage-scale";
+import { canvasToMapPoint, fitStageWidth } from "../lib/stage-scale";
 import { PICKING_TOOLS } from "../types/tactic";
 import { ExportDialog } from "./export-dialog";
 import { LeaveDialog } from "./leave-dialog";
@@ -66,6 +66,7 @@ export function TacticEditorScreen({
   const editor = useTacticEditor(tacticId, canEdit);
   const isDesktop = useIsDesktop();
   const { ref, width } = useStageSize();
+  const { ref: areaRef, width: areaWidth, height: areaHeight } = useStageSize();
   const stageZoom = useStageZoom(width);
   const [presetsOpen, setPresetsOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
@@ -162,6 +163,10 @@ export function TacticEditorScreen({
     focusReturn
   );
 
+  const mapWidth = focus.active
+    ? fitStageWidth(areaWidth, areaHeight)
+    : undefined;
+
   return (
     <div className="flex flex-col gap-4">
       <TacticHeader title={editor.name || "Đang tải..."} />
@@ -242,72 +247,83 @@ export function TacticEditorScreen({
                     onDragEnd={editor.onPaletteDragEnd}
                   />
 
+                  {/* `contents` outside the mode: the map stays a direct child of the row. */}
                   <div
-                    ref={ref}
-                    // A palette entry lands here through the browser's own drag and drop, which the
-                    // Konva stage never hears about - so the drop is caught on the box around it.
-                    onDragOver={(event) => {
-                      if (!editor.isDraggingPaletteToken()) return;
-
-                      event.preventDefault();
-                      event.dataTransfer.dropEffect = "copy";
-                    }}
-                    onDrop={(event) => {
-                      event.preventDefault();
-
-                      const box = event.currentTarget.getBoundingClientRect();
-                      editor.onPaletteDrop(
-                        canvasToMapPoint(
-                          { x: event.clientX - box.left, y: event.clientY - box.top },
-                          stageZoom.zoom,
-                          stageZoom.viewport.fitScale
-                        )
-                      );
-                    }}
-                    style={CANVAS_GRID_STYLE}
-                    className={cn(
-                      "relative min-w-0 flex-1 bg-muted/30",
-                      focus.active ? "overflow-auto" : "overflow-hidden",
-                      // Konva writes the hover cursor inline on its own container, so the drag cursor
-                      // has to be marked important to be seen at all while panning.
-                      stageZoom.panning &&
-                        "cursor-grabbing [&_.konvajs-content]:cursor-grabbing!"
-                    )}
+                    ref={areaRef}
+                    style={focus.active ? FOCUS_CANVAS_STYLE : undefined}
+                    className={
+                      focus.active
+                        ? "flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-hidden p-4"
+                        : "contents"
+                    }
                   >
-                    {frame ? (
-                      <>
-                        <TacticCanvas
-                          frame={frame}
-                          animating={animating}
-                          width={width}
-                          zoom={stageZoom.zoom}
-                          pickable={PICKING_TOOLS.has(tool)}
-                          selectedElementIds={selectedElementIds}
-                          marquee={editor.marquee}
-                          onPointerDown={editor.onPointerDown}
-                          onPointerMove={editor.onPointerMove}
-                          onPointerUp={editor.onPointerUp}
-                          onStageReady={editor.onStageReady}
-                          onWheel={stageZoom.onWheel}
-                          onStageMouseDown={stageZoom.onPanStart}
-                        />
-                        {placement ? (
-                          <SelectionActions
-                            placement={placement}
-                            tokenSizes={selection.flatMap((element) =>
-                              element.kind === "token" ? [element.size] : []
-                            )}
-                            onTokenSizeChange={editor.onSelectionTokenSizeChange}
-                            onDeleteSelected={editor.onDeleteSelected}
+                    <div
+                      ref={ref}
+                      // A palette entry lands here through the browser's own drag and drop, which the
+                      // Konva stage never hears about - so the drop is caught on the box around it.
+                      onDragOver={(event) => {
+                        if (!editor.isDraggingPaletteToken()) return;
+
+                        event.preventDefault();
+                        event.dataTransfer.dropEffect = "copy";
+                      }}
+                      onDrop={(event) => {
+                        event.preventDefault();
+
+                        const box = event.currentTarget.getBoundingClientRect();
+                        editor.onPaletteDrop(
+                          canvasToMapPoint(
+                            { x: event.clientX - box.left, y: event.clientY - box.top },
+                            stageZoom.zoom,
+                            stageZoom.viewport.fitScale
+                          )
+                        );
+                      }}
+                      style={{ ...CANVAS_GRID_STYLE, width: mapWidth }}
+                      className={cn(
+                        "relative min-w-0 overflow-hidden bg-muted/30",
+                        focus.active ? "shrink-0 ring-1 ring-border" : "flex-1",
+                        // Konva writes the hover cursor inline on its own container, so the drag cursor
+                        // has to be marked important to be seen at all while panning.
+                        stageZoom.panning &&
+                          "cursor-grabbing [&_.konvajs-content]:cursor-grabbing!"
+                      )}
+                    >
+                      {frame ? (
+                        <>
+                          <TacticCanvas
+                            frame={frame}
+                            animating={animating}
+                            width={width}
+                            zoom={stageZoom.zoom}
+                            pickable={PICKING_TOOLS.has(tool)}
+                            selectedElementIds={selectedElementIds}
+                            marquee={editor.marquee}
+                            onPointerDown={editor.onPointerDown}
+                            onPointerMove={editor.onPointerMove}
+                            onPointerUp={editor.onPointerUp}
+                            onStageReady={editor.onStageReady}
+                            onWheel={stageZoom.onWheel}
+                            onStageMouseDown={stageZoom.onPanStart}
                           />
-                        ) : null}
-                        <ZoomReadout
-                          zoom={stageZoom.zoom.zoom}
-                          onStep={stageZoom.step}
-                          onReset={stageZoom.reset}
-                        />
-                      </>
-                    ) : null}
+                          {placement ? (
+                            <SelectionActions
+                              placement={placement}
+                              tokenSizes={selection.flatMap((element) =>
+                                element.kind === "token" ? [element.size] : []
+                              )}
+                              onTokenSizeChange={editor.onSelectionTokenSizeChange}
+                              onDeleteSelected={editor.onDeleteSelected}
+                            />
+                          ) : null}
+                          <ZoomReadout
+                            zoom={stageZoom.zoom.zoom}
+                            onStep={stageZoom.step}
+                            onReset={stageZoom.reset}
+                          />
+                        </>
+                      ) : null}
+                    </div>
                   </div>
 
                   <TacticNotesPanel notes={editor.notes} draft={notesDraft} />

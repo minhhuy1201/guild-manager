@@ -6,8 +6,8 @@ Spec: [`docs/specs/tactic-focus-mode.md`](../../specs/tactic-focus-mode.md).
 
 **Blocked by:** 02, 03
 
-**Status:** todo
+**Status:** done
 
-- [ ] Bản đồ editor fit chiều rộng và chiều cao khi bật, căn giữa, có `ring`, nền lưới và vignette
-- [ ] Điểm thả từ palette và thanh hành động của vùng chọn tính theo hộp đã fit
-- [ ] `.claude/rules/web/interaction.md` ghi thêm: một màn có hai nửa (mỗi nửa một focus mode) và bản đồ fit hai chiều
+- [x] Bản đồ editor fit chiều rộng và chiều cao khi bật, căn giữa, có `ring`, nền lưới và vignette
+- [x] Điểm thả từ palette và thanh hành động của vùng chọn tính theo hộp đã fit
+- [x] `.claude/rules/web/interaction.md` ghi thêm: một màn có hai nửa (mỗi nửa một focus mode) và bản đồ fit hai chiều

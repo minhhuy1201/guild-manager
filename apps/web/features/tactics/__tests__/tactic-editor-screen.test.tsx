@@ -11,7 +11,11 @@ import {
   within,
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { TACTIC_SCHEMA_VERSION } from "@guild/shared/schemas";
+import {
+  TACTIC_MAP_HEIGHT,
+  TACTIC_MAP_WIDTH,
+  TACTIC_SCHEMA_VERSION,
+} from "@guild/shared/schemas";
 
 import type { StageFrame } from "../lib/stage-transition";
 
@@ -770,6 +774,29 @@ describe("TacticEditorScreen - viewer focus mode", () => {
     expect(within(dialog).getByText(notes)).toBeTruthy();
   });
 
+  it("sizes the map to the area it must fit, by height when the window is wide", async () => {
+    stubFullscreen();
+    vi.spyOn(Element.prototype, "getBoundingClientRect").mockReturnValue({
+      width: 1000,
+      height: 300,
+      top: 0,
+      left: 0,
+      right: 1000,
+      bottom: 300,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    });
+    const button = await renderViewer();
+
+    fireEvent.click(button);
+
+    const box = screen.getByTestId("canvas").parentElement as HTMLElement;
+    expect(parseFloat(box.style.width)).toBeCloseTo(
+      (300 * TACTIC_MAP_WIDTH) / TACTIC_MAP_HEIGHT
+    );
+  });
+
   it("keeps the plain notes block, without a fold button, outside the mode", async () => {
     await renderViewer();
 
@@ -968,5 +995,36 @@ describe("TacticEditorScreen - editor focus mode", () => {
     fireEvent.keyDown(window, { key: "Escape" });
 
     expect(canvasMounts.count).toBe(1);
+  });
+
+  it("sizes the map to the area it must fit, by height when the window is wide", async () => {
+    // Every box measures 1000 x 300: the area is far wider than the map's shape. Set before the
+    // render, since a box is measured as it mounts.
+    vi.spyOn(Element.prototype, "getBoundingClientRect").mockReturnValue({
+      width: 1000,
+      height: 300,
+      top: 0,
+      left: 0,
+      right: 1000,
+      bottom: 300,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    });
+    const button = await renderEditor();
+
+    fireEvent.click(button);
+
+    const box = screen.getByTestId("canvas").parentElement as HTMLElement;
+    expect(parseFloat(box.style.width)).toBeCloseTo(
+      (300 * TACTIC_MAP_WIDTH) / TACTIC_MAP_HEIGHT
+    );
+  });
+
+  it("leaves the map to the page's width outside the mode", async () => {
+    await renderEditor();
+
+    const box = screen.getByTestId("canvas").parentElement as HTMLElement;
+    expect(box.style.width).toBe("");
   });
 });
