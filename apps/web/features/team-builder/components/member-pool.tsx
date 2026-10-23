@@ -15,6 +15,12 @@ import { DraggableMember } from "./draggable-member";
 import { PoolClassChips } from "./pool-class-chips";
 import { PoolFilters } from "./pool-filters";
 
+/**
+ * How the pool is drawn: a `card` of fixed height in the page, or a `column` that fills the height
+ * of its container (focus mode).
+ */
+export type MemberPoolLayout = "card" | "column";
+
 interface MemberPoolProps {
   /** Members available for the battle on screen, already filtered */
   pool: Character[];
@@ -26,6 +32,8 @@ interface MemberPoolProps {
   otherMatchIds: Set<string>;
   /** Which match is on screen, 0-based — decides what the note says */
   activeMatchIndex: number;
+  /** How the pool is drawn, a card by default */
+  layout?: MemberPoolLayout;
 }
 
 /**
@@ -33,11 +41,16 @@ interface MemberPoolProps {
  * the screen hook on every render, so dropping someone into a slot removes them
  * here without any extra bookkeeping. Dropping a card back onto this area frees
  * their slot.
+ *
+ * In the `column` layout the pool has no card around it: the title, the filters and the class chips
+ * stay pinned at the top, and the list takes the rest of the column's height, scrolling inside the
+ * drop area, so the whole list is where a card is dropped to free its slot.
  * @param pool - Members available for the battle, already filtered
  * @param classCounts - Members left per guild class, before the filters
  * @param readOnly - Hide the pool entirely
  * @param otherMatchIds - Ids of members already placed in the day's other match
  * @param activeMatchIndex - Which match is on screen, 0-based
+ * @param layout - How the pool is drawn
  * @returns Card holding the filters and the available members, or nothing when read-only
  */
 export function MemberPool({
@@ -46,6 +59,7 @@ export function MemberPool({
   readOnly = false,
   otherMatchIds,
   activeMatchIndex,
+  layout = "card",
 }: MemberPoolProps) {
   const data: PoolDropData = { type: "pool" };
   const { setNodeRef, isOver } = useDroppable({
@@ -62,6 +76,77 @@ export function MemberPool({
   if (readOnly) return null;
 
   const isFiltering = search.trim().length > 0 || guildClasses.length > 0;
+  const isColumn = layout === "column";
+
+  const filters = (
+    <>
+      <PoolFilters />
+
+      <PoolClassChips
+        counts={classCounts}
+        selected={guildClasses}
+        onToggle={(guildClass) =>
+          setFilter({
+            search,
+            guildClasses: toggleGuildClass(guildClasses, guildClass),
+          })
+        }
+      />
+    </>
+  );
+
+  const list = (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "rounded-inner border border-dashed border-border bg-card/60 p-2 transition-[background-color,box-shadow,border-color] duration-[var(--duration-fast)]",
+        isColumn && "flex min-h-0 flex-1 flex-col",
+        isOver && "border-solid border-jade bg-jade/10 shadow-[var(--glow-jade)]"
+      )}
+    >
+      <ScrollArea className={isColumn ? "min-h-0 flex-1" : "h-64"}>
+        {pool.length === 0 ? (
+          <EmptyState
+            message={
+              isFiltering
+                ? "Không có thành viên nào khớp bộ lọc."
+                : "Không còn ai để xếp cho trận này."
+            }
+          />
+        ) : (
+          <div
+            className={cn(
+              "grid grid-cols-2 gap-2 pr-3",
+              !isColumn && "md:grid-cols-3 lg:grid-cols-4"
+            )}
+          >
+            {pool.map((character) => (
+              <DraggableMember
+                key={character.id}
+                character={character}
+                from={POOL_DROPPABLE_ID}
+                note={
+                  otherMatchIds.has(character.id)
+                    ? `đang đánh trận ${activeMatchIndex === 0 ? 2 : 1}`
+                    : undefined
+                }
+              />
+            ))}
+          </div>
+        )}
+      </ScrollArea>
+    </div>
+  );
+
+  if (isColumn) {
+    return (
+      <div className="flex h-full min-h-0 flex-col gap-4 p-4">
+        <SectionTitle count={pool.length}>Thành viên chưa xếp</SectionTitle>
+        {filters}
+        {list}
+      </div>
+    );
+  }
 
   return (
     <Card variant="inset">
@@ -69,53 +154,8 @@ export function MemberPool({
         <SectionTitle count={pool.length}>Thành viên chưa xếp</SectionTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        <PoolFilters />
-
-        <PoolClassChips
-          counts={classCounts}
-          selected={guildClasses}
-          onToggle={(guildClass) =>
-            setFilter({
-              search,
-              guildClasses: toggleGuildClass(guildClasses, guildClass),
-            })
-          }
-        />
-
-        <div
-          ref={setNodeRef}
-          className={cn(
-            "rounded-inner border border-dashed border-border bg-card/60 p-2 transition-[background-color,box-shadow,border-color] duration-[var(--duration-fast)]",
-            isOver && "border-solid border-jade bg-jade/10 shadow-[var(--glow-jade)]"
-          )}
-        >
-          <ScrollArea className="h-64">
-            {pool.length === 0 ? (
-              <EmptyState
-                message={
-                  isFiltering
-                    ? "Không có thành viên nào khớp bộ lọc."
-                    : "Không còn ai để xếp cho trận này."
-                }
-              />
-            ) : (
-              <div className="grid grid-cols-2 gap-2 pr-3 md:grid-cols-3 lg:grid-cols-4">
-                {pool.map((character) => (
-                  <DraggableMember
-                    key={character.id}
-                    character={character}
-                    from={POOL_DROPPABLE_ID}
-                    note={
-                      otherMatchIds.has(character.id)
-                        ? `đang đánh trận ${activeMatchIndex === 0 ? 2 : 1}`
-                        : undefined
-                    }
-                  />
-                ))}
-              </div>
-            )}
-          </ScrollArea>
-        </div>
+        {filters}
+        {list}
       </CardContent>
     </Card>
   );

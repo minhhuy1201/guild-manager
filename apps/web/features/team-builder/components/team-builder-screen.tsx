@@ -21,6 +21,7 @@ import { useFormationAnnounce } from "../hooks/use-formation-announce";
 import { useFormationScreen } from "../hooks/use-formation-screen";
 import { useSaveShortcut } from "../hooks/use-save-shortcut";
 import { useUndoShortcut } from "../hooks/use-undo-shortcut";
+import type { FormationLayout } from "../types/formation";
 import { buildBannerTitle } from "../lib/banner-title";
 import { AbsentBanner } from "./absent-banner";
 import { AnnounceFormationDialog } from "./announce-formation-dialog";
@@ -30,7 +31,7 @@ import { FormationCaptureSheet } from "./formation-capture-sheet";
 import { FormationGrid } from "./formation-grid";
 import { FormationToolbar } from "./formation-toolbar";
 import { MemberCard } from "./member-card";
-import { MemberPool } from "./member-pool";
+import { MemberPool, type MemberPoolLayout } from "./member-pool";
 import { MatchTabs } from "./match-tabs";
 import { PrefillBanner } from "./prefill-banner";
 import { SaveConflictDialog } from "./save-conflict-dialog";
@@ -174,30 +175,32 @@ export function TeamBuilderScreen() {
     draftMatchCount: screen.draft.matchCount,
     scheduledMatchCount: activeSession.matchCount,
   });
-  const arranging = (
-    <>
-      <FormationGrid
-        bannerTitle={bannerTitle}
-        isGuildWar={activeSession.isGuildWar}
-        locked={activeSession.locked}
-        assignment={screen.draft.assignment}
-        notes={screen.draft.notes}
-        onNoteChange={screen.draft.setNote}
-        names={screen.teamNames.names}
-        onNameChange={screen.teamNames.setName}
-        saving={saving}
-        charactersById={screen.pool.charactersById}
-        readOnly={!editable}
-        absentIds={screen.pool.absentIds}
-      />
-      <MemberPool
-        pool={screen.pool.pool}
-        classCounts={screen.pool.classCounts}
-        readOnly={!editable}
-        otherMatchIds={screen.pool.otherMatchIds}
-        activeMatchIndex={screen.draft.activeMatchIndex}
-      />
-    </>
+  const grid = (layout: FormationLayout) => (
+    <FormationGrid
+      bannerTitle={bannerTitle}
+      isGuildWar={activeSession.isGuildWar}
+      locked={activeSession.locked}
+      assignment={screen.draft.assignment}
+      notes={screen.draft.notes}
+      onNoteChange={screen.draft.setNote}
+      names={screen.teamNames.names}
+      onNameChange={screen.teamNames.setName}
+      saving={saving}
+      charactersById={screen.pool.charactersById}
+      readOnly={!editable}
+      absentIds={screen.pool.absentIds}
+      layout={layout}
+    />
+  );
+  const pool = (layout: MemberPoolLayout) => (
+    <MemberPool
+      pool={screen.pool.pool}
+      classCounts={screen.pool.classCounts}
+      readOnly={!editable}
+      otherMatchIds={screen.pool.otherMatchIds}
+      activeMatchIndex={screen.draft.activeMatchIndex}
+      layout={layout}
+    />
   );
 
   return (
@@ -332,7 +335,12 @@ export function TeamBuilderScreen() {
           }
         />
 
-        {focusMode.active ? null : arranging}
+        {focusMode.active ? null : (
+          <>
+            {grid("screen")}
+            {pool("card")}
+          </>
+        )}
 
         {showSaveBar && !focusMode.active ? (
           <UnsavedChangesBar
@@ -349,9 +357,12 @@ export function TeamBuilderScreen() {
       </div>
 
       {focusMode.active ? (
-        <FocusModeOverlay title={bannerTitle} onExit={focusMode.exit}>
-          {arranging}
-        </FocusModeOverlay>
+        <FocusModeOverlay
+          title={bannerTitle}
+          onExit={focusMode.exit}
+          grid={grid("focus")}
+          pool={pool("column")}
+        />
       ) : null}
 
       <DragOverlay>

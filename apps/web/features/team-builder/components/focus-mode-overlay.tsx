@@ -16,13 +16,20 @@ interface FocusModeOverlayProps {
   title: string;
   /** Close the overlay */
   onExit: () => void;
-  /** The formation grid and the member pool */
-  children: ReactNode;
+  /** The formation grid, in the wide column */
+  grid: ReactNode;
+  /** The member pool, in the narrow column */
+  pool: ReactNode;
 }
 
 /**
  * The shell of the team builder's focus mode: a dialog that covers the window, a thin top bar with
- * the battle's name and the exit button, and a scrolling body for the grid and the pool.
+ * the battle's name and the exit button, and a body for the grid and the pool.
+ *
+ * From `lg` the body is two columns - the grid on `1fr`, the pool on a clamped width, because a
+ * member card needs a minimum width a percentage would not give - and each column scrolls on its
+ * own, so the pool never moves while the grid is scrolled. Below `lg` the columns stack and the
+ * whole body scrolls.
  *
  * `z-40` puts it over the site header (which comes earlier in the DOM at the same level) and under
  * the `z-50` dialogs, popovers and toasts that portal out to `body`, so a save-conflict dialog
@@ -30,13 +37,15 @@ interface FocusModeOverlayProps {
  * `aria-modal` dialog promises. The only motion is a fade of its opacity.
  * @param title - Headline of the battle being arranged
  * @param onExit - Close the overlay
- * @param children - The formation grid and the member pool
+ * @param grid - The formation grid
+ * @param pool - The member pool
  * @returns The fullscreen dialog
  */
 export function FocusModeOverlay({
   title,
   onExit,
-  children,
+  grid,
+  pool,
 }: FocusModeOverlayProps) {
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -92,8 +101,11 @@ export function FocusModeOverlay({
         </Button>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
-        {children}
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:grid lg:grid-cols-[1fr_clamp(280px,22vw,360px)] lg:overflow-hidden">
+        <div className="p-4 lg:min-h-0 lg:overflow-y-auto">{grid}</div>
+        <div className="border-t border-border max-lg:h-[28rem] max-lg:shrink-0 lg:min-h-0 lg:border-t-0 lg:border-l lg:bg-muted/60">
+          {pool}
+        </div>
       </div>
     </div>
   );

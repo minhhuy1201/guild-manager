@@ -18,11 +18,11 @@ beforeEach(() => {
 });
 
 /**
- * Render an empty grid in one of its two layouts.
- * @param layout - "screen" for the page, "capture" for the image sent to Discord
+ * Render an empty grid in one of its layouts.
+ * @param layout - "screen" for the page, "capture" for the image sent to Discord, "focus" for the fullscreen mode
  * @returns The rendered container
  */
-function renderGrid(layout: "screen" | "capture") {
+function renderGrid(layout: "screen" | "capture" | "focus") {
   return render(
     <DndContext>
       <FormationGrid
@@ -75,5 +75,30 @@ describe("FormationGrid - mỗi lúc một team dưới md", () => {
       expect(teamCard(team).className).not.toContain("max-md:hidden");
     }
     expect(container.querySelectorAll("button[aria-pressed]")).toHaveLength(0);
+  });
+});
+
+describe("FormationGrid - layout focus", () => {
+  it("hiện cả hai hàng đội với nhãn và số đã xếp, không có nút gập", () => {
+    renderGrid("focus");
+
+    expect(screen.getByText("Đội 1-5")).toBeTruthy();
+    expect(screen.getByText("Đội 6-10")).toBeTruthy();
+    expect(screen.getAllByText("0/30")).toHaveLength(2);
+    expect(screen.queryByRole("button", { name: /^Đội 1-5/ })).toBeNull();
+    expect(teamCard(1)).toBeTruthy();
+    expect(teamCard(TEAM_COUNT)).toBeTruthy();
+  });
+
+  it("không dựng banner vì thanh trên đã nêu tên trận", () => {
+    renderGrid("focus");
+
+    expect(screen.queryByText("BANG CHIẾN 20:00 19/09")).toBeNull();
+  });
+
+  it("layout screen vẫn gập được hàng đội", () => {
+    renderGrid("screen");
+
+    expect(screen.getByRole("button", { name: /^Đội 1-5/ })).toBeTruthy();
   });
 });

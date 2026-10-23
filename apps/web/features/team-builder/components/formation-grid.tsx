@@ -19,6 +19,7 @@ import type {
 import { FormationBanner } from "./formation-banner";
 import { TeamColumn } from "./team-column";
 import { TeamRowGroup } from "./team-row-group";
+import { TeamRowHeading } from "./team-row-heading";
 import { TeamSwitcher, type TeamChip } from "./team-switcher";
 
 /** Layout is static data, built once at module load. */
@@ -72,10 +73,13 @@ interface FormationGridProps {
  *
  * A banner as wide as the rows sits on top, naming the battle and the match.
  *
- * `layout` gathers what the Discord image does differently from the screen, both for one reason -
+ * `layout` gathers what the Discord image and the focus mode do differently from the screen. The
+ * image differs in two ways, both for one reason -
  * the image is read on its own, without the tabs and the controls around it: five columns whatever
  * the window, and the tall banner as its only headline. The screen keeps the banner to one line,
- * since the day tab right above it already names the battle.
+ * since the day tab right above it already names the battle. `focus` keeps the screen's grid but
+ * leaves the banner out (the top bar of the mode names the battle) and shows each row open under a
+ * plain heading instead of a foldable group.
  *
  * Takes the assignment as a prop rather than reading the store: what shows is
  * the draft when one exists and the saved copy otherwise, and that merge
@@ -113,6 +117,7 @@ export function FormationGrid({
   captureMatchIndex,
 }: FormationGridProps) {
   const isCapture = layout === "capture";
+  const isFocus = layout === "focus";
 
   const teams = useMemo(() => {
     const grouped = new Map<number, Slot[]>();
@@ -173,12 +178,14 @@ export function FormationGrid({
   return (
     <div className="relative">
       <div className="flex flex-col gap-3">
-        <FormationBanner
-          title={bannerTitle}
-          isGuildWar={isGuildWar}
-          locked={locked}
-          size={isCapture ? "tall" : "compact"}
-        />
+        {isFocus ? null : (
+          <FormationBanner
+            title={bannerTitle}
+            isGuildWar={isGuildWar}
+            locked={locked}
+            size={isCapture ? "tall" : "compact"}
+          />
+        )}
 
         {/* Below `md` the screen shows one team at a time: ten teams stacked made the page almost
             6,000px tall on a phone. The capture always holds all ten, whatever the window. */}
@@ -236,8 +243,17 @@ export function FormationGrid({
 
           // The image sent to Discord is read on its own, so it never folds: all ten teams, no
           // headers, and nothing wrapping the row that the screen does not have either.
-          return isCapture ? (
-            grid
+          if (isCapture) return grid;
+
+          return isFocus ? (
+            <section key={first} className="flex flex-col gap-3">
+              <TeamRowHeading
+                label={`Đội ${first}-${last}`}
+                filled={filled}
+                total={row.length * SLOTS_PER_TEAM}
+              />
+              {grid}
+            </section>
           ) : (
             <TeamRowGroup
               key={first}

@@ -12,10 +12,10 @@ UI: chạy skill `redesign-skill` cho bố cục, giữ quy ước trong `.claud
 
 **Blocked by:** 01
 
-**Status:** todo
+**Status:** done
 
-- [ ] `FormationGrid` có cách hiện "luôn mở": nhãn hàng còn, không có trigger gập. `screen` và `capture` không đổi.
-- [ ] `MemberPool` có cách hiện "cao hết cột": bộ lọc ghim, danh sách lấp phần còn lại, card 2 cột. Cách hiện mặc định không đổi.
-- [ ] Kéo từ pool vào slot ở hàng dưới không phải cuộn trang. Kéo từ slot về pool thì gỡ người ra.
-- [ ] Test component cho hai cách hiện mới (prior art: `formation-grid.test.tsx`, `member-pool.test.tsx`). Test cũ vẫn xanh.
-- [ ] Chạy app, đo chiều cao hai hàng ở 1080p, ghi kết quả vào phần Further Notes của spec
+- [x] `FormationGrid` có cách hiện "luôn mở": nhãn hàng còn, không có trigger gập. `screen` và `capture` không đổi.
+- [x] `MemberPool` có cách hiện "cao hết cột": bộ lọc ghim, danh sách lấp phần còn lại, card 2 cột. Cách hiện mặc định không đổi.
+- [x] Kéo từ pool vào slot ở hàng dưới không phải cuộn trang. Kéo từ slot về pool thì gỡ người ra.
+- [x] Test component cho hai cách hiện mới (prior art: `formation-grid.test.tsx`, `member-pool.test.tsx`). Test cũ vẫn xanh.
+- [ ] Chạy app, đo chiều cao hai hàng ở 1080p, ghi kết quả vào phần Further Notes của spec (chưa đo được: không có trình duyệt trong môi trường làm việc; đã ghi rõ trong Further Notes, cần đo tay)

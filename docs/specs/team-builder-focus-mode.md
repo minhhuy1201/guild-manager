@@ -156,7 +156,8 @@ Thoát bằng `Esc` hoặc nút ✕. Draft vẫn giữ nguyên khi thoát.
 ## Further Notes
 
 - Ước tính một đội (header và 6 slot) cao khoảng 370px. Hai hàng cộng thanh trên khoảng 880px, vừa
-  màn 1080p khi đã vào toàn màn hình thật. Đây là ước tính chưa đo, sẽ kiểm khi chạy app. Nếu không
-  vừa thì grid tự cuộn, không phải lỗi.
+  màn 1080p khi đã vào toàn màn hình thật. Đây là ước tính **chưa đo**: lúc làm ticket 02 môi trường không có trình duyệt
+  để dựng trang xếp đội (cần đăng nhập admin và API), nên chưa có số thật. Cần đo một lần trên máy
+  có trình duyệt. Nếu không vừa thì grid tự cuộn, không phải lỗi.
 - Quy ước mới (lớp phủ toàn màn hình, phím `F`) được ghi thêm vào `.claude/rules/web/interaction.md`,
   mục team builder, cùng PR.
