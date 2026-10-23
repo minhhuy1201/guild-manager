@@ -15,19 +15,19 @@ interface CatRaceResultsProps {
  */
 export function CatRaceResults({ event }: CatRaceResultsProps) {
   const prizes = prizesByTier(event.prizes);
-  const awarded = event.prizes.reduce((sum, prize) => sum + prize.awardedCount, 0);
   const quantity = event.prizes.reduce((sum, prize) => sum + prize.quantity, 0);
   const voided = event.rounds.filter((round) => round.voidedAt !== null).length;
 
   return (
     <div className="flex flex-col gap-4">
+      <h2 className="sr-only">Kết quả</h2>
       <ul
         aria-label="Tổng kết đợt đua"
         className="flex flex-wrap gap-x-6 gap-y-1 text-base text-muted-foreground tabular-nums"
       >
         <li>{event.participants.length} người tham gia</li>
         <li>
-          {awarded}/{quantity} giải đã trao
+          {event.awardedCount}/{quantity} giải đã trao
         </li>
         {voided > 0 ? <li>{voided} vòng huỷ</li> : null}
       </ul>

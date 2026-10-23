@@ -9,23 +9,27 @@ import { useEndCatRace } from "../hooks/use-cat-race-mutations";
 
 interface EndEventButtonProps {
   eventId: string;
+  /** Ending mid-race would cut the replay and the winner card off */
+  disabled?: boolean;
 }
 
 /**
  * "Kết thúc đợt", behind a confirmation: an ended event only reads, it never reopens.
  * @param eventId - Event to end
+ * @param disabled - Whether a race is running
  * @returns The button and its dialog
  */
-export function EndEventButton({ eventId }: EndEventButtonProps) {
+export function EndEventButton({ eventId, disabled = false }: EndEventButtonProps) {
   const [open, setOpen] = useState(false);
   const endRace = useEndCatRace();
 
   return (
     <>
-      <Button type="button" variant="outline" onClick={() => setOpen(true)}>
+      <Button type="button" variant="outline" disabled={disabled} onClick={() => setOpen(true)}>
         <Flag />
         Kết thúc đợt
       </Button>
+      {disabled ? <span className="text-sm">Đợi đua xong rồi hãy kết thúc.</span> : null}
       <MutationDialog
         open={open}
         onOpenChange={setOpen}

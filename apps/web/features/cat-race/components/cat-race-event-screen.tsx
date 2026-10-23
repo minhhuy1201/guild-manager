@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CAT_RACE_MODE_LABEL } from "@guild/shared/enums";
 import type {
   CatRaceEventDetail,
   CatRacePrize,
@@ -9,7 +8,6 @@ import type {
 } from "@guild/shared/schemas";
 
 import { ConfirmDeleteDialog } from "@/components/shared/confirm-delete-dialog";
-import { PageHeader } from "@/components/shared/page-header";
 import { QueryBoundary } from "@/components/shared/query-boundary";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCharacters } from "@/features/attendance";
@@ -21,6 +19,7 @@ import { parseRaceDuration } from "../lib/race-duration";
 import { prizeLockReason } from "../lib/prize-lock";
 import { useRaceStore } from "../store/race-store";
 import { CatRaceEndedScreen } from "./cat-race-ended-screen";
+import { CatRaceHeader } from "./cat-race-header";
 import { EndEventButton } from "./end-event-button";
 import { EntrantsDialog } from "./entrants-dialog";
 import { ParticipantsDialog } from "./participants-dialog";
@@ -114,11 +113,9 @@ function EventBody({ event }: { event: CatRaceEventDetail }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader
-        banner="teamBuilder"
-        title={event.name}
-        description={`Chế độ ${CAT_RACE_MODE_LABEL[event.mode]}`}
-        actions={<EndEventButton eventId={event.id} />}
+      <CatRaceHeader
+        event={event}
+        actions={<EndEventButton eventId={event.id} disabled={isBusy} />}
       />
 
       <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
@@ -136,7 +133,6 @@ function EventBody({ event }: { event: CatRaceEventDetail }) {
           onDurationTextChange={changeDuration}
           isDurationValid={isDurationValid}
           isLocked={isBusy}
-          canEdit
           hasPrize={selected !== undefined}
           entrantCount={selected?.entrantIds.length ?? 0}
           participantCount={event.participants.length}

@@ -27,6 +27,7 @@ function renderResults(overrides: Parameters<typeof makeEvent>[0] = {}) {
 describe("CatRaceResults", () => {
   it("summarises people, awarded prizes and voided rounds", () => {
     renderResults({
+      awardedCount: 1,
       prizes: [{ ...PRIZE, awardedCount: 1 }, mid],
       rounds: [
         ROUND,

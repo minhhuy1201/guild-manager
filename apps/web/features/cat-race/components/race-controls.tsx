@@ -19,8 +19,6 @@ interface RaceControlsProps {
   isDurationValid: boolean;
   /** The field and the buttons lock while a round runs */
   isLocked: boolean;
-  /** Whether the two list buttons show */
-  canEdit: boolean;
   /** Whether a prize is selected, so its list can be edited */
   hasPrize: boolean;
   entrantCount: number;
@@ -35,7 +33,6 @@ interface RaceControlsProps {
  * @param onDurationTextChange - Receives the typed text
  * @param isDurationValid - Whether the typed text is in range
  * @param isLocked - Whether a round is running
- * @param canEdit - Whether the list buttons show
  * @param hasPrize - Whether a prize is selected
  * @param entrantCount - People in the selected prize's list
  * @param participantCount - People in the event
@@ -48,7 +45,6 @@ export function RaceControls({
   onDurationTextChange,
   isDurationValid,
   isLocked,
-  canEdit,
   hasPrize,
   entrantCount,
   participantCount,
@@ -79,16 +75,12 @@ export function RaceControls({
         </div>
         {isDurationValid ? null : <p className="text-sm text-destructive">{RACE_DURATION_ERROR}</p>}
       </div>
-      {canEdit ? (
-        <>
-          <Button type="button" variant="outline" disabled={!hasPrize || isLocked} onClick={onEditEntrants}>
-            Danh sách đua {entrantCount}
-          </Button>
-          <Button type="button" variant="outline" disabled={isLocked} onClick={onEditParticipants}>
-            Người tham gia {participantCount}
-          </Button>
-        </>
-      ) : null}
+      <Button type="button" variant="outline" disabled={!hasPrize || isLocked} onClick={onEditEntrants}>
+        Danh sách đua {entrantCount}
+      </Button>
+      <Button type="button" variant="outline" disabled={isLocked} onClick={onEditParticipants}>
+        Người tham gia {participantCount}
+      </Button>
     </div>
   );
 }

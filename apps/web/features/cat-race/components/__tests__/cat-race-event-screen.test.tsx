@@ -39,7 +39,9 @@ vi.mock("@/components/shared/confirm-delete-dialog", () => ({
       </div>
     ) : null,
 }));
-vi.mock("../end-event-button", () => ({ EndEventButton: () => <button>END</button> }));
+vi.mock("../end-event-button", () => ({
+  EndEventButton: ({ disabled }: { disabled?: boolean }) => <button disabled={disabled}>END</button>,
+}));
 vi.mock("../announce-button", () => ({ AnnounceButton: () => <button>ANNOUNCE</button> }));
 vi.mock("../race-stage", () => ({
   RaceStage: ({ prize, isDurationValid }: { prize?: { name: string }; isDurationValid: boolean }) => (
@@ -237,6 +239,15 @@ describe("CatRaceEventScreen", () => {
     loaded(makeEvent({ status: "ENDED", discordPostedAt: "2026-10-12T03:00:00.000Z" }));
     render(<CatRaceEventScreen id="e1" />);
     expect(screen.getByText("Đã đăng lên Discord.")).toBeTruthy();
+  });
+
+  it("locks the end button while a race runs", () => {
+    render(<CatRaceEventScreen id="e1" />);
+    expect((screen.getByText("END") as HTMLButtonElement).disabled).toBe(false);
+
+    act(() => useRaceStore.setState({ stage: "racing" }));
+
+    expect((screen.getByText("END") as HTMLButtonElement).disabled).toBe(true);
   });
 
   it("selects a prize unless a round is busy", () => {
