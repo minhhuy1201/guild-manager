@@ -35,6 +35,10 @@ interface FocusModeShellProps {
   hideExit?: boolean;
   /** Classes of the wrapper while inactive */
   className?: string;
+  /** Merged over the active frame's classes, e.g. a background of its own */
+  activeClassName?: string;
+  /** `data-slot` of the root while active, for a stylesheet block that must resolve on the root */
+  activeSlot?: string;
   /** The content, mounted once whether or not the mode is on */
   children: ReactNode;
 }
@@ -59,6 +63,8 @@ interface FocusModeShellProps {
  * @param barClassName - Replaces the bar's default look
  * @param hideExit - Hide the exit button visually
  * @param className - Classes of the inactive wrapper
+ * @param activeClassName - Merged over the active frame's classes
+ * @param activeSlot - `data-slot` of the root while active
  * @param children - The content
  * @returns The frame
  */
@@ -70,6 +76,8 @@ export function FocusModeShell({
   barClassName,
   hideExit = false,
   className,
+  activeClassName,
+  activeSlot,
   children,
 }: FocusModeShellProps) {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -113,6 +121,7 @@ export function FocusModeShell({
         "aria-modal": true,
         "aria-label": label,
         tabIndex: -1,
+        "data-slot": activeSlot,
       }
     : {};
 
@@ -121,7 +130,7 @@ export function FocusModeShell({
       ref={rootRef}
       {...dialogProps}
       onKeyDown={trapTab}
-      className={active ? ACTIVE_CLASS : className}
+      className={active ? cn(ACTIVE_CLASS, activeClassName) : className}
     >
       {active ? (
         <div className={barClassName ?? DEFAULT_BAR_CLASS}>

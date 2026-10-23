@@ -5,9 +5,11 @@ import { Cat, FastForward, Play, Shuffle } from "lucide-react";
 import { CatRaceMode } from "@guild/shared/enums";
 import type { CatRaceEventDetail, CatRacePrize } from "@guild/shared/schemas";
 
+import { FocusModeShell } from "@/components/shared/focus-mode-shell";
 import { Spinner } from "@/components/shared/spinner";
 import { toastError } from "@/components/shared/toast";
 import { Button } from "@/components/ui/button";
+import type { FocusMode } from "@/hooks/use-focus-mode";
 import { useInvalidate } from "@/hooks/use-invalidate";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { useSessionRecovery } from "@/hooks/use-session-recovery";
@@ -31,6 +33,10 @@ import { RaceOverlays } from "./race-overlays";
 import { RaceResultOverlay } from "./race-result-overlay";
 import { RaceStandings } from "./race-standings";
 
+/** The overlay's top bar: stage colours, dark so the shell's exit button reads on it. */
+const FOCUS_BAR_CLASS =
+  "dark flex shrink-0 items-center gap-3 border-b border-[color:var(--stage-line)] bg-gradient-to-r from-[color:var(--stage-wood)] to-[color:var(--stage-bar-end)] px-4 py-3 text-[color:var(--stage-paper)]";
+
 /** Any positive number: a preview paints the start line only. */
 const RACE_PREVIEW_SECONDS = 1;
 
@@ -40,6 +46,8 @@ interface RaceStageProps {
   prize: CatRacePrize | undefined;
   /** False while the duration field holds something out of range; locks ĐUA */
   isDurationValid: boolean;
+  /** The screen's focus mode: while active the stage covers the window in place */
+  focus: Pick<FocusMode, "active" | "exit">;
 }
 
 /**
@@ -50,12 +58,14 @@ interface RaceStageProps {
  * @param event - The event
  * @param prize - Prize the next round is for
  * @param isDurationValid - Whether the typed duration is in range
+ * @param focus - The focus mode's flag and its exit
  * @returns The race area
  */
 export function RaceStage({
   event,
   prize,
   isDurationValid,
+  focus,
 }: RaceStageProps) {
   const { stage, durationSeconds, pendingResult, laneOrder } = useRaceStore();
   const store = useRaceStore.getState;
@@ -180,22 +190,83 @@ export function RaceStage({
     }
   };
 
-  return (
-    <section className="flex flex-col gap-4 rounded-container border border-border bg-card p-4">
-      {prize ? (
-        <RaceBroadcastBar
-          prize={prize}
-          entrantCount={entrantCount}
-          ticketCount={event.mode === CatRaceMode.TICKET ? ticketCount : null}
-          isLive={stage === "racing"}
-          clock={clock}
-          className={stageFont.variable}
-        />
+  const isFocused = focus.active;
+  const bar = prize ? (
+    <RaceBroadcastBar
+      prize={prize}
+      entrantCount={entrantCount}
+      ticketCount={event.mode === CatRaceMode.TICKET ? ticketCount : null}
+      isLive={stage === "racing"}
+      clock={clock}
+      size={isFocused ? "focus" : "default"}
+      className={stageFont.variable}
+    />
+  ) : null;
+
+  // Shown under the track, or floating on it in focus mode: one definition for both places.
+  const controls = (
+    <div className="flex flex-col items-center gap-2">
+      {stage === "racing" ? (
+        <Button type="button" variant="outline" onClick={() => setSkipSignal((n) => n + 1)}>
+          <FastForward />
+          Bỏ qua
+        </Button>
+      ) : (
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            disabled={!canShuffle}
+            onClick={shuffleLanes}
+          >
+            <Shuffle />
+            Xáo trộn
+          </Button>
+          <Button
+            type="button"
+            size="lg"
+            disabled={!prize || lock !== null || stage !== "idle" || !isDurationValid}
+            onClick={() => void startRound()}
+          >
+            {stage === "drawing" ? <Spinner size="sm" /> : <Play />}
+            {prize ? `ĐUA: ${prize.name} #${prize.awardedCount + 1}` : "ĐUA"}
+          </Button>
+        </div>
+      )}
+      {lock ? (
+        <p className="text-sm text-muted-foreground">{PRIZE_LOCK_LABEL[lock]}</p>
       ) : null}
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_17rem]">
+    </div>
+  );
+
+  return (
+    <FocusModeShell
+      active={isFocused}
+      label="Đua mèo toàn màn hình"
+      bar={bar}
+      barClassName={FOCUS_BAR_CLASS}
+      onExit={focus.exit}
+      className="flex flex-col gap-4 rounded-container border border-border bg-card p-4"
+      activeClassName="bg-[color:var(--stage-night)]"
+      activeSlot="cat-race-focus"
+    >
+      {isFocused ? null : bar}
+      <div
+        className={cn(
+          "grid gap-4",
+          isFocused
+            ? "min-h-0 flex-1 p-4 max-lg:overflow-y-auto lg:grid-cols-[minmax(0,1fr)_clamp(16rem,20vw,22rem)] lg:grid-rows-[minmax(0,1fr)]"
+            : "lg:grid-cols-[minmax(0,1fr)_17rem]"
+        )}
+      >
         <div
           data-slot="cat-race-stage"
-          className={cn("relative h-[70dvh] min-h-96 overflow-hidden rounded-lg", stageFont.variable)}
+          className={cn(
+            "relative h-[70dvh] min-h-96 overflow-hidden rounded-lg",
+            isFocused && "lg:h-auto lg:min-h-0",
+            stageFont.variable
+          )}
         >
           {stage === "result" && script ? (
             <RaceCanvas
@@ -255,48 +326,27 @@ export function RaceStage({
               onContinue={() => void continueRacing()}
             />
           ) : null}
+          {isFocused && stage !== "result" ? (
+            <div className="pointer-events-none absolute inset-x-0 bottom-5 flex justify-center px-4">
+              <div className="dark pointer-events-auto flex flex-col items-center gap-2 rounded-container border border-white/10 bg-[color:var(--stage-plate)]/70 p-3 shadow-[0_12px_32px_-8px_rgb(0_0_0/0.6)] backdrop-blur-md">
+                {controls}
+              </div>
+            </div>
+          ) : null}
         </div>
         <RaceStandings
           script={stage === "racing" || stage === "result" ? script : null}
           participants={event.participants}
           board={board}
-          className={cn("max-h-80 lg:h-[70dvh] lg:max-h-none lg:min-h-96", stageFont.variable)}
+          className={cn(
+            "max-h-80 lg:max-h-none",
+            isFocused ? "lg:h-auto lg:min-h-0" : "lg:h-[70dvh] lg:min-h-96",
+            stageFont.variable
+          )}
         />
       </div>
 
-      <div className="flex flex-col items-center gap-2">
-        {stage === "racing" ? (
-          <Button type="button" variant="outline" onClick={() => setSkipSignal((n) => n + 1)}>
-            <FastForward />
-            Bỏ qua
-          </Button>
-        ) : (
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="lg"
-              disabled={!canShuffle}
-              onClick={shuffleLanes}
-            >
-              <Shuffle />
-              Xáo trộn
-            </Button>
-            <Button
-              type="button"
-              size="lg"
-              disabled={!prize || lock !== null || stage !== "idle" || !isDurationValid}
-              onClick={() => void startRound()}
-            >
-              {stage === "drawing" ? <Spinner size="sm" /> : <Play />}
-              {prize ? `ĐUA: ${prize.name} #${prize.awardedCount + 1}` : "ĐUA"}
-            </Button>
-          </div>
-        )}
-        {lock ? (
-          <p className="text-sm text-muted-foreground">{PRIZE_LOCK_LABEL[lock]}</p>
-        ) : null}
-      </div>
-    </section>
+      {isFocused ? null : controls}
+    </FocusModeShell>
   );
 }

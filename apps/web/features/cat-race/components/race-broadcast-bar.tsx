@@ -6,6 +6,9 @@ import { PRIZE_TIER_ICON } from "../lib/prize-tier-style";
 import type { RaceClock } from "../lib/race-clock";
 import { RaceClockDisplay } from "./race-clock-display";
 
+/** `focus` is the larger type of the full-screen mode, where the bar is the top edge of the screen. */
+type RaceBroadcastBarSize = "default" | "focus";
+
 interface RaceBroadcastBarProps {
   prize: CatRacePrize;
   entrantCount: number;
@@ -14,6 +17,7 @@ interface RaceBroadcastBarProps {
   /** True from the countdown through the finish photo */
   isLive: boolean;
   clock: RaceClock;
+  size?: RaceBroadcastBarSize;
   className?: string;
 }
 
@@ -25,6 +29,7 @@ interface RaceBroadcastBarProps {
  * @param props.ticketCount - Tickets in the field, or null when the event has none
  * @param props.isLive - Whether the live tag is lit
  * @param props.clock - The race clock
+ * @param props.size - `focus` for the full-screen mode's larger type
  * @param props.className - Extra classes, e.g. the stage font variable
  * @returns The bar
  */
@@ -34,12 +39,13 @@ export function RaceBroadcastBar({
   ticketCount,
   isLive,
   clock,
+  size = "default",
   className,
 }: RaceBroadcastBarProps) {
   const TierIcon = PRIZE_TIER_ICON[prize.tier];
 
   return (
-    <header data-slot="cat-race-hud" className={cn("race-bar", className)}>
+    <header data-slot="cat-race-hud" data-size={size} className={cn("race-bar", className)}>
       <span className="race-live race-display" data-on={isLive}>
         <i aria-hidden />
         TRỰC TIẾP

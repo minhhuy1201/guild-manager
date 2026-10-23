@@ -64,8 +64,8 @@ Thoát bằng `Esc` hoặc nút ✕. Cuộc đua đang chạy vẫn chạy tiế
 22. Là admin, tôi muốn tấm nút và con trỏ chuột tự ẩn sau 2 giây chuột đứng yên khi đang đua, để
     người xem không thấy chúng.
 23. Là admin, tôi muốn tấm nút và con trỏ hiện lại ngay khi tôi rê chuột, để bấm được Bỏ qua.
-24. Là admin, tôi muốn tấm nút luôn hiện khi chưa đua, khi đang rút và khi đang hiện kết quả, để
-    bấm được ĐUA và "Đua tiếp".
+24. Là admin, tôi muốn tấm nút luôn hiện khi chưa đua và khi đang rút, để bấm được ĐUA. Khi đang
+    hiện kết quả thì tấm nút rút đi, để thẻ người thắng (có sẵn nút "Đua tiếp") không bị che.
 25. Là admin, tôi muốn nút ✕ cũng ẩn và hiện cùng tấm nút khi đang đua.
 26. Là admin, tôi muốn vào hoặc thoát chế độ này giữa lúc đang đua mà cuộc đua không bị chạy lại từ
     đầu.
@@ -138,7 +138,9 @@ Thoát bằng `Esc` hoặc nút ✕. Cuộc đua đang chạy vẫn chạy tiế
   - Chỉ khi đang đua (`stage === "racing"`). Sau 2 giây chuột đứng yên, tấm nút và nút ✕ fade về
     opacity 0 và không nhận click. Con trỏ chuột ẩn trên lớp phủ.
   - Rê chuột hoặc focus bằng bàn phím vào tấm nút thì hiện lại ngay và đếm lại từ đầu.
-  - Ở các giai đoạn khác thì luôn hiện. Đặt thời gian 2 giây thành một hằng số có tên.
+  - Khi chưa đua và khi đang rút thì luôn hiện. Khi đang hiện kết quả thì tấm nút không có mặt, vì
+    ĐUA đang bị khoá và thẻ người thắng đã có "Đua tiếp". Đặt thời gian 2 giây thành một hằng số có
+    tên.
 - **Lớp z:** lớp phủ `z-40`. Hộp thoại và toast ở `z-50` vẫn ở trên. Không thêm bậc z mới.
 - **A11y:** `aria-label="Đua mèo toàn màn hình"`, giữ focus bên trong, trả focus về nút vào khi
   đóng. Khi tấm nút đang ẩn, nút vẫn focus được bằng bàn phím, và focus làm nó hiện lại.

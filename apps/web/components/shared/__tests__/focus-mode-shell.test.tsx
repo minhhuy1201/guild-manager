@@ -7,7 +7,15 @@ import { FocusModeShell } from "../focus-mode-shell";
 
 afterEach(cleanup);
 
-function renderShell(props: { active?: boolean; onExit?: () => void } = {}) {
+function renderShell(
+  props: {
+    active?: boolean;
+    onExit?: () => void;
+    activeSlot?: string;
+    activeClassName?: string;
+    barClassName?: string;
+  } = {}
+) {
   return render(
     <FocusModeShell
       active={props.active ?? true}
@@ -23,6 +31,9 @@ function renderShell(props: { active?: boolean; onExit?: () => void } = {}) {
         </div>
       }
       onExit={props.onExit ?? vi.fn()}
+      activeSlot={props.activeSlot}
+      activeClassName={props.activeClassName}
+      barClassName={props.barClassName}
     >
       <button type="button">Nội dung</button>
     </FocusModeShell>
@@ -44,6 +55,39 @@ describe("FocusModeShell", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(screen.getByRole("button", { name: "Nội dung" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Thoát toàn màn hình" })).toBeNull();
+  });
+
+  it("gắn data-slot và class riêng lên gốc khi active, và bỏ chúng khi inactive", () => {
+    const { rerender } = renderShell({ activeSlot: "my-slot", activeClassName: "my-active" });
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.getAttribute("data-slot")).toBe("my-slot");
+    expect(dialog.classList.contains("my-active")).toBe(true);
+
+    rerender(
+      <FocusModeShell
+        active={false}
+        label="Toàn màn hình"
+        bar={null}
+        onExit={vi.fn()}
+        activeSlot="my-slot"
+        activeClassName="my-active"
+        className="plain"
+      >
+        <button type="button">Nội dung</button>
+      </FocusModeShell>
+    );
+    const root = screen.getByRole("button", { name: "Nội dung" }).parentElement?.parentElement;
+    expect(root?.hasAttribute("data-slot")).toBe(false);
+    expect(root?.classList.contains("my-active")).toBe(false);
+    expect(root?.classList.contains("plain")).toBe(true);
+  });
+
+  it("để activeClassName thắng nền mặc định của khung", () => {
+    renderShell({ activeClassName: "bg-[color:var(--x)]" });
+
+    const classes = screen.getByRole("dialog").className.split(" ");
+    expect(classes).toContain("bg-[color:var(--x)]");
+    expect(classes).not.toContain("bg-background");
   });
 
   it("nút thoát gọi onExit", () => {

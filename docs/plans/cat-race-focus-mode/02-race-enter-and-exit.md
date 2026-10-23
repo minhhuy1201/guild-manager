@@ -17,13 +17,13 @@ Spec: [`docs/specs/cat-race-focus-mode.md`](../../specs/cat-race-focus-mode.md).
 
 **Blocked by:** 01
 
-**Status:** todo
+**Status:** done
 
-- [ ] Đợt đang mở: có nút "Toàn màn hình" với cap `F`, chỉ từ `lg`. Đợt đã kết thúc: không có nút.
-- [ ] Bấm nút hoặc `F` thì có dialog "Đua mèo toàn màn hình" chứa thanh phát sóng và nút ĐUA. Header đợt và bảng người thắng không còn trên trang.
-- [ ] `F` trong ô thời lượng, hoặc kèm phím bổ trợ, không bật chế độ
-- [ ] `Esc` hoặc ✕ tắt chế độ và trả focus về nút. `Esc` khi đang gõ hoặc khi có dialog khác đang mở thì không tắt.
-- [ ] Gọi `requestFullscreen` trên `documentElement`. Nếu bị reject thì chế độ vẫn bật. `fullscreenchange` mà không còn `fullscreenElement` thì tắt chế độ.
-- [ ] Bật và tắt giữa lúc đang đua: canvas (mock) chỉ mount một lần
-- [ ] Biến `--stage-*` có hiệu lực trên gốc lớp phủ. Thanh phát sóng có biến thể chữ to cho chế độ này.
-- [ ] Test ở `CatRaceEventScreen` và `RaceStage`. Typecheck, lint, test xanh.
+- [x] Đợt đang mở: có nút "Toàn màn hình" với cap `F`, chỉ từ `lg`. Đợt đã kết thúc: không có nút.
+- [x] Bấm nút hoặc `F` thì có dialog "Đua mèo toàn màn hình" chứa thanh phát sóng và nút ĐUA. Header đợt và bảng người thắng không còn trên trang.
+- [x] `F` trong ô thời lượng, hoặc kèm phím bổ trợ, không bật chế độ
+- [x] `Esc` hoặc ✕ tắt chế độ và trả focus về nút. `Esc` khi đang gõ hoặc khi có dialog khác đang mở thì không tắt.
+- [x] Gọi `requestFullscreen` trên `documentElement`. Nếu bị reject thì chế độ vẫn bật. `fullscreenchange` mà không còn `fullscreenElement` thì tắt chế độ.
+- [x] Bật và tắt giữa lúc đang đua: canvas (mock) chỉ mount một lần
+- [x] Biến `--stage-*` có hiệu lực trên gốc lớp phủ. Thanh phát sóng có biến thể chữ to cho chế độ này.
+- [x] Test ở `CatRaceEventScreen` và `RaceStage`. Typecheck, lint, test xanh.

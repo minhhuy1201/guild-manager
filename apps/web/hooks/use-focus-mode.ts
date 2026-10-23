@@ -59,7 +59,7 @@ export interface FocusReturn {
   fallback: React.RefObject<HTMLElement | null>;
 }
 
-interface FocusMode {
+export interface FocusMode {
   /** Whether the focus mode is on */
   active: boolean;
   /** Enter the mode and ask the browser for fullscreen */
