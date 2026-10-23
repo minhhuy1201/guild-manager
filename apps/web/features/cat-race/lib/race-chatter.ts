@@ -75,6 +75,8 @@ const GO_SHOUTS = 2;
 const CROWD_EDGE_INSET = 24;
 const NAME_MAX_CHARS = 12;
 const ELLIPSIS = "…";
+/** The ` #n` `catLabels` puts after the name of an owner who runs several cats. */
+const TICKET_SUFFIX = /( #\d+)$/;
 
 const GO_TEXT = "Chạy điii!";
 const SPRINT_TEXT = "NƯỚC RÚT!!";
@@ -92,14 +94,18 @@ type Limits = Record<ChatAnchor["kind"], number>;
 type Draft = Pick<ChatBubble, "anchor" | "text" | "tone" | "life" | "isCue">;
 
 /**
- * Cut a cat's label so a bubble stays small.
+ * Cut a cat's label so a bubble stays small. The `#n` that `catLabels` adds for an owner of several
+ * cats survives the cut, or the crowd would call two cats by one name.
  * @param label - The label from `catLabels`
- * @returns The label, at most `NAME_MAX_CHARS` long plus an ellipsis
+ * @returns The name part cut to `NAME_MAX_CHARS` characters plus an ellipsis, then the `#n`
  */
 function shortName(label: string): string {
-  if (label.length <= NAME_MAX_CHARS) return label;
+  const suffix = TICKET_SUFFIX.exec(label)?.[1] ?? "";
+  // By code point, so a name with an emoji is never cut through the middle of one.
+  const name = Array.from(label.slice(0, label.length - suffix.length));
+  if (name.length <= NAME_MAX_CHARS) return label;
 
-  return label.slice(0, NAME_MAX_CHARS).trimEnd() + ELLIPSIS;
+  return name.slice(0, NAME_MAX_CHARS).join("").trimEnd() + ELLIPSIS + suffix;
 }
 
 /**
@@ -167,7 +173,7 @@ function draftsForCue(cue: RaceCue, frame: ChatFrame, random: () => number): Dra
     case "go":
       return Array.from({ length: GO_SHOUTS }, () => crowdCue(frame, random, { text: GO_TEXT, tone: "hype" }));
     case "lead-change": {
-      const name = shortName(frame.labels.get(cue.catKey) ?? "?");
+      const name = shortName(frame.labels.get(cue.catKey)!);
 
       return [
         crowdCue(frame, random, { text: `${name} lên rồi!`, tone: "lead" }),

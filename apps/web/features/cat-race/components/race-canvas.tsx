@@ -15,7 +15,7 @@ import { paintChatBubble } from "../lib/paint-chat-bubbles";
 import { paintStageBand, type BandScene } from "../lib/paint-stage-band";
 import { nameFontPx, nameRoom, paintStageNames } from "../lib/paint-stage-names";
 import { paintStageTrack } from "../lib/paint-stage-track";
-import { frameAt, planRace, type RacePlan } from "../lib/race-frame";
+import { frameAt, planRace, type FrameCat, type RacePlan } from "../lib/race-frame";
 import { standingsAt, type RaceStanding } from "../lib/race-board";
 import { lengthsBehind } from "../lib/race-lengths";
 import { visibleLanes, type LaneLayout, type LaneRange } from "../lib/race-layout";
@@ -215,6 +215,7 @@ export function RaceCanvas({
     /**
      * Paint every cat that is in view, with its crown, speed lines and the dust it kicks up.
      * @param current - The plan being painted
+     * @param cats - Every cat's position this frame, from the top lane down
      * @param motion - Race time, whether the cats run, the leader's key and seconds since the last frame
      * @param lanes - The lanes in view
      * @param top - How far the lanes are scrolled, in px
@@ -222,6 +223,7 @@ export function RaceCanvas({
      */
     const drawCats = (
       current: RacePlan,
+      cats: readonly FrameCat[],
       motion: { u: number; isRunning: boolean; leaderKey: string | null; dt: number },
       lanes: LaneRange,
       top: number
@@ -229,7 +231,6 @@ export function RaceCanvas({
       const { layout, script: raced } = current;
       const height = (layout.catWidth * SPRITE_ROWS) / SPRITE_COLUMNS;
       const clock = legClock(motion.u, raced.durationSeconds);
-      const cats = frameAt(current, motion.u);
       const kicked: DustParticle[] = [];
       for (let lane = lanes.first; lane <= lanes.last; lane += 1) {
         const cat = cats[lane];
@@ -258,18 +259,17 @@ export function RaceCanvas({
     /**
      * Paint the meow bubbles of the cats in view, above and right of each head.
      * @param current - The plan being painted
-     * @param view - Race time, the animation clock, how far the lanes are scrolled and the lanes in view
+     * @param cats - Every cat's position this frame, from the top lane down
+     * @param view - The animation clock, how far the lanes are scrolled and the lanes in view
      */
     const paintCatBubbles = (
       current: RacePlan,
-      view: { u: number; time: number; top: number; lanes: LaneRange }
+      cats: readonly FrameCat[],
+      view: { time: number; top: number; lanes: LaneRange }
     ) => {
-      const meows = chatter.bubbles.filter((bubble) => bubble.anchor.kind === "cat");
-      if (meows.length === 0) return;
       const { layout } = current;
       const spriteHeight = (layout.catWidth * SPRITE_ROWS) / SPRITE_COLUMNS;
-      const cats = frameAt(current, view.u);
-      for (const bubble of meows) {
+      for (const bubble of chatter.bubbles) {
         if (bubble.anchor.kind !== "cat") continue;
         const lane = current.laneOf.get(bubble.anchor.catKey)!;
         if (lane < view.lanes.first || lane > view.lanes.last) continue;
@@ -330,14 +330,16 @@ export function RaceCanvas({
       });
       dust = stepDust(dust, frame.dt);
       paintDust(context, dust, top);
+      const cats = frameAt(current, frame.u);
       const kicked = drawCats(
         current,
+        cats,
         { u: frame.u, isRunning: frame.phase === "running", leaderKey, dt: frame.dt },
         lanes,
         top
       );
       dust = [...dust, ...kicked];
-      paintCatBubbles(current, { u: frame.u, time: frame.time, top, lanes });
+      paintCatBubbles(current, cats, { time: frame.time, top, lanes });
       paintStageNames(context, {
         ...view,
         laneOrder: current.laneOrder,

@@ -70,7 +70,8 @@ người xem không đọc ngay được "sắp chạy" như đèn giao thông.
   (Bungee). `lead`: nền `gold`, chữ `night`, font display.
 - Chuyển động: bật lên kiểu lò xo (scale 0 -> ~1.12 -> 1 trong ~160ms), trôi lên vài px suốt đời,
   mờ dần ở 25% cuối.
-- Khán giả: vẽ trong dải trời, sau khán giả và trước hàng rào, đáy đuôi chạm trên đầu khán giả.
+- Khán giả: vẽ trong dải trời, đuôi chạm trên đầu khán giả. Vẽ sau cùng trong dải trời (sau cổng
+  đích và bảng tên) để bong bóng gần đích không bị cổng che; đáy đuôi vẫn ở trên hàng rào.
 - Mèo: vẽ trong vùng làn (bị dải trời che như mèo), phía trên-phải đầu mèo; kẹp trong bề ngang canvas.
 
 ### 4. Nối vào canvas
@@ -84,7 +85,7 @@ người xem không đọc ngay được "sắp chạy" như đèn giao thông.
 ## Testing Decisions
 
 - `race-chatter`: dùng `seeded-random`. Cue sinh đúng câu và tone; `lead-change` sinh cả bong bóng
-  khán giả có tên lẫn bong bóng mèo neo đúng `catKey`; không vượt giới hạn đồng thời; cue đẩy bong
+  khán giả có tên lẫn bong bóng mèo neo đúng `catKey`; cắt tên giữ hậu tố `#n` và không cắt đôi emoji; không vượt giới hạn đồng thời; cue đẩy bong
   bóng ngẫu nhiên cũ nhất khi đầy; bong bóng hết hạn bị bỏ; excitement cao sinh nhiều hơn excitement
   thấp qua cùng khoảng thời gian; state cũ không bị đổi.
 - `race-overlays`: đèn đúng màu theo vị trí, chỉ một đèn `data-lit` mỗi bước, số mang `data-signal`

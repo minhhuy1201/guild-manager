@@ -145,7 +145,7 @@ function paintCrowd(
 }
 
 /**
- * Paint the crowd's speech bubbles over the spectators' heads, behind the rail.
+ * Paint the crowd's speech bubbles over the spectators' heads.
  * @param context - Where to paint
  * @param scene - The band scene
  * @param bubbles - The bubbles alive; only crowd ones are drawn
@@ -227,9 +227,10 @@ export function paintStageBand(
   if (scene.backdrop) context.drawImage(scene.backdrop, 0, 0, scene.width, layout.band);
   paintLanterns(context, scene, time);
   paintCrowd(context, scene.crowd, railY, time, excitement);
-  paintCrowdBubbles(context, scene, bubbles, { railY, time });
   paintRail(context, scene, railY);
   paintMarks(context, scene, railY);
   paintStageGate(context, layout.finishX, layout.band, scene.fonts);
   paintStagePlaque(context, layout.nameColumn, layout.band, { cats: scene.cats, people: scene.people }, scene.fonts);
+  // Last, so a callout near the finish is not hidden behind the gate; it ends above the rail anyway.
+  paintCrowdBubbles(context, scene, bubbles, { railY, time });
 }

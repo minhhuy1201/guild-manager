@@ -8,6 +8,9 @@ import type { CatRaceParticipant } from "@guild/shared/schemas";
 vi.mock("next/font/google", () => ({
   Bungee: () => ({ variable: "bungee-variable", style: { fontFamily: "'Bungee', 'Bungee Fallback'" } }),
 }));
+// The bubbles are painted by their own module; a spy keeps their text apart from the canvas's own lettering.
+const { paintChatBubble } = vi.hoisted(() => ({ paintChatBubble: vi.fn() }));
+vi.mock("../../lib/paint-chat-bubbles", () => ({ paintChatBubble }));
 vi.mock("@/features/auth", () => ({
   discordAvatarUrl: (id: string, hash: string | null) =>
     hash ? `https://cdn.test/${id}/${hash}.png` : null,
@@ -29,20 +32,11 @@ const fonts: string[] = [];
 const rects: [number, number, number, number][] = [];
 const sprites: { x: number; y: number }[] = [];
 const GRADIENT = { addColorStop: () => undefined };
-const textStyle = { align: "", baseline: "" };
-/**
- * The crowd's speech bubbles call the countdown numbers centred on their box; these tests read
- * digits as the canvas's own lettering (places, an overlay-only countdown), so they skip those.
- */
-const paintText = (text: string, ...rest: unknown[]) => {
-  const isBubbleDigit = textStyle.align === "center" && textStyle.baseline === "middle" && /^\d$/.test(text);
-  if (!isBubbleDigit) fillText(text, ...rest);
-};
 const fakeContext = new Proxy(
   {},
   {
     get: (_target, property) => {
-      if (property === "fillText") return paintText;
+      if (property === "fillText") return fillText;
       if (property === "createLinearGradient" || property === "createRadialGradient") return () => GRADIENT;
       if (property === "measureText") return (text: string) => ({ width: text.length * 7 });
       if (property === "fillRect") {
@@ -57,8 +51,6 @@ const fakeContext = new Proxy(
     set: (_target, property, value) => {
       if (property === "fillStyle") fills.push(value);
       if (property === "font") fonts.push(String(value));
-      if (property === "textAlign") textStyle.align = String(value);
-      if (property === "textBaseline") textStyle.baseline = String(value);
 
       return true;
     },
@@ -171,6 +163,7 @@ afterEach(() => {
   delete (HTMLElement.prototype as { clientWidth?: number }).clientWidth;
   delete (HTMLElement.prototype as { clientHeight?: number }).clientHeight;
   fillText.mockClear();
+  paintChatBubble.mockClear();
   vi.unstubAllGlobals();
   window.history.replaceState(null, "", "/");
 });
@@ -216,6 +209,45 @@ describe("RaceCanvas", () => {
 
     const digits = fillText.mock.calls.map((call) => String(call[0])).filter((text) => /^[123]$/.test(text));
     expect(digits).toEqual([]);
+  });
+
+  it("lets the crowd call the countdown in speech bubbles during a replay", () => {
+    render(
+      <RaceCanvas
+        script={SCRIPT}
+        participants={participants(false)}
+        onFinish={vi.fn()}
+        skipSignal={0}
+        onStandings={vi.fn()}
+        onCue={vi.fn()}
+      />
+    );
+
+    runFrame(START_MS);
+    runFrame(START_MS + 900);
+    runFrame(START_MS + 1700);
+
+    const said = paintChatBubble.mock.calls.map((call) => call[1].text);
+    expect(said).toEqual(expect.arrayContaining(["3", "2", "1"]));
+  });
+
+  it("paints no speech bubbles in the preview", () => {
+    render(
+      <RaceCanvas
+        mode="start"
+        script={SCRIPT}
+        participants={participants(false)}
+        onFinish={vi.fn()}
+        skipSignal={0}
+        onStandings={vi.fn()}
+        onCue={vi.fn()}
+      />
+    );
+
+    runFrame(START_MS);
+    runFrame(START_MS + 900);
+
+    expect(paintChatBubble).not.toHaveBeenCalled();
   });
 
   it("announces the countdown 3, 2, 1 in steps of 0.8 seconds, then go", () => {

@@ -13,6 +13,6 @@ vào `RaceCanvas` + `paintStageBand` để khán giả hô theo cue và cổ vũ
       hẹp), cue đẩy bong bóng ngẫu nhiên cũ nhất, hết hạn thì bỏ, không mutate.
 - [x] Test `race-chatter` cho các ý trên với `seeded-random`.
 - [x] `paint-chat-bubbles`: 3 tone, đuôi, bóng đặc, pop lò xo, trôi lên, mờ cuối đời.
-- [x] Vẽ trong dải trời sau khán giả, trước hàng rào; chỉ ở `replay`.
+- [x] Vẽ trong dải trời, sau cùng (không bị cổng đích che); chỉ ở `replay`.
 - [ ] Chạy app, xem một vòng 8 mèo và một vòng 240 mèo.
 - [x] `pnpm --filter web test`, `typecheck`, `lint` xanh.

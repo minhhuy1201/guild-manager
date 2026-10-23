@@ -9,6 +9,9 @@ const LABELS = new Map([
   ["cat-1", "Alice"],
   ["cat-2", "Bob"],
   ["cat-long", "Nguyễn Văn Anh Tuấn Kiệt"],
+  ["cat-shared-1", "Nguyễn Văn Anh Tuấn #1"],
+  ["cat-shared-2", "Nguyễn Văn Anh Tuấn #2"],
+  ["cat-emoji", "Mèo Mướp 😺😺😺😺😺"],
 ]);
 const QUIET = () => 0.99;
 const NO_CATS = { visible: [], ranks: null };
@@ -57,6 +60,21 @@ describe("stepChatter cues", () => {
     expect(texts(named)).toEqual(["Alice lên rồi!"]);
     expect(named.bubbles[0].tone).toBe("lead");
     expect(texts(long)[0]).toMatch(/^.{1,12}… lên rồi!$/);
+  });
+
+  it("keeps the ticket suffix when it cuts a shared owner's name, so two cats stay apart", () => {
+    const callOut = (catKey: string) =>
+      texts(stepChatter(INITIAL_CHATTER, frameAt(0, { cues: [{ kind: "lead-change", catKey }] }), QUIET))[0];
+
+    expect(callOut("cat-shared-1")).toBe("Nguyễn Văn A… #1 lên rồi!");
+    expect(callOut("cat-shared-2")).toBe("Nguyễn Văn A… #2 lên rồi!");
+  });
+
+  it("never cuts an emoji in half", () => {
+    const state = stepChatter(INITIAL_CHATTER, frameAt(0, { cues: [{ kind: "lead-change", catKey: "cat-emoji" }] }), QUIET);
+
+    expect(texts(state)[0]).toBe("Mèo Mướp 😺😺😺… lên rồi!");
+    expect(texts(state)[0].isWellFormed()).toBe(true);
   });
 
   it("shouts the sprint and the photo finish", () => {
