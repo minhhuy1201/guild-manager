@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleDashed, Clock, History, Lock, Swords, X } from "lucide-react";
+import { Clock, History, Lock, Swords, X } from "lucide-react";
 import { attendanceLabel } from "@guild/shared/enums";
 import type { AttendanceRecord, BattleSession } from "@guild/shared/schemas";
 
@@ -45,6 +45,7 @@ import { countUnanswered } from "../lib/unanswered";
 import { AbsenceReasonInput } from "./absence-reason-input";
 import { AttendanceStatusIcon } from "./attendance-status-icon";
 import { FoughtBattlesFold } from "./fought-battles-fold";
+import { UnansweredIcon } from "./unanswered-icon";
 
 /** The two options of an attendance entry, in display order. */
 const CHOICES = [true, false];
@@ -492,10 +493,7 @@ function FoughtAnswers({ battles, recordMap, characterId }: FoughtAnswersProps) 
             className="size-6"
           />
         ) : (
-          <span key={battle.id} className="inline-flex size-6 items-center justify-center">
-            <CircleDashed aria-hidden className="size-5 text-amber-500" />
-            <span className="sr-only">Chưa điểm danh</span>
-          </span>
+          <UnansweredIcon key={battle.id} className="size-6" />
         );
       })}
     </span>

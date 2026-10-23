@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CircleDashed } from "lucide-react";
 import type {
   AttendanceRecord,
   BattleSession,
@@ -41,6 +40,7 @@ import { useAttendanceFilterStore } from "../store/attendance-filter-store";
 import { AttendanceFilters } from "./attendance-filters";
 import { AttendanceRow } from "./attendance-row";
 import { AttendanceStatusIcon } from "./attendance-status-icon";
+import { UnansweredIcon } from "./unanswered-icon";
 
 /**
  * Day columns drawn while the week's schedule is still loading. A guess, not a rule —
@@ -387,10 +387,8 @@ function DayTotalsCell({ session, totals }: DayTotalsCellProps) {
           <AttendanceStatusIcon isPresent={false} source="answer" />
           <CountUp value={totals.khong} />
         </span>
-        {/* Amber is the palette's "not answered yet" (frontend.md §6). A bare dash before the
-            number read as a minus sign. */}
         <span className="inline-flex items-center gap-1">
-          <CircleDashed className="size-5 text-amber-500" />
+          <UnansweredIcon />
           <CountUp value={totals.chuaTraLoi} />
         </span>
       </div>
