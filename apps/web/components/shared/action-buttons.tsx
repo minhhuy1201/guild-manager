@@ -141,20 +141,7 @@ export function RowActionButton({
           {button}
         </TooltipTrigger>
       ) : (
-        <TooltipTrigger
-          render={
-            <Button
-              variant={variant}
-              size="icon-sm"
-              disabled={disabled}
-              className={className}
-              onClick={onClick}
-            />
-          }
-        >
-          {icon}
-          <span className="sr-only">{label}</span>
-        </TooltipTrigger>
+        <TooltipTrigger render={button} />
       )}
       <TooltipContent>{isExplained ? disabledReason : label}</TooltipContent>
     </Tooltip>
