@@ -1,5 +1,7 @@
+import { paintChatBubble } from "./paint-chat-bubbles";
 import { paintStageGate } from "./paint-stage-gate";
 import { paintStagePlaque } from "./paint-stage-plaque";
+import type { ChatBubble } from "./race-chatter";
 import { markX, type LaneLayout } from "./race-layout";
 import { ARMS_UP_FROM } from "./stage-excitement";
 import { STAGE_PALETTE } from "./stage-palette";
@@ -59,6 +61,8 @@ const ARM_RISE = 3;
 const ARM_RIGHT_OFFSET = 5;
 const ARM_LEFT_OFFSET = 2;
 const ARM_BOB_SHARE = 0.5;
+/** A crowd bubble's tail ends this far above the back row's heads, clear of raised arms. */
+const BUBBLE_TAIL_GAP = ARM_RISE + ARM_HEIGHT + 1;
 
 const FLAG_SHARES = [0.25, 0.5, 0.75] as const;
 const FLAG_FONT_PX = 10;
@@ -141,6 +145,26 @@ function paintCrowd(
 }
 
 /**
+ * Paint the crowd's speech bubbles over the spectators' heads, behind the rail.
+ * @param context - Where to paint
+ * @param scene - The band scene
+ * @param bubbles - The bubbles alive; only crowd ones are drawn
+ * @param view - Top of the rail and the animation clock
+ */
+function paintCrowdBubbles(
+  context: CanvasRenderingContext2D,
+  scene: BandScene,
+  bubbles: readonly ChatBubble[],
+  view: { railY: number; time: number }
+) {
+  const tailY = view.railY - SPECTATOR_RAISE - SPECTATOR_ROW_RISE - BUBBLE_TAIL_GAP;
+  for (const bubble of bubbles) {
+    if (bubble.anchor.kind !== "crowd") continue;
+    paintChatBubble(context, bubble, { x: bubble.anchor.x, y: tailY }, { time: view.time, fonts: scene.fonts, width: scene.width });
+  }
+}
+
+/**
  * Paint the wooden rail the crowd leans on.
  * @param context - Where to paint
  * @param scene - The band scene
@@ -189,18 +213,21 @@ function paintMarks(context: CanvasRenderingContext2D, scene: BandScene, railY: 
  * @param scene - The band scene
  * @param time - Seconds on the animation clock
  * @param excitement - How hard the crowd bobs, see `excitementAt`
+ * @param bubbles - The speech bubbles alive this frame
  */
 export function paintStageBand(
   context: CanvasRenderingContext2D,
   scene: BandScene,
   time: number,
-  excitement: number
+  excitement: number,
+  bubbles: readonly ChatBubble[]
 ) {
   const { layout } = scene;
   const railY = layout.band - RAIL_HEIGHT;
   if (scene.backdrop) context.drawImage(scene.backdrop, 0, 0, scene.width, layout.band);
   paintLanterns(context, scene, time);
   paintCrowd(context, scene.crowd, railY, time, excitement);
+  paintCrowdBubbles(context, scene, bubbles, { railY, time });
   paintRail(context, scene, railY);
   paintMarks(context, scene, railY);
   paintStageGate(context, layout.finishX, layout.band, scene.fonts);

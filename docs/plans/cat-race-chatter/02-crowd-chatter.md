@@ -7,12 +7,12 @@ vào `RaceCanvas` + `paintStageBand` để khán giả hô theo cue và cổ vũ
 
 **Blocked by:** None (can start immediately)
 
-**Status:** todo
+**Status:** done (chưa xem bằng mắt: app cần DB và đăng nhập Discord)
 
-- [ ] `stepChatter` (khán giả): cue -> câu/tone, câu ngẫu nhiên theo excitement, giới hạn 3 (2 khi
+- [x] `stepChatter` (khán giả): cue -> câu/tone, câu ngẫu nhiên theo excitement, giới hạn 3 (2 khi
       hẹp), cue đẩy bong bóng ngẫu nhiên cũ nhất, hết hạn thì bỏ, không mutate.
-- [ ] Test `race-chatter` cho các ý trên với `seeded-random`.
-- [ ] `paint-chat-bubbles`: 3 tone, đuôi, bóng đặc, pop lò xo, trôi lên, mờ cuối đời.
-- [ ] Vẽ trong dải trời sau khán giả, trước hàng rào; chỉ ở `replay`.
+- [x] Test `race-chatter` cho các ý trên với `seeded-random`.
+- [x] `paint-chat-bubbles`: 3 tone, đuôi, bóng đặc, pop lò xo, trôi lên, mờ cuối đời.
+- [x] Vẽ trong dải trời sau khán giả, trước hàng rào; chỉ ở `replay`.
 - [ ] Chạy app, xem một vòng 8 mèo và một vòng 240 mèo.
-- [ ] `pnpm --filter web test`, `typecheck`, `lint` xanh.
+- [x] `pnpm --filter web test`, `typecheck`, `lint` xanh.

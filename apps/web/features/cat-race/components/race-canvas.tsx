@@ -20,6 +20,7 @@ import { lengthsBehind } from "../lib/race-lengths";
 import { visibleLanes, type LaneLayout, type LaneRange } from "../lib/race-layout";
 import type { RaceScript } from "../lib/race-script";
 import { leaderAt, rankAt } from "../lib/race-script";
+import { INITIAL_CHATTER, stepChatter, type ChatterState } from "../lib/race-chatter";
 import { spawnDust, stepDust, type DustParticle } from "../lib/race-dust";
 import { catSprite } from "../lib/race-sprites";
 import { FALLBACK_SPRITE_CLASS, SPRITE_COLUMNS, SPRITE_ROWS } from "../lib/sprite-rows";
@@ -170,6 +171,7 @@ export function RaceCanvas({
     let frames = 0;
     let lastTime = 0;
     let dust: readonly DustParticle[] = [];
+    let chatter: ChatterState = INITIAL_CHATTER;
     let isDisposed = false;
     doneRef.current = false;
 
@@ -258,7 +260,7 @@ export function RaceCanvas({
      */
     const paintStage = (
       current: RacePlan,
-      frame: { phase: StagePhase; isSprint: boolean; u: number; time: number; dt: number },
+      frame: { phase: StagePhase; isSprint: boolean; u: number; time: number; dt: number; cues: readonly RaceCue[] },
       ranks: readonly string[] | null
     ) => {
       if (!scene) return;
@@ -296,7 +298,24 @@ export function RaceCanvas({
         fonts,
       });
       context.restore();
-      paintStageBand(context, scene, frame.time, excitementAt(frame.phase, frame.isSprint));
+      const excitement = excitementAt(frame.phase, frame.isSprint);
+      // A preview stands still: no one talks until a round is replayed.
+      if (!isPreview) {
+        chatter = stepChatter(
+          chatter,
+          {
+            time: frame.time,
+            dt: frame.dt,
+            cues: frame.cues,
+            excitement,
+            width: viewWidth,
+            crowdLeft: layout.nameColumn,
+            labels,
+          },
+          Math.random
+        );
+      }
+      paintStageBand(context, scene, frame.time, excitement, chatter.bubbles);
     };
 
     /**
@@ -312,7 +331,7 @@ export function RaceCanvas({
         const isFinishLine = mode === "finish";
         paintStage(
           plan,
-          { phase: isFinishLine ? "done" : "idle", isSprint: false, u: isFinishLine ? RACE_END_U : 0, time, dt },
+          { phase: isFinishLine ? "done" : "idle", isSprint: false, u: isFinishLine ? RACE_END_U : 0, time, dt, cues: [] },
           isFinishLine ? rankAt(script, RACE_END_U) : null
         );
         if (!isStill) frameId = requestAnimationFrame(tick);
@@ -323,17 +342,21 @@ export function RaceCanvas({
       const elapsed = (now - startedAt) / MS_PER_SECOND;
       const moment = momentAt(elapsed, script.durationSeconds);
       const ranks = isRacing(moment.phase) ? rankAt(script, moment.u) : null;
-      paintStage(plan, { phase: moment.phase, isSprint: moment.isSprint, u: moment.u, time, dt }, ranks);
-      if (ranks && now - lastStandings >= STANDINGS_INTERVAL_MS) {
-        lastStandings = now;
-        standingsRef.current(standingsAt(script, moment.u, plan.layout));
-      }
       const finish: FinishCue = {
         kind: "finish",
         lengthsBehind: lengthsBehind(script.runnerUpGap, plan.layout),
       };
       const announced = nextCues(cursor, moment, leaderAt(script, moment.u), finish);
       cursor = announced.cursor;
+      paintStage(
+        plan,
+        { phase: moment.phase, isSprint: moment.isSprint, u: moment.u, time, dt, cues: announced.cues },
+        ranks
+      );
+      if (ranks && now - lastStandings >= STANDINGS_INTERVAL_MS) {
+        lastStandings = now;
+        standingsRef.current(standingsAt(script, moment.u, plan.layout));
+      }
       for (const cue of announced.cues) cueRef.current(cue);
       frames += 1;
       if (showFps) {

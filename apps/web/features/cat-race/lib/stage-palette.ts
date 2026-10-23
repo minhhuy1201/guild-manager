@@ -14,6 +14,8 @@ export const STAGE_PALETTE = {
   earthAlt: "#5e4130",
   /** `--stage-plate` at 80%: the photo labels sit on the track, so they let it show through. */
   plateScrim: "#120c18cc",
+  /** Solid drop shadow of a speech bubble, a purple-tinged dark like the banner's `box-shadow`. */
+  bubbleShadow: "#0e0916",
   /** Scene colours below are canvas-only: no overlay needs them. */
   skyTop: "#2a1c3e",
   skyMid: "#6b3a52",

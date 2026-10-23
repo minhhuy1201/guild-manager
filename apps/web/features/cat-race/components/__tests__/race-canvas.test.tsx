@@ -29,11 +29,20 @@ const fonts: string[] = [];
 const rects: [number, number, number, number][] = [];
 const sprites: { x: number; y: number }[] = [];
 const GRADIENT = { addColorStop: () => undefined };
+const textStyle = { align: "", baseline: "" };
+/**
+ * The crowd's speech bubbles call the countdown numbers centred on their box; these tests read
+ * digits as the canvas's own lettering (places, an overlay-only countdown), so they skip those.
+ */
+const paintText = (text: string, ...rest: unknown[]) => {
+  const isBubbleDigit = textStyle.align === "center" && textStyle.baseline === "middle" && /^\d$/.test(text);
+  if (!isBubbleDigit) fillText(text, ...rest);
+};
 const fakeContext = new Proxy(
   {},
   {
     get: (_target, property) => {
-      if (property === "fillText") return fillText;
+      if (property === "fillText") return paintText;
       if (property === "createLinearGradient" || property === "createRadialGradient") return () => GRADIENT;
       if (property === "measureText") return (text: string) => ({ width: text.length * 7 });
       if (property === "fillRect") {
@@ -48,6 +57,8 @@ const fakeContext = new Proxy(
     set: (_target, property, value) => {
       if (property === "fillStyle") fills.push(value);
       if (property === "font") fonts.push(String(value));
+      if (property === "textAlign") textStyle.align = String(value);
+      if (property === "textBaseline") textStyle.baseline = String(value);
 
       return true;
     },
