@@ -112,6 +112,7 @@ describe('FormationAnnounceController', () => {
       'session-1',
       undefined,
       undefined,
+      undefined,
     );
   });
 });
@@ -228,6 +229,22 @@ describe('announceFormationSchema — lưu ý thêm', () => {
   });
 
   it('nhận đúng giới hạn và từ chối vượt một ký tự', () => {
+    expect(parse('a'.repeat(ANNOUNCEMENT_NOTE_MAX_CHARS)).success).toBe(true);
+    expect(parse('a'.repeat(ANNOUNCEMENT_NOTE_MAX_CHARS + 1)).success).toBe(
+      false,
+    );
+  });
+});
+
+describe('notifyMembersSchema — lưu ý thêm', () => {
+  it('dùng chung luật với announce: cắt hai đầu, rỗng là không có, tối đa 500', () => {
+    const parse = (note: string) => notifyMembersSchema.safeParse({ note });
+
+    const trimmed = parse('  Mang giáp \n');
+    const empty = parse('   ');
+
+    expect(trimmed.success && trimmed.data.note).toBe('Mang giáp');
+    expect(empty.success && empty.data.note).toBeUndefined();
     expect(parse('a'.repeat(ANNOUNCEMENT_NOTE_MAX_CHARS)).success).toBe(true);
     expect(parse('a'.repeat(ANNOUNCEMENT_NOTE_MAX_CHARS + 1)).success).toBe(
       false,

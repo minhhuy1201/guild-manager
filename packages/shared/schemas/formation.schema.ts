@@ -277,7 +277,8 @@ const teamImageSchema = z.object({
  * Body of POST /team-builder/formations/:sessionId/notify-members. `notices` narrows the send to
  * those members and matches, the retry of whoever did not get theirs. Left out, everyone the day
  * calls for is messaged. `teamImages` holds the card image of each (match, team); a team without
- * one is messaged in text, so leaving it out is valid.
+ * one is messaged in text, so leaving it out is valid. `note` is the Announcement note, the same
+ * one the announcement carried: a retry sends it again so every member reads the same DM.
  */
 export const notifyMembersSchema = z.object({
   notices: z
@@ -299,6 +300,7 @@ export const notifyMembersSchema = z.object({
       "Mỗi team chỉ được có một ảnh cho mỗi trận.",
     )
     .optional(),
+  note: announcementNoteSchema,
 });
 
 export type NotifyMembersInput = z.infer<typeof notifyMembersSchema>;

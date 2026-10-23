@@ -82,6 +82,39 @@ describe("useFormationAnnounce - lưu ý thêm", () => {
     });
   });
 
+  it("gửi cùng lưu ý trong request nhắn riêng", async () => {
+    const { result } = renderAnnounce();
+
+    act(() => result.current.setOpen(true));
+    act(() => result.current.setNote("Mang giáp"));
+    await act(() => result.current.confirm());
+
+    expect(notifyMock).toHaveBeenCalledWith(
+      expect.objectContaining({ sessionId: "session-1", note: "Mang giáp" })
+    );
+  });
+
+  it("nhắn lại người lỗi vẫn gửi đúng lưu ý đó", async () => {
+    const unsent = { characterId: "kirito", name: "Kirito", matchIndex: 1 };
+    notifyMock.mockResolvedValueOnce({
+      ok: true,
+      data: { ...REPORT, unsent: [unsent] },
+    });
+    const { result } = renderAnnounce();
+
+    act(() => result.current.setOpen(true));
+    act(() => result.current.setNote("Mang giáp"));
+    await act(() => result.current.confirm());
+    await act(() => result.current.retry());
+
+    expect(notifyMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        notices: [{ characterId: "kirito", matchIndex: 1 }],
+        note: "Mang giáp",
+      })
+    );
+  });
+
   it("mỗi lần mở dialog bắt đầu với lưu ý trống", () => {
     const { result } = renderAnnounce();
 

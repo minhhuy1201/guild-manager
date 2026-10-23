@@ -147,6 +147,8 @@ export interface NotifyTeamMembersArgs {
   notices?: NotifyMembersInput["notices"];
   /** Card image of each (match, team) that has one; a team without one is messaged in text */
   teamImages?: NotifyMembersInput["teamImages"];
+  /** The Announcement note, sent again on a retry so every member reads the same DM */
+  note?: string;
 }
 
 /**
@@ -165,6 +167,7 @@ export async function notifyTeamMembers(
         body: JSON.stringify({
           notices: input.notices,
           teamImages: input.teamImages,
+          note: input.note,
         }),
         headers: await authHeader(),
       }

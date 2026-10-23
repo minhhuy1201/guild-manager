@@ -124,6 +124,16 @@ describe("team builder API", () => {
     expect(JSON.parse(String(init.body))).toEqual({ notices: [] });
   });
 
+  it("posts the note next to the notices when notifying members", async () => {
+    const fetchMock = mockFetch({ status: 200, body: { data: {} } });
+
+    await notifyTeamMembers({ sessionId: "s1", note: "Mang giáp" });
+
+    expect(JSON.parse(String(requestOf(fetchMock).init.body))).toEqual({
+      note: "Mang giáp",
+    });
+  });
+
   it("posts the team images next to the notices when notifying members", async () => {
     const fetchMock = mockFetch({ status: 200, body: { data: {} } });
     const teamImages = [{ matchIndex: 1, team: 3, image: "data:image/webp;base64,AQID" }];

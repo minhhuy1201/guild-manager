@@ -23,6 +23,7 @@ function input(overrides: Partial<TeamNoticeInput> = {}): TeamNoticeInput {
     teamName: 'Hổ Báo',
     hasImage: false,
     bangChienChannelId: CHANNEL_ID,
+    note: null,
     ...overrides,
   };
 }
@@ -107,5 +108,32 @@ describe('buildTeamNotice', () => {
     const { content } = buildTeamNotice(input({ teamName: 'T'.repeat(24) }));
 
     expect(content.length).toBeLessThan(MAX_CONTENT_LENGTH);
+  });
+});
+
+describe('buildTeamNotice — lưu ý thêm', () => {
+  it('lưu ý nằm ngay dưới tiêu đề, trên dòng "Bạn ở", dạng quote', () => {
+    const { content } = buildTeamNotice(input({ note: 'Mang giáp\nVào sớm' }));
+
+    expect(content.split('\n').slice(0, 4)).toEqual([
+      '**SCRIM 20:30 19/08 - Trận 1/2**',
+      '> Mang giáp',
+      '> Vào sớm',
+      'Bạn ở **Hổ Báo** (team 3). Online trước 19:45.',
+    ]);
+  });
+
+  it('không có lưu ý thì không có dòng quote nào', () => {
+    const { content } = buildTeamNotice(input());
+
+    expect(content.split('\n').some((line) => line.startsWith('>'))).toBe(
+      false,
+    );
+  });
+
+  it('lưu ý không mở mention nào', () => {
+    const payload = buildTeamNotice(input({ note: '@everyone <@123>' }));
+
+    expect(payload.allowed_mentions).toEqual({ parse: [] });
   });
 });

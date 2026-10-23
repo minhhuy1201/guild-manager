@@ -1,3 +1,4 @@
+import { noteQuoteLines } from './announcement-note';
 import { battleHeading, timesOf } from './formation-announcement';
 
 /** What one Team notice says. */
@@ -18,6 +19,8 @@ export interface TeamNoticeInput {
   hasImage: boolean;
   /** The guild war channel, where the line-up announcement lives */
   bangChienChannelId: string;
+  /** The Announcement note, already trimmed; null when the admin wrote none */
+  note: string | null;
 }
 
 /**
@@ -37,6 +40,7 @@ export function teamNoticeContent(input: TeamNoticeInput): string {
 
   return [
     `**${battleHeading(input)} - Trận ${input.matchIndex}/${input.matchCount}**`,
+    ...noteQuoteLines(input.note),
     `Bạn ở ${team}. Online trước ${gather}.`,
     ...(input.hasImage
       ? []

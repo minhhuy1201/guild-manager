@@ -136,6 +136,46 @@ function sent(rest: ReturnType<typeof build>['rest']) {
   );
 }
 
+describe('TeamNoticeService.notifyMembers — lưu ý thêm', () => {
+  it('mọi DM mang cùng lưu ý ngay dưới tiêu đề, cả hai trận', async () => {
+    const { service, rest } = build();
+
+    await service.notifyMembers('session-1', undefined, [], 'Mang giáp');
+
+    const contents = sent(rest).map(({ content }) => content.split('\n'));
+
+    expect(contents.length).toBeGreaterThan(1);
+    for (const lines of contents) expect(lines[1]).toBe('> Mang giáp');
+  });
+
+  it('nhắn lại thu hẹp bằng notices vẫn mang lưu ý', async () => {
+    const { service, rest } = build();
+
+    await service.notifyMembers(
+      'session-1',
+      [{ characterId: 'kirito', matchIndex: 1 }],
+      [],
+      'Mang giáp',
+    );
+
+    expect(sent(rest).map(({ content }) => content.split('\n')[1])).toEqual([
+      '> Mang giáp',
+    ]);
+  });
+
+  it('không có lưu ý thì DM không có dòng quote', async () => {
+    const { service, rest } = build();
+
+    await service.notifyMembers('session-1');
+
+    for (const { content } of sent(rest)) {
+      expect(content.split('\n').some((line) => line.startsWith('>'))).toBe(
+        false,
+      );
+    }
+  });
+});
+
 describe('TeamNoticeService.notifyMembers', () => {
   it('không tìm thấy ngày thì từ chối, không nhắn ai', async () => {
     const { service, rest } = build({ found: null });

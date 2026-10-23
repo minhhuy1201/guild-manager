@@ -104,6 +104,8 @@ export function useFormationAnnounce(
   const [note, setNote] = useState("");
   const [outcome, setOutcome] = useState<TeamNoticeOutcome | null>(null);
   const [capturing, setCapturing] = useState(false);
+  // An empty note is left out of the request rather than sent as "": the server reads both as none.
+  const noteToSend = note === "" ? undefined : note;
   const recoverSession = useSessionRecovery();
   // The send closes the day's attendance on the server, so the cached sessions and records go stale
   // the moment it answers — without this the attendance screen keeps offering its answer buttons for
@@ -157,7 +159,7 @@ export function useFormationAnnounce(
     }
 
     try {
-      await mutation.mutateAsync({ sessionId, images, note });
+      await mutation.mutateAsync({ sessionId, images, note: noteToSend });
     } catch (error) {
       toastError(error instanceof Error ? error.message : SEND_FAILED);
       return;
@@ -194,6 +196,7 @@ export function useFormationAnnounce(
         sessionId: id,
         notices,
         teamImages,
+        note: noteToSend,
       });
 
       setOutcome({
