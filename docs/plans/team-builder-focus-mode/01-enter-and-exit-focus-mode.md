@@ -13,14 +13,14 @@ UI: giữ quy ước trong `.claude/rules/web/` (cap `Kbd` trên nút, `isTyping
 
 **Blocked by:** None (can start immediately)
 
-**Status:** todo
+**Status:** done
 
-- [ ] Trận sửa được: có nút "Toàn màn hình" với cap `F`. Read-only thì không có nút.
-- [ ] Bấm nút hoặc `F` thì có dialog "Xếp đội hình toàn màn hình" chứa grid và pool
-- [ ] `F` trong ô nhập, hoặc kèm phím bổ trợ, không bật chế độ
-- [ ] `Esc` hoặc ✕ tắt chế độ và trả focus về nút. `Esc` đã bị dialog khác chặn, hoặc bấm trong ô nhập, thì không tắt.
-- [ ] Bật thì gọi `requestFullscreen` trên `documentElement`. Nếu bị reject thì chế độ vẫn bật (catch rỗng có ghi lý do).
-- [ ] `fullscreenchange` mà không còn `fullscreenElement` thì tắt chế độ. Tắt bằng ✕ hoặc `Esc` mà document đang toàn màn hình thì gọi `exitFullscreen`.
-- [ ] Trận chuyển sang read-only khi đang bật thì chế độ tắt
-- [ ] Grid và pool chỉ mount một lần (không trùng id droppable)
-- [ ] Test ở `TeamBuilderScreen` cho các ca trên. Typecheck, lint, test xanh.
+- [x] Trận sửa được: có nút "Toàn màn hình" với cap `F`. Read-only thì không có nút.
+- [x] Bấm nút hoặc `F` thì có dialog "Xếp đội hình toàn màn hình" chứa grid và pool
+- [x] `F` trong ô nhập, hoặc kèm phím bổ trợ, không bật chế độ
+- [x] `Esc` hoặc ✕ tắt chế độ và trả focus về nút. `Esc` đã bị dialog khác chặn, hoặc bấm trong ô nhập, thì không tắt.
+- [x] Bật thì gọi `requestFullscreen` trên `documentElement`. Nếu bị reject thì chế độ vẫn bật (catch rỗng có ghi lý do).
+- [x] `fullscreenchange` mà không còn `fullscreenElement` thì tắt chế độ. Tắt bằng ✕ hoặc `Esc` mà document đang toàn màn hình thì gọi `exitFullscreen`.
+- [x] Trận chuyển sang read-only khi đang bật thì chế độ tắt
+- [x] Grid và pool chỉ mount một lần (không trùng id droppable)
+- [x] Test ở `TeamBuilderScreen` cho các ca trên. Typecheck, lint, test xanh.

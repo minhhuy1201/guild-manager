@@ -30,6 +30,8 @@ function renderToolbar(
       onCopy={vi.fn()}
       announcing={false}
       onAnnounce={vi.fn()}
+      onEnterFocus={vi.fn()}
+      focusButtonRef={null}
       {...props}
     />
   );

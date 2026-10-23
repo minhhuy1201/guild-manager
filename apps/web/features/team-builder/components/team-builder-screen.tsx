@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -16,6 +16,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { UnsavedChangesBar } from "@/components/shared/unsaved-changes-bar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useFocusMode } from "../hooks/use-focus-mode";
 import { useFormationAnnounce } from "../hooks/use-formation-announce";
 import { useFormationScreen } from "../hooks/use-formation-screen";
 import { useSaveShortcut } from "../hooks/use-save-shortcut";
@@ -24,6 +25,7 @@ import { buildBannerTitle } from "../lib/banner-title";
 import { AbsentBanner } from "./absent-banner";
 import { AnnounceFormationDialog } from "./announce-formation-dialog";
 import { CopyFormationDialog } from "./copy-formation-dialog";
+import { FocusModeOverlay } from "./focus-mode-overlay";
 import { FormationCaptureSheet } from "./formation-capture-sheet";
 import { FormationGrid } from "./formation-grid";
 import { FormationToolbar } from "./formation-toolbar";
@@ -68,6 +70,8 @@ export function TeamBuilderScreen() {
     screen.draft.saveErrorMessage,
     screen.teamNames.saveErrorMessage,
   ].filter((message): message is string => Boolean(message));
+  const focusButtonRef = useRef<HTMLButtonElement>(null);
+  const focusMode = useFocusMode(editable, focusButtonRef);
   const announce = useFormationAnnounce(
     screen.selection.activeSessionId,
     screen.draft.matches.length,
@@ -160,6 +164,42 @@ export function TeamBuilderScreen() {
     );
   }
 
+  // The grid and the pool are mounted in one place only - the page or the focus mode overlay - since
+  // each slot and the pool are dnd-kit droppables with unique ids.
+  const bannerTitle = buildBannerTitle({
+    isGuildWar: activeSession.isGuildWar,
+    dateTime: activeSession.dateTime,
+    opponent: activeSession.opponent,
+    activeMatchIndex: screen.draft.activeMatchIndex,
+    draftMatchCount: screen.draft.matchCount,
+    scheduledMatchCount: activeSession.matchCount,
+  });
+  const arranging = (
+    <>
+      <FormationGrid
+        bannerTitle={bannerTitle}
+        isGuildWar={activeSession.isGuildWar}
+        locked={activeSession.locked}
+        assignment={screen.draft.assignment}
+        notes={screen.draft.notes}
+        onNoteChange={screen.draft.setNote}
+        names={screen.teamNames.names}
+        onNameChange={screen.teamNames.setName}
+        saving={saving}
+        charactersById={screen.pool.charactersById}
+        readOnly={!editable}
+        absentIds={screen.pool.absentIds}
+      />
+      <MemberPool
+        pool={screen.pool.pool}
+        classCounts={screen.pool.classCounts}
+        readOnly={!editable}
+        otherMatchIds={screen.pool.otherMatchIds}
+        activeMatchIndex={screen.draft.activeMatchIndex}
+      />
+    </>
+  );
+
   return (
     <DndContext
       sensors={sensors}
@@ -167,7 +207,7 @@ export function TeamBuilderScreen() {
       onDragEnd={screen.dnd.handleDragEnd}
       onDragCancel={screen.dnd.cancelDrag}
     >
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4" inert={focusMode.active}>
         <PageHeader
           banner="teamBuilder"
           title="Xếp đội hình bang chiến"
@@ -217,6 +257,8 @@ export function TeamBuilderScreen() {
               onCopy={handleCopy}
               announcing={announce.sending}
               onAnnounce={() => announce.setOpen(true)}
+              onEnterFocus={focusMode.enter}
+              focusButtonRef={focusButtonRef}
             />
           </div>
         </section>
@@ -290,36 +332,9 @@ export function TeamBuilderScreen() {
           }
         />
 
-        <FormationGrid
-          bannerTitle={buildBannerTitle({
-            isGuildWar: activeSession.isGuildWar,
-            dateTime: activeSession.dateTime,
-            opponent: activeSession.opponent,
-            activeMatchIndex: screen.draft.activeMatchIndex,
-            draftMatchCount: screen.draft.matchCount,
-            scheduledMatchCount: activeSession.matchCount,
-          })}
-          isGuildWar={activeSession.isGuildWar}
-          locked={activeSession.locked}
-          assignment={screen.draft.assignment}
-          notes={screen.draft.notes}
-          onNoteChange={screen.draft.setNote}
-          names={screen.teamNames.names}
-          onNameChange={screen.teamNames.setName}
-          saving={saving}
-          charactersById={screen.pool.charactersById}
-          readOnly={!editable}
-          absentIds={screen.pool.absentIds}
-        />
-        <MemberPool
-          pool={screen.pool.pool}
-          classCounts={screen.pool.classCounts}
-          readOnly={!editable}
-          otherMatchIds={screen.pool.otherMatchIds}
-          activeMatchIndex={screen.draft.activeMatchIndex}
-        />
+        {focusMode.active ? null : arranging}
 
-        {showSaveBar ? (
+        {showSaveBar && !focusMode.active ? (
           <UnsavedChangesBar
             message={`${changeCount} thay đổi chưa lưu`}
             resetLabel="Đặt lại"
@@ -332,6 +347,12 @@ export function TeamBuilderScreen() {
           />
         ) : null}
       </div>
+
+      {focusMode.active ? (
+        <FocusModeOverlay title={bannerTitle} onExit={focusMode.exit}>
+          {arranging}
+        </FocusModeOverlay>
+      ) : null}
 
       <DragOverlay>
         {screen.dnd.activeCharacter ? (
