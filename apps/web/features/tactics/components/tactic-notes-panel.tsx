@@ -35,9 +35,8 @@ interface TacticNotesPanelProps {
  * the notes when there are some and starts folded when there are none, so an empty panel never
  * takes room from the map.
  *
- * Its content scrolls inside a box pinned to the column, so long notes never make the row taller
- * than the map. It only ever renders for an admin at the drawing tools; everyone else reads the
- * notes in `TacticViewer`.
+ * It only ever renders for an admin at the drawing tools; everyone else reads the notes in
+ * `TacticViewer`.
  * @param props - The saved notes and the draft
  * @returns The notes column
  */
