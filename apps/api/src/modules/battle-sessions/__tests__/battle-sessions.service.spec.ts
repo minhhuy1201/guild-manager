@@ -296,8 +296,8 @@ describe('BattleSessionsService', () => {
   describe('create', () => {
     it('tạo được trận cho tuần đang mở và tuần kế tiếp', async () => {
       await service.create({
-        dateTime: vn('2026-07-21T20:30').toISOString(),
-        deadline: vn('2026-07-21T10:00').toISOString(),
+        dateTime: vn('2026-07-23T20:30').toISOString(),
+        deadline: vn('2026-07-23T10:00').toISOString(),
         matchCount: 2,
         opponent: 'Hắc Long Đường',
       });
@@ -317,6 +317,17 @@ describe('BattleSessionsService', () => {
       });
     });
 
+    it('từ chối tạo trận ở giờ đã qua trong tuần đang mở', async () => {
+      await expect(
+        service.create({
+          dateTime: vn('2026-07-21T20:30').toISOString(),
+          deadline: vn('2026-07-21T10:00').toISOString(),
+          matchCount: 2,
+        }),
+      ).rejects.toThrow('Giờ đánh đã qua.');
+      expect(prisma.battleSession.create).not.toHaveBeenCalled();
+    });
+
     it('từ chối trận thuộc tuần đã qua', async () => {
       await expect(
         service.create({
@@ -330,8 +341,8 @@ describe('BattleSessionsService', () => {
     it('từ chối hạn chót muộn hơn 10:00 sáng ngày đánh', async () => {
       await expect(
         service.create({
-          dateTime: vn('2026-07-21T20:30').toISOString(),
-          deadline: vn('2026-07-21T17:00').toISOString(),
+          dateTime: vn('2026-07-23T20:30').toISOString(),
+          deadline: vn('2026-07-23T17:00').toISOString(),
           matchCount: 2,
         }),
       ).rejects.toThrow(BadRequestException);
@@ -339,8 +350,8 @@ describe('BattleSessionsService', () => {
 
     it('chấp nhận hạn chót đúng bằng trần', async () => {
       await service.create({
-        dateTime: vn('2026-07-21T20:30').toISOString(),
-        deadline: vn('2026-07-21T10:00').toISOString(),
+        dateTime: vn('2026-07-23T20:30').toISOString(),
+        deadline: vn('2026-07-23T10:00').toISOString(),
         matchCount: 2,
       });
 
@@ -350,8 +361,8 @@ describe('BattleSessionsService', () => {
     it('trận trước 10:00 lấy giờ đánh làm trần', async () => {
       await expect(
         service.create({
-          dateTime: vn('2026-07-21T08:00').toISOString(),
-          deadline: vn('2026-07-21T09:00').toISOString(),
+          dateTime: vn('2026-07-23T08:00').toISOString(),
+          deadline: vn('2026-07-23T09:00').toISOString(),
           matchCount: 2,
         }),
       ).rejects.toThrow(BadRequestException);
@@ -359,8 +370,8 @@ describe('BattleSessionsService', () => {
 
     it('quy tên bang rỗng về null', async () => {
       await service.create({
-        dateTime: vn('2026-07-21T20:30').toISOString(),
-        deadline: vn('2026-07-21T10:00').toISOString(),
+        dateTime: vn('2026-07-23T20:30').toISOString(),
+        deadline: vn('2026-07-23T10:00').toISOString(),
         matchCount: 2,
         opponent: '',
       });
@@ -550,6 +561,19 @@ describe('BattleSessionsService', () => {
   });
 
   describe('trận đã đánh', () => {
+    it('không cho dời trận chưa đánh về giờ đã qua', async () => {
+      prisma.battleSession.findUnique.mockResolvedValue(
+        row({ dateTime: UPCOMING }),
+      );
+
+      await expect(
+        service.update('session-tue', {
+          dateTime: vn('2026-07-22T08:00').toISOString(),
+        }),
+      ).rejects.toThrow('Giờ đánh đã qua.');
+      expect(prisma.battleSession.update).not.toHaveBeenCalled();
+    });
+
     it('không cho sửa scrim đã qua giờ đánh, kể cả chỉ đổi tên đối thủ', async () => {
       await expect(
         service.update('session-tue', { opponent: 'Tên mới' }),
@@ -674,8 +698,8 @@ describe('BattleSessionsService', () => {
   describe('số trận', () => {
     it('lưu số trận admin chọn khi tạo scrim', async () => {
       await service.create({
-        dateTime: vn('2026-07-21T20:30').toISOString(),
-        deadline: vn('2026-07-21T10:00').toISOString(),
+        dateTime: vn('2026-07-23T20:30').toISOString(),
+        deadline: vn('2026-07-23T10:00').toISOString(),
         matchCount: 1,
       });
 

@@ -69,6 +69,7 @@ export function SessionRow({
           {session.canReopenAttendance && (
             <Badge variant="outline">Đã chốt đội hình</Badge>
           )}
+          {isFought && <Badge variant="outline">Đã đánh</Badge>}
         </SessionLabel>
         {getSessionSubtitle(session) && (
           <div className="text-xs text-muted-foreground">

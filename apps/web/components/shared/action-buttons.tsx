@@ -119,44 +119,44 @@ export function RowActionButton({
   className,
   onClick,
 }: RowActionButtonProps) {
-  if (disabled && disabledReason) {
-    // A disabled button gets no pointer events, so the tooltip hangs on a focusable wrapper.
-    return (
-      <Tooltip>
-        <TooltipTrigger render={<span tabIndex={0} className="inline-flex" />}>
-          <Button
-            variant={variant}
-            size="icon-sm"
-            disabled
-            className={className}
-            onClick={onClick}
-          >
-            {icon}
-            <span className="sr-only">{label}</span>
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>{disabledReason}</TooltipContent>
-      </Tooltip>
-    );
-  }
+  const isExplained = disabled && disabledReason !== undefined;
+  const button = (
+    <Button
+      variant={variant}
+      size="icon-sm"
+      disabled={disabled}
+      className={className}
+      onClick={onClick}
+    >
+      {icon}
+      <span className="sr-only">{label}</span>
+    </Button>
+  );
 
   return (
     <Tooltip>
-      <TooltipTrigger
-        render={
-          <Button
-            variant={variant}
-            size="icon-sm"
-            disabled={disabled}
-            className={className}
-            onClick={onClick}
-          />
-        }
-      >
-        {icon}
-        <span className="sr-only">{label}</span>
-      </TooltipTrigger>
-      <TooltipContent>{label}</TooltipContent>
+      {isExplained ? (
+        // A disabled button gets no pointer events, so the tooltip hangs on a focusable wrapper.
+        <TooltipTrigger render={<span tabIndex={0} className="inline-flex" />}>
+          {button}
+        </TooltipTrigger>
+      ) : (
+        <TooltipTrigger
+          render={
+            <Button
+              variant={variant}
+              size="icon-sm"
+              disabled={disabled}
+              className={className}
+              onClick={onClick}
+            />
+          }
+        >
+          {icon}
+          <span className="sr-only">{label}</span>
+        </TooltipTrigger>
+      )}
+      <TooltipContent>{isExplained ? disabledReason : label}</TooltipContent>
     </Tooltip>
   );
 }

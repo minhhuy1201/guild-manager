@@ -128,6 +128,12 @@ describe("SessionRow", () => {
     }
   });
 
+  it("scrim đã đánh hiện nhãn Đã đánh ngay trên dòng, không chỉ trong tooltip", () => {
+    renderRow(session(), true);
+
+    expect(screen.getByText("Đã đánh")).toBeTruthy();
+  });
+
   it("scrim chưa đánh thì nút Sửa và Xoá dùng được", () => {
     renderRow(session());
 
