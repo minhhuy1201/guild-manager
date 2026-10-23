@@ -22,9 +22,13 @@ afterEach(() => {
  * Render an empty pool and return the drop area that holds the empty message.
  * @returns The drop area element
  */
-function renderPool(readOnly = false): HTMLElement | null {
+function renderPool(
+  readOnly = false,
+  layout?: "card" | "column"
+): HTMLElement | null {
   render(
     <MemberPool
+      layout={layout}
       pool={[]}
       classCounts={[]}
       readOnly={readOnly}
@@ -55,5 +59,33 @@ describe("MemberPool - vùng thả", () => {
 
   it("chỉ xem thì không dựng gì", () => {
     expect(renderPool(true)).toBeNull();
+  });
+});
+
+describe("MemberPool - layout column", () => {
+  it("không bọc trong thẻ, khác layout mặc định", () => {
+    renderPool(false, "column");
+    expect(document.querySelector("[data-slot=card]")).toBeNull();
+    cleanup();
+
+    renderPool();
+    expect(document.querySelector("[data-slot=card]")).not.toBeNull();
+  });
+
+  it("vẫn có tiêu đề, và vùng thả bao phần danh sách", () => {
+    const area = renderPool(false, "column");
+
+    expect(screen.getByText("Thành viên chưa xếp")).toBeTruthy();
+    expect(area).not.toBeNull();
+  });
+
+  it("thẻ đang được kéo qua thì vùng thả sáng lên viền liền", () => {
+    over.value = true;
+
+    expect(renderPool(false, "column")?.className).toContain("border-solid");
+  });
+
+  it("chỉ xem thì không dựng gì", () => {
+    expect(renderPool(true, "column")).toBeNull();
   });
 });

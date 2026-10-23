@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -16,19 +16,22 @@ import { PageHeader } from "@/components/shared/page-header";
 import { UnsavedChangesBar } from "@/components/shared/unsaved-changes-bar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useFocusMode } from "../hooks/use-focus-mode";
 import { useFormationAnnounce } from "../hooks/use-formation-announce";
 import { useFormationScreen } from "../hooks/use-formation-screen";
 import { useSaveShortcut } from "../hooks/use-save-shortcut";
 import { useUndoShortcut } from "../hooks/use-undo-shortcut";
+import type { FormationLayout } from "../types/formation";
 import { buildBannerTitle } from "../lib/banner-title";
 import { AbsentBanner } from "./absent-banner";
 import { AnnounceFormationDialog } from "./announce-formation-dialog";
 import { CopyFormationDialog } from "./copy-formation-dialog";
+import { FocusModeOverlay } from "./focus-mode-overlay";
 import { FormationCaptureSheet } from "./formation-capture-sheet";
 import { FormationGrid } from "./formation-grid";
 import { FormationToolbar } from "./formation-toolbar";
 import { MemberCard } from "./member-card";
-import { MemberPool } from "./member-pool";
+import { MemberPool, type MemberPoolLayout } from "./member-pool";
 import { MatchTabs } from "./match-tabs";
 import { PrefillBanner } from "./prefill-banner";
 import { SaveConflictDialog } from "./save-conflict-dialog";
@@ -68,6 +71,17 @@ export function TeamBuilderScreen() {
     screen.draft.saveErrorMessage,
     screen.teamNames.saveErrorMessage,
   ].filter((message): message is string => Boolean(message));
+  const focusButtonRef = useRef<HTMLButtonElement>(null);
+  const controlsRef = useRef<HTMLElement>(null);
+  const focusReturn = useMemo(
+    () => ({ button: focusButtonRef, fallback: controlsRef }),
+    []
+  );
+  const focusMode = useFocusMode(
+    editable,
+    Boolean(screen.dnd.activeCharacter),
+    focusReturn
+  );
   const announce = useFormationAnnounce(
     screen.selection.activeSessionId,
     screen.draft.matches.length,
@@ -160,6 +174,72 @@ export function TeamBuilderScreen() {
     );
   }
 
+  // The grid and the pool are mounted in one place only - the page or the focus mode overlay - since
+  // each slot and the pool are dnd-kit droppables with unique ids.
+  const bannerTitle = buildBannerTitle({
+    isGuildWar: activeSession.isGuildWar,
+    dateTime: activeSession.dateTime,
+    opponent: activeSession.opponent,
+    activeMatchIndex: screen.draft.activeMatchIndex,
+    draftMatchCount: screen.draft.matchCount,
+    scheduledMatchCount: activeSession.matchCount,
+  });
+  const saveBar = showSaveBar ? (
+    <UnsavedChangesBar
+      message={`${changeCount} thay đổi chưa lưu`}
+      resetLabel="Đặt lại"
+      saving={saving}
+      errorMessages={errorMessages}
+      onSave={handleSave}
+      onReset={handleReset}
+      // Ctrl+Z's twin for a phone. The bar itself locks it while saving, as the shortcut does.
+      undo={{ onUndo: screen.draft.undo, canUndo: screen.draft.canUndo }}
+    />
+  ) : null;
+  const matchTabs = (
+    <MatchTabs
+      matchCount={screen.draft.matchCount}
+      activeMatchIndex={screen.draft.activeMatchIndex}
+      secondMatchHasMembers={Object.values(
+        screen.draft.matches[1]?.assignment ?? {}
+      ).some(Boolean)}
+      canAddMatch={screen.draft.canAddMatch}
+      onSelect={screen.draft.setActiveMatch}
+      onAdd={screen.draft.addMatch}
+      onRemove={screen.draft.removeMatch}
+    />
+  );
+  const absentCount = editable ? screen.pool.absentIds.size : 0;
+  const removeAbsent = () =>
+    screen.draft.removeFromActiveMatch(screen.pool.absentIds);
+  const grid = (layout: FormationLayout) => (
+    <FormationGrid
+      bannerTitle={bannerTitle}
+      isGuildWar={activeSession.isGuildWar}
+      locked={activeSession.locked}
+      assignment={screen.draft.assignment}
+      notes={screen.draft.notes}
+      onNoteChange={screen.draft.setNote}
+      names={screen.teamNames.names}
+      onNameChange={screen.teamNames.setName}
+      saving={saving}
+      charactersById={screen.pool.charactersById}
+      readOnly={!editable}
+      absentIds={screen.pool.absentIds}
+      layout={layout}
+    />
+  );
+  const pool = (layout: MemberPoolLayout) => (
+    <MemberPool
+      pool={screen.pool.pool}
+      classCounts={screen.pool.classCounts}
+      readOnly={!editable}
+      otherMatchIds={screen.pool.otherMatchIds}
+      activeMatchIndex={screen.draft.activeMatchIndex}
+      layout={layout}
+    />
+  );
+
   return (
     <DndContext
       sensors={sensors}
@@ -167,7 +247,7 @@ export function TeamBuilderScreen() {
       onDragEnd={screen.dnd.handleDragEnd}
       onDragCancel={screen.dnd.cancelDrag}
     >
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4" inert={focusMode.active}>
         <PageHeader
           banner="teamBuilder"
           title="Xếp đội hình bang chiến"
@@ -184,8 +264,10 @@ export function TeamBuilderScreen() {
             the left and what to do with the line-up on the right. The DOM order is the visual order,
             so focus follows the eye. */}
         <section
+          ref={controlsRef}
           aria-label="Điều khiển đội hình"
-          className="flex flex-col gap-3 rounded-container border border-border/60 bg-muted/60 p-3"
+          tabIndex={-1}
+          className="flex flex-col gap-3 rounded-container border border-border/60 bg-muted/60 p-3 outline-none"
         >
           <SessionTabs
             sessions={screen.selection.sessions}
@@ -196,17 +278,7 @@ export function TeamBuilderScreen() {
           />
 
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-            <MatchTabs
-              matchCount={screen.draft.matchCount}
-              activeMatchIndex={screen.draft.activeMatchIndex}
-              secondMatchHasMembers={Object.values(
-                screen.draft.matches[1]?.assignment ?? {}
-              ).some(Boolean)}
-              canAddMatch={screen.draft.canAddMatch}
-              onSelect={screen.draft.setActiveMatch}
-              onAdd={screen.draft.addMatch}
-              onRemove={screen.draft.removeMatch}
-            />
+            {matchTabs}
 
             <FormationToolbar
               dirty={dirty}
@@ -217,6 +289,8 @@ export function TeamBuilderScreen() {
               onCopy={handleCopy}
               announcing={announce.sending}
               onAnnounce={() => announce.setOpen(true)}
+              onEnterFocus={focusMode.enter}
+              focusButtonRef={focusButtonRef}
             />
           </div>
         </section>
@@ -283,55 +357,31 @@ export function TeamBuilderScreen() {
           onClear={screen.draft.clearActiveDraft}
         />
 
-        <AbsentBanner
-          count={editable ? screen.pool.absentIds.size : 0}
-          onRemove={() =>
-            screen.draft.removeFromActiveMatch(screen.pool.absentIds)
-          }
-        />
+        <AbsentBanner count={absentCount} onRemove={removeAbsent} />
 
-        <FormationGrid
-          bannerTitle={buildBannerTitle({
-            isGuildWar: activeSession.isGuildWar,
-            dateTime: activeSession.dateTime,
-            opponent: activeSession.opponent,
-            activeMatchIndex: screen.draft.activeMatchIndex,
-            draftMatchCount: screen.draft.matchCount,
-            scheduledMatchCount: activeSession.matchCount,
-          })}
-          isGuildWar={activeSession.isGuildWar}
-          locked={activeSession.locked}
-          assignment={screen.draft.assignment}
-          notes={screen.draft.notes}
-          onNoteChange={screen.draft.setNote}
-          names={screen.teamNames.names}
-          onNameChange={screen.teamNames.setName}
-          saving={saving}
-          charactersById={screen.pool.charactersById}
-          readOnly={!editable}
-          absentIds={screen.pool.absentIds}
-        />
-        <MemberPool
-          pool={screen.pool.pool}
-          classCounts={screen.pool.classCounts}
-          readOnly={!editable}
-          otherMatchIds={screen.pool.otherMatchIds}
-          activeMatchIndex={screen.draft.activeMatchIndex}
-        />
+        {focusMode.active ? null : (
+          <>
+            {grid("screen")}
+            {pool("card")}
+          </>
+        )}
 
-        {showSaveBar ? (
-          <UnsavedChangesBar
-            message={`${changeCount} thay đổi chưa lưu`}
-            resetLabel="Đặt lại"
-            saving={saving}
-            errorMessages={errorMessages}
-            onSave={handleSave}
-            onReset={handleReset}
-            // Ctrl+Z's twin for a phone. The bar itself locks it while saving, as the shortcut does.
-            undo={{ onUndo: screen.draft.undo, canUndo: screen.draft.canUndo }}
-          />
-        ) : null}
+        {focusMode.active ? null : saveBar}
       </div>
+
+      {focusMode.active ? (
+        <FocusModeOverlay
+          title={bannerTitle}
+          onExit={focusMode.exit}
+          matchTabs={matchTabs}
+          notice={
+            <AbsentBanner count={absentCount} onRemove={removeAbsent} compact />
+          }
+          footer={saveBar}
+          grid={grid("focus")}
+          pool={pool("column")}
+        />
+      ) : null}
 
       <DragOverlay>
         {screen.dnd.activeCharacter ? (

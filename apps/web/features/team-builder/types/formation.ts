@@ -46,9 +46,11 @@ export interface MatchDraft {
 
 /**
  * Where a formation grid is drawn. `screen` is the admin's working view; `capture` is the image
- * posted to Discord, which is read on its own and so keeps five columns and the tall headline.
+ * posted to Discord, which is read on its own and so keeps five columns and the tall headline;
+ * `focus` is the fullscreen arranging mode, where the rows never fold and the top bar already names
+ * the battle.
  */
-export type FormationLayout = "screen" | "capture";
+export type FormationLayout = "screen" | "capture" | "focus";
 
 /** Where a drag started from. */
 export type DragSource = { kind: "pool" } | { kind: "slot"; slotId: string };
