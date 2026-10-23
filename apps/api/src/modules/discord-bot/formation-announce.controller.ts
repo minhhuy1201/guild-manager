@@ -39,7 +39,8 @@ export class FormationAnnounceController {
   /**
    * Announce the day's line-up in Discord, with one image per match.
    * @param sessionId - Id of the battle day being announced
-   * @param body - images: one `data:image/webp;base64,…` per match, in order
+   * @param body - images: one `data:image/webp;base64,…` per match, in order; note: the
+   *   Announcement note shown under the headline
    * @returns How many images reached Discord
    */
   @Post('formations/:sessionId/announce')
@@ -48,7 +49,7 @@ export class FormationAnnounceController {
     @Param('sessionId') sessionId: string,
     @Body() body: AnnounceFormationDto,
   ): Promise<AnnouncementResult> {
-    return this.announcer.announce(sessionId, body.images);
+    return this.announcer.announce(sessionId, body.images, body.note);
   }
 
   /**

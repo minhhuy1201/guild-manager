@@ -99,6 +99,21 @@ describe("team builder API", () => {
     });
   });
 
+  it("posts the note next to the images when announcing", async () => {
+    const fetchMock = mockFetch({ status: 200, body: { data: {} } });
+
+    await announceFormation({
+      sessionId: "s1",
+      images: ["data:image/webp;base64,AQID"],
+      note: "Đổi map trận 2",
+    });
+
+    expect(JSON.parse(String(requestOf(fetchMock).init.body))).toEqual({
+      images: ["data:image/webp;base64,AQID"],
+      note: "Đổi map trận 2",
+    });
+  });
+
   it("posts only the notices when notifying members", async () => {
     const fetchMock = mockFetch({ status: 200, body: { data: {} } });
 

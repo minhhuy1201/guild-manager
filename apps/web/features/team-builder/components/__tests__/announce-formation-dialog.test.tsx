@@ -22,6 +22,8 @@ function renderDialog(
       blocked={false}
       sending={false}
       notifyMembers
+      note=""
+      onNoteChange={vi.fn()}
       outcome={null}
       onNotifyMembersChange={vi.fn()}
       onRetry={vi.fn()}
@@ -41,6 +43,37 @@ function confirmButton(): HTMLButtonElement {
     name: /Gửi thông báo|Đang gửi/,
   }) as HTMLButtonElement;
 }
+
+describe("AnnounceFormationDialog - lưu ý thêm", () => {
+  it("có ô Lưu ý thêm với bộ đếm theo giới hạn 500", () => {
+    renderDialog({ note: "Đổi map" });
+
+    const field = screen.getByLabelText("Lưu ý thêm") as HTMLTextAreaElement;
+
+    expect(field.value).toBe("Đổi map");
+    expect(field.maxLength).toBe(500);
+    expect(screen.getByText("7/500")).toBeTruthy();
+  });
+
+  it("gõ vào ô thì báo lên onNoteChange", () => {
+    const onNoteChange = vi.fn();
+    renderDialog({ onNoteChange });
+
+    fireEvent.change(screen.getByLabelText("Lưu ý thêm"), {
+      target: { value: "Online sớm" },
+    });
+
+    expect(onNoteChange).toHaveBeenCalledWith("Online sớm");
+  });
+
+  it("đang gửi thì khoá ô lưu ý", () => {
+    renderDialog({ sending: true });
+
+    expect((screen.getByLabelText("Lưu ý thêm") as HTMLTextAreaElement).disabled).toBe(
+      true
+    );
+  });
+});
 
 describe("AnnounceFormationDialog", () => {
   it("nói số người còn thiếu của từng trận", () => {

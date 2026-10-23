@@ -4,6 +4,7 @@
  * `assertNever`, and the wording of the Discord line-up messages, which the API sends and the web
  * app previews.
  */
+export * from './announcement-note';
 export * from './assert-never';
 export * from './battle-session';
 export * from './formation-announcement';

@@ -1,3 +1,4 @@
+import { noteQuoteLines } from './announcement-note';
 import { formatVnDayMonth, formatVnTime } from './vn-format';
 import { shiftVnDate, vnParts } from './vn-time';
 
@@ -37,6 +38,8 @@ export interface FormationAnnouncementInput {
   matchCount: number;
   /** Now, from `Clock` — decides the "TỐI NAY" / "TỐI MAI" phrase */
   now: Date;
+  /** The Announcement note, already trimmed; null when the admin wrote none */
+  note: string | null;
 }
 
 /** The two Discord ids the message points at. */
@@ -142,6 +145,7 @@ export function formationAnnouncementContent(
 
   return [
     `# ${battleHeading(input)}${dayPhrase(input.dateTime, input.now)} - ${input.matchCount} TRẬN`,
+    ...noteQuoteLines(input.note),
     `## - Các thành viên có tên trong danh sách vui lòng online *sớm trước ${times.gather}* !`,
     `## - Sau ${times.replace} chưa online, slot được thay thế cho thành viên khác.`,
     `## - Nếu không thể tham gia hoặc vào trễ *sau ${times.late}*, báo gấp vào <#${links.baoBanChannelId}> .`,

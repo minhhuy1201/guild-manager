@@ -68,6 +68,10 @@ export interface FormationAnnounceState {
   notifyMembers: boolean;
   /** Set whether to message each placed member */
   setNotifyMembers: (notify: boolean) => void;
+  /** The Announcement note typed so far, empty when there is none */
+  note: string;
+  /** Set the Announcement note */
+  setNote: (note: string) => void;
   /** Null until the announcement went out with the direct messages switched on */
   outcome: TeamNoticeOutcome | null;
   /** Open or close the confirmation dialog */
@@ -97,6 +101,7 @@ export function useFormationAnnounce(
 ): FormationAnnounceState {
   const [open, setOpen] = useState(false);
   const [notifyMembers, setNotifyMembers] = useState(true);
+  const [note, setNote] = useState("");
   const [outcome, setOutcome] = useState<TeamNoticeOutcome | null>(null);
   const [capturing, setCapturing] = useState(false);
   const recoverSession = useSessionRecovery();
@@ -114,13 +119,14 @@ export function useFormationAnnounce(
   });
 
   /**
-   * Open or close the dialog. Opening starts from a clean slate: the switch back on and the last
-   * send's result gone, so a second visit never shows the first one's report.
+   * Open or close the dialog. Opening starts from a clean slate: the switch back on, the note empty
+   * and the last send's result gone, so a second visit never shows the first one's report or note.
    * @param next - Whether the dialog should be open
    */
   function changeOpen(next: boolean): void {
     if (next) {
       setNotifyMembers(true);
+      setNote("");
       setOutcome(null);
     }
 
@@ -151,7 +157,7 @@ export function useFormationAnnounce(
     }
 
     try {
-      await mutation.mutateAsync({ sessionId, images });
+      await mutation.mutateAsync({ sessionId, images, note });
     } catch (error) {
       toastError(error instanceof Error ? error.message : SEND_FAILED);
       return;
@@ -274,6 +280,8 @@ export function useFormationAnnounce(
     sending: capturing || mutation.isPending || notifyMutation.isPending,
     notifyMembers,
     setNotifyMembers,
+    note,
+    setNote,
     outcome,
     setOpen: changeOpen,
     confirm,

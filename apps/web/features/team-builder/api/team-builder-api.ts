@@ -109,17 +109,19 @@ export async function saveTeamNames(
   );
 }
 
-/** Arguments of `announceFormation`. `sessionId` travels on the URL; only `images` is sent. */
+/** Arguments of `announceFormation`. `sessionId` travels on the URL; `images` and `note` are sent. */
 export interface AnnounceFormationArgs {
   /** Id of the battle day being announced */
   sessionId: string;
   /** One `data:image/webp;base64,…` per match, in match order */
   images: string[];
+  /** The Announcement note; the server trims it and treats an empty one as none */
+  note?: string;
 }
 
 /**
  * Post the day's line-up to Discord, with one image per match.
- * @param input - sessionId and the captured images
+ * @param input - sessionId, the captured images and the Announcement note
  * @returns How many images reached Discord; a failure value (`ok: false`) when signed out, the day is gone (404), or Discord refuses the message
  */
 export async function announceFormation(
@@ -130,7 +132,7 @@ export async function announceFormation(
       `/team-builder/formations/${encodeURIComponent(input.sessionId)}/announce`,
       {
         method: "POST",
-        body: JSON.stringify({ images: input.images }),
+        body: JSON.stringify({ images: input.images, note: input.note }),
         headers: await authHeader(),
       }
     )

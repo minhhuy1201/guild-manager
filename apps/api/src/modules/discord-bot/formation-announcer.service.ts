@@ -61,6 +61,7 @@ export class FormationAnnouncerService {
    *
    * @param sessionId - Battle day being announced
    * @param images - Line-up images as `data:image/webp;base64,…`, in match order
+   * @param note - Announcement note shown under the headline; omitted when there is none
    * @returns How many images were sent
    * @throws NotFoundException when the battle day does not exist
    * @throws BadRequestException when there are more images than the day has matches
@@ -70,6 +71,7 @@ export class FormationAnnouncerService {
   async announce(
     sessionId: string,
     images: string[],
+    note?: string,
   ): Promise<AnnouncementResult> {
     const session = await this.battleSessions.findById(sessionId);
 
@@ -93,6 +95,7 @@ export class FormationAnnouncerService {
         dateTime: new Date(session.dateTime),
         matchCount: session.matchCount,
         now: this.clock.now(),
+        note: note ?? null,
       },
       {
         guildRoleId: this.config.get('DISCORD_GUILD_ROLE_ID', { infer: true }),
