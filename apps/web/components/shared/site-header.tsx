@@ -7,7 +7,7 @@ import { GuildSeal } from "@/components/shared/guild-seal";
 import { HeaderLoginButton } from "@/components/shared/header-login-button";
 import { MainNav } from "@/components/shared/main-nav";
 import { MobileTabBar } from "@/components/shared/mobile-tab-bar";
-import { ThemeMenu } from "@/components/shared/theme-menu";
+import { ThemeSwitch } from "@/components/shared/theme-switch";
 import { ROUTES } from "@/config/routes";
 import { UserMenu } from "@/features/auth";
 import { getActor, getMe } from "@/features/auth/server";
@@ -57,7 +57,7 @@ function GuildName() {
  * the header from `sm` up, in the tab bar at the bottom of a phone's screen below it. A visitor gets
  * the guild's public page behind the mark and a way to sign in.
  * Reads the actor on the server to decide whether to show the nav at all, and which items it
- * carries. The theme is picked from the account menu, or from `ThemeMenu` when signed out.
+ * carries. The theme switch sits right of the brand for everyone, signed in or not.
  * @returns The styled header, followed by the phone's tab bar when signed in
  */
 export async function SiteHeader() {
@@ -99,10 +99,10 @@ export async function SiteHeader() {
           >
             <GuildName />
           </Link>
+          <ThemeSwitch />
           {/* Signed out there is nothing to navigate between, only a way in. */}
           {!actor && (
             <div className="ml-auto flex shrink-0 items-center gap-2">
-              <ThemeMenu />
               <HeaderLoginButton />
             </div>
           )}

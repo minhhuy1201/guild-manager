@@ -423,9 +423,9 @@ Gold and amber stay apart by saturation: amber is a vivid state colour, gold a m
 ### Themes → tokens only, switched by next-themes
 
 `ThemeProvider` (`components/providers.tsx`) puts `.dark` on `<html>`; light is the default and the
-operating system's preference is ignored. The pickers live in `components/shared/theme-menu.tsx`:
-`ThemeRadioItems` ("Giao diện": Sáng / Tối) inside the account menu, and `ThemeMenu`, a palette icon
-button in the header, for a signed-out visitor.
+operating system's preference is ignored. The picker is `ThemeSwitch`
+(`components/shared/theme-switch.tsx`), a sun/moon pill right of the brand in the header, shown
+signed in or out.
 
 - **A colour comes from a token**, so it follows the theme on its own. A literal colour is only for
   something that must look the same in both: the scrims and white text on a picture, the attendance
