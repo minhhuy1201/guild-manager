@@ -192,7 +192,7 @@ previous CI deploy as what production runs.
 | Push to `main` touching shared code or workspace config | The whole pipeline, both deploys |
 | Push to `main` touching only docs | Nothing runs, unless an app is still behind from a failed run; then that app's pipeline runs |
 | Open/update a pull request | Tests only — the deploy jobs are gated on `github.ref` |
-| Any test job fails | The migration and both deploy jobs are skipped; production keeps the previous build **and its schema**, and `deploy-alert` opens an issue |
+| Any test job fails | The migration and both deploy jobs are skipped; production keeps the previous build **and its schema**; on `main`, `deploy-alert` also opens an issue |
 
 **A red run on `main` opens an issue.** The `Alert on a failed deploy` job runs after every push to
 `main`. When any test, build, migrate or deploy job failed or was cancelled, it opens the issue
