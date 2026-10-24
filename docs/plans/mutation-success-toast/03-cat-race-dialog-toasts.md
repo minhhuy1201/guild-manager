@@ -4,11 +4,11 @@
 
 **Blocked by:** 01 (Quy tắc mới và toast thành công trong `MutationForm`).
 
-**Status:** todo
+**Status:** done
 
-- [ ] Tạo đợt đua và kết thúc đợt hiện toast thành công nêu tên đợt.
-- [ ] Lưu người tham gia và entrants hiện toast thành công.
-- [ ] Thêm, sửa, xoá giải hiện toast thành công nêu tên giải.
-- [ ] Huỷ vòng hiện toast thành công.
-- [ ] Test của các dialog liên quan kiểm tra toast thành công.
-- [ ] Test, typecheck, lint của web xanh.
+- [x] Tạo đợt đua và kết thúc đợt hiện toast thành công nêu tên đợt.
+- [x] Lưu người tham gia và entrants hiện toast thành công.
+- [x] Thêm, sửa, xoá giải hiện toast thành công nêu tên giải.
+- [x] Huỷ vòng hiện toast thành công.
+- [x] Test của các dialog liên quan kiểm tra toast thành công.
+- [x] Test, typecheck, lint của web xanh.

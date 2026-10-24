@@ -201,6 +201,11 @@ function SessionForm({ session, onDone }: SessionFormProps) {
       pendingLabel="Đang lưu…"
       submitIcon={<Save />}
       fallbackError="Không lưu được thay đổi."
+      successMessage={
+        session
+          ? `Đã lưu thay đổi cho ${session.label}.`
+          : "Đã thêm trận scrim."
+      }
       onDone={onDone}
       run={submitSession}
     >

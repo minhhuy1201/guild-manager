@@ -37,6 +37,8 @@ afterEach(() => {
   cleanup();
   m.pending.announce = false;
   m.recover.mockReturnValue(false);
+  m.toastSuccess.mockClear();
+  m.toastError.mockClear();
 });
 
 describe("AnnounceButton", () => {
@@ -91,6 +93,9 @@ describe("EndEventButton", () => {
     fireEvent.click(screen.getByRole("button", { name: "Kết thúc" }));
 
     await waitFor(() => expect(m.endRace).toHaveBeenCalledWith("e1"));
+    await waitFor(() =>
+      expect(m.toastSuccess).toHaveBeenCalledWith("Đã kết thúc đợt đua.")
+    );
   });
 });
 
@@ -120,6 +125,7 @@ describe("VoidRoundDialog", () => {
 
     await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
     expect(m.voidRound).toHaveBeenCalledWith({ id: "e1", roundId: "r1", reason: "nhầm" });
+    expect(m.toastSuccess).toHaveBeenCalledWith(`Đã huỷ vòng của ${ROUND.winnerName}.`);
   });
 
   it("cancels without writing", () => {

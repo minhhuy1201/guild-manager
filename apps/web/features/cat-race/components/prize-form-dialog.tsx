@@ -85,6 +85,9 @@ function PrizeFormBody({ eventId, prize, onDone }: PrizeFormBodyProps) {
       pendingLabel="Đang lưu..."
       submitIcon={<Save />}
       fallbackError="Không lưu được hạng mục."
+      successMessage={
+        prize ? `Đã lưu hạng mục ${name}.` : `Đã thêm hạng mục ${name}.`
+      }
       onCancel={onDone}
       onDone={onDone}
       run={async () => {

@@ -93,6 +93,7 @@ function TokenPresetBody({ onDone }: TokenPresetBodyProps) {
       pendingLabel="Đang thêm..."
       submitIcon={<Plus />}
       fallbackError="Không thêm được quân cờ."
+      successMessage={`Đã thêm quân cờ ${label.trim()}.`}
       onCancel={onDone}
       onDone={onDone}
       run={async () => {

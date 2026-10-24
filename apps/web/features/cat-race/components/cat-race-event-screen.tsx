@@ -220,6 +220,11 @@ function EventBody({ event }: { event: CatRaceEventDetail }) {
         submitLabel="Xoá"
         pendingLabel="Đang xoá..."
         fallbackError="Không xoá được hạng mục."
+        successMessage={
+          dialog.kind === "delete-prize"
+            ? `Đã xoá hạng mục ${dialog.prize.name}.`
+            : ""
+        }
         run={async () => {
           if (dialog.kind !== "delete-prize") return;
           await deletePrize.mutateAsync({ id: event.id, prizeId: dialog.prize.id });

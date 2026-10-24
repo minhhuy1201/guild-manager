@@ -7,5 +7,5 @@
 **Status:** todo
 
 - [ ] `successMessage` là prop bắt buộc của `MutationForm`, `MutationDialog` và `ConfirmDeleteDialog`.
-- [ ] Mọi chỗ dùng, kể cả `reduce-match-count-dialog`, truyền câu báo thành công.
+- [ ] Mọi chỗ dùng đều truyền `successMessage`. `stage-bar` (xoá giai đoạn trên bản nháp) truyền chuỗi rỗng kèm lý do.
 - [ ] Test, typecheck, lint của web xanh.
