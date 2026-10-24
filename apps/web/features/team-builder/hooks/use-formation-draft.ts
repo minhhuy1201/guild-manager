@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import type { SessionFormation } from "@guild/shared/schemas";
 
+import { toastSuccess } from "@/components/shared/toast";
 import { useSessionRecovery } from "@/hooks/use-session-recovery";
 import { ApiError } from "@/lib/api-client";
 import { isSessionExpired } from "@/lib/session-expired";
@@ -422,6 +423,7 @@ export function useFormationDraft(
       });
       clearDraft(activeSessionId);
       setStaleSessionId(null);
+      toastSuccess("Đã lưu đội hình.");
     } catch (error) {
       if (error instanceof ApiError && error.statusCode === STALE_STATUS) {
         setStaleSessionId(activeSessionId);

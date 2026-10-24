@@ -10,9 +10,10 @@ vi.mock("../../api/tactics-api", () => ({
 }));
 
 const toastError = vi.fn();
+const toastSuccess = vi.fn();
 vi.mock("@/components/shared/toast", () => ({
   toastError: (message: string) => toastError(message),
-  toastSuccess: vi.fn(),
+  toastSuccess: (message: string) => toastSuccess(message),
 }));
 
 import { fetchTactic, saveTacticStages } from "../../api/tactics-api";
@@ -53,6 +54,7 @@ async function renderEditor(canEdit = true) {
 
 beforeEach(() => {
   toastError.mockReset();
+  toastSuccess.mockReset();
   vi.mocked(fetchTactic).mockResolvedValue({ ok: true, data: makeTactic({ scene: makeScene(2) }) });
   vi.mocked(saveTacticStages).mockResolvedValue({ ok: true, data: makeTactic() });
 });
@@ -356,6 +358,7 @@ describe("useTacticEditor", () => {
     expect(saved).toBe(true);
     expect(useTacticEditorStore.getState().dirty).toBe(false);
     expect(vi.mocked(saveTacticStages).mock.calls[0][0].id).toBe("t1");
+    expect(toastSuccess).toHaveBeenCalledWith("Đã lưu chiến thuật.");
   });
 
   it("keeps the draft and toasts the backend's sentence when a save fails", async () => {
@@ -376,6 +379,7 @@ describe("useTacticEditor", () => {
     );
     expect(useTacticEditorStore.getState().dirty).toBe(true);
     expect(elements()).toHaveLength(1);
+    expect(toastSuccess).not.toHaveBeenCalled();
   });
 
   it("keeps a stroke drawn while the save was out as unsaved", async () => {

@@ -17,6 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { TableCell, TableHead, TableRow } from "@/components/ui/table";
 import { useSessionRecovery } from "@/hooks/use-session-recovery";
 import { useTablePagination } from "@/hooks/use-table-pagination";
+import { toastSuccess } from "@/components/shared/toast";
 import { errorMessageOf } from "@/lib/error-message";
 import { cn } from "@/lib/utils";
 import { useAttendanceBoard } from "../hooks/use-attendance-board";
@@ -239,7 +240,10 @@ export function AttendanceGrid({ canManageOthers }: AttendanceGridProps) {
     const firstFailure = results.find(
       (result): result is PromiseRejectedResult => result.status === "rejected"
     );
-    if (!firstFailure) return;
+    if (!firstFailure) {
+      toastSuccess(`Đã lưu ${changes.length} thay đổi điểm danh.`);
+      return;
+    }
     // An expired session is taken care of by a navigation and its own toast.
     if (recoverSession(firstFailure.reason)) return;
     setSaveError(errorMessageOf(firstFailure.reason, SAVE_FALLBACK_ERROR));

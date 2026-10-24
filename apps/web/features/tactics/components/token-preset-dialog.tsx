@@ -12,6 +12,7 @@ import { ErrorNotice } from "@/components/shared/error-notice";
 import { FieldLabel } from "@/components/shared/field-label";
 import { MutationDialogShell } from "@/components/shared/mutation-dialog";
 import { MutationForm } from "@/components/shared/mutation-form";
+import { toastSuccess } from "@/components/shared/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSessionRecovery } from "@/hooks/use-session-recovery";
@@ -78,6 +79,7 @@ function TokenPresetBody({ onDone }: TokenPresetBodyProps) {
 
     try {
       await deletePreset.mutateAsync(presetId);
+      toastSuccess("Đã xoá quân cờ.");
     } catch (caught) {
       // An expired session is renewed by a navigation, and the recovery says so itself.
       if (!recoverSession(caught)) {

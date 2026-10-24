@@ -12,6 +12,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 
 const updateTactic = vi.fn();
+const toastSuccess = vi.fn();
+
+vi.mock("@/components/shared/toast", () => ({
+  toastSuccess: (message: string) => toastSuccess(message),
+  toastError: vi.fn(),
+}));
 
 vi.mock("../api/tactics-api", () => ({
   updateTactic: (input: unknown) => updateTactic(input),
@@ -105,6 +111,7 @@ describe("TacticNotesPanel", () => {
       })
     );
     await waitFor(() => expect(screen.queryByRole("textbox")).toBeNull());
+    expect(toastSuccess).toHaveBeenCalledWith("Đã lưu ghi chú chiến thuật.");
   });
 
   it("clears the notes when saved empty", async () => {
@@ -158,5 +165,6 @@ describe("TacticNotesPanel", () => {
     expect((screen.getByRole("textbox") as HTMLTextAreaElement).value).toBe(
       "Giữ cổng."
     );
+    expect(toastSuccess).not.toHaveBeenCalled();
   });
 });

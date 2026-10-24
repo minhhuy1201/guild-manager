@@ -3,6 +3,7 @@ import { act, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { TeamNames, TeamNamesState } from "@guild/shared/schemas";
 
+import { toastSuccess } from "@/components/shared/toast";
 import { saveTeamNames } from "../../api/team-builder-api";
 import { useTeamNameDraft } from "../use-team-name-draft";
 import { renderFormationHook } from "./render-formation-hook";
@@ -10,6 +11,11 @@ import { renderFormationHook } from "./render-formation-hook";
 vi.mock("../../api/team-builder-api", () => ({
   fetchTeamNames: vi.fn(),
   saveTeamNames: vi.fn(),
+}));
+
+vi.mock("@/components/shared/toast", () => ({
+  toastSuccess: vi.fn(),
+  toastError: vi.fn(),
 }));
 
 const saveTeamNamesMock = vi.mocked(saveTeamNames);
@@ -135,6 +141,7 @@ describe("useTeamNameDraft — lưu", () => {
     });
 
     await waitFor(() => expect(result.current.dirty).toBe(false));
+    expect(toastSuccess).toHaveBeenCalledWith("Đã lưu tên đội.");
   });
 
   it("lưu lỗi thì giữ nguyên nháp và hiện message của backend", async () => {
@@ -151,6 +158,7 @@ describe("useTeamNameDraft — lưu", () => {
     );
     expect(result.current.names["2"]).toBe("Hậu cần");
     expect(result.current.dirty).toBe(true);
+    expect(toastSuccess).not.toHaveBeenCalled();
   });
 });
 
