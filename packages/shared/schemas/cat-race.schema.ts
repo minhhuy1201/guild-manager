@@ -174,6 +174,30 @@ export const catRaceDrawResultSchema = z.object({
   winningTicket: z.number().int().min(1),
 });
 
+/** How many Featured races the landing page shows, newest first. */
+export const FEATURED_RACE_LIMIT = 3;
+
+/** One winner as the public sees them: no Discord, no character id, no tickets. */
+export const featuredRaceWinnerSchema = z.object({
+  name: z.string(),
+  guildClass: z.enum(GuildClass),
+});
+
+export const featuredRacePrizeSchema = z.object({
+  name: z.string(),
+  tier: z.enum(PrizeTier),
+  winners: z.array(featuredRaceWinnerSchema),
+});
+
+/** An ended event on the landing page's Bảng vàng; readable without a session. */
+export const featuredRaceSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  endedAt: z.string(),
+  participantCount: z.number().int(),
+  prizes: z.array(featuredRacePrizeSchema),
+});
+
 /** A prize line a new event can start from. */
 export const catRacePrizeTemplateSchema = catRacePrizeInputSchema;
 
@@ -198,3 +222,6 @@ export type CatRaceRound = z.infer<typeof catRaceRoundSchema>;
 export type CatRaceEventDetail = z.infer<typeof catRaceEventDetailSchema>;
 export type CatRaceDrawResult = z.infer<typeof catRaceDrawResultSchema>;
 export type CatRacePrizeTemplate = z.infer<typeof catRacePrizeTemplateSchema>;
+export type FeaturedRaceWinner = z.infer<typeof featuredRaceWinnerSchema>;
+export type FeaturedRacePrize = z.infer<typeof featuredRacePrizeSchema>;
+export type FeaturedRace = z.infer<typeof featuredRaceSchema>;

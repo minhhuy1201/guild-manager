@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { LandingScreen } from "@/features/landing";
 import { getSession } from "@/features/auth/server";
+import { loadFeaturedRaces } from "@/features/landing/server";
 import { LANDING_HERO } from "@/lib/page-banners";
 
 export const metadata: Metadata = {
@@ -26,11 +27,17 @@ export const metadata: Metadata = {
  * without a session can reach.
  *
  * The session is read for one reason: it decides where the page's call to action points, not what
- * the page shows. Nothing here is gated.
+ * the page shows. Nothing here is gated. The Bảng vàng is read in parallel and without the session's
+ * token; if that read fails the page still renders, without the block.
  * @returns The landing screen
  */
 export default async function LandingPage() {
-  const session = await getSession();
+  const [session, featuredRaces] = await Promise.all([
+    getSession(),
+    loadFeaturedRaces(),
+  ]);
 
-  return <LandingScreen isSignedIn={Boolean(session)} />;
+  return (
+    <LandingScreen isSignedIn={Boolean(session)} featuredRaces={featuredRaces} />
+  );
 }

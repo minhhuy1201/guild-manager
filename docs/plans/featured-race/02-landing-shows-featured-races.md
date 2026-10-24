@@ -6,12 +6,12 @@ Spec: [`docs/specs/2026-10-24-featured-race.md`](../../specs/2026-10-24-featured
 
 **Blocked by:** 01 (Admin bật "Hiện ở trang chủ")
 
-**Status:** todo
+**Status:** done
 
-- [ ] Schema Zod public trong `packages/shared`: `id`, `name`, `endedAt`, `participantCount`, `prizes[]` (`name`, `tier`, `winners[]` gồm `name`, `guildClass`); không có số vé, Discord, id nhân vật
-- [ ] `GET /public/featured-races`, không guard, trong một controller riêng của module `cat-race`; tối đa `FEATURED_RACE_LIMIT = 3`, xếp theo `endedAt` giảm dần
-- [ ] Vòng bị huỷ không hiện; prize không có người thắng hợp lệ bị bỏ; prize xếp theo tier rồi `sortOrder`, winner theo `drawnAt`
-- [ ] Test service cho giới hạn, thứ tự, lọc vòng huỷ, và shape không có số vé; test controller cho route public không guard
-- [ ] Page `/trang-chu` gọi endpoint public không kèm token; lỗi thì ghi log server và ẩn khối, phần còn lại của trang vẫn render
-- [ ] Khối Bảng vàng là component của feature `landing`, nhận danh sách qua prop, đứng ngay dưới hero trong `ScrollReveal`
-- [ ] Test `LandingScreen`: danh sách rỗng thì không có khối; có đợt thì có tên đợt, hạng mục, người thắng, không có số vé; test cũ vẫn xanh
+- [x] Schema Zod public trong `packages/shared`: `id`, `name`, `endedAt`, `participantCount`, `prizes[]` (`name`, `tier`, `winners[]` gồm `name`, `guildClass`); không có số vé, Discord, id nhân vật
+- [x] `GET /public/featured-races`, không guard, trong một controller riêng của module `cat-race`; tối đa `FEATURED_RACE_LIMIT = 3`, xếp theo `endedAt` giảm dần
+- [x] Vòng bị huỷ không hiện; prize không có người thắng hợp lệ bị bỏ; prize xếp theo tier rồi `sortOrder`, winner theo `drawnAt`
+- [x] Test service cho giới hạn, thứ tự, lọc vòng huỷ, và shape không có số vé; test controller cho route public không guard
+- [x] Page `/trang-chu` gọi endpoint public không kèm token; lỗi thì ghi log server và ẩn khối, phần còn lại của trang vẫn render
+- [x] Khối Bảng vàng là component của feature `landing`, nhận danh sách qua prop, đứng ngay dưới hero trong `ScrollReveal`
+- [x] Test `LandingScreen`: danh sách rỗng thì không có khối; có đợt thì có tên đợt, hạng mục, người thắng, không có số vé; test cũ vẫn xanh
