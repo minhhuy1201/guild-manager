@@ -912,12 +912,12 @@ readable. Tailwind 4 only emits the palette variables the app actually uses, whi
 is `--color-emerald-600` (in use elsewhere) and not `--color-green-600` (not emitted, so it would
 silently resolve to nothing).
 
-Which of the two feedback shapes:
-
 Every successful write says so in a toast. A dialog closing, a row appearing or a save bar
 vanishing is a side effect the eye can miss, and the same screens already toast some writes (leave,
 reopen, attendance) while others stayed silent, which reads as "did it save?". `MutationForm` owns
 the success toast (`successMessage`) so a dialog cannot forget it and `run` stays a pure write.
+The one exception is a write whose result is the screen's own reveal: the cat race draw is the
+animation, and a toast naming the winner would spoil it.
 
 Where a *failure* shows is a separate choice:
 

@@ -71,8 +71,8 @@ function TacticFormBody({ tactic, onDone }: TacticFormBodyProps) {
       fallbackError="Không lưu được chiến thuật."
       successMessage={
         tactic
-          ? `Đã lưu thay đổi chiến thuật ${name}.`
-          : `Đã tạo chiến thuật ${name}.`
+          ? `Đã lưu thay đổi chiến thuật ${name.trim()}.`
+          : `Đã tạo chiến thuật ${name.trim()}.`
       }
       onCancel={onDone}
       onDone={onDone}

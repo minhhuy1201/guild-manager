@@ -6,7 +6,7 @@
 
 **Status:** done
 
-- [x] Lưu đội hình hiện toast thành công nêu ngày; 412 (xung đột), 409 (ngày đã khoá) và 401 không raise toast thành công.
+- [x] Lưu đội hình hiện toast thành công "Đã lưu đội hình."; chỉ ghi khi ngày đang mở có thay đổi, nên lưu riêng tên đội không ghi lại đội hình và không toast đội hình; 412 (xung đột), 409 (ngày đã khoá) và 401 không raise toast thành công.
 - [x] Lưu tên đội hiện toast thành công.
 - [x] Lưu lưới điểm danh hiện toast thành công khi mọi ô đều ghi được; ghi một phần thì không toast thành công, dòng lỗi giữ nguyên.
 - [x] Lưu bản vẽ chiến thuật (nút lưu và Ctrl/Cmd+S) hiện toast thành công.

@@ -125,7 +125,7 @@ function MemberForm({ member, onDone }: MemberFormProps) {
       fallbackError="Không lưu được thay đổi."
       successMessage={
         member
-          ? `Đã lưu thay đổi cho ${member.name}.`
+          ? `Đã lưu thay đổi cho ${name.trim()}.`
           : `Đã thêm ${name.trim()}.`
       }
       onDone={onDone}

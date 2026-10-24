@@ -6,7 +6,7 @@ import {
   TACTIC_TOKEN_ICONS,
   type TacticTokenIcon,
 } from "@guild/shared/enums";
-import { TACTIC_LIMITS } from "@guild/shared/schemas";
+import { TACTIC_LIMITS, type TacticTokenPreset } from "@guild/shared/schemas";
 
 import { ErrorNotice } from "@/components/shared/error-notice";
 import { FieldLabel } from "@/components/shared/field-label";
@@ -72,20 +72,22 @@ function TokenPresetBody({ onDone }: TokenPresetBodyProps) {
 
   /**
    * Delete one preset, keeping the reason on screen when the server refuses.
-   * @param presetId - Id of the preset to delete
+   * @param preset - The preset to delete
    */
-  async function removePreset(presetId: string) {
+  async function removePreset(preset: TacticTokenPreset) {
     setDeleteError(null);
 
     try {
-      await deletePreset.mutateAsync(presetId);
-      toastSuccess("Đã xoá quân cờ.");
+      await deletePreset.mutateAsync(preset.id);
     } catch (caught) {
       // An expired session is renewed by a navigation, and the recovery says so itself.
       if (!recoverSession(caught)) {
         setDeleteError(errorMessageOf(caught, "Không xoá được quân cờ."));
       }
+      return;
     }
+
+    toastSuccess(`Đã xoá quân cờ ${preset.label}.`);
   }
 
   return (
@@ -163,7 +165,7 @@ function TokenPresetBody({ onDone }: TokenPresetBodyProps) {
                 variant="ghost"
                 className="text-destructive"
                 aria-label={`Xoá ${preset.label}`}
-                onClick={() => void removePreset(preset.id)}
+                onClick={() => void removePreset(preset)}
               >
                 <Trash2 />
               </Button>

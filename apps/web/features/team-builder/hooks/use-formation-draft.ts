@@ -408,7 +408,9 @@ export function useFormationDraft(
    * first: the draft stays and `isStale` opens the dialog that offers reload or overwrite.
    */
   async function handleSave() {
-    if (!activeSessionId) return;
+    // A names-only save runs this too (the screen saves both drafts together); an untouched day
+    // must not be rewritten, or its version bumps and a false "saved" toast appears.
+    if (!activeSessionId || !dirtySessionIds.has(activeSessionId)) return;
 
     try {
       await saveMutation.mutateAsync({

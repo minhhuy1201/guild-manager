@@ -334,6 +334,17 @@ describe("useFormationDraft — lưu", () => {
     expect(recoverSessionMock).not.toHaveBeenCalled();
   });
 
+  it("ngày không đổi gì thì không ghi lại đội hình và không toast", async () => {
+    const { result } = renderDraft();
+
+    await act(async () => {
+      await result.current.handleSave();
+    });
+
+    expect(saveFormationMock).not.toHaveBeenCalled();
+    expect(toastSuccess).not.toHaveBeenCalled();
+  });
+
   it("chưa chọn ngày nào thì không gọi API", async () => {
     const { result } = renderFormationHook(() =>
       useFormationDraft([], null, false, vi.fn(), fetchVersionMock)

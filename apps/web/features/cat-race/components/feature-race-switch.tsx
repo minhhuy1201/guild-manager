@@ -3,7 +3,7 @@
 import { useId } from "react";
 import type { CatRaceEventDetail } from "@guild/shared/schemas";
 
-import { toastError } from "@/components/shared/toast";
+import { toastError, toastSuccess } from "@/components/shared/toast";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useSessionRecovery } from "@/hooks/use-session-recovery";
@@ -35,7 +35,14 @@ export function FeatureRaceSwitch({ event }: FeatureRaceSwitchProps) {
     } catch (error) {
       if (recoverSession(error)) return;
       toastError(errorMessageOf(error, "Không đổi được trạng thái ở trang chủ."));
+      return;
     }
+
+    toastSuccess(
+      featured
+        ? "Đã hiện đợt đua ở trang chủ."
+        : "Đã ẩn đợt đua khỏi trang chủ."
+    );
   };
 
   return (

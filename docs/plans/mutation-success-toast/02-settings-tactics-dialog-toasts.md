@@ -6,7 +6,7 @@
 
 **Status:** done
 
-- [x] Tạo, sửa, xoá ngày đánh hiện toast thành công nêu tên ngày.
+- [x] Tạo, sửa, xoá ngày đánh hiện toast thành công; sửa nêu nhãn ngày, thêm trận scrim không nêu (nhãn do backend dựng).
 - [x] Tạo, sửa, xoá chiến thuật hiện toast thành công nêu tên chiến thuật.
 - [x] Thêm quân cờ tự đặt hiện toast thành công. Xoá giai đoạn không toast: nó chỉ sửa bản nháp trong editor, toast lúc lưu bản vẽ (ticket 04) mới là lúc ghi thật.
 - [x] Test của các dialog liên quan kiểm tra toast thành công.
