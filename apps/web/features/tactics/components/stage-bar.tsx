@@ -159,6 +159,8 @@ export function StageBar({
         submitLabel="Xoá"
         pendingLabel="Đang xoá…"
         fallbackError="Không xoá được giai đoạn này."
+        // The removal only edits the unsaved drawing; the save of the drawing is what gets a toast.
+        successMessage={null}
         run={async () => {
           if (removing) onRemove(removing.id);
         }}

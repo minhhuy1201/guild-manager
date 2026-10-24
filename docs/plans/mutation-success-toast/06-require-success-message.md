@@ -4,8 +4,8 @@
 
 **Blocked by:** 02 (Cài đặt và Chiến thuật), 03 (Đua mèo).
 
-**Status:** todo
+**Status:** done
 
-- [ ] `successMessage` là prop bắt buộc của `MutationForm`, `MutationDialog` và `ConfirmDeleteDialog`.
-- [ ] Mọi chỗ dùng đều truyền `successMessage`. `stage-bar` (xoá giai đoạn trên bản nháp) truyền chuỗi rỗng kèm lý do.
-- [ ] Test, typecheck, lint của web xanh.
+- [x] `successMessage` (kiểu `string | null`) là prop bắt buộc của `MutationForm`, `MutationDialog` và `ConfirmDeleteDialog`.
+- [x] Mọi chỗ dùng đều truyền `successMessage`. `stage-bar` (xoá giai đoạn trên bản nháp) truyền `null` kèm lý do.
+- [x] Test, typecheck, lint của web xanh.

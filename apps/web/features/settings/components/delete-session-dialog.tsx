@@ -65,7 +65,7 @@ export function DeleteSessionDialog({
       submitLabel="Xoá trận"
       pendingLabel="Đang xoá…"
       fallbackError="Không xoá được trận này."
-      successMessage={session ? `Đã xoá ${session.label}.` : ""}
+      successMessage={session ? `Đã xoá ${session.label}.` : null}
       run={async () => {
         if (!session) return;
         await deleteMutation.mutateAsync(session.id);

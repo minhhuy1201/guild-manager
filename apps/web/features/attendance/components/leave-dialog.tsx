@@ -126,7 +126,7 @@ function LeaveForm({
       successMessage={
         startDay
           ? `Đã khai nghỉ ${formatLeaveRange(startDay, endDay)}.`
-          : undefined
+          : null
       }
       onDone={onDone}
       run={submitLeave}

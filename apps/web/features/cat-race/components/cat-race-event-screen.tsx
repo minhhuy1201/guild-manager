@@ -223,7 +223,7 @@ function EventBody({ event }: { event: CatRaceEventDetail }) {
         successMessage={
           dialog.kind === "delete-prize"
             ? `Đã xoá hạng mục ${dialog.prize.name}.`
-            : ""
+            : null
         }
         run={async () => {
           if (dialog.kind !== "delete-prize") return;

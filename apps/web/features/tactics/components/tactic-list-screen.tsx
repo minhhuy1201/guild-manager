@@ -124,7 +124,7 @@ export function TacticListScreen({ canEdit }: TacticListScreenProps) {
         submitLabel="Xoá"
         pendingLabel="Đang xoá..."
         fallbackError="Không xoá được chiến thuật."
-        successMessage={deleting ? `Đã xoá chiến thuật ${deleting.name}.` : ""}
+        successMessage={deleting ? `Đã xoá chiến thuật ${deleting.name}.` : null}
         run={async () => {
           if (deleting) await deleteTactic.mutateAsync(deleting.id);
         }}

@@ -38,7 +38,7 @@ export function DeleteMemberDialog({
       submitLabel="Xoá thành viên"
       pendingLabel="Đang xoá…"
       fallbackError="Không xoá được thành viên này."
-      successMessage={member ? `Đã xoá ${member.name}.` : ""}
+      successMessage={member ? `Đã xoá ${member.name}.` : null}
       run={async () => {
         if (!member) return;
         await deleteMutation.mutateAsync(member.id);

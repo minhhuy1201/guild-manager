@@ -28,8 +28,8 @@ export interface MutationFormProps {
   submitIcon: ReactNode;
   /** Sentence shown when the thrown value carries no message of its own */
   fallbackError: string;
-  /** Toast raised once the write resolved, before the dialog closes. Omit for a write that toasts itself. */
-  successMessage?: string;
+  /** Toast raised once the write resolved, before the dialog closes. `null` says nothing: a draft edit that writes nothing yet. */
+  successMessage: string | null;
   /** Confirm button style */
   variant?: "default" | "destructive";
   /** Cancel handler. Omit for no cancel button — the corner X is still there. */

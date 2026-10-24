@@ -51,6 +51,7 @@ function renderDialog(overrides: Partial<MutationDialogProps> = {}) {
     pendingLabel: PENDING_LABEL,
     submitIcon: null,
     fallbackError: FALLBACK,
+    successMessage: null,
     run: async () => {},
     showCancel: true,
     ...overrides,
