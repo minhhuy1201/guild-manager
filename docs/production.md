@@ -171,14 +171,29 @@ commit. `apps/api/**` marks the API affected, `apps/web/**` marks the web app af
 shared code and workspace-wide config can break either app. A commit matching none of them (docs, for
 instance) skips every job, including the deploys.
 
+**On `main`, each app diffs against the commit production last deployed, not against the previous
+commit.** The `Find the commit production runs` step reads the newest `success` deployment of
+`production-api` and `production-web` from the Deployments API and hands each SHA to its own
+`paths-filter` step as `base`. A per-commit diff never retried a failed deploy: on 2026-10-24 a red
+`Build web` skipped the API deploy, the next two commits touched only `apps/web`, and production
+served a web app calling an API route that had never shipped. Now any later run on `main`, even a
+docs-only one, migrates and redeploys whichever app is still behind. With no successful deployment
+on record the step leaves the base empty and the diff falls back to the previous commit.
+
 | Git event | What happens |
 |---|---|
 | Push to `main` touching `apps/api` | API test, lint, build, then the database migration, then API deploy only |
 | Push to `main` touching `apps/web` | Web test, lint, build, then web deploy only |
 | Push to `main` touching shared code or workspace config | The whole pipeline, both deploys |
-| Push to `main` touching only docs | Nothing runs; production is untouched |
+| Push to `main` touching only docs | Nothing runs, unless an app is still behind from a failed run; then that app's pipeline runs |
 | Open/update a pull request | Tests only — the deploy jobs are gated on `github.ref` |
-| Any test job fails | The migration and both deploy jobs are skipped; production keeps the previous build **and its schema** |
+| Any test job fails | The migration and both deploy jobs are skipped; production keeps the previous build **and its schema**, and `deploy-alert` opens an issue |
+
+**A red run on `main` opens an issue.** The `Alert on a failed deploy` job runs after every push to
+`main`. When any test, build, migrate or deploy job failed or was cancelled, it opens the issue
+*Production deploy failed on main*, assigned to the repository owner so GitHub notifies them, or
+comments on it when it is already open. The next fully green run on `main` closes it. SonarQube and
+the tooling check are left out: neither gates a deploy.
 
 Three things make the gate real:
 
@@ -795,7 +810,8 @@ There is no automatic rollback. In practice:
 ### Not in place yet
 
 Recorded so nobody assumes otherwise: preview deployments (both projects build on `main` only), a
-staging environment, verified backups, monitoring/alerting, application-level rate limiting.
+staging environment, verified backups, runtime monitoring/alerting (only a failed deploy alerts, see
+section 4), application-level rate limiting.
 
 The web Vercel project is still connected to the repository, so `vercel[bot]` keeps writing skipped
 deployments and its two auto-created environments stay on the Environments page (section 4).

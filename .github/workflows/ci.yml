@@ -22,41 +22,89 @@ env:
   VERCEL_WEB_PROJECT_ID: prj_NQb6Wdj6quicozmVNVFk0Kd8Za1T
 
 jobs:
-  # The gate every other job passes through: which part of the monorepo this commit touched. A
-  # docs-only commit matches no filter, so every job below is skipped and nothing redeploys.
+  # The gate every other job passes through: which part of the monorepo changed. A docs-only
+  # commit matches no filter, so every job below is skipped and nothing redeploys - unless an app
+  # is still behind main from an earlier failed run, see the `deployed` step.
   changes:
     name: Detect changes
     runs-on: ubuntu-latest
     permissions:
       contents: read
       pull-requests: read
+      # To read which commit each production environment last deployed.
+      deployments: read
     outputs:
       # `global` folds into both: packages/shared is the contract web and API share, and once the
       # lockfile, the workspace, .nvmrc or CI itself changes, neither app can still count as
       # untouched.
-      api: ${{ steps.filter.outputs.api == 'true' || steps.filter.outputs.global == 'true' }}
-      web: ${{ steps.filter.outputs.web == 'true' || steps.filter.outputs.global == 'true' }}
+      api: ${{ steps.api.outputs.api == 'true' || steps.api.outputs.global == 'true' }}
+      web: ${{ steps.web.outputs.web == 'true' || steps.web.outputs.global == 'true' }}
       # Developer tooling is its own axis: it ships with neither app, so `global` would drag both
       # of them into a run that only touched a script.
-      tooling: ${{ steps.filter.outputs.tooling }}
+      tooling: ${{ steps.tooling.outputs.tooling }}
     steps:
       - uses: actions/checkout@v7
+
+      # On main each app diffs against the commit its production environment last deployed, not
+      # against the previous commit. A per-commit diff never retried a failed deploy: when the
+      # next commit touched only the other app, the lagging one stayed skipped, and production
+      # served a web app calling an API route that had never shipped.
+      #
+      # Only `success` counts - a failed deploy leaves its older successful one as what production
+      # runs. No successful deploy at all leaves the output empty, and paths-filter then falls
+      # back to the previous commit.
+      - name: Find the commit production runs
+        id: deployed
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for app in api web; do
+            sha=''
+            while read -r id candidate; do
+              state=$(gh api "repos/$GITHUB_REPOSITORY/deployments/$id/statuses?per_page=1" --jq '.[0].state')
+              if [ "$state" = success ]; then
+                sha=$candidate
+                break
+              fi
+            done < <(gh api "repos/$GITHUB_REPOSITORY/deployments?environment=production-$app&per_page=30" \
+                       --jq '.[] | "\(.id) \(.sha)"')
+            if [ -z "$sha" ]; then
+              echo "::warning::No successful production-$app deploy found; diffing against the previous commit."
+            fi
+            echo "production-$app runs ${sha:-unknown}"
+            echo "$app=$sha" >> "$GITHUB_OUTPUT"
+          done
+
+      # One filter per app because each has its own base. Off main both bases are empty and
+      # paths-filter diffs the pull request as usual.
       - uses: dorny/paths-filter@v4
-        id: filter
+        id: api
         with:
-          filters: |
+          base: ${{ steps.deployed.outputs.api }}
+          filters: &deployable-filters |
             api:
               - 'apps/api/**'
             web:
               - 'apps/web/**'
-            tooling:
-              - 'packages/ci-triage/**'
             global:
               - 'packages/shared/**'
               - 'pnpm-lock.yaml'
               - 'pnpm-workspace.yaml'
               - '.nvmrc'
               - '.github/**'
+      - uses: dorny/paths-filter@v4
+        id: web
+        with:
+          base: ${{ steps.deployed.outputs.web }}
+          filters: *deployable-filters
+      # Tooling never deploys, so it keeps the per-commit diff.
+      - uses: dorny/paths-filter@v4
+        id: tooling
+        with:
+          filters: |
+            tooling:
+              - 'packages/ci-triage/**'
 
   backend-test:
     name: Backend test
@@ -312,6 +360,41 @@ jobs:
         with:
           project-id: ${{ env.VERCEL_WEB_PROJECT_ID }}
           token: ${{ secrets.VERCEL_TOKEN }}
+
+  # A red run on main means production did not get this commit, and the run page is the only
+  # place that says so - nobody opens it after the merge. One open issue carries the alert so
+  # GitHub notifies the owner; later red runs comment on it, and the next green run on main closes
+  # it, because by then `changes` has redeployed whatever was behind.
+  deploy-alert:
+    name: Alert on a failed deploy
+    needs: [changes, backend-test, frontend-test, quality-api, quality-web, build-api, build-web, migrate, deploy-api, deploy-web]
+    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Open, update or close the alert issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TITLE: Production deploy failed on main
+          FAILED: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          open=$(gh issue list --state open --limit 100 --json number,title \
+                   --jq 'map(select(.title == env.TITLE)) | .[0].number // empty')
+          if [ "$FAILED" != true ]; then
+            if [ -n "$open" ]; then
+              gh issue close "$open" --comment "$RUN_URL deployed $GITHUB_SHA; production has caught up with main."
+            fi
+            exit 0
+          fi
+          body="$RUN_URL failed on $GITHUB_SHA. Production stays on its last deployed commit until a run on main goes green: re-run the failed jobs, or push a fix."
+          if [ -n "$open" ]; then
+            gh issue comment "$open" --body "$body"
+            exit 0
+          fi
+          gh issue create --title "$TITLE" --body "$body" --assignee "$GITHUB_REPOSITORY_OWNER"
 
   # Developer tooling gets the same lint, format, typecheck and test treatment as the apps, in one
   # job rather than four: it is a few hundred lines, and four runners to check them would cost more
