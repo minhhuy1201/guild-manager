@@ -1,16 +1,23 @@
 import { PRIZE_TIER_LABEL } from "@guild/shared/enums";
+import { vnParts } from "@guild/shared/lib";
 import type { FeaturedRace, FeaturedRacePrize } from "@guild/shared/schemas";
 import { CalendarDays, Users } from "lucide-react";
 
 import { cardVariants } from "@/components/ui/card";
-import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 import { groupPrizesByTier } from "../lib/group-prizes-by-tier";
 import { FeaturedPrizeItem } from "./featured-prize-item";
 
-/** The guild's zone: the server renders in UTC, which would show a late-evening end a day early. */
-const GUILD_TIME_ZONE = "Asia/Ho_Chi_Minh";
+/**
+ * The end day as dd/MM/yyyy in Vietnam time. The server renders in UTC, so the runtime's own zone
+ * would show a late-evening end a day early.
+ */
+function formatEndDate(iso: string) {
+  const { day, month, year } = vnParts(new Date(iso));
+
+  return `${String(day).padStart(2, "0")}/${String(month).padStart(2, "0")}/${year}`;
+}
 
 /** Winners across some prizes; the entrance staggers by this running count. */
 function countWinners(prizes: readonly FeaturedRacePrize[]) {
@@ -52,7 +59,7 @@ export function FeaturedRaceCard({ race, isLead }: FeaturedRaceCardProps) {
         <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
           <span className="inline-flex items-center gap-1.5">
             <CalendarDays aria-hidden className="size-4" />
-            Kết thúc {formatDate(race.endedAt, GUILD_TIME_ZONE)}
+            Kết thúc {formatEndDate(race.endedAt)}
           </span>
           <span className="inline-flex items-center gap-1.5">
             <Users aria-hidden className="size-4" />

@@ -1,17 +1,13 @@
 /**
  * Format a date as dd/MM/yyyy in Vietnamese.
  * @param iso - ISO date string
- * @param timeZone - IANA zone to read the date in; omit to use the runtime's own. A server render
- * passes the guild's zone, because the server's own is UTC and would shift a late-evening date
- * back a day.
  * @returns The formatted date
  */
-export function formatDate(iso: string, timeZone?: string): string {
+export function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("vi-VN", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
-    timeZone,
   });
 }
 
