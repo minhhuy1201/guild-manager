@@ -10,7 +10,9 @@ concurrency:
   group: ci-${{ github.ref }}
   # Back-to-back pushes to one branch: cancel the older run, keep only the newest. Except on
   # main - every run there deploys, and cancelling midway leaves a half-finished deploy nobody is
-  # watching. Same group without cancelling means runs on main queue up and deploy in commit order.
+  # watching. A run on main still waits for the one in progress, but GitHub keeps only one pending
+  # run per group, so a newer push replaces a pending one; the newer run diffs against the last
+  # deploy, so the replaced commit still ships.
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 # Vercel project identifiers - not secrets, they grant nothing on their own. The right to deploy
@@ -51,24 +53,29 @@ jobs:
       # served a web app calling an API route that had never shipped.
       #
       # Only `success` counts - a failed deploy leaves its older successful one as what production
-      # runs. No successful deploy at all leaves the output empty, and paths-filter then falls
-      # back to the previous commit.
+      # runs. No successful deploy within DEPLOY_HISTORY_DEPTH leaves the output empty, and
+      # paths-filter then falls back to the previous commit. An API error fails the job instead:
+      # falling back silently would reopen the gap this step closes.
       - name: Find the commit production runs
         id: deployed
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEPLOY_HISTORY_DEPTH: 30
         run: |
           for app in api web; do
             sha=''
+            # Captured before the loop: inside `< <(...)` a failed call would not trip `bash -e`.
+            deployments=$(gh api "repos/$GITHUB_REPOSITORY/deployments?environment=production-$app&per_page=$DEPLOY_HISTORY_DEPTH" \
+                            --jq '.[] | "\(.id) \(.sha)"')
             while read -r id candidate; do
+              [ -n "$id" ] || continue
               state=$(gh api "repos/$GITHUB_REPOSITORY/deployments/$id/statuses?per_page=1" --jq '.[0].state')
               if [ "$state" = success ]; then
                 sha=$candidate
                 break
               fi
-            done < <(gh api "repos/$GITHUB_REPOSITORY/deployments?environment=production-$app&per_page=30" \
-                       --jq '.[] | "\(.id) \(.sha)"')
+            done <<< "$deployments"
             if [ -z "$sha" ]; then
               echo "::warning::No successful production-$app deploy found; diffing against the previous commit."
             fi
@@ -363,14 +370,15 @@ jobs:
 
   # A red run on main means production did not get this commit, and the run page is the only
   # place that says so - nobody opens it after the merge. One open issue carries the alert so
-  # GitHub notifies the owner; later red runs comment on it, and the next green run on main closes
-  # it, because by then `changes` has redeployed whatever was behind.
+  # GitHub notifies the owner; later red runs comment on it, and the next green run of main's head
+  # closes it, because by then `changes` has redeployed whatever was behind.
   deploy-alert:
     name: Alert on a failed deploy
     needs: [changes, backend-test, frontend-test, quality-api, quality-web, build-api, build-web, migrate, deploy-api, deploy-web]
     if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       issues: write
     steps:
       - name: Open, update or close the alert issue
@@ -380,16 +388,21 @@ jobs:
           TITLE: Production deploy failed on main
           FAILED: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          # Only the newest few issues are scanned; the alert is reused, so it stays among them.
+          ISSUE_SCAN_LIMIT: 100
         run: |
-          open=$(gh issue list --state open --limit 100 --json number,title \
+          open=$(gh issue list --state open --limit "$ISSUE_SCAN_LIMIT" --json number,title \
                    --jq 'map(select(.title == env.TITLE)) | .[0].number // empty')
           if [ "$FAILED" != true ]; then
-            if [ -n "$open" ]; then
+            # A green re-run of an older run deployed an older commit over production, so it
+            # has not caught up; only a run of main's current head may close the alert.
+            head=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
+            if [ -n "$open" ] && [ "$head" = "$GITHUB_SHA" ]; then
               gh issue close "$open" --comment "$RUN_URL deployed $GITHUB_SHA; production has caught up with main."
             fi
             exit 0
           fi
-          body="$RUN_URL failed on $GITHUB_SHA. Production stays on its last deployed commit until a run on main goes green: re-run the failed jobs, or push a fix."
+          body="$RUN_URL failed on $GITHUB_SHA. Production stays on its last deployed commit until a run of main's head goes green. Re-run the newest CI run on main, or push a fix: either one redeploys whatever is behind. Do not re-run an older run - it deploys that run's older commit over production."
           if [ -n "$open" ]; then
             gh issue comment "$open" --body "$body"
             exit 0

@@ -178,7 +178,12 @@ commit.** The `Find the commit production runs` step reads the newest `success` 
 `Build web` skipped the API deploy, the next two commits touched only `apps/web`, and production
 served a web app calling an API route that had never shipped. Now any later run on `main`, even a
 docs-only one, migrates and redeploys whichever app is still behind. With no successful deployment
-on record the step leaves the base empty and the diff falls back to the previous commit.
+among the newest 30 the step leaves the base empty and the diff falls back to the previous commit;
+an API error fails the job instead.
+
+The base is the last deploy **CI recorded** in the Deployments tab. A Vercel-dashboard promotion or
+a hand `vercel deploy` (both under Rollback, section 6) leaves no record, so CI still treats the
+previous CI deploy as what production runs.
 
 | Git event | What happens |
 |---|---|
@@ -192,8 +197,10 @@ on record the step leaves the base empty and the diff falls back to the previous
 **A red run on `main` opens an issue.** The `Alert on a failed deploy` job runs after every push to
 `main`. When any test, build, migrate or deploy job failed or was cancelled, it opens the issue
 *Production deploy failed on main*, assigned to the repository owner so GitHub notifies them, or
-comments on it when it is already open. The next fully green run on `main` closes it. SonarQube and
-the tooling check are left out: neither gates a deploy.
+comments on it when it is already open. The next fully green run of `main`'s head closes it. A
+green re-run of an older run does not: it deployed that older commit over production. To recover,
+re-run the newest run on `main` or push a fix. SonarQube and the tooling check are left out:
+neither gates a deploy.
 
 Three things make the gate real:
 
@@ -289,8 +296,12 @@ dashboard; the already-disconnected API project answers that.
 ### Why pushes to `main` do not cancel each other
 
 The `concurrency` block cancels superseded runs on every ref **except** `main`. Runs on `main` share
-the group but are not cancelled, so they queue and deploy in commit order. Cancelling one mid-deploy
-would abandon a Vercel build that keeps running with nobody watching its result.
+the group but a run in progress is not cancelled. Cancelling one mid-deploy would abandon a Vercel
+build that keeps running with nobody watching its result.
+
+They do not all queue, though: GitHub keeps one pending run per group, so a third quick push to
+`main` replaces the second one before it starts. The replaced commit still ships, because the newer
+run diffs each app against its last deploy (section 4).
 
 ### Each app installs only what it needs
 
