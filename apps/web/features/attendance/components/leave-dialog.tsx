@@ -11,7 +11,6 @@ import {
 import { FieldLabel } from "@/components/shared/field-label";
 import { MutationDialogShell } from "@/components/shared/mutation-dialog";
 import { MutationForm } from "@/components/shared/mutation-form";
-import { toastSuccess } from "@/components/shared/toast";
 import { Textarea } from "@/components/ui/textarea";
 import { useCreateLeave } from "../hooks/use-leaves";
 import { formatLeaveRange } from "../lib/leave-label";
@@ -114,7 +113,6 @@ function LeaveForm({
       endDate: endDay,
       reason: reason.trim() || null,
     });
-    toastSuccess(`Đã khai nghỉ ${formatLeaveRange(startDay, endDay)}.`);
   }
 
   return (
@@ -124,6 +122,12 @@ function LeaveForm({
       pendingLabel="Đang lưu…"
       submitIcon={<Plane />}
       fallbackError="Không khai nghỉ được, thử lại giúp mình."
+      // `submitLeave` refuses an empty range, so no write ever resolves without a start day.
+      successMessage={
+        startDay
+          ? `Đã khai nghỉ ${formatLeaveRange(startDay, endDay)}.`
+          : null
+      }
       onDone={onDone}
       run={submitLeave}
     >

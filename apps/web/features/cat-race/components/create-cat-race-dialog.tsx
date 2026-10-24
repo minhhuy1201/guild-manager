@@ -146,6 +146,11 @@ function CreateCatRaceBody({
         pendingLabel="Đang tạo..."
         submitIcon={<Save />}
         fallbackError="Không tạo được đợt đua."
+        successMessage={
+          name.trim() === ""
+            ? "Đã tạo đợt đua."
+            : `Đã tạo đợt đua ${name.trim()}.`
+        }
         cancelLabel="Quay lại"
         cancelIcon={<ArrowLeft />}
         onCancel={() => goTo("prizes")}

@@ -40,6 +40,7 @@ export function EndEventButton({ eventId, disabled = false }: EndEventButtonProp
         pendingLabel="Đang kết thúc..."
         submitIcon={<Flag />}
         fallbackError="Không kết thúc được đợt đua."
+        successMessage="Đã kết thúc đợt đua."
         run={async () => {
           await endRace.mutateAsync(eventId);
         }}

@@ -133,20 +133,6 @@ const ROUTES: Route[] = [
     body: { name: "n" },
   },
   {
-    name: "updateCatRace",
-    call: () => api.updateCatRace({ id: "e1", name: "n" } as never),
-    method: "PATCH",
-    path: "/cat-races/e1",
-    body: { name: "n" },
-  },
-  {
-    name: "deleteCatRace",
-    call: () => api.deleteCatRace("e1"),
-    method: "DELETE",
-    path: "/cat-races/e1",
-    body: undefined,
-  },
-  {
     name: "setCatRaceParticipants",
     call: () =>
       api.setCatRaceParticipants({ id: "e1", participants: [] } as never),

@@ -6,8 +6,6 @@ import { useInvalidate } from "@/hooks/use-invalidate";
 import { fromAction } from "@/lib/action-result";
 import {
   createCatRace,
-  updateCatRace,
-  deleteCatRace,
   setCatRaceParticipants,
   addCatRacePrize,
   updateCatRacePrize,
@@ -28,26 +26,6 @@ export function useCreateCatRace() {
   const invalidate = useInvalidate("cat-race");
 
   return useMutation({ mutationFn: fromAction(createCatRace), onSuccess: invalidate });
-}
-
-/**
- * Rename an event or change its mode.
- * @returns TanStack mutation; use mutateAsync to catch backend errors
- */
-export function useUpdateCatRace() {
-  const invalidate = useInvalidate("cat-race");
-
-  return useMutation({ mutationFn: fromAction(updateCatRace), onSuccess: invalidate });
-}
-
-/**
- * Delete an event with no round.
- * @returns TanStack mutation; use mutateAsync to catch backend errors
- */
-export function useDeleteCatRace() {
-  const invalidate = useInvalidate("cat-race");
-
-  return useMutation({ mutationFn: fromAction(deleteCatRace), onSuccess: invalidate });
 }
 
 /**

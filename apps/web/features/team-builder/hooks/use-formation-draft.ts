@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import type { SessionFormation } from "@guild/shared/schemas";
 
+import { toastSuccess } from "@/components/shared/toast";
 import { useSessionRecovery } from "@/hooks/use-session-recovery";
 import { ApiError } from "@/lib/api-client";
 import { isSessionExpired } from "@/lib/session-expired";
@@ -407,7 +408,9 @@ export function useFormationDraft(
    * first: the draft stays and `isStale` opens the dialog that offers reload or overwrite.
    */
   async function handleSave() {
-    if (!activeSessionId) return;
+    // A names-only save runs this too (the screen saves both drafts together); an untouched day
+    // must not be rewritten, or its version bumps and a false "saved" toast appears.
+    if (!activeSessionId || !dirtySessionIds.has(activeSessionId)) return;
 
     try {
       await saveMutation.mutateAsync({
@@ -422,6 +425,7 @@ export function useFormationDraft(
       });
       clearDraft(activeSessionId);
       setStaleSessionId(null);
+      toastSuccess("Đã lưu đội hình.");
     } catch (error) {
       if (error instanceof ApiError && error.statusCode === STALE_STATUS) {
         setStaleSessionId(activeSessionId);

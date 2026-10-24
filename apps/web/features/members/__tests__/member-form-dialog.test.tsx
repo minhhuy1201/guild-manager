@@ -19,6 +19,12 @@ const m = vi.hoisted(() => ({
   update: vi.fn(),
   create: vi.fn(),
   viewerRole: { current: "ADMIN" as string },
+  toastSuccess: vi.fn(),
+}));
+
+vi.mock("@/components/shared/toast", () => ({
+  toastSuccess: m.toastSuccess,
+  toastError: vi.fn(),
 }));
 
 vi.mock("../hooks/use-member-mutations", () => ({
@@ -180,5 +186,29 @@ describe("MemberFormDialog - người xem không phải Admin", () => {
       "guildClass",
       "name",
     ]);
+  });
+});
+
+describe("MemberFormDialog - toast", () => {
+  it("sửa xong thì báo đã lưu thay đổi của thành viên", async () => {
+    renderDialog();
+
+    fireEvent.click(screen.getByRole("button", { name: "Lưu" }));
+
+    await waitFor(() =>
+      expect(m.toastSuccess).toHaveBeenCalledWith(
+        "Đã lưu thay đổi cho Mèo Mập."
+      )
+    );
+  });
+
+  it("lưu lỗi thì không toast thành công", async () => {
+    m.update.mockRejectedValue(new Error("Máy chủ đang bận."));
+    renderDialog();
+
+    fireEvent.click(screen.getByRole("button", { name: "Lưu" }));
+
+    await screen.findByText("Máy chủ đang bận.");
+    expect(m.toastSuccess).not.toHaveBeenCalled();
   });
 });

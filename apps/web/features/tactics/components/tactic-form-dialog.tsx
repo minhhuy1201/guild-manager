@@ -69,6 +69,11 @@ function TacticFormBody({ tactic, onDone }: TacticFormBodyProps) {
       pendingLabel="Đang lưu..."
       submitIcon={<Save />}
       fallbackError="Không lưu được chiến thuật."
+      successMessage={
+        tactic
+          ? `Đã lưu thay đổi chiến thuật ${name.trim()}.`
+          : `Đã tạo chiến thuật ${name.trim()}.`
+      }
       onCancel={onDone}
       onDone={onDone}
       run={async () => {

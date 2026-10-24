@@ -8,6 +8,7 @@ import type {
   Character,
 } from "@guild/shared/schemas";
 
+import { toastSuccess } from "@/components/shared/toast";
 import { ApiError } from "@/lib/api-client";
 import { recordKey } from "../lib/record-key";
 import { useAttendanceFilterStore } from "../store/attendance-filter-store";
@@ -41,6 +42,10 @@ vi.mock("../hooks/use-attendance", () => ({
 // The write protocol recovers an expired session by navigating, which needs a router; these suites
 // render outside one.
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+vi.mock("@/components/shared/toast", () => ({
+  toastSuccess: vi.fn(),
+  toastError: vi.fn(),
+}));
 
 import { AttendanceGrid } from "../components/attendance-grid";
 
@@ -294,6 +299,7 @@ describe("AttendanceGrid - admin bấm thẳng vào ô", () => {
       isPresent: false,
     });
     expect(screen.queryByText(/ô đã đổi/)).toBeNull();
+    expect(toastSuccess).toHaveBeenCalledWith("Đã lưu 2 thay đổi điểm danh.");
   });
 
   it("lưu lỗi một phần thì giữ lại đúng ô lỗi và báo lỗi", async () => {
@@ -311,6 +317,7 @@ describe("AttendanceGrid - admin bấm thẳng vào ô", () => {
     expect(screen.getByText("Máy chủ bận.")).toBeTruthy();
     expect(cell("1").dataset.changed).toBe("false");
     expect(cell("2").dataset.changed).toBe("true");
+    expect(toastSuccess).not.toHaveBeenCalled();
   });
 
   it("còn nháp thì rời trang phải được hỏi lại", () => {

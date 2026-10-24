@@ -6,12 +6,13 @@ import {
   TACTIC_TOKEN_ICONS,
   type TacticTokenIcon,
 } from "@guild/shared/enums";
-import { TACTIC_LIMITS } from "@guild/shared/schemas";
+import { TACTIC_LIMITS, type TacticTokenPreset } from "@guild/shared/schemas";
 
 import { ErrorNotice } from "@/components/shared/error-notice";
 import { FieldLabel } from "@/components/shared/field-label";
 import { MutationDialogShell } from "@/components/shared/mutation-dialog";
 import { MutationForm } from "@/components/shared/mutation-form";
+import { toastSuccess } from "@/components/shared/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSessionRecovery } from "@/hooks/use-session-recovery";
@@ -71,19 +72,22 @@ function TokenPresetBody({ onDone }: TokenPresetBodyProps) {
 
   /**
    * Delete one preset, keeping the reason on screen when the server refuses.
-   * @param presetId - Id of the preset to delete
+   * @param preset - The preset to delete
    */
-  async function removePreset(presetId: string) {
+  async function removePreset(preset: TacticTokenPreset) {
     setDeleteError(null);
 
     try {
-      await deletePreset.mutateAsync(presetId);
+      await deletePreset.mutateAsync(preset.id);
     } catch (caught) {
       // An expired session is renewed by a navigation, and the recovery says so itself.
       if (!recoverSession(caught)) {
         setDeleteError(errorMessageOf(caught, "Không xoá được quân cờ."));
       }
+      return;
     }
+
+    toastSuccess(`Đã xoá quân cờ ${preset.label}.`);
   }
 
   return (
@@ -93,6 +97,7 @@ function TokenPresetBody({ onDone }: TokenPresetBodyProps) {
       pendingLabel="Đang thêm..."
       submitIcon={<Plus />}
       fallbackError="Không thêm được quân cờ."
+      successMessage={`Đã thêm quân cờ ${label.trim()}.`}
       onCancel={onDone}
       onDone={onDone}
       run={async () => {
@@ -160,7 +165,7 @@ function TokenPresetBody({ onDone }: TokenPresetBodyProps) {
                 variant="ghost"
                 className="text-destructive"
                 aria-label={`Xoá ${preset.label}`}
-                onClick={() => void removePreset(preset.id)}
+                onClick={() => void removePreset(preset)}
               >
                 <Trash2 />
               </Button>

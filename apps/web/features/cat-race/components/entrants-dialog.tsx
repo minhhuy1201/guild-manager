@@ -63,6 +63,7 @@ function EntrantsBody({ event, prize, onDone }: EntrantsBodyProps) {
       pendingLabel="Đang lưu..."
       submitIcon={<Save />}
       fallbackError="Không lưu được danh sách đua."
+      successMessage={`Đã lưu danh sách đua ${prize.name}.`}
       onCancel={onDone}
       onDone={onDone}
       run={async () => {

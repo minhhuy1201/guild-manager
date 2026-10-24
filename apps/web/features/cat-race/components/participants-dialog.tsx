@@ -67,6 +67,7 @@ function ParticipantsBody({ event, characters, onDone }: ParticipantsBodyProps) 
       pendingLabel="Đang lưu..."
       submitIcon={<Save />}
       fallbackError="Không lưu được người tham gia."
+      successMessage="Đã lưu danh sách người tham gia."
       onCancel={onDone}
       onDone={onDone}
       run={async () => {

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import type { TeamNames, TeamNamesState } from "@guild/shared/schemas";
 
+import { toastSuccess } from "@/components/shared/toast";
 import { ApiError } from "@/lib/api-client";
 import { countNameChanges } from "../lib/team-name-diff";
 import { useTeamNameStore } from "../store/team-name-store";
@@ -91,6 +92,7 @@ export function useTeamNameDraft(
       });
       clearDraft();
       setIsStale(false);
+      toastSuccess("Đã lưu tên đội.");
     } catch (error) {
       const isStaleSave =
         error instanceof ApiError && error.statusCode === STALE_STATUS;

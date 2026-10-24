@@ -2,6 +2,7 @@
 import { act, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { toastSuccess } from "@/components/shared/toast";
 import { ApiError } from "@/lib/api-client";
 import { saveFormation } from "../../api/team-builder-api";
 import { useFormationStore } from "../../store/formation-store";
@@ -19,6 +20,11 @@ const recoverSessionMock = vi.fn<(error: unknown) => boolean>(() => false);
 
 vi.mock("@/hooks/use-session-recovery", () => ({
   useSessionRecovery: () => recoverSessionMock,
+}));
+
+vi.mock("@/components/shared/toast", () => ({
+  toastSuccess: vi.fn(),
+  toastError: vi.fn(),
 }));
 
 const saveFormationMock = vi.mocked(saveFormation);
@@ -225,6 +231,7 @@ describe("useFormationDraft — lưu", () => {
       expect.anything()
     );
     expect(result.current.dirty).toBe(false);
+    expect(toastSuccess).toHaveBeenCalledWith("Đã lưu đội hình.");
   });
 
   it("trận 2 không còn ai thì không được lưu lên server", async () => {
@@ -272,6 +279,7 @@ describe("useFormationDraft — lưu", () => {
     await waitFor(() =>
       expect(result.current.saveErrorMessage).toBe("Máy chủ bận.")
     );
+    expect(toastSuccess).not.toHaveBeenCalled();
   });
 
   it("409 — ngày vừa bị khoá: tải lại đội hình và vẫn giữ nháp", async () => {
@@ -286,6 +294,7 @@ describe("useFormationDraft — lưu", () => {
 
     expect(refetchFormations).toHaveBeenCalledOnce();
     expect(result.current.dirty).toBe(true);
+    expect(toastSuccess).not.toHaveBeenCalled();
   });
 
   it("401 — phiên hết hạn giữa lúc xếp: giao cho recoverSession và giữ nháp", async () => {
@@ -323,6 +332,17 @@ describe("useFormationDraft — lưu", () => {
     });
 
     expect(recoverSessionMock).not.toHaveBeenCalled();
+  });
+
+  it("ngày không đổi gì thì không ghi lại đội hình và không toast", async () => {
+    const { result } = renderDraft();
+
+    await act(async () => {
+      await result.current.handleSave();
+    });
+
+    expect(saveFormationMock).not.toHaveBeenCalled();
+    expect(toastSuccess).not.toHaveBeenCalled();
   });
 
   it("chưa chọn ngày nào thì không gọi API", async () => {

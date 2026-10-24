@@ -63,6 +63,7 @@ function VoidRoundBody({ eventId, round, onDone }: VoidRoundBodyProps) {
       submitIcon={<Ban />}
       variant="destructive"
       fallbackError="Không huỷ được vòng."
+      successMessage={`Đã huỷ vòng của ${round.winnerName}.`}
       onCancel={onDone}
       onDone={onDone}
       run={async () => {

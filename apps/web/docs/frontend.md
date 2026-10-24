@@ -912,15 +912,25 @@ readable. Tailwind 4 only emits the palette variables the app actually uses, whi
 is `--color-emerald-600` (in use elsewhere) and not `--color-green-600` (not emitted, so it would
 silently resolve to nothing).
 
-Which of the two feedback shapes:
+Every successful write says so in a toast. A dialog closing, a row appearing or a save bar
+vanishing is a side effect the eye can miss, and the same screens already toast some writes (leave,
+reopen, attendance) while others stayed silent, which reads as "did it save?". `MutationForm` owns
+the success toast (`successMessage`) so a dialog cannot forget it and `run` stays a pure write.
+The one exception is a write whose result is the screen's own reveal: the cat race draw is the
+animation, and a toast naming the winner would spoil it.
+
+Where a *failure* shows is a separate choice:
 
 - **A write with no visible result of its own** → a toast, success and failure both, so the two
   outcomes land in the same place. `member-attendance-card` is the worked example: pressing "Có"
   changes one button's fill, which is too quiet to read as "saved".
 - **A write inside a table or a dialog** → the inline error line that keeps its slot (see *Motion*,
-  "A mutation error keeps its slot"). The row is already in view and a toast would pull the eye off
-  it - `members-panel`. The attendance grid writes from its save bar instead, and the bar carries
-  the error in place of its count.
+  "A mutation error keeps its slot"). The form is still open and the error sits next to the field
+  to fix, which a toast that fades would not. The attendance grid writes from its save bar instead,
+  and the bar carries the error in place of its count.
+
+No success toast when the write failed, when `recoverSession` took over an expired session, or when
+a batch only partly landed: the toast would contradict the error still on screen.
 
 ### Motion
 

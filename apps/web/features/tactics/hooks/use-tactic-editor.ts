@@ -10,7 +10,7 @@ import {
   type TacticStage,
 } from "@guild/shared/schemas";
 
-import { toastError } from "@/components/shared/toast";
+import { toastError, toastSuccess } from "@/components/shared/toast";
 import { errorMessageOf } from "@/lib/error-message";
 import { combineQueries, type QueryGroupState } from "@/lib/query-group";
 import {
@@ -710,6 +710,7 @@ export function useTacticEditor(
 
     // `current` is what the server now holds; anything drawn since the request left stays unsaved.
     markSaved(current);
+    toastSuccess("Đã lưu chiến thuật.");
     return true;
   }, [canEdit, saveTactic, tacticId, markSaved]);
 

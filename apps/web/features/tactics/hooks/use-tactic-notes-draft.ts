@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 
+import { toastSuccess } from "@/components/shared/toast";
 import { errorMessageOf } from "@/lib/error-message";
 import { useUpdateTactic } from "./use-tactic-mutations";
 
@@ -71,6 +72,7 @@ export function useTacticNotesDraft(
     }
 
     setEditing(false);
+    toastSuccess("Đã lưu ghi chú chiến thuật.");
     return true;
   }, [draft, mutateAsync, tacticId]);
 

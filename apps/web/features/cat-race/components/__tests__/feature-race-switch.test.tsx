@@ -5,13 +5,17 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 const m = vi.hoisted(() => ({
   setFeatured: vi.fn(),
   toastError: vi.fn(),
+  toastSuccess: vi.fn(),
   recover: vi.fn(() => false),
 }));
 
 vi.mock("../../hooks/use-cat-race-mutations", () => ({
   useSetCatRaceFeatured: () => ({ mutateAsync: m.setFeatured, isPending: false }),
 }));
-vi.mock("@/components/shared/toast", () => ({ toastError: m.toastError }));
+vi.mock("@/components/shared/toast", () => ({
+  toastError: m.toastError,
+  toastSuccess: m.toastSuccess,
+}));
 vi.mock("@/hooks/use-session-recovery", () => ({ useSessionRecovery: () => m.recover }));
 
 import { FeatureRaceSwitch } from "../feature-race-switch";
@@ -57,6 +61,7 @@ describe("FeatureRaceSwitch", () => {
     await waitFor(() =>
       expect(m.setFeatured).toHaveBeenCalledWith({ id: "e1", featured: true })
     );
+    expect(m.toastSuccess).toHaveBeenCalledWith("Đã hiện đợt đua ở trang chủ.");
   });
 
   it("unfeatures a featured event, even one that could no longer be featured", async () => {
