@@ -4,6 +4,7 @@ import { useState, type FormEvent, type ReactNode } from "react";
 import { AlertCircle, X } from "lucide-react";
 
 import { Spinner } from "@/components/shared/spinner";
+import { toastSuccess } from "@/components/shared/toast";
 import { Button } from "@/components/ui/button";
 import {
   DialogFooter,
@@ -27,6 +28,8 @@ export interface MutationFormProps {
   submitIcon: ReactNode;
   /** Sentence shown when the thrown value carries no message of its own */
   fallbackError: string;
+  /** Toast raised once the write resolved, before the dialog closes. Omit for a write that toasts itself. */
+  successMessage?: string;
   /** Confirm button style */
   variant?: "default" | "destructive";
   /** Cancel handler. Omit for no cancel button — the corner X is still there. */
@@ -46,10 +49,10 @@ export interface MutationFormProps {
 /**
  * The write protocol every mutation dialog follows, written once.
  *
- * Five rules live here and nowhere else: the error resets before sending, the
+ * Six rules live here and nowhere else: the error resets before sending, the
  * caller is told to close only on success, a failure keeps the form up with
- * the message the error carried, and the confirm button locks and swaps its
- * label while the write runs. Callers say *what* is written (`run`) and what
+ * the message the error carried, the confirm button locks and swaps its
+ * label while the write runs, and a success says so in a toast. Callers say *what* is written (`run`) and what
  * it *looks like* (`children`, the labels) — never how the protocol goes.
  *
  * It holds its own pending flag rather than taking one: `member-form-dialog`
@@ -65,6 +68,7 @@ export interface MutationFormProps {
  * @param pendingLabel - Confirm button label while the write runs
  * @param submitIcon - Confirm button icon while idle
  * @param fallbackError - Sentence shown when the thrown value has no message
+ * @param successMessage - Toast raised once the write resolved
  * @param variant - Confirm button style
  * @param onCancel - Cancel handler; omit for no cancel button
  * @param cancelLabel - Cancel button label
@@ -81,6 +85,7 @@ export function MutationForm({
   pendingLabel,
   submitIcon,
   fallbackError,
+  successMessage,
   variant = "default",
   onCancel,
   cancelLabel = "Huỷ",
@@ -121,6 +126,7 @@ export function MutationForm({
       reportPending(false);
     }
 
+    if (successMessage) toastSuccess(successMessage);
     onDone();
   }
 

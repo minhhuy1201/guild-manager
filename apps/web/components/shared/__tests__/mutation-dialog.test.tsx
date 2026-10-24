@@ -8,6 +8,7 @@ import {
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { toastSuccess } from "@/components/shared/toast";
 import { ApiError } from "@/lib/api-client";
 import { MutationDialog, type MutationDialogProps } from "../mutation-dialog";
 
@@ -15,10 +16,16 @@ import { MutationDialog, type MutationDialogProps } from "../mutation-dialog";
 // render outside one.
 const refresh = vi.hoisted(() => vi.fn());
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
-
+vi.mock("@/components/shared/toast", () => ({
+  toastSuccess: vi.fn(),
+  toastError: vi.fn(),
+}));
 
 // The dialog mounts in a portal; a leftover one gives the next case two buttons with the same name.
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.mocked(toastSuccess).mockClear();
+});
 
 // React only batches and flushes state updates inside act() when it knows it is under test;
 // without this flag a mutation's error does not reach the assertion in time.
@@ -174,5 +181,51 @@ describe("MutationDialog", () => {
 
     await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
     expect(screen.queryByText("Bạn cần đăng nhập.")).toBeNull();
+  });
+
+  it("write xong thì toast successMessage rồi mới đóng", async () => {
+    const { onOpenChange } = renderDialog({ successMessage: "Đã xoá Mèo Mập." });
+
+    clickSubmit();
+
+    await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
+    expect(toastSuccess).toHaveBeenCalledWith("Đã xoá Mèo Mập.");
+  });
+
+  it("không có successMessage thì không toast", async () => {
+    const { onOpenChange } = renderDialog();
+
+    clickSubmit();
+
+    await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
+    expect(toastSuccess).not.toHaveBeenCalled();
+  });
+
+  it("write lỗi thì không toast thành công", async () => {
+    renderDialog({
+      successMessage: "Đã xoá Mèo Mập.",
+      run: async () => {
+        throw new ApiError("Máy chủ đang bận.", 503);
+      },
+    });
+
+    clickSubmit();
+
+    await screen.findByText("Máy chủ đang bận.");
+    expect(toastSuccess).not.toHaveBeenCalled();
+  });
+
+  it("401 thì không toast thành công", async () => {
+    renderDialog({
+      successMessage: "Đã xoá Mèo Mập.",
+      run: async () => {
+        throw new ApiError("Bạn cần đăng nhập.", 401);
+      },
+    });
+
+    clickSubmit();
+
+    await waitFor(() => expect(refresh).toHaveBeenCalled());
+    expect(toastSuccess).not.toHaveBeenCalled();
   });
 });

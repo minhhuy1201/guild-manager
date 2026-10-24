@@ -90,7 +90,9 @@ A new interaction convention goes here; its reason goes in `frontend.md`.
 
 - Raise a toast through `components/shared/toast.ts` (`toastSuccess` / `toastError`), never `sonner` directly. One `<Toaster position="top-center" />` lives in `components/providers.tsx`.
 - Use emerald for success and `destructive` for failure, as a 10% tint. The accent is `--color-emerald-600`, not `--color-green-600` (not emitted).
-- Use a toast for a write with no visible result of its own (`member-attendance-card`). Use the inline error line that keeps its slot for a write inside a table or dialog (`members-panel`).
+- Say every successful write in a toast. A dialog passes `successMessage` to `MutationForm` / `MutationDialog` and the form raises it once the write resolved; never call `toastSuccess` inside `run`. A screen that saves from a bar or a hook calls `toastSuccess` after the write resolved and the draft was cleared.
+- Raise no success toast when the write failed, when the session expired (`recoverSession`), or when only part of a batch landed.
+- Keep the failure where it is read best: a toast for a write with no visible result of its own (`member-attendance-card`); the inline error line that keeps its slot for a write inside a table or dialog (`members-panel`); the save bar for a draft.
 
 ## Motion
 

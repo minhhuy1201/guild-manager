@@ -6,7 +6,6 @@ import type { BattleSession } from "@guild/shared/schemas";
 
 import { RowActionButton } from "@/components/shared/action-buttons";
 import { MutationDialog } from "@/components/shared/mutation-dialog";
-import { toastSuccess } from "@/components/shared/toast";
 import { useReopenAttendance } from "../hooks/use-session-mutations";
 
 /** Tooltip and dialog wording, kept together so the button and its dialog cannot drift apart. */
@@ -59,10 +58,10 @@ export function ReopenAttendanceAction({
         pendingLabel="Đang mở…"
         submitIcon={<LockOpen />}
         fallbackError={FAILED}
+        successMessage={REOPENED}
         showCancel
         run={async () => {
           await reopen.mutateAsync(session.id);
-          toastSuccess(REOPENED);
         }}
       >
         <p className="text-sm">

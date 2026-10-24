@@ -3,7 +3,6 @@
 import type { Leave } from "@guild/shared/schemas";
 
 import { ConfirmDeleteDialog } from "@/components/shared/confirm-delete-dialog";
-import { toastSuccess } from "@/components/shared/toast";
 import { useCancelLeave } from "../hooks/use-leaves";
 import { formatLeaveRange } from "../lib/leave-label";
 
@@ -43,11 +42,11 @@ export function CancelLeaveDialog({
       submitLabel="Hủy lần nghỉ"
       pendingLabel="Đang hủy…"
       fallbackError="Không hủy được lần nghỉ, thử lại giúp mình."
+      successMessage="Đã hủy lần nghỉ."
       run={async () => {
         if (!leave) return;
 
         await cancelMutation.mutateAsync(leave.id);
-        toastSuccess("Đã hủy lần nghỉ.");
       }}
     >
       <div className="text-sm">

@@ -123,6 +123,11 @@ function MemberForm({ member, onDone }: MemberFormProps) {
       pendingLabel="Đang lưu…"
       submitIcon={<Save />}
       fallbackError="Không lưu được thay đổi."
+      successMessage={
+        member
+          ? `Đã lưu thay đổi cho ${member.name}.`
+          : `Đã thêm ${name.trim()}.`
+      }
       onDone={onDone}
       run={async () => {
         // The backend takes null for "no Discord account yet", and unlinks on it when editing.
