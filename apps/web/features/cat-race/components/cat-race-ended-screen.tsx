@@ -3,6 +3,7 @@ import type { CatRaceEventDetail } from "@guild/shared/schemas";
 import { eventStageOf } from "../lib/event-stage";
 import { AnnounceButton } from "./announce-button";
 import { CatRaceHeader } from "./cat-race-header";
+import { FeatureRaceSwitch } from "./feature-race-switch";
 import { CatRaceResults } from "./cat-race-results";
 import { RaceStatusBadge } from "./race-status-badge";
 
@@ -30,6 +31,7 @@ export function CatRaceEndedScreen({ event }: CatRaceEndedScreenProps) {
         }
       />
       <RaceStatusBadge stage={eventStageOf(event)} className="self-start" />
+      <FeatureRaceSwitch event={event} />
       <CatRaceResults event={event} />
     </div>
   );

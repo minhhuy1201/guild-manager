@@ -33,6 +33,7 @@ import {
   CreateCatRaceEventDto,
   DrawCatRaceRoundDto,
   SetCatRaceEntrantsDto,
+  SetCatRaceFeaturedDto,
   SetCatRaceParticipantsDto,
   UpdateCatRaceEventDto,
   UpdateCatRacePrizeDto,
@@ -170,6 +171,16 @@ export class CatRaceController {
     @Body() body: VoidCatRaceRoundDto,
   ): Promise<CatRaceEventDetail> {
     return this.catRace.voidRound(id, roundId, body);
+  }
+
+  /** Show or hide the ended event on the landing page. */
+  @Put(':id/featured')
+  @ApiOperation({ summary: 'Hiện hoặc ẩn đợt đua ở trang chủ' })
+  setFeatured(
+    @Param('id') id: string,
+    @Body() body: SetCatRaceFeaturedDto,
+  ): Promise<CatRaceEventDetail> {
+    return this.catRace.setFeatured(id, body);
   }
 
   /** End the event. */

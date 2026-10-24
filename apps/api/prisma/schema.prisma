@@ -330,6 +330,8 @@ model CatRaceEvent {
   endedAt         DateTime?
   /// Set only after Discord accepted the summary post.
   discordPostedAt DateTime?
+  /// Set from Clock while the event is a Featured race; null = not featured.
+  featuredAt      DateTime?
 
   participants CatRaceParticipant[]
   prizes       CatRacePrize[]

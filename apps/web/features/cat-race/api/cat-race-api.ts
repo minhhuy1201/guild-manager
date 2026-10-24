@@ -8,6 +8,7 @@ import type {
   CatRacePrizeTemplate,
   CreateCatRaceEventInput,
   SetCatRaceEntrantsInput,
+  SetCatRaceFeaturedInput,
   SetCatRaceParticipantsInput,
   UpdateCatRaceEventInput,
   UpdateCatRacePrizeInput,
@@ -49,6 +50,11 @@ export interface SetCatRaceEntrantsArgs extends SetCatRaceEntrantsInput {
 export interface VoidCatRaceRoundArgs extends VoidCatRaceRoundInput {
   id: string;
   roundId: string;
+}
+
+/** Arguments of `setCatRaceFeatured`. */
+export interface SetCatRaceFeaturedArgs extends SetCatRaceFeaturedInput {
+  id: string;
 }
 
 /**
@@ -311,6 +317,24 @@ export async function announceCatRace(id: string): Promise<ActionResult<CatRaceE
   return toActionResult(async () =>
     apiFetch<CatRaceEventDetail>(`${eventPath(id)}/announce`, {
       method: "POST",
+      headers: await authHeader(),
+    })
+  );
+}
+
+/**
+ * Show or hide an ended event on the landing page.
+ * @param args - event id and whether it should be featured
+ * @returns The event after the change; a failure value (409) when it has not ended or has no valid round
+ */
+export async function setCatRaceFeatured({
+  id,
+  ...body
+}: SetCatRaceFeaturedArgs): Promise<ActionResult<CatRaceEventDetail>> {
+  return toActionResult(async () =>
+    apiFetch<CatRaceEventDetail>(`${eventPath(id)}/featured`, {
+      method: "PUT",
+      body: JSON.stringify(body),
       headers: await authHeader(),
     })
   );

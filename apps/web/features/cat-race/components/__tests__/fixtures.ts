@@ -44,6 +44,7 @@ export function makeEvent(
     status: "OPEN",
     createdAt: "2026-10-12T00:00:00.000Z",
     discordPostedAt: null,
+    featured: false,
     awardedCount: 0,
     participants: ["a", "b"].map((id) => ({
       characterId: id,

@@ -109,6 +109,10 @@ export const voidCatRaceRoundSchema = z.object({
     .max(CAT_RACE_VOID_REASON_MAX, "Lý do huỷ quá dài."),
 });
 
+export const setCatRaceFeaturedSchema = z.object({
+  featured: z.boolean("Thiếu trạng thái hiện ở trang chủ."),
+});
+
 export const catRaceEventSummarySchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -116,6 +120,8 @@ export const catRaceEventSummarySchema = z.object({
   status: z.enum(["OPEN", "ENDED"]),
   createdAt: z.string(),
   discordPostedAt: z.string().nullable(),
+  /** Shown on the landing page's Bảng vàng. */
+  featured: z.boolean(),
   awardedCount: z.number().int(),
 });
 
@@ -176,6 +182,7 @@ export type UpdateCatRaceEventInput = z.infer<typeof updateCatRaceEventSchema>;
 export type SetCatRaceParticipantsInput = z.infer<
   typeof setCatRaceParticipantsSchema
 >;
+export type SetCatRaceFeaturedInput = z.infer<typeof setCatRaceFeaturedSchema>;
 export type CatRacePrizeInput = z.infer<typeof catRacePrizeInputSchema>;
 export type UpdateCatRacePrizeInput = z.infer<typeof updateCatRacePrizeSchema>;
 export type SetCatRaceEntrantsInput = z.infer<typeof setCatRaceEntrantsSchema>;

@@ -28,6 +28,7 @@ vi.mock("../../hooks/use-cat-races", () => ({ useCatRaceEvent: () => m.event.cur
 vi.mock("../../hooks/use-cat-race-mutations", () => ({
   useDeleteCatRacePrize: () => ({ mutateAsync: m.deletePrize }),
   useDrawCatRaceRound: () => ({ mutateAsync: vi.fn() }),
+  useSetCatRaceFeatured: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 vi.mock("@/features/attendance", () => ({
   useCharacters: () => ({ data: [{ id: "a" }] }),

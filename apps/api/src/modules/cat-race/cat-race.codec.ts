@@ -84,6 +84,7 @@ export function toEventSummary(row: EventSummaryRow): CatRaceEventSummary {
     status: row.endedAt ? 'ENDED' : 'OPEN',
     createdAt: row.createdAt.toISOString(),
     discordPostedAt: row.discordPostedAt?.toISOString() ?? null,
+    featured: row.featuredAt !== null,
     awardedCount,
   } satisfies CatRaceEventSummary);
 }
