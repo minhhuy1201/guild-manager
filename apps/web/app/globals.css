@@ -67,6 +67,7 @@
     --color-jade: var(--jade);
     --color-gold-foreground: var(--gold-foreground);
     --color-gold: var(--gold);
+    --color-gold-ink: var(--gold-ink);
     --color-popover-foreground: var(--popover-foreground);
     --color-popover: var(--popover);
     --color-card-foreground: var(--card-foreground);
@@ -142,6 +143,8 @@
     --jade-foreground: oklch(0.985 0.004 85);
     --gold: oklch(0.7 0.095 80);
     --gold-foreground: oklch(0.22 0.015 70);
+    /* Gold as text: the fill gold is ~2.5:1 on the light cards, so text takes a deeper shade of the same hue. */
+    --gold-ink: oklch(0.47 0.09 75);
     --ring: oklch(0.52 0.085 170);
     --chart-1: oklch(0.286 0.017 270.758);
     --chart-2: oklch(0.283 0.064 270.718);
@@ -224,6 +227,8 @@
     --jade-foreground: oklch(0.17 0.022 262);
     --gold: oklch(0.8 0.1 82);
     --gold-foreground: oklch(0.17 0.022 262);
+    /* On the night plane the fill gold already reads as text. */
+    --gold-ink: var(--gold);
     --ring: oklch(0.74 0.1 170);
     --chart-1: oklch(0.488 0.243 264.376);
     --chart-2: oklch(0.696 0.17 162.48);
@@ -966,6 +971,41 @@
 
 @keyframes race-blink {
   to { visibility: hidden; }
+}
+
+/* Bảng vàng entrance (`features/landing/components/featured-race-card.tsx`). Both rules wait for the
+   `ScrollReveal` ancestor's `data-revealed`, so they play when the block is scrolled to rather than
+   when the page mounts under its hidden wrapper. Each winner rises in turn (`--i` is its position in
+   the card); the HIGH prize's sheen sweeps once. `backwards` fill and a resting opacity of 0 on the
+   sheen, so nothing is left behind and neither loops. */
+[data-slot="scroll-reveal"][data-revealed] [data-slot="featured-winner"] {
+    animation: winner-in var(--duration-slow) var(--ease-out-soft) calc(120ms + min(var(--i, 0), 10) * 90ms) backwards;
+}
+
+[data-slot="featured-prize"][data-tier="HIGH"]::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0;
+    background: linear-gradient(105deg, transparent 38%, color-mix(in oklab, var(--gold) 55%, transparent) 50%, transparent 62%);
+    background-size: 250% 100%;
+    background-position: 100% 0;
+}
+
+[data-slot="scroll-reveal"][data-revealed] [data-slot="featured-prize"][data-tier="HIGH"]::after {
+    animation: prize-sheen 1400ms ease-in-out 450ms backwards;
+}
+
+@keyframes winner-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: none; }
+}
+
+@keyframes prize-sheen {
+    0% { opacity: 0; background-position: 100% 0; }
+    20%, 80% { opacity: 1; }
+    100% { opacity: 0; background-position: 0 0; }
 }
 
 /* A card whose edge lights up where the pointer is. `useSpotlight` writes --spot-x / --spot-y on the

@@ -56,11 +56,12 @@ immersion.
 |---|---|
 | Navy (`--primary`) | Primary actions and selected tabs - the app's working colour; lit to a light navy on the dark theme |
 | Jade (`--jade`) | The accent: active navigation, focus ring, the guild seal, section dividers |
-| Antique gold (`--gold`) | Important highlights only: the formation headline and the login ornament; a raised card takes the jade glow, not gold |
+| Antique gold (`--gold`) | Important highlights only: the formation headline, the login ornament, and the Featured race (Bảng vàng): its title accent, and the border, medal and one-off sheen of the HIGH prize; a raised card takes the jade glow, not gold |
 | Emerald / red / amber | Attendance state only ("Có" / "Không" / not answered yet) - never decoration |
 
 Gold is never used for a state; amber is never used for decoration. The two stay apart by
-saturation.
+saturation. Gold as text (the Bảng vàng title) takes `--gold-ink`, a deeper shade of the same hue on
+the light theme, because the fill gold is only about 2.5:1 on a near-white card.
 
 - Typography: Be Vietnam Pro for all UI text; Playfair Display (`font-heading`) for headings only -
   page titles, section titles inside a card, dialog titles and the guild name. Both cover Vietnamese
@@ -77,9 +78,16 @@ saturation.
   page and its history a phone drops the scene and shows the title and description as plain text, so
   answers start near the top. Still one scene per page.
 - **The login page** is the one full-screen scene, behind a translucent card.
-- **The landing page** (`/trang-chu`) opens on its own scene, `landing.jpg`, in a tall hero rather
-  than a banner strip. It starts as a copy of `login.jpg` so the guild can swap one without
-  touching the other.
+- **The landing page** (`/trang-chu`) opens on its own scene, `landing.jpg`, in a tall hero (about
+  86% of the screen height) rather than a banner strip. It starts as a copy of `login.jpg` so the
+  guild can swap one without touching the other. The hero sets the guild name very large in
+  `font-heading`, with the extra-large guild seal and a clear call to action. Below it the blocks
+  deliberately do not share one mould: the Bảng vàng (centred title, gold ornament, a soft gold wash
+  on the page surface, the newest race as a large card) comes first; then the pillars as a bento,
+  the leadership with its title in a sticky side column, the joining steps as a row from `md`, and
+  a closing ask on the header's ink-navy band. Scrolled into view, the Bảng vàng's winners rise one
+  after another and the HIGH prize sheens gold once; nothing loops, and reduced motion shows it all
+  static.
 - Pictures fade in over their dominant colour; they never pop in on a white box.
 - The site is public, so the artwork is credited to NetEase in the footer of every page, with a line
   saying the site is a non-commercial guild page not affiliated with NetEase. A credit is not a
@@ -111,7 +119,7 @@ Motion says "the data is arriving" and "this responds to you", nothing more:
 
 ## Allowed since 2026-10-22
 
-- A thin gold edge on a few highlights only (formation headline, login)
+- A thin gold edge on a few highlights only (formation headline, login, the Bảng vàng's HIGH prize)
 - Jade glow behind a raised card, gold glow behind the formation headline and login
 - Static paper grain and ink wash on the plane
 - A translucent, blurred header band and dialog backdrop

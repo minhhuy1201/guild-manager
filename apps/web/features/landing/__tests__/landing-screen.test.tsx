@@ -2,6 +2,7 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { PRIZE_TIER_LABEL } from "@guild/shared/enums";
 import type { FeaturedRace } from "@guild/shared/schemas";
 
 import { GUILD_LEADERS } from "../lib/guild-info";
@@ -141,6 +142,29 @@ describe("LandingScreen", () => {
       expect(screen.getByText("Tiền mặt")).toBeTruthy();
       expect(screen.getByText("Mèo Mập")).toBeTruthy();
       expect(screen.queryByText(/vé/i)).toBeNull();
+    });
+
+    it("giải cao đứng trước và mọi người thắng đều có mặt", () => {
+      const winnerOf = (name: string) => ({
+        name,
+        guildClass: race.prizes[0].winners[0].guildClass,
+      });
+      const mixed: FeaturedRace = {
+        ...race,
+        prizes: [
+          { name: "Giải phụ", tier: "LOW" as FeaturedRace["prizes"][number]["tier"], winners: [winnerOf("Người A")] },
+          { ...race.prizes[0], winners: [winnerOf("Người B"), winnerOf("Người C")] },
+        ],
+      };
+      render(<LandingScreen isSignedIn={false} featuredRaces={[mixed]} />);
+
+      for (const name of ["Người A", "Người B", "Người C"]) {
+        expect(screen.getByText(name)).toBeTruthy();
+      }
+      const order = screen
+        .getAllByRole("heading", { level: 4 })
+        .map((heading) => heading.textContent);
+      expect(order[0]).toBe(`Giải ${PRIZE_TIER_LABEL.HIGH}`);
     });
 
     it("đợt mới nhất đứng trước trong thứ tự đọc", () => {
