@@ -16,7 +16,14 @@ describe("guild-info", () => {
     for (const leader of GUILD_LEADERS) {
       expect(leader.avatarSrc).toMatch(/^\/img\/members\/[a-z]+\.png$/);
       expect(leader.initials.length).toBeGreaterThan(0);
-      expect(leader.duty.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("bang chủ chỉ hiện tên, ba người còn lại có mô tả", () => {
+    const [master, ...officers] = GUILD_LEADERS;
+    expect(master.duty).toBeUndefined();
+    for (const officer of officers) {
+      expect(officer.duty?.length).toBeGreaterThan(0);
     }
   });
 
