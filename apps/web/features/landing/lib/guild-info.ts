@@ -22,8 +22,8 @@ export interface GuildLeader {
   name: string;
   /** What the guild calls their post */
   role: string;
-  /** One line saying what this person actually looks after */
-  duty: string;
+  /** One line saying what this person actually looks after; the guild master goes by name alone */
+  duty?: string;
   /**
    * Where their picture goes. The file may not exist yet: the avatar falls back to `initials` until
    * someone drops a PNG at this exact path.
@@ -38,21 +38,20 @@ export const GUILD_LEADERS: readonly GuildLeader[] = [
   {
     name: "LightAries",
     role: "Bang chủ",
-    duty: "Chốt định hướng mùa giải và quyết cuối trong mọi trận lớn.",
     avatarSrc: "/img/members/lightaries.png",
     initials: "LA",
   },
   {
     name: "Leonie",
     role: "Leader",
-    duty: "Cầm quân trong trận, gọi mục tiêu và điều nhịp giao tranh.",
+    duty: "Lead bang chiến, cầm quân, đội hình chiến đấu.",
     avatarSrc: "/img/members/leonie.png",
     initials: "LE",
   },
   {
     name: "huy",
     role: "Quản lý",
-    duty: "Giữ lịch đánh, đội hình và số liệu điểm danh hằng tuần.",
+    duty: "Giữ lịch đánh, số liệu điểm danh hằng tuần và quản lý hệ thống.",
     avatarSrc: "/img/members/huy.png",
     initials: "HU",
   },

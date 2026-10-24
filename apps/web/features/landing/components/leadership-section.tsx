@@ -86,9 +86,11 @@ export function LeadershipSection() {
             <h3 className="font-heading text-2xl font-semibold tracking-tight">
               {master.name}
             </h3>
-            <p className="max-w-md text-sm text-pretty text-muted-foreground">
-              {master.duty}
-            </p>
+            {master.duty && (
+              <p className="max-w-md text-sm text-pretty text-muted-foreground">
+                {master.duty}
+              </p>
+            )}
           </div>
         </article>
 
@@ -106,9 +108,11 @@ export function LeadershipSection() {
                   </h3>
                   <Badge variant="secondary">{officer.role}</Badge>
                 </div>
-                <p className="text-sm text-pretty text-muted-foreground">
-                  {officer.duty}
-                </p>
+                {officer.duty && (
+                  <p className="text-sm text-pretty text-muted-foreground">
+                    {officer.duty}
+                  </p>
+                )}
               </div>
             </article>
           ))}
