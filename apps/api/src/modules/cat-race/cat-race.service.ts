@@ -17,6 +17,7 @@ import {
   type CreateCatRaceEventInput,
   type DrawCatRaceRoundInput,
   type SetCatRaceEntrantsInput,
+  type SetCatRaceFeaturedInput,
   type SetCatRaceParticipantsInput,
   type UpdateCatRaceEventInput,
   type UpdateCatRacePrizeInput,
@@ -67,6 +68,9 @@ const ROUND_ALREADY_VOID = 'Vòng này đã huỷ.';
 const UNKNOWN_MEMBER = 'Có thành viên không tồn tại.';
 const DUPLICATE_MEMBER = 'Danh sách có người trùng nhau.';
 const STANDARD_TICKETS = 'Chế độ Thường chỉ có 1 vé mỗi người.';
+const FEATURE_NOT_ENDED = 'Kết thúc đợt trước khi hiện ở trang chủ.';
+const FEATURE_NO_ROUND =
+  'Đợt chưa có vòng nào còn hiệu lực để hiện ở trang chủ.';
 const NOT_A_PARTICIPANT = 'Có người không thuộc đợt đua này.';
 
 /** What the Discord summary needs of an ended event: prizes in order, each with its winners. */
@@ -556,6 +560,46 @@ export class CatRaceService {
         await tx.catRaceEvent.update({
           where: { id },
           data: { endedAt: this.clock.now() },
+        });
+      }
+
+      return this.detailOf(tx, id);
+    });
+  }
+
+  /**
+   * Show or hide an ended event on the landing page. Hiding always works; showing an event that is
+   * already shown keeps its original `featuredAt`.
+   * @param id - Event id
+   * @param input - whether the event should be featured
+   * @returns The event after the change
+   * @throws ConflictException when featuring an open event, or one whose every round is void
+   */
+  setFeatured(
+    id: string,
+    input: SetCatRaceFeaturedInput,
+  ): Promise<CatRaceEventDetail> {
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT 1 FROM "CatRaceEvent" WHERE "id" = ${id} FOR NO KEY UPDATE`;
+      const event = await tx.catRaceEvent.findUnique({ where: { id } });
+      if (!event) throw new NotFoundException(EVENT_NOT_FOUND);
+      if (!input.featured) {
+        await tx.catRaceEvent.update({
+          where: { id },
+          data: { featuredAt: null },
+        });
+
+        return this.detailOf(tx, id);
+      }
+      if (!event.endedAt) throw new ConflictException(FEATURE_NOT_ENDED);
+      const activeRounds = await tx.catRaceRound.count({
+        where: { prize: { eventId: id }, voidedAt: null },
+      });
+      if (activeRounds === 0) throw new ConflictException(FEATURE_NO_ROUND);
+      if (!event.featuredAt) {
+        await tx.catRaceEvent.update({
+          where: { id },
+          data: { featuredAt: this.clock.now() },
         });
       }
 

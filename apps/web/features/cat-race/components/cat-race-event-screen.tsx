@@ -24,6 +24,7 @@ import { useRaceStore } from "../store/race-store";
 import { CatRaceEndedScreen } from "./cat-race-ended-screen";
 import { CatRaceHeader } from "./cat-race-header";
 import { EndEventButton } from "./end-event-button";
+import { FeatureRaceSwitch } from "./feature-race-switch";
 import { EntrantsDialog } from "./entrants-dialog";
 import { ParticipantsDialog } from "./participants-dialog";
 import { PrizeChips } from "./prize-chips";
@@ -148,6 +149,8 @@ function EventBody({ event }: { event: CatRaceEventDetail }) {
           }
         />
       )}
+
+      {focus.active ? null : <FeatureRaceSwitch event={event} />}
 
       {focus.active ? null : (
         <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">

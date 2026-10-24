@@ -64,6 +64,10 @@ _Avoid_: decoy, dark horse, runner-up role
 The close-up of the first two cats at the line, shown after every race.
 _Avoid_: finish shot, close finish
 
+**Featured race** (UI: "Bảng vàng"):
+An ended event whose winners the guild chose to show to every visitor of its public page.
+_Avoid_: showcase, pinned race, quay thưởng
+
 ## Attendance
 
 **Fought battle** (UI: "Đã đánh"):

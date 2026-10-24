@@ -64,6 +64,7 @@ describe('CatRaceController', () => {
     ['removePrize', ['e1', 'p1'], 'removePrize'],
     ['setEntrants', ['e1', 'p1', { characterIds: [] }], 'setEntrants'],
     ['voidRound', ['e1', 'r1', { reason: 'x' }], 'voidRound'],
+    ['setFeatured', ['e1', { featured: true }], 'setFeatured'],
   ] as const)(
     '%s forwards ids and body to the service',
     async (name, args, method) => {

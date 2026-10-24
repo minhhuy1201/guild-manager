@@ -2,6 +2,9 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { PRIZE_TIER_LABEL } from "@guild/shared/enums";
+import type { FeaturedRace } from "@guild/shared/schemas";
+
 import { GUILD_LEADERS } from "../lib/guild-info";
 
 // The auth barrel behind the call to action reaches the user menu's server actions and so
@@ -75,7 +78,7 @@ describe("JoinSteps", () => {
 
 describe("LandingScreen", () => {
   it("dựng đủ năm khối", () => {
-    render(<LandingScreen isSignedIn={false} />);
+    render(<LandingScreen isSignedIn={false} featuredRaces={[]} />);
 
     expect(
       screen.getByRole("heading", { level: 1, name: "Mèo Mập Giang Hồ" })
@@ -94,8 +97,87 @@ describe("LandingScreen", () => {
   });
 
   it("khối cuối nói rõ cần đăng nhập Discord", () => {
-    render(<LandingScreen isSignedIn={false} />);
+    render(<LandingScreen isSignedIn={false} featuredRaces={[]} />);
 
     expect(screen.getByText(/đăng nhập bằng Discord/i)).toBeTruthy();
+  });
+
+  describe("Bảng vàng", () => {
+    const race: FeaturedRace = {
+      id: "e1",
+      name: "Đua mèo mùa thu",
+      endedAt: "2026-10-12T03:00:00.000Z",
+      participantCount: 14,
+      prizes: [
+        {
+          name: "Tiền mặt",
+          tier: "HIGH" as FeaturedRace["prizes"][number]["tier"],
+          winners: [
+            {
+              name: "Mèo Mập",
+              guildClass: "CUU_LINH" as FeaturedRace["prizes"][number]["winners"][number]["guildClass"],
+            },
+          ],
+        },
+      ],
+    };
+
+    it("danh sách rỗng thì không có khối", () => {
+      render(<LandingScreen isSignedIn={false} featuredRaces={[]} />);
+
+      expect(screen.queryByText("Bảng vàng")).toBeNull();
+    });
+
+    it("hiện tên đợt, ngày kết thúc, số người, hạng mục và người thắng", () => {
+      render(<LandingScreen isSignedIn={false} featuredRaces={[race]} />);
+
+      expect(
+        screen.getByRole("heading", { level: 2, name: "Bảng vàng" })
+      ).toBeTruthy();
+      expect(
+        screen.getByRole("heading", { level: 3, name: "Đua mèo mùa thu" })
+      ).toBeTruthy();
+      expect(screen.getByText("Kết thúc 12/10/2026")).toBeTruthy();
+      expect(screen.getByText("14 người tham gia")).toBeTruthy();
+      expect(screen.getByText("Tiền mặt")).toBeTruthy();
+      expect(screen.getByText("Mèo Mập")).toBeTruthy();
+      expect(screen.queryByText(/vé/i)).toBeNull();
+    });
+
+    it("giải cao đứng trước và mọi người thắng đều có mặt", () => {
+      const winnerOf = (name: string) => ({
+        name,
+        guildClass: race.prizes[0].winners[0].guildClass,
+      });
+      const mixed: FeaturedRace = {
+        ...race,
+        prizes: [
+          { name: "Giải phụ", tier: "LOW" as FeaturedRace["prizes"][number]["tier"], winners: [winnerOf("Người A")] },
+          { ...race.prizes[0], winners: [winnerOf("Người B"), winnerOf("Người C")] },
+        ],
+      };
+      render(<LandingScreen isSignedIn={false} featuredRaces={[mixed]} />);
+
+      for (const name of ["Người A", "Người B", "Người C"]) {
+        expect(screen.getByText(name)).toBeTruthy();
+      }
+      const order = screen
+        .getAllByRole("heading", { level: 4 })
+        .map((heading) => heading.textContent);
+      expect(order[0]).toBe(`Giải ${PRIZE_TIER_LABEL.HIGH}`);
+    });
+
+    it("đợt mới nhất đứng trước trong thứ tự đọc", () => {
+      const older = { ...race, id: "e0", name: "Đợt cũ hơn" };
+      render(
+        <LandingScreen isSignedIn={false} featuredRaces={[race, older]} />
+      );
+
+      const titles = screen
+        .getAllByRole("heading", { level: 3 })
+        .map((heading) => heading.textContent)
+        .filter((text) => text === race.name || text === older.name);
+      expect(titles).toEqual([race.name, older.name]);
+    });
   });
 });

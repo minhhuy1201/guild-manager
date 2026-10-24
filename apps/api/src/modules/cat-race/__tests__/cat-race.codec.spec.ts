@@ -36,6 +36,7 @@ const summaryRow = (overrides: Record<string, unknown> = {}) =>
     createdAt: DRAWN,
     endedAt: null,
     discordPostedAt: null,
+    featuredAt: null,
     prizes: [{ rounds: [round(), round({ voidedAt: VOIDED })] }],
     ...overrides,
   }) as unknown as EventSummaryRow;
@@ -70,6 +71,7 @@ describe('cat race codec', () => {
       status: 'OPEN',
       createdAt: DRAWN.toISOString(),
       discordPostedAt: null,
+      featured: false,
       awardedCount: 1,
     });
   });
@@ -81,6 +83,12 @@ describe('cat race codec', () => {
 
     expect(summary.status).toBe('ENDED');
     expect(summary.discordPostedAt).toBe(VOIDED.toISOString());
+  });
+
+  it('reports featured once featuredAt is set', () => {
+    expect(toEventSummary(summaryRow({ featuredAt: VOIDED })).featured).toBe(
+      true,
+    );
   });
 
   it('maps a detail with roster, prizes and rounds sorted by draw time', () => {

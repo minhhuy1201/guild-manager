@@ -274,6 +274,101 @@ describe('CatRaceService end', () => {
   });
 });
 
+describe('CatRaceService setFeatured', () => {
+  const LATER = new Date('2026-10-20T00:00:00.000Z');
+
+  /** The event lookup answers `event`; `activeRounds` is how many non-voided rounds it has. */
+  function featurePrisma(
+    event: Record<string, unknown> | null,
+    activeRounds = 1,
+  ) {
+    const prisma = createPrisma();
+    prisma.catRaceEvent.findUnique.mockResolvedValue(event && openEvent(event));
+    prisma.catRaceRound.count.mockResolvedValue(activeRounds);
+
+    return prisma;
+  }
+
+  it('404s an unknown event', async () => {
+    const prisma = featurePrisma(null);
+
+    await expect(
+      buildService(prisma).setFeatured('nope', { featured: true }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('refuses to feature an event that has not ended', async () => {
+    const prisma = featurePrisma({ endedAt: null });
+
+    const attempt = buildService(prisma).setFeatured('e1', { featured: true });
+
+    await expect(attempt).rejects.toBeInstanceOf(ConflictException);
+    await expect(attempt).rejects.toThrow(
+      'Kết thúc đợt trước khi hiện ở trang chủ.',
+    );
+    expect(prisma.catRaceEvent.update).not.toHaveBeenCalled();
+  });
+
+  it('refuses to feature an event whose every round is void', async () => {
+    const prisma = featurePrisma({ endedAt: NOW }, 0);
+
+    const attempt = buildService(prisma).setFeatured('e1', { featured: true });
+
+    await expect(attempt).rejects.toBeInstanceOf(ConflictException);
+    await expect(attempt).rejects.toThrow(
+      'Đợt chưa có vòng nào còn hiệu lực để hiện ở trang chủ.',
+    );
+    expect(prisma.catRaceRound.count).toHaveBeenCalledWith({
+      where: { prize: { eventId: 'e1' }, voidedAt: null },
+    });
+    expect(prisma.catRaceEvent.update).not.toHaveBeenCalled();
+  });
+
+  it('stamps featuredAt from the clock when featuring an ended event', async () => {
+    const prisma = featurePrisma({ endedAt: NOW });
+
+    await buildService(prisma).setFeatured('e1', { featured: true });
+
+    expect(prisma.catRaceEvent.update).toHaveBeenCalledWith({
+      where: { id: 'e1' },
+      data: { featuredAt: NOW },
+    });
+  });
+
+  it('keeps featuredAt when the event is already featured', async () => {
+    const prisma = featurePrisma({ endedAt: NOW, featuredAt: LATER });
+
+    const detail = await buildService(prisma).setFeatured('e1', {
+      featured: true,
+    });
+
+    expect(prisma.catRaceEvent.update).not.toHaveBeenCalled();
+    expect(detail.featured).toBe(true);
+  });
+
+  it('writes null when unfeaturing', async () => {
+    const prisma = featurePrisma({ endedAt: NOW, featuredAt: LATER });
+
+    await buildService(prisma).setFeatured('e1', { featured: false });
+
+    expect(prisma.catRaceEvent.update).toHaveBeenCalledWith({
+      where: { id: 'e1' },
+      data: { featuredAt: null },
+    });
+  });
+
+  it('lets an event that cannot be featured be unfeatured anyway', async () => {
+    const prisma = featurePrisma({ endedAt: null, featuredAt: LATER }, 0);
+
+    await buildService(prisma).setFeatured('e1', { featured: false });
+
+    expect(prisma.catRaceEvent.update).toHaveBeenCalledWith({
+      where: { id: 'e1' },
+      data: { featuredAt: null },
+    });
+  });
+});
+
 describe('CatRaceService announcement', () => {
   const ended = (overrides: Record<string, unknown> = {}) => ({
     id: 'e1',

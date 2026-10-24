@@ -16,6 +16,7 @@ import {
   voidCatRaceRound,
   endCatRace,
   announceCatRace,
+  setCatRaceFeatured,
   drawCatRaceRound,
 } from "../api/cat-race-api";
 
@@ -127,6 +128,16 @@ export function useAnnounceCatRace() {
   const invalidate = useInvalidate("cat-race");
 
   return useMutation({ mutationFn: fromAction(announceCatRace), onSuccess: invalidate });
+}
+
+/**
+ * Show or hide an ended event on the landing page.
+ * @returns TanStack mutation; use mutateAsync to catch backend errors
+ */
+export function useSetCatRaceFeatured() {
+  const invalidate = useInvalidate("cat-race");
+
+  return useMutation({ mutationFn: fromAction(setCatRaceFeatured), onSuccess: invalidate });
 }
 
 /**

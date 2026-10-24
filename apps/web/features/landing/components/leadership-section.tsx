@@ -44,7 +44,8 @@ function LeaderAvatar({
  * Who runs the guild: the guild master on their own, then the three people beside them.
  *
  * Deliberately not four equal cards. The guild master decides, and the layout should say so before
- * the badge does.
+ * the badge does. The title sits in its own column so this block does not repeat the stacked
+ * title-over-content rhythm of the one below it.
  * @returns The leadership block
  */
 export function LeadershipSection() {
@@ -54,41 +55,44 @@ export function LeadershipSection() {
     <section
       id={LEADERSHIP_SECTION_ID}
       aria-labelledby={LEADERSHIP_HEADING_ID}
-      className="flex flex-col gap-6 scroll-mt-20"
+      className="grid scroll-mt-20 gap-8 lg:grid-cols-[16rem_1fr] lg:gap-12"
     >
-      <div className="flex flex-col gap-3">
+      {/* From `lg` the title keeps the left column and stays beside the people as the page scrolls. */}
+      <div className="flex flex-col gap-3 lg:sticky lg:top-24 lg:self-start">
         <h2
           id={LEADERSHIP_HEADING_ID}
-          className="font-heading text-2xl font-semibold tracking-tight"
+          className="font-heading text-3xl font-semibold tracking-tight"
         >
           Ban chỉ huy
         </h2>
         <OrnamentDivider stroke="brush" />
       </div>
 
-      {/* One column on a phone; from `md` the guild master keeps the left third. */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="flex flex-col gap-4">
         <article
           data-slot="card"
           data-variant="raised"
           className={cn(
             cardVariants({ variant: "raised" }),
-            "items-start gap-4 p-6"
+            "items-start gap-5 p-6 sm:flex-row sm:items-center sm:p-8"
           )}
         >
-          <LeaderAvatar leader={master} className="size-24" />
+          <LeaderAvatar
+            leader={master}
+            className="size-24 ring-2 ring-jade/40 ring-offset-2 ring-offset-card sm:size-28"
+          />
           <div className="flex flex-col gap-2">
             <Badge>{master.role}</Badge>
-            <h3 className="font-heading text-xl font-semibold tracking-tight">
+            <h3 className="font-heading text-2xl font-semibold tracking-tight">
               {master.name}
             </h3>
-            <p className="text-sm text-pretty text-muted-foreground">
+            <p className="max-w-md text-sm text-pretty text-muted-foreground">
               {master.duty}
             </p>
           </div>
         </article>
 
-        <div className="divide-y rounded-container border bg-card shadow-sm md:col-span-2">
+        <div className="divide-y rounded-container border bg-card shadow-sm">
           {officers.map((officer) => (
             <article
               key={officer.name}

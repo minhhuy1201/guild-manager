@@ -65,6 +65,7 @@ export function openEvent(overrides: Record<string, unknown> = {}) {
     createdAt: NOW,
     endedAt: null,
     discordPostedAt: null,
+    featuredAt: null,
     participants: [],
     prizes: [],
     ...overrides,

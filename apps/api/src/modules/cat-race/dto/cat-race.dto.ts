@@ -2,6 +2,7 @@ import {
   createCatRaceEventSchema,
   drawCatRaceRoundSchema,
   setCatRaceEntrantsSchema,
+  setCatRaceFeaturedSchema,
   setCatRaceParticipantsSchema,
   catRacePrizeInputSchema,
   updateCatRaceEventSchema,
@@ -43,3 +44,8 @@ export class DrawCatRaceRoundDto extends createZodDto(drawCatRaceRoundSchema) {}
 
 /** Body of POST /cat-races/:id/rounds/:roundId/void. */
 export class VoidCatRaceRoundDto extends createZodDto(voidCatRaceRoundSchema) {}
+
+/** Body of PUT /cat-races/:id/featured. */
+export class SetCatRaceFeaturedDto extends createZodDto(
+  setCatRaceFeaturedSchema,
+) {}

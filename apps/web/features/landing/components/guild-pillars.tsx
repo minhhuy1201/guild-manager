@@ -35,7 +35,7 @@ export function GuildPillars() {
       className="grid gap-4 md:grid-cols-3 md:grid-rows-2"
     >
       <article
-        className="relative flex min-h-64 flex-col justify-end overflow-hidden rounded-container shadow-sm md:col-span-2 md:row-span-2"
+        className="relative flex min-h-72 flex-col justify-end overflow-hidden rounded-container shadow-md md:col-span-2 md:row-span-2 md:min-h-[26rem]"
         style={{ backgroundColor: LANDING_PILLAR.tint }}
       >
         <BannerImage
@@ -50,11 +50,11 @@ export function GuildPillars() {
         <div className="relative flex flex-col gap-3 p-6 sm:p-8">
           {/* White, not `text-jade`: jade is a page-surface accent and at either theme's lightness
               it goes dim against the scrim, where every other mark on this picture is white. */}
-          <LeadIcon aria-hidden className="size-6 text-white/85" />
-          <h2 className="font-heading text-2xl font-semibold tracking-tight text-white">
+          <LeadIcon aria-hidden className="size-8 text-white/85" />
+          <h2 className="font-heading text-3xl font-semibold tracking-tight text-white sm:text-4xl">
             {lead.title}
           </h2>
-          <p className="max-w-md text-sm text-pretty text-white/85">
+          <p className="max-w-md text-base text-pretty text-white/85">
             {lead.body}
           </p>
         </div>
@@ -63,19 +63,29 @@ export function GuildPillars() {
       <article
         data-slot="card"
         data-variant="raised"
-        className={cn(cardVariants({ variant: "raised" }), "gap-3 p-6")}
+        className={cn(
+          cardVariants({ variant: "raised" }),
+          "relative gap-3 overflow-hidden p-6"
+        )}
       >
-        <GoalIcon aria-hidden className="size-6 text-jade" />
-        <h2 className="font-heading text-xl font-semibold tracking-tight">
+        {/* A watermark of the card's own icon: depth for a card that is otherwise text on a plane. */}
+        <GoalIcon
+          aria-hidden
+          className="pointer-events-none absolute -right-4 -bottom-4 size-28 text-jade/10"
+        />
+        <GoalIcon aria-hidden className="relative size-6 text-jade" />
+        <h2 className="relative font-heading text-xl font-semibold tracking-tight">
           {goal.title}
         </h2>
-        <p className="text-sm text-pretty text-muted-foreground">{goal.body}</p>
+        <p className="relative text-sm text-pretty text-muted-foreground">
+          {goal.body}
+        </p>
       </article>
 
       <article
         data-slot="card"
         data-variant="default"
-        className={cn(cardVariants(), "gap-3 p-6")}
+        className={cn(cardVariants(), "gap-3 border-t-2 border-t-jade/60 p-6")}
       >
         <DisciplineIcon aria-hidden className="size-6 text-jade" />
         <h2 className="font-heading text-xl font-semibold tracking-tight">

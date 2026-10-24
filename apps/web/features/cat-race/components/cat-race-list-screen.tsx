@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Cat } from "lucide-react";
+import { Cat, Trophy } from "lucide-react";
 import { CAT_RACE_MODE_LABEL } from "@guild/shared/enums";
 
 import { CreateButton } from "@/components/shared/action-buttons";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { QueryBoundary } from "@/components/shared/query-boundary";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { catRaceEventPath } from "@/config/routes";
@@ -93,7 +94,15 @@ export function CatRaceListScreen() {
                           <span className="absolute inset-0 rounded-container" />
                           {race.name}
                         </Link>
-                        <RaceStatusBadge stage={stage} className="shrink-0" />
+                        <div className="flex shrink-0 items-center gap-2">
+                          {race.featured ? (
+                            <Badge variant="secondary">
+                              <Trophy aria-hidden />
+                              Bảng vàng
+                            </Badge>
+                          ) : null}
+                          <RaceStatusBadge stage={stage} />
+                        </div>
                       </div>
                       <p className="text-sm text-muted-foreground">
                         Chế độ {CAT_RACE_MODE_LABEL[race.mode]} ·{" "}

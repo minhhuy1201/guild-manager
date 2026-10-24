@@ -3,13 +3,14 @@ import { Cat } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
-/** Where the seal sits: the header's brand block, or the login card. */
-export type GuildSealSize = "md" | "lg";
+/** Where the seal sits: the header's brand block, the login card, or the landing hero. */
+export type GuildSealSize = "md" | "lg" | "xl";
 
 /** Frame and glyph size per named size - two fixed values, like `SessionLabel`. */
 const SIZE_CLASS: Record<GuildSealSize, string> = {
   md: "size-9 rounded-md [&_svg]:size-5",
   lg: "size-14 rounded-lg [&_svg]:size-8",
+  xl: "size-20 rounded-xl [&_svg]:size-11",
 };
 
 /** Jade for the guild's own mark; destructive for the stamp on an error. */
@@ -22,7 +23,7 @@ const TONE_CLASS: Record<GuildSealTone, string> = {
 };
 
 interface GuildSealProps {
-  /** "md" in the header, "lg" on the login card */
+  /** "md" in the header, "lg" on the login card, "xl" on the landing hero */
   size?: GuildSealSize;
   /** Colour of the edge and glyph */
   tone?: GuildSealTone;
