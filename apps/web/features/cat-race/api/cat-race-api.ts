@@ -10,7 +10,6 @@ import type {
   SetCatRaceEntrantsInput,
   SetCatRaceFeaturedInput,
   SetCatRaceParticipantsInput,
-  UpdateCatRaceEventInput,
   UpdateCatRacePrizeInput,
   VoidCatRaceRoundInput,
 } from "@guild/shared/schemas";
@@ -18,11 +17,6 @@ import type {
 import { authHeader } from "@/features/auth/server";
 import { type ActionResult, toActionResult } from "@/lib/action-result";
 import { apiFetch } from "@/lib/api-client";
-
-/** Arguments of `updateCatRace`. `id` travels on the URL; only the fields are sent. */
-export interface UpdateCatRaceArgs extends UpdateCatRaceEventInput {
-  id: string;
-}
 
 /** Arguments of `setCatRaceParticipants`. */
 export interface SetCatRaceParticipantsArgs extends SetCatRaceParticipantsInput {
@@ -115,37 +109,6 @@ export async function createCatRace(
     apiFetch<CatRaceEventDetail>("/cat-races", {
       method: "POST",
       body: JSON.stringify(input),
-      headers: await authHeader(),
-    })
-  );
-}
-
-/**
- * Rename an event or change its mode before the first round.
- * @param args - event id and the fields to change
- * @returns The event after the change
- */
-export async function updateCatRace({
-  id,
-  ...fields
-}: UpdateCatRaceArgs): Promise<ActionResult<CatRaceEventDetail>> {
-  return toActionResult(async () =>
-    apiFetch<CatRaceEventDetail>(eventPath(id), {
-      method: "PATCH",
-      body: JSON.stringify(fields),
-      headers: await authHeader(),
-    })
-  );
-}
-
-/**
- * Delete an event that has no round.
- * @param id - Event id
- */
-export async function deleteCatRace(id: string): Promise<ActionResult<void>> {
-  return toActionResult(async () =>
-    apiFetch<void>(eventPath(id), {
-      method: "DELETE",
       headers: await authHeader(),
     })
   );

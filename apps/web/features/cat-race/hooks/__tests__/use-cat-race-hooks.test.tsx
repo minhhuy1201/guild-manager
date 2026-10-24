@@ -6,8 +6,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 const api = vi.hoisted(() => ({
   createCatRace: vi.fn(),
-  updateCatRace: vi.fn(),
-  deleteCatRace: vi.fn(),
   setCatRaceParticipants: vi.fn(),
   addCatRacePrize: vi.fn(),
   updateCatRacePrize: vi.fn(),
@@ -45,8 +43,6 @@ afterEach(cleanup);
 
 const WRITES = [
   ["useCreateCatRace", "createCatRace"],
-  ["useUpdateCatRace", "updateCatRace"],
-  ["useDeleteCatRace", "deleteCatRace"],
   ["useSetCatRaceParticipants", "setCatRaceParticipants"],
   ["useAddCatRacePrize", "addCatRacePrize"],
   ["useUpdateCatRacePrize", "updateCatRacePrize"],

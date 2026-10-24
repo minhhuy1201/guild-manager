@@ -4,8 +4,8 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** todo
+**Status:** done
 
-- [ ] Hai hook và test của chúng bị xoá.
-- [ ] Server action `updateCatRace` / `deleteCatRace` bị xoá nếu không còn chỗ dùng, cùng test của chúng; endpoint API giữ nguyên.
-- [ ] Test, typecheck, lint của web xanh.
+- [x] Hai hook và test của chúng bị xoá.
+- [x] Server action `updateCatRace` / `deleteCatRace` bị xoá nếu không còn chỗ dùng, cùng test của chúng; endpoint API giữ nguyên.
+- [x] Test, typecheck, lint của web xanh.
