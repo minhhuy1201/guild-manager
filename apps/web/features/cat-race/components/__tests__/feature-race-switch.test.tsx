@@ -32,7 +32,9 @@ describe("FeatureRaceSwitch", () => {
     render(<FeatureRaceSwitch event={makeEvent({ status: "OPEN", rounds: [ROUND] })} />);
 
     expect(isDisabled()).toBe(true);
-    expect(screen.getByText("Kết thúc đợt trước khi hiện ở trang chủ.")).toBeTruthy();
+    const reason = screen.getByText("Kết thúc đợt trước khi hiện ở trang chủ.");
+    expect(reason).toBeTruthy();
+    expect(toggle().getAttribute("aria-describedby")).toBe(reason.id);
   });
 
   it("is disabled with the reason when every round is void", () => {

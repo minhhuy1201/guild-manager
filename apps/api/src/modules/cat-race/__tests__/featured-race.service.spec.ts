@@ -66,6 +66,14 @@ describe('FeaturedRaceService', () => {
     await expect(service.list()).resolves.toEqual([]);
   });
 
+  it('fails loud when a featured event has no endedAt', async () => {
+    const { service } = build([eventRow({ id: 'broken', endedAt: null })]);
+
+    await expect(service.list()).rejects.toThrow(
+      'featured event broken has no endedAt',
+    );
+  });
+
   it('keeps the order the database returned', async () => {
     const { service } = build([
       eventRow({ id: 'new' }),

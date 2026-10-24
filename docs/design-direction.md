@@ -120,7 +120,7 @@ Motion says "the data is arriving" and "this responds to you", nothing more:
 ## Allowed since 2026-10-22
 
 - A thin gold edge on a few highlights only (formation headline, login, the Bảng vàng's HIGH prize)
-- Jade glow behind a raised card, gold glow behind the formation headline and login
+- Jade glow behind a raised card, gold glow behind the formation headline, login and the Bảng vàng HIGH medal
 - Static paper grain and ink wash on the plane
 - A translucent, blurred header band and dialog backdrop
 - One-shot motion: banner drift, page cross-fade, count-up of totals

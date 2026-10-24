@@ -1,4 +1,4 @@
-import { GuildClass, PrizeTier } from '@guild/shared/enums';
+import { GuildClass, PRIZE_TIER_ORDER, PrizeTier } from '@guild/shared/enums';
 import {
   featuredRaceSchema,
   type FeaturedRace,
@@ -33,13 +33,6 @@ export type FeaturedRaceRow = Prisma.CatRaceEventGetPayload<{
   include: typeof FEATURED_RACE_INCLUDE;
 }>;
 
-/** Display order of the tiers: the most valuable prize first. */
-const TIER_ORDER: readonly PrizeTier[] = [
-  PrizeTier.HIGH,
-  PrizeTier.MEDIUM,
-  PrizeTier.LOW,
-];
-
 /**
  * Map an ended event to its public shape. A prize whose rounds are all voided is dropped, so the
  * landing page never lists a prize nobody holds.
@@ -67,7 +60,7 @@ export function toFeaturedRace(
     .filter((prize) => prize.winners.length > 0)
     .sort(
       (a, b) =>
-        TIER_ORDER.indexOf(a.tier) - TIER_ORDER.indexOf(b.tier) ||
+        PRIZE_TIER_ORDER.indexOf(a.tier) - PRIZE_TIER_ORDER.indexOf(b.tier) ||
         a.sortOrder - b.sortOrder,
     )
     .map(({ name, tier, winners }): FeaturedRacePrize => ({

@@ -5,6 +5,8 @@ import { OrnamentDivider } from "@/components/shared/ornament-divider";
 
 import { FeaturedRaceCard } from "./featured-race-card";
 
+const FEATURED_HEADING_ID = "bang-vang-tieu-de";
+
 interface FeaturedRacesProps {
   /** Featured races, newest first; at most a handful */
   races: FeaturedRace[];
@@ -27,7 +29,7 @@ export function FeaturedRaces({ races }: FeaturedRacesProps) {
 
   return (
     <section
-      aria-labelledby="featured-races-title"
+      aria-labelledby={FEATURED_HEADING_ID}
       className="relative flex flex-col gap-8 py-4 sm:py-8"
     >
       <div
@@ -42,7 +44,7 @@ export function FeaturedRaces({ races }: FeaturedRacesProps) {
           <Trophy className="size-6" />
         </span>
         <h2
-          id="featured-races-title"
+          id={FEATURED_HEADING_ID}
           className="font-heading text-4xl font-semibold tracking-tight text-gold-ink sm:text-5xl"
         >
           Bảng vàng

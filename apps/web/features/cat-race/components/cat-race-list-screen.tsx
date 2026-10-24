@@ -96,7 +96,7 @@ export function CatRaceListScreen() {
                         </Link>
                         <div className="flex shrink-0 items-center gap-2">
                           {race.featured ? (
-                            <Badge className="bg-gold text-gold-foreground">
+                            <Badge variant="secondary">
                               <Trophy aria-hidden />
                               Bảng vàng
                             </Badge>

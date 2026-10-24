@@ -23,6 +23,7 @@ interface FeatureRaceSwitchProps {
  */
 export function FeatureRaceSwitch({ event }: FeatureRaceSwitchProps) {
   const id = useId();
+  const reasonId = useId();
   const setFeatured = useSetCatRaceFeatured();
   const recoverSession = useSessionRecovery();
   const reason = featureLockReason(event);
@@ -42,6 +43,7 @@ export function FeatureRaceSwitch({ event }: FeatureRaceSwitchProps) {
       <Switch
         id={id}
         checked={event.featured}
+        aria-describedby={isLocked ? reasonId : undefined}
         disabled={isLocked || setFeatured.isPending}
         onCheckedChange={(checked) => void change(checked)}
       />
@@ -49,7 +51,7 @@ export function FeatureRaceSwitch({ event }: FeatureRaceSwitchProps) {
         Hiện ở trang chủ
       </Label>
       {isLocked ? (
-        <span className="text-sm text-muted-foreground">{FEATURE_LOCK_LABEL[reason]}</span>
+        <span id={reasonId} className="text-sm text-muted-foreground">{FEATURE_LOCK_LABEL[reason]}</span>
       ) : null}
     </div>
   );

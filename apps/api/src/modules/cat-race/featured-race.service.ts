@@ -22,8 +22,12 @@ export class FeaturedRaceService {
       include: FEATURED_RACE_INCLUDE,
     });
 
-    return rows.flatMap((row) =>
-      row.endedAt ? [toFeaturedRace(row, row.endedAt)] : [],
-    );
+    return rows.map((row) => {
+      if (!row.endedAt) {
+        throw new Error(`featured event ${row.id} has no endedAt`);
+      }
+
+      return toFeaturedRace(row, row.endedAt);
+    });
   }
 }

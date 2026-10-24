@@ -994,7 +994,7 @@
 }
 
 [data-slot="scroll-reveal"][data-revealed] [data-slot="featured-prize"][data-tier="HIGH"]::after {
-    animation: prize-sheen 1400ms ease-in-out 450ms backwards;
+    animation: prize-sheen 1400ms var(--ease-out-soft) 450ms backwards;
 }
 
 @keyframes winner-in {
