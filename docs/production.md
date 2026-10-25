@@ -171,14 +171,36 @@ commit. `apps/api/**` marks the API affected, `apps/web/**` marks the web app af
 shared code and workspace-wide config can break either app. A commit matching none of them (docs, for
 instance) skips every job, including the deploys.
 
+**On `main`, each app diffs against the commit production last deployed, not against the previous
+commit.** The `Find the commit production runs` step reads the newest `success` deployment of
+`production-api` and `production-web` from the Deployments API and hands each SHA to its own
+`paths-filter` step as `base`. A per-commit diff never retried a failed deploy: on 2026-10-24 a red
+`Build web` skipped the API deploy, the next two commits touched only `apps/web`, and production
+served a web app calling an API route that had never shipped. Now any later run on `main`, even a
+docs-only one, migrates and redeploys whichever app is still behind. With no successful deployment
+among the newest 30 the step leaves the base empty and the diff falls back to the previous commit;
+an API error fails the job instead.
+
+The base is the last deploy **CI recorded** in the Deployments tab. A Vercel-dashboard promotion or
+a hand `vercel deploy` (both under Rollback, section 6) leaves no record, so CI still treats the
+previous CI deploy as what production runs.
+
 | Git event | What happens |
 |---|---|
 | Push to `main` touching `apps/api` | API test, lint, build, then the database migration, then API deploy only |
 | Push to `main` touching `apps/web` | Web test, lint, build, then web deploy only |
 | Push to `main` touching shared code or workspace config | The whole pipeline, both deploys |
-| Push to `main` touching only docs | Nothing runs; production is untouched |
+| Push to `main` touching only docs | Nothing runs, unless an app is still behind from a failed run; then that app's pipeline runs |
 | Open/update a pull request | Tests only — the deploy jobs are gated on `github.ref` |
-| Any test job fails | The migration and both deploy jobs are skipped; production keeps the previous build **and its schema** |
+| Any test job fails | The migration and both deploy jobs are skipped; production keeps the previous build **and its schema**; on `main`, `deploy-alert` also opens an issue |
+
+**A red run on `main` opens an issue.** The `Alert on a failed deploy` job runs after every push to
+`main`. When any test, build, migrate or deploy job failed or was cancelled, it opens the issue
+*Production deploy failed on main*, assigned to the repository owner so GitHub notifies them, or
+comments on it when it is already open. The next fully green run of `main`'s head closes it. A
+green re-run of an older run does not: it deployed that older commit over production. To recover,
+re-run the newest run on `main` or push a fix. SonarQube and the tooling check are left out:
+neither gates a deploy.
 
 Three things make the gate real:
 
@@ -274,8 +296,12 @@ dashboard; the already-disconnected API project answers that.
 ### Why pushes to `main` do not cancel each other
 
 The `concurrency` block cancels superseded runs on every ref **except** `main`. Runs on `main` share
-the group but are not cancelled, so they queue and deploy in commit order. Cancelling one mid-deploy
-would abandon a Vercel build that keeps running with nobody watching its result.
+the group but a run in progress is not cancelled. Cancelling one mid-deploy would abandon a Vercel
+build that keeps running with nobody watching its result.
+
+They do not all queue, though: GitHub keeps one pending run per group, so a third quick push to
+`main` replaces the second one before it starts. The replaced commit still ships, because the newer
+run diffs each app against its last deploy (section 4).
 
 ### Each app installs only what it needs
 
@@ -795,7 +821,8 @@ There is no automatic rollback. In practice:
 ### Not in place yet
 
 Recorded so nobody assumes otherwise: preview deployments (both projects build on `main` only), a
-staging environment, verified backups, monitoring/alerting, application-level rate limiting.
+staging environment, verified backups, runtime monitoring/alerting (only a failed deploy alerts, see
+section 4), application-level rate limiting.
 
 The web Vercel project is still connected to the repository, so `vercel[bot]` keeps writing skipped
 deployments and its two auto-created environments stay on the Environments page (section 4).
