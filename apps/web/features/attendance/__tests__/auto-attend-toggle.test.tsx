@@ -3,13 +3,17 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AutoAttendStatus } from "@guild/shared/schemas";
 
+import { ApiError } from "@/lib/api-client";
+
 const { toastSuccess, toastError } = vi.hoisted(() => ({
   toastSuccess: vi.fn(),
   toastError: vi.fn(),
 }));
 const mutateAsync = vi.fn();
 const recoverSession = vi.fn();
-let query: { data?: AutoAttendStatus; isPending: boolean } = { isPending: false };
+let query: { data?: AutoAttendStatus; error?: Error; isPending: boolean } = {
+  isPending: false,
+};
 
 vi.mock("../hooks/use-auto-attend", () => ({
   useAutoAttend: () => query,
@@ -54,12 +58,38 @@ describe("AutoAttendToggle", () => {
     expect(theSwitch().getAttribute("aria-checked")).toBe("true");
   });
 
-  it("không render gì khi không đọc được trạng thái (admin cứu hộ chưa có nhân vật)", () => {
-    query = { data: undefined, isPending: false };
+  it("không render gì khi tài khoản chưa có nhân vật (admin cứu hộ, API trả 404)", () => {
+    query = {
+      data: undefined,
+      error: new ApiError("Không tìm thấy thành viên.", 404),
+      isPending: false,
+    };
 
     const { container } = render(<AutoAttendToggle />);
 
     expect(container.firstChild).toBeNull();
+  });
+
+  it("lỗi khác 404 thì nói ra, không âm thầm giấu công tắc", () => {
+    query = {
+      data: undefined,
+      error: new ApiError("Máy chủ đang bận.", 500),
+      isPending: false,
+    };
+
+    render(<AutoAttendToggle />);
+
+    expect(screen.getByText("Máy chủ đang bận.")).toBeTruthy();
+    expect(screen.queryByRole("switch")).toBeNull();
+  });
+
+  it("đọc trạng thái bị 401 thì chuyển cho recoverSession", () => {
+    const error = new ApiError("Hết phiên.", 401);
+    query = { data: undefined, error, isPending: false };
+
+    render(<AutoAttendToggle />);
+
+    expect(recoverSession).toHaveBeenCalledWith(error);
   });
 
   it("đang tải thì hiện khung chờ, chưa có công tắc", () => {

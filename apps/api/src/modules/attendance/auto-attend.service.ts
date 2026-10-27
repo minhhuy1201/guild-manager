@@ -48,13 +48,16 @@ export class AutoAttendService {
    */
   async set(actor: RequestActor, enabled: boolean): Promise<AutoAttendStatus> {
     const characterId = await this.requireCharacterId(actor);
-    const now = this.clock.now();
 
     return this.prisma.$transaction(async (tx) => {
       // Serialises switches for one character: the read of the running period and the write after it
       // must not interleave with another switch (web and Discord at the same moment), or two periods
       // end up running. Released at commit/rollback.
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${characterId}))`;
+
+      // Read after the lock so the stored moments follow the order the lock serialises: a switch-off
+      // that waited behind a switch-on must not stamp a `disabledAt` earlier than that `enabledAt`.
+      const now = this.clock.now();
 
       const running = await tx.autoAttendPeriod.findFirst({
         where: { characterId, disabledAt: null },
