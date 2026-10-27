@@ -1,6 +1,7 @@
 import type { Clock } from '../../../common';
 import type {
   AttendanceService,
+  AutoAttendService,
   LeaveService,
 } from '../../attendance/attendance.public';
 import type { BattleSessionsService } from '../../battle-sessions/battle-sessions.public';
@@ -186,6 +187,7 @@ export interface CommandLinks {
 export interface CommandDeps {
   attendance: AttendanceService;
   leaves: LeaveService;
+  autoAttend: AutoAttendService;
   battleSessions: BattleSessionsService;
   characters: CharactersService;
   actors: ActorResolver;

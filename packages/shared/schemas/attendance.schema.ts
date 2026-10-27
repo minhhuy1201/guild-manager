@@ -22,8 +22,11 @@ export const markAttendanceSchema = z.object({
 
 export type MarkAttendanceInput = z.infer<typeof markAttendanceSchema>;
 
-/** Where an attendance entry comes from: a button somebody pressed, or a leave covering the day. */
-export const attendanceSourceSchema = z.enum(["answer", "leave"]);
+/**
+ * Where an attendance entry comes from: a button somebody pressed, a leave covering the day, or the
+ * member's Auto-attend.
+ */
+export const attendanceSourceSchema = z.enum(["answer", "leave", "auto"]);
 export type AttendanceSource = z.infer<typeof attendanceSourceSchema>;
 
 /** One attendance entry as the API returns it. */

@@ -17,6 +17,7 @@ export const CACHE_TOPICS = [
   "schedule",
   "attendance",
   "leave",
+  "auto-attend",
   "attendance-window",
   "formation",
   "tactic",
@@ -67,6 +68,15 @@ export const CACHE_DEPENDENTS: Record<CacheTopic, () => QueryKey[]> = {
    */
   leave: () => [
     attendanceKeys.leaves(),
+    attendanceKeys.records(),
+    teamBuilderKeys.all,
+  ],
+  /**
+   * Turning Auto-attend on or off turns open "chưa phản hồi" cells into "Có" and back, so the grid
+   * and the team builder's pool of present members both change.
+   */
+  "auto-attend": () => [
+    attendanceKeys.autoAttend(),
     attendanceKeys.records(),
     teamBuilderKeys.all,
   ],

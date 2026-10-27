@@ -13,6 +13,8 @@ export const attendanceKeys = {
     [...attendanceKeys.sessions(), weekStart] as const,
   /** Active leaves, guild-wide. */
   leaves: () => [...attendanceKeys.all, "leaves"] as const,
+  /** The signed-in member's own Auto-attend state. */
+  autoAttend: () => [...attendanceKeys.all, "auto-attend"] as const,
   week: () => [...attendanceKeys.all, "week"] as const,
   /** Prefix over every week's records - what an invalidation targets. */
   records: () => [...attendanceKeys.all, "records"] as const,

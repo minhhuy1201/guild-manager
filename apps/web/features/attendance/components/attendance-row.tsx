@@ -1,6 +1,7 @@
 "use client";
 
 import { attendanceLabel } from "@guild/shared/enums";
+import { assertNever } from "@guild/shared/lib";
 import type {
   AttendanceRecord,
   AttendanceSource,
@@ -14,13 +15,13 @@ import type { GridDraft } from "../lib/grid-draft";
 import { recordKey } from "../lib/record-key";
 import { STICKY_NAME_COLUMN } from "../lib/sticky-columns";
 import { AbsenceReasonText } from "./absence-reason-text";
-import { AttendanceStatusIcon, LEAVE_LABEL } from "./attendance-status-icon";
+import { AttendanceStatusIcon, AUTO_LABEL, LEAVE_LABEL } from "./attendance-status-icon";
 import { CharacterName } from "./character-name";
 
 /**
  * How a cell's answer is named to a screen reader.
  * @param isPresent - The answer shown, undefined when there is none
- * @param source - Whether the answer was pressed or implied by a leave
+ * @param source - Whether the answer was pressed, or implied by a leave or Auto-attend
  * @returns The label
  */
 function describeAnswer(
@@ -29,7 +30,19 @@ function describeAnswer(
 ): string {
   if (isPresent === undefined) return UNANSWERED_LABEL;
 
-  return source === "leave" ? LEAVE_LABEL : attendanceLabel(isPresent);
+  switch (source) {
+    case "leave":
+      return LEAVE_LABEL;
+
+    case "auto":
+      return AUTO_LABEL;
+
+    case "answer":
+      return attendanceLabel(isPresent);
+
+    default:
+      return assertNever(source);
+  }
 }
 
 /** How an unanswered cell is named to a screen reader. */
@@ -131,14 +144,14 @@ export function AttendanceRow({
 interface AnswerMarkProps {
   /** The answer shown, undefined when there is none */
   isPresent?: boolean;
-  /** Whether the answer was pressed or implied by a leave */
+  /** Whether the answer was pressed, or implied by a leave or Auto-attend */
   source: AttendanceSource;
 }
 
 /**
  * One cell's answer, as the coloured status icon every screen uses for it.
  * @param isPresent - The answer shown
- * @param source - Whether the answer was pressed or implied by a leave
+ * @param source - Whether the answer was pressed, or implied by a leave or Auto-attend
  * @returns An emerald swords (yes) / red cross (no) icon, or "—" when unanswered
  */
 function AnswerMark({ isPresent, source }: AnswerMarkProps) {

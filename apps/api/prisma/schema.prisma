@@ -86,6 +86,7 @@ model Character {
   attendanceRecords AttendanceRecord[]
   formationSlots    FormationSlot[]
   leaves            Leave[]
+  autoAttendPeriods AutoAttendPeriod[]
 
   catRaceParticipants CatRaceParticipant[]
   catRaceEntrants     CatRaceEntrant[]
@@ -302,6 +303,21 @@ model Leave {
 
   @@index([characterId])
   @@index([endDate])
+}
+
+/// One stretch during which a member had Auto-attend on. Read-time only, like Leave: it never writes
+/// AttendanceRecord rows - see docs/specs/2026-10-27-auto-attend.md.
+model AutoAttendPeriod {
+  id          String    @id @default(cuid())
+  characterId String
+  /// Compared with the day's closing moment by the coverage rule; written from Clock, not by the DB.
+  enabledAt   DateTime
+  /// Null = still on. Turning it off stamps this instead of deleting, so days closed before it stay "Có".
+  disabledAt  DateTime?
+
+  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  @@index([characterId])
 }
 
 /// How a cat race event weighs its entrants. Values must match the CatRaceMode enum in packages/shared/enums.

@@ -9,4 +9,5 @@
  * other that is a real domain cycle, and the answer is a third module, not `forwardRef()`.
  */
 export { AttendanceService } from './attendance.service';
+export { AutoAttendService } from './auto-attend.service';
 export { LeaveService } from './leave.service';
