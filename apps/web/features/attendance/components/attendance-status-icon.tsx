@@ -1,6 +1,6 @@
 "use client";
 
-import { Plane, Swords, X } from "lucide-react";
+import { Plane, Repeat, Swords, X } from "lucide-react";
 import { attendanceLabel } from "@guild/shared/enums";
 import { assertNever } from "@guild/shared/lib";
 import type { AttendanceSource } from "@guild/shared/schemas";
@@ -28,7 +28,8 @@ interface AttendanceStatusIconProps {
  * card all say the same thing the same way.
  * A "Không" that comes from a leave keeps the danger tone but swaps the mark for a plane and says
  * so, because "chưa phản hồi" and "đang nghỉ" are different things to whoever reads the grid.
- * A "Có" that comes from Auto-attend keeps the success tone and says so, for the same reason.
+ * A "Có" that comes from Auto-attend keeps the success tone and swaps the swords for the repeat mark
+ * the switch and the Discord button carry, for the same reason.
  * @param isPresent - The recorded answer
  * @param source - Whether the answer was pressed or implied by a leave or Auto-attend
  * @param className - Extra classes, merged after the defaults
@@ -54,7 +55,7 @@ export function AttendanceStatusIcon({
       return (
         <StatusIcon
           tone="success"
-          icon={Swords}
+          icon={Repeat}
           label={AUTO_LABEL}
           className={className}
         />

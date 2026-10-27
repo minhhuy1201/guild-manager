@@ -6,6 +6,7 @@ import { Plane } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSession } from "@/features/auth";
 import { useCharacters } from "../hooks/use-attendance";
+import { AutoAttendToggle } from "./auto-attend-toggle";
 import { LeaveDialog } from "./leave-dialog";
 import { MyLeaveBanner } from "./my-leave-banner";
 
@@ -15,8 +16,8 @@ interface LeaveSectionProps {
 }
 
 /**
- * The attendance screen's leave entry: the button that opens the dialog, and the viewer's own
- * leaves under it.
+ * The attendance screen's standing-answer entries: the button that opens the leave dialog beside the
+ * Auto-attend switch, and the viewer's own leaves under them.
  * @param canManageOthers - Whether the viewer may file leaves for others
  * @returns The section
  */
@@ -27,11 +28,12 @@ export function LeaveSection({ canManageOthers }: LeaveSectionProps) {
 
   return (
     <section className="flex flex-col gap-3">
-      <div>
+      <div className="flex flex-wrap items-center gap-3">
         <Button type="button" variant="outline" onClick={() => setIsOpen(true)}>
           <Plane />
           Xin nghỉ phép
         </Button>
+        <AutoAttendToggle />
       </div>
       <MyLeaveBanner />
       <LeaveDialog

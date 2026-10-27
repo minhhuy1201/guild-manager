@@ -48,6 +48,14 @@ describe("CACHE_DEPENDENTS", () => {
     ]);
   });
 
+  it("bật hay tắt tự động điểm danh làm cũ trạng thái, record và xếp team", () => {
+    expect(CACHE_DEPENDENTS["auto-attend"]()).toEqual([
+      attendanceKeys.autoAttend(),
+      attendanceKeys.records(),
+      teamBuilderKeys.all,
+    ]);
+  });
+
   it("lưu đội hình chỉ làm cũ xếp team", () => {
     expect(CACHE_DEPENDENTS.formation()).toEqual([teamBuilderKeys.all]);
   });
