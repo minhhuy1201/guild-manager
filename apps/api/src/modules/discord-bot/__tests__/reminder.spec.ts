@@ -133,8 +133,8 @@ describe('buildReminder', () => {
   it('mang cùng hàng nút với thông báo tuần', () => {
     const row = buildReminder([GUILD_WAR], WEB_ORIGIN).components?.[0];
 
-    expect(row?.components).toHaveLength(3);
-    expect(row?.components[2]).toMatchObject({
+    expect(row?.components).toHaveLength(4);
+    expect(row?.components[3]).toMatchObject({
       url: `${WEB_ORIGIN}/dang-nhap?redirect=%2F`,
     });
   });

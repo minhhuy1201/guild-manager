@@ -9,22 +9,22 @@ sang trạng thái mới.
 
 **Blocked by:** 01 (Bật/tắt qua API và lưới hiện "Có · Tự động")
 
-**Status:** todo
+**Status:** done
 
-- [ ] `buildEntryButtons` có nút thứ tư `🔁 Tự động điểm danh` (secondary), custom_id cố định
+- [x] `buildEntryButtons` có nút thứ tư `🔁 Tự động điểm danh` (secondary), custom_id cố định
       `ann:tu-dong`; cả `/thong-bao` lẫn tin nhắc nhận nút. Test theo mẫu `entry-buttons.spec.ts`.
-- [ ] custom_id `ann:tu-dong`, `auto:bat`, `auto:tat` khai báo cùng chỗ với các id hiện có; id lạ hoặc
+- [x] custom_id `ann:tu-dong`, `auto:bat`, `auto:tat` khai báo cùng chỗ với các id hiện có; id lạ hoặc
       cũ nhận message rõ ràng, không crash.
-- [ ] Bấm `ann:tu-dong` → response ephemeral. Đang tắt: "Mọi trận đánh trong tương lai sẽ được tự động
+- [x] Bấm `ann:tu-dong` → response ephemeral. Đang tắt: "Mọi trận đánh trong tương lai sẽ được tự động
       điểm danh **CÓ** cho bạn. Lưu ý: trận nào bận thì vào đổi thành **KHÔNG** trước hạn chót, hoặc
       dùng Xin nghỉ." + nút `Bật` (`auto:bat`). Đang bật: "Bạn đang bật tự động điểm danh từ dd/mm." +
       nút `Tắt` (`auto:tat`).
-- [ ] Bấm `auto:bat` / `auto:tat` → gọi `AutoAttendService` qua `deps`, trả response type 7 (update
+- [x] Bấm `auto:bat` / `auto:tat` → gọi `AutoAttendService` qua `deps`, trả response type 7 (update
       message) với trạng thái mới và nút ngược lại. Bấm lại nút cũ hiện trạng thái thật (idempotent).
-- [ ] Danh tính lấy từ payload đã ký, không từ custom_id. Người bấm không có nhân vật → cùng message
+- [x] Danh tính lấy từ payload đã ký, không từ custom_id. Người bấm không có nhân vật → cùng message
       `ActorResolver` dùng cho `/diem-danh`.
-- [ ] Trả lời trong 3 giây, không deferred reply.
-- [ ] Test theo mẫu `interaction-router.spec.ts`: mở tin đúng trạng thái, bật, tắt, bấm lặp, không
+- [x] Trả lời trong 3 giây, không deferred reply.
+- [x] Test theo mẫu `interaction-router.spec.ts`: mở tin đúng trạng thái, bật, tắt, bấm lặp, không
       có nhân vật.
-- [ ] `docs/architecture.md`: bảng module `discord-bot` và sơ đồ bot ghi nút mới.
-- [ ] `pnpm --filter api` test, typecheck, lint xanh. Không cần `discord:register` (nút không phải lệnh).
+- [x] `docs/architecture.md`: bảng module `discord-bot` và sơ đồ bot ghi nút mới.
+- [x] `pnpm --filter api` test, typecheck, lint xanh. Không cần `discord:register` (nút không phải lệnh).

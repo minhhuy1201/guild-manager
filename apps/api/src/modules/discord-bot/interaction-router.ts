@@ -5,12 +5,14 @@ import { assertNever, Clock } from '../../common';
 import type { Env } from '../../config';
 import {
   AttendanceService,
+  AutoAttendService,
   LeaveService,
 } from '../attendance/attendance.public';
 import { BattleSessionsService } from '../battle-sessions/battle-sessions.public';
 import { CharactersService } from '../characters/characters.public';
 import { ActorResolver } from './actor-resolver';
 import { buildOwnBoard, handleAttendanceButton } from './attendance-board';
+import { openAutoAttend, switchAutoAttend } from './auto-attend-reply';
 import { BotChannelService } from './bot-channel.service';
 import { DiscordRestClient } from './discord-rest';
 import { ReminderService } from './reminder.service';
@@ -23,7 +25,10 @@ import type {
 } from './commands/command.types';
 import {
   ANNOUNCEMENT_ATTENDANCE_ID,
+  ANNOUNCEMENT_AUTO_ATTEND_ID,
   ANNOUNCEMENT_LEAVE_ID,
+  AUTO_ATTEND_OFF_ID,
+  AUTO_ATTEND_ON_ID,
   LEAVE_MODAL_ID,
 } from './custom-id';
 import { buildLeaveModal, readLeaveModal } from './leave-modal';
@@ -79,6 +84,7 @@ export class InteractionRouter {
     private readonly reminders: ReminderService,
     private readonly rest: DiscordRestClient,
     private readonly leaves: LeaveService,
+    private readonly autoAttend: AutoAttendService,
     private readonly clock: Clock,
   ) {}
 
@@ -150,7 +156,8 @@ export class InteractionRouter {
    *
    * The announcement's button gets a **new** ephemeral message rather than an update. It sits on a
    * message the whole guild is reading, so updating would replace the announcement itself with the
-   * presser's own board — the first person to press would delete it for everyone. Every other
+   * presser's own board — the first person to press would delete it for everyone. The Auto-attend
+   * button does the same, and its panel's own buttons rewrite that private panel. Every other
    * component is an attendance button, which does sit on a message it is entitled to rewrite.
    *
    * A refusal is answered privately for the same reason: the `/diem-danh-ho` board is public, and a
@@ -172,6 +179,19 @@ export class InteractionRouter {
       return ephemeral(
         await buildOwnBoard(callerDiscordId(interaction), this.deps),
       );
+    }
+
+    if (interaction.data.custom_id === ANNOUNCEMENT_AUTO_ATTEND_ID) {
+      return openAutoAttend(callerDiscordId(interaction), this.deps);
+    }
+
+    // Both sit on the private panel that button opened, so rewriting it in place is safe.
+    if (interaction.data.custom_id === AUTO_ATTEND_ON_ID) {
+      return switchAutoAttend(callerDiscordId(interaction), true, this.deps);
+    }
+
+    if (interaction.data.custom_id === AUTO_ATTEND_OFF_ID) {
+      return switchAutoAttend(callerDiscordId(interaction), false, this.deps);
     }
 
     const outcome = await handleAttendanceButton(interaction, this.deps);
@@ -216,6 +236,7 @@ export class InteractionRouter {
     return {
       attendance: this.attendance,
       leaves: this.leaves,
+      autoAttend: this.autoAttend,
       battleSessions: this.battleSessions,
       characters: this.characters,
       actors: this.actors,
