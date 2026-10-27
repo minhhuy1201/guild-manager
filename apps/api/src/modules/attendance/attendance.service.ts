@@ -28,6 +28,7 @@ import {
 } from '../characters/characters.public';
 import { TeamBuilderService } from '../team-builder/team-builder.public';
 import { toAttendanceRecord } from './attendance.codec';
+import { AutoAttendService } from './auto-attend.service';
 import { effectiveRecords } from './leave-coverage';
 import { LeaveService } from './leave.service';
 
@@ -69,6 +70,7 @@ export class AttendanceService {
     private readonly characters: CharactersService,
     private readonly teamBuilder: TeamBuilderService,
     private readonly leaves: LeaveService,
+    private readonly autoAttend: AutoAttendService,
     private readonly clock: Clock,
   ) {}
 
@@ -109,7 +111,7 @@ export class AttendanceService {
    * materialises the Guild War, so deriving the week twice meant a second write on every read.
    *
    * @param sessionIds - Sessions to read entries for
-   * @returns Their records - pressed answers plus the "Không" entries leaves imply - newest first
+   * @returns Their records - pressed answers plus the entries leaves and Auto-attend imply - newest first
    */
   async getRecordsForSessions(
     sessionIds: string[],
@@ -121,9 +123,17 @@ export class AttendanceService {
       }),
       this.battleSessions.readCoverageByIds(sessionIds),
     ]);
-    const windows = await this.leaves.windowsForSessions(sessions);
+    const [windows, autoPeriods] = await Promise.all([
+      this.leaves.windowsForSessions(sessions),
+      this.autoAttend.windowsForSessions(sessions),
+    ]);
 
-    return effectiveRecords(records.map(toAttendanceRecord), windows, sessions);
+    return effectiveRecords(
+      records.map(toAttendanceRecord),
+      windows,
+      autoPeriods,
+      sessions,
+    );
   }
 
   /**

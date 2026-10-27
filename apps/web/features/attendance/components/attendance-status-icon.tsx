@@ -10,10 +10,13 @@ import { StatusIcon } from "@/components/shared/status-icon";
 /** Screen reader and tooltip text of an answer implied by a leave. */
 export const LEAVE_LABEL = "Không · Nghỉ phép";
 
+/** Screen reader and tooltip text of an answer implied by the member's Auto-attend. */
+export const AUTO_LABEL = "Có · Tự động";
+
 interface AttendanceStatusIconProps {
   /** The recorded answer */
   isPresent: boolean;
-  /** Whether somebody pressed the answer or a leave implies it */
+  /** Whether somebody pressed the answer, or a leave or Auto-attend implies it */
   source: AttendanceSource;
   /** Extra classes (e.g. to change the size), merged after the defaults. */
   className?: string;
@@ -25,8 +28,9 @@ interface AttendanceStatusIconProps {
  * card all say the same thing the same way.
  * A "Không" that comes from a leave keeps the danger tone but swaps the mark for a plane and says
  * so, because "chưa phản hồi" and "đang nghỉ" are different things to whoever reads the grid.
+ * A "Có" that comes from Auto-attend keeps the success tone and says so, for the same reason.
  * @param isPresent - The recorded answer
- * @param source - Whether the answer was pressed or implied by a leave
+ * @param source - Whether the answer was pressed or implied by a leave or Auto-attend
  * @param className - Extra classes, merged after the defaults
  * @returns The coloured status icon with its screen reader label
  */
@@ -42,6 +46,16 @@ export function AttendanceStatusIcon({
           tone="danger"
           icon={Plane}
           label={LEAVE_LABEL}
+          className={className}
+        />
+      );
+
+    case "auto":
+      return (
+        <StatusIcon
+          tone="success"
+          icon={Swords}
+          label={AUTO_LABEL}
           className={className}
         />
       );

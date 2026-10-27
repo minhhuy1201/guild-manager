@@ -1,5 +1,6 @@
 import type { AttendanceRecord } from '@guild/shared/schemas';
 
+import type { AutoAttendWindow } from '../auto-attend-coverage';
 import {
   effectiveRecords,
   isLeaveCovering,
@@ -125,13 +126,13 @@ describe('effectiveRecords', () => {
   });
 
   it('keeps a pressed answer over a covering leave', () => {
-    expect(effectiveRecords([answer()], [leave()], [SESSION])).toEqual([
+    expect(effectiveRecords([answer()], [leave()], [], [SESSION])).toEqual([
       answer(),
     ]);
   });
 
   it('fills an unanswered cell covered by a leave', () => {
-    expect(effectiveRecords([], [leave()], [SESSION])).toEqual([
+    expect(effectiveRecords([], [leave()], [], [SESSION])).toEqual([
       {
         characterId: 'c1',
         sessionId: 's1',
@@ -147,6 +148,7 @@ describe('effectiveRecords', () => {
     const records = effectiveRecords(
       [answer({ characterId: 'c2' })],
       [leave()],
+      [],
       [SESSION],
     );
 
@@ -163,9 +165,71 @@ describe('effectiveRecords', () => {
     const records = effectiveRecords(
       [answer({ characterId: 'c2', markedAt: '2026-10-01T00:00:00.000Z' })],
       [leave()],
+      [],
       [SESSION],
     );
 
     expect(records.map((r) => r.characterId)).toEqual(['c1', 'c2']);
+  });
+  describe('with Auto-attend', () => {
+    const period = (
+      overrides: Partial<AutoAttendWindow> = {},
+    ): AutoAttendWindow => ({
+      id: 'a1',
+      characterId: 'c1',
+      enabledAt: BEFORE_DEADLINE,
+      disabledAt: null,
+      ...overrides,
+    });
+
+    it('fills an unanswered cell with a "Có" from Auto-attend', () => {
+      expect(effectiveRecords([], [], [period()], [SESSION])).toEqual([
+        {
+          characterId: 'c1',
+          sessionId: 's1',
+          isPresent: true,
+          markedAt: BEFORE_DEADLINE.toISOString(),
+          reason: null,
+          source: 'auto',
+        },
+      ]);
+    });
+
+    it('keeps a pressed "Không" over Auto-attend', () => {
+      const pressed = answer({ isPresent: false, reason: 'bận' });
+
+      expect(effectiveRecords([pressed], [], [period()], [SESSION])).toEqual([
+        pressed,
+      ]);
+    });
+
+    it('lets a covering leave win over Auto-attend', () => {
+      const records = effectiveRecords([], [leave()], [period()], [SESSION]);
+
+      expect(records.map((r) => [r.isPresent, r.source])).toEqual([
+        [false, 'leave'],
+      ]);
+    });
+
+    it('falls back to Auto-attend on a day the leave does not cover', () => {
+      const records = effectiveRecords(
+        [],
+        [leave({ endDate: '2026-10-09' })],
+        [period()],
+        [SESSION],
+      );
+
+      expect(records.map((r) => [r.isPresent, r.source])).toEqual([
+        [true, 'auto'],
+      ]);
+    });
+
+    it('does not cover a day for another character', () => {
+      expect(
+        effectiveRecords([], [], [period({ characterId: 'c2' })], [SESSION]),
+      ).toEqual([
+        expect.objectContaining({ characterId: 'c2', source: 'auto' }),
+      ]);
+    });
   });
 });

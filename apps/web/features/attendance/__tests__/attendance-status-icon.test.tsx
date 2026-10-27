@@ -49,6 +49,14 @@ describe("AttendanceStatusIcon", () => {
     );
   });
 
+  it('"Có" từ tự động điểm danh mang nhãn "Có · Tự động" trên nền emerald', () => {
+    const { container } = render(<AttendanceStatusIcon isPresent source="auto" />);
+
+    expect(glyphOf(container)).toBe("swords");
+    expect(container.firstElementChild?.className).toContain("bg-emerald-500");
+    expect(container.querySelector(".sr-only")?.textContent).toBe("Có · Tự động");
+  });
+
   it("className được chuyển tiếp xuống StatusIcon", () => {
     const { container } = render(
       <AttendanceStatusIcon isPresent source="answer" className="size-5" />

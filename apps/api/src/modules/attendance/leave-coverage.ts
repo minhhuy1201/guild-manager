@@ -2,6 +2,10 @@ import { vnDateKey } from '@guild/shared/lib';
 import type { AttendanceRecord } from '@guild/shared/schemas';
 
 import { closingMoment } from '../battle-sessions/battle-sessions.public';
+import {
+  isAutoAttendCovering,
+  type AutoAttendWindow,
+} from './auto-attend-coverage';
 
 /** What the coverage rule needs to know about a battle day. */
 export interface CoverageSession {
@@ -53,15 +57,17 @@ export function isLeaveCovering(
 }
 
 /**
- * Pressed answers plus the "Không" entries leaves imply for cells nobody answered.
+ * Pressed answers, plus what leaves and Auto-attend imply for cells nobody answered.
  * @param records - Stored answers
  * @param leaves - Leaves of the characters involved
+ * @param autoPeriods - Auto-attend periods of the characters involved
  * @param sessions - The battle days being read
- * @returns Entries newest first, an answer always winning over a leave
+ * @returns Entries newest first; an answer wins over a leave, and a leave over Auto-attend
  */
 export function effectiveRecords(
   records: AttendanceRecord[],
   leaves: LeaveWindow[],
+  autoPeriods: AutoAttendWindow[],
   sessions: CoverageSession[],
 ): AttendanceRecord[] {
   const answered = new Set(
@@ -82,6 +88,21 @@ export function effectiveRecords(
         markedAt: leave.createdAt.toISOString(),
         reason: leave.reason,
         source: 'leave',
+      });
+    }
+
+    for (const period of autoPeriods) {
+      const key = `${session.id}:${period.characterId}`;
+      if (answered.has(key) || !isAutoAttendCovering(period, session)) continue;
+
+      answered.add(key);
+      implied.push({
+        characterId: period.characterId,
+        sessionId: session.id,
+        isPresent: true,
+        markedAt: period.enabledAt.toISOString(),
+        reason: null,
+        source: 'auto',
       });
     }
   }

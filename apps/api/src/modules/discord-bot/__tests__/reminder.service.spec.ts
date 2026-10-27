@@ -48,7 +48,7 @@ interface Options {
     characterId: string;
     sessionId: string;
     isPresent?: boolean;
-    source?: 'answer' | 'leave';
+    source?: 'answer' | 'leave' | 'auto';
   }[];
   members?: { id: string; name: string; discordId: string | null }[];
   now?: Date;
@@ -138,6 +138,32 @@ describe('ReminderService.run', () => {
           sessionId: 'gw-2026-09-05',
           isPresent: false,
           source: 'leave',
+        },
+      ],
+    });
+
+    await expect(service.run('today')).resolves.toMatchObject({
+      status: 'sent',
+      missingCount: 1,
+    });
+    const [, message] = postMessage.mock.calls[0] as [string, unknown];
+    expect(JSON.stringify(message)).toContain('Cún');
+    expect(JSON.stringify(message)).not.toContain('Mèo Béo');
+  });
+
+  // Auto-attend arrives the same way as a leave: one more record from AttendanceService.
+  it('không nhắc người đang bật tự động điểm danh, vẫn nhắc người khác', async () => {
+    const { service, postMessage } = makeService({
+      members: [
+        { id: 'meo-beo', name: 'Mèo Béo', discordId: '111' },
+        { id: 'cun', name: 'Cún', discordId: '222' },
+      ],
+      records: [
+        {
+          characterId: 'meo-beo',
+          sessionId: 'gw-2026-09-05',
+          isPresent: true,
+          source: 'auto',
         },
       ],
     });

@@ -130,6 +130,36 @@ describe("AttendanceRow - chỉ đọc", () => {
   });
 });
 
+describe("AttendanceRow - ô do tự động điểm danh", () => {
+  const autoRecordMap = (): Record<string, AttendanceRecord> => ({
+    [KEY]: {
+      characterId: CHARACTER.id,
+      sessionId: SESSION.id,
+      isPresent: true,
+      markedAt: "2026-08-20T10:00:00.000Z",
+      reason: null,
+      source: "auto",
+    },
+  });
+
+  it('ô nói "Có · Tự động" cho trình đọc màn hình', () => {
+    renderRow({ recordMap: autoRecordMap() });
+
+    expect(cellButton().getAttribute("aria-label")).toContain("Có · Tự động");
+  });
+
+  it("admin đổi ô thì nhãn quay về câu trả lời bấm tay", () => {
+    renderRow({
+      recordMap: autoRecordMap(),
+      draft: {
+        [KEY]: { characterId: CHARACTER.id, sessionId: SESSION.id, isPresent: false },
+      },
+    });
+
+    expect(cellButton().getAttribute("aria-label")).not.toContain("Tự động");
+  });
+});
+
 describe("AttendanceRow - admin bấm thẳng vào ô", () => {
   it("ô là một nút, đọc được trạng thái mà không cần hover", () => {
     renderRow();
