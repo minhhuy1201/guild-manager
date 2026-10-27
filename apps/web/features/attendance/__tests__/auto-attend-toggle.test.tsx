@@ -83,15 +83,6 @@ describe("AutoAttendToggle", () => {
     expect(screen.queryByRole("switch")).toBeNull();
   });
 
-  it("đọc trạng thái bị 401 thì chuyển cho recoverSession", () => {
-    const error = new ApiError("Hết phiên.", 401);
-    query = { data: undefined, error, isPending: false };
-
-    render(<AutoAttendToggle />);
-
-    expect(recoverSession).toHaveBeenCalledWith(error);
-  });
-
   it("đang tải thì hiện khung chờ, chưa có công tắc", () => {
     query = { data: undefined, isPending: true };
 

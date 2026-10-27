@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Repeat } from "lucide-react";
 
 import { ErrorNotice } from "@/components/shared/error-notice";
@@ -40,12 +40,6 @@ export function AutoAttendToggle() {
   const setAutoAttend = useSetAutoAttend();
   const recoverSession = useSessionRecovery();
   const [isConfirming, setIsConfirming] = useState(false);
-
-  // A 401 is the session running out, not the state being unreadable: hand it to the recovery,
-  // which renews the pair through the proxy so the next read works.
-  useEffect(() => {
-    if (error) recoverSession(error);
-  }, [error, recoverSession]);
 
   if (error) {
     if (error instanceof ApiError && error.statusCode === NO_CHARACTER) return null;
