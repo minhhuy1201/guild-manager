@@ -316,6 +316,7 @@
   input[type="radio"]:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
   [role="tab"]:not([aria-disabled="true"]),
+  [role="switch"]:not([aria-disabled="true"]),
   [role="option"]:not([aria-disabled="true"]) {
     cursor: pointer;
   }

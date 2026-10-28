@@ -18,7 +18,7 @@ A new interaction convention goes here; its reason goes in `frontend.md`.
 
 ## A clickable element → the pointer cursor, from `globals.css`
 
-- Never write `cursor-pointer` at a call site. One base rule in `globals.css` covers `button`, `summary`, `select` and the roles `button`, `tab`, `option`; disabled controls keep the arrow.
+- Never write `cursor-pointer` at a call site. One base rule in `globals.css` covers `button`, `summary`, `select` and the roles `button`, `tab`, `switch`, `option`; disabled controls keep the arrow.
 - Make a clickable `div` a `button` instead.
 
 ## A row that opens a page → the whole card is the link
