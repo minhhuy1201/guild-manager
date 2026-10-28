@@ -115,8 +115,9 @@ export async function proxy(request: NextRequest) {
  * screen that renders `WEB_AUTH_ERROR.sessionInvalid`, and sending the visitor to the landing page
  * instead would hide the one sentence explaining why signing in again cannot help.
  *
- * `onward` and `attendance` are signed-in verdicts and cannot come back here; they are handled only
- * to keep the switch exhaustive, so a new verdict is a compile error rather than a quiet fall-through.
+ * `onward` and `attendance` are signed-in verdicts and cannot come back here; they share one branch
+ * only to keep the switch exhaustive, so a new verdict is a compile error rather than a quiet
+ * fall-through.
  * @param request - The request being handled
  * @param isMisconfigured - Whether the session failed for a reason signing in again cannot fix
  * @returns The continuing response, or the redirect the verdict calls for
@@ -139,7 +140,6 @@ function signedOutResponse(
         : NextResponse.redirect(new URL(ROUTES.landing, request.url));
     case "login":
       return NextResponse.redirect(loginUrl(request, isMisconfigured));
-    // Signed-in verdicts never reach here; they share one branch only to keep the switch exhaustive.
     case "onward":
     case "attendance":
       return NextResponse.redirect(onwardUrl(request));

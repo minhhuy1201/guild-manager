@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { ErrorNotice } from "@/components/shared/error-notice";
 import { ROUTES } from "@/config/routes";
 import { AttendanceScreen } from "@/features/attendance";
+import { loginErrorMessage } from "@/features/auth";
 import { WEB_AUTH_ERROR } from "@/features/auth/core";
 
 vi.mock("server-only", () => ({}));
@@ -69,6 +70,9 @@ describe("Trang điểm danh", () => {
     const [notice, screen] = await renderPage(WEB_AUTH_ERROR.notGranted);
 
     expect(notice.type).toBe(ErrorNotice);
+    expect(notice.props).toEqual({
+      message: loginErrorMessage(WEB_AUTH_ERROR.notGranted),
+    });
     expect(screen.type).toBe(AttendanceScreen);
   });
 });
