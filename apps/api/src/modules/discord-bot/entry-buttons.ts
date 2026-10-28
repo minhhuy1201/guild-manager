@@ -7,14 +7,14 @@ import {
 import { BUTTON_STYLE, COMPONENT_TYPE } from './discord.constants';
 
 /**
- * Where the link button sends people: the login screen, already carrying the attendance page as its
- * `redirect`.
+ * Where the link button sends people: the login screen, carrying the site's root as its `redirect`.
  *
  * Not the bare origin. The site's root answers a signed-out request with the guild's public landing
  * page, which is right for a stranger typing the domain and wrong for this button - everyone reading
  * it is in the guild's Discord and means to go and answer. The login screen sends a signed-in member
- * straight on to attendance and a signed-out one through Discord and then to attendance, so both
- * arrive where the message is pointing. The path is spelled out here the same way `auth.service.ts`
+ * on to the root and a signed-out one through Discord and then to the root, and the web app forwards
+ * a signed-in request for the root to the attendance page, so both arrive where the message is
+ * pointing. The path is spelled out here the same way `auth.service.ts`
  * spells out its own; the web app's routes are not something this app imports.
  */
 const ATTENDANCE_ENTRY_PATH = '/dang-nhap?redirect=%2F';

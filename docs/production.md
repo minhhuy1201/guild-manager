@@ -717,7 +717,7 @@ the path is `apps/api/coverage/lcov.info` and not `coverage/lcov.info`.
 deeper: `Could not resolve N file paths`. Each runner writes lcov entries relative to its own app
 directory while the scanner resolves them against the repository root, so both reporters are
 configured with `projectRoot: "../.."` — Jest in `apps/api/package.json`, Vitest in
-`apps/web/vitest.config.ts`. An entry in the report reads `apps/web/app/page.tsx`, and checking that
+`apps/web/vitest.config.ts`. An entry in the report reads `apps/web/app/diem-danh/page.tsx`, and checking that
 is the fastest way to tell a real 0% from a broken one.
 
 **`Could not resolve N file paths` is the line to read after every change to these patterns.** It

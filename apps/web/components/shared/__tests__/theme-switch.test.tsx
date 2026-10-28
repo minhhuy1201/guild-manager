@@ -70,6 +70,22 @@ describe("ThemeSwitch", () => {
     expect(localStorage.getItem("theme")).toBe("light");
   });
 
+  // A transition switched on in the same style change as the flip to a stored dark theme would still
+  // run, so the swap stays off until someone actually clicks.
+  it("chỉ xoay icon sau lần bấm đầu tiên, không xoay khi tải trang", async () => {
+    localStorage.setItem("theme", "dark");
+    const toggle = renderSwitch();
+    const icons = () => Array.from(toggle.querySelectorAll("svg"));
+
+    expect(icons().every((icon) => icon.classList.contains("transition-none"))).toBe(true);
+
+    await act(async () => {
+      fireEvent.click(toggle);
+    });
+
+    expect(icons().some((icon) => icon.classList.contains("transition-none"))).toBe(false);
+  });
+
   it("đã chọn Tối từ trước thì mở lại vẫn thấy công tắc ở Tối", () => {
     localStorage.setItem("theme", "dark");
 

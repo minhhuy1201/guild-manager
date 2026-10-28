@@ -35,7 +35,7 @@ who cannot do anything yet.
 apps/web/
 ├── app/                            # routing and layout ONLY — one thin page per route
 │   ├── layout.tsx                  # <Providers> + app shell
-│   ├── page.tsx                    # / — attendance
+│   ├── diem-danh/page.tsx          # attendance (`/` has no page: the proxy redirects it)
 │   ├── trang-chu/page.tsx          # public landing page
 │   ├── lich-su-diem-danh/page.tsx  # attendance history
 │   ├── xep-team/page.tsx           # team builder (admin)
@@ -424,9 +424,11 @@ Gold and amber stay apart by saturation: amber is a vivid state colour, gold a m
 
 `ThemeProvider` (`components/providers.tsx`) puts `.dark` on `<html>`; light is the default and the
 operating system's preference is ignored. The picker is `ThemeSwitch`
-(`components/shared/theme-switch.tsx`), a sun/moon pill right of the brand in the header, shown
-signed in or out. Its thumb slides by `transform` only. It is one of the few in-place transforms
-(see `interaction.md`, Motion), kept because the slide is what shows the switch changed state.
+(`components/shared/theme-switch.tsx`), a round icon button right of the brand in the header, shown
+signed in or out. The sun and the moon share one spot and swap by turning and scaling. It is one of
+the few in-place transforms (see `interaction.md`, Motion), kept because the turn is what shows the
+switch changed state. It animates only after the first click, so a stored dark theme never spins in
+on page load.
 
 - **A colour comes from a token**, so it follows the theme on its own. A literal colour is only for
   something that must look the same in both: the scrims and white text on a picture, the attendance

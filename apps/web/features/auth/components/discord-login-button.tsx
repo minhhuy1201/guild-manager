@@ -1,4 +1,5 @@
 import { PUBLIC_API_URL } from "@/config/api";
+import { ROUTES } from "@/config/routes";
 import { DiscordIcon } from "@/components/shared/discord-icon";
 import { Button } from "@/components/ui/button";
 
@@ -21,7 +22,7 @@ interface DiscordLoginButtonProps {
  * @returns The link into the API that opens OAuth
  */
 export function DiscordLoginButton({
-  redirect = "/",
+  redirect = ROUTES.root,
   label = "Đăng nhập bằng Discord",
 }: DiscordLoginButtonProps) {
   // The public URL, not `FETCH_API_URL`: this renders on the server, but the browser follows the
