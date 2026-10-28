@@ -151,6 +151,39 @@ describe("proxy", () => {
     expect(response.status).toBe(200);
   });
 
+  it("đưa người đã đăng nhập gõ trần tên miền tới trang điểm danh", async () => {
+    const response = await proxy(
+      request(ROUTES.root, { access: await token(3600, MEMBER_PAYLOAD) })
+    );
+
+    expect(response.status).toBe(307);
+    expect(new URL(response.headers.get("location") ?? "").pathname).toBe(
+      ROUTES.attendance
+    );
+  });
+
+  it("vừa gia hạn phiên ở tên miền trần thì redirect vẫn mang cặp cookie mới", async () => {
+    refreshRequest.mockResolvedValue(RENEWED);
+
+    const response = await proxy(
+      request(ROUTES.root, {
+        access: await token(-10),
+        refresh: await token(3600),
+      })
+    );
+
+    expect(response.status).toBe(307);
+    expect(new URL(response.headers.get("location") ?? "").pathname).toBe(
+      ROUTES.attendance
+    );
+    expect(response.cookies.get(ACCESS_TOKEN_COOKIE)?.value).toBe(
+      RENEWED.accessToken
+    );
+    expect(response.cookies.get(REFRESH_TOKEN_COOKIE)?.value).toBe(
+      RENEWED.refreshToken
+    );
+  });
+
   it("đẩy về trang đăng nhập và xoá cookie hỏng khi cả hai token hết hạn", async () => {
     const response = await proxy(
       request(ROUTES.teamBuilder, {
@@ -168,12 +201,12 @@ describe("proxy", () => {
     expect(refreshRequest).not.toHaveBeenCalled();
   });
 
-  // The attendance page sits at the bare domain, so a session dying there sends people back to the
-  // landing page rather than to an empty login form - the landing page already carries a login
-  // button to move on with.
-  it("đưa trang điểm danh về trang giới thiệu khi phiên đã chết", async () => {
+  // The bare domain is where people are sent, so a session dying there sends them to the landing
+  // page rather than to an empty login form - the landing page already carries a login button to
+  // move on with.
+  it("đưa tên miền trần về trang giới thiệu khi phiên đã chết", async () => {
     const response = await proxy(
-      request(ROUTES.attendance, { access: await token(-10) })
+      request(ROUTES.root, { access: await token(-10) })
     );
 
     expect(response.status).toBe(307);
@@ -269,8 +302,9 @@ describe("proxy", () => {
       );
     });
 
-    it("không nói đi đâu thì về màn điểm danh", async () => {
-      expect((await onwardUrl()).pathname).toBe(ROUTES.attendance);
+    // `safeRedirect` falls back to `/`, which the proxy then sends on to the attendance page.
+    it("không nói đi đâu thì về tên miền trần", async () => {
+      expect((await onwardUrl()).pathname).toBe(ROUTES.root);
     });
 
     // `redirect` is a URL parameter, and anyone in Discord can repost that button. A browser reads a
@@ -282,7 +316,7 @@ describe("proxy", () => {
         const url = await onwardUrl(redirect);
 
         expect(url.host).toBe("guild.test");
-        expect(url.pathname).toBe(ROUTES.attendance);
+        expect(url.pathname).toBe(ROUTES.root);
       }
     );
 

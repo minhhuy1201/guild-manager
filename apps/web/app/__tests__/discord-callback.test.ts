@@ -45,8 +45,8 @@ describe("Callback đăng nhập Discord", () => {
     expect(createSession).toHaveBeenCalledOnce();
   });
 
-  it("không nói đi đâu thì về màn điểm danh", async () => {
-    expect((await locationFor()).pathname).toBe(ROUTES.attendance);
+  it("không nói đi đâu thì về tên miền trần, proxy đưa tiếp tới màn điểm danh", async () => {
+    expect((await locationFor()).pathname).toBe(ROUTES.root);
   });
 
   // `redirect` is a URL parameter, and anyone in Discord can repost that button. A browser reads a
@@ -57,7 +57,7 @@ describe("Callback đăng nhập Discord", () => {
       const location = await locationFor(redirect);
 
       expect(location.host).toBe("guild.test");
-      expect(location.pathname).toBe(ROUTES.attendance);
+      expect(location.pathname).toBe(ROUTES.root);
     }
   );
 });

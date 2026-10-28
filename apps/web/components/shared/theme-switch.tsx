@@ -2,19 +2,23 @@
 
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 
 import { cn } from "@/lib/utils";
 
 const subscribeNever = () => () => {};
 
+const ICON_BASE = "col-start-1 row-start-1 size-5";
+const ICON_SHOWN = "text-primary";
+const ICON_HIDDEN = "pointer-events-none opacity-0";
+
 /**
- * The light/dark switch beside the guild's name: a pill with a sun and a moon, the thumb resting
- * under the active one.
+ * The light/dark switch beside the guild's name: one icon button where the sun and the moon share
+ * a spot and swap by turning and scaling.
  *
  * next-themes knows the stored theme only in the browser, so the server render and the first client
- * render both draw the light state, and the thumb's slide stays off until then - a dark-theme
- * visitor sees the thumb already in place instead of gliding across on every page load.
+ * render both draw the light state. The icons animate only after the first click, so a dark-theme
+ * visitor sees the moon already in place instead of watching it spin in on every page load.
  * @returns The switch button
  */
 export function ThemeSwitch() {
@@ -24,7 +28,10 @@ export function ThemeSwitch() {
     () => true,
     () => false
   );
+  const [hasToggled, setHasToggled] = useState(false);
   const isDark = mounted && resolvedTheme === "dark";
+  const enter = hasToggled ? "animate-icon-in" : "";
+  const leave = hasToggled ? "animate-icon-out" : "";
 
   return (
     <button
@@ -32,29 +39,24 @@ export function ThemeSwitch() {
       role="switch"
       aria-checked={isDark}
       aria-label="Chế độ tối"
-      onClick={() => setTheme(isDark ? "light" : "dark")}
-      className="group relative grid h-9 w-14 shrink-0 grid-cols-2 place-items-center rounded-full ring-1 ring-white/10 ring-inset bg-card p-1 outline-none hover:bg-foreground/5 max-sm:h-10 focus-visible:ring-3 focus-visible:ring-ring/50"
+      onClick={() => {
+        setHasToggled(true);
+        setTheme(isDark ? "light" : "dark");
+      }}
+      className="grid size-9 shrink-0 place-items-center rounded-full bg-card ring-1 ring-white/10 ring-inset outline-none hover:bg-foreground/5 max-sm:size-10 focus-visible:ring-3 focus-visible:ring-ring/50"
     >
-      <span
-        aria-hidden
-        className={cn(
-          "absolute inset-y-0 left-1 my-auto size-6 rounded-full bg-primary shadow-sm",
-          mounted && "transition-transform duration-[var(--duration-base)] ease-out-soft",
-          isDark && "translate-x-6"
-        )}
-      />
       <Sun
         aria-hidden
         className={cn(
-          "relative size-4 transition-colors duration-[var(--duration-fast)] ease-out-soft",
-          isDark ? "text-muted-foreground" : "text-primary-foreground"
+          ICON_BASE,
+          isDark ? cn(ICON_HIDDEN, leave) : cn(ICON_SHOWN, enter)
         )}
       />
       <Moon
         aria-hidden
         className={cn(
-          "relative size-4 transition-colors duration-[var(--duration-fast)] ease-out-soft",
-          isDark ? "text-primary-foreground" : "text-muted-foreground"
+          ICON_BASE,
+          isDark ? cn(ICON_SHOWN, enter) : cn(ICON_HIDDEN, leave)
         )}
       />
     </button>

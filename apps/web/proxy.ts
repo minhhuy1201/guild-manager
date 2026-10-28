@@ -47,9 +47,9 @@ function readAuthSecret(): string | undefined {
  *    for a new pair. The proxy is the only place in Next that can write cookies for every request, so
  *    refreshing belongs here rather than in a Server Component.
  * 2. Deciding whether the request goes through and where it is sent otherwise — the default is
- *    **sign-in required**; `/dang-nhap` and `/trang-chu` are the exceptions, and a signed-out
- *    request for `/` goes to the latter rather than to a login form. A signed-in request for
- *    `/dang-nhap` is sent on to its `redirect` target.
+ *    **sign-in required**; `/dang-nhap` and `/trang-chu` are the exceptions. The bare `/` has no
+ *    page: signed out it goes to `/trang-chu` rather than to a login form, signed in to
+ *    `/diem-danh`. A signed-in request for `/dang-nhap` is sent on to its `redirect` target.
  * @param request - The request being handled
  * @returns The response continuing the request (with new cookies after a refresh), or a redirect
  */
@@ -115,8 +115,9 @@ export async function proxy(request: NextRequest) {
  * screen that renders `WEB_AUTH_ERROR.sessionInvalid`, and sending the visitor to the landing page
  * instead would hide the one sentence explaining why signing in again cannot help.
  *
- * `onward` is a signed-in verdict and cannot come back here; it is handled only to keep the switch
- * exhaustive, so a new verdict is a compile error rather than a quiet fall-through.
+ * `onward` and `attendance` are signed-in verdicts and cannot come back here; they share one branch
+ * only to keep the switch exhaustive, so a new verdict is a compile error rather than a quiet
+ * fall-through.
  * @param request - The request being handled
  * @param isMisconfigured - Whether the session failed for a reason signing in again cannot fix
  * @returns The continuing response, or the redirect the verdict calls for
@@ -140,6 +141,7 @@ function signedOutResponse(
     case "login":
       return NextResponse.redirect(loginUrl(request, isMisconfigured));
     case "onward":
+    case "attendance":
       return NextResponse.redirect(onwardUrl(request));
     default:
       return assertNever(decision);
@@ -172,6 +174,11 @@ function decide(request: NextRequest, allowed: NextResponse): NextResponse {
       return NextResponse.redirect(loginUrl(request, false));
     case "onward":
       return withCookies(NextResponse.redirect(onwardUrl(request)), allowed);
+    case "attendance":
+      return withCookies(
+        NextResponse.redirect(new URL(ROUTES.attendance, request.url)),
+        allowed
+      );
     default:
       return assertNever(decision);
   }

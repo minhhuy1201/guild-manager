@@ -94,7 +94,8 @@ More detail (environment variables, common commands, troubleshooting): [`docs/de
 |---|---|---|
 | `/trang-chu` | The guild's public page | Public |
 | `/dang-nhap` | Sign in with Discord | Public |
-| `/` | Mark attendance for the current week | Signed in — a member marks their own character, an admin edits the whole grid |
+| `/` | No page: redirects to `/trang-chu` signed out, `/diem-danh` signed in | Public |
+| `/diem-danh` | Mark attendance for the current week | Signed in — a member marks their own character, an admin edits the whole grid |
 | `/lich-su-diem-danh` | Attendance history | Signed in |
 | `/xep-team` | Build the roster for each match | Admin only |
 | `/chien-thuat` | Guild war tactics board: the list, and one tactic's editor at `/chien-thuat/[id]` | Signed in to view; admin to draw and edit |

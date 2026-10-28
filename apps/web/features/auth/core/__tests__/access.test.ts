@@ -37,6 +37,23 @@ describe("decideAccess", () => {
     ).toBe("login");
   });
 
+  it("khách mở trang điểm danh thì bị chuyển về đăng nhập", () => {
+    expect(decideAccess({ pathname: "/diem-danh", isSignedIn: false })).toBe(
+      "login"
+    );
+  });
+
+  // `/` has no page of its own: the proxy answers it, so a member typing the bare domain lands on the
+  // week's attendance with a clean 307.
+  it("người đã đăng nhập gõ trần tên miền thì được đưa tới màn điểm danh", () => {
+    expect(decideAccess({ pathname: "/", isSignedIn: true })).toBe(
+      "attendance"
+    );
+    expect(decideAccess({ pathname: "/diem-danh", isSignedIn: true })).toBe(
+      "allow"
+    );
+  });
+
   it("khách xem được trang giới thiệu", () => {
     expect(decideAccess({ pathname: "/trang-chu", isSignedIn: false })).toBe(
       "allow"

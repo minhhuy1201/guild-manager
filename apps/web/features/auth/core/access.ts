@@ -31,7 +31,9 @@ export type AccessDecision =
   /** Signed out at the site's root - send to the guild's public page */
   | "landing"
   /** Signed in at the login page - send on to where they were heading */
-  | "onward";
+  | "onward"
+  /** Signed in at the site's root - send to the week's attendance */
+  | "attendance";
 
 /**
  * Decide whether a page request goes through, and where it is sent otherwise.
@@ -55,6 +57,10 @@ export function decideAccess({
   // skeleton. Exact path only - the OAuth callback under it still has to run.
   if (isSignedIn && pathname === ROUTES.login) return "onward";
 
+  // The root has no page of its own, for the same reason: it is only an address, and the proxy
+  // answers it for both states (see the signed-out branch below).
+  if (isSignedIn && pathname === ROUTES.root) return "attendance";
+
   const isPublic = PUBLIC_PATH_PREFIXES.some((prefix) =>
     isUnder(pathname, prefix)
   );
@@ -64,9 +70,9 @@ export function decideAccess({
     // The root is the address people are given, so a visitor who has never signed in lands on the
     // guild's public page rather than on a login form for an app they know nothing about. Only the
     // root: every other path was asked for deliberately, and sending someone who typed /xep-team to
-    // a page about the guild loses where they were going. A member has a session and never gets
-    // here, so the week's attendance is still one hop from the bare domain.
-    return pathname === ROUTES.attendance ? "landing" : "login";
+    // a page about the guild loses where they were going. A member has a session and gets the
+    // "attendance" verdict above, so the week's attendance is still one hop from the bare domain.
+    return pathname === ROUTES.root ? "landing" : "login";
   }
 
   // Signed in is all the proxy judges. The token's role can be a day old, so deciding management

@@ -18,7 +18,7 @@ A new interaction convention goes here; its reason goes in `frontend.md`.
 
 ## A clickable element → the pointer cursor, from `globals.css`
 
-- Never write `cursor-pointer` at a call site. One base rule in `globals.css` covers `button`, `summary`, `select` and the roles `button`, `tab`, `option`; disabled controls keep the arrow.
+- Never write `cursor-pointer` at a call site. One base rule in `globals.css` covers `button`, `summary`, `select` and the roles `button`, `tab`, `switch`, `option`; disabled controls keep the arrow.
 - Make a clickable `div` a `button` instead.
 
 ## A row that opens a page → the whole card is the link
@@ -97,9 +97,9 @@ A new interaction convention goes here; its reason goes in `frontend.md`.
 
 ## Motion
 
-- Use only the tokens in `globals.css`: `--duration-fast` 120ms (colour, hover, press), `--duration-base` 200ms (show/hide in an existing frame), `--duration-slow` 320ms (skeleton ⇄ data), `--ease-out-soft` (every easing), `--ease-spring` (hover lift and press of a control, transform only), `--duration-drift` 9s (a banner scene's one-shot drift, nothing else). Write a duration as `duration-[var(--duration-base)]`.
+- Use only the tokens in `globals.css`: `--duration-fast` 120ms (colour, hover, press), `--duration-base` 200ms (show/hide in an existing frame), `--duration-slow` 320ms (skeleton ⇄ data), `--ease-out-soft` (every easing), `--ease-spring` (hover lift and press of a control, and the `ThemeSwitch` icon turning in; transform and opacity only), `--duration-drift` 9s (a banner scene's one-shot drift, nothing else). Write a duration as `duration-[var(--duration-base)]`.
 - Play the drift once (`animation-iteration-count: 1`, `backwards`, ending on `transform: none`), never loop it.
-- Never animate layout geometry: no `height`, `width`, `scale` on table content, no `translate` on anything in place. The one named exception is the button hover lift and press (`translate-y-px`, `scale-[0.98]` on a button, and the press scale on a tab trigger; see Buttons). An arriving element may rise a few pixels. The `ThemeSwitch` and generic `Switch` thumbs may slide between their two ends (transform only, `--duration-base`). The next step of a multi-step dialog may slide 24px in from the side it came from (`StepSlide`). A portal popup may slide in (`SelectContent` needs `alignItemWithTrigger={false}`).
+- Never animate layout geometry: no `height`, `width`, `scale` on table content, no `translate` on anything in place. The one named exception is the button hover lift and press (`translate-y-px`, `scale-[0.98]` on a button, and the press scale on a tab trigger; see Buttons). An arriving element may rise a few pixels. The generic `Switch` thumb may slide between its two ends (transform only, `--duration-base`). The `ThemeSwitch` icons swap in place through keyframes (`animate-icon-in` on `--ease-spring` and `--duration-base`, `animate-icon-out` on `--ease-out-soft` and `--duration-fast`; rotate, scale, opacity only), never transitions, which next-themes freezes while the theme flips. They play only after the first click, never on page load. The next step of a multi-step dialog may slide 24px in from the side it came from (`StepSlide`). A portal popup may slide in (`SelectContent` needs `alignItemWithTrigger={false}`).
 - Keep `ease-linear` only for the login button sheen.
 - Let the cat race stage overlays (countdown, banners, lead-change bar, finish flash, photo, result card), the race board's row slide and the TRỰC TIẾP blink own their keyframes and durations, declared once as `--stage-*` variables under the `[data-slot="cat-race-stage"], [data-slot="cat-race-hud"], [data-slot="cat-race-focus"]` block in `globals.css`. They are exempt from the four tokens and the no-`scale` rule; every other screen is not.
 - Let the Bảng vàng winner stagger and the HIGH prize sheen own their delays: they play once when `ScrollReveal` reveals the block, a showcase entrance rather than loaded data in a working screen. Reduced motion still silences them.
@@ -114,7 +114,7 @@ A new interaction convention goes here; its reason goes in `frontend.md`.
 - Wrap `<main>` in React `<ViewTransition default="none" update={{ "page-nav": "page-fade", default: "none" }}>` (`app/layout.tsx`): only a typed navigation cross-fades the content. A nav entry point (`MainNav`, `MobileTabBar`, the guild brand link, the 404 and error "back" links) passes `transitionTypes={PAGE_NAV_TRANSITION}` (`lib/page-transition.ts`); `router.refresh()`, the settings tab `router.replace`, Suspense reveals and logout carry no type and stay still. A new navigation link of that kind adds the type. Style it only with the `::view-transition-*(.page-fade)` rules in `globals.css`; never give `main` or a page a permanent `view-transition-name` (it would become the containing block of the drag overlay and sticky bars). Reduced motion zeroes those pseudo-elements too. The one exception to "no permanent name" is the site header (`site-header`) and the phone tab bar (`mobile-tab-bar`): each has a `viewTransitionName` and a `::view-transition-group(...) { animation: none; z-index: 1 }` rule so the main snapshot never paints over them (neither is an ancestor of the drag overlay or the sticky bars).
 - Let `<main>` children run `page-enter` (60ms stagger). Table rows run `fade-in-soft` (opacity only). `Skeleton` uses `animate-shimmer`.
 - Wrap a block far below the fold in `ScrollReveal`; only the wrapper is a Client Component.
-- Fill every entrance `backwards`, never `both`. End every keyframe on `transform: none`.
+- Fill every entrance `backwards`, never `both`. End every keyframe on `transform: none`, except an exit that ends invisible (the `ThemeSwitch` `icon-out`).
 - Never reveal the formation grid.
 - Keep the reduced-motion rule zeroing `animation-delay`.
 
