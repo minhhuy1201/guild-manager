@@ -114,7 +114,7 @@ A new interaction convention goes here; its reason goes in `frontend.md`.
 - Wrap `<main>` in React `<ViewTransition default="none" update={{ "page-nav": "page-fade", default: "none" }}>` (`app/layout.tsx`): only a typed navigation cross-fades the content. A nav entry point (`MainNav`, `MobileTabBar`, the guild brand link, the 404 and error "back" links) passes `transitionTypes={PAGE_NAV_TRANSITION}` (`lib/page-transition.ts`); `router.refresh()`, the settings tab `router.replace`, Suspense reveals and logout carry no type and stay still. A new navigation link of that kind adds the type. Style it only with the `::view-transition-*(.page-fade)` rules in `globals.css`; never give `main` or a page a permanent `view-transition-name` (it would become the containing block of the drag overlay and sticky bars). Reduced motion zeroes those pseudo-elements too. The one exception to "no permanent name" is the site header (`site-header`) and the phone tab bar (`mobile-tab-bar`): each has a `viewTransitionName` and a `::view-transition-group(...) { animation: none; z-index: 1 }` rule so the main snapshot never paints over them (neither is an ancestor of the drag overlay or the sticky bars).
 - Let `<main>` children run `page-enter` (60ms stagger). Table rows run `fade-in-soft` (opacity only). `Skeleton` uses `animate-shimmer`.
 - Wrap a block far below the fold in `ScrollReveal`; only the wrapper is a Client Component.
-- Fill every entrance `backwards`, never `both`. End every keyframe on `transform: none`.
+- Fill every entrance `backwards`, never `both`. End every keyframe on `transform: none`, except an exit that ends invisible (the `ThemeSwitch` `icon-out`).
 - Never reveal the formation grid.
 - Keep the reduced-motion rule zeroing `animation-delay`.
 

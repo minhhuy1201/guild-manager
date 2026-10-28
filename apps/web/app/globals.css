@@ -36,8 +36,9 @@
     --animate-step-back: step-back var(--duration-base) var(--ease-out-soft) backwards;
     /* The theme switch's icons trade places. Keyframes, not transitions: next-themes'
        `disableTransitionOnChange` blankets the page in `transition: none !important` for the very
-       frame the theme flips, which would freeze a transition. `backwards`: both end on the resting
-       state the icon's own classes hold, so nothing is left on it. */
+       frame the theme flips, which would freeze a transition. `backwards`: icon-in ends on the resting
+       state, and icon-out ends at opacity 0, which the hidden icon's class also holds, so its
+       turn snapping back is never seen and nothing is left on it. */
     --animate-icon-in: icon-in var(--duration-base) var(--ease-spring) backwards;
     --animate-icon-out: icon-out var(--duration-fast) var(--ease-out-soft) backwards;
     /* Serif (Playfair Display) for page titles, section titles in a card and the guild name; every
