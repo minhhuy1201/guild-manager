@@ -8,19 +8,17 @@ import { cn } from "@/lib/utils";
 
 const subscribeNever = () => () => {};
 
-const ICON_BASE =
-  "col-start-1 row-start-1 size-5 transition-[opacity,rotate,scale] duration-[var(--duration-base)]";
-const ICON_ACTIVE = "rotate-0 scale-100 opacity-100 ease-spring";
-const ICON_HIDDEN = "pointer-events-none opacity-0 ease-out-soft";
+const ICON_BASE = "col-start-1 row-start-1 size-5";
+const ICON_SHOWN = "text-primary";
+const ICON_HIDDEN = "pointer-events-none opacity-0";
 
 /**
  * The light/dark switch beside the guild's name: one icon button where the sun and the moon share
  * a spot and swap by turning and scaling.
  *
  * next-themes knows the stored theme only in the browser, so the server render and the first client
- * render both draw the light state. The swap animates only after the first click: turning it on at
- * mount would land in the same style change as the flip to dark, and a CSS transition still runs
- * then, so a dark-theme visitor would watch the moon spin in on every page load.
+ * render both draw the light state. The icons animate only after the first click, so a dark-theme
+ * visitor sees the moon already in place instead of watching it spin in on every page load.
  * @returns The switch button
  */
 export function ThemeSwitch() {
@@ -32,7 +30,8 @@ export function ThemeSwitch() {
   );
   const [hasToggled, setHasToggled] = useState(false);
   const isDark = mounted && resolvedTheme === "dark";
-  const transitionGate = hasToggled ? "" : "transition-none";
+  const enter = hasToggled ? "animate-icon-in" : "";
+  const leave = hasToggled ? "animate-icon-out" : "";
 
   return (
     <button
@@ -50,16 +49,14 @@ export function ThemeSwitch() {
         aria-hidden
         className={cn(
           ICON_BASE,
-          transitionGate,
-          isDark ? `${ICON_HIDDEN} rotate-90 scale-50` : `${ICON_ACTIVE} text-primary`
+          isDark ? cn(ICON_HIDDEN, leave) : cn(ICON_SHOWN, enter)
         )}
       />
       <Moon
         aria-hidden
         className={cn(
           ICON_BASE,
-          transitionGate,
-          isDark ? `${ICON_ACTIVE} text-primary` : `${ICON_HIDDEN} -rotate-90 scale-50`
+          isDark ? cn(ICON_SHOWN, enter) : cn(ICON_HIDDEN, leave)
         )}
       />
     </button>

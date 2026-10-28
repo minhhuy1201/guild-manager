@@ -70,20 +70,22 @@ describe("ThemeSwitch", () => {
     expect(localStorage.getItem("theme")).toBe("light");
   });
 
-  // A transition switched on in the same style change as the flip to a stored dark theme would still
-  // run, so the swap stays off until someone actually clicks.
+  // A stored dark theme flips the icons right after hydration; animating that would spin the moon in
+  // on every page load, so the swap stays still until someone actually clicks.
   it("chỉ xoay icon sau lần bấm đầu tiên, không xoay khi tải trang", async () => {
     localStorage.setItem("theme", "dark");
     const toggle = renderSwitch();
     const icons = () => Array.from(toggle.querySelectorAll("svg"));
 
-    expect(icons().every((icon) => icon.classList.contains("transition-none"))).toBe(true);
+    const animated = () =>
+      icons().filter((icon) => /animate-icon-(in|out)/.test(icon.getAttribute("class") ?? ""));
+    expect(animated()).toHaveLength(0);
 
     await act(async () => {
       fireEvent.click(toggle);
     });
 
-    expect(icons().some((icon) => icon.classList.contains("transition-none"))).toBe(false);
+    expect(animated()).toHaveLength(2);
   });
 
   it("đã chọn Tối từ trước thì mở lại vẫn thấy công tắc ở Tối", () => {

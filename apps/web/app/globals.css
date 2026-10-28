@@ -13,7 +13,7 @@
     --duration-base: 200ms;
     --duration-slow: 320ms;
     --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
-    /* Hover lift and press of a control, and the theme switch icon settling in: overshoots a
+    /* Hover lift and press of a control, and the theme switch icon turning in: overshoots a
        little, so it feels physical. Transform and opacity only; never on layout geometry. */
     --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
     /* One slow drift of a page banner's scene when the page opens (Ken Burns), played once. The
@@ -34,6 +34,12 @@
     /* A multi-step dialog's next step arrives from the right, a step back from the left. */
     --animate-step-forward: step-forward var(--duration-base) var(--ease-out-soft) backwards;
     --animate-step-back: step-back var(--duration-base) var(--ease-out-soft) backwards;
+    /* The theme switch's icons trade places. Keyframes, not transitions: next-themes'
+       `disableTransitionOnChange` blankets the page in `transition: none !important` for the very
+       frame the theme flips, which would freeze a transition. `backwards`: both end on the resting
+       state the icon's own classes hold, so nothing is left on it. */
+    --animate-icon-in: icon-in var(--duration-base) var(--ease-spring) backwards;
+    --animate-icon-out: icon-out var(--duration-fast) var(--ease-out-soft) backwards;
     /* Serif (Playfair Display) for page titles, section titles in a card and the guild name; every
        other line of UI text stays sans. */
     --font-heading: var(--font-playfair-display), ui-serif, Georgia, serif;
@@ -426,6 +432,16 @@
 @keyframes step-back {
   from { opacity: 0; transform: translateX(-24px); }
   to { opacity: 1; transform: none; }
+}
+
+@keyframes icon-in {
+  from { opacity: 0; rotate: -90deg; scale: 0.5; }
+  to { opacity: 1; rotate: none; scale: none; }
+}
+
+@keyframes icon-out {
+  from { opacity: 1; rotate: none; scale: none; }
+  to { opacity: 0; rotate: 90deg; scale: 0.5; }
 }
 
 @keyframes fade-in-soft {
