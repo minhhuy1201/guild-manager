@@ -139,10 +139,10 @@ function signedOutResponse(
         : NextResponse.redirect(new URL(ROUTES.landing, request.url));
     case "login":
       return NextResponse.redirect(loginUrl(request, isMisconfigured));
+    // Signed-in verdicts never reach here; they share one branch only to keep the switch exhaustive.
     case "onward":
-      return NextResponse.redirect(onwardUrl(request));
     case "attendance":
-      return NextResponse.redirect(new URL(ROUTES.attendance, request.url));
+      return NextResponse.redirect(onwardUrl(request));
     default:
       return assertNever(decision);
   }
