@@ -10,7 +10,7 @@ import { ROUTES } from "@/config/routes";
 const MEMBER: Actor = { role: GuildRole.MEMBER };
 const ADMIN: Actor = { role: GuildRole.ADMIN };
 
-const nav = vi.hoisted(() => ({ pathname: "/" }));
+const nav = vi.hoisted(() => ({ pathname: "/diem-danh" }));
 vi.mock("next/navigation", () => ({ usePathname: () => nav.pathname }));
 
 // Link's `transitionTypes` never reaches the DOM, so the stub exposes it for the tests to read.

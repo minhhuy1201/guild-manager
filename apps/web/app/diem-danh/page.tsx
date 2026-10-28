@@ -7,12 +7,12 @@ import { loginErrorMessage } from "@/features/auth";
 import { getActor } from "@/features/auth/server";
 
 /**
- * Root route "/" — composes the attendance feature's screen.
+ * Route /diem-danh - composes the attendance feature's screen.
  * Reads the role on the server to decide whether this person sees the whole guild or only their own character.
  * @param props.searchParams - `error`, set when another page redirected here rather than render
  * @returns The attendance screen
  */
-export default async function Home({
+export default async function AttendancePage({
   searchParams,
 }: {
   searchParams: Promise<{ error?: string }>;

@@ -90,10 +90,10 @@ export async function SiteHeader() {
             APP_SHELL_WIDTH
           )}
         >
-          {/* Signed in the mark leads to the week's attendance, signed out to the guild's public
-              page - the one route besides the login screen a visitor can actually reach. */}
+          {/* The mark always leads to the guild's public page, signed in or not; the week's
+              attendance is one click away in the nav. */}
           <Link
-            href={actor ? ROUTES.attendance : ROUTES.landing}
+            href={ROUTES.landing}
             transitionTypes={PAGE_NAV_TRANSITION}
             className={BRAND}
           >

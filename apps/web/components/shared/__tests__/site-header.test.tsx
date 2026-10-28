@@ -125,7 +125,7 @@ describe("SiteHeader - theme", () => {
 });
 
 describe("SiteHeader - đã đăng nhập", () => {
-  it("tên bang dẫn về màn điểm danh và không còn nút đăng nhập", async () => {
+  it("tên bang dẫn về trang giới thiệu và không còn nút đăng nhập", async () => {
     getSession.mockResolvedValue({
       discordId: "1",
       role: GuildRole.MEMBER,
@@ -138,7 +138,7 @@ describe("SiteHeader - đã đăng nhập", () => {
       screen
         .getByRole("link", { name: /Mèo Mập Giang Hồ/ })
         .getAttribute("href")
-    ).toBe(ROUTES.attendance);
+    ).toBe(ROUTES.landing);
     expect(screen.queryByRole("button", { name: "Đăng nhập" })).toBeNull();
   });
 });

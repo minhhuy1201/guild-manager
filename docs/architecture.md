@@ -479,7 +479,8 @@ there navigates to the API, which drives the Discord OAuth2 flow and finally red
 Server Component cannot write cookies: it trades the code for the token pair and stores it.
 
 `/dang-nhap` sends a visitor who **already** has a session straight on to `?redirect=`, or to the
-attendance page when that is absent, rather than showing a login form to somebody who is logged in.
+bare `/` (and from there to the attendance page at `/diem-danh`) when that is absent, rather than
+showing a login form to somebody who is logged in.
 The value goes through `safeRedirect` from `@guild/shared/lib` first, the same rule the API applies
 to the redirect it packs into the OAuth state: it is a query parameter, and an unchecked one makes
 the login page an open redirect. That bounce is what lets the Discord bot's "Mở website" button
@@ -495,12 +496,13 @@ token has expired but the refresh token has not (the proxy is the only place in 
 write cookies for any request), and it applies `decideAccess` — **every page needs a session** except
 `/dang-nhap` and `/trang-chu`. The proxy does not judge roles: the token's role can be a day old.
 
-One path is answered specially. A signed-out request for **`/`** is sent to `/trang-chu`, not to the
-login page: the bare domain is the address people are given, so somebody who has never signed in
-meets the guild's public page rather than a form for an app they know nothing about. Only `/` —
-every other path was typed deliberately, and sending someone who asked for `/xep-team` to a page
-about the guild loses where they were going. A misconfigured `AUTH_SECRET` overrides it and still
-goes to the login page, because that is the only screen rendering
+The bare **`/`** has no page of its own; the proxy answers it for both states. A signed-out request
+is sent to `/trang-chu`, not to the login page: the bare domain is the address people are given, so
+somebody who has never signed in meets the guild's public page rather than a form for an app they know
+nothing about. A signed-in request is sent to `/diem-danh`, the week's attendance page. Only `/` is
+special-cased when signed out - every other path was typed deliberately, and sending someone who asked
+for `/xep-team` to a page about the guild loses where they were going. A misconfigured `AUTH_SECRET`
+overrides it and still goes to the login page, because that is the only screen rendering
 `WEB_AUTH_ERROR.sessionInvalid`.
 
 ```mermaid

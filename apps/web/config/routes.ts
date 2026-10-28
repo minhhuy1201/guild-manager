@@ -1,7 +1,8 @@
 /** The app's route paths — shared by the nav and by programmatic navigation. */
 export const ROUTES = {
   landing: "/trang-chu",
-  attendance: "/",
+  root: "/",
+  attendance: "/diem-danh",
   attendanceHistory: "/lich-su-diem-danh",
   teamBuilder: "/xep-team",
   tactics: "/chien-thuat",
