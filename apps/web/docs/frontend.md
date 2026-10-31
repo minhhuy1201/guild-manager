@@ -590,6 +590,7 @@ the mapping stays on the frontend while the enum itself comes from `@guild/share
 | Class | Image |
 |---|---|
 | Cửu Linh | `/img/cuuLinh.png` |
+| Huyền Cơ | `/img/huyenCo.png` |
 | Huyết Hà | `/img/huyetHa.png` |
 | Long Ngâm | `/img/longNgam.png` |
 | Thần Tương | `/img/thanTuong.png` |

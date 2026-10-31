@@ -1,6 +1,7 @@
 /** In-game character class. */
 export enum GuildClass {
   CUU_LINH = "CUU_LINH",
+  HUYEN_CO = "HUYEN_CO",
   HUYET_HA = "HUYET_HA",
   LONG_NGAM = "LONG_NGAM",
   THAN_TUONG = "THAN_TUONG",
@@ -12,6 +13,7 @@ export enum GuildClass {
 /** Vietnamese display label per class. */
 export const GUILD_CLASS_LABEL: Record<GuildClass, string> = {
   [GuildClass.CUU_LINH]: "Cửu Linh",
+  [GuildClass.HUYEN_CO]: "Huyền Cơ",
   [GuildClass.HUYET_HA]: "Huyết Hà",
   [GuildClass.LONG_NGAM]: "Long Ngâm",
   [GuildClass.THAN_TUONG]: "Thần Tương",

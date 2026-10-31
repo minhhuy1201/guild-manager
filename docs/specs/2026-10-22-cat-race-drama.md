@@ -185,7 +185,7 @@ Một module thuần mới quy đổi thời gian thật (từ lúc bắt đầu
 
 - Sprite 14 × 10 ô: 2 hàng phụ kiện theo phái ở trên, 6 hàng thân (có 3 sọc vằn màu thân tối hơn
   28%), 2 hàng chân. 4 frame chân (duỗi, giữa, gom, giữa). Phụ kiện: Cửu Linh quả cầu, Huyết Hà lông
-  vũ đỏ, Long Ngâm sừng vàng, Thần Tướng nón lá, Thiết Y mũ sắt, Toái Mộng trăng khuyết, Tố Vấn hoa.
+  vũ đỏ, Long Ngâm sừng vàng, Thần Tướng nón lá, Thiết Y mũ sắt, Toái Mộng trăng khuyết, Tố Vấn hoa, Huyền Cơ ngôi sao.
   Bản vẽ từng ô lấy đúng từ prototype.
 - Nhịp chân theo thời gian đua (nên chậm lại trong slow-mo); frame chẵn thân nhún lên. Lúc chờ: đứng
   frame 0.

@@ -6,6 +6,7 @@ import { GuildClass } from "@guild/shared/enums";
  */
 export const GUILD_CLASS_IMAGE: Record<GuildClass, string> = {
   [GuildClass.CUU_LINH]: "/img/cuuLinh.png",
+  [GuildClass.HUYEN_CO]: "/img/huyenCo.png",
   [GuildClass.HUYET_HA]: "/img/huyetHa.png",
   [GuildClass.LONG_NGAM]: "/img/longNgam.png",
   [GuildClass.THAN_TUONG]: "/img/thanTuong.png",
@@ -21,6 +22,7 @@ export const GUILD_CLASS_IMAGE: Record<GuildClass, string> = {
  */
 export const GUILD_CLASS_COLOR: Record<GuildClass, string> = {
   [GuildClass.CUU_LINH]: "#BB8ED0",
+  [GuildClass.HUYEN_CO]: "#F4E89E",
   [GuildClass.HUYET_HA]: "#E06666",
   [GuildClass.LONG_NGAM]: "#6AA84F",
   [GuildClass.THAN_TUONG]: "#0070C0",

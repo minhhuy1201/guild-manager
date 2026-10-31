@@ -20,6 +20,7 @@ datasource db {
 /// Character class. Values must match the GuildClass enum in packages/shared/enums.
 enum GuildClass {
   CUU_LINH
+  HUYEN_CO
   HUYET_HA
   LONG_NGAM
   THAN_TUONG
