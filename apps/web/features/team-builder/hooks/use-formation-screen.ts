@@ -34,6 +34,7 @@ import { useTeamSettings } from "./use-team-settings";
 const EMPTY_TEAM_SETTINGS_STATE: TeamSettingsState = {
   names: {},
   colors: {},
+  icons: {},
   version: 0,
 };
 
@@ -51,7 +52,7 @@ export interface FormationScreenState {
   copy: FormationCopyState;
   /** The drag gesture in flight */
   dnd: FormationDndState;
-  /** The team column names and colours and their own draft */
+  /** The team column names, colours and icons and their own draft */
   teamSettings: TeamSettingsDraftState;
 }
 
@@ -104,7 +105,7 @@ export function useFormationScreen(): FormationScreenState {
   const { refetch: refetchTeamSettingsQuery } = teamSettingsQuery;
   const refetchTeamSettings = useCallback(async () => {
     const { data } = await refetchTeamSettingsQuery({ throwOnError: true });
-    if (!data) throw new Error("Không tải được tên và màu đội, hãy tải lại trang.");
+    if (!data) throw new Error("Không tải được tên, màu và biểu tượng đội, hãy tải lại trang.");
 
     return data;
   }, [refetchTeamSettingsQuery]);
@@ -117,7 +118,7 @@ export function useFormationScreen(): FormationScreenState {
   // `data`, not `isSuccess`: a failed background refetch keeps the loaded data, and edits stay open.
   const teamSettings: TeamSettingsDraftState = teamSettingsQuery.data !== undefined
     ? teamSettingsDraft
-    : { ...teamSettingsDraft, setName: () => undefined, setColor: () => undefined };
+    : { ...teamSettingsDraft, setName: () => undefined, setColor: () => undefined, setIcon: () => undefined };
 
   return { week, selection, draft, pool, copy, dnd, teamSettings };
 }

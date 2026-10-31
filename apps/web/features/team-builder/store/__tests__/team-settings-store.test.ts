@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { TeamColor } from "@guild/shared/enums";
+import { TeamColor, TeamIcon } from "@guild/shared/enums";
 import type { TeamSettings, TeamSettingsState } from "@guild/shared/schemas";
 
 import { useTeamSettingsStore } from "../team-settings-store";
@@ -9,6 +9,7 @@ import { useTeamSettingsStore } from "../team-settings-store";
 const SAVED: TeamSettingsState = {
   names: { "1": "Thủ nhà", "7": "Dự bị" },
   colors: { "7": TeamColor.PURPLE },
+  icons: { "7": TeamIcon.TRUCK },
   version: 5,
 };
 
@@ -94,6 +95,7 @@ describe("useTeamSettingsStore", () => {
       expect(draft()).toEqual({
         names: { "1": "Thủ nhà", "7": "Dự bị" },
         colors: { "3": TeamColor.RED, "7": TeamColor.PURPLE },
+        icons: { "7": TeamIcon.TRUCK },
       });
     });
 
@@ -151,4 +153,32 @@ describe("useTeamSettingsStore", () => {
       expect(useTeamSettingsStore.getState().baseVersion).toBeNull();
     });
   });
+
+describe("setIcon", () => {
+  it("lần đầu dựng nháp từ bản đã lưu, giữ tên, màu và icon các đội khác", () => {
+    useTeamSettingsStore.getState().setIcon(SAVED, 3, TeamIcon.CASTLE);
+
+    expect(draft()).toEqual({
+      names: SAVED.names,
+      colors: SAVED.colors,
+      icons: { "3": TeamIcon.CASTLE, "7": TeamIcon.TRUCK },
+    });
+  });
+
+  it("null xoá khoá để đội quay về chấm màu", () => {
+    useTeamSettingsStore.getState().setIcon(SAVED, 7, null);
+
+    expect(draft()?.icons).toEqual({});
+    expect(SAVED.icons).toEqual({ "7": TeamIcon.TRUCK });
+  });
+
+  it("đổi màu sau khi đổi icon giữ icon trong nháp", () => {
+    const store = useTeamSettingsStore.getState();
+    store.setIcon(SAVED, 3, TeamIcon.EYE);
+    store.setColor(SAVED, 4, TeamColor.RED);
+
+    expect(draft()?.icons["3"]).toBe(TeamIcon.EYE);
+    expect(draft()?.colors["4"]).toBe(TeamColor.RED);
+  });
+});
 });

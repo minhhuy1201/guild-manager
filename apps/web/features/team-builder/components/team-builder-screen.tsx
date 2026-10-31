@@ -56,7 +56,7 @@ export function TeamBuilderScreen() {
     useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } })
   );
 
-  // The team settings are global, so an unsaved name or colour is unsaved work on every day
+  // The team settings are global, so an unsaved name, colour or icon is unsaved work on every day
   // of the week, not only the one whose tab is open.
   const hasUnsaved =
     screen.draft.dirtySessionIds.size > 0 || screen.teamSettings.dirty;
@@ -224,6 +224,8 @@ export function TeamBuilderScreen() {
       onNameChange={screen.teamSettings.setName}
       colors={screen.teamSettings.colors}
       onColorChange={screen.teamSettings.setColor}
+      icons={screen.teamSettings.icons}
+      onIconChange={screen.teamSettings.setIcon}
       saving={saving}
       charactersById={screen.pool.charactersById}
       readOnly={!editable}
@@ -333,6 +335,7 @@ export function TeamBuilderScreen() {
             absentIds={screen.pool.absentIds}
             names={screen.teamSettings.names}
             colors={screen.teamSettings.colors}
+            icons={screen.teamSettings.icons}
           />
         ) : null}
 

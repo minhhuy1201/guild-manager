@@ -2,8 +2,8 @@
 import { cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { TeamColor } from "@guild/shared/enums";
-import type { TeamColors } from "@guild/shared/schemas";
+import { TeamColor, TeamIcon } from "@guild/shared/enums";
+import type { TeamColors, TeamIcons } from "@guild/shared/schemas";
 
 import { TeamColumn } from "../team-column";
 
@@ -14,12 +14,14 @@ afterEach(cleanup);
  * @param team - Team number
  * @param colors - Chosen colours
  * @param readOnly - Render without the colour button
+ * @param icons - Chosen icons
  * @returns The card element
  */
 function renderColumn(
   team: number,
   colors: TeamColors = {},
-  readOnly = false
+  readOnly = false,
+  icons: TeamIcons = {}
 ): HTMLElement {
   const { container } = render(
     <TeamColumn
@@ -28,6 +30,8 @@ function renderColumn(
       onNameChange={() => {}}
       colors={colors}
       onColorChange={() => {}}
+      icons={icons}
+      onIconChange={() => {}}
       readOnly={readOnly}
       slots={[]}
       occupants={new Map()}
@@ -47,6 +51,17 @@ describe("TeamColumn", () => {
     const marker = card.querySelector('[data-slot="team-marker"]');
     expect(marker).not.toBeNull();
     expect(marker?.getAttribute("aria-hidden")).toBe("true");
+  });
+
+  it("đội có icon thì icon mang màu đội thay cho chấm", () => {
+    const card = renderColumn(1, { "1": TeamColor.RED }, false, {
+      "1": TeamIcon.SWORDS,
+    });
+
+    expect(card.querySelector('[data-slot="team-marker"]')).toBeNull();
+    const icon = card.querySelector('[data-slot="team-icon"]');
+    expect(icon?.getAttribute("aria-hidden")).toBe("true");
+    expect(icon?.getAttribute("class")).toContain("text-red");
   });
 
   it("không có vạch màu nào chạm mép trên của card", () => {

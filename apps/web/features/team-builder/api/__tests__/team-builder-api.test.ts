@@ -78,7 +78,7 @@ describe("team builder API", () => {
 
   it("puts the team settings", async () => {
     const fetchMock = mockFetch({ status: 200, body: { data: {} } });
-    const input = { names: {}, colors: {}, version: 1 };
+    const input = { names: {}, colors: {}, icons: {}, version: 1 };
 
     await saveTeamSettings(input as never);
 

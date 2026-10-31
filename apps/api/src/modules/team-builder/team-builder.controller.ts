@@ -72,23 +72,25 @@ export class TeamBuilderController {
   }
 
   /**
-   * The team names and colours shown on the grid's column headers — global, not per battle day.
-   * @returns Team number (as a decimal string) → name / colour, plus the version
+   * The team names, colours and icons shown on the grid's column headers — global, not per battle day.
+   * @returns Team number (as a decimal string) → name / colour / icon, plus the version
    */
   @Get('team-settings')
-  @ApiOperation({ summary: 'Tên và màu các đội trên lưới đội hình' })
+  @ApiOperation({
+    summary: 'Tên, màu và biểu tượng các đội trên lưới đội hình',
+  })
   getTeamSettings(): Promise<TeamSettingsState> {
     return this.teamBuilder.getTeamSettings();
   }
 
   /**
    * Overwrite the whole team settings bundle.
-   * @param body - names / colors: team number → value, a team left out loses it; version: the one
+   * @param body - names / colors / icons: team number → value, a team left out loses it; version: the one
    *   the draft was based on
    * @returns The bundle just written (412 when the version is stale)
    */
   @Put('team-settings')
-  @ApiOperation({ summary: 'Lưu tên và màu các đội' })
+  @ApiOperation({ summary: 'Lưu tên, màu và biểu tượng các đội' })
   saveTeamSettings(
     @Body() body: SaveTeamSettingsDto,
   ): Promise<TeamSettingsState> {

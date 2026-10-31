@@ -245,10 +245,33 @@ enum TeamColor {
   SKY
 }
 
-/// Optimistic lock of the global team settings: the names (TeamName) and the colours
-/// (TeamColorChoice) are read, saved and versioned together (spec f14). Exactly one row, id = 1,
-/// inserted by the migration. A missing row is a broken database and fails loudly - it is never
-/// recreated.
+/// Icon a team shows in place of its colour dot, picked by a Manager. Global configuration like
+/// TeamName. A team with no icon has NO row, so `icon` is never null.
+model TeamIconChoice {
+  /// Team number, same meaning as `TeamName.team`. The column itself is not constrained.
+  team      Int      @id
+  icon      TeamIcon
+  updatedAt DateTime @updatedAt
+}
+
+/// Icons a team can show. Keep in step with `TeamIcon` in `@guild/shared/enums`
+/// (prisma-enum-sync.spec.ts).
+enum TeamIcon {
+  CASTLE
+  SWORDS
+  SHIELD
+  FOOTPRINTS
+  EYE
+  TRUCK
+  TOP_LANE
+  MID_LANE
+  BOT_LANE
+}
+
+/// Optimistic lock of the global team settings: the names (TeamName), the colours
+/// (TeamColorChoice) and the icons (TeamIconChoice) are read, saved and versioned together (spec
+/// f14). Exactly one row, id = 1, inserted by the migration. A missing row is a broken database and
+/// fails loudly - it is never recreated.
 /// Not a column on TeamName: an empty map has no row to carry it. The table keeps its old name
 /// because renaming it would force a hand-written migration.
 model TeamNameVersion {

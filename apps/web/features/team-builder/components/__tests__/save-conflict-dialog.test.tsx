@@ -36,7 +36,7 @@ describe("SaveConflictDialog", () => {
   it("chỉ tên đội xung đột: chỉ liệt kê tên đội, không cảnh báo người vắng", () => {
     renderDialog({ isFormationStale: false, isTeamSettingsStale: true });
 
-    expect(screen.getByText("Tên và màu đội")).toBeTruthy();
+    expect(screen.getByText("Tên, màu và biểu tượng đội")).toBeTruthy();
     expect(screen.queryByText(/Đội hình Thứ 7/)).toBeNull();
     expect(screen.queryByText(/báo vắng/)).toBeNull();
   });

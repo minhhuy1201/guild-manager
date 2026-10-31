@@ -1,4 +1,4 @@
-import { Capability, TeamColor } from '@guild/shared/enums';
+import { Capability, TeamColor, TeamIcon } from '@guild/shared/enums';
 
 import { CapabilityGuard, JwtAuthGuard } from '../../../common';
 import { accessOf, guardsOf } from '../../../__tests__/guards-of';
@@ -68,11 +68,13 @@ describe('TeamBuilderController — cài đặt đội', () => {
       getTeamSettings: jest.fn().mockResolvedValue({
         names: { '1': 'Thủ nhà' },
         colors: {},
+        icons: {},
         version: 1,
       }),
       saveTeamSettings: jest.fn().mockResolvedValue({
         names: { '2': 'Xung kích' },
         colors: {},
+        icons: {},
         version: 5,
       }),
     };
@@ -82,18 +84,20 @@ describe('TeamBuilderController — cài đặt đội', () => {
     );
   });
 
-  it('trả về bundle tên + màu service đưa ra', async () => {
+  it('trả về bundle tên + màu + biểu tượng service đưa ra', async () => {
     await expect(controller.getTeamSettings()).resolves.toEqual({
       names: { '1': 'Thủ nhà' },
       colors: {},
+      icons: {},
       version: 1,
     });
   });
 
-  it('lưu bằng chính body, version đi cùng names và colors', async () => {
+  it('lưu bằng chính body, version đi cùng names, colors và icons', async () => {
     const body = {
       names: { '2': 'Xung kích' },
       colors: { '2': TeamColor.RED },
+      icons: { '2': TeamIcon.SHIELD },
       version: 4,
     };
 

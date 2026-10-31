@@ -22,9 +22,9 @@ Theo thiết kế:
 
 **Blocked by:** 02 - Team color end to end
 
-**Status:** todo
+**Status:** done
 
-- [ ] Test service API: `icons` lưu/đọc cùng `names` và `colors`, đúng luật key, version cũ trả 412.
-- [ ] Test màn `TeamBuilderScreen`: chọn icon thì header hiện icon thay chấm; "Không biểu tượng" xoá key và chấm hiện lại; Save gửi đủ ba record; `readOnly` hiện icon nhưng không có nút.
-- [ ] Migration có RLS, `prisma-enum-sync.spec.ts` xanh.
-- [ ] `pnpm --filter api test`, `pnpm --filter web test`, typecheck và lint của cả hai app xanh.
+- [x] Test service API: `icons` lưu/đọc cùng `names` và `colors`, đúng luật key, version cũ trả 412.
+- [x] Test màn `TeamBuilderScreen`: chọn icon thì header hiện icon thay chấm; "Không biểu tượng" xoá key và chấm hiện lại; Save gửi đủ ba record; `readOnly` hiện icon nhưng không có nút.
+- [x] Migration có RLS, `prisma-enum-sync.spec.ts` xanh.
+- [x] `pnpm --filter api test`, `pnpm --filter web test`, typecheck và lint của cả hai app xanh.

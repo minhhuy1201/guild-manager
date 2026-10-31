@@ -1,19 +1,20 @@
 import { describe, expect, it } from "vitest";
 
-import { TeamColor } from "@guild/shared/enums";
+import { TeamColor, TeamIcon } from "@guild/shared/enums";
 
 import { countSettingChanges } from "../team-settings-diff";
 
 const SAVED = {
   names: { "1": "Xung kích", "2": "Thủ nhà" },
   colors: { "1": TeamColor.RED },
+  icons: { "1": TeamIcon.SHIELD },
 };
 
 describe("countSettingChanges", () => {
   it("giống bản lưu thì là 0", () => {
     expect(
       countSettingChanges(
-        { names: { ...SAVED.names }, colors: { ...SAVED.colors } },
+        { names: { ...SAVED.names }, colors: { ...SAVED.colors }, icons: { ...SAVED.icons } },
         SAVED
       )
     ).toBe(0);
@@ -62,9 +63,29 @@ describe("countSettingChanges", () => {
         {
           names: { ...SAVED.names, "1": "Công" },
           colors: { "1": TeamColor.SKY },
+          icons: SAVED.icons,
         },
         SAVED
       )
     ).toBe(2);
+  });
+
+  it("đổi hay bỏ biểu tượng một đội là 1", () => {
+    expect(
+      countSettingChanges(
+        { ...SAVED, icons: { "1": TeamIcon.EYE } },
+        SAVED
+      )
+    ).toBe(1);
+    expect(countSettingChanges({ ...SAVED, icons: {} }, SAVED)).toBe(1);
+  });
+
+  it("thêm biểu tượng cho đội chưa có là 1", () => {
+    expect(
+      countSettingChanges(
+        { ...SAVED, icons: { ...SAVED.icons, "2": TeamIcon.TRUCK } },
+        SAVED
+      )
+    ).toBe(1);
   });
 });

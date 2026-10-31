@@ -8,6 +8,8 @@ interface TeamColorStyle {
   header: string;
   /** The dot beside the team name, the team colour at full strength; a complete Tailwind literal */
   marker: string;
+  /** Text colour that paints a team icon in the team colour at full strength; a complete Tailwind literal */
+  iconText: string;
   /**
    * Ring colour of the team's token on the tactics map. The team builder's headers are light tints
    * on a light page; the map is a dark picture with no theme, so this is a brighter solid shade of
@@ -26,48 +28,56 @@ export const TEAM_COLOR_STYLES: Record<TeamColor, TeamColorStyle> = {
     label: "Ngọc bích",
     header: "bg-jade/15 text-foreground",
     marker: "bg-jade",
+    iconText: "text-jade",
     hex: "#6fb59d",
   },
   [TeamColor.STONE]: {
     label: "Xám đá",
     header: "bg-foreground/[0.08] text-foreground",
     marker: "bg-foreground/45",
+    iconText: "text-foreground/45",
     hex: "#c2bdb7",
   },
   [TeamColor.NAVY]: {
     label: "Xanh navy",
     header: "bg-primary/15 text-foreground",
     marker: "bg-primary",
+    iconText: "text-primary",
     hex: "#6c84c3",
   },
   [TeamColor.GOLD]: {
     label: "Vàng",
     header: "bg-gold/20 text-foreground",
     marker: "bg-gold",
+    iconText: "text-gold",
     hex: "#d4b278",
   },
   [TeamColor.RED]: {
     label: "Đỏ",
     header: "bg-red/15 text-foreground",
     marker: "bg-red",
+    iconText: "text-red",
     hex: "#d8516a",
   },
   [TeamColor.PURPLE]: {
     label: "Tím",
     header: "bg-purple/15 text-foreground",
     marker: "bg-purple",
+    iconText: "text-purple",
     hex: "#bd72c1",
   },
   [TeamColor.ORANGE]: {
     label: "Cam",
     header: "bg-orange/15 text-foreground",
     marker: "bg-orange",
+    iconText: "text-orange",
     hex: "#f47f46",
   },
   [TeamColor.SKY]: {
     label: "Xanh trời",
     header: "bg-sky/20 text-foreground",
     marker: "bg-sky",
+    iconText: "text-sky",
     hex: "#92dff2",
   },
 };

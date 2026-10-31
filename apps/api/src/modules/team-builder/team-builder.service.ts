@@ -4,7 +4,7 @@ import {
   NotFoundException,
   PreconditionFailedException,
 } from '@nestjs/common';
-import type { TeamColor } from '@guild/shared/enums';
+import type { TeamColor, TeamIcon } from '@guild/shared/enums';
 import {
   formationWeekSchema,
   sessionFormationSchema,
@@ -46,7 +46,7 @@ const FORMATION_STALE =
 
 /** A team settings save based on a version someone else has already moved past. */
 const TEAM_SETTINGS_STALE =
-  'Tên và màu đội vừa được ADMIN khác lưu. Tải bản mới nhất hoặc ghi đè.';
+  'Tên, màu và biểu tượng đội vừa được ADMIN khác lưu. Tải bản mới nhất hoặc ghi đè.';
 
 /** Id of the one TeamNameVersion row - see the model's comment. */
 const TEAM_NAME_VERSION_ID = 1;
@@ -393,10 +393,10 @@ export class TeamBuilderService {
   }
 
   /**
-   * The team names and colours shown on the formation grid's column headers, with the version they
+   * The team names, colours and icons shown on the formation grid's column headers, with the version they
    * are at. Global data: one bundle for the whole app, not one per week or per battle day.
-   * @returns Team number (as a decimal string) → name / colour, teams still on their number or
-   *   default colour are absent
+   * @returns Team number (as a decimal string) → name / colour / icon, teams still on their number,
+   *   default colour or colour dot are absent
    * @throws Error when the one TeamNameVersion row is missing - a broken database, never recreated
    */
   async getTeamSettings(): Promise<TeamSettingsState> {
@@ -410,6 +410,9 @@ export class TeamBuilderService {
     const colorRows = await this.prisma.teamColorChoice.findMany({
       orderBy: { team: 'asc' },
     });
+    const iconRows = await this.prisma.teamIconChoice.findMany({
+      orderBy: { team: 'asc' },
+    });
 
     return verifyResponse(teamSettingsStateSchema, {
       names: Object.fromEntries(
@@ -419,17 +422,20 @@ export class TeamBuilderService {
       colors: Object.fromEntries(
         colorRows.map((row) => [String(row.team), row.color as TeamColor]),
       ),
+      icons: Object.fromEntries(
+        iconRows.map((row) => [String(row.team), row.icon as TeamIcon]),
+      ),
       version: versionRow.version,
     } satisfies TeamSettingsState);
   }
 
   /**
    * Overwrite the WHOLE team settings bundle. Delete-then-recreate for the same reason
-   * `saveFormation` does it: ten rows at most per table, and clearing a name or colour back to its
+   * `saveFormation` does it: ten rows at most per table, and clearing a name, colour or icon back to its
    * default becomes a missing key rather than a dedicated endpoint.
    * Not guarded by a session lock — the settings are global configuration and belong to no battle
    * day, so a played battle never freezes them.
-   * @param input - Team number (as a decimal string) → name / colour, plus the version the save is
+   * @param input - Team number (as a decimal string) → name / colour / icon, plus the version the save is
    *   based on
    * @returns The bundle just written, at its new version
    * @throws PreconditionFailedException when the stored version is no longer `input.version`
@@ -445,9 +451,13 @@ export class TeamBuilderService {
       team: Number(team),
       color,
     }));
+    const iconRows = Object.entries(input.icons).map(([team, icon]) => ({
+      team: Number(team),
+      icon,
+    }));
 
     await this.prisma.$transaction(async (tx) => {
-      // Same single-statement check-and-bump as `saveFormation`: one bump covers both tables.
+      // Same single-statement check-and-bump as `saveFormation`: one bump covers all three tables.
       const { count } = await tx.teamNameVersion.updateMany({
         where: { id: TEAM_NAME_VERSION_ID, version: input.version },
         data: { version: { increment: 1 } },
@@ -467,11 +477,16 @@ export class TeamBuilderService {
       if (colorRows.length > 0) {
         await tx.teamColorChoice.createMany({ data: colorRows });
       }
+      await tx.teamIconChoice.deleteMany({});
+      if (iconRows.length > 0) {
+        await tx.teamIconChoice.createMany({ data: iconRows });
+      }
     });
 
     return verifyResponse(teamSettingsStateSchema, {
       names: input.names,
       colors: input.colors,
+      icons: input.icons,
       version: input.version + 1,
     } satisfies TeamSettingsState);
   }

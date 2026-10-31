@@ -1,8 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { TeamColor } from "@guild/shared/enums";
-import type { TeamColors, TeamNames, TeamSettingsState } from "@guild/shared/schemas";
+import type { TeamColor, TeamIcon } from "@guild/shared/enums";
+import type {
+  TeamColors,
+  TeamIcons,
+  TeamNames,
+  TeamSettingsState,
+} from "@guild/shared/schemas";
 
 import { toastSuccess } from "@/components/shared/toast";
 import { ApiError } from "@/lib/api-client";
@@ -13,15 +18,17 @@ import { useSaveTeamSettings } from "./use-save-team-settings";
 /** HTTP status the backend returns when the draft's base version is no longer current. */
 const STALE_STATUS = 412;
 
-/** The team names and colours on screen, and everything that edits and saves them. */
+/** The team names, colours and icons on screen, and everything that edits and saves them. */
 export interface TeamSettingsDraftState {
   /** Names currently shown — the draft where one exists, the saved copy otherwise */
   names: TeamNames;
   /** Chosen colours currently shown; a team with no key is on its default colour */
   colors: TeamColors;
-  /** Whether the names or colours differ from the saved copy */
+  /** Chosen icons currently shown; a team with no key shows its colour dot */
+  icons: TeamIcons;
+  /** Whether the names, colours or icons differ from the saved copy */
   dirty: boolean;
-  /** How many name and colour fields differ from the saved copy */
+  /** How many name, colour and icon fields differ from the saved copy */
   changeCount: number;
   /** True while the save request is in flight */
   saving: boolean;
@@ -31,6 +38,8 @@ export interface TeamSettingsDraftState {
   setName: (team: number, name: string) => void;
   /** Write one team's colour; `null` puts the team back on its default colour */
   setColor: (team: number, color: TeamColor | null) => void;
+  /** Write one team's icon; `null` puts the team back on its colour dot */
+  setIcon: (team: number, icon: TeamIcon | null) => void;
   /** Discard the draft, falling back to the saved copy */
   reset: () => void;
   /** Persist the whole bundle. A no-op while nothing differs from the saved copy. */
@@ -53,7 +62,7 @@ export interface TeamSettingsDraftState {
  *
  * The settings are global, so this hook takes no session: unlike the formation,
  * nothing about them depends on which battle day is open.
- * @param saved - The names and colours as the server has them, with their version
+ * @param saved - The names, colours and icons as the server has them, with their version
  * @param refetchSaved - Reload the saved settings, for reloading or overwriting a stale save
  * @returns The settings on screen plus the handlers that edit and save them
  */
@@ -64,6 +73,7 @@ export function useTeamSettingsDraft(
   const draft = useTeamSettingsStore((s) => s.draft);
   const setNameInStore = useTeamSettingsStore((s) => s.setName);
   const setColorInStore = useTeamSettingsStore((s) => s.setColor);
+  const setIconInStore = useTeamSettingsStore((s) => s.setIcon);
   const clearDraft = useTeamSettingsStore((s) => s.clearDraft);
   const rebase = useTeamSettingsStore((s) => s.rebase);
 
@@ -73,7 +83,7 @@ export function useTeamSettingsDraft(
   const shown = draft ?? saved;
 
   // Compared by value, not by reference: retyping the name a team already had
-  // (or picking its saved colour again) leaves a draft in place that is equal to the saved copy, and that is not an
+  // (or picking its saved colour or icon again) leaves a draft in place that is equal to the saved copy, and that is not an
   // unsaved change.
   const changeCount = useMemo(
     () => countSettingChanges(shown, saved),
@@ -93,13 +103,14 @@ export function useTeamSettingsDraft(
       await saveMutation.mutateAsync({
         names: shown.names,
         colors: shown.colors,
+        icons: shown.icons,
         // Read from the store, not a render's closure: `overwriteStale` re-bases and saves in the
         // same tick. A draft always carries its base version; `saved.version` only types the gap.
         version: useTeamSettingsStore.getState().baseVersion ?? saved.version,
       });
       clearDraft();
       setIsStale(false);
-      toastSuccess("Đã lưu tên và màu đội.");
+      toastSuccess("Đã lưu tên, màu và biểu tượng đội.");
     } catch (error) {
       const isStaleSave =
         error instanceof ApiError && error.statusCode === STALE_STATUS;
@@ -129,6 +140,7 @@ export function useTeamSettingsDraft(
   return {
     names: shown.names,
     colors: shown.colors,
+    icons: shown.icons,
     dirty,
     changeCount,
     saving: saveMutation.isPending,
@@ -139,6 +151,7 @@ export function useTeamSettingsDraft(
         : undefined,
     setName: (team, name) => setNameInStore(saved, team, name),
     setColor: (team, color) => setColorInStore(saved, team, color),
+    setIcon: (team, icon) => setIconInStore(saved, team, icon),
     reset: clearDraft,
     save,
     isStale,

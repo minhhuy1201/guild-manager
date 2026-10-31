@@ -1,5 +1,5 @@
-import type { TeamColor } from "@guild/shared/enums";
-import type { Character, TeamColors } from "@guild/shared/schemas";
+import type { TeamColor, TeamIcon } from "@guild/shared/enums";
+import type { Character, TeamColors, TeamIcons } from "@guild/shared/schemas";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { resolveTeamColor, TEAM_COLOR_STYLES } from "@/lib/team-color";
@@ -25,6 +25,10 @@ interface TeamColumnProps {
   colors: TeamColors;
   /** Called with the picked colour when the header's colour button is used; `null` for the default */
   onColorChange: (team: number, color: TeamColor | null) => void;
+  /** Icons Managers picked, keyed by team number. A team with no key shows its colour dot. */
+  icons: TeamIcons;
+  /** Called with the picked icon when the header's style button is used; `null` for no icon */
+  onIconChange: (team: number, icon: TeamIcon | null) => void;
   /** The six slots of this team, already sorted by position */
   slots: Slot[];
   /** Occupant of each slot, keyed by slot id. A missing key means the slot is empty. */
@@ -52,6 +56,8 @@ interface TeamColumnProps {
  * @param onNameChange - Called with the committed name
  * @param colors - Chosen team colours, keyed by team number
  * @param onColorChange - Called with the picked colour
+ * @param icons - Chosen team icons, keyed by team number
+ * @param onIconChange - Called with the picked icon
  * @param slots - The six slots of this team, sorted by position
  * @param occupants - Occupant of each slot, keyed by slot id
  * @param readOnly - Render without drag handles
@@ -68,6 +74,8 @@ export function TeamColumn({
   onNameChange,
   colors,
   onColorChange,
+  icons,
+  onIconChange,
   slots,
   occupants,
   readOnly = false,
@@ -109,7 +117,9 @@ export function TeamColumn({
             team={team}
             colors={colors}
             readOnly={readOnly}
+            icons={icons}
             onColorChange={onColorChange}
+            onIconChange={onIconChange}
           />
           <div className="min-w-0 flex-1">
             <TeamNameField

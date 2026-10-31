@@ -85,7 +85,7 @@ export function SaveConflictDialog({
             <p>Những phần sau đã được lưu ở nơi khác:</p>
             <ul className="list-disc pl-5">
               {isFormationStale ? <li>Đội hình {formationLabel}</li> : null}
-              {isTeamSettingsStale ? <li>Tên và màu đội</li> : null}
+              {isTeamSettingsStale ? <li>Tên, màu và biểu tượng đội</li> : null}
             </ul>
             <p>
               Tải bản mới nhất sẽ bỏ phần bạn đang sửa. Ghi đè sẽ thay bản vừa

@@ -75,6 +75,7 @@ describe("useFormationScreen - tên đội", () => {
     fetchTeamSettingsMock.mockResolvedValue({ ok: true, data: {
       names: { "2": "Thủ nhà" },
       colors: {},
+      icons: {},
       version: 4,
     } });
     const { result } = renderFormationHook(() => useFormationScreen());

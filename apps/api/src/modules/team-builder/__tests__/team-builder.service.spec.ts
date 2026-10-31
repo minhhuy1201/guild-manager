@@ -884,6 +884,7 @@ describe('TeamBuilderService.getSavedFormation', () => {
     formationMatch: { findMany: jest.Mock };
     teamName: { findMany: jest.Mock };
     teamColorChoice: { findMany: jest.Mock };
+    teamIconChoice: { findMany: jest.Mock };
     teamNameVersion: { findUniqueOrThrow: jest.Mock };
   };
 
@@ -896,6 +897,7 @@ describe('TeamBuilderService.getSavedFormation', () => {
         findMany: jest.fn().mockResolvedValue([{ team: 1, name: 'Hổ Báo' }]),
       },
       teamColorChoice: { findMany: jest.fn().mockResolvedValue([]) },
+      teamIconChoice: { findMany: jest.fn().mockResolvedValue([]) },
       teamNameVersion: {
         findUniqueOrThrow: jest.fn().mockResolvedValue({ id: 1, version: 3 }),
       },

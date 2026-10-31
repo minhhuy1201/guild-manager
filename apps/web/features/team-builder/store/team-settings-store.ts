@@ -1,11 +1,11 @@
 import { create } from "zustand";
 
-import type { TeamColor } from "@guild/shared/enums";
+import type { TeamColor, TeamIcon } from "@guild/shared/enums";
 import type { TeamSettings, TeamSettingsState } from "@guild/shared/schemas";
 
 interface TeamSettingsStoreState {
   /**
-   * Unsaved team settings (names and colours). `null` means nothing was edited yet and the saved
+   * Unsaved team settings (names, colours and icons). `null` means nothing was edited yet and the saved
    * copy shows through - the same "missing key = untouched" rule `formation-store` uses for its
    * per-day drafts, except there is only ever one draft here because the settings are global.
    */
@@ -22,6 +22,12 @@ interface TeamSettingsStoreState {
     saved: TeamSettingsState,
     team: number,
     color: TeamColor | null
+  ) => void;
+  /** Write one team's icon into the draft; `null` puts the team back on its colour dot */
+  setIcon: (
+    saved: TeamSettingsState,
+    team: number,
+    icon: TeamIcon | null
   ) => void;
   /** Re-base the draft onto a newer saved version, keeping the draft itself */
   rebase: (version: number) => void;
@@ -49,7 +55,7 @@ export const useTeamSettingsStore = create<TeamSettingsStoreState>((set) => ({
       else delete names[String(team)];
 
       return {
-        draft: { names, colors: base.colors },
+        draft: { names, colors: base.colors, icons: base.icons },
         baseVersion: state.baseVersion ?? saved.version,
       };
     }),
@@ -63,7 +69,21 @@ export const useTeamSettingsStore = create<TeamSettingsStoreState>((set) => ({
       else delete colors[String(team)];
 
       return {
-        draft: { names: base.names, colors },
+        draft: { names: base.names, colors, icons: base.icons },
+        baseVersion: state.baseVersion ?? saved.version,
+      };
+    }),
+  setIcon: (saved, team, icon) =>
+    set((state) => {
+      const base = state.draft ?? saved;
+      const icons = { ...base.icons };
+
+      // No icon is a missing key too: the team keeps its colour dot.
+      if (icon) icons[String(team)] = icon;
+      else delete icons[String(team)];
+
+      return {
+        draft: { names: base.names, colors: base.colors, icons },
         baseVersion: state.baseVersion ?? saved.version,
       };
     }),

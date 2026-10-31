@@ -35,6 +35,8 @@ function renderGrid(layout: "screen" | "capture" | "focus") {
         names={{}}
         onNameChange={() => {}}
         colors={{}}
+        icons={{}}
+        onIconChange={() => {}}
         onColorChange={() => {}}
         charactersById={new Map()}
         absentIds={new Set()}
