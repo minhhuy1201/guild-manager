@@ -8,6 +8,7 @@ import type { TeamColor, TeamIcon } from '@guild/shared/enums';
 import {
   formationWeekSchema,
   sessionFormationSchema,
+  teamColorsSchema,
   teamSettingsStateSchema,
 } from '@guild/shared/schemas';
 import type {
@@ -17,6 +18,7 @@ import type {
   SaveFormationInput,
   SaveTeamSettingsInput,
   SessionFormation,
+  TeamColors,
   TeamNames,
   TeamSettingsState,
 } from '@guild/shared/schemas';
@@ -427,6 +429,24 @@ export class TeamBuilderService {
       ),
       version: versionRow.version,
     } satisfies TeamSettingsState);
+  }
+
+  /**
+   * Only the team colours - what the tactics map needs to ring a "Đội N" token. Kept apart from
+   * `getTeamSettings` so a reader without the team builder Capability never receives the names.
+   * @returns Team number (as a decimal string) → colour; a team on its default colour is absent
+   */
+  async getTeamColors(): Promise<TeamColors> {
+    const colorRows = await this.prisma.teamColorChoice.findMany({
+      orderBy: { team: 'asc' },
+    });
+
+    return verifyResponse(
+      teamColorsSchema,
+      Object.fromEntries(
+        colorRows.map((row) => [String(row.team), row.color as TeamColor]),
+      ),
+    );
   }
 
   /**

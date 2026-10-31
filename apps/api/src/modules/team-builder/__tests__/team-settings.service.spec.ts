@@ -123,6 +123,27 @@ describe('TeamBuilderService — cài đặt đội', () => {
     });
   });
 
+  describe('getTeamColors', () => {
+    it('chỉ đọc bảng màu, không đụng tên, biểu tượng hay version', async () => {
+      prisma.teamColorChoice.findMany.mockResolvedValue([
+        { team: 1, color: 'RED' },
+        { team: 4, color: 'SKY' },
+      ]);
+
+      await expect(service.getTeamColors()).resolves.toEqual({
+        '1': 'RED',
+        '4': 'SKY',
+      });
+      expect(prisma.teamName.findMany).not.toHaveBeenCalled();
+      expect(prisma.teamIconChoice.findMany).not.toHaveBeenCalled();
+      expect(prisma.teamNameVersion.findUniqueOrThrow).not.toHaveBeenCalled();
+    });
+
+    it('chưa đội nào chọn màu thì trả về map rỗng', async () => {
+      await expect(service.getTeamColors()).resolves.toEqual({});
+    });
+  });
+
   describe('saveTeamSettings', () => {
     it('xoá sạch rồi tạo lại, cả hai trong một transaction', async () => {
       await service.saveTeamSettings({

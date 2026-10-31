@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { BattleSessionsModule } from '../battle-sessions/battle-sessions.module';
 import { CharactersModule } from '../characters/characters.module';
 import { TeamBuilderController } from './team-builder.controller';
+import { TeamColorsController } from './team-colors.controller';
 import { TeamBuilderService } from './team-builder.service';
 
 /**
@@ -12,7 +13,7 @@ import { TeamBuilderService } from './team-builder.service';
  */
 @Module({
   imports: [BattleSessionsModule, CharactersModule],
-  controllers: [TeamBuilderController],
+  controllers: [TeamBuilderController, TeamColorsController],
   providers: [TeamBuilderService],
   // Attendance writes through this service: answering "Không" takes the member out of the day's
   // formation, and the slot rules stay in exactly one module.

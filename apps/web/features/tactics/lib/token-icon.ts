@@ -2,6 +2,7 @@ import {
   isNumberIcon,
   numberIconDigits,
   type TacticColor,
+  type TeamColor,
   type TacticLucideIcon,
   type TacticTokenIcon,
   type TacticTokenSize,
@@ -32,11 +33,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import {
-  NO_CHOSEN_COLORS,
-  resolveTeamColor,
-  TEAM_COLOR_STYLES,
-} from "@/lib/team-color";
+import { resolveTeamColor, TEAM_COLOR_STYLES } from "@/lib/team-color";
 import { TOKEN_ICON_PATHS } from "./icon-paths";
 
 /**
@@ -131,16 +128,19 @@ export const COLOR_HEX: Record<TacticColor, string> = {
  * other token wears the colour it was drawn in. Resolved on every render rather than stored, so
  * drawings saved before this rule pick it up and regrouping a team recolours the map too.
  * @param token - The token being drawn, or the one a palette drag is about to drop
+ * @param teamColors - Colours teams were given on the team builder, keyed by team number; empty until
+ * they load, which leaves every team on its default group colour
  * @returns The hex to draw its ring in
  */
 export function tokenBorderHex(
-  token: Pick<TacticToken, "icon" | "color">
+  token: Pick<TacticToken, "icon" | "color">,
+  teamColors: Readonly<Record<string, TeamColor>>
 ): string {
   if (!isNumberIcon(token.icon)) return COLOR_HEX[token.color];
 
   const team = Number(numberIconDigits(token.icon));
 
-  return TEAM_COLOR_STYLES[resolveTeamColor(team, NO_CHOSEN_COLORS)].hex;
+  return TEAM_COLOR_STYLES[resolveTeamColor(team, teamColors)].hex;
 }
 
 /** How wide a token's icon is drawn, relative to the token's radius. */

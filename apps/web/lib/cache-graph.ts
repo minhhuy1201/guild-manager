@@ -93,8 +93,11 @@ export const CACHE_DEPENDENTS: Record<CacheTopic, () => QueryKey[]> = {
     // there while the day is closed, so a stale session list keeps offering an action that 400s.
     settingsKeys.all,
   ],
-  /** Saving a formation only touches the team builder's own data. */
-  formation: () => [teamBuilderKeys.all],
+  /**
+   * Saving a formation or the team settings touches the team builder's data, and the tactics map
+   * rings its "Đội N" tokens in the colours the settings hold.
+   */
+  formation: () => [teamBuilderKeys.all, tacticKeys.teamColors()],
   /**
    * A tactic hangs off nothing — not a week, not a battle day — so writing one leaves every other
    * screen's data untouched.

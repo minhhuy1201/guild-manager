@@ -100,8 +100,7 @@ const DEFAULT_TEAM_COLORS: Record<number, TeamColor> = {
 };
 
 /**
- * Chosen colours of a screen that does not load them yet: every team takes its default group. Callers
- * pass this until teams can pick their own colour.
+ * No chosen colours: every team takes its default group. Stands in while the chosen colours load.
  */
 export const NO_CHOSEN_COLORS: Readonly<Record<string, TeamColor>> = {};
 

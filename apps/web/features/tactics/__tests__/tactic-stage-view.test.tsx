@@ -48,12 +48,20 @@ vi.mock("react-konva", () => ({
   Rect: konvaNode("rect"),
 }));
 
+/** Colours the mocked `useTeamColors` hands out; a test sets it, `afterEach` clears it. */
+let mockTeamColors: Record<string, string> = {};
+
+vi.mock("../hooks/use-team-colors", () => ({
+  useTeamColors: () => mockTeamColors,
+}));
+
 import { staticFrame, transitionFrame } from "../lib/stage-transition";
 import { TacticStageView } from "../components/tactic-stage-view";
 
 afterEach(() => {
   cleanup();
   rendered.clear();
+  mockTeamColors = {};
 });
 
 /**
@@ -238,6 +246,20 @@ describe("TacticStageView", () => {
       expect(propsOf("text").fill).toBe("#e5484d");
     }
   );
+
+  it("rings a team token in the colour a manager chose for it", () => {
+    mockTeamColors = { "3": "RED" };
+    const team: TacticStage = {
+      ...stage,
+      elements: [
+        { ...stage.elements[0], icon: "number-3" } as TacticStage["elements"][number],
+      ],
+    };
+
+    render(<TacticStageView frame={staticFrame(team)} width={960} />);
+
+    expect(propsOf("circle").stroke).toBe("#d8516a");
+  });
 
   it("rings any other token in the toolbar's colour", () => {
     render(<TacticStageView frame={staticFrame(stage)} width={960} />);

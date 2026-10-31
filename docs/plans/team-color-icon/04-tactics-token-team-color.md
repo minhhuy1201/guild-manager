@@ -20,9 +20,9 @@ Theo thiết kế:
 
 **Blocked by:** 02 - Team color end to end
 
-**Status:** todo
+**Status:** done
 
-- [ ] Test controller/service API: endpoint trả `colors`; user đăng nhập mà không có Capability vẫn đọc được; không đăng nhập thì 401.
-- [ ] Test web: hàm màu viền token lấy Team color đã chọn cho "Đội N", lấy màu nhóm mặc định khi chưa chọn, và giữ màu riêng cho token không phải đội.
-- [ ] Không còn chỗ vẽ token nào gọi hàm màu viền mà thiếu record màu đội (typecheck bắt).
-- [ ] `pnpm --filter api test`, `pnpm --filter web test`, typecheck và lint của cả hai app xanh.
+- [x] Test controller/service API: endpoint trả `colors`; user đăng nhập mà không có Capability vẫn đọc được; không đăng nhập thì 401.
+- [x] Test web: hàm màu viền token lấy Team color đã chọn cho "Đội N", lấy màu nhóm mặc định khi chưa chọn, và giữ màu riêng cho token không phải đội.
+- [x] Không còn chỗ vẽ token nào gọi hàm màu viền mà thiếu record màu đội (typecheck bắt).
+- [x] `pnpm --filter api test`, `pnpm --filter web test`, typecheck và lint của cả hai app xanh.
