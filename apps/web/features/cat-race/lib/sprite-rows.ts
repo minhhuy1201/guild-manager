@@ -15,9 +15,10 @@ export const LEG_FRAME_COUNT = 4;
 /** Class used for a cat whose owner is not on the roster. */
 export const FALLBACK_SPRITE_CLASS = GuildClass.CUU_LINH;
 
-/** The two rows above the head, per class: orb, red feather, gold horn, straw hat, helmet, crescent, flower. */
+/** The two rows above the head, per class: orb, red feather, gold horn, straw hat, helmet, crescent, flower, star. */
 const ACCESSORY_ROWS: Record<GuildClass, readonly [string, string]> = {
   [GuildClass.CUU_LINH]: ["...........c..", ".............."],
+  [GuildClass.HUYEN_CO]: ["...........h..", "..........hhh."],
   [GuildClass.HUYET_HA]: ["............r.", "...........r.."],
   [GuildClass.LONG_NGAM]: ["..........g...", "..........gg.."],
   [GuildClass.THAN_TUONG]: ["..........yy..", ".........yyyy."],

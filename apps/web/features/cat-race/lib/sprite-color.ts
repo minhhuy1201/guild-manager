@@ -17,6 +17,7 @@ const FIXED_COLORS: Readonly<Record<string, string>> = {
   s: "#a8b0ba",
   m: "#f6efc4",
   f: "#fff4c0",
+  h: "#f4e89e",
 };
 
 /** The crown's gold is the horn's gold. */
