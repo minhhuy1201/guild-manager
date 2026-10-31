@@ -2,6 +2,7 @@ import {
   callerDiscordId,
   commandOptionValue,
   interactionSchema,
+  invokedSubcommand,
   isEphemeralPress,
   type ApplicationCommandInteraction,
   type MessageComponentInteraction,
@@ -148,6 +149,53 @@ describe('callerDiscordId', () => {
     expect(() =>
       callerDiscordId(parsed as ApplicationCommandInteraction),
     ).toThrow();
+  });
+});
+
+describe('invokedSubcommand', () => {
+  it('đọc tên subcommand và giá trị option lồng bên trong', () => {
+    const parsed = interactionSchema.parse({
+      type: 2,
+      channel_id: '424242',
+      data: {
+        name: 'khao-sat-luu-phai',
+        options: [
+          {
+            name: 'mo',
+            type: 1,
+            options: [
+              { name: 'ten', type: 3, value: 'Update 06/11' },
+              { name: 'han', type: 3, value: '06/11' },
+            ],
+          },
+        ],
+      },
+      member: { user: { id: '111' } },
+    });
+
+    const subcommand = invokedSubcommand(
+      parsed as ApplicationCommandInteraction,
+    );
+
+    expect(subcommand?.name).toBe('mo');
+    expect(subcommand?.option('ten')).toBe('Update 06/11');
+    expect(subcommand?.option('khac')).toBeNull();
+  });
+
+  it('trả null khi lệnh gửi lên không có subcommand', () => {
+    const parsed = interactionSchema.parse({
+      type: 2,
+      channel_id: '424242',
+      data: {
+        name: 'diem-danh-ho',
+        options: [{ name: 'nguoi', type: 6, value: '999' }],
+      },
+      member: { user: { id: '111' } },
+    });
+
+    expect(
+      invokedSubcommand(parsed as ApplicationCommandInteraction),
+    ).toBeNull();
   });
 });
 

@@ -4,6 +4,7 @@ import { AttendanceModule } from '../attendance/attendance.module';
 import { BattleSessionsModule } from '../battle-sessions/battle-sessions.module';
 import { CatRaceModule } from '../cat-race/cat-race.module';
 import { CharactersModule } from '../characters/characters.module';
+import { ClassSurveyModule } from '../class-survey/class-survey.module';
 import { TeamBuilderModule } from '../team-builder/team-builder.module';
 import { ActorResolver } from './actor-resolver';
 import { BotChannelService } from './bot-channel.service';
@@ -38,6 +39,7 @@ import { TeamNoticeService } from './team-notice.service';
     BattleSessionsModule,
     CatRaceModule,
     CharactersModule,
+    ClassSurveyModule,
     TeamBuilderModule,
   ],
   controllers: [

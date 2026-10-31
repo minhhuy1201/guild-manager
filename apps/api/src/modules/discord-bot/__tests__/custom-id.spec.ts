@@ -1,6 +1,8 @@
 import {
   decodeAttendanceButtonId,
+  decodeSurveyFillId,
   encodeAttendanceButtonId,
+  encodeSurveyFillId,
 } from '../custom-id';
 
 describe('custom_id của nút điểm danh', () => {
@@ -43,5 +45,31 @@ describe('custom_id của nút điểm danh', () => {
         isPresent: true,
       }),
     ).toThrow();
+  });
+});
+
+describe('custom_id của nút Điền khảo sát', () => {
+  it('mã hoá rồi giải mã ra đúng id đợt', () => {
+    expect(decodeSurveyFillId(encodeSurveyFillId('cl9x0survey'))).toBe(
+      'cl9x0survey',
+    );
+  });
+
+  it('giải mã ra null khi không phải nút này, kể cả nút điểm danh', () => {
+    expect(decodeSurveyFillId('ann:diem-danh')).toBeNull();
+    expect(decodeSurveyFillId('dd:a:b:1')).toBeNull();
+    expect(decodeSurveyFillId('cs:khac:cl9x0survey')).toBeNull();
+    expect(decodeSurveyFillId('cs:dien:')).toBeNull();
+    expect(decodeSurveyFillId('cs:dien')).toBeNull();
+  });
+
+  it('nút điểm danh không bị nhầm với nút khảo sát', () => {
+    expect(
+      decodeAttendanceButtonId(encodeSurveyFillId('cl9x0survey')),
+    ).toBeNull();
+  });
+
+  it('ném lỗi thay vì dựng một custom_id quá dài', () => {
+    expect(() => encodeSurveyFillId('x'.repeat(100))).toThrow();
   });
 });

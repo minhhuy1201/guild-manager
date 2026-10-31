@@ -8,7 +8,9 @@ import {
   ANNOUNCEMENT_LEAVE_ID,
   AUTO_ATTEND_OFF_ID,
   AUTO_ATTEND_ON_ID,
+  encodeSurveyFillId,
 } from '../custom-id';
+import type { CommandReply } from '../commands/command.types';
 import { INTERACTION_RESPONSE_TYPE, MESSAGE_FLAG } from '../discord.constants';
 import { InteractionRouter } from '../interaction-router';
 
@@ -28,6 +30,7 @@ function makeRouter(resolve: unknown = null): InteractionRouter {
     {} as never,
     { resolve: jest.fn().mockResolvedValue(resolve) } as never,
     { get: jest.fn().mockReturnValue('') } as never,
+    {} as never,
     {} as never,
     {} as never,
     {} as never,
@@ -123,6 +126,7 @@ describe('InteractionRouter', () => {
       {} as never,
       {} as never,
       {} as never,
+      {} as never,
     );
 
     await router.route({
@@ -174,6 +178,7 @@ describe('InteractionRouter', () => {
         {} as never,
         {} as never,
         { create } as never,
+        {} as never,
         {} as never,
         new FixedClock(vn('2026-10-04T12:00')),
       );
@@ -262,6 +267,7 @@ describe('InteractionRouter', () => {
         {} as never,
         {} as never,
         autoAttend as never,
+        {} as never,
         new FixedClock(vn('2026-10-27T12:00')),
       );
     }
@@ -397,5 +403,20 @@ describe('InteractionRouter', () => {
         data: { flags: MESSAGE_FLAG.ephemeral },
       });
     });
+  });
+});
+
+describe('InteractionRouter - nút Điền khảo sát', () => {
+  it('trả tin riêng "sắp có" cho nút của một đợt khảo sát', async () => {
+    const reply = await makeRouter().route({
+      type: 3,
+      data: { custom_id: encodeSurveyFillId('cl9x0survey') },
+      member: { user: { id: '111' } },
+    });
+
+    const { data } = reply as CommandReply;
+
+    expect(data.content).toContain('sắp có');
+    expect(data.flags).toBe(MESSAGE_FLAG.ephemeral);
   });
 });

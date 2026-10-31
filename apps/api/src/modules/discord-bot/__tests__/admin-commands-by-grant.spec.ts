@@ -5,6 +5,7 @@ import { cauHinhKenhCommand } from '../commands/cau-hinh-kenh.command';
 import { chaoMungCommand } from '../commands/chao-mung.command';
 import { diemDanhHoCommand } from '../commands/diem-danh-ho.command';
 import { diemDanhCommand } from '../commands/diem-danh.command';
+import { khaoSatLuuPhaiCommand } from '../commands/khao-sat-luu-phai.command';
 import { nhacDiemDanhCommand } from '../commands/nhac-diem-danh.command';
 import { pingCommand } from '../commands/ping.command';
 import { thongBaoCommand } from '../commands/thong-bao.command';
@@ -20,6 +21,11 @@ const ADMIN_COMMANDS: [string, SlashCommand, GrantableCommand][] = [
   ['/cau-hinh-kenh', cauHinhKenhCommand, GrantableCommand.CAU_HINH_KENH],
   ['/thong-bao', thongBaoCommand, GrantableCommand.THONG_BAO],
   ['/nhac-diem-danh', nhacDiemDanhCommand, GrantableCommand.NHAC_DIEM_DANH],
+  [
+    '/khao-sat-luu-phai',
+    khaoSatLuuPhaiCommand,
+    GrantableCommand.KHAO_SAT_LUU_PHAI,
+  ],
 ];
 
 /**

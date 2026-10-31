@@ -4,6 +4,7 @@ export * from "./auth.schema";
 export * from "./battle-session.schema";
 export * from "./cat-race.schema";
 export * from "./character.schema";
+export * from "./class-survey.schema";
 export * from "./formation.schema";
 export * from "./leave.schema";
 export * from "./lift-tactic-scene";

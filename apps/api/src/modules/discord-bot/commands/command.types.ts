@@ -6,6 +6,7 @@ import type {
 } from '../../attendance/attendance.public';
 import type { BattleSessionsService } from '../../battle-sessions/battle-sessions.public';
 import type { CharactersService } from '../../characters/characters.public';
+import type { ClassSurveyService } from '../../class-survey/class-survey.public';
 import type { ActorResolver } from '../actor-resolver';
 import type { BotChannelService } from '../bot-channel.service';
 import type { DiscordRestClient } from '../discord-rest';
@@ -36,6 +37,8 @@ export interface SlashCommandOption {
   required: boolean;
   /** The fixed values a STRING option offers. Omitted when the option takes any value. */
   choices?: SlashCommandOptionChoice[];
+  /** The options of a subcommand (`COMMAND_OPTION_TYPE.subCommand`). Omitted on every other type. */
+  options?: SlashCommandOption[];
 }
 
 /** One fixed value of a STRING option: `name` is what the user picks, `value` what the bot reads. */
@@ -188,6 +191,7 @@ export interface CommandDeps {
   attendance: AttendanceService;
   leaves: LeaveService;
   autoAttend: AutoAttendService;
+  classSurveys: ClassSurveyService;
   battleSessions: BattleSessionsService;
   characters: CharactersService;
   actors: ActorResolver;

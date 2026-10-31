@@ -80,6 +80,14 @@ A member's standing "Có" for every battle day still open while it is on, until 
 button the member pressed, or a leave, wins over it on that day.
 _Avoid_: auto-yes, always present, luôn có mặt
 
+## Class survey
+
+**Class survey** (UI: "Khảo sát lưu phái"):
+A named round with a deadline in which each member says whether they keep their class or move to
+another one, and how sure they are, ahead of a game update. It only shows the guild's line-up; it
+never changes the class on a member's profile.
+_Avoid_: poll, vote, form
+
 ## Teams
 
 **Team color** (UI: "Màu đội"):

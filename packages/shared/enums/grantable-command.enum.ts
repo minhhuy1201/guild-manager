@@ -14,6 +14,8 @@ export enum GrantableCommand {
   THONG_BAO = "THONG_BAO",
   /** `/nhac-diem-danh` */
   NHAC_DIEM_DANH = "NHAC_DIEM_DANH",
+  /** `/khao-sat-luu-phai` */
+  KHAO_SAT_LUU_PHAI = "KHAO_SAT_LUU_PHAI",
 }
 
 /** Display label per command: the slash command as typed in Discord, keys in display order. */
@@ -23,4 +25,5 @@ export const GRANTABLE_COMMAND_LABEL: Record<GrantableCommand, string> = {
   [GrantableCommand.CAU_HINH_KENH]: "/cau-hinh-kenh",
   [GrantableCommand.THONG_BAO]: "/thong-bao",
   [GrantableCommand.NHAC_DIEM_DANH]: "/nhac-diem-danh",
+  [GrantableCommand.KHAO_SAT_LUU_PHAI]: "/khao-sat-luu-phai",
 };

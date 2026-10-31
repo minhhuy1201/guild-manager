@@ -1,5 +1,6 @@
 export * from "./attendance.enum";
 export * from "./capability.enum";
+export * from "./class-change-confidence.enum";
 export * from "./cat-race-mode.enum";
 export * from "./grantable-command.enum";
 export * from "./guild-class.enum";

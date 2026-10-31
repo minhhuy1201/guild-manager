@@ -89,3 +89,50 @@ export function decodeAttendanceButtonId(
 
   return { sessionId, characterId, isPresent: answer === '1' };
 }
+
+/** Marks a custom_id as belonging to a Class survey message. */
+const SURVEY_PREFIX = 'cs';
+
+/** Second part of the "Điền khảo sát" button's custom_id. */
+const SURVEY_FILL = 'dien';
+
+/** How many parts the "Điền khảo sát" custom_id has, prefix included. */
+const SURVEY_FILL_PART_COUNT = 3;
+
+/**
+ * Build the custom_id of the "Điền khảo sát" button. It carries the survey id because Discord keeps
+ * no state between presses and the same message may outlive its survey.
+ *
+ * @param surveyId - Id of the Class survey the button belongs to
+ * @returns The custom_id string
+ * @throws Error when the result exceeds Discord's 100-character limit
+ */
+export function encodeSurveyFillId(surveyId: string): string {
+  const customId = [SURVEY_PREFIX, SURVEY_FILL, surveyId].join(SEPARATOR);
+
+  if (customId.length > MAX_CUSTOM_ID_LENGTH) {
+    throw new Error(
+      `custom_id dài ${customId.length} ký tự, vượt giới hạn ${MAX_CUSTOM_ID_LENGTH} của Discord: ${customId}`,
+    );
+  }
+
+  return customId;
+}
+
+/**
+ * Read a "Điền khảo sát" button's custom_id back.
+ * @param customId - Raw custom_id from the interaction
+ * @returns The survey id, or null when this component is not that button
+ */
+export function decodeSurveyFillId(customId: string): string | null {
+  const parts = customId.split(SEPARATOR);
+
+  if (parts.length !== SURVEY_FILL_PART_COUNT) return null;
+
+  const [prefix, action, surveyId] = parts;
+
+  if (prefix !== SURVEY_PREFIX || action !== SURVEY_FILL) return null;
+  if (surveyId.length === 0) return null;
+
+  return surveyId;
+}

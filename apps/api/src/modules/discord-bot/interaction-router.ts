@@ -10,6 +10,7 @@ import {
 } from '../attendance/attendance.public';
 import { BattleSessionsService } from '../battle-sessions/battle-sessions.public';
 import { CharactersService } from '../characters/characters.public';
+import { ClassSurveyService } from '../class-survey/class-survey.public';
 import { ActorResolver } from './actor-resolver';
 import { buildOwnBoard, handleAttendanceButton } from './attendance-board';
 import { openAutoAttend, switchAutoAttend } from './auto-attend-reply';
@@ -29,6 +30,7 @@ import {
   ANNOUNCEMENT_LEAVE_ID,
   AUTO_ATTEND_OFF_ID,
   AUTO_ATTEND_ON_ID,
+  decodeSurveyFillId,
   LEAVE_MODAL_ID,
 } from './custom-id';
 import { buildLeaveModal, readLeaveModal } from './leave-modal';
@@ -56,6 +58,9 @@ export type InteractionReply =
 
 /** Shown when something failed that the user can do nothing about. */
 const UNEXPECTED = 'Có lỗi xảy ra. Thử lại sau hoặc điểm danh trên web.';
+
+/** Shown to whoever presses "Điền khảo sát" before the answer panel exists. */
+const SURVEY_COMING_SOON = 'Khảo sát sắp có, bạn thử lại sau nhé.';
 
 /** Shown when a submitted form is not one this build knows how to read. */
 const STALE_FORM = 'Biểu mẫu này không còn dùng được. Bấm lại nút Xin nghỉ.';
@@ -85,6 +90,7 @@ export class InteractionRouter {
     private readonly rest: DiscordRestClient,
     private readonly leaves: LeaveService,
     private readonly autoAttend: AutoAttendService,
+    private readonly classSurveys: ClassSurveyService,
     private readonly clock: Clock,
   ) {}
 
@@ -185,6 +191,11 @@ export class InteractionRouter {
       return openAutoAttend(callerDiscordId(interaction), this.deps);
     }
 
+    // The real panel arrives with the answer flow; until then the button only says so.
+    if (decodeSurveyFillId(interaction.data.custom_id) !== null) {
+      return ephemeralText(SURVEY_COMING_SOON);
+    }
+
     // Both sit on the private panel that button opened, so rewriting it in place is safe.
     if (interaction.data.custom_id === AUTO_ATTEND_ON_ID) {
       return switchAutoAttend(callerDiscordId(interaction), true, this.deps);
@@ -237,6 +248,7 @@ export class InteractionRouter {
       attendance: this.attendance,
       leaves: this.leaves,
       autoAttend: this.autoAttend,
+      classSurveys: this.classSurveys,
       battleSessions: this.battleSessions,
       characters: this.characters,
       actors: this.actors,

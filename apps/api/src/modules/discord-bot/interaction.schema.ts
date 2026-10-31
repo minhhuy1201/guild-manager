@@ -29,6 +29,15 @@ const commandOptionSchema = z.object({
   value: z.string().min(1),
 });
 
+/**
+ * A subcommand as Discord sends it: no `value` of its own, its filled-in options nested one level
+ * down. A command with subcommands sends exactly one of these as its only top-level option.
+ */
+const subcommandSchema = z.object({
+  name: z.string().min(1),
+  options: z.array(commandOptionSchema).optional(),
+});
+
 const pingInteractionSchema = z.object({
   type: z.literal(INTERACTION_TYPE.ping),
 });
@@ -43,7 +52,9 @@ const applicationCommandInteractionSchema = z.object({
   channel_id: z.string().min(1),
   data: z.object({
     name: z.string().min(1),
-    options: z.array(commandOptionSchema).optional(),
+    options: z
+      .array(z.union([commandOptionSchema, subcommandSchema]))
+      .optional(),
   }),
   ...invokerFields,
 });
@@ -168,5 +179,39 @@ export function commandOptionValue(
     (candidate) => candidate.name === name,
   );
 
-  return option?.value ?? null;
+  return option && 'value' in option ? option.value : null;
+}
+
+/** The subcommand a caller picked, with the values it was given. */
+export interface InvokedSubcommand {
+  name: string;
+  /**
+   * Value of one of the subcommand's options.
+   * @param optionName - Option name as declared in the command definition
+   * @returns The value, or null when the option was not filled in
+   */
+  option(optionName: string): string | null;
+}
+
+/**
+ * The subcommand of a slash command.
+ * @param interaction - The command invocation
+ * @returns The subcommand, or null when the command was sent without one
+ */
+export function invokedSubcommand(
+  interaction: ApplicationCommandInteraction,
+): InvokedSubcommand | null {
+  const picked = interaction.data.options?.find(
+    (candidate) => !('value' in candidate),
+  );
+
+  if (!picked) return null;
+
+  const options = 'options' in picked ? (picked.options ?? []) : [];
+
+  return {
+    name: picked.name,
+    option: (optionName) =>
+      options.find((candidate) => candidate.name === optionName)?.value ?? null,
+  };
 }
