@@ -3,7 +3,7 @@ import { GrantableCommand, GuildRole } from '@guild/shared/enums';
 import { TOKEN_TYPE } from '../../../common';
 import { vn } from '../../../__tests__/vn-date';
 import { khaoSatLuuPhaiCommand } from '../commands/khao-sat-luu-phai.command';
-import type { CommandDeps } from '../commands/command.types';
+import type { ButtonComponent, CommandDeps } from '../commands/command.types';
 import { decodeSurveyFillId } from '../custom-id';
 import {
   COMPONENT_TYPE,
@@ -102,7 +102,8 @@ describe('/khao-sat-luu-phai mo', () => {
     expect(embed?.description).toContain('06/11/2026');
     expect(embed?.description).toContain('Sửa lại được đến hạn chót');
 
-    const buttons = reply.data.components?.[0].components ?? [];
+    const buttons = (reply.data.components?.[0].components ??
+      []) as ButtonComponent[];
     expect(buttons).toHaveLength(2);
     expect(buttons[0].type).toBe(COMPONENT_TYPE.button);
     expect(buttons[0].label).toContain('Điền khảo sát');

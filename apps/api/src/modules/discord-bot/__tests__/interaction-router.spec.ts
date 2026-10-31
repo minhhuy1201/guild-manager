@@ -1,4 +1,9 @@
-import { GuildRole } from '@guild/shared/enums';
+import { BadRequestException } from '@nestjs/common';
+import {
+  ClassChangeConfidence,
+  GuildClass,
+  GuildRole,
+} from '@guild/shared/enums';
 
 import { FixedClock, TOKEN_TYPE } from '../../../common';
 import { vn } from '../../../__tests__/vn-date';
@@ -9,8 +14,9 @@ import {
   AUTO_ATTEND_OFF_ID,
   AUTO_ATTEND_ON_ID,
   encodeSurveyFillId,
+  encodeSurveyLevelId,
+  encodeSurveySelectId,
 } from '../custom-id';
-import type { CommandReply } from '../commands/command.types';
 import { INTERACTION_RESPONSE_TYPE, MESSAGE_FLAG } from '../discord.constants';
 import { InteractionRouter } from '../interaction-router';
 
@@ -406,17 +412,265 @@ describe('InteractionRouter', () => {
   });
 });
 
-describe('InteractionRouter - nút Điền khảo sát', () => {
-  it('trả tin riêng "sắp có" cho nút của một đợt khảo sát', async () => {
-    const reply = await makeRouter().route({
-      type: 3,
-      data: { custom_id: encodeSurveyFillId('cl9x0survey') },
-      member: { user: { id: '111' } },
+describe('InteractionRouter - khảo sát lưu phái', () => {
+  const SURVEY_ID = 'cl9x0survey';
+  const LINKED = {
+    actor: { sub: '111', role: GuildRole.MEMBER, type: TOKEN_TYPE.access },
+    character: { id: 'meo-beo', name: 'Mèo Béo', discordId: '111' },
+  };
+  const SURVEY = {
+    id: SURVEY_ID,
+    title: 'Update 06/11',
+    closesAt: vn('2026-11-05T23:59').toISOString(),
+    isOpen: true,
+  };
+  const memberRow = (answer: unknown = null) => ({
+    id: 'meo-beo',
+    name: 'Mèo Béo',
+    guildClass: GuildClass.TO_VAN,
+    answer,
+  });
+  const press = (customId: string, values?: string[]) => ({
+    type: 3 as const,
+    data: { custom_id: customId, ...(values ? { values } : {}) },
+    member: { user: { id: '111' } },
+  });
+
+  type Reply = {
+    type: number;
+    data: {
+      content: string;
+      flags?: number;
+      components?: {
+        components: {
+          custom_id: string;
+          label?: string;
+          options?: unknown[];
+        }[];
+      }[];
+    };
+  };
+
+  function surveyRouter(opts: {
+    view?: unknown;
+    answer?: jest.Mock;
+    resolve?: unknown;
+  }): InteractionRouter {
+    const view = opts.view ?? { survey: SURVEY, members: [memberRow()] };
+
+    return new InteractionRouter(
+      {} as never,
+      {} as never,
+      {} as never,
+      {
+        resolve: jest
+          .fn()
+          .mockResolvedValue(
+            opts.resolve === undefined ? LINKED : opts.resolve,
+          ),
+      } as never,
+      { get: jest.fn().mockReturnValue('') } as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {
+        current: jest.fn().mockResolvedValue(view),
+        answer: opts.answer ?? jest.fn(),
+      } as never,
+      new FixedClock(vn('2026-11-01T12:00')),
+    );
+  }
+
+  it('nút Điền khảo sát mở tin riêng có phái hiện tại, chưa điền và menu chọn', async () => {
+    const reply = (await surveyRouter({}).route(
+      press(encodeSurveyFillId(SURVEY_ID)),
+    )) as Reply;
+
+    expect(reply.type).toBe(INTERACTION_RESPONSE_TYPE.channelMessageWithSource);
+    expect(reply.data.flags).toBe(MESSAGE_FLAG.ephemeral);
+    expect(reply.data.content).toContain('Tố Vấn');
+    expect(reply.data.content).toContain('chưa điền');
+
+    const select = reply.data.components![0].components[0];
+
+    expect(select.custom_id).toBe(encodeSurveySelectId(SURVEY_ID));
+    expect(select.options).toHaveLength(Object.values(GuildClass).length);
+    expect(select.options).not.toContainEqual(
+      expect.objectContaining({ value: GuildClass.TO_VAN }),
+    );
+  });
+
+  it('mở lại bảng thì hiện câu đã lưu', async () => {
+    const saved = {
+      kind: 'CHANGE',
+      fromClass: GuildClass.TO_VAN,
+      targetClass: GuildClass.HUYET_HA,
+      confidence: 'SURE',
+    };
+    const reply = (await surveyRouter({
+      view: { survey: SURVEY, members: [memberRow(saved)] },
+    }).route(press(encodeSurveyFillId(SURVEY_ID)))) as Reply;
+
+    expect(reply.data.content).toContain('Chuyển sang Huyết Hà');
+    expect(reply.data.content).toContain('Chắc chắn');
+  });
+
+  it('chọn Giữ nguyên lưu ngay và viết lại bảng với dòng xác nhận', async () => {
+    const answer = jest
+      .fn()
+      .mockResolvedValue({ kind: 'KEEP', fromClass: GuildClass.TO_VAN });
+    const reply = (await surveyRouter({ answer }).route(
+      press(encodeSurveySelectId(SURVEY_ID), ['KEEP']),
+    )) as Reply;
+
+    expect(answer).toHaveBeenCalledWith(SURVEY_ID, LINKED.actor, {
+      kind: 'KEEP',
     });
+    expect(reply.type).toBe(INTERACTION_RESPONSE_TYPE.updateMessage);
+    expect(reply.data.content).toContain('Đã lưu');
+    expect(reply.data.content).toContain('Giữ nguyên');
+  });
 
-    const { data } = reply as CommandReply;
+  it('chọn một phái chưa lưu, chỉ viết lại bảng với hai nút mức độ', async () => {
+    const answer = jest.fn();
+    const reply = (await surveyRouter({ answer }).route(
+      press(encodeSurveySelectId(SURVEY_ID), [GuildClass.HUYET_HA]),
+    )) as Reply;
 
-    expect(data.content).toContain('sắp có');
-    expect(data.flags).toBe(MESSAGE_FLAG.ephemeral);
+    expect(answer).not.toHaveBeenCalled();
+    expect(reply.type).toBe(INTERACTION_RESPONSE_TYPE.updateMessage);
+    expect(reply.data.content).toContain('Huyết Hà');
+
+    const buttons = reply.data.components![1].components;
+
+    expect(buttons.map((button) => button.label)).toEqual([
+      'Chắc chắn',
+      'Đang cân nhắc',
+    ]);
+    expect(buttons[0].custom_id).toBe(
+      encodeSurveyLevelId({
+        surveyId: SURVEY_ID,
+        targetClass: GuildClass.HUYET_HA,
+        confidence: ClassChangeConfidence.SURE,
+      }),
+    );
+  });
+
+  it('bấm nút mức độ lưu đúng phái và mức độ rồi hiện xác nhận', async () => {
+    const answer = jest.fn().mockResolvedValue({
+      kind: 'CHANGE',
+      fromClass: GuildClass.TO_VAN,
+      targetClass: GuildClass.HUYET_HA,
+      confidence: 'CONSIDERING',
+    });
+    const reply = (await surveyRouter({ answer }).route(
+      press(
+        encodeSurveyLevelId({
+          surveyId: SURVEY_ID,
+          targetClass: GuildClass.HUYET_HA,
+          confidence: ClassChangeConfidence.CONSIDERING,
+        }),
+      ),
+    )) as Reply;
+
+    expect(answer).toHaveBeenCalledWith(SURVEY_ID, LINKED.actor, {
+      kind: 'CHANGE',
+      targetClass: GuildClass.HUYET_HA,
+      confidence: ClassChangeConfidence.CONSIDERING,
+    });
+    expect(reply.type).toBe(INTERACTION_RESPONSE_TYPE.updateMessage);
+    expect(reply.data.content).toContain('Đã lưu');
+    expect(reply.data.content).toContain('Đang cân nhắc');
+    // The confidence buttons are gone once the answer is saved.
+    expect(reply.data.components).toHaveLength(1);
+  });
+
+  it('lời từ chối của service (trùng phái, hết hạn) ra tin riêng, không ghi đè bảng', async () => {
+    const answer = jest
+      .fn()
+      .mockRejectedValue(
+        new BadRequestException('Phái muốn chuyển phải khác phái hiện tại.'),
+      );
+    const reply = (await surveyRouter({ answer }).route(
+      press(
+        encodeSurveyLevelId({
+          surveyId: SURVEY_ID,
+          targetClass: GuildClass.TO_VAN,
+          confidence: ClassChangeConfidence.SURE,
+        }),
+      ),
+    )) as Reply;
+
+    expect(reply).toEqual({
+      type: INTERACTION_RESPONSE_TYPE.channelMessageWithSource,
+      data: {
+        content: 'Phái muốn chuyển phải khác phái hiện tại.',
+        flags: MESSAGE_FLAG.ephemeral,
+      },
+    });
+  });
+
+  it.each([
+    [
+      'đợt đã đóng',
+      { survey: { ...SURVEY, isOpen: false }, members: [memberRow()] },
+    ],
+    [
+      'đợt khác đang mở',
+      { survey: { ...SURVEY, id: 'other' }, members: [memberRow()] },
+    ],
+    ['chưa có đợt nào', { survey: null, members: [memberRow()] }],
+  ])('nút của %s nhận tin riêng nói đợt đã đóng', async (_name, view) => {
+    const answer = jest.fn();
+    const reply = (await surveyRouter({ view, answer }).route(
+      press(encodeSurveyFillId(SURVEY_ID)),
+    )) as Reply;
+
+    expect(reply.data.flags).toBe(MESSAGE_FLAG.ephemeral);
+    expect(reply.data.content).toContain('đã đóng');
+    expect(answer).not.toHaveBeenCalled();
+  });
+
+  it('chọn trên bảng của đợt đã đóng không lưu gì', async () => {
+    const answer = jest.fn();
+    const reply = (await surveyRouter({
+      view: { survey: { ...SURVEY, isOpen: false }, members: [memberRow()] },
+      answer,
+    }).route(press(encodeSurveySelectId(SURVEY_ID), ['KEEP']))) as Reply;
+
+    expect(answer).not.toHaveBeenCalled();
+    expect(reply.data.content).toContain('đã đóng');
+  });
+
+  it('tài khoản chưa liên kết nhận tin riêng nói chưa liên kết', async () => {
+    const reply = (await surveyRouter({ resolve: null }).route(
+      press(encodeSurveyFillId(SURVEY_ID)),
+    )) as Reply;
+
+    expect(reply).toEqual({
+      type: INTERACTION_RESPONSE_TYPE.channelMessageWithSource,
+      data: { content: NOT_LINKED, flags: MESSAGE_FLAG.ephemeral },
+    });
+  });
+
+  it('giá trị menu lạ nhận tin riêng báo bảng cũ, không lưu', async () => {
+    const answer = jest.fn();
+    const reply = (await surveyRouter({ answer }).route(
+      press(encodeSurveySelectId(SURVEY_ID), ['PHAI_LA']),
+    )) as Reply;
+
+    expect(answer).not.toHaveBeenCalled();
+    expect(reply.data.flags).toBe(MESSAGE_FLAG.ephemeral);
+    expect(reply.data.content).toContain('không còn dùng được');
+  });
+
+  it('custom_id khảo sát lạ không làm hỏng, nhận tin riêng', async () => {
+    const reply = (await surveyRouter({}).route(
+      press('cs:muc:chi-co-hai'),
+    )) as Reply;
+
+    expect(reply.data.flags).toBe(MESSAGE_FLAG.ephemeral);
   });
 });

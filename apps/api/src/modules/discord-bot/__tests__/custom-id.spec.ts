@@ -1,4 +1,9 @@
+import { ClassChangeConfidence, GuildClass } from '@guild/shared/enums';
+
 import {
+  decodeSurveyComponentId,
+  encodeSurveyLevelId,
+  encodeSurveySelectId,
   decodeAttendanceButtonId,
   decodeSurveyFillId,
   encodeAttendanceButtonId,
@@ -71,5 +76,57 @@ describe('custom_id của nút Điền khảo sát', () => {
 
   it('ném lỗi thay vì dựng một custom_id quá dài', () => {
     expect(() => encodeSurveyFillId('x'.repeat(100))).toThrow();
+  });
+});
+
+describe('custom_id của bảng trả lời khảo sát', () => {
+  it('menu chọn và nút mức độ mã hoá rồi giải mã đúng', () => {
+    expect(decodeSurveyComponentId(encodeSurveySelectId('s1'))).toEqual({
+      kind: 'select',
+      surveyId: 's1',
+    });
+
+    const level = {
+      surveyId: 's1',
+      targetClass: GuildClass.HUYET_HA,
+      confidence: ClassChangeConfidence.CONSIDERING,
+    };
+
+    expect(decodeSurveyComponentId(encodeSurveyLevelId(level))).toEqual({
+      kind: 'level',
+      ...level,
+    });
+  });
+
+  it('nút Điền khảo sát giải mã ra loại fill', () => {
+    expect(decodeSurveyComponentId(encodeSurveyFillId('s1'))).toEqual({
+      kind: 'fill',
+      surveyId: 's1',
+    });
+  });
+
+  it.each([
+    'something-else',
+    'cs:chon',
+    'cs:chon:',
+    'cs:chon:a:b',
+    'cs:muc:s1:HUYET_HA',
+    'cs:muc:s1:PHAI_LA:SURE',
+    'cs:muc:s1:HUYET_HA:CHAC',
+    'cs:muc::HUYET_HA:SURE',
+    'cs:cu:s1',
+  ])('id lạ %s giải mã ra null', (customId) => {
+    expect(decodeSurveyComponentId(customId)).toBeNull();
+  });
+
+  it('ném lỗi thay vì dựng custom_id quá dài', () => {
+    expect(() => encodeSurveySelectId('x'.repeat(100))).toThrow();
+    expect(() =>
+      encodeSurveyLevelId({
+        surveyId: 'x'.repeat(100),
+        targetClass: GuildClass.TO_VAN,
+        confidence: ClassChangeConfidence.SURE,
+      }),
+    ).toThrow();
   });
 });

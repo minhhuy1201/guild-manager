@@ -25,7 +25,7 @@ const SURVEY_ENTRY_PATH = '/dang-nhap?redirect=%2Fluu-phai';
  * @param instant - Any instant on that day
  * @returns The day as members write it
  */
-function formatVnDay(instant: Date): string {
+export function formatVnDay(instant: Date): string {
   const key = vnDateKey(instant);
 
   return `${key.slice(8, 10)}/${key.slice(5, 7)}/${key.slice(0, 4)}`;

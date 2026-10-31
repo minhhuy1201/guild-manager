@@ -62,7 +62,11 @@ const applicationCommandInteractionSchema = z.object({
 const messageComponentInteractionSchema = z.object({
   type: z.literal(INTERACTION_TYPE.messageComponent),
   // snake_case because this is Discord's payload, read verbatim.
-  data: z.object({ custom_id: z.string().min(1) }),
+  data: z.object({
+    custom_id: z.string().min(1),
+    /** Chosen option values of a string select; a button sends none. */
+    values: z.array(z.string()).optional(),
+  }),
   /**
    * The message the component sits on. Only its flags are read, to tell a public board from an
    * ephemeral one; everything else Discord sends here is ignored.

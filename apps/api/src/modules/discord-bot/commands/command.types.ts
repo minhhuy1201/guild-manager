@@ -74,10 +74,24 @@ export interface LinkButton {
 /** One button of either kind. */
 export type ButtonComponent = CustomIdButton | LinkButton;
 
+/** One option of a string select. */
+export interface SelectOption {
+  label: string;
+  value: string;
+}
+
+/** A drop-down; Discord requires it to be the only component of its action row. */
+export interface StringSelectComponent {
+  type: (typeof COMPONENT_TYPE)['stringSelect'];
+  custom_id: string;
+  placeholder: string;
+  options: SelectOption[];
+}
+
 /** A horizontal strip of components. Discord allows at most 5 of these per message. */
 export interface ActionRow {
   type: (typeof COMPONENT_TYPE)['actionRow'];
-  components: ButtonComponent[];
+  components: (ButtonComponent | StringSelectComponent)[];
 }
 
 /**

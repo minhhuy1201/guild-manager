@@ -24,6 +24,16 @@ function pressWithFlags(flags?: number): MessageComponentInteraction {
 }
 
 describe('interactionSchema', () => {
+  it('nhận lựa chọn của string select, giá trị nằm trong data.values', () => {
+    const parsed = interactionSchema.parse({
+      type: 3,
+      data: { custom_id: 'cs:chon:s1', component_type: 3, values: ['KEEP'] },
+      member: { user: { id: '111' } },
+    }) as MessageComponentInteraction;
+
+    expect(parsed.data.values).toEqual(['KEEP']);
+  });
+
   it('nhận gói modal submit, chỉ giữ custom_id và value của từng ô', () => {
     const parsed = interactionSchema.parse({
       type: 5,

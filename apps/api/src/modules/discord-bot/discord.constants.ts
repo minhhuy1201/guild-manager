@@ -40,6 +40,8 @@ export const MESSAGE_FLAG = {
 export const COMPONENT_TYPE = {
   actionRow: 1,
   button: 2,
+  /** A drop-down of fixed options; sits alone in its action row */
+  stringSelect: 3,
   textInput: 4,
   /** Wraps one input inside a modal and gives it a caption */
   label: 18,

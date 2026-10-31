@@ -13,6 +13,11 @@ import { CharactersService } from '../characters/characters.public';
 import { ClassSurveyService } from '../class-survey/class-survey.public';
 import { ActorResolver } from './actor-resolver';
 import { buildOwnBoard, handleAttendanceButton } from './attendance-board';
+import {
+  answerSurveyLevel,
+  chooseSurveyOption,
+  openSurveyPanel,
+} from './class-survey-panel';
 import { openAutoAttend, switchAutoAttend } from './auto-attend-reply';
 import { BotChannelService } from './bot-channel.service';
 import { DiscordRestClient } from './discord-rest';
@@ -30,7 +35,8 @@ import {
   ANNOUNCEMENT_LEAVE_ID,
   AUTO_ATTEND_OFF_ID,
   AUTO_ATTEND_ON_ID,
-  decodeSurveyFillId,
+  decodeSurveyComponentId,
+  type SurveyComponentId,
   LEAVE_MODAL_ID,
 } from './custom-id';
 import { buildLeaveModal, readLeaveModal } from './leave-modal';
@@ -58,9 +64,6 @@ export type InteractionReply =
 
 /** Shown when something failed that the user can do nothing about. */
 const UNEXPECTED = 'Có lỗi xảy ra. Thử lại sau hoặc điểm danh trên web.';
-
-/** Shown to whoever presses "Điền khảo sát" before the answer panel exists. */
-const SURVEY_COMING_SOON = 'Khảo sát sắp có, bạn thử lại sau nhé.';
 
 /** Shown when a submitted form is not one this build knows how to read. */
 const STALE_FORM = 'Biểu mẫu này không còn dùng được. Bấm lại nút Xin nghỉ.';
@@ -191,9 +194,10 @@ export class InteractionRouter {
       return openAutoAttend(callerDiscordId(interaction), this.deps);
     }
 
-    // The real panel arrives with the answer flow; until then the button only says so.
-    if (decodeSurveyFillId(interaction.data.custom_id) !== null) {
-      return ephemeralText(SURVEY_COMING_SOON);
+    const surveyComponent = decodeSurveyComponentId(interaction.data.custom_id);
+
+    if (surveyComponent) {
+      return this.routeSurveyComponent(interaction, surveyComponent);
     }
 
     // Both sit on the private panel that button opened, so rewriting it in place is safe.
@@ -219,6 +223,39 @@ export class InteractionRouter {
 
       default:
         return assertNever(outcome, 'Kết quả bấm nút ngoài dự kiến');
+    }
+  }
+
+  /**
+   * Answer a Class survey component. The fill button sits on the public announcement, so it opens a
+   * new private panel; the select and the confidence buttons sit on that private panel and rewrite it.
+   * @param interaction - The validated press or selection
+   * @param component - The decoded custom_id
+   * @returns The reply Discord shows
+   */
+  private routeSurveyComponent(
+    interaction: MessageComponentInteraction,
+    component: SurveyComponentId,
+  ): Promise<InteractionReply> {
+    const discordId = callerDiscordId(interaction);
+
+    switch (component.kind) {
+      case 'fill':
+        return openSurveyPanel(discordId, component.surveyId, this.deps);
+
+      case 'select':
+        return chooseSurveyOption(
+          discordId,
+          component.surveyId,
+          interaction.data.values?.[0],
+          this.deps,
+        );
+
+      case 'level':
+        return answerSurveyLevel(discordId, component, this.deps);
+
+      default:
+        return assertNever(component, 'Thành phần khảo sát ngoài dự kiến');
     }
   }
 

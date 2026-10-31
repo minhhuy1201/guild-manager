@@ -9,16 +9,16 @@ và bảng hiện dòng xác nhận. Lưu đi qua cùng `ClassSurveyService.answ
 
 **Blocked by:** 01, 03
 
-**Status:** todo
+**Status:** done
 
-- [ ] `custom-id.ts`: id menu chọn (mang id đợt) và id nút mức độ (mang id đợt + phái + mức độ), encode +
+- [x] `custom-id.ts`: id menu chọn (mang id đợt) và id nút mức độ (mang id đợt + phái + mức độ), encode +
       decode; id lạ hoặc của bản build cũ ra thông báo rõ, không crash. `custom-id.spec.ts` phủ round trip.
-- [ ] Schema interaction nhận component string select (giá trị chọn trong `data.values`); router thêm nhánh
+- [x] Schema interaction nhận component string select (giá trị chọn trong `data.values`); router thêm nhánh
       cho nó, switch kết thúc bằng `assertNever`.
-- [ ] Nút "Điền khảo sát" thay câu "sắp có" của ticket 01 bằng bảng thật. Bảng viết lại tại chỗ
+- [x] Nút "Điền khảo sát" thay câu "sắp có" của ticket 01 bằng bảng thật. Bảng viết lại tại chỗ
       (update message) như bảng Tự động điểm danh.
-- [ ] Danh tính qua `ActorResolver`; tài khoản chưa liên kết, đợt đã đóng, đợt không tồn tại, chọn trùng phái
+- [x] Danh tính qua `ActorResolver`; tài khoản chưa liên kết, đợt đã đóng, đợt không tồn tại, chọn trùng phái
       đều ra tin ephemeral rõ ràng (lấy thông báo từ service).
-- [ ] Test qua `interaction-router.spec.ts`: mở bảng, giữ nguyên lưu ngay, chọn phái rồi chọn mức độ, đợt đã
+- [x] Test qua `interaction-router.spec.ts`: mở bảng, giữ nguyên lưu ngay, chọn phái rồi chọn mức độ, đợt đã
       đóng, chưa liên kết.
-- [ ] `docs/architecture.md` §3.3 (dòng `discord-bot` và sơ đồ luồng bot) nhắc menu chọn khảo sát.
+- [x] `docs/architecture.md` §3.3 (dòng `discord-bot` và sơ đồ luồng bot) nhắc menu chọn khảo sát.
