@@ -5,11 +5,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { PaletteDragPreview } from "../components/palette-drag-preview";
 import {
   COLOR_HEX,
-  TEAM_GROUP_HEX,
   TOKEN_FILL,
   TOKEN_RADIUS,
   tokenArtSize,
 } from "../lib/token-icon";
+import { TEAM_COLOR_STYLES } from "@/lib/team-color";
 
 afterEach(() => {
   cleanup();
@@ -125,7 +125,9 @@ describe("PaletteDragPreview", () => {
 
     const border = screen.getByTestId("palette-drag-preview").style.borderColor;
     expect(border).not.toBe(cssColor(COLOR_HEX.blue));
-    expect(Object.values(TEAM_GROUP_HEX).map(cssColor)).toContain(border);
+    expect(Object.values(TEAM_COLOR_STYLES)
+        .map((style) => style.hex)
+        .map(cssColor)).toContain(border);
   });
 
   it("stops listening once it is gone", () => {

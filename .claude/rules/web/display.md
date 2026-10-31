@@ -25,7 +25,7 @@ Screens must look like one app. A new display convention goes here; its reason g
 - Treat a `dark:` variant as a last resort. Fix it with a token that fits both themes.
 - Give the header and the phone tab bar `className="dark"` plus `text-foreground`. Both are translucent glass (`bg-card/85` or `/80`, `backdrop-blur-xl`, a `border-white/10` edge); keep the tab bar a sibling of the header, since the blur is a containing block.
 - Read the theme in the toaster through `useTheme()` (`components/ui/sonner.tsx`).
-- Tint team columns (`features/team-builder/lib/team-colors.ts`) from the same palette. Text is always `foreground`.
+- Tint team columns (`lib/team-color.ts`) from the same palette. Text is always `foreground`.
 
 ## A field's heading → `FieldLabel` when editable, `FieldCaption` when not
 

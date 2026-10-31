@@ -80,6 +80,19 @@ A member's standing "Có" for every battle day still open while it is on, until 
 button the member pressed, or a leave, wins over it on that day.
 _Avoid_: auto-yes, always present, luôn có mặt
 
+## Teams
+
+**Team color** (UI: "Màu đội"):
+The one colour from a fixed set that marks a team wherever it appears: its column in the team
+grid, the Formation announcement image, and its token on every tactic map. A team that has not
+chosen one keeps the colour of its default group.
+_Avoid_: card colour, theme, team group
+
+**Team icon** (UI: "Biểu tượng đội"):
+An optional symbol from a fixed set, shown before a team's name, that says the team's role, such as
+Công, Thủ, Trụ or a lane.
+_Avoid_: badge, avatar, insignia
+
 ## Screens
 
 **Focus mode** (UI: "Toàn màn hình"):

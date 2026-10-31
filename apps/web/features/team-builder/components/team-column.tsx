@@ -1,13 +1,17 @@
 import type { Character } from "@guild/shared/schemas";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import {
+  NO_CHOSEN_COLORS,
+  resolveTeamColor,
+  TEAM_COLOR_STYLES,
+} from "@/lib/team-color";
 import { cn } from "@/lib/utils";
 import {
   TEAM_CAPTURE_MATCH_ATTRIBUTE,
   TEAM_CAPTURE_MEMBERS_ATTRIBUTE,
   TEAM_CAPTURE_TEAM_ATTRIBUTE,
 } from "../lib/team-capture-attributes";
-import { getTeamColors } from "../lib/team-colors";
 import type { Notes, Slot } from "../types/formation";
 import { SlotCell } from "./slot-cell";
 import { TeamNameField } from "./team-name-field";
@@ -67,7 +71,7 @@ export function TeamColumn({
   className,
   captureMatchIndex,
 }: TeamColumnProps) {
-  const colors = getTeamColors(team);
+  const colors = TEAM_COLOR_STYLES[resolveTeamColor(team, NO_CHOSEN_COLORS)];
   const memberIds = [
     ...new Set(
       slots.flatMap((slot) => occupants.get(slot.id)?.id ?? [])
@@ -87,7 +91,7 @@ export function TeamColumn({
       {...captureMarks}
       className={cn(
         "gap-2 overflow-hidden pt-0 pb-3",
-        colors.background,
+        "bg-card",
         className
       )}
     >

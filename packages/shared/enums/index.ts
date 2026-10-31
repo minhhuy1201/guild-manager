@@ -5,4 +5,5 @@ export * from "./grantable-command.enum";
 export * from "./guild-class.enum";
 export * from "./prize-tier.enum";
 export * from "./role.enum";
+export * from "./team-color.enum";
 export * from "./tactic.enum";
