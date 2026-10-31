@@ -430,7 +430,7 @@ apps/web/
 └── lib/              # api-client.ts (apiFetch + ApiError), format.ts, keyboard-target.ts, motion.ts, page-banners.ts, utils.ts, …
 ```
 
-Features: `attendance`, `auth`, `cat-race`, `landing`, `members`, `settings`, `tactics`, `team-builder`.
+Features: `attendance`, `auth`, `cat-race`, `class-survey`, `landing`, `members`, `settings`, `tactics`, `team-builder`.
 
 `auth` is the one feature with **three** entry points instead of one, split by runtime rather than by
 public/private, because the split is what the runtimes force:

@@ -7,6 +7,7 @@
 export * from './announcement-note';
 export * from './assert-never';
 export * from './battle-session';
+export * from './class-outlook';
 export * from './formation-announcement';
 export * from './permissions';
 export * from './safe-redirect';

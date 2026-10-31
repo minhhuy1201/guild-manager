@@ -88,6 +88,12 @@ another one, and how sure they are, ahead of a game update. It only shows the gu
 never changes the class on a member's profile.
 _Avoid_: poll, vote, form
 
+**Class outlook** (UI: "Lực lượng lưu phái"):
+The guild's head-count per class before and after a game update, read from a Class survey: members
+who have not answered count at their current class on both sides, and a planned move is split into
+sure and still-considering. With no survey it is just the current line-up.
+_Avoid_: class forecast, class distribution
+
 ## Teams
 
 **Team color** (UI: "Màu đội"):

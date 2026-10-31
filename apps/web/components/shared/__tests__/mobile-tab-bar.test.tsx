@@ -48,16 +48,16 @@ function tabLabels(): string[] {
 describe("MobileTabBar", () => {
   // On a phone the "Điểm danh" and "Lịch sử" icons are hard to tell apart, so every item needs its
   // text. "Xếp team" and "Chiến thuật" are desktop-only: drag-and-drop and the map need a wide screen.
-  it("member thấy hai mục, mục nào cũng có chữ", () => {
+  it("member thấy ba mục, mục nào cũng có chữ", () => {
     render(<MobileTabBar actor={MEMBER} />);
 
-    expect(tabLabels()).toEqual(["Điểm danh", "Lịch sử"]);
+    expect(tabLabels()).toEqual(["Điểm danh", "Lịch sử", "Lưu phái"]);
   });
 
   it("admin thấy thêm Thiết lập, không có Xếp team và Chiến thuật", () => {
     render(<MobileTabBar actor={ADMIN} />);
 
-    expect(tabLabels()).toEqual(["Điểm danh", "Lịch sử", "Thiết lập"]);
+    expect(tabLabels()).toEqual(["Điểm danh", "Lịch sử", "Lưu phái", "Thiết lập"]);
   });
 
   it("mục đang mở được đánh dấu là trang hiện tại", () => {
@@ -95,7 +95,7 @@ describe("MobileTabBar - Manager", () => {
   it("chưa có Grant nào thì thấy y hệt Member", () => {
     render(<MobileTabBar actor={{ role: GuildRole.MANAGER }} />);
 
-    expect(tabLabels()).toEqual(["Điểm danh", "Lịch sử"]);
+    expect(tabLabels()).toEqual(["Điểm danh", "Lịch sử", "Lưu phái"]);
   });
 
   it("có Capability của một tab Thiết lập thì thấy Thiết lập", () => {
@@ -105,7 +105,7 @@ describe("MobileTabBar - Manager", () => {
       />
     );
 
-    expect(tabLabels()).toEqual(["Điểm danh", "Lịch sử", "Thiết lập"]);
+    expect(tabLabels()).toEqual(["Điểm danh", "Lịch sử", "Lưu phái", "Thiết lập"]);
   });
 
   it("Xếp team là mục chỉ dành cho màn rộng nên không hiện trên điện thoại", () => {
@@ -115,7 +115,7 @@ describe("MobileTabBar - Manager", () => {
       />
     );
 
-    expect(tabLabels()).toEqual(["Điểm danh", "Lịch sử"]);
+    expect(tabLabels()).toEqual(["Điểm danh", "Lịch sử", "Lưu phái"]);
   });
 });
 
