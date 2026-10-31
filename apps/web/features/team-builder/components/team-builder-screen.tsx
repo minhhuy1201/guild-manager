@@ -56,20 +56,20 @@ export function TeamBuilderScreen() {
     useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } })
   );
 
-  // The team names are global, so an unsaved name is unsaved work on every day
+  // The team settings are global, so an unsaved name, colour or icon is unsaved work on every day
   // of the week, not only the one whose tab is open.
   const hasUnsaved =
-    screen.draft.dirtySessionIds.size > 0 || screen.teamNames.dirty;
-  const dirty = screen.draft.dirty || screen.teamNames.dirty;
-  const saving = screen.draft.saving || screen.teamNames.saving;
+    screen.draft.dirtySessionIds.size > 0 || screen.teamSettings.dirty;
+  const dirty = screen.draft.dirty || screen.teamSettings.dirty;
+  const saving = screen.draft.saving || screen.teamSettings.saving;
   const editable = screen.selection.editable;
-  const changeCount = screen.draft.changeCount + screen.teamNames.changeCount;
+  const changeCount = screen.draft.changeCount + screen.teamSettings.changeCount;
   // A day already played has no Save, exactly as before the bar existed: its formation cannot be
   // written, so a save from there would only meet the lock.
   const showSaveBar = editable && dirty;
   const errorMessages = [
     screen.draft.saveErrorMessage,
-    screen.teamNames.saveErrorMessage,
+    screen.teamSettings.saveErrorMessage,
   ].filter((message): message is string => Boolean(message));
   const focusButtonRef = useRef<HTMLButtonElement>(null);
   const controlsRef = useRef<HTMLElement>(null);
@@ -94,7 +94,7 @@ export function TeamBuilderScreen() {
    * team must not rewrite the formation of the day that happens to be open.
    */
   async function handleSave() {
-    await Promise.all([screen.draft.handleSave(), screen.teamNames.save()]);
+    await Promise.all([screen.draft.handleSave(), screen.teamSettings.save()]);
   }
 
   // An empty match has nothing to lose, so it is copied over without a dialog.
@@ -115,7 +115,7 @@ export function TeamBuilderScreen() {
   /** Discard both drafts - the save bar's "Đặt lại" covers everything it can save. */
   function handleReset() {
     screen.draft.resetActive();
-    screen.teamNames.reset();
+    screen.teamSettings.reset();
   }
 
   useSaveShortcut(handleSave, showSaveBar && !saving);
@@ -220,8 +220,12 @@ export function TeamBuilderScreen() {
       assignment={screen.draft.assignment}
       notes={screen.draft.notes}
       onNoteChange={screen.draft.setNote}
-      names={screen.teamNames.names}
-      onNameChange={screen.teamNames.setName}
+      names={screen.teamSettings.names}
+      onNameChange={screen.teamSettings.setName}
+      colors={screen.teamSettings.colors}
+      onColorChange={screen.teamSettings.setColor}
+      icons={screen.teamSettings.icons}
+      onIconChange={screen.teamSettings.setIcon}
       saving={saving}
       charactersById={screen.pool.charactersById}
       readOnly={!editable}
@@ -329,29 +333,31 @@ export function TeamBuilderScreen() {
             matches={screen.draft.matches}
             charactersById={screen.pool.charactersById}
             absentIds={screen.pool.absentIds}
-            names={screen.teamNames.names}
+            names={screen.teamSettings.names}
+            colors={screen.teamSettings.colors}
+            icons={screen.teamSettings.icons}
           />
         ) : null}
 
         <SaveConflictDialog
           formationLabel={activeSession.label}
           isFormationStale={screen.draft.isStale}
-          isTeamNamesStale={screen.teamNames.isStale}
+          isTeamSettingsStale={screen.teamSettings.isStale}
           onReload={() => {
             if (screen.draft.isStale) screen.draft.discardStale();
-            if (screen.teamNames.isStale) screen.teamNames.discardStale();
+            if (screen.teamSettings.isStale) screen.teamSettings.discardStale();
           }}
           onOverwrite={async () => {
             await Promise.all([
               screen.draft.isStale ? screen.draft.overwriteStale() : undefined,
-              screen.teamNames.isStale
-                ? screen.teamNames.overwriteStale()
+              screen.teamSettings.isStale
+                ? screen.teamSettings.overwriteStale()
                 : undefined,
             ]);
           }}
           onClose={() => {
             screen.draft.dismissStale();
-            screen.teamNames.dismissStale();
+            screen.teamSettings.dismissStale();
           }}
         />
 

@@ -41,11 +41,18 @@ export function toastSuccess(message: string): void {
   toast.success(message, { style: toneStyle("success") });
 }
 
+/** Extra settings of an error toast. */
+interface ToastErrorOptions {
+  /** Toasts sharing an id collapse into one, for a failure several callers report at once */
+  id?: string;
+}
+
 /**
  * Report a write that failed.
  * @param message - Vietnamese sentence shown in the toast, usually `ApiError.message`
+ * @param options - Optional id that collapses repeated reports of the same failure
  * @returns Nothing
  */
-export function toastError(message: string): void {
-  toast.error(message, { style: toneStyle("error") });
+export function toastError(message: string, options: ToastErrorOptions = {}): void {
+  toast.error(message, { id: options.id, style: toneStyle("error") });
 }

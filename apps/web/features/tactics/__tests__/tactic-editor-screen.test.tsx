@@ -62,6 +62,8 @@ vi.mock("../components/tactic-canvas", () => ({
   },
 }));
 
+vi.mock("../hooks/use-team-colors", () => ({ useTeamColors: () => ({}) }));
+
 vi.mock("../hooks/use-token-presets", () => ({
   useTokenPresets: () => ({ data: [], isPending: false }),
   useCreateTokenPreset: () => ({ mutateAsync: vi.fn() }),

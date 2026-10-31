@@ -4,20 +4,23 @@ import {
   NotFoundException,
   PreconditionFailedException,
 } from '@nestjs/common';
+import type { TeamColor, TeamIcon } from '@guild/shared/enums';
 import {
   formationWeekSchema,
   sessionFormationSchema,
-  teamNamesStateSchema,
+  teamColorsSchema,
+  teamSettingsStateSchema,
 } from '@guild/shared/schemas';
 import type {
   BattleSession,
   FormationWeek,
   MatchFormation,
   SaveFormationInput,
-  SaveTeamNamesInput,
+  SaveTeamSettingsInput,
   SessionFormation,
+  TeamColors,
   TeamNames,
-  TeamNamesState,
+  TeamSettingsState,
 } from '@guild/shared/schemas';
 
 import { Clock } from '../../common';
@@ -43,9 +46,9 @@ const FOREIGN_KEY_VIOLATION = 'P2003';
 const FORMATION_STALE =
   'Đội hình ngày này vừa được lưu ở nơi khác (ADMIN khác, hoặc có người báo vắng). Tải bản mới nhất hoặc ghi đè.';
 
-/** A team name save based on a version someone else has already moved past. */
-const TEAM_NAMES_STALE =
-  'Tên đội vừa được ADMIN khác lưu. Tải bản mới nhất hoặc ghi đè.';
+/** A team settings save based on a version someone else has already moved past. */
+const TEAM_SETTINGS_STALE =
+  'Tên, màu và biểu tượng đội vừa được ADMIN khác lưu. Tải bản mới nhất hoặc ghi đè.';
 
 /** Id of the one TeamNameVersion row - see the model's comment. */
 const TEAM_NAME_VERSION_ID = 1;
@@ -170,7 +173,7 @@ export class TeamBuilderService {
    */
   async getSavedFormation(sessionId: string): Promise<SavedFormation> {
     const matchesBySession = await this.loadMatchesBySession([sessionId]);
-    const { names } = await this.getTeamNames();
+    const { names } = await this.getTeamSettings();
 
     return { matches: matchesBySession.get(sessionId) ?? [], teamNames: names };
   }
@@ -392,46 +395,89 @@ export class TeamBuilderService {
   }
 
   /**
-   * The team names shown on the formation grid's column headers, with the version they are at.
-   * Global data: one map for the whole app, not one per week or per battle day.
-   * @returns Team number (as a decimal string) → name, teams still on their number are absent
+   * The team names, colours and icons shown on the formation grid's column headers, with the version they
+   * are at. Global data: one bundle for the whole app, not one per week or per battle day.
+   * @returns Team number (as a decimal string) → name / colour / icon, teams still on their number,
+   *   default colour or colour dot are absent
    * @throws Error when the one TeamNameVersion row is missing - a broken database, never recreated
    */
-  async getTeamNames(): Promise<TeamNamesState> {
+  async getTeamSettings(): Promise<TeamSettingsState> {
     // Version first, sequentially - same reasoning as `getFormations`.
     const versionRow = await this.prisma.teamNameVersion.findUniqueOrThrow({
       where: { id: TEAM_NAME_VERSION_ID },
     });
-    const rows = await this.prisma.teamName.findMany({
+    const nameRows = await this.prisma.teamName.findMany({
+      orderBy: { team: 'asc' },
+    });
+    const colorRows = await this.prisma.teamColorChoice.findMany({
+      orderBy: { team: 'asc' },
+    });
+    const iconRows = await this.prisma.teamIconChoice.findMany({
       orderBy: { team: 'asc' },
     });
 
-    return verifyResponse(teamNamesStateSchema, {
+    return verifyResponse(teamSettingsStateSchema, {
       names: Object.fromEntries(
-        rows.map((row) => [String(row.team), row.name]),
+        nameRows.map((row) => [String(row.team), row.name]),
+      ),
+      // The Prisma enum is a string union; verifyResponse is what proves it is a shared TeamColor.
+      colors: Object.fromEntries(
+        colorRows.map((row) => [String(row.team), row.color as TeamColor]),
+      ),
+      icons: Object.fromEntries(
+        iconRows.map((row) => [String(row.team), row.icon as TeamIcon]),
       ),
       version: versionRow.version,
-    } satisfies TeamNamesState);
+    } satisfies TeamSettingsState);
   }
 
   /**
-   * Overwrite the WHOLE team name map. Delete-then-recreate for the same reason `saveFormation`
-   * does it: ten rows at most, and clearing a name back to its plain number becomes a missing key
-   * rather than a dedicated endpoint.
-   * Not guarded by a session lock — the names are global configuration and belong to no battle day,
-   * so a played battle never freezes them.
-   * @param input - Team number (as a decimal string) → name, plus the version the save is based on
-   * @returns The map just written, at its new version
+   * Only the team colours - what the tactics map needs to ring a "Đội N" token. Kept apart from
+   * `getTeamSettings` so a reader without the team builder Capability never receives the names.
+   * @returns Team number (as a decimal string) → colour; a team on its default colour is absent
+   */
+  async getTeamColors(): Promise<TeamColors> {
+    const colorRows = await this.prisma.teamColorChoice.findMany({
+      orderBy: { team: 'asc' },
+    });
+
+    return verifyResponse(
+      teamColorsSchema,
+      Object.fromEntries(
+        colorRows.map((row) => [String(row.team), row.color as TeamColor]),
+      ),
+    );
+  }
+
+  /**
+   * Overwrite the WHOLE team settings bundle. Delete-then-recreate for the same reason
+   * `saveFormation` does it: ten rows at most per table, and clearing a name, colour or icon back to its
+   * default becomes a missing key rather than a dedicated endpoint.
+   * Not guarded by a session lock — the settings are global configuration and belong to no battle
+   * day, so a played battle never freezes them.
+   * @param input - Team number (as a decimal string) → name / colour / icon, plus the version the save is
+   *   based on
+   * @returns The bundle just written, at its new version
    * @throws PreconditionFailedException when the stored version is no longer `input.version`
    */
-  async saveTeamNames(input: SaveTeamNamesInput): Promise<TeamNamesState> {
-    const rows = Object.entries(input.names).map(([team, name]) => ({
+  async saveTeamSettings(
+    input: SaveTeamSettingsInput,
+  ): Promise<TeamSettingsState> {
+    const nameRows = Object.entries(input.names).map(([team, name]) => ({
       team: Number(team),
       name,
     }));
+    const colorRows = Object.entries(input.colors).map(([team, color]) => ({
+      team: Number(team),
+      color,
+    }));
+    const iconRows = Object.entries(input.icons).map(([team, icon]) => ({
+      team: Number(team),
+      icon,
+    }));
 
     await this.prisma.$transaction(async (tx) => {
-      // Same single-statement check-and-bump as `saveFormation`.
+      // Same single-statement check-and-bump as `saveFormation`: one bump covers all three tables.
       const { count } = await tx.teamNameVersion.updateMany({
         where: { id: TEAM_NAME_VERSION_ID, version: input.version },
         data: { version: { increment: 1 } },
@@ -442,17 +488,27 @@ export class TeamBuilderService {
         await tx.teamNameVersion.findUniqueOrThrow({
           where: { id: TEAM_NAME_VERSION_ID },
         });
-        throw new PreconditionFailedException(TEAM_NAMES_STALE);
+        throw new PreconditionFailedException(TEAM_SETTINGS_STALE);
       }
 
       await tx.teamName.deleteMany({});
-      if (rows.length > 0) await tx.teamName.createMany({ data: rows });
+      if (nameRows.length > 0) await tx.teamName.createMany({ data: nameRows });
+      await tx.teamColorChoice.deleteMany({});
+      if (colorRows.length > 0) {
+        await tx.teamColorChoice.createMany({ data: colorRows });
+      }
+      await tx.teamIconChoice.deleteMany({});
+      if (iconRows.length > 0) {
+        await tx.teamIconChoice.createMany({ data: iconRows });
+      }
     });
 
-    return verifyResponse(teamNamesStateSchema, {
+    return verifyResponse(teamSettingsStateSchema, {
       names: input.names,
+      colors: input.colors,
+      icons: input.icons,
       version: input.version + 1,
-    } satisfies TeamNamesState);
+    } satisfies TeamSettingsState);
   }
 }
 

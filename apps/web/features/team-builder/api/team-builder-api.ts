@@ -5,9 +5,9 @@ import type {
   FormationWeek,
   MatchFormation,
   NotifyMembersInput,
-  SaveTeamNamesInput,
+  SaveTeamSettingsInput,
   SessionFormation,
-  TeamNamesState,
+  TeamSettingsState,
   TeamNoticeReport,
 } from "@guild/shared/schemas";
 
@@ -80,28 +80,28 @@ export async function saveFormation(
 }
 
 /**
- * Get the team names shown on the grid's column headers.
- * Global data — one map for the whole app, not one per week or per battle day.
- * @returns Team number (as a decimal string) → name, teams still on their number are absent, plus the version; a failure value (`ok: false`) when signed out or the backend rejects it
+ * Get the team names, colours and icons shown on the grid's column headers.
+ * Global data — one bundle for the whole app, not one per week or per battle day.
+ * @returns Team number (as a decimal string) → name / colour / icon, teams on their number, default colour or colour dot are absent, plus the version; a failure value (`ok: false`) when signed out or the backend rejects it
  */
-export async function fetchTeamNames(): Promise<ActionResult<TeamNamesState>> {
+export async function fetchTeamSettings(): Promise<ActionResult<TeamSettingsState>> {
   return toActionResult(async () =>
-    apiFetch<TeamNamesState>("/team-builder/team-names", {
+    apiFetch<TeamSettingsState>("/team-builder/team-settings", {
       headers: await authHeader(),
     })
   );
 }
 
 /**
- * Overwrite the whole team name map.
- * @param input - Team number (as a decimal string) → name, a team left out loses its name, plus the version the draft started from
- * @returns The map just written, at its new version; a failure value (`ok: false`) when signed out, the version is stale (412), or the backend rejects it
+ * Overwrite the whole team settings bundle.
+ * @param input - Team number (as a decimal string) → name / colour / icon, a team left out loses it, plus the version the draft started from
+ * @returns The bundle just written, at its new version; a failure value (`ok: false`) when signed out, the version is stale (412), or the backend rejects it
  */
-export async function saveTeamNames(
-  input: SaveTeamNamesInput
-): Promise<ActionResult<TeamNamesState>> {
+export async function saveTeamSettings(
+  input: SaveTeamSettingsInput
+): Promise<ActionResult<TeamSettingsState>> {
   return toActionResult(async () =>
-    apiFetch<TeamNamesState>("/team-builder/team-names", {
+    apiFetch<TeamSettingsState>("/team-builder/team-settings", {
       method: "PUT",
       body: JSON.stringify(input),
       headers: await authHeader(),

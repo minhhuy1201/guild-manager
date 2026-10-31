@@ -12,6 +12,7 @@ import {
   tokenArtSize,
   tokenBorderHex,
 } from "../lib/token-icon";
+import { useTeamColors } from "../hooks/use-team-colors";
 import { TokenGlyph } from "./token-glyph";
 
 /** Width of the ring, in map units - the canvas draws an unselected token's ring this wide. */
@@ -45,6 +46,7 @@ export function PaletteDragPreview({
   scale,
 }: PaletteDragPreviewProps) {
   const [pointer, setPointer] = useState<MapPoint | null>(null);
+  const teamColors = useTeamColors();
 
   useEffect(() => {
     /**
@@ -78,7 +80,7 @@ export function PaletteDragPreview({
         width: diameter,
         height: diameter,
         borderWidth: RING_WIDTH * scale,
-        borderColor: tokenBorderHex({ icon: token.icon, color }),
+        borderColor: tokenBorderHex({ icon: token.icon, color }, teamColors),
         backgroundColor: TOKEN_FILL[color],
         color: COLOR_HEX[color],
         // The glyph is sized in `em`, so one font size draws an icon and a team's digits alike.

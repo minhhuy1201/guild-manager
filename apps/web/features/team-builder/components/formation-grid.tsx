@@ -3,7 +3,8 @@
 import { useMemo } from "react";
 
 import { SLOTS_PER_TEAM } from "@guild/shared/lib";
-import type { Character, TeamNames } from "@guild/shared/schemas";
+import type { TeamColor, TeamIcon } from "@guild/shared/enums";
+import type { Character, TeamColors, TeamIcons, TeamNames } from "@guild/shared/schemas";
 
 import { Spinner } from "@/components/shared/spinner";
 import { cn } from "@/lib/utils";
@@ -51,6 +52,14 @@ interface FormationGridProps {
   names: TeamNames;
   /** Called with the committed name when a team header is edited */
   onNameChange: (team: number, name: string) => void;
+  /** Colours Managers picked, keyed by team number. A team with no key shows its default colour. */
+  colors: TeamColors;
+  /** Called with the picked colour when a team header's colour button is used */
+  onColorChange: (team: number, color: TeamColor | null) => void;
+  /** Team icons, keyed by team number. A team with no key shows its colour dot. */
+  icons: TeamIcons;
+  /** Called with the picked icon; `null` puts the team back on its colour dot */
+  onIconChange: (team: number, icon: TeamIcon | null) => void;
   /** True while a save is in flight — the grid is covered and frozen */
   saving?: boolean;
   /** Where the grid is drawn: the admin's screen, or the Discord image */
@@ -94,6 +103,10 @@ interface FormationGridProps {
  * @param notes - Notes currently shown, keyed by slot id
  * @param onNoteChange - Called with the raw text when a slot's note changes
  * @param names - Team names, keyed by team number
+ * @param colors - Chosen team colours, keyed by team number
+ * @param onColorChange - Called with the picked colour
+ * @param icons - Chosen team icons, keyed by team number
+ * @param onIconChange - Called with the picked icon
  * @param onNameChange - Called with the committed name of a team
  * @param saving - True while a save is in flight
  * @param layout - Where the grid is drawn, the screen by default
@@ -111,6 +124,10 @@ export function FormationGrid({
   notes,
   onNoteChange,
   names,
+  colors,
+  onColorChange,
+  icons,
+  onIconChange,
   onNameChange,
   saving = false,
   layout = "screen",
@@ -222,6 +239,10 @@ export function FormationGrid({
                   team={team}
                   name={names[String(team)] ?? ""}
                   onNameChange={onNameChange}
+                  colors={colors}
+                  onColorChange={onColorChange}
+                  icons={icons}
+                  onIconChange={onIconChange}
                   slots={slots}
                   occupants={occupants}
                   readOnly={readOnly}

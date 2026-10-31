@@ -442,7 +442,7 @@ on page load.
   as the variable. Menus they open portal to `<body>` and follow the page's theme.
 - The toaster follows the theme through `useTheme()` (`components/ui/sonner.tsx`).
 
-**Team columns** (`features/team-builder/lib/team-colors.ts`) tint the same palette rather than
+**Team columns** (`lib/team-color.ts`) tint the same palette rather than
 bringing hues of their own: teams 1-5 jade, 6-7 the warm neutral, 8 navy, 9-10 gold. The header
 sits at `/15` to `/30`, the border a step stronger, the surface at `/5` to `/10`, and the text is
 always `foreground`.

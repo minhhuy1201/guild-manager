@@ -4,6 +4,7 @@ import { attendanceKeys } from "@/features/attendance/api/attendance-keys";
 import { catRaceKeys } from "@/features/cat-race/api/cat-race-keys";
 import { memberKeys } from "@/features/members/api/members-keys";
 import { settingsKeys } from "@/features/settings/api/battle-sessions-keys";
+import { tacticKeys } from "@/features/tactics/api/tactics-keys";
 import { teamBuilderKeys } from "@/features/team-builder/api/team-builder-keys";
 import { CACHE_DEPENDENTS, CACHE_TOPICS } from "../cache-graph";
 
@@ -56,8 +57,11 @@ describe("CACHE_DEPENDENTS", () => {
     ]);
   });
 
-  it("lưu đội hình chỉ làm cũ xếp team", () => {
-    expect(CACHE_DEPENDENTS.formation()).toEqual([teamBuilderKeys.all]);
+  it("lưu đội hình hay cài đặt đội làm cũ xếp team và màu đội trên bản đồ chiến thuật", () => {
+    expect(CACHE_DEPENDENTS.formation()).toEqual([
+      teamBuilderKeys.all,
+      tacticKeys.teamColors(),
+    ]);
   });
 
   it("gọi hai lần trả về key bằng nhau", () => {

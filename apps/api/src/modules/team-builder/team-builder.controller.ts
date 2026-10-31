@@ -12,7 +12,7 @@ import { Capability } from '@guild/shared/enums';
 import type {
   FormationWeek,
   SessionFormation,
-  TeamNamesState,
+  TeamSettingsState,
 } from '@guild/shared/schemas';
 
 import {
@@ -22,7 +22,7 @@ import {
   RequireCapability,
 } from '../../common';
 import { SaveFormationDto } from './dto/save-formation.dto';
-import { SaveTeamNamesDto } from './dto/save-team-names.dto';
+import { SaveTeamSettingsDto } from './dto/save-team-settings.dto';
 import { TeamBuilderService } from './team-builder.service';
 
 @ApiTags('team-builder')
@@ -72,24 +72,28 @@ export class TeamBuilderController {
   }
 
   /**
-   * The team names shown on the grid's column headers — global, not per battle day.
-   * @returns Team number (as a decimal string) → name, plus the version
+   * The team names, colours and icons shown on the grid's column headers — global, not per battle day.
+   * @returns Team number (as a decimal string) → name / colour / icon, plus the version
    */
-  @Get('team-names')
-  @ApiOperation({ summary: 'Tên các đội trên lưới đội hình' })
-  getTeamNames(): Promise<TeamNamesState> {
-    return this.teamBuilder.getTeamNames();
+  @Get('team-settings')
+  @ApiOperation({
+    summary: 'Tên, màu và biểu tượng các đội trên lưới đội hình',
+  })
+  getTeamSettings(): Promise<TeamSettingsState> {
+    return this.teamBuilder.getTeamSettings();
   }
 
   /**
-   * Overwrite the whole team name map.
-   * @param body - names: team number → name, a team left out loses its name; version: the one the
-   *   draft was based on
-   * @returns The map just written (412 when the version is stale)
+   * Overwrite the whole team settings bundle.
+   * @param body - names / colors / icons: team number → value, a team left out loses it; version: the one
+   *   the draft was based on
+   * @returns The bundle just written (412 when the version is stale)
    */
-  @Put('team-names')
-  @ApiOperation({ summary: 'Lưu tên các đội' })
-  saveTeamNames(@Body() body: SaveTeamNamesDto): Promise<TeamNamesState> {
-    return this.teamBuilder.saveTeamNames(body);
+  @Put('team-settings')
+  @ApiOperation({ summary: 'Lưu tên, màu và biểu tượng các đội' })
+  saveTeamSettings(
+    @Body() body: SaveTeamSettingsDto,
+  ): Promise<TeamSettingsState> {
+    return this.teamBuilder.saveTeamSettings(body);
   }
 }

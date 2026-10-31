@@ -1,16 +1,18 @@
-import type { Character } from "@guild/shared/schemas";
+import type { TeamColor, TeamIcon } from "@guild/shared/enums";
+import type { Character, TeamColors, TeamIcons } from "@guild/shared/schemas";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { resolveTeamColor, TEAM_COLOR_STYLES } from "@/lib/team-color";
 import { cn } from "@/lib/utils";
 import {
   TEAM_CAPTURE_MATCH_ATTRIBUTE,
   TEAM_CAPTURE_MEMBERS_ATTRIBUTE,
   TEAM_CAPTURE_TEAM_ATTRIBUTE,
 } from "../lib/team-capture-attributes";
-import { getTeamColors } from "../lib/team-colors";
 import type { Notes, Slot } from "../types/formation";
 import { SlotCell } from "./slot-cell";
 import { TeamNameField } from "./team-name-field";
+import { TeamStyleButton } from "./team-style-button";
 
 interface TeamColumnProps {
   /** Team number shown in the header */
@@ -19,6 +21,14 @@ interface TeamColumnProps {
   name: string;
   /** Called with the committed name when the header is edited */
   onNameChange: (team: number, name: string) => void;
+  /** Colours Managers picked, keyed by team number. A team with no key shows its default colour. */
+  colors: TeamColors;
+  /** Called with the picked colour when the header's colour button is used; `null` for the default */
+  onColorChange: (team: number, color: TeamColor | null) => void;
+  /** Icons Managers picked, keyed by team number. A team with no key shows its colour dot. */
+  icons: TeamIcons;
+  /** Called with the picked icon when the header's style button is used; `null` for no icon */
+  onIconChange: (team: number, icon: TeamIcon | null) => void;
   /** The six slots of this team, already sorted by position */
   slots: Slot[];
   /** Occupant of each slot, keyed by slot id. A missing key means the slot is empty. */
@@ -44,6 +54,10 @@ interface TeamColumnProps {
  * @param team - Team number shown in the header
  * @param name - The team's name, empty while it shows its number
  * @param onNameChange - Called with the committed name
+ * @param colors - Chosen team colours, keyed by team number
+ * @param onColorChange - Called with the picked colour
+ * @param icons - Chosen team icons, keyed by team number
+ * @param onIconChange - Called with the picked icon
  * @param slots - The six slots of this team, sorted by position
  * @param occupants - Occupant of each slot, keyed by slot id
  * @param readOnly - Render without drag handles
@@ -58,6 +72,10 @@ export function TeamColumn({
   team,
   name,
   onNameChange,
+  colors,
+  onColorChange,
+  icons,
+  onIconChange,
   slots,
   occupants,
   readOnly = false,
@@ -67,7 +85,7 @@ export function TeamColumn({
   className,
   captureMatchIndex,
 }: TeamColumnProps) {
-  const colors = getTeamColors(team);
+  const style = TEAM_COLOR_STYLES[resolveTeamColor(team, colors)];
   const memberIds = [
     ...new Set(
       slots.flatMap((slot) => occupants.get(slot.id)?.id ?? [])
@@ -87,18 +105,21 @@ export function TeamColumn({
       {...captureMarks}
       className={cn(
         "gap-2 overflow-hidden pt-0 pb-3",
-        colors.background,
+        "bg-card",
         className
       )}
     >
       <CardHeader
-        className={cn("border-b border-border/60 px-3 py-2.5", colors.header)}
+        className={cn("border-b border-border/60 px-3 py-2.5", style.header)}
       >
         <div className="flex items-center gap-2">
-          <span
-            aria-hidden
-            data-slot="team-marker"
-            className={cn("size-2.5 shrink-0 rounded-full", colors.marker)}
+          <TeamStyleButton
+            team={team}
+            colors={colors}
+            readOnly={readOnly}
+            icons={icons}
+            onColorChange={onColorChange}
+            onIconChange={onIconChange}
           />
           <div className="min-w-0 flex-1">
             <TeamNameField

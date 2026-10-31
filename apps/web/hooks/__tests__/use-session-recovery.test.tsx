@@ -28,6 +28,8 @@ describe("useSessionRecovery", () => {
     expect(refresh).toHaveBeenCalledTimes(1);
     expect(toastError).toHaveBeenCalledTimes(1);
     expect(toastError.mock.calls[0][0]).toContain("Bấm lại");
+    // A fixed id, so two saves of one press failing together show one toast, not two.
+    expect(toastError.mock.calls[0][1]).toEqual({ id: "session-recovered" });
   });
 
   it("lỗi khác thì không đụng gì, để caller tự báo", () => {

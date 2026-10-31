@@ -1,24 +1,36 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { TeamNames, TeamNamesState } from "@guild/shared/schemas";
+import type { TeamColor, TeamIcon } from "@guild/shared/enums";
+import type {
+  TeamColors,
+  TeamIcons,
+  TeamNames,
+  TeamSettingsState,
+} from "@guild/shared/schemas";
 
 import { toastSuccess } from "@/components/shared/toast";
+import { useSessionRecovery } from "@/hooks/use-session-recovery";
 import { ApiError } from "@/lib/api-client";
-import { countNameChanges } from "../lib/team-name-diff";
-import { useTeamNameStore } from "../store/team-name-store";
-import { useSaveTeamNames } from "./use-save-team-names";
+import { isSessionExpired } from "@/lib/session-expired";
+import { countSettingChanges } from "../lib/team-settings-diff";
+import { useTeamSettingsStore } from "../store/team-settings-store";
+import { useSaveTeamSettings } from "./use-save-team-settings";
 
 /** HTTP status the backend returns when the draft's base version is no longer current. */
 const STALE_STATUS = 412;
 
-/** The team names on screen, and everything that edits and saves them. */
-export interface TeamNameDraftState {
+/** The team names, colours and icons on screen, and everything that edits and saves them. */
+export interface TeamSettingsDraftState {
   /** Names currently shown — the draft where one exists, the saved copy otherwise */
   names: TeamNames;
-  /** Whether the names differ from the saved copy */
+  /** Chosen colours currently shown; a team with no key is on its default colour */
+  colors: TeamColors;
+  /** Chosen icons currently shown; a team with no key shows its colour dot */
+  icons: TeamIcons;
+  /** Whether the names, colours or icons differ from the saved copy */
   dirty: boolean;
-  /** How many teams carry a name different from the saved copy */
+  /** How many name, colour and icon fields differ from the saved copy */
   changeCount: number;
   /** True while the save request is in flight */
   saving: boolean;
@@ -26,9 +38,13 @@ export interface TeamNameDraftState {
   saveErrorMessage: string | undefined;
   /** Write one team's name; an empty name clears it back to the team number */
   setName: (team: number, name: string) => void;
+  /** Write one team's colour; `null` puts the team back on its default colour */
+  setColor: (team: number, color: TeamColor | null) => void;
+  /** Write one team's icon; `null` puts the team back on its colour dot */
+  setIcon: (team: number, icon: TeamIcon | null) => void;
   /** Discard the draft, falling back to the saved copy */
   reset: () => void;
-  /** Persist the whole map. A no-op while nothing differs from the saved copy. */
+  /** Persist the whole bundle. A no-op while nothing differs from the saved copy. */
   save: () => Promise<void>;
   /** The last save was refused as stale (412); the draft is still there */
   isStale: boolean;
@@ -41,42 +57,45 @@ export interface TeamNameDraftState {
 }
 
 /**
- * The team names layer: merges the saved map from TanStack Query with the draft
+ * The team settings layer: merges the saved bundle from TanStack Query with the draft
  * held in Zustand. Mirrors `useFormationDraft` deliberately — the screen wires
  * both into one Save button, so the two must behave the same way about what a
  * draft is and what a failed save leaves behind.
  *
- * The names are global, so this hook takes no session: unlike the formation,
+ * The settings are global, so this hook takes no session: unlike the formation,
  * nothing about them depends on which battle day is open.
- * @param saved - The names as the server has them, with their version
- * @param refetchSaved - Reload the saved names, for reloading or overwriting a stale save
- * @returns The names on screen plus the handlers that edit and save them
+ * @param saved - The names, colours and icons as the server has them, with their version
+ * @param refetchSaved - Reload the saved settings, for reloading or overwriting a stale save
+ * @returns The settings on screen plus the handlers that edit and save them
  */
-export function useTeamNameDraft(
-  saved: TeamNamesState,
-  refetchSaved: () => Promise<TeamNamesState>
-): TeamNameDraftState {
-  const draft = useTeamNameStore((s) => s.draft);
-  const setNameInStore = useTeamNameStore((s) => s.setName);
-  const clearDraft = useTeamNameStore((s) => s.clearDraft);
-  const rebase = useTeamNameStore((s) => s.rebase);
+export function useTeamSettingsDraft(
+  saved: TeamSettingsState,
+  refetchSaved: () => Promise<TeamSettingsState>
+): TeamSettingsDraftState {
+  const draft = useTeamSettingsStore((s) => s.draft);
+  const setNameInStore = useTeamSettingsStore((s) => s.setName);
+  const setColorInStore = useTeamSettingsStore((s) => s.setColor);
+  const setIconInStore = useTeamSettingsStore((s) => s.setIcon);
+  const clearDraft = useTeamSettingsStore((s) => s.clearDraft);
+  const rebase = useTeamSettingsStore((s) => s.rebase);
 
-  const saveMutation = useSaveTeamNames();
+  const saveMutation = useSaveTeamSettings();
+  const recoverSession = useSessionRecovery();
   const [isStale, setIsStale] = useState(false);
 
-  const names = draft ?? saved.names;
+  const shown = draft ?? saved;
 
   // Compared by value, not by reference: retyping the name a team already had
-  // leaves a draft in place that is equal to the saved copy, and that is not an
+  // (or picking its saved colour or icon again) leaves a draft in place that is equal to the saved copy, and that is not an
   // unsaved change.
   const changeCount = useMemo(
-    () => countNameChanges(names, saved.names),
-    [names, saved.names]
+    () => countSettingChanges(shown, saved),
+    [shown, saved]
   );
   const dirty = changeCount > 0;
 
   /**
-   * Persist the whole map, then drop the draft so the query's copy shows through.
+   * Persist the whole bundle, then drop the draft so the query's copy shows through.
    * A failed save keeps the draft: the toolbar shows the message and the user retries. A 412 sets
    * `isStale` instead, and the conflict dialog offers reload or overwrite.
    */
@@ -85,20 +104,24 @@ export function useTeamNameDraft(
 
     try {
       await saveMutation.mutateAsync({
-        names,
+        names: shown.names,
+        colors: shown.colors,
+        icons: shown.icons,
         // Read from the store, not a render's closure: `overwriteStale` re-bases and saves in the
         // same tick. A draft always carries its base version; `saved.version` only types the gap.
-        version: useTeamNameStore.getState().baseVersion ?? saved.version,
+        version: useTeamSettingsStore.getState().baseVersion ?? saved.version,
       });
       clearDraft();
       setIsStale(false);
-      toastSuccess("Đã lưu tên đội.");
+      toastSuccess("Đã lưu tên, màu và biểu tượng đội.");
     } catch (error) {
       const isStaleSave =
         error instanceof ApiError && error.statusCode === STALE_STATUS;
       // Any other outcome ends the conflict: leaving the flag on would keep a modal over the
       // toolbar's error message.
       setIsStale(isStaleSave);
+      // The draft stays, so the work survives the refresh an expired session needs.
+      recoverSession(error);
       // Anything else is swallowed on purpose: the message is read off the mutation below, and
       // rethrowing here would take the formation's save down with it when the
       // screen runs both in one Promise.all.
@@ -120,16 +143,22 @@ export function useTeamNameDraft(
   }
 
   return {
-    names,
+    names: shown.names,
+    colors: shown.colors,
+    icons: shown.icons,
     dirty,
     changeCount,
     saving: saveMutation.isPending,
     saveErrorMessage:
       saveMutation.error instanceof ApiError &&
-      saveMutation.error.statusCode !== STALE_STATUS
+      saveMutation.error.statusCode !== STALE_STATUS &&
+      // An expired session is `recoverSession`'s message to tell, as in `use-formation-draft`.
+      !isSessionExpired(saveMutation.error)
         ? saveMutation.error.message
         : undefined,
     setName: (team, name) => setNameInStore(saved, team, name),
+    setColor: (team, color) => setColorInStore(saved, team, color),
+    setIcon: (team, icon) => setIconInStore(saved, team, icon),
     reset: clearDraft,
     save,
     isStale,

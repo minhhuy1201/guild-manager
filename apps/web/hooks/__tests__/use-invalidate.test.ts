@@ -57,13 +57,13 @@ describe("useInvalidate", () => {
   });
 
   it("chủ đề hẹp chỉ invalidate một key", async () => {
-    const { result, invalidateSpy } = renderInvalidate("formation");
+    const { result, invalidateSpy } = renderInvalidate("attendance");
 
     await result.current();
 
     expect(invalidateSpy).toHaveBeenCalledTimes(1);
     expect(invalidateSpy).toHaveBeenCalledWith({
-      queryKey: teamBuilderKeys.all,
+      queryKey: attendanceKeys.records(),
     });
   });
 

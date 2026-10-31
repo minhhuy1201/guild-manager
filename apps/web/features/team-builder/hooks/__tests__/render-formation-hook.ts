@@ -2,11 +2,11 @@ import { createElement, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, renderHook, type RenderHookResult } from "@testing-library/react";
 import { afterEach } from "vitest";
-import type { SessionFormation, TeamNames } from "@guild/shared/schemas";
+import type { SessionFormation, TeamSettings } from "@guild/shared/schemas";
 
 import { useFormationStore } from "../../store/formation-store";
 import { usePoolFilterStore } from "../../store/pool-filter-store";
-import { useTeamNameStore } from "../../store/team-name-store";
+import { useTeamSettingsStore } from "../../store/team-settings-store";
 
 /** Store state a test may want in place before the first render. */
 interface SeedState {
@@ -24,10 +24,10 @@ interface SeedState {
   >;
   /** Pool filter fields — search keyword and guild class filter */
   poolFilter?: Partial<ReturnType<typeof usePoolFilterStore.getState>>;
-  /** Unsaved team names, null for "nothing typed yet" */
-  teamNameDraft?: TeamNames | null;
-  /** Saved version the team name draft started from, null when there is no draft */
-  teamNameBaseVersion?: number | null;
+  /** Unsaved team settings, null for "nothing edited yet" */
+  teamSettingsDraft?: TeamSettings | null;
+  /** Saved version the team settings draft started from, null when there is no draft */
+  teamSettingsBaseVersion?: number | null;
 }
 
 // A hook left mounted keeps reacting to the Zustand stores, so a later test's
@@ -65,9 +65,9 @@ export function renderFormationHook<T>(
     guildClasses: [],
     ...seed.poolFilter,
   });
-  useTeamNameStore.setState({
-    draft: seed.teamNameDraft ?? null,
-    baseVersion: seed.teamNameBaseVersion ?? null,
+  useTeamSettingsStore.setState({
+    draft: seed.teamSettingsDraft ?? null,
+    baseVersion: seed.teamSettingsBaseVersion ?? null,
   });
 
   const queryClient = new QueryClient({

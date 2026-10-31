@@ -1,4 +1,4 @@
-import { Capability } from '@guild/shared/enums';
+import { Capability, TeamColor, TeamIcon } from '@guild/shared/enums';
 
 import { CapabilityGuard, JwtAuthGuard } from '../../../common';
 import { accessOf, guardsOf } from '../../../__tests__/guards-of';
@@ -56,17 +56,27 @@ describe('TeamBuilderController.getWeeks', () => {
   });
 });
 
-describe('TeamBuilderController — tên đội', () => {
+describe('TeamBuilderController — cài đặt đội', () => {
   let controller: TeamBuilderController;
   let teamBuilder: {
-    getTeamNames: jest.Mock;
-    saveTeamNames: jest.Mock;
+    getTeamSettings: jest.Mock;
+    saveTeamSettings: jest.Mock;
   };
 
   beforeEach(() => {
     teamBuilder = {
-      getTeamNames: jest.fn().mockResolvedValue({ '1': 'Thủ nhà' }),
-      saveTeamNames: jest.fn().mockResolvedValue({ '2': 'Xung kích' }),
+      getTeamSettings: jest.fn().mockResolvedValue({
+        names: { '1': 'Thủ nhà' },
+        colors: {},
+        icons: {},
+        version: 1,
+      }),
+      saveTeamSettings: jest.fn().mockResolvedValue({
+        names: { '2': 'Xung kích' },
+        colors: {},
+        icons: {},
+        version: 5,
+      }),
     };
 
     controller = new TeamBuilderController(
@@ -74,18 +84,26 @@ describe('TeamBuilderController — tên đội', () => {
     );
   });
 
-  it('trả về map tên service đưa ra', async () => {
-    await expect(controller.getTeamNames()).resolves.toEqual({
-      '1': 'Thủ nhà',
+  it('trả về bundle tên + màu + biểu tượng service đưa ra', async () => {
+    await expect(controller.getTeamSettings()).resolves.toEqual({
+      names: { '1': 'Thủ nhà' },
+      colors: {},
+      icons: {},
+      version: 1,
     });
   });
 
-  it('lưu bằng chính body, version đi cùng names', async () => {
-    const body = { names: { '2': 'Xung kích' }, version: 4 };
+  it('lưu bằng chính body, version đi cùng names, colors và icons', async () => {
+    const body = {
+      names: { '2': 'Xung kích' },
+      colors: { '2': TeamColor.RED },
+      icons: { '2': TeamIcon.SHIELD },
+      version: 4,
+    };
 
-    await controller.saveTeamNames(body);
+    await controller.saveTeamSettings(body);
 
-    expect(teamBuilder.saveTeamNames).toHaveBeenCalledWith(body);
+    expect(teamBuilder.saveTeamSettings).toHaveBeenCalledWith(body);
   });
 
   it('lưu đội hình bằng cả body, version đi cùng matches', async () => {

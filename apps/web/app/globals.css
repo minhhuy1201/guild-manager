@@ -75,6 +75,10 @@
     --color-gold-foreground: var(--gold-foreground);
     --color-gold: var(--gold);
     --color-gold-ink: var(--gold-ink);
+    --color-red: var(--red);
+    --color-purple: var(--purple);
+    --color-orange: var(--orange);
+    --color-sky: var(--sky);
     --color-popover-foreground: var(--popover-foreground);
     --color-popover: var(--popover);
     --color-card-foreground: var(--card-foreground);
@@ -152,6 +156,11 @@
     --gold-foreground: oklch(0.22 0.015 70);
     /* Gold as text: the fill gold is ~2.5:1 on the light cards, so text takes a deeper shade of the same hue. */
     --gold-ink: oklch(0.47 0.09 75);
+    /* Team colours a manager can pick beyond the four group colours. Spread in hue and lightness so all eight stay apart as header washes and marker dots; sky sits much lighter than the navy primary. */
+    --red: oklch(0.52 0.16 22);
+    --purple: oklch(0.48 0.13 325);
+    --orange: oklch(0.66 0.17 46);
+    --sky: oklch(0.68 0.1 222);
     --ring: oklch(0.52 0.085 170);
     --chart-1: oklch(0.286 0.017 270.758);
     --chart-2: oklch(0.283 0.064 270.718);
@@ -236,6 +245,10 @@
     --gold-foreground: oklch(0.17 0.022 262);
     /* On the night plane the fill gold already reads as text. */
     --gold-ink: var(--gold);
+    --red: oklch(0.62 0.17 12);
+    --purple: oklch(0.66 0.14 325);
+    --orange: oklch(0.72 0.16 45);
+    --sky: oklch(0.86 0.08 215);
     --ring: oklch(0.74 0.1 170);
     --chart-1: oklch(0.488 0.243 264.376);
     --chart-2: oklch(0.696 0.17 162.48);

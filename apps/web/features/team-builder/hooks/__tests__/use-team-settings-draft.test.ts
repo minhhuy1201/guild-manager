@@ -1,16 +1,24 @@
 // @vitest-environment jsdom
 import { act, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { TeamNames, TeamNamesState } from "@guild/shared/schemas";
+import { TeamColor, TeamIcon } from "@guild/shared/enums";
+import type { TeamSettings, TeamSettingsState } from "@guild/shared/schemas";
 
 import { toastSuccess } from "@/components/shared/toast";
-import { saveTeamNames } from "../../api/team-builder-api";
-import { useTeamNameDraft } from "../use-team-name-draft";
+import { saveTeamSettings } from "../../api/team-builder-api";
+import { useTeamSettingsDraft } from "../use-team-settings-draft";
 import { renderFormationHook } from "./render-formation-hook";
 
 vi.mock("../../api/team-builder-api", () => ({
-  fetchTeamNames: vi.fn(),
-  saveTeamNames: vi.fn(),
+  fetchTeamSettings: vi.fn(),
+  saveTeamSettings: vi.fn(),
+}));
+
+/** `useSessionRecovery` needs a router; the save path's contract is only "hand a 401 over". */
+const recoverSessionMock = vi.fn<(error: unknown) => boolean>(() => false);
+
+vi.mock("@/hooks/use-session-recovery", () => ({
+  useSessionRecovery: () => recoverSessionMock,
 }));
 
 vi.mock("@/components/shared/toast", () => ({
@@ -18,42 +26,48 @@ vi.mock("@/components/shared/toast", () => ({
   toastError: vi.fn(),
 }));
 
-const saveTeamNamesMock = vi.mocked(saveTeamNames);
+const saveTeamSettingsMock = vi.mocked(saveTeamSettings);
 
 /** The saved copy the hook reads, standing in for the query's data. */
-const SAVED: TeamNamesState = { names: { "1": "Thủ nhà" }, version: 5 };
+const SAVED: TeamSettingsState = {
+  names: { "1": "Thủ nhà" },
+  colors: { "1": TeamColor.RED },
+  icons: { "1": TeamIcon.SHIELD },
+  version: 5,
+};
 
 /** Stand-in for the names query's refetch. */
-const refetchMock = vi.fn<() => Promise<TeamNamesState>>();
+const refetchMock = vi.fn<() => Promise<TeamSettingsState>>();
 
 /**
- * Render `useTeamNameDraft` over a saved map.
+ * Render `useTeamSettingsDraft` over a saved map.
  * @param saved - The names as the server has them
  * @param draft - Unsaved names to seed the store with
  * @returns The testing-library render result
  */
 function renderNames(
-  saved: TeamNamesState = SAVED,
-  draft: TeamNames | null = null,
+  saved: TeamSettingsState = SAVED,
+  draft: TeamSettings | null = null,
   baseVersion: number | null = draft ? saved.version : null
 ) {
-  return renderFormationHook(() => useTeamNameDraft(saved, refetchMock), {
-    teamNameDraft: draft,
-    teamNameBaseVersion: baseVersion,
+  return renderFormationHook(() => useTeamSettingsDraft(saved, refetchMock), {
+    teamSettingsDraft: draft,
+    teamSettingsBaseVersion: baseVersion,
   });
 }
 
 beforeEach(() => {
-  saveTeamNamesMock.mockReset();
-  saveTeamNamesMock.mockResolvedValue({ ok: true, data: { names: {}, version: 6 } });
+  saveTeamSettingsMock.mockReset();
+  saveTeamSettingsMock.mockResolvedValue({ ok: true, data: { names: {}, colors: {}, icons: {}, version: 6 } });
   refetchMock.mockReset();
+  recoverSessionMock.mockClear();
 });
 
 afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("useTeamNameDraft — đọc", () => {
+describe("useTeamSettingsDraft — đọc", () => {
   it("chưa sửa gì thì đọc bản đã lưu và không dirty", () => {
     const { result } = renderNames();
 
@@ -62,7 +76,7 @@ describe("useTeamNameDraft — đọc", () => {
   });
 
   it("có nháp thì nháp che bản đã lưu", () => {
-    const { result } = renderNames(SAVED, { "1": "Xung kích" });
+    const { result } = renderNames(SAVED, { names: { "1": "Xung kích" }, colors: SAVED.colors, icons: SAVED.icons });
 
     expect(result.current.names).toEqual({ "1": "Xung kích" });
     expect(result.current.dirty).toBe(true);
@@ -85,6 +99,41 @@ describe("useTeamNameDraft — đọc", () => {
     expect(result.current.dirty).toBe(true);
   });
 
+  it("đổi màu thì dirty, đặt lại màu đã lưu thì hết", () => {
+    const { result } = renderNames();
+
+    act(() => result.current.setColor(1, TeamColor.SKY));
+    expect(result.current.colors["1"]).toBe(TeamColor.SKY);
+    expect(result.current.dirty).toBe(true);
+
+    act(() => result.current.setColor(1, TeamColor.RED));
+    expect(result.current.dirty).toBe(false);
+  });
+
+  it("đổi icon thì dirty, đặt lại icon đã lưu thì hết, null xoá key", () => {
+    const { result } = renderNames();
+
+    act(() => result.current.setIcon(1, TeamIcon.EYE));
+    expect(result.current.icons["1"]).toBe(TeamIcon.EYE);
+    expect(result.current.dirty).toBe(true);
+
+    act(() => result.current.setIcon(1, TeamIcon.SHIELD));
+    expect(result.current.dirty).toBe(false);
+
+    act(() => result.current.setIcon(1, null));
+    expect(result.current.icons).toEqual({});
+    expect(result.current.changeCount).toBe(1);
+  });
+
+  it("setColor null xoá màu đã chọn", () => {
+    const { result } = renderNames();
+
+    act(() => result.current.setColor(1, null));
+
+    expect(result.current.colors).toEqual({});
+    expect(result.current.dirty).toBe(true);
+  });
+
   it("changeCount đếm số đội đổi tên", () => {
     const { result } = renderNames();
     expect(result.current.changeCount).toBe(0);
@@ -96,7 +145,7 @@ describe("useTeamNameDraft — đọc", () => {
   });
 
   it("reset bỏ nháp, trả về bản đã lưu", () => {
-    const { result } = renderNames(SAVED, { "1": "Xung kích" });
+    const { result } = renderNames(SAVED, { names: { "1": "Xung kích" }, colors: SAVED.colors, icons: SAVED.icons });
 
     act(() => result.current.reset());
 
@@ -105,7 +154,7 @@ describe("useTeamNameDraft — đọc", () => {
   });
 });
 
-describe("useTeamNameDraft — lưu", () => {
+describe("useTeamSettingsDraft — lưu", () => {
   it("không bẩn thì không gọi API", async () => {
     const { result } = renderNames();
 
@@ -113,7 +162,24 @@ describe("useTeamNameDraft — lưu", () => {
       await result.current.save();
     });
 
-    expect(saveTeamNamesMock).not.toHaveBeenCalled();
+    expect(saveTeamSettingsMock).not.toHaveBeenCalled();
+  });
+
+  it("gửi cả màu cùng tên trong một lần lưu", async () => {
+    const { result } = renderNames();
+
+    act(() => result.current.setColor(3, TeamColor.ORANGE));
+    await act(async () => {
+      await result.current.save();
+    });
+
+    expect(saveTeamSettingsMock).toHaveBeenCalledTimes(1);
+    expect(saveTeamSettingsMock.mock.calls[0][0]).toEqual({
+      names: { "1": "Thủ nhà" },
+      colors: { "1": TeamColor.RED, "3": TeamColor.ORANGE },
+      icons: { "1": TeamIcon.SHIELD },
+      version: 5,
+    });
   });
 
   it("gửi đúng map đang hiện trên màn hình", async () => {
@@ -126,8 +192,10 @@ describe("useTeamNameDraft — lưu", () => {
 
     // TanStack hands the mutation function a context object as a second
     // argument; only the payload matters here.
-    expect(saveTeamNamesMock.mock.calls[0][0]).toEqual({
+    expect(saveTeamSettingsMock.mock.calls[0][0]).toEqual({
       names: { "1": "Thủ nhà", "2": "Hậu cần" },
+      colors: { "1": TeamColor.RED },
+      icons: { "1": TeamIcon.SHIELD },
       version: 5,
     });
   });
@@ -141,11 +209,11 @@ describe("useTeamNameDraft — lưu", () => {
     });
 
     await waitFor(() => expect(result.current.dirty).toBe(false));
-    expect(toastSuccess).toHaveBeenCalledWith("Đã lưu tên đội.");
+    expect(toastSuccess).toHaveBeenCalledWith("Đã lưu tên, màu và biểu tượng đội.");
   });
 
   it("lưu lỗi thì giữ nguyên nháp và hiện message của backend", async () => {
-    saveTeamNamesMock.mockResolvedValue({ ok: false, message: "Tên đội quá dài.", statusCode: 400 });
+    saveTeamSettingsMock.mockResolvedValue({ ok: false, message: "Tên đội quá dài.", statusCode: 400 });
     const { result } = renderNames();
 
     act(() => result.current.setName(2, "Hậu cần"));
@@ -162,8 +230,15 @@ describe("useTeamNameDraft — lưu", () => {
   });
 });
 
-describe("useTeamNameDraft — xung đột phiên bản", () => {
-  const DRAFT = { "1": "Xung kích" };
+/** An unsaved rename of team 1, based on version 3. */
+const DRAFT: TeamSettings = {
+  names: { "1": "Xung kích" },
+  colors: SAVED.colors,
+  icons: SAVED.icons,
+};
+
+describe("useTeamSettingsDraft — xung đột phiên bản", () => {
+  
 
   it("lưu gửi baseVersion của nháp, không phải version của bản đã lưu", async () => {
     const { result } = renderNames(SAVED, DRAFT, 3);
@@ -172,14 +247,29 @@ describe("useTeamNameDraft — xung đột phiên bản", () => {
       await result.current.save();
     });
 
-    expect(saveTeamNamesMock.mock.calls[0][0]).toEqual({
-      names: DRAFT,
+    expect(saveTeamSettingsMock.mock.calls[0][0]).toEqual({
+      ...DRAFT,
       version: 3,
     });
   });
 
+  it("401: giao cho recoverSession, giữ nháp, không hiện message riêng", async () => {
+    saveTeamSettingsMock.mockResolvedValue({ ok: false, message: "Hết phiên.", statusCode: 401 });
+    const { result } = renderNames(SAVED, DRAFT, 3);
+
+    await act(async () => {
+      await result.current.save();
+    });
+
+    expect(recoverSessionMock).toHaveBeenCalledOnce();
+    expect(result.current.dirty).toBe(true);
+    expect(result.current.isStale).toBe(false);
+    await waitFor(() => expect(result.current.saving).toBe(false));
+    expect(result.current.saveErrorMessage).toBeUndefined();
+  });
+
   it("412: isStale = true, nháp còn, không hiện message riêng", async () => {
-    saveTeamNamesMock.mockResolvedValue({ ok: false, message: "Cũ rồi.", statusCode: 412 });
+    saveTeamSettingsMock.mockResolvedValue({ ok: false, message: "Cũ rồi.", statusCode: 412 });
     const { result } = renderNames(SAVED, DRAFT, 3);
 
     await act(async () => {
@@ -192,8 +282,8 @@ describe("useTeamNameDraft — xung đột phiên bản", () => {
   });
 
   it("discardStale: xoá nháp, isStale = false, tải lại bản đã lưu", async () => {
-    saveTeamNamesMock.mockResolvedValue({ ok: false, message: "Cũ rồi.", statusCode: 412 });
-    refetchMock.mockResolvedValue({ names: {}, version: 6 });
+    saveTeamSettingsMock.mockResolvedValue({ ok: false, message: "Cũ rồi.", statusCode: 412 });
+    refetchMock.mockResolvedValue({ names: {}, colors: {}, icons: {}, version: 6 });
     const { result } = renderNames(SAVED, DRAFT, 3);
     await act(async () => {
       await result.current.save();
@@ -207,7 +297,7 @@ describe("useTeamNameDraft — xung đột phiên bản", () => {
   });
 
   it("dismissStale giữ nháp, isStale = false", async () => {
-    saveTeamNamesMock.mockResolvedValue({ ok: false, message: "Cũ rồi.", statusCode: 412 });
+    saveTeamSettingsMock.mockResolvedValue({ ok: false, message: "Cũ rồi.", statusCode: 412 });
     const { result } = renderNames(SAVED, DRAFT, 3);
     await act(async () => {
       await result.current.save();
@@ -220,9 +310,9 @@ describe("useTeamNameDraft — xung đột phiên bản", () => {
   });
 
   it("overwriteStale: rebase lên version mới nhất rồi lưu với nó", async () => {
-    saveTeamNamesMock.mockResolvedValueOnce({ ok: false, message: "Cũ rồi.", statusCode: 412 });
-    saveTeamNamesMock.mockResolvedValueOnce({ ok: true, data: { names: DRAFT, version: 7 } });
-    refetchMock.mockResolvedValue({ names: { "1": "Khác" }, version: 6 });
+    saveTeamSettingsMock.mockResolvedValueOnce({ ok: false, message: "Cũ rồi.", statusCode: 412 });
+    saveTeamSettingsMock.mockResolvedValueOnce({ ok: true, data: { ...DRAFT, version: 7 } });
+    refetchMock.mockResolvedValue({ names: { "1": "Khác" }, colors: {}, icons: {}, version: 6 });
     const { result } = renderNames(SAVED, DRAFT, 3);
     await act(async () => {
       await result.current.save();
@@ -232,16 +322,16 @@ describe("useTeamNameDraft — xung đột phiên bản", () => {
       await result.current.overwriteStale();
     });
 
-    expect(saveTeamNamesMock.mock.calls.at(-1)?.[0]).toEqual({
-      names: DRAFT,
+    expect(saveTeamSettingsMock.mock.calls.at(-1)?.[0]).toEqual({
+      ...DRAFT,
       version: 6,
     });
     expect(result.current.isStale).toBe(false);
   });
 
   it("overwriteStale gặp 412 lần nữa: isStale vẫn true, nháp còn", async () => {
-    saveTeamNamesMock.mockResolvedValue({ ok: false, message: "Cũ rồi.", statusCode: 412 });
-    refetchMock.mockResolvedValue({ names: {}, version: 6 });
+    saveTeamSettingsMock.mockResolvedValue({ ok: false, message: "Cũ rồi.", statusCode: 412 });
+    refetchMock.mockResolvedValue({ names: {}, colors: {}, icons: {}, version: 6 });
     const { result } = renderNames(SAVED, DRAFT, 3);
 
     await act(async () => {
@@ -253,9 +343,9 @@ describe("useTeamNameDraft — xung đột phiên bản", () => {
   });
 
   it("overwriteStale gặp lỗi 500: hết isStale, thông báo hiện ở thanh công cụ", async () => {
-    saveTeamNamesMock.mockResolvedValue({ ok: false, message: "Máy chủ bận.", statusCode: 500 });
-    refetchMock.mockResolvedValue({ names: {}, version: 6 });
-    const { result } = renderNames(SAVED, { "1": "Xung kích" }, 3);
+    saveTeamSettingsMock.mockResolvedValue({ ok: false, message: "Máy chủ bận.", statusCode: 500 });
+    refetchMock.mockResolvedValue({ names: {}, colors: {}, icons: {}, version: 6 });
+    const { result } = renderNames(SAVED, DRAFT, 3);
 
     await act(async () => {
       await result.current.overwriteStale();

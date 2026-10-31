@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
 
+vi.mock("../hooks/use-team-colors", () => ({ useTeamColors: () => ({}) }));
+
 const dynamicCalls: unknown[] = [];
 
 vi.mock("next/dynamic", () => ({

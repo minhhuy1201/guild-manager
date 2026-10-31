@@ -2,17 +2,25 @@
 import { act, cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+/** Colours the mocked `useTeamColors` hands out; a test sets it, `afterEach` clears it. */
+let mockTeamColors: Record<string, string> = {};
+
+vi.mock("../hooks/use-team-colors", () => ({
+  useTeamColors: () => mockTeamColors,
+}));
+
 import { PaletteDragPreview } from "../components/palette-drag-preview";
 import {
   COLOR_HEX,
-  TEAM_GROUP_HEX,
   TOKEN_FILL,
   TOKEN_RADIUS,
   tokenArtSize,
 } from "../lib/token-icon";
+import { TEAM_COLOR_STYLES } from "@/lib/team-color";
 
 afterEach(() => {
   cleanup();
+  mockTeamColors = {};
   vi.unstubAllGlobals();
 });
 
@@ -111,6 +119,24 @@ describe("PaletteDragPreview", () => {
     expect(tokenArtSize("number-1", 10)).not.toBe(tokenArtSize("eye", 10));
   });
 
+  it("borders a numbered team in the colour a manager chose for it", () => {
+    mockTeamColors = { "1": "RED" };
+    render(
+      <PaletteDragPreview
+        token={{ label: "Đội 1", icon: "number-1" }}
+        color="blue"
+        size="md"
+        scale={1}
+      />
+    );
+
+    dragOverAt(10, 10);
+
+    expect(screen.getByTestId("palette-drag-preview").style.borderColor).toBe(
+      cssColor(TEAM_COLOR_STYLES.RED.hex)
+    );
+  });
+
   it("borders a numbered team in its team builder colour, as on the map", () => {
     render(
       <PaletteDragPreview
@@ -125,7 +151,9 @@ describe("PaletteDragPreview", () => {
 
     const border = screen.getByTestId("palette-drag-preview").style.borderColor;
     expect(border).not.toBe(cssColor(COLOR_HEX.blue));
-    expect(Object.values(TEAM_GROUP_HEX).map(cssColor)).toContain(border);
+    expect(Object.values(TEAM_COLOR_STYLES)
+        .map((style) => style.hex)
+        .map(cssColor)).toContain(border);
   });
 
   it("stops listening once it is gone", () => {

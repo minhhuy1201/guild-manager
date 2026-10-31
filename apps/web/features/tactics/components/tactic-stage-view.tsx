@@ -14,7 +14,7 @@ import {
   Text,
 } from "react-konva";
 import type Konva from "konva";
-import type { TacticTokenIcon } from "@guild/shared/enums";
+import type { TacticTokenIcon, TeamColor } from "@guild/shared/enums";
 import { assertNever } from "@guild/shared/lib";
 import {
   TACTIC_MAP_HEIGHT,
@@ -41,6 +41,7 @@ import {
   tokenBorderHex,
   tokenIcon,
 } from "../lib/token-icon";
+import { useTeamColors } from "../hooks/use-team-colors";
 import type { PointerModifiers } from "../types/tactic";
 
 /** Where the map picture is served from. Konva loads it with a plain `Image`, not `next/image`. */
@@ -139,6 +140,7 @@ export function TacticStageView({
   onStageMouseDown,
 }: TacticStageViewProps) {
   const [mapImage, setMapImage] = useState<HTMLImageElement | null>(null);
+  const teamColors = useTeamColors();
   // The fit scale makes the map exactly as wide as the canvas; the zoom multiplies it.
   const fitScale = stageScale(width);
   const scale = fitScale * zoom.zoom;
@@ -230,6 +232,7 @@ export function TacticStageView({
             opacity={ghost.opacity}
             movable={false}
             selected={false}
+            teamColors={teamColors}
           />
         ))}
         {frame.tokens.map((unit) =>
@@ -237,7 +240,7 @@ export function TacticStageView({
             <Line
               key={`trail-${unit.token.id}`}
               points={unit.trail}
-              stroke={tokenBorderHex(unit.token)}
+              stroke={tokenBorderHex(unit.token, teamColors)}
               strokeWidth={TRAIL_STROKE_WIDTH}
               opacity={TRAIL_OPACITY}
               lineCap="round"
@@ -254,6 +257,7 @@ export function TacticStageView({
             opacity={frame.outgoing.opacity}
             movable={false}
             selected={false}
+            teamColors={teamColors}
           />
         ))}
         {frame.incoming.elements.map((element) => (
@@ -263,6 +267,7 @@ export function TacticStageView({
             opacity={frame.incoming.opacity}
             movable={false}
             selected={selected.has(element.id)}
+            teamColors={teamColors}
           />
         ))}
         {frame.tokens.map((unit) => (
@@ -272,6 +277,7 @@ export function TacticStageView({
             opacity={unit.opacity}
             movable={movable}
             selected={selected.has(unit.token.id)}
+            teamColors={teamColors}
           />
         ))}
       </Layer>
@@ -364,6 +370,8 @@ interface ElementShapeProps {
   movable: boolean;
   /** Whether to draw the selection ring */
   selected: boolean;
+  /** Colours teams were given on the team builder, for the ring of a "Đội N" token */
+  teamColors: Readonly<Record<string, TeamColor>>;
 }
 
 /**
@@ -380,6 +388,7 @@ function ElementShape({
   opacity,
   movable,
   selected,
+  teamColors,
 }: ElementShapeProps) {
   // Only a token reads this, but the hook has to run for every element kind all the same.
   const { hovered, onEnter, onLeave } = useTokenHover(movable);
@@ -387,7 +396,7 @@ function ElementShape({
   switch (element.kind) {
     case "token": {
       const radius = TOKEN_RADIUS[element.size];
-      const border = tokenBorderHex(element);
+      const border = tokenBorderHex(element, teamColors);
 
       return (
         <Group

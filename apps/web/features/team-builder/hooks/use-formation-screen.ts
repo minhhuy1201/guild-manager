@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
-import type { TeamNamesState } from "@guild/shared/schemas";
+import type { TeamSettingsState } from "@guild/shared/schemas";
 
 import {
   useFormationCopy,
@@ -25,13 +25,18 @@ import {
   type SessionSelectionState,
 } from "./use-session-selection";
 import {
-  useTeamNameDraft,
-  type TeamNameDraftState,
-} from "./use-team-name-draft";
-import { useTeamNames } from "./use-team-names";
+  useTeamSettingsDraft,
+  type TeamSettingsDraftState,
+} from "./use-team-settings-draft";
+import { useTeamSettings } from "./use-team-settings";
 
-/** Stable stand-in while the names are still loading, so memos do not rerun. */
-const EMPTY_TEAM_NAMES_STATE: TeamNamesState = { names: {}, version: 0 };
+/** Stable stand-in while the settings are still loading, so memos do not rerun. */
+const EMPTY_TEAM_SETTINGS_STATE: TeamSettingsState = {
+  names: {},
+  colors: {},
+  icons: {},
+  version: 0,
+};
 
 /** The seven branches of the formation screen, kept apart on purpose. */
 export interface FormationScreenState {
@@ -47,8 +52,8 @@ export interface FormationScreenState {
   copy: FormationCopyState;
   /** The drag gesture in flight */
   dnd: FormationDndState;
-  /** The team column names and their own draft */
-  teamNames: TeamNameDraftState;
+  /** The team column names, colours and icons and their own draft */
+  teamSettings: TeamSettingsDraftState;
 }
 
 /**
@@ -60,7 +65,7 @@ export interface FormationScreenState {
  * which the draft branch alone decides what to do with. The copy button works
  * the same way, through `draft.copyIntoActiveMatch`.
  *
- * `teamNames` hangs off nothing: the names are global, so unlike every other
+ * `teamSettings` hangs off nothing: the settings are global, so unlike every other
  * branch it needs neither the week nor the open battle day.
  * @returns The seven branches, each with its own small interface
  */
@@ -96,24 +101,24 @@ export function useFormationScreen(): FormationScreenState {
     draft.copyIntoActiveMatch
   );
   const dnd = useFormationDnd(draft.applyDrop, pool.charactersById);
-  const teamNamesQuery = useTeamNames();
-  const { refetch: refetchTeamNamesQuery } = teamNamesQuery;
-  const refetchTeamNames = useCallback(async () => {
-    const { data } = await refetchTeamNamesQuery({ throwOnError: true });
-    if (!data) throw new Error("Không tải được tên đội, hãy tải lại trang.");
+  const teamSettingsQuery = useTeamSettings();
+  const { refetch: refetchTeamSettingsQuery } = teamSettingsQuery;
+  const refetchTeamSettings = useCallback(async () => {
+    const { data } = await refetchTeamSettingsQuery({ throwOnError: true });
+    if (!data) throw new Error("Không tải được tên, màu và biểu tượng đội, hãy tải lại trang.");
 
     return data;
-  }, [refetchTeamNamesQuery]);
-  const teamNamesDraft = useTeamNameDraft(
-    teamNamesQuery.data ?? EMPTY_TEAM_NAMES_STATE,
-    refetchTeamNames
+  }, [refetchTeamSettingsQuery]);
+  const teamSettingsDraft = useTeamSettingsDraft(
+    teamSettingsQuery.data ?? EMPTY_TEAM_SETTINGS_STATE,
+    refetchTeamSettings
   );
   // Until the first load the fallback is an empty map at version 0: a draft started from it would
-  // save over - and wipe - every other team's name while passing the version check. So no draft yet.
+  // save over - and wipe - every other team's name, colour and icon while passing the version check. So no draft yet.
   // `data`, not `isSuccess`: a failed background refetch keeps the loaded data, and edits stay open.
-  const teamNames: TeamNameDraftState = teamNamesQuery.data !== undefined
-    ? teamNamesDraft
-    : { ...teamNamesDraft, setName: () => undefined };
+  const teamSettings: TeamSettingsDraftState = teamSettingsQuery.data !== undefined
+    ? teamSettingsDraft
+    : { ...teamSettingsDraft, setName: () => undefined, setColor: () => undefined, setIcon: () => undefined };
 
-  return { week, selection, draft, pool, copy, dnd, teamNames };
+  return { week, selection, draft, pool, copy, dnd, teamSettings };
 }

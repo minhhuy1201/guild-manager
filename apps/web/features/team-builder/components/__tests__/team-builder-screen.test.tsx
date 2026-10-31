@@ -136,7 +136,7 @@ function editableScreen() {
       assignment: {},
       notes: {},
     },
-    teamNames: { dirty: false, saving: false, changeCount: 0, saveErrorMessage: null, names: {} },
+    teamSettings: { dirty: false, saving: false, changeCount: 0, saveErrorMessage: null, names: {} },
     copy: { sourceLabel: "Thứ 6", canCopy: true, copy: vi.fn() },
     pool: { absentIds: new Set<string>(), charactersById: new Map(), pool: [], classCounts: [], otherMatchIds: new Set<string>(), prefill: null },
     dnd: { activeCharacter: null },

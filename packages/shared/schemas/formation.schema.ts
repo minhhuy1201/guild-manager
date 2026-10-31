@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { TeamColor } from "../enums/team-color.enum";
+import { TeamIcon } from "../enums/team-icon.enum";
 import { SLOTS_PER_TEAM, TEAM_COUNT } from "../lib/slot-id";
 
 /**
@@ -23,6 +25,9 @@ export const notesSchema = z.record(
 /** Max length of a team's name — sized to the width of the team column header. */
 export const TEAM_NAME_MAX_LENGTH = 24;
 
+/** Team number as a decimal string: the key of every per-team record below. */
+const teamKeySchema = z.string().regex(/^(\d+)$/, "Số đội không hợp lệ.");
+
 /**
  * Team names: team number (as a decimal string key) → name. Global data, not per session: the
  * same ten names apply to every week and every match. A team still showing its number carries NO
@@ -32,7 +37,7 @@ export const TEAM_NAME_MAX_LENGTH = 24;
  * frontend — the backend only stores what the user typed against a number it never interprets.
  */
 export const teamNamesSchema = z.record(
-  z.string().regex(/^\d+$/, "Số đội không hợp lệ."),
+  teamKeySchema,
   z.string().trim().min(1).max(TEAM_NAME_MAX_LENGTH),
 );
 
@@ -43,25 +48,54 @@ export const teamNamesSchema = z.record(
 const versionSchema = z.number().int().nonnegative();
 
 /**
- * Body of PUT /team-builder/team-names — the WHOLE map every time, like the formation save.
- * A name dropped from the map is a name deleted.
+ * Team colours: team number (as a decimal string key) → the colour the Manager picked. Same rule as
+ * the names: a team on its default colour carries NO key, so there is no nullable value.
  */
-export const saveTeamNamesSchema = z.object({
+export const teamColorsSchema = z.record(
+  teamKeySchema,
+  z.enum(TeamColor),
+);
+
+/**
+ * Team icons: team number (as a decimal string key) → the icon the Manager picked. A team without an
+ * icon carries NO key and keeps its colour dot.
+ */
+export const teamIconsSchema = z.record(
+  teamKeySchema,
+  z.enum(TeamIcon),
+);
+
+/** Everything a team's header shows that a Manager can set, saved and locked as one bundle. */
+export const teamSettingsSchema = z.object({
   names: teamNamesSchema,
+  colors: teamColorsSchema,
+  icons: teamIconsSchema,
+});
+
+/**
+ * Body of PUT /team-builder/team-settings - the WHOLE bundle every time, like the formation save.
+ * A name, colour or icon dropped from its map is deleted.
+ */
+export const saveTeamSettingsSchema = teamSettingsSchema.extend({
   version: versionSchema,
 });
 
 export type TeamNames = z.infer<typeof teamNamesSchema>;
 
-export type SaveTeamNamesInput = z.infer<typeof saveTeamNamesSchema>;
+export type TeamColors = z.infer<typeof teamColorsSchema>;
 
-/** GET/PUT /team-builder/team-names answer: the map plus the version it is at. */
-export const teamNamesStateSchema = z.object({
-  names: teamNamesSchema,
+export type TeamIcons = z.infer<typeof teamIconsSchema>;
+
+export type TeamSettings = z.infer<typeof teamSettingsSchema>;
+
+export type SaveTeamSettingsInput = z.infer<typeof saveTeamSettingsSchema>;
+
+/** GET/PUT /team-builder/team-settings answer: the bundle plus the version it is at. */
+export const teamSettingsStateSchema = teamSettingsSchema.extend({
   version: z.number().int(),
 });
 
-export type TeamNamesState = z.infer<typeof teamNamesStateSchema>;
+export type TeamSettingsState = z.infer<typeof teamSettingsStateSchema>;
 
 /** One match: who stands where, plus each slot's note. */
 export const matchSchema = z.object({

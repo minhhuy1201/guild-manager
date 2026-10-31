@@ -7,6 +7,7 @@ import type {
   TacticScene,
   TacticSummary,
   TacticTokenPreset,
+  TeamColors,
   UpdateTacticInput,
 } from "@guild/shared/schemas";
 
@@ -160,6 +161,19 @@ export async function deleteTokenPreset(id: string): Promise<ActionResult<void>>
   return toActionResult(async () =>
     apiFetch<void>(`/tactics/token-presets/${encodeURIComponent(id)}`, {
       method: "DELETE",
+      headers: await authHeader(),
+    })
+  );
+}
+
+/**
+ * Get the colour each team was given on the team builder, so a "Đội N" token wears it on the map.
+ * Lives here, not in the team-builder feature: that feature's route is for managers, this read is open to every signed-in user.
+ * @returns Team number (as a decimal string) → colour, a team on its default colour is absent; a failure value (`ok: false`) when signed out or the backend rejects it
+ */
+export async function fetchTeamColors(): Promise<ActionResult<TeamColors>> {
+  return toActionResult(async () =>
+    apiFetch<TeamColors>("/team-builder/team-colors", {
       headers: await authHeader(),
     })
   );

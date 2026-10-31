@@ -1,11 +1,13 @@
 // @vitest-environment jsdom
 import { waitFor } from "@testing-library/react";
+import { TeamColor } from "@guild/shared/enums";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../api/tactics-api", () => ({
   fetchTactics: vi.fn(),
   fetchTactic: vi.fn(),
   fetchTokenPresets: vi.fn(),
+  fetchTeamColors: vi.fn(),
   createTactic: vi.fn(),
   updateTactic: vi.fn(),
   deleteTactic: vi.fn(),
@@ -21,6 +23,7 @@ import {
   deleteTokenPreset,
   fetchTactic,
   fetchTactics,
+  fetchTeamColors,
   fetchTokenPresets,
   saveTacticStages,
   updateTactic,
@@ -33,6 +36,7 @@ import {
   useUpdateTactic,
 } from "../use-tactic-mutations";
 import { useTactics } from "../use-tactics";
+import { useTeamColors } from "../use-team-colors";
 import {
   useCreateTokenPreset,
   useDeleteTokenPreset,
@@ -44,6 +48,7 @@ beforeEach(() => {
   vi.mocked(fetchTactics).mockResolvedValue({ ok: true, data: [] });
   vi.mocked(fetchTactic).mockResolvedValue({ ok: true, data: makeTactic() });
   vi.mocked(fetchTokenPresets).mockResolvedValue({ ok: true, data: [] });
+  vi.mocked(fetchTeamColors).mockResolvedValue({ ok: true, data: { "3": TeamColor.RED } });
   vi.mocked(createTactic).mockResolvedValue({ ok: true, data: makeTactic() });
   vi.mocked(updateTactic).mockResolvedValue({ ok: true, data: makeTactic() });
   vi.mocked(saveTacticStages).mockResolvedValue({ ok: true, data: makeTactic() });
@@ -78,6 +83,36 @@ describe("tactics queries", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(fetchTokenPresets).toHaveBeenCalled();
+  });
+});
+
+describe("useTeamColors", () => {
+  it("hands out the colours teams were given once they load", async () => {
+    const { result } = renderTacticHook(() => useTeamColors());
+
+    await waitFor(() => expect(result.current).toEqual({ "3": TeamColor.RED }));
+    expect(fetchTeamColors).toHaveBeenCalled();
+  });
+
+  it("hands out no colours while loading, so tokens keep their default group colour", () => {
+    vi.mocked(fetchTeamColors).mockReturnValue(new Promise(() => {}));
+
+    const { result } = renderTacticHook(() => useTeamColors());
+
+    expect(result.current).toEqual({});
+  });
+
+  it("hands out no colours when the read fails", async () => {
+    vi.mocked(fetchTeamColors).mockResolvedValue({
+      ok: false,
+      statusCode: 500,
+      message: "Lỗi",
+    });
+
+    const { result } = renderTacticHook(() => useTeamColors());
+
+    await waitFor(() => expect(fetchTeamColors).toHaveBeenCalled());
+    expect(result.current).toEqual({});
   });
 });
 

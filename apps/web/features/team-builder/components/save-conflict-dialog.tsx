@@ -18,8 +18,8 @@ interface SaveConflictDialogProps {
   formationLabel: string;
   /** The open day's formation was saved by someone else first */
   isFormationStale: boolean;
-  /** The team names were saved by someone else first */
-  isTeamNamesStale: boolean;
+  /** The team settings were saved by someone else first */
+  isTeamSettingsStale: boolean;
   /** Throw the stale drafts away and load what is saved */
   onReload: () => void;
   /** Save the drafts over what is saved; rejects when the latest version cannot be read */
@@ -39,7 +39,7 @@ const FALLBACK_ERROR = "Không ghi đè được, thử lại sau.";
  * nor a close lands in the middle of it.
  * @param formationLabel - Label of the open day
  * @param isFormationStale - The open day's formation conflicts
- * @param isTeamNamesStale - The team names conflict
+ * @param isTeamSettingsStale - The team settings conflict
  * @param onReload - Discard the drafts and reload
  * @param onOverwrite - Save the drafts over what is saved
  * @param onClose - Close, keeping the drafts
@@ -48,7 +48,7 @@ const FALLBACK_ERROR = "Không ghi đè được, thử lại sau.";
 export function SaveConflictDialog({
   formationLabel,
   isFormationStale,
-  isTeamNamesStale,
+  isTeamSettingsStale,
   onReload,
   onOverwrite,
   onClose,
@@ -71,7 +71,7 @@ export function SaveConflictDialog({
 
   return (
     <Dialog
-      open={isFormationStale || isTeamNamesStale}
+      open={isFormationStale || isTeamSettingsStale}
       onOpenChange={(next) => {
         if (!next && !isOverwriting) onClose();
       }}
@@ -85,7 +85,7 @@ export function SaveConflictDialog({
             <p>Những phần sau đã được lưu ở nơi khác:</p>
             <ul className="list-disc pl-5">
               {isFormationStale ? <li>Đội hình {formationLabel}</li> : null}
-              {isTeamNamesStale ? <li>Tên đội</li> : null}
+              {isTeamSettingsStale ? <li>Tên, màu và biểu tượng đội</li> : null}
             </ul>
             <p>
               Tải bản mới nhất sẽ bỏ phần bạn đang sửa. Ghi đè sẽ thay bản vừa
