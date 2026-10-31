@@ -1,8 +1,10 @@
 import type { ClassChangeConfidence, GuildClass } from '@guild/shared/enums';
 import {
+  classSurveyAnswerSchema,
   classSurveySchema,
   classSurveyViewSchema,
   type ClassSurvey,
+  type ClassSurveyAnswer,
   type ClassSurveyMember,
   type ClassSurveyView,
 } from '@guild/shared/schemas';
@@ -47,8 +49,39 @@ export function toClassSurvey(row: ClassSurveyRow, now: Date): ClassSurvey {
 }
 
 /**
- * One member's row. A stored answer with no target is "stay"; the database CHECK guarantees the
- * confidence is then null too, so the two never disagree here.
+ * A stored answer with no target is "stay"; the database CHECK guarantees the confidence is then
+ * null too, so the two never disagree here.
+ * @param answer - The stored row
+ * @returns The answer as the contract describes it
+ */
+function toAnswerShape(answer: ClassSurveyAnswerRow): ClassSurveyAnswer {
+  // Prisma's enum unions are the shared enums' values (kept in step by prisma-enum-sync.spec.ts);
+  // `verifyResponse` checks the casts outside production.
+  const fromClass = answer.fromClass as GuildClass;
+
+  if (answer.targetClass === null) return { kind: 'KEEP', fromClass };
+
+  return {
+    kind: 'CHANGE',
+    fromClass,
+    targetClass: answer.targetClass as GuildClass,
+    confidence: answer.confidence as ClassChangeConfidence,
+  };
+}
+
+/**
+ * Turn a saved answer row into the object returned to the client.
+ * @param row - Row read from Prisma
+ * @returns The contract-shaped answer
+ */
+export function toClassSurveyAnswer(
+  row: ClassSurveyAnswerRow,
+): ClassSurveyAnswer {
+  return verifyResponse(classSurveyAnswerSchema, toAnswerShape(row));
+}
+
+/**
+ * One member's row.
  * @param character - The member
  * @param answer - Their answer in this survey, or undefined when they have not answered
  * @returns The contract-shaped row
@@ -57,24 +90,11 @@ function toMember(
   character: ClassSurveyCharacterRow,
   answer: ClassSurveyAnswerRow | undefined,
 ): ClassSurveyMember {
-  // Prisma's enum unions are the shared enums' values (kept in step by prisma-enum-sync.spec.ts);
-  // `verifyResponse` checks the casts outside production.
-  const fromClass = answer?.fromClass as GuildClass | undefined;
-
   return {
     id: character.id,
     name: character.name,
     guildClass: character.guildClass as GuildClass,
-    answer: answer
-      ? answer.targetClass === null
-        ? { kind: 'KEEP', fromClass: fromClass as GuildClass }
-        : {
-            kind: 'CHANGE',
-            fromClass: fromClass as GuildClass,
-            targetClass: answer.targetClass as GuildClass,
-            confidence: answer.confidence as ClassChangeConfidence,
-          }
-      : null,
+    answer: answer ? toAnswerShape(answer) : null,
   };
 }
 

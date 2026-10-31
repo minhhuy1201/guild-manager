@@ -1,8 +1,14 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Put, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import type { ClassSurveyView } from '@guild/shared/schemas';
+import {
+  classSurveyAnswerInputSchema,
+  type ClassSurveyAnswer,
+  type ClassSurveyAnswerInput,
+  type ClassSurveyView,
+} from '@guild/shared/schemas';
+import { ZodValidationPipe } from 'nestjs-zod';
 
-import { JwtAuthGuard } from '../../common';
+import { CurrentUser, JwtAuthGuard, type RequestActor } from '../../common';
 import { ClassSurveyService } from './class-survey.service';
 
 /** Class surveys - readable by any signed-in member, like attendance itself. */
@@ -21,5 +27,24 @@ export class ClassSurveyController {
   @ApiOperation({ summary: 'Đợt khảo sát lưu phái hiện tại cùng câu trả lời' })
   current(): Promise<ClassSurveyView> {
     return this.surveys.current();
+  }
+
+  /**
+   * Save the caller's own answer; there is no way to answer for somebody else.
+   * @param id - Survey id
+   * @param body - Stay, or the class to move to and how sure
+   * @param user - JWT payload attached by JwtAuthGuard
+   * @returns The saved answer
+   */
+  @Put(':id/answers/me')
+  @ApiOperation({ summary: 'Trả lời khảo sát lưu phái của chính mình' })
+  answer(
+    @Param('id') id: string,
+    // A union body cannot be a `createZodDto` class, so the schema is handed to the pipe directly.
+    @Body(new ZodValidationPipe(classSurveyAnswerInputSchema))
+    body: ClassSurveyAnswerInput,
+    @CurrentUser() user: RequestActor,
+  ): Promise<ClassSurveyAnswer> {
+    return this.surveys.answer(id, user, body);
   }
 }

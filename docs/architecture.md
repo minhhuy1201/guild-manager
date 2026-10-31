@@ -302,6 +302,7 @@ Endpoints, all behind the `/api` prefix:
 | `GET` | `/auto-attend/me` | Whether the caller's Auto-attend is on, and since when | Bearer (own character; 404 without one) |
 | `PUT` | `/auto-attend/me` | Turn the caller's Auto-attend on or off (`{ enabled }`); asking for the state it is already in changes nothing | Bearer (own character only - nobody switches it for somebody else) |
 | `GET` | `/class-surveys/current` | The open Class survey, else the latest closed one, else `survey: null`; always with a row per `Character` (any role) and each one's answer (`null` until answered). `isOpen` is computed by the server | Bearer |
+| `PUT` | `/class-surveys/:id/answers/me` | Save the caller's own answer (upsert per survey and Character): body `{ kind: "KEEP" }` or `{ kind: "CHANGE", targetClass, confidence }`; stores the caller's current class as `fromClass`. 404 for an unknown survey or a caller with no `Character`; 400 once `closesAt` has passed or when `targetClass` equals the current class. Nobody answers for somebody else; Discord saves through the same `ClassSurveyService.answer` | Bearer |
 | `POST` | `/attendance` | Mark one character for one match (with a reason when the answer is "Không") | Bearer (own character; admin marks for anyone and bypasses the deadline) |
 | `GET` | `/team-builder/weeks` | Weeks that still have roster data | Admin |
 | `GET` | `/team-builder/formations?weekStart=` | Match rosters of a week, each day with its `version` | Admin |

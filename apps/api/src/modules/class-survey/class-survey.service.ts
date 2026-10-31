@@ -1,10 +1,24 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
-import type { ClassSurvey, ClassSurveyView } from '@guild/shared/schemas';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import type { GuildClass } from '@guild/shared/enums';
+import type {
+  ClassSurvey,
+  ClassSurveyAnswer,
+  ClassSurveyAnswerInput,
+  ClassSurveyView,
+} from '@guild/shared/schemas';
 
 import { Clock, type RequestActor } from '../../common';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { CharactersService } from '../characters/characters.public';
-import { toClassSurvey, toClassSurveyView } from './class-survey.codec';
+import {
+  toClassSurvey,
+  toClassSurveyAnswer,
+  toClassSurveyView,
+} from './class-survey.codec';
 
 const DEADLINE_PASSED = 'Hạn chót đã qua, không mở được đợt khảo sát.';
 /** A member who has not answered the open survey. */
@@ -21,6 +35,10 @@ export type SurveyReminderTargets = {
   unanswered: UnansweredMember[];
 };
 
+const SURVEY_NOT_FOUND = 'Không tìm thấy đợt khảo sát.';
+const SURVEY_CLOSED = 'Đợt khảo sát đã đóng, không sửa được câu trả lời.';
+const NO_CHARACTER = 'Tài khoản này chưa gắn với thành viên nào.';
+const SAME_CLASS = 'Phái muốn chuyển phải khác phái hiện tại.';
 const ALREADY_OPEN = 'Đang có một đợt khảo sát chưa hết hạn.';
 
 /**
@@ -68,6 +86,51 @@ export class ClassSurveyService {
 
       return toClassSurvey(created, now);
     });
+  }
+
+  /**
+   * Save the caller's own answer, replacing an earlier one. The caller's class at this moment is
+   * kept as `fromClass`, so a later edit of their profile does not move the result.
+   * @param surveyId - Survey being answered
+   * @param actor - JWT payload of the answerer; its `sub` (Discord id) finds their Character
+   * @param input - Stay, or move to another class with a confidence
+   * @returns The saved answer
+   * @throws NotFoundException when the survey does not exist or the caller has no Character
+   * @throws BadRequestException when the survey is closed or the target is the caller's current class
+   */
+  async answer(
+    surveyId: string,
+    actor: RequestActor,
+    input: ClassSurveyAnswerInput,
+  ): Promise<ClassSurveyAnswer> {
+    const now = this.clock.now();
+    const [survey, character] = await Promise.all([
+      this.prisma.classSurvey.findUnique({ where: { id: surveyId } }),
+      this.characters.findByDiscordId(actor.sub),
+    ]);
+
+    if (!survey) throw new NotFoundException(SURVEY_NOT_FOUND);
+    if (!character) throw new NotFoundException(NO_CHARACTER);
+    if (survey.closesAt <= now) throw new BadRequestException(SURVEY_CLOSED);
+    // The profile column holds the shared enum's values (prisma-enum-sync.spec.ts keeps them in step).
+    const fromClass = character.guildClass as GuildClass;
+    if (input.kind === 'CHANGE' && input.targetClass === fromClass) {
+      throw new BadRequestException(SAME_CLASS);
+    }
+
+    const fields = {
+      fromClass,
+      targetClass: input.kind === 'CHANGE' ? input.targetClass : null,
+      confidence: input.kind === 'CHANGE' ? input.confidence : null,
+      answeredAt: now,
+    };
+    const saved = await this.prisma.classSurveyAnswer.upsert({
+      where: { surveyId_characterId: { surveyId, characterId: character.id } },
+      create: { surveyId, characterId: character.id, ...fields },
+      update: fields,
+    });
+
+    return toClassSurveyAnswer(saved);
   }
 
   /**

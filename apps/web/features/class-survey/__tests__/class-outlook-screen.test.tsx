@@ -14,7 +14,16 @@ const query = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("../hooks/use-class-survey", () => ({ useClassSurvey: () => query.current }));
+const session = vi.hoisted(() => ({ character: null as { id: string } | null }));
+
+vi.mock("../hooks/use-class-survey", () => ({
+  useClassSurvey: () => query.current,
+  useAnswerClassSurvey: () => ({ mutateAsync: vi.fn(), isPending: false }),
+}));
+vi.mock("@/features/auth", () => ({
+  useSession: () => ({ data: { character: session.character } }),
+}));
+vi.mock("@/hooks/use-session-recovery", () => ({ useSessionRecovery: () => () => false }));
 // The scene is next/image; what is under test is the page's own content.
 vi.mock("@/components/shared/banner-image", () => ({ BannerImage: () => null }));
 
@@ -63,7 +72,10 @@ function load(view: ClassSurveyView) {
   };
 }
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  session.character = null;
+});
 
 describe("ClassOutlookScreen", () => {
   it("đợt đang mở: banner có tên và hạn chót, bốn ô số, tab Trước / sau", () => {
@@ -108,5 +120,27 @@ describe("ClassOutlookScreen", () => {
     expect(screen.queryByText("Đã điền")).toBeNull();
     expect(screen.queryByText("Danh sách")).toBeNull();
     expect(screen.queryByText("Trước / sau")).toBeNull();
+  });
+
+  it("viewer with a Character sees the form; without one it is hidden", () => {
+    load({ survey: SURVEY, members: MEMBERS });
+    session.character = { id: "c" };
+    const { unmount } = render(<ClassOutlookScreen />);
+
+    expect(screen.getByText("Câu trả lời của bạn")).toBeTruthy();
+    unmount();
+
+    session.character = null;
+    render(<ClassOutlookScreen />);
+
+    expect(screen.queryByText("Câu trả lời của bạn")).toBeNull();
+  });
+
+  it("no survey yet: no form even for a member", () => {
+    load({ survey: null, members: MEMBERS });
+    session.character = { id: "c" };
+    render(<ClassOutlookScreen />);
+
+    expect(screen.queryByText("Câu trả lời của bạn")).toBeNull();
   });
 });

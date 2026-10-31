@@ -9,17 +9,17 @@ cập nhật.
 
 **Blocked by:** 02
 
-**Status:** todo
+**Status:** done
 
-- [ ] Schema body trong `packages/shared` là union có discriminant (từ spec):
+- [x] Schema body trong `packages/shared` là union có discriminant (từ spec):
       `{ kind: "KEEP" } | { kind: "CHANGE"; targetClass: GuildClass; confidence: ClassChangeConfidence }`.
       Spec schema nhỏ kiểu `create-leave.schema.spec.ts`.
-- [ ] `ClassSurveyService.answer(surveyId, actor, input)` (export qua `class-survey.public.ts` để Discord
+- [x] `ClassSurveyService.answer(surveyId, actor, input)` (export qua `class-survey.public.ts` để Discord
       dùng ở ticket 04): upsert theo `(surveyId, characterId)`, ghi `fromClass` từ `guildClass` hiện tại và
       `answeredAt` từ `Clock`. Từ chối: đợt không tồn tại (404), đợt đã đóng (400), người gọi không có
       `Character` (404), `targetClass` trùng lưu phái hiện tại (400) - thông báo tiếng Việt.
-- [ ] `PUT /class-surveys/:id/answers/me` (Bearer, chỉ chính mình). Test service + controller.
-- [ ] Form: bộ chọn phái (bỏ phái hiện tại) + công tắc mức độ (khoá khi "Giữ nguyên"); mutation qua hook,
+- [x] `PUT /class-surveys/:id/answers/me` (Bearer, chỉ chính mình). Test service + controller.
+- [x] Form: bộ chọn phái (bỏ phái hiện tại) + công tắc mức độ (khoá khi "Giữ nguyên"); mutation qua hook,
       invalidate query đọc; lỗi `ApiError` hiện nguyên thông báo; toast thành công theo quy ước sẵn có.
-- [ ] Test Vitest: form điền sẵn câu đã lưu, chỉ đọc khi đóng, ẩn khi không có nhân vật, lưu gọi đúng body.
-- [ ] `docs/architecture.md` bảng endpoint có `PUT`.
+- [x] Test Vitest: form điền sẵn câu đã lưu, chỉ đọc khi đóng, ẩn khi không có nhân vật, lưu gọi đúng body.
+- [x] `docs/architecture.md` bảng endpoint có `PUT`.

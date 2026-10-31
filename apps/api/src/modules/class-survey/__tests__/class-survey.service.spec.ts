@@ -1,5 +1,9 @@
-import { BadRequestException } from '@nestjs/common';
-import { GuildRole } from '@guild/shared/enums';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  ClassChangeConfidence,
+  GuildClass,
+  GuildRole,
+} from '@guild/shared/enums';
 
 import { FixedClock, TOKEN_TYPE, type RequestActor } from '../../../common';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
@@ -26,10 +30,14 @@ describe('ClassSurveyService', () => {
   let prisma: {
     $transaction: jest.Mock;
     $executeRaw: jest.Mock;
-    classSurvey: { findFirst: jest.Mock; create: jest.Mock };
-    classSurveyAnswer: { findMany: jest.Mock };
+    classSurvey: {
+      findFirst: jest.Mock;
+      findUnique: jest.Mock;
+      create: jest.Mock;
+    };
+    classSurveyAnswer: { findMany: jest.Mock; upsert: jest.Mock };
   };
-  let characters: { listRows: jest.Mock };
+  let characters: { listRows: jest.Mock; findByDiscordId: jest.Mock };
   let service: ClassSurveyService;
 
   beforeEach(() => {
@@ -37,16 +45,29 @@ describe('ClassSurveyService', () => {
       $executeRaw: jest.fn().mockResolvedValue(1),
       classSurvey: {
         findFirst: jest.fn().mockResolvedValue(null),
+        findUnique: jest.fn().mockResolvedValue(null),
         create: jest
           .fn()
           .mockImplementation((args: { data: Record<string, unknown> }) =>
             Promise.resolve({ id: 'new', ...args.data }),
           ),
       },
-      classSurveyAnswer: { findMany: jest.fn().mockResolvedValue([]) },
+      classSurveyAnswer: {
+        findMany: jest.fn().mockResolvedValue([]),
+        upsert: jest
+          .fn()
+          .mockImplementation((args: { create: Record<string, unknown> }) =>
+            Promise.resolve({ id: 'a1', ...args.create }),
+          ),
+      },
       $transaction: jest.fn((run: (client: unknown) => unknown) => run(prisma)),
     };
-    characters = { listRows: jest.fn().mockResolvedValue(MEMBERS) };
+    characters = {
+      listRows: jest.fn().mockResolvedValue(MEMBERS),
+      findByDiscordId: jest
+        .fn()
+        .mockResolvedValue({ id: 'meo', guildClass: 'TO_VAN' }),
+    };
     service = new ClassSurveyService(
       prisma as unknown as PrismaService,
       characters as unknown as CharactersService,
@@ -199,6 +220,117 @@ describe('ClassSurveyService', () => {
           answer: { kind: 'KEEP', fromClass: 'THIET_Y' },
         },
       ]);
+    });
+  });
+
+  describe('answer', () => {
+    const OPEN = {
+      id: 'open',
+      title: 'Đang mở',
+      closesAt: vn('2026-11-06T23:59'),
+    };
+    const CHANGE = {
+      kind: 'CHANGE',
+      targetClass: GuildClass.HUYEN_CO,
+      confidence: ClassChangeConfidence.SURE,
+    } as const;
+
+    beforeEach(() => {
+      prisma.classSurvey.findUnique.mockResolvedValue(OPEN);
+    });
+
+    it('saves a change with the caller class as fromClass and the clock as answeredAt', async () => {
+      await expect(service.answer('open', ADMIN, CHANGE)).resolves.toEqual({
+        kind: 'CHANGE',
+        fromClass: 'TO_VAN',
+        targetClass: 'HUYEN_CO',
+        confidence: 'SURE',
+      });
+      expect(characters.findByDiscordId).toHaveBeenCalledWith(ADMIN.sub);
+      expect(prisma.classSurveyAnswer.upsert).toHaveBeenCalledWith({
+        where: {
+          surveyId_characterId: { surveyId: 'open', characterId: 'meo' },
+        },
+        create: {
+          surveyId: 'open',
+          characterId: 'meo',
+          fromClass: 'TO_VAN',
+          targetClass: 'HUYEN_CO',
+          confidence: 'SURE',
+          answeredAt: NOW,
+        },
+        update: {
+          fromClass: 'TO_VAN',
+          targetClass: 'HUYEN_CO',
+          confidence: 'SURE',
+          answeredAt: NOW,
+        },
+      });
+    });
+
+    it('saves "keep" with neither target nor confidence', async () => {
+      await expect(
+        service.answer('open', ADMIN, { kind: 'KEEP' }),
+      ).resolves.toEqual({ kind: 'KEEP', fromClass: 'TO_VAN' });
+      expect(prisma.classSurveyAnswer.upsert).toHaveBeenCalledWith({
+        where: {
+          surveyId_characterId: { surveyId: 'open', characterId: 'meo' },
+        },
+        create: {
+          surveyId: 'open',
+          characterId: 'meo',
+          fromClass: 'TO_VAN',
+          targetClass: null,
+          confidence: null,
+          answeredAt: NOW,
+        },
+        update: {
+          fromClass: 'TO_VAN',
+          targetClass: null,
+          confidence: null,
+          answeredAt: NOW,
+        },
+      });
+    });
+
+    it('refuses an unknown survey', async () => {
+      prisma.classSurvey.findUnique.mockResolvedValue(null);
+
+      await expect(service.answer('nope', ADMIN, CHANGE)).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(prisma.classSurveyAnswer.upsert).not.toHaveBeenCalled();
+    });
+
+    it('refuses an answer once the deadline has passed', async () => {
+      prisma.classSurvey.findUnique.mockResolvedValue({
+        ...OPEN,
+        closesAt: vn('2026-11-01T11:00'),
+      });
+
+      await expect(service.answer('open', ADMIN, CHANGE)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(prisma.classSurveyAnswer.upsert).not.toHaveBeenCalled();
+    });
+
+    it('refuses a caller with no Character', async () => {
+      characters.findByDiscordId.mockResolvedValue(null);
+
+      await expect(service.answer('open', ADMIN, CHANGE)).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(prisma.classSurveyAnswer.upsert).not.toHaveBeenCalled();
+    });
+
+    it('refuses a target equal to the current class', async () => {
+      await expect(
+        service.answer('open', ADMIN, {
+          ...CHANGE,
+          targetClass: GuildClass.TO_VAN,
+        }),
+      ).rejects.toThrow(BadRequestException);
+      expect(prisma.classSurveyAnswer.upsert).not.toHaveBeenCalled();
     });
   });
 
