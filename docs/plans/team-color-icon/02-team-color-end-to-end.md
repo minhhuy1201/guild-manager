@@ -29,10 +29,10 @@ Theo thiết kế:
 
 **Blocked by:** 01 - Một bảng tra màu đội duy nhất
 
-**Status:** todo
+**Status:** done
 
-- [ ] Test service API: lưu/đọc `colors` cùng `names`; đội không màu thì không có key; đội có màu mà không tên vẫn lưu được; version cũ trả 412 và không ghi gì.
-- [ ] Test màn `TeamBuilderScreen`: mở popover, chọn màu, card đổi; Save gửi `names` + `colors` + version; "Mặc định" xoá key; `readOnly` không có nút; 412 hiện dialog xung đột.
-- [ ] Migration mới có RLS, `migration-rls.spec.ts` và `prisma-enum-sync.spec.ts` xanh.
-- [ ] Không còn tham chiếu nào tới `team-names` (path), `TeamNamesState`, `SaveTeamNamesInput`.
-- [ ] `pnpm --filter api test`, `pnpm --filter web test`, typecheck và lint của cả hai app xanh.
+- [x] Test service API: lưu/đọc `colors` cùng `names`; đội không màu thì không có key; đội có màu mà không tên vẫn lưu được; version cũ trả 412 và không ghi gì.
+- [x] Test màn `TeamBuilderScreen`: mở popover, chọn màu, card đổi; Save gửi `names` + `colors` + version; "Mặc định" xoá key; `readOnly` không có nút; 412 hiện dialog xung đột.
+- [x] Migration mới có RLS, `migration-rls.spec.ts` và `prisma-enum-sync.spec.ts` xanh.
+- [x] Không còn tham chiếu nào tới `team-names` (path), `TeamNamesState`, `SaveTeamNamesInput`.
+- [x] `pnpm --filter api test`, `pnpm --filter web test`, typecheck và lint của cả hai app xanh.

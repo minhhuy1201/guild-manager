@@ -222,9 +222,35 @@ model TeamName {
   updatedAt DateTime @updatedAt
 }
 
-/// Optimistic lock of the global team name map (spec f14). Exactly one row, id = 1, inserted by the
-/// migration. A missing row is a broken database and fails loudly - it is never recreated.
-/// Not a column on TeamName: an empty map has no row to carry it.
+/// Colour a team is shown in, picked by a Manager. Global configuration like TeamName. A team on its
+/// default colour (the group by team number, owned by the web app) has NO row, so `color` is never
+/// null and a team with a colour but no name is representable.
+model TeamColorChoice {
+  /// Team number, same meaning as `TeamName.team`. The column itself is not constrained.
+  team      Int       @id
+  color     TeamColor
+  updatedAt DateTime  @updatedAt
+}
+
+/// Colours a team can be shown in. Keep in step with `TeamColor` in `@guild/shared/enums`
+/// (prisma-enum-sync.spec.ts).
+enum TeamColor {
+  JADE
+  STONE
+  NAVY
+  GOLD
+  RED
+  PURPLE
+  ORANGE
+  SKY
+}
+
+/// Optimistic lock of the global team settings: the names (TeamName) and the colours
+/// (TeamColorChoice) are read, saved and versioned together (spec f14). Exactly one row, id = 1,
+/// inserted by the migration. A missing row is a broken database and fails loudly - it is never
+/// recreated.
+/// Not a column on TeamName: an empty map has no row to carry it. The table keeps its old name
+/// because renaming it would force a hand-written migration.
 model TeamNameVersion {
   id      Int @id @default(1)
   version Int @default(0)

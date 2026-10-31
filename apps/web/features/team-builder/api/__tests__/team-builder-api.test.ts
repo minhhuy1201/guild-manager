@@ -10,10 +10,10 @@ const {
   announceFormation,
   fetchFormationWeeks,
   fetchFormations,
-  fetchTeamNames,
+  fetchTeamSettings,
   notifyTeamMembers,
   saveFormation,
-  saveTeamNames,
+  saveTeamSettings,
 } = await import("../team-builder-api");
 
 afterEach(() => {
@@ -68,19 +68,19 @@ describe("team builder API", () => {
     ).resolves.toEqual({ ok: false, message: "Đội hình đã đổi", statusCode: 412 });
   });
 
-  it("reads the team names", async () => {
+  it("reads the team settings", async () => {
     const fetchMock = mockFetch({ status: 200, body: { data: {} } });
 
-    await fetchTeamNames();
+    await fetchTeamSettings();
 
-    expect(requestOf(fetchMock).url).toContain("/team-builder/team-names");
+    expect(requestOf(fetchMock).url).toContain("/team-builder/team-settings");
   });
 
-  it("puts the team names", async () => {
+  it("puts the team settings", async () => {
     const fetchMock = mockFetch({ status: 200, body: { data: {} } });
-    const input = { names: [] };
+    const input = { names: {}, colors: {}, version: 1 };
 
-    await saveTeamNames(input as never);
+    await saveTeamSettings(input as never);
 
     const { init } = requestOf(fetchMock);
     expect(init.method).toBe("PUT");

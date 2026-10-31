@@ -23,7 +23,7 @@ function renderDialog(
     <SaveConflictDialog
       formationLabel="Thứ 7 · Bang Chiến"
       isFormationStale
-      isTeamNamesStale={false}
+      isTeamSettingsStale={false}
       {...handlers}
       {...props}
     />
@@ -34,9 +34,9 @@ function renderDialog(
 
 describe("SaveConflictDialog", () => {
   it("chỉ tên đội xung đột: chỉ liệt kê tên đội, không cảnh báo người vắng", () => {
-    renderDialog({ isFormationStale: false, isTeamNamesStale: true });
+    renderDialog({ isFormationStale: false, isTeamSettingsStale: true });
 
-    expect(screen.getByText("Tên đội")).toBeTruthy();
+    expect(screen.getByText("Tên và màu đội")).toBeTruthy();
     expect(screen.queryByText(/Đội hình Thứ 7/)).toBeNull();
     expect(screen.queryByText(/báo vắng/)).toBeNull();
   });
@@ -101,7 +101,7 @@ describe("SaveConflictDialog", () => {
   });
 
   it("không phần nào xung đột: dialog đóng", () => {
-    renderDialog({ isFormationStale: false, isTeamNamesStale: false });
+    renderDialog({ isFormationStale: false, isTeamSettingsStale: false });
 
     expect(screen.queryByText("Có người vừa lưu trước bạn")).toBeNull();
   });

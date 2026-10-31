@@ -54,6 +54,7 @@ function renderSheet(
         charactersById={charactersById}
         absentIds={new Set()}
         names={{}}
+        colors={{}}
       />
     </DndContext>
   );

@@ -2,6 +2,8 @@ import { TeamColor } from "@guild/shared/enums";
 
 /** What one team colour renders as. */
 interface TeamColorStyle {
+  /** Vietnamese name of the colour, read out by the colour button and shown under its swatch */
+  label: string;
   /** Header surface and its text, a complete Tailwind literal (Tailwind scans source text) */
   header: string;
   /** The dot beside the team name, the team colour at full strength; a complete Tailwind literal */
@@ -21,41 +23,49 @@ interface TeamColorStyle {
  */
 export const TEAM_COLOR_STYLES: Record<TeamColor, TeamColorStyle> = {
   [TeamColor.JADE]: {
+    label: "Ngọc bích",
     header: "bg-jade/15 text-foreground",
     marker: "bg-jade",
     hex: "#6fb59d",
   },
   [TeamColor.STONE]: {
+    label: "Xám đá",
     header: "bg-foreground/[0.08] text-foreground",
     marker: "bg-foreground/45",
     hex: "#c2bdb7",
   },
   [TeamColor.NAVY]: {
+    label: "Xanh navy",
     header: "bg-primary/15 text-foreground",
     marker: "bg-primary",
     hex: "#6c84c3",
   },
   [TeamColor.GOLD]: {
+    label: "Vàng",
     header: "bg-gold/20 text-foreground",
     marker: "bg-gold",
     hex: "#d4b278",
   },
   [TeamColor.RED]: {
+    label: "Đỏ",
     header: "bg-red/15 text-foreground",
     marker: "bg-red",
     hex: "#d8516a",
   },
   [TeamColor.PURPLE]: {
+    label: "Tím",
     header: "bg-purple/15 text-foreground",
     marker: "bg-purple",
     hex: "#bd72c1",
   },
   [TeamColor.ORANGE]: {
+    label: "Cam",
     header: "bg-orange/15 text-foreground",
     marker: "bg-orange",
     hex: "#f47f46",
   },
   [TeamColor.SKY]: {
+    label: "Xanh trời",
     header: "bg-sky/20 text-foreground",
     marker: "bg-sky",
     hex: "#92dff2",

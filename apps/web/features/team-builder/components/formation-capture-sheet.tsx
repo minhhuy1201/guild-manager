@@ -3,6 +3,7 @@
 import type {
   Character,
   SessionFormation,
+  TeamColors,
   TeamNames,
 } from "@guild/shared/schemas";
 
@@ -43,6 +44,8 @@ interface FormationCaptureSheetProps {
   absentIds: Set<string>;
   /** Team names, keyed by team number */
   names: TeamNames;
+  /** Chosen team colours, keyed by team number */
+  colors: TeamColors;
 }
 
 /**
@@ -64,6 +67,7 @@ interface FormationCaptureSheetProps {
  * @param charactersById - Full roster indexed by character id
  * @param absentIds - Ids of placed members who dropped out
  * @param names - Team names, keyed by team number
+ * @param colors - Chosen team colours, keyed by team number
  * @returns The off-screen sheet, one grid per match
  */
 export function FormationCaptureSheet({
@@ -72,6 +76,7 @@ export function FormationCaptureSheet({
   charactersById,
   absentIds,
   names,
+  colors,
 }: FormationCaptureSheetProps) {
   return (
     <div
@@ -104,6 +109,8 @@ export function FormationCaptureSheet({
             onNoteChange={() => {}}
             names={names}
             onNameChange={() => {}}
+            colors={colors}
+            onColorChange={() => {}}
             layout="capture"
             captureMatchIndex={index + 1}
           />
