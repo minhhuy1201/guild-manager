@@ -11,6 +11,12 @@ const RECOVERED =
   "Phiên đăng nhập vừa được làm mới. Bấm lại giúp mình một lần nữa.";
 
 /**
+ * One toast however many saves of the same press hit the 401: the team builder saves the formation
+ * and the team settings together, and both hand their 401 over.
+ */
+const RECOVERED_TOAST_ID = "session-recovered";
+
+/**
  * Turn a 401 from a Server Action into a navigation, so the session actually comes back.
  *
  * `proxy.ts` is the only place that trades the refresh token for a new pair, and it only runs on a
@@ -31,7 +37,7 @@ export function useSessionRecovery(): (error: unknown) => boolean {
       if (!isSessionExpired(error)) return false;
 
       router.refresh();
-      toastError(RECOVERED);
+      toastError(RECOVERED, { id: RECOVERED_TOAST_ID });
 
       return true;
     },

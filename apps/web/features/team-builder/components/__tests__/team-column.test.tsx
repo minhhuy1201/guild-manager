@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { TeamColor, TeamIcon } from "@guild/shared/enums";
@@ -95,5 +95,13 @@ describe("TeamColumn", () => {
 
     expect(card.querySelector('[data-slot="team-marker"]')).not.toBeNull();
     expect(card.querySelector("button")).toBeNull();
+  });
+
+  it("readOnly: trình đọc màn hình vẫn nghe được màu và biểu tượng", () => {
+    renderColumn(1, { "1": TeamColor.RED }, true, { "1": TeamIcon.SWORDS });
+
+    expect(
+      screen.getByRole("img", { name: /Màu đội 1: .*biểu tượng Công/ })
+    ).toBeTruthy();
   });
 });

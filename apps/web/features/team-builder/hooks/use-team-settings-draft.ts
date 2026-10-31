@@ -10,7 +10,9 @@ import type {
 } from "@guild/shared/schemas";
 
 import { toastSuccess } from "@/components/shared/toast";
+import { useSessionRecovery } from "@/hooks/use-session-recovery";
 import { ApiError } from "@/lib/api-client";
+import { isSessionExpired } from "@/lib/session-expired";
 import { countSettingChanges } from "../lib/team-settings-diff";
 import { useTeamSettingsStore } from "../store/team-settings-store";
 import { useSaveTeamSettings } from "./use-save-team-settings";
@@ -78,6 +80,7 @@ export function useTeamSettingsDraft(
   const rebase = useTeamSettingsStore((s) => s.rebase);
 
   const saveMutation = useSaveTeamSettings();
+  const recoverSession = useSessionRecovery();
   const [isStale, setIsStale] = useState(false);
 
   const shown = draft ?? saved;
@@ -117,6 +120,8 @@ export function useTeamSettingsDraft(
       // Any other outcome ends the conflict: leaving the flag on would keep a modal over the
       // toolbar's error message.
       setIsStale(isStaleSave);
+      // The draft stays, so the work survives the refresh an expired session needs.
+      recoverSession(error);
       // Anything else is swallowed on purpose: the message is read off the mutation below, and
       // rethrowing here would take the formation's save down with it when the
       // screen runs both in one Promise.all.
@@ -146,7 +151,9 @@ export function useTeamSettingsDraft(
     saving: saveMutation.isPending,
     saveErrorMessage:
       saveMutation.error instanceof ApiError &&
-      saveMutation.error.statusCode !== STALE_STATUS
+      saveMutation.error.statusCode !== STALE_STATUS &&
+      // An expired session is `recoverSession`'s message to tell, as in `use-formation-draft`.
+      !isSessionExpired(saveMutation.error)
         ? saveMutation.error.message
         : undefined,
     setName: (team, name) => setNameInStore(saved, team, name),

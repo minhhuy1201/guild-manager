@@ -114,7 +114,7 @@ export function useFormationScreen(): FormationScreenState {
     refetchTeamSettings
   );
   // Until the first load the fallback is an empty map at version 0: a draft started from it would
-  // save over - and wipe - every other team's name and colour while passing the version check. So no draft yet.
+  // save over - and wipe - every other team's name, colour and icon while passing the version check. So no draft yet.
   // `data`, not `isSuccess`: a failed background refetch keeps the loaded data, and edits stay open.
   const teamSettings: TeamSettingsDraftState = teamSettingsQuery.data !== undefined
     ? teamSettingsDraft

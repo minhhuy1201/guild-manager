@@ -74,9 +74,10 @@ màu.
   hay trận. Đội không có giá trị thì không có key, cùng luật với tên đội. Tên, màu và biểu tượng dùng
   chung một optimistic lock (version hiện tại của tên đội), nên một lần Save là một version.
 - **Hợp đồng API**:
-  - `GET` và `PUT /team-builder/team-names` mở rộng: ngoài `names` có thêm `colors` (số đội →
-    `TeamColor`) và `icons` (số đội → `TeamIcon`). Ba record song song, cùng luật key, cùng version. PUT
-    ghi đè toàn bộ cả ba, version cũ trả 412 như hiện tại. Quyền giữ nguyên `TEAM_BUILDER`.
+  - `GET` và `PUT /team-builder/team-names` được thay bằng `GET` và `PUT /team-builder/team-settings`:
+    ngoài `names` có thêm `colors` (số đội → `TeamColor`) và `icons` (số đội → `TeamIcon`). Ba record
+    song song, cùng luật key, cùng version. PUT ghi đè toàn bộ cả ba, version cũ trả 412 như hiện tại.
+    Quyền giữ nguyên `TEAM_BUILDER`. Path cũ bị bỏ, không giữ alias (xem bản thiết kế).
   - Một endpoint `GET` mới chỉ trả `colors`, mở cho mọi người đã đăng nhập (`JwtAuthGuard`, không cần
     Capability), cùng mức quyền với `GET /tactics`. Map chiến thuật dùng endpoint này.
   - Mọi shape là schema Zod trong `packages/shared/schemas`, bọc thành DTO phía API. Giá trị lạ bị Zod
@@ -100,7 +101,9 @@ màu.
 ## Testing Decisions
 
 - Test chỉ kiểm tra hành vi nhìn thấy từ bên ngoài: payload gửi đi, thứ người dùng thấy trên màn hình,
-  màu một token được vẽ. Không test state nội bộ của store hay popover.
+  màu một token được vẽ. Không viết test mới cho state nội bộ của store hay popover. Test store tên
+  đội đã có từ trước được giữ lại và đổi theo store mới, vì nó vẫn phủ luật "không có giá trị thì
+  không có key" ở mức rẻ nhất.
 - **API, `TeamBuilderService`**: lưu và đọc `colors` và `icons` cùng `names`; đội không có giá trị thì
   không có key; version cũ trả 412 và không ghi gì; đội có màu mà không có tên vẫn lưu được; endpoint
   đọc màu trả đúng `colors`. Prior art: `team-name.service.spec.ts`, `team-builder.controller.spec.ts`.

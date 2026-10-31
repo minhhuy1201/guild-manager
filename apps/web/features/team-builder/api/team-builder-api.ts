@@ -80,9 +80,9 @@ export async function saveFormation(
 }
 
 /**
- * Get the team names and colours shown on the grid's column headers.
+ * Get the team names, colours and icons shown on the grid's column headers.
  * Global data — one bundle for the whole app, not one per week or per battle day.
- * @returns Team number (as a decimal string) → name / colour, teams on their number or default colour are absent, plus the version; a failure value (`ok: false`) when signed out or the backend rejects it
+ * @returns Team number (as a decimal string) → name / colour / icon, teams on their number, default colour or colour dot are absent, plus the version; a failure value (`ok: false`) when signed out or the backend rejects it
  */
 export async function fetchTeamSettings(): Promise<ActionResult<TeamSettingsState>> {
   return toActionResult(async () =>
@@ -94,7 +94,7 @@ export async function fetchTeamSettings(): Promise<ActionResult<TeamSettingsStat
 
 /**
  * Overwrite the whole team settings bundle.
- * @param input - Team number (as a decimal string) → name / colour, a team left out loses it, plus the version the draft started from
+ * @param input - Team number (as a decimal string) → name / colour / icon, a team left out loses it, plus the version the draft started from
  * @returns The bundle just written, at its new version; a failure value (`ok: false`) when signed out, the version is stale (412), or the backend rejects it
  */
 export async function saveTeamSettings(

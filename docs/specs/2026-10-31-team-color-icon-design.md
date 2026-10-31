@@ -162,14 +162,14 @@ draft và wire.
 
 ## Open questions and risks
 
-- **Đổi path và type sang `team-settings`?** Đề xuất: đổi. Nếu bạn muốn diff nhỏ hơn, giữ
-  `team-names` và chỉ thêm trường.
-- **Cửa sổ deploy**: API và web deploy riêng. Trong vài phút giữa hai lần deploy, web cũ gọi
-  `team-names` sẽ bị 404, hoặc bị 400 nếu giữ path. Chỉ ảnh hưởng thao tác Save tên đội, và lần
-  Save sau khi web mới lên thì thành công. Chấp nhận được không?
-- **Màu xanh trời và navy**: hai màu có thể gần nhau trên header nhạt. Bước `redesign-skill` kiểm tra
-  độ phân biệt ở cả hai theme. Nếu không ổn thì đổi `SKY` sang màu khác trước khi chốt enum, vì đổi
-  enum sau migration tốn hơn.
+- **Đổi path và type sang `team-settings`**: đã chốt là đổi, bỏ hẳn `team-names`, không giữ alias.
+- **Cửa sổ deploy**: API và web deploy thành hai job riêng. Trong vài phút giữa hai lần deploy, một bên
+  gọi path mà bên kia không còn hoặc chưa có. Web cũ trên API mới: `GET team-names` trả 404, nên tab
+  đang mở hiện số đội thay cho tên và không sửa được header cho tới khi reload; `PUT` cũng 404. Web mới
+  trên API cũ: lỗi tương tự với `team-settings`. Không mất dữ liệu, vì request lỗi không ghi gì. Reload
+  sau khi cả hai deploy xong là hết. Chấp nhận, người duyệt PR xác nhận lại.
+- **Màu xanh trời và navy**: ticket 01 đã kiểm tra bằng khoảng cách OKLab ở cả hai theme. `SKY` sáng
+  hơn navy nhiều và lệch hue khoảng 45 độ, nên giữ `SKY`.
 
 ## Next implementation step
 

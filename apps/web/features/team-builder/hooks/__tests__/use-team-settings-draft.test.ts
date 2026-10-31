@@ -14,6 +14,13 @@ vi.mock("../../api/team-builder-api", () => ({
   saveTeamSettings: vi.fn(),
 }));
 
+/** `useSessionRecovery` needs a router; the save path's contract is only "hand a 401 over". */
+const recoverSessionMock = vi.fn<(error: unknown) => boolean>(() => false);
+
+vi.mock("@/hooks/use-session-recovery", () => ({
+  useSessionRecovery: () => recoverSessionMock,
+}));
+
 vi.mock("@/components/shared/toast", () => ({
   toastSuccess: vi.fn(),
   toastError: vi.fn(),
@@ -53,6 +60,7 @@ beforeEach(() => {
   saveTeamSettingsMock.mockReset();
   saveTeamSettingsMock.mockResolvedValue({ ok: true, data: { names: {}, colors: {}, icons: {}, version: 6 } });
   refetchMock.mockReset();
+  recoverSessionMock.mockClear();
 });
 
 afterEach(() => {
@@ -243,6 +251,21 @@ describe("useTeamSettingsDraft — xung đột phiên bản", () => {
       ...DRAFT,
       version: 3,
     });
+  });
+
+  it("401: giao cho recoverSession, giữ nháp, không hiện message riêng", async () => {
+    saveTeamSettingsMock.mockResolvedValue({ ok: false, message: "Hết phiên.", statusCode: 401 });
+    const { result } = renderNames(SAVED, DRAFT, 3);
+
+    await act(async () => {
+      await result.current.save();
+    });
+
+    expect(recoverSessionMock).toHaveBeenCalledOnce();
+    expect(result.current.dirty).toBe(true);
+    expect(result.current.isStale).toBe(false);
+    await waitFor(() => expect(result.current.saving).toBe(false));
+    expect(result.current.saveErrorMessage).toBeUndefined();
   });
 
   it("412: isStale = true, nháp còn, không hiện message riêng", async () => {

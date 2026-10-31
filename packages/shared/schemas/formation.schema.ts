@@ -25,6 +25,9 @@ export const notesSchema = z.record(
 /** Max length of a team's name — sized to the width of the team column header. */
 export const TEAM_NAME_MAX_LENGTH = 24;
 
+/** Team number as a decimal string: the key of every per-team record below. */
+const teamKeySchema = z.string().regex(/^(\d+)$/, "Số đội không hợp lệ.");
+
 /**
  * Team names: team number (as a decimal string key) → name. Global data, not per session: the
  * same ten names apply to every week and every match. A team still showing its number carries NO
@@ -34,7 +37,7 @@ export const TEAM_NAME_MAX_LENGTH = 24;
  * frontend — the backend only stores what the user typed against a number it never interprets.
  */
 export const teamNamesSchema = z.record(
-  z.string().regex(/^\d+$/, "Số đội không hợp lệ."),
+  teamKeySchema,
   z.string().trim().min(1).max(TEAM_NAME_MAX_LENGTH),
 );
 
@@ -49,7 +52,7 @@ const versionSchema = z.number().int().nonnegative();
  * the names: a team on its default colour carries NO key, so there is no nullable value.
  */
 export const teamColorsSchema = z.record(
-  z.string().regex(/^\d+$/, "Số đội không hợp lệ."),
+  teamKeySchema,
   z.enum(TeamColor),
 );
 
@@ -58,7 +61,7 @@ export const teamColorsSchema = z.record(
  * icon carries NO key and keeps its colour dot.
  */
 export const teamIconsSchema = z.record(
-  z.string().regex(/^\d+$/, "Số đội không hợp lệ."),
+  teamKeySchema,
   z.enum(TeamIcon),
 );
 

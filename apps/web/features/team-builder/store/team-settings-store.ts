@@ -36,57 +36,62 @@ interface TeamSettingsStoreState {
 }
 
 /**
+ * A copy of `record` with the team's key set to `value`, or removed when `value` is null. Every
+ * per-team record follows the same "no value = no key" rule the schema accepts.
+ */
+function withKey<T>(
+  record: Record<string, T>,
+  team: number,
+  value: T | null
+): Record<string, T> {
+  const key = String(team);
+  const rest = Object.fromEntries(
+    Object.entries(record).filter(([entryKey]) => entryKey !== key)
+  );
+
+  return value === null ? rest : { ...rest, [key]: value };
+}
+
+/**
  * Draft state of the team settings (Zustand).
  * Holds ONLY unsaved edits - the saved settings are server data and stay in
  * TanStack Query, like every other response in this app.
  */
-export const useTeamSettingsStore = create<TeamSettingsStoreState>((set) => ({
-  draft: null,
-  baseVersion: null,
-  setName: (saved, team, name) =>
+export const useTeamSettingsStore = create<TeamSettingsStoreState>((set) => {
+  /** Apply one field change to the draft, starting it from `saved` when there is none. */
+  function patch(
+    saved: TeamSettingsState,
+    change: (base: TeamSettings) => Partial<TeamSettings>
+  ) {
     set((state) => {
       const base = state.draft ?? saved;
-      const trimmed = name.trim();
-      const names = { ...base.names };
-
-      // A cleared name is a missing key, not an empty string: that is what the
-      // schema accepts and what makes the header fall back to the team number.
-      if (trimmed) names[String(team)] = trimmed;
-      else delete names[String(team)];
 
       return {
-        draft: { names, colors: base.colors, icons: base.icons },
+        draft: {
+          names: base.names,
+          colors: base.colors,
+          icons: base.icons,
+          ...change(base),
+        },
         baseVersion: state.baseVersion ?? saved.version,
       };
-    }),
-  setColor: (saved, team, color) =>
-    set((state) => {
-      const base = state.draft ?? saved;
-      const colors = { ...base.colors };
+    });
+  }
 
-      // The default colour is a missing key too, so the colour record keeps the rule the names follow.
-      if (color) colors[String(team)] = color;
-      else delete colors[String(team)];
-
-      return {
-        draft: { names: base.names, colors, icons: base.icons },
-        baseVersion: state.baseVersion ?? saved.version,
-      };
-    }),
-  setIcon: (saved, team, icon) =>
-    set((state) => {
-      const base = state.draft ?? saved;
-      const icons = { ...base.icons };
-
-      // No icon is a missing key too: the team keeps its colour dot.
-      if (icon) icons[String(team)] = icon;
-      else delete icons[String(team)];
-
-      return {
-        draft: { names: base.names, colors: base.colors, icons },
-        baseVersion: state.baseVersion ?? saved.version,
-      };
-    }),
-  rebase: (version) => set({ baseVersion: version }),
-  clearDraft: () => set({ draft: null, baseVersion: null }),
-}));
+  return {
+    draft: null,
+    baseVersion: null,
+    // A cleared name is a missing key, not an empty string: that is what makes the header fall back
+    // to the team number.
+    setName: (saved, team, name) =>
+      patch(saved, (base) => ({
+        names: withKey(base.names, team, name.trim() || null),
+      })),
+    setColor: (saved, team, color) =>
+      patch(saved, (base) => ({ colors: withKey(base.colors, team, color) })),
+    setIcon: (saved, team, icon) =>
+      patch(saved, (base) => ({ icons: withKey(base.icons, team, icon) })),
+    rebase: (version) => set({ baseVersion: version }),
+    clearDraft: () => set({ draft: null, baseVersion: null }),
+  };
+});

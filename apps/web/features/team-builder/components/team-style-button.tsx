@@ -73,12 +73,14 @@ export function TeamStyleButton({
 
   const currentIcon = icons[String(team)] as TeamIcon | undefined;
 
+  const description = `Màu đội ${team}: ${TEAM_COLOR_STYLES[current].label}${isDefault ? " (mặc định)" : ""}, ${currentIcon ? `biểu tượng ${TEAM_ICONS[currentIcon].label}` : "không biểu tượng"}`;
+
   const CurrentIcon = currentIcon ? TEAM_ICONS[currentIcon].Icon : null;
   const mark = CurrentIcon ? (
     <CurrentIcon
       aria-hidden
       data-slot="team-icon"
-      className={cn("size-5 shrink-0", TEAM_COLOR_STYLES[current].iconText)}
+      className={cn("size-4.5 shrink-0", TEAM_COLOR_STYLES[current].iconText)}
     />
   ) : (
     <span
@@ -91,7 +93,13 @@ export function TeamStyleButton({
     />
   );
 
-  if (readOnly) return <span className="grid size-6 place-items-center">{mark}</span>;
+  if (readOnly) {
+    return (
+      <span role="img" aria-label={description} className="grid size-6 place-items-center">
+        {mark}
+      </span>
+    );
+  }
 
   /**
    * Hand the pick to the draft and close the popover.
@@ -114,10 +122,10 @@ export function TeamStyleButton({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
-        aria-label={`Màu đội ${team}: ${TEAM_COLOR_STYLES[current].label}${isDefault ? " (mặc định)" : ""}, ${currentIcon ? `biểu tượng ${TEAM_ICONS[currentIcon].label}` : "không biểu tượng"}. Nhấn để đổi màu và biểu tượng.`}
+        aria-label={`${description}. Nhấn để đổi màu và biểu tượng.`}
         className={cn(
-          // 44px square on a phone (frontend display rules); a snug target beside the name above it.
-          "grid size-8 shrink-0 place-items-center rounded-full max-sm:size-11",
+          // `size-10` is the 44px touch floor on a phone (display.md); snug beside the name above it.
+          "grid size-8 shrink-0 place-items-center rounded-full max-sm:size-10",
           "transition-colors duration-[var(--duration-fast)] outline-none",
           "hover:bg-foreground/5 aria-expanded:bg-foreground/10",
           "focus-visible:ring-3 focus-visible:ring-ring/50"

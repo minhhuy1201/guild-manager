@@ -18,7 +18,7 @@ interface SaveConflictDialogProps {
   formationLabel: string;
   /** The open day's formation was saved by someone else first */
   isFormationStale: boolean;
-  /** The team names were saved by someone else first */
+  /** The team settings were saved by someone else first */
   isTeamSettingsStale: boolean;
   /** Throw the stale drafts away and load what is saved */
   onReload: () => void;
@@ -39,7 +39,7 @@ const FALLBACK_ERROR = "Không ghi đè được, thử lại sau.";
  * nor a close lands in the middle of it.
  * @param formationLabel - Label of the open day
  * @param isFormationStale - The open day's formation conflicts
- * @param isTeamSettingsStale - The team names conflict
+ * @param isTeamSettingsStale - The team settings conflict
  * @param onReload - Discard the drafts and reload
  * @param onOverwrite - Save the drafts over what is saved
  * @param onClose - Close, keeping the drafts

@@ -145,7 +145,7 @@ describe('TeamBuilderService — cài đặt đội', () => {
   });
 
   describe('saveTeamSettings', () => {
-    it('xoá sạch rồi tạo lại, cả hai trong một transaction', async () => {
+    it('xoá sạch rồi tạo lại, cả ba bảng trong một transaction', async () => {
       await service.saveTeamSettings({
         names: { '3': 'Thủ nhà' },
         colors: {},
