@@ -7,6 +7,20 @@ import { CharactersService } from '../characters/characters.public';
 import { toClassSurvey, toClassSurveyView } from './class-survey.codec';
 
 const DEADLINE_PASSED = 'Hạn chót đã qua, không mở được đợt khảo sát.';
+/** A member who has not answered the open survey. */
+export type UnansweredMember = {
+  id: string;
+  name: string;
+  /** null when no Discord account is linked - they cannot be pinged */
+  discordId: string | null;
+};
+
+/** The open survey with the members who have not answered it yet. */
+export type SurveyReminderTargets = {
+  survey: ClassSurvey;
+  unanswered: UnansweredMember[];
+};
+
 const ALREADY_OPEN = 'Đang có một đợt khảo sát chưa hết hạn.';
 
 /**
@@ -80,5 +94,34 @@ export class ClassSurveyService {
     ]);
 
     return toClassSurveyView(survey, answers, members, now);
+  }
+
+  /**
+   * Who still owes an answer to the open survey.
+   * @returns The open survey and every Character without an answer, or null when no survey is open
+   */
+  async unanswered(): Promise<SurveyReminderTargets | null> {
+    const now = this.clock.now();
+    const survey = await this.prisma.classSurvey.findFirst({
+      where: { closesAt: { gt: now } },
+    });
+
+    if (!survey) return null;
+
+    const [answers, members] = await Promise.all([
+      this.prisma.classSurveyAnswer.findMany({
+        where: { surveyId: survey.id },
+        select: { characterId: true },
+      }),
+      this.characters.listRows(),
+    ]);
+    const answered = new Set(answers.map((answer) => answer.characterId));
+
+    return {
+      survey: toClassSurvey(survey, now),
+      unanswered: members
+        .filter((member) => !answered.has(member.id))
+        .map(({ id, name, discordId }) => ({ id, name, discordId })),
+    };
   }
 }

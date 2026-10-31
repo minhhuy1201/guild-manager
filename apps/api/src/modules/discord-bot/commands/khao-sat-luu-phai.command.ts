@@ -1,18 +1,26 @@
 import { GrantableCommand } from '@guild/shared/enums';
 import { fromVnParts, vnDateKey } from '@guild/shared/lib';
 
-import { buildSurveyMessage } from '../class-survey-message';
+import {
+  buildSurveyMessage,
+  buildSurveyReminder,
+} from '../class-survey-message';
 import { COMMAND_OPTION_TYPE } from '../discord.constants';
 import { invokedSubcommand } from '../interaction.schema';
 import { parseLeaveDateInput } from '../leave-date-input';
 import { ephemeralText, publicMessage } from '../reply';
 import { requireCommand } from '../require-command';
-import type { CommandReply, SlashCommand } from './command.types';
+import type { CommandDeps, CommandReply, SlashCommand } from './command.types';
 
 /** Subcommand and option names, used both when registering and when reading the invocation. */
 const OPEN_SUBCOMMAND = 'mo';
+const REMIND_SUBCOMMAND = 'nhac';
 const TITLE_OPTION = 'ten';
 const DEADLINE_OPTION = 'han';
+
+const NO_OPEN_SURVEY =
+  'Hiện không có đợt khảo sát nào đang mở. Mở một đợt bằng /khao-sat-luu-phai mo.';
+const EVERYONE_ANSWERED = 'Mọi người đã điền khảo sát, không cần nhắc ai.';
 
 const BAD_DATE = 'Hạn phải có dạng dd/mm hoặc dd/mm/yyyy, ví dụ 06/11.';
 const PAST_DATE = 'Hạn chót đã qua. Chọn hôm nay hoặc một ngày sau đó.';
@@ -33,9 +41,42 @@ function endOfVnDay(dateKey: string): Date {
 }
 
 /**
+ * `nhac`: ping every unanswered member who has a linked Discord account.
+ * @param deps - Services the command may reach
+ * @returns A public reminder, or a private sentence when there is nobody to ping
+ */
+async function remind(deps: CommandDeps): Promise<CommandReply> {
+  const targets = await deps.classSurveys.unanswered();
+
+  if (!targets) return ephemeralText(NO_OPEN_SURVEY);
+  if (targets.unanswered.length === 0) return ephemeralText(EVERYONE_ANSWERED);
+
+  const discordIds = targets.unanswered.flatMap((member) =>
+    member.discordId ? [member.discordId] : [],
+  );
+
+  if (discordIds.length === 0) {
+    return ephemeralText(
+      `${targets.unanswered.length} người chưa điền nhưng chưa liên kết Discord nên không ping được.`,
+    );
+  }
+
+  return publicMessage(
+    buildSurveyReminder(
+      targets.survey,
+      {
+        discordIds,
+        unlinkedCount: targets.unanswered.length - discordIds.length,
+      },
+      deps.links,
+    ),
+  );
+}
+
+/**
  * Class survey - an Admin, or a Manager granted this command.
  *
- * `mo` opens a round and posts the public announcement. Everything about the round itself (one open
+ * `mo` opens a round and posts the public announcement; `nhac` pings the members who have not answered. Everything about the round itself (one open
  * at a time, deadline in the future) is `ClassSurveyService.open`'s, so web and Discord cannot
  * disagree; this command only reads the typed date and phrases the message.
  */
@@ -64,6 +105,12 @@ export const khaoSatLuuPhaiCommand: SlashCommand = {
           },
         ],
       },
+      {
+        name: REMIND_SUBCOMMAND,
+        description: 'Ping những người chưa điền đợt khảo sát đang mở',
+        type: COMMAND_OPTION_TYPE.subCommand,
+        required: false,
+      },
     ],
   },
 
@@ -77,6 +124,9 @@ export const khaoSatLuuPhaiCommand: SlashCommand = {
     if (!check.ok) return check.reply;
 
     const subcommand = invokedSubcommand(interaction);
+
+    if (subcommand?.name === REMIND_SUBCOMMAND) return remind(deps);
+
     const title = subcommand?.option(TITLE_OPTION);
     const deadlineText = subcommand?.option(DEADLINE_OPTION);
 

@@ -8,6 +8,7 @@ import { decodeSurveyFillId } from '../custom-id';
 import {
   COMPONENT_TYPE,
   INTERACTION_RESPONSE_TYPE,
+  MAX_CONTENT_LENGTH,
   MESSAGE_FLAG,
 } from '../discord.constants';
 import { NOT_GRANTED } from '../require-command';
@@ -45,12 +46,14 @@ function invocation(han: string) {
  * @param role - Role of the caller
  * @param open - Stub for `classSurveys.open`
  * @param grantedCommands - Grants a Manager carries
+ * @param unanswered - Stub for `classSurveys.unanswered`
  * @returns The deps
  */
 function makeDeps(
   role: GuildRole,
   open: jest.Mock,
   grantedCommands: GrantableCommand[] = [],
+  unanswered: jest.Mock = jest.fn(),
 ): CommandDeps {
   return {
     actors: {
@@ -59,7 +62,7 @@ function makeDeps(
         character: { id: 'meo-beo-k7ma3x', name: 'Mèo Béo', discordId: '111' },
       }),
     },
-    classSurveys: { open },
+    classSurveys: { open, unanswered },
     clock: { now: () => NOW },
     links: {
       webOrigin: 'https://mmgh-nth.vercel.app',
@@ -184,5 +187,150 @@ describe('/khao-sat-luu-phai mo', () => {
     );
 
     expect(open).toHaveBeenCalledTimes(1);
+  });
+});
+
+const REMIND = {
+  type: 2 as const,
+  channel_id: '424242',
+  data: { name: 'khao-sat-luu-phai', options: [{ name: 'nhac', options: [] }] },
+  member: { user: { id: '111' } },
+};
+
+const OPEN_SURVEY = {
+  id: SURVEY_ID,
+  title: 'Update 06/11',
+  closesAt: vn('2026-11-06T23:59').toISOString(),
+  isOpen: true,
+};
+
+/** @returns A `classSurveys.unanswered` stub resolving to the open survey and the given members */
+function unansweredStub(
+  members: { id: string; name: string; discordId: string | null }[],
+): jest.Mock {
+  return jest
+    .fn()
+    .mockResolvedValue({ survey: OPEN_SURVEY, unanswered: members });
+}
+
+describe('/khao-sat-luu-phai nhac', () => {
+  it('không có quyền thì bị từ chối và không đọc ai', async () => {
+    const unanswered = unansweredStub([]);
+
+    const reply = await khaoSatLuuPhaiCommand.execute(
+      REMIND,
+      makeDeps(GuildRole.MEMBER, jest.fn(), [], unanswered),
+    );
+
+    expect(reply.data.content).toBe(NOT_GRANTED);
+    expect(unanswered).not.toHaveBeenCalled();
+  });
+
+  it('không có đợt mở thì báo rõ và không ping ai', async () => {
+    const reply = await khaoSatLuuPhaiCommand.execute(
+      REMIND,
+      makeDeps(
+        GuildRole.ADMIN,
+        jest.fn(),
+        [],
+        jest.fn().mockResolvedValue(null),
+      ),
+    );
+
+    expect(reply.data.flags).toBe(MESSAGE_FLAG.ephemeral);
+    expect(reply.data.content).toContain('không có đợt khảo sát');
+    expect(reply.data.allowed_mentions).toBeUndefined();
+  });
+
+  it('mọi người đã điền thì báo vậy và không ping ai', async () => {
+    const reply = await khaoSatLuuPhaiCommand.execute(
+      REMIND,
+      makeDeps(GuildRole.ADMIN, jest.fn(), [], unansweredStub([])),
+    );
+
+    expect(reply.data.flags).toBe(MESSAGE_FLAG.ephemeral);
+    expect(reply.data.content).toContain('Mọi người đã điền');
+    expect(reply.data.allowed_mentions).toBeUndefined();
+  });
+
+  it('ping từng người chưa điền, kèm nút điền, và chỉ mở đúng các id đó', async () => {
+    const reply = await khaoSatLuuPhaiCommand.execute(
+      REMIND,
+      makeDeps(
+        GuildRole.MANAGER,
+        jest.fn(),
+        [GrantableCommand.KHAO_SAT_LUU_PHAI],
+        unansweredStub([
+          { id: 'a', name: 'A', discordId: '1001' },
+          { id: 'b', name: 'B', discordId: '1002' },
+        ]),
+      ),
+    );
+
+    expect(reply.data.flags).toBeUndefined();
+    expect(reply.data.content).toContain('<@1001> <@1002>');
+    expect(reply.data.allowed_mentions).toEqual({ users: ['1001', '1002'] });
+
+    const button = reply.data.components?.[0].components[0] as {
+      custom_id: string;
+    };
+    expect(decodeSurveyFillId(button.custom_id)).toBe(SURVEY_ID);
+  });
+
+  it('người chưa liên kết Discord không bị ping nhưng được đếm trong tin', async () => {
+    const reply = await khaoSatLuuPhaiCommand.execute(
+      REMIND,
+      makeDeps(
+        GuildRole.ADMIN,
+        jest.fn(),
+        [],
+        unansweredStub([
+          { id: 'a', name: 'A', discordId: '1001' },
+          { id: 'b', name: 'B', discordId: null },
+          { id: 'c', name: 'C', discordId: null },
+        ]),
+      ),
+    );
+
+    expect(reply.data.content).toContain('2 người chưa điền');
+    expect(reply.data.content).toContain('không ping được');
+    expect(reply.data.allowed_mentions).toEqual({ users: ['1001'] });
+  });
+
+  it('chỉ còn người chưa liên kết thì không đăng tin ping', async () => {
+    const reply = await khaoSatLuuPhaiCommand.execute(
+      REMIND,
+      makeDeps(
+        GuildRole.ADMIN,
+        jest.fn(),
+        [],
+        unansweredStub([{ id: 'b', name: 'B', discordId: null }]),
+      ),
+    );
+
+    expect(reply.data.flags).toBe(MESSAGE_FLAG.ephemeral);
+    expect(reply.data.content).toContain('không ping được');
+    expect(reply.data.allowed_mentions).toBeUndefined();
+  });
+
+  it('danh sách quá dài thì cắt theo giới hạn, ghi số người bị bỏ, và id khớp nội dung', async () => {
+    const members = Array.from({ length: 200 }, (_, index) => ({
+      id: `m${index}`,
+      name: `M${index}`,
+      discordId: String(100_000_000_000_000_000n + BigInt(index)),
+    }));
+
+    const reply = await khaoSatLuuPhaiCommand.execute(
+      REMIND,
+      makeDeps(GuildRole.ADMIN, jest.fn(), [], unansweredStub(members)),
+    );
+
+    const content = reply.data.content;
+    const pinged = reply.data.allowed_mentions?.users ?? [];
+
+    expect(content.length).toBeLessThanOrEqual(MAX_CONTENT_LENGTH);
+    expect(pinged.length).toBeLessThan(members.length);
+    expect(content).toContain(`và ${members.length - pinged.length} người nữa`);
+    expect(content.match(/<@\d+>/g)).toEqual(pinged.map((id) => `<@${id}>`));
   });
 });

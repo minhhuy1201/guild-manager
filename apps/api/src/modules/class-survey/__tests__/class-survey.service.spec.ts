@@ -18,8 +18,8 @@ const ADMIN: RequestActor = {
 };
 
 const MEMBERS = [
-  { id: 'meo', name: 'Mèo Béo', guildClass: 'TO_VAN' },
-  { id: 'cun', name: 'Cún Con', guildClass: 'THIET_Y' },
+  { id: 'meo', name: 'Mèo Béo', guildClass: 'TO_VAN', discordId: '111' },
+  { id: 'cun', name: 'Cún Con', guildClass: 'THIET_Y', discordId: null },
 ];
 
 describe('ClassSurveyService', () => {
@@ -198,6 +198,33 @@ describe('ClassSurveyService', () => {
           guildClass: 'THIET_Y',
           answer: { kind: 'KEEP', fromClass: 'THIET_Y' },
         },
+      ]);
+    });
+  });
+
+  describe('unanswered', () => {
+    it('is null when no survey is open', async () => {
+      await expect(service.unanswered()).resolves.toBeNull();
+      expect(prisma.classSurvey.findFirst).toHaveBeenCalledWith({
+        where: { closesAt: { gt: NOW } },
+      });
+    });
+
+    it('lists every Character without an answer, linked or not', async () => {
+      prisma.classSurvey.findFirst.mockResolvedValue({
+        id: 'open',
+        title: 'Đang mở',
+        closesAt: vn('2026-11-06T23:59'),
+      });
+      prisma.classSurveyAnswer.findMany.mockResolvedValue([
+        { characterId: 'meo' },
+      ]);
+
+      const result = await service.unanswered();
+
+      expect(result?.survey.id).toBe('open');
+      expect(result?.unanswered).toEqual([
+        { id: 'cun', name: 'Cún Con', discordId: null },
       ]);
     });
   });
