@@ -183,6 +183,7 @@ describe('người ngoài bấm nút trên bảng công khai', () => {
       {} as never,
       {} as never,
       {} as never,
+      {} as never,
     );
   }
 
@@ -240,6 +241,7 @@ describe('lỗi từ AttendanceService', () => {
       deps.characters,
       deps.actors,
       { get: jest.fn().mockReturnValue('') } as never,
+      {} as never,
       {} as never,
       {} as never,
       {} as never,

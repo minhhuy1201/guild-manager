@@ -4,6 +4,7 @@ export const ROUTES = {
   root: "/",
   attendance: "/diem-danh",
   attendanceHistory: "/lich-su-diem-danh",
+  classOutlook: "/luu-phai",
   teamBuilder: "/xep-team",
   tactics: "/chien-thuat",
   settings: "/thiet-lap",

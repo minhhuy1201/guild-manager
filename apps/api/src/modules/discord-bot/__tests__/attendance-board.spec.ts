@@ -5,6 +5,7 @@ import { buildAttendanceBoard } from '../attendance-board';
 import { BUTTON_STYLE } from '../discord.constants';
 import type {
   ActionRow,
+  ButtonComponent,
   CommandDeps,
   CustomIdButton,
 } from '../commands/command.types';
@@ -207,7 +208,7 @@ describe('buildAttendanceBoard', () => {
       deps,
     );
 
-    const [yes, no] = board.components![0].components;
+    const [yes, no] = board.components![0].components as ButtonComponent[];
 
     expect(yes.style).toBe(BUTTON_STYLE.secondary);
     expect(no.style).toBe(BUTTON_STYLE.secondary);
@@ -227,7 +228,7 @@ describe('buildAttendanceBoard', () => {
       deps,
     );
 
-    const [yes, no] = board.components![0].components;
+    const [yes, no] = board.components![0].components as ButtonComponent[];
 
     expect(yes.style).toBe(BUTTON_STYLE.success);
     expect(yes.label).toBe('✔ Thứ 5 · 20:30 · Có');

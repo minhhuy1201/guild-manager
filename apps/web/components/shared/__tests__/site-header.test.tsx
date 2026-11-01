@@ -222,7 +222,7 @@ describe("SiteHeader - nav theo Capability", () => {
 
     await renderHeader();
 
-    expect(navLinkNames()).toEqual(["Điểm danh", "Lịch sử điểm danh", "Chiến thuật"]);
+    expect(navLinkNames()).toEqual(["Điểm danh", "Lịch sử điểm danh", "Lực lượng lưu phái", "Chiến thuật"]);
   });
 
   it("Manager có Xếp team thấy mục Xếp team nhưng không có Thiết lập", async () => {
@@ -259,7 +259,7 @@ describe("SiteHeader - nav theo Capability", () => {
 
     await renderHeader();
 
-    expect(navLinkNames()).toEqual(["Điểm danh", "Lịch sử điểm danh", "Chiến thuật"]);
+    expect(navLinkNames()).toEqual(["Điểm danh", "Lịch sử điểm danh", "Lực lượng lưu phái", "Chiến thuật"]);
   });
 
   it("token Admin cũ mà /auth/me báo giờ là Member thì không thấy mục quản trị nào", async () => {
@@ -276,7 +276,7 @@ describe("SiteHeader - nav theo Capability", () => {
 
     await renderHeader();
 
-    expect(navLinkNames()).toEqual(["Điểm danh", "Lịch sử điểm danh", "Chiến thuật"]);
+    expect(navLinkNames()).toEqual(["Điểm danh", "Lịch sử điểm danh", "Lực lượng lưu phái", "Chiến thuật"]);
   });
 
   it("token Admin mà /auth/me lỗi thì nav chỉ còn như Member", async () => {
@@ -285,7 +285,7 @@ describe("SiteHeader - nav theo Capability", () => {
 
     await renderHeader();
 
-    expect(navLinkNames()).toEqual(["Điểm danh", "Lịch sử điểm danh", "Chiến thuật"]);
+    expect(navLinkNames()).toEqual(["Điểm danh", "Lịch sử điểm danh", "Lực lượng lưu phái", "Chiến thuật"]);
   });
 
   it("token Member cũ mà /auth/me báo giờ là Quản lý có Xếp team thì thấy mục này ngay", async () => {

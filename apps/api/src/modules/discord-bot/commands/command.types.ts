@@ -6,6 +6,7 @@ import type {
 } from '../../attendance/attendance.public';
 import type { BattleSessionsService } from '../../battle-sessions/battle-sessions.public';
 import type { CharactersService } from '../../characters/characters.public';
+import type { ClassSurveyService } from '../../class-survey/class-survey.public';
 import type { ActorResolver } from '../actor-resolver';
 import type { BotChannelService } from '../bot-channel.service';
 import type { DiscordRestClient } from '../discord-rest';
@@ -36,6 +37,10 @@ export interface SlashCommandOption {
   required: boolean;
   /** The fixed values a STRING option offers. Omitted when the option takes any value. */
   choices?: SlashCommandOptionChoice[];
+  /** Longest text a STRING option accepts; Discord rejects a longer entry before the bot sees it. */
+  max_length?: number;
+  /** The options of a subcommand (`COMMAND_OPTION_TYPE.subCommand`). Omitted on every other type. */
+  options?: SlashCommandOption[];
 }
 
 /** One fixed value of a STRING option: `name` is what the user picks, `value` what the bot reads. */
@@ -71,10 +76,24 @@ export interface LinkButton {
 /** One button of either kind. */
 export type ButtonComponent = CustomIdButton | LinkButton;
 
+/** One option of a string select. */
+export interface SelectOption {
+  label: string;
+  value: string;
+}
+
+/** A drop-down; Discord requires it to be the only component of its action row. */
+export interface StringSelectComponent {
+  type: (typeof COMPONENT_TYPE)['stringSelect'];
+  custom_id: string;
+  placeholder: string;
+  options: SelectOption[];
+}
+
 /** A horizontal strip of components. Discord allows at most 5 of these per message. */
 export interface ActionRow {
   type: (typeof COMPONENT_TYPE)['actionRow'];
-  components: ButtonComponent[];
+  components: (ButtonComponent | StringSelectComponent)[];
 }
 
 /**
@@ -188,6 +207,7 @@ export interface CommandDeps {
   attendance: AttendanceService;
   leaves: LeaveService;
   autoAttend: AutoAttendService;
+  classSurveys: ClassSurveyService;
   battleSessions: BattleSessionsService;
   characters: CharactersService;
   actors: ActorResolver;

@@ -15,6 +15,7 @@ export interface PageImage {
 export type PageBannerKey =
   | "attendance"
   | "history"
+  | "classOutlook"
   | "teamBuilder"
   | "tactics"
   | "settings";
@@ -30,6 +31,12 @@ export const PAGE_BANNERS: Record<PageBannerKey, PageImage> = {
     src: "/img/bg/history.jpg",
     objectPosition: "center 55%",
     tint: "#243a63",
+  },
+  // No scene of its own yet: shares the line-up picture until a dedicated one is added.
+  classOutlook: {
+    src: "/img/bg/team-builder.jpg",
+    objectPosition: "center 45%",
+    tint: "#6b4a2c",
   },
   teamBuilder: {
     src: "/img/bg/team-builder.jpg",

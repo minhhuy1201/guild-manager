@@ -55,19 +55,20 @@ enum GrantableCommand {
   CAU_HINH_KENH
   THONG_BAO
   NHAC_DIEM_DANH
+  KHAO_SAT_LUU_PHAI
 }
 
 /// A character in the guild.
 model Character {
   /// Generated primary key: name slug plus a random suffix ("meo-beo-k7ma3x").
-  id              String     @id
+  id              String             @id
   /// Display name of the character.
   name            String
   guildClass      GuildClass
   /// Discord ID (snowflake) entered by an admin. Null = this member cannot sign in yet.
   /// Nullable + @unique: Postgres allows many NULLs, so "many unassigned" is valid while
   /// "two people on one ID" is not.
-  discordId       String?    @unique
+  discordId       String?            @unique
   /// Discord name read at the last login — lets an admin confirm the right person was assigned.
   discordUsername String?
   /// Discord avatar hash read at the last login (hash only, not a URL).
@@ -75,19 +76,20 @@ model Character {
   discordAvatar   String?
   /// Null = never signed in.
   lastLoginAt     DateTime?
-  role            GuildRole  @default(MEMBER)
+  role            GuildRole          @default(MEMBER)
   /// Areas of management granted to this person. Empty unless role = MANAGER: the member service
   /// clears it whenever a member leaves that role.
   capabilities    Capability[]       @default([])
   /// Admin Discord commands granted to this person. Same invariant as `capabilities`.
   grantedCommands GrantableCommand[] @default([])
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
 
-  attendanceRecords AttendanceRecord[]
-  formationSlots    FormationSlot[]
-  leaves            Leave[]
-  autoAttendPeriods AutoAttendPeriod[]
+  attendanceRecords  AttendanceRecord[]
+  formationSlots     FormationSlot[]
+  leaves             Leave[]
+  autoAttendPeriods  AutoAttendPeriod[]
+  classSurveyAnswers ClassSurveyAnswer[]
 
   catRaceParticipants CatRaceParticipant[]
   catRaceEntrants     CatRaceEntrant[]
@@ -140,19 +142,19 @@ model BattleSession {
 
 /// One character's attendance for one battle session.
 model AttendanceRecord {
-  id                  String           @id @default(cuid())
+  id                  String   @id @default(cuid())
   characterId         String
   sessionId           String
   /// True = "Có" (signed up), false = "Không".
   isPresent           Boolean
   /// Last time attendance was recorded (flipping yes ⇄ no before the deadline updates it).
-  markedAt            DateTime         @default(now())
+  markedAt            DateTime @default(now())
   /// Who recorded this entry. Null for data written before login existed.
   /// Deliberately not a relation: deleting the recorder must not destroy someone else's entry.
   markedByCharacterId String?
   /// Why the member answered "Không". Null when isPresent = true, or when no reason was given.
   /// VarChar(255) so the business limit cannot be bypassed by any write path.
-  reason              String?          @db.VarChar(255)
+  reason              String?  @db.VarChar(255)
 
   character Character     @relation(fields: [characterId], references: [id], onDelete: Cascade)
   session   BattleSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
@@ -367,6 +369,47 @@ model AutoAttendPeriod {
 
   character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
 
+  @@index([characterId])
+}
+
+/// How sure a member is about a planned class change. Values must match the ClassChangeConfidence enum in packages/shared/enums.
+enum ClassChangeConfidence {
+  SURE
+  CONSIDERING
+}
+
+/// One Class survey: a named round with a deadline. Open while now < closesAt; at most one is open at a time
+/// (enforced by the service). See docs/specs/2026-10-31-class-change-survey.md.
+model ClassSurvey {
+  id          String   @id @default(cuid())
+  title       String
+  closesAt    DateTime
+  /// Written from Clock, not by the DB.
+  createdAt   DateTime
+  /// Plain id with no relation, same reason as Leave.createdByCharacterId: the survey outlives its opener.
+  createdById String
+
+  answers ClassSurveyAnswer[]
+
+  @@index([closesAt])
+}
+
+/// A member's answer to a Class survey. KEEP = targetClass and confidence both null; CHANGE = both set
+/// (a CHECK constraint in the migration enforces "both or neither").
+model ClassSurveyAnswer {
+  id          String                 @id @default(cuid())
+  surveyId    String
+  characterId String
+  /// The member's class when they answered, so editing the profile later does not move the result.
+  fromClass   GuildClass
+  targetClass GuildClass?
+  confidence  ClassChangeConfidence?
+  answeredAt  DateTime
+
+  survey    ClassSurvey @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  character Character   @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  @@unique([surveyId, characterId])
   @@index([characterId])
 }
 

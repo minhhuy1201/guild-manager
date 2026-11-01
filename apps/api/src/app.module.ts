@@ -9,6 +9,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { BattleSessionsModule } from './modules/battle-sessions/battle-sessions.module';
 import { CatRaceModule } from './modules/cat-race/cat-race.module';
 import { CharactersModule } from './modules/characters/characters.module';
+import { ClassSurveyModule } from './modules/class-survey/class-survey.module';
 import { DiscordBotModule } from './modules/discord-bot/discord-bot.module';
 import { HealthModule } from './modules/health/health.module';
 import { TacticsModule } from './modules/tactics/tactics.module';
@@ -28,6 +29,7 @@ import { TeamBuilderModule } from './modules/team-builder/team-builder.module';
     BattleSessionsModule,
     CharactersModule,
     AttendanceModule,
+    ClassSurveyModule,
     TeamBuilderModule,
     TacticsModule,
     CatRaceModule,

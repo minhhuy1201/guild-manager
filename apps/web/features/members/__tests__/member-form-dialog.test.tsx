@@ -102,7 +102,8 @@ describe("MemberFormDialog - Grant", () => {
 
     expect(screen.getByText("Chức năng")).not.toBeNull();
     expect(screen.getByText("Command Discord")).not.toBeNull();
-    expect(screen.getAllByRole("checkbox")).toHaveLength(11);
+    expect(screen.getAllByText("/khao-sat-luu-phai").length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("checkbox")).toHaveLength(12);
     for (const box of screen.getAllByRole("checkbox")) {
       expect(box.getAttribute("aria-checked")).toBe("false");
     }

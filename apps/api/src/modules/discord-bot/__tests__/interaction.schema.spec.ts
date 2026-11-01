@@ -2,6 +2,7 @@ import {
   callerDiscordId,
   commandOptionValue,
   interactionSchema,
+  invokedSubcommand,
   isEphemeralPress,
   type ApplicationCommandInteraction,
   type MessageComponentInteraction,
@@ -23,6 +24,16 @@ function pressWithFlags(flags?: number): MessageComponentInteraction {
 }
 
 describe('interactionSchema', () => {
+  it('nhận lựa chọn của string select, giá trị nằm trong data.values', () => {
+    const parsed = interactionSchema.parse({
+      type: 3,
+      data: { custom_id: 'cs:chon:s1', component_type: 3, values: ['KEEP'] },
+      member: { user: { id: '111' } },
+    }) as MessageComponentInteraction;
+
+    expect(parsed.data.values).toEqual(['KEEP']);
+  });
+
   it('nhận gói modal submit, chỉ giữ custom_id và value của từng ô', () => {
     const parsed = interactionSchema.parse({
       type: 5,
@@ -148,6 +159,85 @@ describe('callerDiscordId', () => {
     expect(() =>
       callerDiscordId(parsed as ApplicationCommandInteraction),
     ).toThrow();
+  });
+});
+
+describe('invokedSubcommand', () => {
+  it('đọc tên subcommand và giá trị option lồng bên trong', () => {
+    const parsed = interactionSchema.parse({
+      type: 2,
+      channel_id: '424242',
+      data: {
+        name: 'khao-sat-luu-phai',
+        options: [
+          {
+            name: 'mo',
+            type: 1,
+            options: [
+              { name: 'ten', type: 3, value: 'Update 06/11' },
+              { name: 'han', type: 3, value: '06/11' },
+            ],
+          },
+        ],
+      },
+      member: { user: { id: '111' } },
+    });
+
+    const subcommand = invokedSubcommand(
+      parsed as ApplicationCommandInteraction,
+    );
+
+    expect(subcommand?.name).toBe('mo');
+    expect(subcommand?.option('ten')).toBe('Update 06/11');
+    expect(subcommand?.option('khac')).toBeNull();
+  });
+
+  it.each([
+    ['value rỗng', { name: 'loai', type: 3, value: '' }],
+    ['value không phải chuỗi', { name: 'so', type: 4, value: 5 }],
+    ['không có type và value hỏng', { name: 'loai', value: '' }],
+    ['không có type và value kiểu số', { name: 'so', value: 5 }],
+  ])('từ chối option hỏng: %s', (_name, option) => {
+    expect(() =>
+      interactionSchema.parse({
+        type: 2,
+        channel_id: '424242',
+        data: { name: 'diem-danh-ho', options: [option] },
+        member: { user: { id: '111' } },
+      }),
+    ).toThrow();
+  });
+
+  it('nhận một subcommand đúng tag và giữ option lồng bên trong', () => {
+    const parsed = interactionSchema.parse({
+      type: 2,
+      channel_id: '424242',
+      data: {
+        name: 'khao-sat-luu-phai',
+        options: [{ name: 'nhac', type: 1, options: [] }],
+      },
+      member: { user: { id: '111' } },
+    });
+
+    expect(
+      invokedSubcommand(parsed as ApplicationCommandInteraction)?.name,
+    ).toBe('nhac');
+  });
+
+  it('trả null khi lệnh gửi lên không có subcommand', () => {
+    const parsed = interactionSchema.parse({
+      type: 2,
+      channel_id: '424242',
+      data: {
+        name: 'diem-danh-ho',
+        options: [{ name: 'nguoi', type: 6, value: '999' }],
+      },
+      member: { user: { id: '111' } },
+    });
+
+    expect(
+      invokedSubcommand(parsed as ApplicationCommandInteraction),
+    ).toBeNull();
   });
 });
 

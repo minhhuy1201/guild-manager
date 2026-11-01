@@ -31,6 +31,7 @@ describe("navItemsFor", () => {
     expect(hrefsFor(GuildRole.MEMBER)).toEqual([
       ROUTES.attendance,
       ROUTES.attendanceHistory,
+      ROUTES.classOutlook,
       ROUTES.tactics,
     ]);
   });
@@ -39,6 +40,7 @@ describe("navItemsFor", () => {
     expect(hrefsFor(GuildRole.ADMIN)).toEqual([
       ROUTES.attendance,
       ROUTES.attendanceHistory,
+      ROUTES.classOutlook,
       ROUTES.teamBuilder,
       ROUTES.tactics,
       ROUTES.settings,
@@ -47,7 +49,12 @@ describe("navItemsFor", () => {
 });
 
 describe("navItemsFor - Manager", () => {
-  const OPEN = [ROUTES.attendance, ROUTES.attendanceHistory, ROUTES.tactics];
+  const OPEN = [
+    ROUTES.attendance,
+    ROUTES.attendanceHistory,
+    ROUTES.classOutlook,
+    ROUTES.tactics,
+  ];
 
   it("chưa có Grant nào thì thấy y hệt Member", () => {
     expect(hrefsForManager()).toEqual(hrefsFor(GuildRole.MEMBER));
@@ -57,6 +64,7 @@ describe("navItemsFor - Manager", () => {
     expect(hrefsForManager(Capability.TEAM_BUILDER)).toEqual([
       ROUTES.attendance,
       ROUTES.attendanceHistory,
+      ROUTES.classOutlook,
       ROUTES.teamBuilder,
       ROUTES.tactics,
     ]);

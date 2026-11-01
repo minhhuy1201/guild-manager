@@ -1,6 +1,10 @@
 import { z } from 'zod';
 
-import { INTERACTION_TYPE, MESSAGE_FLAG } from './discord.constants';
+import {
+  COMMAND_OPTION_TYPE,
+  INTERACTION_TYPE,
+  MESSAGE_FLAG,
+} from './discord.constants';
 
 /**
  * These shapes stay in this module instead of `packages/shared`.
@@ -29,6 +33,19 @@ const commandOptionSchema = z.object({
   value: z.string().min(1),
 });
 
+/**
+ * A subcommand as Discord sends it: no `value` of its own, its filled-in options nested one level
+ * down. A command with subcommands sends exactly one of these as its only top-level option.
+ *
+ * Discriminated by Discord's `type` tag, not by the absence of `value`: otherwise a malformed plain
+ * option (empty or non-string value) would parse here with its `value` silently stripped.
+ */
+const subcommandSchema = z.object({
+  type: z.literal(COMMAND_OPTION_TYPE.subCommand),
+  name: z.string().min(1),
+  options: z.array(commandOptionSchema).optional(),
+});
+
 const pingInteractionSchema = z.object({
   type: z.literal(INTERACTION_TYPE.ping),
 });
@@ -43,7 +60,9 @@ const applicationCommandInteractionSchema = z.object({
   channel_id: z.string().min(1),
   data: z.object({
     name: z.string().min(1),
-    options: z.array(commandOptionSchema).optional(),
+    options: z
+      .array(z.union([commandOptionSchema, subcommandSchema]))
+      .optional(),
   }),
   ...invokerFields,
 });
@@ -51,7 +70,11 @@ const applicationCommandInteractionSchema = z.object({
 const messageComponentInteractionSchema = z.object({
   type: z.literal(INTERACTION_TYPE.messageComponent),
   // snake_case because this is Discord's payload, read verbatim.
-  data: z.object({ custom_id: z.string().min(1) }),
+  data: z.object({
+    custom_id: z.string().min(1),
+    /** Chosen option values of a string select; a button sends none. */
+    values: z.array(z.string()).optional(),
+  }),
   /**
    * The message the component sits on. Only its flags are read, to tell a public board from an
    * ephemeral one; everything else Discord sends here is ignored.
@@ -168,5 +191,40 @@ export function commandOptionValue(
     (candidate) => candidate.name === name,
   );
 
-  return option?.value ?? null;
+  return option && 'value' in option ? option.value : null;
+}
+
+/** The subcommand a caller picked, with the values it was given. */
+export interface InvokedSubcommand {
+  name: string;
+  /**
+   * Value of one of the subcommand's options.
+   * @param optionName - Option name as declared in the command definition
+   * @returns The value, or null when the option was not filled in
+   */
+  option(optionName: string): string | null;
+}
+
+/**
+ * The subcommand of a slash command.
+ * @param interaction - The command invocation
+ * @returns The subcommand, or null when the command was sent without one
+ */
+export function invokedSubcommand(
+  interaction: ApplicationCommandInteraction,
+): InvokedSubcommand | null {
+  const picked = interaction.data.options?.find(
+    (candidate) =>
+      'type' in candidate && candidate.type === COMMAND_OPTION_TYPE.subCommand,
+  );
+
+  if (!picked) return null;
+
+  const options = 'options' in picked ? (picked.options ?? []) : [];
+
+  return {
+    name: picked.name,
+    option: (optionName) =>
+      options.find((candidate) => candidate.name === optionName)?.value ?? null,
+  };
 }

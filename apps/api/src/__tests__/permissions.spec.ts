@@ -48,7 +48,7 @@ describe('quyền theo vai', () => {
     ]);
   });
 
-  it('có năm command admin, nhãn là tên lệnh', () => {
+  it('có sáu command admin, nhãn là tên lệnh', () => {
     expect(Object.keys(GRANTABLE_COMMAND_LABEL)).toEqual(
       Object.values(GrantableCommand),
     );
@@ -58,6 +58,7 @@ describe('quyền theo vai', () => {
       '/cau-hinh-kenh',
       '/thong-bao',
       '/nhac-diem-danh',
+      '/khao-sat-luu-phai',
     ]);
   });
 });

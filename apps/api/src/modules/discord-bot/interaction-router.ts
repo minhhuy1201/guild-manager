@@ -10,8 +10,14 @@ import {
 } from '../attendance/attendance.public';
 import { BattleSessionsService } from '../battle-sessions/battle-sessions.public';
 import { CharactersService } from '../characters/characters.public';
+import { ClassSurveyService } from '../class-survey/class-survey.public';
 import { ActorResolver } from './actor-resolver';
 import { buildOwnBoard, handleAttendanceButton } from './attendance-board';
+import {
+  answerSurveyLevel,
+  chooseSurveyOption,
+  openSurveyPanel,
+} from './class-survey-panel';
 import { openAutoAttend, switchAutoAttend } from './auto-attend-reply';
 import { BotChannelService } from './bot-channel.service';
 import { DiscordRestClient } from './discord-rest';
@@ -29,6 +35,8 @@ import {
   ANNOUNCEMENT_LEAVE_ID,
   AUTO_ATTEND_OFF_ID,
   AUTO_ATTEND_ON_ID,
+  decodeSurveyComponentId,
+  type SurveyComponentId,
   LEAVE_MODAL_ID,
 } from './custom-id';
 import { buildLeaveModal, readLeaveModal } from './leave-modal';
@@ -85,6 +93,7 @@ export class InteractionRouter {
     private readonly rest: DiscordRestClient,
     private readonly leaves: LeaveService,
     private readonly autoAttend: AutoAttendService,
+    private readonly classSurveys: ClassSurveyService,
     private readonly clock: Clock,
   ) {}
 
@@ -185,6 +194,12 @@ export class InteractionRouter {
       return openAutoAttend(callerDiscordId(interaction), this.deps);
     }
 
+    const surveyComponent = decodeSurveyComponentId(interaction.data.custom_id);
+
+    if (surveyComponent) {
+      return this.routeSurveyComponent(interaction, surveyComponent);
+    }
+
     // Both sit on the private panel that button opened, so rewriting it in place is safe.
     if (interaction.data.custom_id === AUTO_ATTEND_ON_ID) {
       return switchAutoAttend(callerDiscordId(interaction), true, this.deps);
@@ -208,6 +223,39 @@ export class InteractionRouter {
 
       default:
         return assertNever(outcome, 'Kết quả bấm nút ngoài dự kiến');
+    }
+  }
+
+  /**
+   * Answer a Class survey component. The fill button sits on the public announcement, so it opens a
+   * new private panel; the select and the confidence buttons sit on that private panel and rewrite it.
+   * @param interaction - The validated press or selection
+   * @param component - The decoded custom_id
+   * @returns The reply Discord shows
+   */
+  private routeSurveyComponent(
+    interaction: MessageComponentInteraction,
+    component: SurveyComponentId,
+  ): Promise<InteractionReply> {
+    const discordId = callerDiscordId(interaction);
+
+    switch (component.kind) {
+      case 'fill':
+        return openSurveyPanel(discordId, component.surveyId, this.deps);
+
+      case 'select':
+        return chooseSurveyOption(
+          discordId,
+          component.surveyId,
+          interaction.data.values?.[0],
+          this.deps,
+        );
+
+      case 'level':
+        return answerSurveyLevel(discordId, component, this.deps);
+
+      default:
+        return assertNever(component, 'Thành phần khảo sát ngoài dự kiến');
     }
   }
 
@@ -237,6 +285,7 @@ export class InteractionRouter {
       attendance: this.attendance,
       leaves: this.leaves,
       autoAttend: this.autoAttend,
+      classSurveys: this.classSurveys,
       battleSessions: this.battleSessions,
       characters: this.characters,
       actors: this.actors,

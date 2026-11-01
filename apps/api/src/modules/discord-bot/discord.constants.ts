@@ -40,6 +40,8 @@ export const MESSAGE_FLAG = {
 export const COMPONENT_TYPE = {
   actionRow: 1,
   button: 2,
+  /** A drop-down of fixed options; sits alone in its action row */
+  stringSelect: 3,
   textInput: 4,
   /** Wraps one input inside a modal and gives it a caption */
   label: 18,
@@ -78,6 +80,8 @@ export const EMBED_COLOR = 0x5865f2;
 
 /** Slash command option types. Only the ones the bot declares are listed. */
 export const COMMAND_OPTION_TYPE = {
+  /** A named branch of a command; its own options are nested inside it */
+  subCommand: 1,
   /** Free text, or one of the option's `choices` when it declares some */
   string: 3,
   /** A guild member picker — the value arrives as a Discord ID string */

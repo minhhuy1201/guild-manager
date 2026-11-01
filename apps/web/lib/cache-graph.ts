@@ -1,6 +1,7 @@
 import type { QueryKey } from "@tanstack/react-query";
 
 import { attendanceKeys } from "@/features/attendance/api/attendance-keys";
+import { classSurveyKeys } from "@/features/class-survey/api/class-survey-keys";
 import { catRaceKeys } from "@/features/cat-race/api/cat-race-keys";
 import { memberKeys } from "@/features/members/api/members-keys";
 import { settingsKeys } from "@/features/settings/api/battle-sessions-keys";
@@ -22,6 +23,7 @@ export const CACHE_TOPICS = [
   "formation",
   "tactic",
   "cat-race",
+  "class-survey",
 ] as const;
 
 /** A kind of data a write can make stale. */
@@ -49,6 +51,8 @@ export const CACHE_DEPENDENTS: Record<CacheTopic, () => QueryKey[]> = {
     teamBuilderKeys.all,
     // Removing a member drops them from every cat race roster.
     catRaceKeys.all,
+    // The Class outlook lists every member with their current class.
+    classSurveyKeys.all,
   ],
   /**
    * The attendance table changes column count and the team builder changes tab count, so missing one
@@ -105,4 +109,6 @@ export const CACHE_DEPENDENTS: Record<CacheTopic, () => QueryKey[]> = {
   tactic: () => [tacticKeys.all],
   /** A cat race only reads the roster; writing one touches nothing else. */
   "cat-race": () => [catRaceKeys.all],
+  /** An answer changes the figures, the chart and the member list, all read from the one view. */
+  "class-survey": () => [classSurveyKeys.all],
 };
