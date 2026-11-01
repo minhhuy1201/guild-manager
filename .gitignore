@@ -56,3 +56,6 @@ seed-data.json
 
 # business notes, not part of the app
 ba.md
+
+# Diagrams generated locally by the archify skill
+.archify/
