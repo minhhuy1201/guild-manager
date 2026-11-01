@@ -476,7 +476,23 @@ describe('InteractionRouter - khảo sát lưu phái', () => {
       {} as never,
       {} as never,
       {
-        current: jest.fn().mockResolvedValue(view),
+        panelFor: jest.fn().mockImplementation((surveyId: string) => {
+          const { survey, members } = view as {
+            survey: typeof SURVEY | null;
+            members: ReturnType<typeof memberRow>[];
+          };
+          const member = members[0];
+
+          return Promise.resolve(
+            survey?.id === surveyId && member
+              ? {
+                  survey,
+                  fromClass: member.guildClass,
+                  answer: member.answer,
+                }
+              : null,
+          );
+        }),
         answer: opts.answer ?? jest.fn(),
       } as never,
       new FixedClock(vn('2026-11-01T12:00')),

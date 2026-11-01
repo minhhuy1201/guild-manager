@@ -144,7 +144,7 @@ type LoadedPanel =
   | { ok: false; reply: CommandReply };
 
 /**
- * Resolve the caller and read the survey and their saved answer. Only the open survey has a panel.
+ * Resolve the caller and read the survey with their class and saved answer. Only the open survey has a panel.
  * @param discordId - Discord ID from the signed interaction
  * @param surveyId - Survey the pressed component belongs to
  * @param deps - Services the bot reaches
@@ -158,10 +158,9 @@ async function loadPanel(
   const caller = await resolveOwnCaller(discordId, deps);
   if (!caller.ok) return caller;
 
-  const view = await deps.classSurveys.current();
-  const member = view.members.find((row) => row.id === caller.characterId);
+  const panel = await deps.classSurveys.panelFor(surveyId, caller.characterId);
 
-  if (view.survey?.id !== surveyId || !view.survey.isOpen || !member) {
+  if (!panel?.survey.isOpen) {
     return { ok: false, reply: ephemeralText(SURVEY_UNAVAILABLE) };
   }
 
@@ -169,9 +168,9 @@ async function loadPanel(
     ok: true,
     caller,
     state: {
-      survey: view.survey,
-      fromClass: member.guildClass,
-      saved: member.answer,
+      survey: panel.survey,
+      fromClass: panel.fromClass,
+      saved: panel.answer,
     },
   };
 }

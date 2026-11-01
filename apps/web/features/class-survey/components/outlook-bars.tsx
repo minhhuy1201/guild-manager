@@ -9,7 +9,7 @@ import { GuildClassIcon } from "@/components/shared/guild-class-icon";
 import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
 import { GUILD_CLASS_COLOR } from "@/lib/guild-class";
 import { cn } from "@/lib/utils";
-import { formatDelta } from "../lib/sort-by-after";
+import { formatDelta } from "../lib/outlook-rows";
 
 const BAR_SIZE = 12;
 const BAR_RADIUS = 2;

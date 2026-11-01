@@ -4,6 +4,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import type { GuildClass } from '@guild/shared/enums';
+import {
+  classSurveyTitleSchema,
+  SURVEY_TITLE_MAX_LENGTH,
+} from '@guild/shared/schemas';
 import type {
   ClassSurvey,
   ClassSurveyAnswer,
@@ -35,10 +39,21 @@ export type SurveyReminderTargets = {
   unanswered: UnansweredMember[];
 };
 
+/** One member's slice of a survey: what the Discord answer panel draws, without the whole guild. */
+export type SurveyPanelData = {
+  /** The survey, open or not - the caller decides what a closed one means */
+  survey: ClassSurvey;
+  /** The member's class right now */
+  fromClass: GuildClass;
+  /** Their saved answer, null until they answer */
+  answer: ClassSurveyAnswer | null;
+};
+
 const SURVEY_NOT_FOUND = 'Không tìm thấy đợt khảo sát.';
 const SURVEY_CLOSED = 'Đợt khảo sát đã đóng, không sửa được câu trả lời.';
 const NO_CHARACTER = 'Tài khoản này chưa gắn với thành viên nào.';
 const SAME_CLASS = 'Phái muốn chuyển phải khác phái hiện tại.';
+const TITLE_INVALID = `Tên đợt khảo sát phải có 1 đến ${SURVEY_TITLE_MAX_LENGTH} ký tự.`;
 const ALREADY_OPEN = 'Đang có một đợt khảo sát chưa hết hạn.';
 
 /**
@@ -59,13 +74,20 @@ export class ClassSurveyService {
    * @param closesAt - The deadline instant
    * @param actor - JWT payload of whoever opens it; its `sub` is kept as `createdById`
    * @returns The new survey
-   * @throws BadRequestException when the deadline is not in the future or another survey is open
+   * @throws BadRequestException when the title is empty or too long, the deadline is not in the
+   *   future, or another survey is open
    */
   async open(
     title: string,
     closesAt: Date,
     actor: RequestActor,
   ): Promise<ClassSurvey> {
+    const parsedTitle = classSurveyTitleSchema.safeParse(title);
+
+    if (!parsedTitle.success) {
+      throw new BadRequestException(TITLE_INVALID);
+    }
+
     return this.prisma.$transaction(async (tx) => {
       // Serialises openers: the "is one open" read and the create after it must not interleave with
       // another opener (two admins at once), or two surveys end up open. Released at commit/rollback.
@@ -81,7 +103,12 @@ export class ClassSurveyService {
       if (open) throw new BadRequestException(ALREADY_OPEN);
 
       const created = await tx.classSurvey.create({
-        data: { title, closesAt, createdAt: now, createdById: actor.sub },
+        data: {
+          title: parsedTitle.data,
+          closesAt,
+          createdAt: now,
+          createdById: actor.sub,
+        },
       });
 
       return toClassSurvey(created, now);
@@ -157,6 +184,42 @@ export class ClassSurveyService {
     ]);
 
     return toClassSurveyView(survey, answers, members, now);
+  }
+
+  /**
+   * One member's view of one survey: the survey, their class now and their answer. Narrower than
+   * `current()`, which reads every answer and Character - the Discord panel runs inside a 3 second
+   * budget and needs only one row.
+   * @param surveyId - Survey the panel belongs to
+   * @param characterId - The member
+   * @returns The slice, or null when the survey or the Character does not exist
+   */
+  async panelFor(
+    surveyId: string,
+    characterId: string,
+  ): Promise<SurveyPanelData | null> {
+    const now = this.clock.now();
+    const survey = await this.prisma.classSurvey.findUnique({
+      where: { id: surveyId },
+    });
+
+    if (!survey) return null;
+
+    const [answer, character] = await Promise.all([
+      this.prisma.classSurveyAnswer.findUnique({
+        where: { surveyId_characterId: { surveyId, characterId } },
+      }),
+      this.characters.findById(characterId),
+    ]);
+
+    if (!character) return null;
+
+    return {
+      survey: toClassSurvey(survey, now),
+      // The profile column holds the shared enum's values (prisma-enum-sync.spec.ts keeps them in step).
+      fromClass: character.guildClass as GuildClass,
+      answer: answer ? toClassSurveyAnswer(answer) : null,
+    };
   }
 
   /**

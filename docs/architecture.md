@@ -660,7 +660,7 @@ one exception is `prisma/fix-deadlines.ts`, a one-off migration of rows written 
 
 | What you're adding | Where it goes |
 |---|---|
-| **A new API endpoint on an existing domain** | Controller method → service method in that module. Payload shapes as Zod schemas in `packages/shared/schemas`, wrapped as DTOs with `createZodDto`. |
+| **A new API endpoint on an existing domain** | Controller method → service method in that module. Payload shapes as Zod schemas in `packages/shared/schemas`, wrapped as DTOs with `createZodDto`. A union body cannot be a DTO class: pass its schema to `@Body(new ZodValidationPipe(schema))` and give Swagger `@ApiBody({ schema: z.toJSONSchema(schema, { target: 'openapi-3.0' }) })`, as `class-survey.controller.ts` does. |
 | **A new backend domain** | `src/modules/<domain>/` with `<domain>.module.ts`, `.controller.ts`, `.service.ts`, plus `dto/`. Register it in `app.module.ts`. Its request **and** response shapes go in `packages/shared/schemas/`. Add a `<domain>.repository.ts` only once the queries are complex or repeated; simple CRUD calls `PrismaService` from the service. |
 | **A database column or table** | `prisma/schema.prisma` → `pnpm --filter api prisma:migrate` → commit the migration folder. Enums must stay in step with `packages/shared/enums`. Then check the Data API grants ([`production.md`](production.md) §5). |
 | **A request/response shape, an enum, a validation rule** | `packages/shared` — never re-declared per app. |

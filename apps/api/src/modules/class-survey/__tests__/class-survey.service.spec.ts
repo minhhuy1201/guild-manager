@@ -1,4 +1,5 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { SURVEY_TITLE_MAX_LENGTH } from '@guild/shared/schemas';
 import {
   ClassChangeConfidence,
   GuildClass,
@@ -35,9 +36,17 @@ describe('ClassSurveyService', () => {
       findUnique: jest.Mock;
       create: jest.Mock;
     };
-    classSurveyAnswer: { findMany: jest.Mock; upsert: jest.Mock };
+    classSurveyAnswer: {
+      findMany: jest.Mock;
+      findUnique: jest.Mock;
+      upsert: jest.Mock;
+    };
   };
-  let characters: { listRows: jest.Mock; findByDiscordId: jest.Mock };
+  let characters: {
+    listRows: jest.Mock;
+    findByDiscordId: jest.Mock;
+    findById: jest.Mock;
+  };
   let service: ClassSurveyService;
 
   beforeEach(() => {
@@ -54,6 +63,7 @@ describe('ClassSurveyService', () => {
       },
       classSurveyAnswer: {
         findMany: jest.fn().mockResolvedValue([]),
+        findUnique: jest.fn().mockResolvedValue(null),
         upsert: jest
           .fn()
           .mockImplementation((args: { create: Record<string, unknown> }) =>
@@ -65,6 +75,9 @@ describe('ClassSurveyService', () => {
     characters = {
       listRows: jest.fn().mockResolvedValue(MEMBERS),
       findByDiscordId: jest
+        .fn()
+        .mockResolvedValue({ id: 'meo', guildClass: 'TO_VAN' }),
+      findById: jest
         .fn()
         .mockResolvedValue({ id: 'meo', guildClass: 'TO_VAN' }),
     };
@@ -94,6 +107,30 @@ describe('ClassSurveyService', () => {
           createdAt: NOW,
           createdById: ADMIN.sub,
         },
+      });
+    });
+
+    it.each([
+      ['longer than the limit', 'x'.repeat(SURVEY_TITLE_MAX_LENGTH + 1)],
+      ['blank', '   '],
+    ])(
+      'refuses a title that is %s before touching the database',
+      async (_name, title) => {
+        await expect(
+          service.open(title, vn('2026-11-06T23:59'), ADMIN),
+        ).rejects.toBeInstanceOf(BadRequestException);
+        expect(prisma.$transaction).not.toHaveBeenCalled();
+        expect(prisma.classSurvey.create).not.toHaveBeenCalled();
+      },
+    );
+
+    it('stores the title trimmed, at exactly the limit', async () => {
+      const title = 'x'.repeat(SURVEY_TITLE_MAX_LENGTH);
+
+      await service.open(` ${title} `, vn('2026-11-06T23:59'), ADMIN);
+
+      expect(prisma.classSurvey.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ title }) as unknown,
       });
     });
 
@@ -331,6 +368,87 @@ describe('ClassSurveyService', () => {
         }),
       ).rejects.toThrow(BadRequestException);
       expect(prisma.classSurveyAnswer.upsert).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('panelFor', () => {
+    const SURVEY_ROW = {
+      id: 's1',
+      title: 'Update 06/11',
+      closesAt: vn('2026-11-06T23:59'),
+    };
+
+    it('returns the survey, the class now and no answer before the member answers', async () => {
+      prisma.classSurvey.findUnique.mockResolvedValue(SURVEY_ROW);
+
+      const panel = await service.panelFor('s1', 'meo');
+
+      expect(panel).toEqual({
+        survey: expect.objectContaining({ id: 's1', isOpen: true }) as unknown,
+        fromClass: 'TO_VAN',
+        answer: null,
+      });
+      expect(prisma.classSurvey.findUnique).toHaveBeenCalledWith({
+        where: { id: 's1' },
+      });
+      expect(prisma.classSurveyAnswer.findUnique).toHaveBeenCalledWith({
+        where: { surveyId_characterId: { surveyId: 's1', characterId: 'meo' } },
+      });
+      expect(characters.findById).toHaveBeenCalledWith('meo');
+    });
+
+    it('returns the saved answer in contract shape', async () => {
+      prisma.classSurvey.findUnique.mockResolvedValue(SURVEY_ROW);
+      prisma.classSurveyAnswer.findUnique.mockResolvedValue({
+        characterId: 'meo',
+        fromClass: 'TO_VAN',
+        targetClass: 'HUYET_HA',
+        confidence: 'SURE',
+      });
+
+      const panel = await service.panelFor('s1', 'meo');
+
+      expect(panel?.answer).toEqual({
+        kind: 'CHANGE',
+        fromClass: 'TO_VAN',
+        targetClass: 'HUYET_HA',
+        confidence: 'SURE',
+      });
+    });
+
+    it('returns a closed survey marked closed, not null', async () => {
+      prisma.classSurvey.findUnique.mockResolvedValue({
+        ...SURVEY_ROW,
+        closesAt: vn('2026-10-30T23:59'),
+      });
+
+      const panel = await service.panelFor('s1', 'meo');
+
+      expect(panel?.survey.isOpen).toBe(false);
+    });
+
+    it('is null for an unknown survey and reads nothing else', async () => {
+      const panel = await service.panelFor('nope', 'meo');
+
+      expect(panel).toBeNull();
+      expect(prisma.classSurveyAnswer.findUnique).not.toHaveBeenCalled();
+      expect(characters.findById).not.toHaveBeenCalled();
+    });
+
+    it('is null for an unknown Character', async () => {
+      prisma.classSurvey.findUnique.mockResolvedValue(SURVEY_ROW);
+      characters.findById.mockResolvedValue(null);
+
+      expect(await service.panelFor('s1', 'ghost')).toBeNull();
+    });
+
+    it('never reads every answer or every Character', async () => {
+      prisma.classSurvey.findUnique.mockResolvedValue(SURVEY_ROW);
+
+      await service.panelFor('s1', 'meo');
+
+      expect(prisma.classSurveyAnswer.findMany).not.toHaveBeenCalled();
+      expect(characters.listRows).not.toHaveBeenCalled();
     });
   });
 

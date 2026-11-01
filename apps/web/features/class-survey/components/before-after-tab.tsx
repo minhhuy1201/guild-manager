@@ -2,7 +2,7 @@
 
 import type { ClassOutlookRow } from "@guild/shared/lib";
 
-import { sortByAfter } from "../lib/sort-by-after";
+import { sortByAfter } from "../lib/outlook-rows";
 import { OutlookBars } from "./outlook-bars";
 
 interface BeforeAfterTabProps {

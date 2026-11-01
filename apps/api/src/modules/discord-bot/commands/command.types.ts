@@ -37,6 +37,8 @@ export interface SlashCommandOption {
   required: boolean;
   /** The fixed values a STRING option offers. Omitted when the option takes any value. */
   choices?: SlashCommandOptionChoice[];
+  /** Longest text a STRING option accepts; Discord rejects a longer entry before the bot sees it. */
+  max_length?: number;
   /** The options of a subcommand (`COMMAND_OPTION_TYPE.subCommand`). Omitted on every other type. */
   options?: SlashCommandOption[];
 }

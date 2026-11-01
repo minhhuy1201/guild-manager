@@ -26,6 +26,19 @@ export const classSurveyAnswerSchema = z.intersection(
 
 export type ClassSurveyAnswer = z.infer<typeof classSurveyAnswerSchema>;
 
+/**
+ * Longest survey title. Discord caps an embed title at 256 characters and the announcement adds an
+ * emoji prefix; 100 also keeps the reminder's mention budget positive.
+ */
+export const SURVEY_TITLE_MAX_LENGTH = 100;
+
+/** The title an admin types when opening a survey, trimmed and bounded. */
+export const classSurveyTitleSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(SURVEY_TITLE_MAX_LENGTH);
+
 /** One Class survey round. */
 export const classSurveySchema = z.object({
   id: z.string(),

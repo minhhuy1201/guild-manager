@@ -192,6 +192,38 @@ describe('invokedSubcommand', () => {
     expect(subcommand?.option('khac')).toBeNull();
   });
 
+  it.each([
+    ['value rỗng', { name: 'loai', type: 3, value: '' }],
+    ['value không phải chuỗi', { name: 'so', type: 4, value: 5 }],
+    ['không có type và value hỏng', { name: 'loai', value: '' }],
+    ['không có type và value kiểu số', { name: 'so', value: 5 }],
+  ])('từ chối option hỏng: %s', (_name, option) => {
+    expect(() =>
+      interactionSchema.parse({
+        type: 2,
+        channel_id: '424242',
+        data: { name: 'diem-danh-ho', options: [option] },
+        member: { user: { id: '111' } },
+      }),
+    ).toThrow();
+  });
+
+  it('nhận một subcommand đúng tag và giữ option lồng bên trong', () => {
+    const parsed = interactionSchema.parse({
+      type: 2,
+      channel_id: '424242',
+      data: {
+        name: 'khao-sat-luu-phai',
+        options: [{ name: 'nhac', type: 1, options: [] }],
+      },
+      member: { user: { id: '111' } },
+    });
+
+    expect(
+      invokedSubcommand(parsed as ApplicationCommandInteraction)?.name,
+    ).toBe('nhac');
+  });
+
   it('trả null khi lệnh gửi lên không có subcommand', () => {
     const parsed = interactionSchema.parse({
       type: 2,

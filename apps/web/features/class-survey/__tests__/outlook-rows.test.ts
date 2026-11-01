@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { GuildClass } from "@guild/shared/enums";
 import type { ClassOutlookRow } from "@guild/shared/lib";
 
-import { biggestGainer, formatDelta, sortByAfter } from "../lib/sort-by-after";
+import { biggestGainer, formatDelta, sortByAfter } from "../lib/outlook-rows";
 
 /**
  * A row with only the fields these helpers read.

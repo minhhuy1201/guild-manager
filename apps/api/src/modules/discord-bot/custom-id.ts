@@ -100,8 +100,8 @@ const SURVEY_PREFIX = 'cs';
 /** Second part of the "Điền khảo sát" button's custom_id. */
 const SURVEY_FILL = 'dien';
 
-/** How many parts the "Điền khảo sát" custom_id has, prefix included. */
-const SURVEY_FILL_PART_COUNT = 3;
+/** Parts of the fill button and select custom_ids: prefix, action, survey id. */
+const SURVEY_ID_ONLY_PART_COUNT = 3;
 
 /**
  * Build the custom_id of the "Điền khảo sát" button. It carries the survey id because Discord keeps
@@ -112,15 +112,9 @@ const SURVEY_FILL_PART_COUNT = 3;
  * @throws Error when the result exceeds Discord's 100-character limit
  */
 export function encodeSurveyFillId(surveyId: string): string {
-  const customId = [SURVEY_PREFIX, SURVEY_FILL, surveyId].join(SEPARATOR);
-
-  if (customId.length > MAX_CUSTOM_ID_LENGTH) {
-    throw new Error(
-      `custom_id dài ${customId.length} ký tự, vượt giới hạn ${MAX_CUSTOM_ID_LENGTH} của Discord: ${customId}`,
-    );
-  }
-
-  return customId;
+  return assertWithinLimit(
+    [SURVEY_PREFIX, SURVEY_FILL, surveyId].join(SEPARATOR),
+  );
 }
 
 /**
@@ -129,13 +123,23 @@ export function encodeSurveyFillId(surveyId: string): string {
  * @returns The survey id, or null when this component is not that button
  */
 export function decodeSurveyFillId(customId: string): string | null {
+  return decodeSurveyIdOnly(customId, SURVEY_FILL);
+}
+
+/**
+ * Read a `cs:<action>:<surveyId>` custom_id, the shape the fill button and the select share.
+ * @param customId - Raw custom_id from the interaction
+ * @param action - The second part the id must carry
+ * @returns The survey id, or null when the id has another shape or action
+ */
+function decodeSurveyIdOnly(customId: string, action: string): string | null {
   const parts = customId.split(SEPARATOR);
 
-  if (parts.length !== SURVEY_FILL_PART_COUNT) return null;
+  if (parts.length !== SURVEY_ID_ONLY_PART_COUNT) return null;
 
-  const [prefix, action, surveyId] = parts;
+  const [prefix, actual, surveyId] = parts;
 
-  if (prefix !== SURVEY_PREFIX || action !== SURVEY_FILL) return null;
+  if (prefix !== SURVEY_PREFIX || actual !== action) return null;
   if (surveyId.length === 0) return null;
 
   return surveyId;
@@ -146,9 +150,6 @@ const SURVEY_SELECT = 'chon';
 
 /** Second part of the panel's confidence buttons. */
 const SURVEY_LEVEL = 'muc';
-
-/** Parts of the select menu custom_id: prefix, action, survey id. */
-const SURVEY_SELECT_PART_COUNT = 3;
 
 /** Parts of a confidence button custom_id: prefix, action, survey id, target class, confidence. */
 const SURVEY_LEVEL_PART_COUNT = 5;
@@ -225,17 +226,15 @@ export function decodeSurveyComponentId(
 
   if (fillSurveyId !== null) return { kind: 'fill', surveyId: fillSurveyId };
 
+  const selectSurveyId = decodeSurveyIdOnly(customId, SURVEY_SELECT);
+
+  if (selectSurveyId !== null) {
+    return { kind: 'select', surveyId: selectSurveyId };
+  }
+
   const parts = customId.split(SEPARATOR);
 
   if (parts[0] !== SURVEY_PREFIX) return null;
-
-  if (parts[1] === SURVEY_SELECT) {
-    if (parts.length !== SURVEY_SELECT_PART_COUNT || parts[2].length === 0) {
-      return null;
-    }
-
-    return { kind: 'select', surveyId: parts[2] };
-  }
 
   if (parts[1] === SURVEY_LEVEL) {
     if (parts.length !== SURVEY_LEVEL_PART_COUNT) return null;

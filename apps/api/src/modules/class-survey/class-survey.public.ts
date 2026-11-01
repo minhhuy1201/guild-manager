@@ -10,6 +10,7 @@
  */
 export { ClassSurveyService } from './class-survey.service';
 export type {
+  SurveyPanelData,
   SurveyReminderTargets,
   UnansweredMember,
 } from './class-survey.service';

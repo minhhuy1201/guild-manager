@@ -35,19 +35,18 @@ export interface ClassOutlook {
  * @returns Per-class counts plus how many members plan to move
  */
 export function computeClassOutlook(members: readonly ClassSurveyMember[]): ClassOutlook {
-  const counts = new Map<GuildClass, Omit<ClassOutlookRow, "guildClass" | "after" | "delta">>(
+  const counts = Object.fromEntries(
     GUILD_CLASS_OPTIONS.map((guildClass) => [
       guildClass,
       { before: 0, afterSure: 0, afterConsidering: 0 },
     ])
-  );
+  ) as Record<GuildClass, Omit<ClassOutlookRow, "guildClass" | "after" | "delta">>;
   let moverCount = 0;
   let sureMoverCount = 0;
 
   for (const { guildClass, answer } of members) {
     const origin = answer ? answer.fromClass : guildClass;
-    const from = counts.get(origin);
-    if (!from) continue;
+    const from = counts[origin];
     from.before += 1;
 
     if (answer?.kind !== "CHANGE") {
@@ -56,8 +55,7 @@ export function computeClassOutlook(members: readonly ClassSurveyMember[]): Clas
     }
 
     moverCount += 1;
-    const into = counts.get(answer.targetClass);
-    if (!into) continue;
+    const into = counts[answer.targetClass];
     if (answer.confidence === ClassChangeConfidence.SURE) {
       sureMoverCount += 1;
       into.afterSure += 1;
@@ -67,7 +65,7 @@ export function computeClassOutlook(members: readonly ClassSurveyMember[]): Clas
   }
 
   const rows = GUILD_CLASS_OPTIONS.map((guildClass) => {
-    const { before, afterSure, afterConsidering } = counts.get(guildClass)!;
+    const { before, afterSure, afterConsidering } = counts[guildClass];
     const after = afterSure + afterConsidering;
 
     return { guildClass, before, afterSure, afterConsidering, after, delta: after - before };

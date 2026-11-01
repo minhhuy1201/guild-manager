@@ -127,7 +127,9 @@ update.
 - Một lệnh `/khao-sat-luu-phai` với hai subcommand, chặn bằng `requireCommand` với
   `KHAO_SAT_LUU_PHAI`:
   - `mo ten:<chữ> han:<dd/mm[/yyyy]>`: mở đợt. Ngày đọc bằng parser ngày của Nghỉ phép đang có;
-    `closesAt` là 23:59:59.999 giờ VN của ngày đó. Ngày đã qua bị từ chối. Tin trả lời công khai
+    `closesAt` là 23:59:59.999 giờ VN của ngày đó. Ngày đã qua bị từ chối. `ten` được trim, dài
+    1-100 ký tự (`SURVEY_TITLE_MAX_LENGTH`; Discord chặn bằng `max_length`, service kiểm lại trước
+    khi lưu) để embed và tin nhắc không vượt giới hạn của Discord. Tin trả lời công khai
     mention role bang (`allowed_mentions` chỉ mở role đó, giống `/thong-bao`), có embed (tên, hạn
     chót, "Sửa lại được đến hạn chót"), nút "Điền khảo sát" và nút link tới trang.
   - `nhac`: ping từng thành viên đã liên kết Discord mà chưa điền đợt đang mở, kèm cùng nút. Mention

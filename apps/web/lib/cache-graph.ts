@@ -51,6 +51,8 @@ export const CACHE_DEPENDENTS: Record<CacheTopic, () => QueryKey[]> = {
     teamBuilderKeys.all,
     // Removing a member drops them from every cat race roster.
     catRaceKeys.all,
+    // The Class outlook lists every member with their current class.
+    classSurveyKeys.all,
   ],
   /**
    * The attendance table changes column count and the team builder changes tab count, so missing one

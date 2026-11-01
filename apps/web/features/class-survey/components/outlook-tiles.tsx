@@ -3,7 +3,7 @@ import type { ClassOutlook } from "@guild/shared/lib";
 import type { ClassSurveyMember } from "@guild/shared/schemas";
 
 import { Card } from "@/components/ui/card";
-import { biggestGainer, formatDelta } from "../lib/sort-by-after";
+import { biggestGainer, formatDelta } from "../lib/outlook-rows";
 
 interface OutlookTilesProps {
   /** Every guild member with their answer */

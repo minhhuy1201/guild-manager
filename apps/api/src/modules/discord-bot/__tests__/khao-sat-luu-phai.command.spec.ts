@@ -1,4 +1,5 @@
 import { GrantableCommand, GuildRole } from '@guild/shared/enums';
+import { SURVEY_TITLE_MAX_LENGTH } from '@guild/shared/schemas';
 
 import { TOKEN_TYPE } from '../../../common';
 import { vn } from '../../../__tests__/vn-date';
@@ -30,6 +31,7 @@ function invocation(han: string) {
       options: [
         {
           name: 'mo',
+          type: 1 as const,
           options: [
             { name: 'ten', value: 'Update 06/11' },
             { name: 'han', value: han },
@@ -82,6 +84,17 @@ function openStub(): jest.Mock {
     }),
   );
 }
+
+describe('/khao-sat-luu-phai definition', () => {
+  it('giới hạn độ dài option ten để Discord chặn tên quá dài trước khi tới bot', () => {
+    const open = khaoSatLuuPhaiCommand.definition.options?.find(
+      (option) => option.name === 'mo',
+    );
+    const title = open?.options?.find((option) => option.name === 'ten');
+
+    expect(title?.max_length).toBe(SURVEY_TITLE_MAX_LENGTH);
+  });
+});
 
 describe('/khao-sat-luu-phai mo', () => {
   it('admin mở đợt: tin công khai ping role bang, có embed và đúng hai nút', async () => {
@@ -194,7 +207,10 @@ describe('/khao-sat-luu-phai mo', () => {
 const REMIND = {
   type: 2 as const,
   channel_id: '424242',
-  data: { name: 'khao-sat-luu-phai', options: [{ name: 'nhac', options: [] }] },
+  data: {
+    name: 'khao-sat-luu-phai',
+    options: [{ name: 'nhac', type: 1 as const, options: [] }],
+  },
   member: { user: { id: '111' } },
 };
 

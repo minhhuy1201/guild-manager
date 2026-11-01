@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { attendanceKeys } from "@/features/attendance/api/attendance-keys";
 import { catRaceKeys } from "@/features/cat-race/api/cat-race-keys";
+import { classSurveyKeys } from "@/features/class-survey/api/class-survey-keys";
 import { memberKeys } from "@/features/members/api/members-keys";
 import { settingsKeys } from "@/features/settings/api/battle-sessions-keys";
 import { tacticKeys } from "@/features/tactics/api/tactics-keys";
@@ -15,13 +16,14 @@ describe("CACHE_DEPENDENTS", () => {
     }
   });
 
-  it("sửa danh sách thành viên làm cũ điểm danh, xếp team lẫn đua mèo", () => {
+  it("sửa danh sách thành viên làm cũ điểm danh, xếp team, đua mèo lẫn khảo sát lưu phái", () => {
     expect(CACHE_DEPENDENTS.roster()).toEqual([
       memberKeys.all,
       attendanceKeys.characters(),
       attendanceKeys.records(),
       teamBuilderKeys.all,
       catRaceKeys.all,
+      classSurveyKeys.all,
     ]);
   });
 

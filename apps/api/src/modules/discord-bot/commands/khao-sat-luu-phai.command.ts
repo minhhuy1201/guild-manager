@@ -1,5 +1,6 @@
 import { GrantableCommand } from '@guild/shared/enums';
 import { fromVnParts, vnDateKey } from '@guild/shared/lib';
+import { SURVEY_TITLE_MAX_LENGTH } from '@guild/shared/schemas';
 
 import {
   buildSurveyMessage,
@@ -96,6 +97,7 @@ export const khaoSatLuuPhaiCommand: SlashCommand = {
             description: 'Tên đợt khảo sát, ví dụ "Update 06/11"',
             type: COMMAND_OPTION_TYPE.string,
             required: true,
+            max_length: SURVEY_TITLE_MAX_LENGTH,
           },
           {
             name: DEADLINE_OPTION,

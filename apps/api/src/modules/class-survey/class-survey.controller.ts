@@ -1,5 +1,11 @@
 import { Body, Controller, Get, Param, Put, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiTags,
+  type SchemaObject,
+} from '@nestjs/swagger';
 import {
   classSurveyAnswerInputSchema,
   type ClassSurveyAnswer,
@@ -7,9 +13,15 @@ import {
   type ClassSurveyView,
 } from '@guild/shared/schemas';
 import { ZodValidationPipe } from 'nestjs-zod';
+import { z } from 'zod';
 
 import { CurrentUser, JwtAuthGuard, type RequestActor } from '../../common';
 import { ClassSurveyService } from './class-survey.service';
+
+/** OpenAPI 3.0 form of the answer body; Zod's JSON Schema type and Swagger's are separate declarations of the same shape. */
+const ANSWER_BODY_SCHEMA = z.toJSONSchema(classSurveyAnswerInputSchema, {
+  target: 'openapi-3.0',
+}) as SchemaObject;
 
 /** Class surveys - readable by any signed-in member, like attendance itself. */
 @ApiTags('class-surveys')
@@ -38,6 +50,8 @@ export class ClassSurveyController {
    */
   @Put(':id/answers/me')
   @ApiOperation({ summary: 'Trả lời khảo sát lưu phái của chính mình' })
+  // No DTO class to read the body schema from (see below), so Swagger gets it generated from Zod.
+  @ApiBody({ schema: ANSWER_BODY_SCHEMA })
   answer(
     @Param('id') id: string,
     // A union body cannot be a `createZodDto` class, so the schema is handed to the pipe directly.

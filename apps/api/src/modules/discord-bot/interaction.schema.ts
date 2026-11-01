@@ -1,6 +1,10 @@
 import { z } from 'zod';
 
-import { INTERACTION_TYPE, MESSAGE_FLAG } from './discord.constants';
+import {
+  COMMAND_OPTION_TYPE,
+  INTERACTION_TYPE,
+  MESSAGE_FLAG,
+} from './discord.constants';
 
 /**
  * These shapes stay in this module instead of `packages/shared`.
@@ -32,8 +36,12 @@ const commandOptionSchema = z.object({
 /**
  * A subcommand as Discord sends it: no `value` of its own, its filled-in options nested one level
  * down. A command with subcommands sends exactly one of these as its only top-level option.
+ *
+ * Discriminated by Discord's `type` tag, not by the absence of `value`: otherwise a malformed plain
+ * option (empty or non-string value) would parse here with its `value` silently stripped.
  */
 const subcommandSchema = z.object({
+  type: z.literal(COMMAND_OPTION_TYPE.subCommand),
   name: z.string().min(1),
   options: z.array(commandOptionSchema).optional(),
 });
@@ -206,7 +214,8 @@ export function invokedSubcommand(
   interaction: ApplicationCommandInteraction,
 ): InvokedSubcommand | null {
   const picked = interaction.data.options?.find(
-    (candidate) => !('value' in candidate),
+    (candidate) =>
+      'type' in candidate && candidate.type === COMMAND_OPTION_TYPE.subCommand,
   );
 
   if (!picked) return null;
