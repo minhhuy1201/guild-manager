@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { TACTIC_STROKE_WIDTHS } from "@guild/shared/enums";
 
 import { belongsElsewhere } from "@/lib/keyboard-target";
-import { toolForKey } from "../lib/shortcuts";
+import { isRemoveKey, toolForKey } from "../lib/shortcuts";
 import { useTacticEditorStore } from "../store/editor-store";
 
 /**
@@ -78,7 +78,7 @@ export function useEditorShortcuts(
         return;
       }
 
-      if (event.key === "Delete" || event.key === "Backspace") {
+      if (isRemoveKey(event.key)) {
         event.preventDefault();
         onDeleteSelected();
       }

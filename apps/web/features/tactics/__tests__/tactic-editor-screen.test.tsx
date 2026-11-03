@@ -123,7 +123,7 @@ beforeEach(() => {
   updateTactic.mockReset();
   updateTactic.mockResolvedValue({ ok: true, data: {} });
   useTacticEditorStore.getState().reset();
-  // jsdom measures every box as 0 wide, and a canvas 0 wide has nowhere to put the action bar.
+  // jsdom measures every box as 0 wide, and a canvas 0 wide draws no map.
   vi.spyOn(Element.prototype, "getBoundingClientRect").mockReturnValue({
     width: 1000,
     height: 560,
@@ -248,15 +248,13 @@ describe("TacticEditorScreen", () => {
     expect(screen.queryByRole("button", { name: "Đội hình" })).toBeNull();
   });
 
-  it("puts the selected element's actions on the map, not in the toolbar", async () => {
+  it("keeps the map clear and acts on the selection from the toolbar", async () => {
     renderScreen(true);
 
     await waitFor(() =>
       expect(screen.getByRole("button", { name: "Đội hình" })).toBeTruthy()
     );
-    expect(
-      screen.queryByRole("toolbar", { name: "Sửa phần tử đang chọn" })
-    ).toBeNull();
+    expect(screen.getByText("Chưa chọn")).toBeTruthy();
 
     const token = {
       kind: "token" as const,
@@ -269,23 +267,30 @@ describe("TacticEditorScreen", () => {
       color: "blue" as const,
     };
 
-    useTacticEditorStore.getState().commit("s1", [token]);
-    useTacticEditorStore.getState().selectElements(["tok1"]);
+    act(() => {
+      useTacticEditorStore.getState().commit("s1", [token]);
+      useTacticEditorStore.getState().selectElements(["tok1"]);
+    });
+
+    await waitFor(() => expect(screen.getByText("Đã chọn 1")).toBeTruthy());
+    expect(
+      screen.queryByRole("toolbar", { name: "Sửa phần tử đang chọn" })
+    ).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Cỡ quân cờ: Lớn" }));
 
     await waitFor(() =>
       expect(
-        screen.getByRole("toolbar", { name: "Sửa phần tử đang chọn" })
-      ).toBeTruthy()
+        useTacticEditorStore.getState().scene?.stages[0]?.elements[0]
+      ).toMatchObject({ id: "tok1", size: "lg" })
     );
-    expect(screen.getByRole("button", { name: "Cỡ lớn" })).toBeTruthy();
 
-    useTacticEditorStore.getState().clearSelection();
+    fireEvent.click(screen.getByRole("button", { name: "Xoá phần tử đang chọn" }));
 
     await waitFor(() =>
-      expect(
-        screen.queryByRole("toolbar", { name: "Sửa phần tử đang chọn" })
-      ).toBeNull()
+      expect(useTacticEditorStore.getState().scene?.stages[0]?.elements).toEqual([])
     );
+    expect(screen.getByText("Chưa chọn")).toBeTruthy();
   });
 
   it("drops a token dragged out of the palette where it is let go on the map", async () => {
@@ -352,146 +357,6 @@ describe("TacticEditorScreen", () => {
 
     act(() => useTacticEditorStore.getState().setTool("select"));
     await waitFor(() => expect(canvasProps.current.pickable).toBe(true));
-  });
-
-  it("takes the action bar away while the selection is being dragged", async () => {
-    renderScreen(true);
-
-    await waitFor(() =>
-      expect(screen.getByRole("button", { name: "Đội hình" })).toBeTruthy()
-    );
-
-    const token = {
-      kind: "token" as const,
-      id: "tok1",
-      x: 900,
-      y: 400,
-      size: "md" as const,
-      icon: "swords" as const,
-      label: "Đội công",
-      color: "blue" as const,
-    };
-
-    act(() => {
-      useTacticEditorStore.getState().commit("s1", [token]);
-      useTacticEditorStore.getState().selectElements(["tok1"]);
-    });
-
-    await waitFor(() =>
-      expect(
-        screen.getByRole("toolbar", { name: "Sửa phần tử đang chọn" })
-      ).toBeTruthy()
-    );
-
-    const pointer = canvasProps.current as unknown as {
-      onPointerDown: (point: { x: number; y: number }) => void;
-      onPointerMove: (point: { x: number; y: number }) => void;
-      onPointerUp: () => void;
-    };
-
-    // The bar would cover the piece being carried, so it waits for the drop.
-    act(() => pointer.onPointerDown({ x: 900, y: 400 }));
-    act(() => pointer.onPointerMove({ x: 1000, y: 450 }));
-
-    expect(
-      screen.queryByRole("toolbar", { name: "Sửa phần tử đang chọn" })
-    ).toBeNull();
-
-    act(() => pointer.onPointerUp());
-
-    await waitFor(() =>
-      expect(
-        screen.getByRole("toolbar", { name: "Sửa phần tử đang chọn" })
-      ).toBeTruthy()
-    );
-  });
-
-  it("gives the action bar back when the window is left mid-drag", async () => {
-    renderScreen(true);
-
-    await waitFor(() =>
-      expect(screen.getByRole("button", { name: "Đội hình" })).toBeTruthy()
-    );
-
-    act(() => {
-      useTacticEditorStore.getState().commit("s1", [
-        {
-          kind: "token" as const,
-          id: "tok1",
-          x: 900,
-          y: 400,
-          size: "md" as const,
-          icon: "swords" as const,
-          label: "Đội công",
-          color: "blue" as const,
-        },
-      ]);
-    });
-
-    const pointer = canvasProps.current as unknown as {
-      onPointerDown: (point: { x: number; y: number }) => void;
-      onPointerMove: (point: { x: number; y: number }) => void;
-    };
-    act(() => pointer.onPointerDown({ x: 900, y: 400 }));
-    act(() => pointer.onPointerMove({ x: 1000, y: 450 }));
-
-    expect(
-      screen.queryByRole("toolbar", { name: "Sửa phần tử đang chọn" })
-    ).toBeNull();
-
-    // Alt-tab away mid-drag and the release never reaches the canvas.
-    act(() => {
-      fireEvent.blur(window);
-    });
-
-    await waitFor(() =>
-      expect(
-        screen.getByRole("toolbar", { name: "Sửa phần tử đang chọn" })
-      ).toBeTruthy()
-    );
-  });
-
-  it("does not lose the action bar when the dragged token is deleted mid-drag", async () => {
-    renderScreen(true);
-
-    await waitFor(() =>
-      expect(screen.getByRole("button", { name: "Đội hình" })).toBeTruthy()
-    );
-
-    const token = {
-      kind: "token" as const,
-      id: "tok1",
-      x: 900,
-      y: 400,
-      size: "md" as const,
-      icon: "swords" as const,
-      label: "Đội công",
-      color: "blue" as const,
-    };
-    const other = { ...token, id: "tok2", x: 400, label: "Đội thủ" };
-
-    act(() => {
-      useTacticEditorStore.getState().commit("s1", [token, other]);
-    });
-
-    const pointer = canvasProps.current as unknown as {
-      onPointerDown: (point: { x: number; y: number }) => void;
-      onPointerMove: (point: { x: number; y: number }) => void;
-    };
-    act(() => pointer.onPointerDown({ x: 900, y: 400 }));
-    act(() => pointer.onPointerMove({ x: 1000, y: 450 }));
-
-    // Delete answers the keyboard even with the button still held.
-    act(() => {
-      fireEvent.keyDown(window, { key: "Delete" });
-      useTacticEditorStore.getState().selectElements(["tok2"]);
-    });
-
-    await waitFor(() =>
-      expect(
-        screen.getByRole("toolbar", { name: "Sửa phần tử đang chọn" })
-      ).toBeTruthy()
-    );
   });
 
   it("keeps saving to the toolbar's own button, with no second bar for it", async () => {

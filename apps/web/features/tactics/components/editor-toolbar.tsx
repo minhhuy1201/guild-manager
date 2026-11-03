@@ -7,6 +7,7 @@ import {
   Pencil,
   Redo2,
   Save,
+  Trash2,
   Image as ImageIcon,
   Maximize2,
   Type,
@@ -29,6 +30,7 @@ import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { cn } from "@/lib/utils";
 import { useModifierKey } from "../hooks/use-modifier-key";
 import { COLOR_HEX, COLOR_LABELS, TOKEN_SIZE_TEXT } from "../lib/token-icon";
+import { pressedTokenSize } from "../lib/token-size-selection";
 import {
   ACTION_SHORTCUTS,
   STROKE_WIDTH_SHORTCUT,
@@ -102,6 +104,10 @@ export interface EditorToolbarProps {
   strokeWidth: TacticStrokeWidth;
   /** Size every new token takes */
   tokenSize: TacticTokenSize;
+  /** How many elements are selected, whatever their kind */
+  selectedCount: number;
+  /** Size of every selected token; empty when the selection holds none */
+  selectedTokenSizes: readonly TacticTokenSize[];
   /** Whether there is an edit to take back */
   canUndo: boolean;
   /** Whether there is an edit to put back */
@@ -117,6 +123,8 @@ export interface EditorToolbarProps {
   onStrokeWidthChange: (strokeWidth: TacticStrokeWidth) => void;
   /** Called with the size picked, which new tokens take and the selected tokens are given */
   onTokenSizeChange: (tokenSize: TacticTokenSize) => void;
+  /** Remove every selected element */
+  onDeleteSelected: () => void;
   onUndo: () => void;
   onRedo: () => void;
   onSave: () => void;
@@ -128,9 +136,10 @@ export interface EditorToolbarProps {
 }
 
 /**
- * The editor's toolbar: tools, colours, stroke widths, token sizes, undo/redo, save and export. It is
- * the top edge of the editor frame, so it draws no box of its own. What can be
- * done to the selected element lives on the map, under the element itself — see `SelectionActions`.
+ * The editor's toolbar: tools, colours, stroke widths, token sizes, the selection, undo/redo, save
+ * and export. It is the top edge of the editor frame, so it draws no box of its own. The selection
+ * is resized and deleted from here rather than from a bar floating on the map, which covered the
+ * pieces next to the one picked up.
  * Every button that answers to a shortcut wears it as a key cap, so the keyboard is readable off
  * the toolbar itself rather than out of a tooltip nobody hovers.
  * @param props - The current tool state and the callbacks that change it
@@ -141,6 +150,8 @@ export function EditorToolbar({
   color,
   strokeWidth,
   tokenSize,
+  selectedCount,
+  selectedTokenSizes,
   canUndo,
   canRedo,
   saving,
@@ -150,6 +161,7 @@ export function EditorToolbar({
   onColorChange,
   onStrokeWidthChange,
   onTokenSizeChange,
+  onDeleteSelected,
   onUndo,
   onRedo,
   onSave,
@@ -158,6 +170,7 @@ export function EditorToolbar({
   focusButtonRef,
 }: EditorToolbarProps) {
   const modifier = useModifierKey();
+  const pressedSize = pressedTokenSize(tokenSize, selectedTokenSizes);
 
   return (
     <div className="flex flex-wrap items-center gap-2 bg-muted/40 px-2 py-1.5">
@@ -229,10 +242,8 @@ export function EditorToolbar({
             key={candidate}
             type="button"
             size="xs"
-            variant={candidate === tokenSize ? "default" : "ghost"}
-            aria-pressed={candidate === tokenSize}
-            // Named for what it sets, so it is not mistaken for the action bar's buttons, which
-            // resize only the selection.
+            variant={candidate === pressedSize ? "default" : "ghost"}
+            aria-pressed={candidate === pressedSize}
             aria-label={`Cỡ quân cờ: ${TOKEN_SIZE_TEXT[candidate]}`}
             title={`Cỡ quân cờ: ${TOKEN_SIZE_TEXT[candidate]}`}
             onClick={() => onTokenSizeChange(candidate)}
@@ -241,6 +252,32 @@ export function EditorToolbar({
           </Button>
         ))}
       </div>
+
+      {canEdit ? (
+        <div className={GROUP_CLASS}>
+          {/* A fixed width, so the groups after it do not shift as the count changes. */}
+          <span
+            aria-live="polite"
+            className="w-[5.5rem] shrink-0 px-1.5 text-center text-xs text-muted-foreground tabular-nums"
+          >
+            {selectedCount > 0 ? `Đã chọn ${selectedCount}` : "Chưa chọn"}
+          </span>
+          <Button
+            type="button"
+            size="xs"
+            variant="ghost"
+            className="text-destructive"
+            disabled={selectedCount === 0}
+            aria-label="Xoá phần tử đang chọn"
+            title={`Xoá phần tử đang chọn (${shortcutLabel(ACTION_SHORTCUTS.remove, modifier)})`}
+            onClick={onDeleteSelected}
+          >
+            <Trash2 />
+            Xoá
+            <ShortcutKeys shortcut={ACTION_SHORTCUTS.remove} modifier={modifier} />
+          </Button>
+        </div>
+      ) : null}
 
       <div className="ml-auto flex items-center gap-1">
         <Button

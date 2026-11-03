@@ -215,12 +215,12 @@ describe("useTacticEditor", () => {
     act(() => result.current.onPointerUp());
     expect(elements()[0]).toMatchObject({ x: 400, y: 500 });
 
-    // The whole element, not just its size: the action bar is drawn where the element is.
+    // The whole element, not just its size: the toolbar reads each selected token's size.
     expect(result.current.selectedElements).toEqual([
       expect.objectContaining({ id: tokenId, kind: "token", size: "md" }),
     ]);
 
-    act(() => result.current.onSelectionTokenSizeChange("lg"));
+    act(() => result.current.onToolbarTokenSizeChange("lg"));
     expect(elements()[0]).toMatchObject({ size: "lg" });
 
     act(() => result.current.onDeleteSelected());
@@ -680,11 +680,9 @@ describe("useTacticEditor - marquee and group moves", () => {
 
     act(() => result.current.onPointerDown({ x: 100, y: 100 }));
     act(() => result.current.onPointerMove({ x: 150, y: 120 }));
-    expect(result.current.isMoving).toBe(true);
     act(() => result.current.onPointerMove({ x: 200, y: 140 }));
     act(() => result.current.onPointerUp());
 
-    expect(result.current.isMoving).toBe(false);
     expect(elements()[0]).toMatchObject({ x: 200, y: 140 });
     expect(elements()[1]).toMatchObject({ x: 200, y: 200 });
     expect(elements()[3]).toMatchObject({ points: [200, 340, 300, 340] });
@@ -703,7 +701,6 @@ describe("useTacticEditor - marquee and group moves", () => {
     act(() => result.current.onPointerMove({ x: 150, y: 150 }));
     // Delete answers the keyboard even with the button still held.
     act(() => result.current.onDeleteSelected());
-    expect(result.current.isMoving).toBe(false);
 
     act(() => result.current.onPointerMove({ x: 200, y: 200 }));
     act(() => result.current.onPointerUp());

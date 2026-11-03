@@ -92,7 +92,7 @@ export interface TacticStageViewProps {
    * the editor for the tools that draw on top of a token instead
    */
   pickable?: boolean;
-  /** Elements the action bar acts on: a token gets a thick ring, anything else a dashed box */
+  /** Elements the toolbar, Delete and a drag act on: a token gets a thick ring, anything else a dashed box */
   selectedElementIds?: readonly string[];
   /** The marquee being dragged out, in map units, or null when none is */
   marquee?: MapRect | null;

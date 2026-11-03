@@ -42,7 +42,20 @@ export const ACTION_SHORTCUTS = {
   undo: { hasModifier: true, keys: ["Z"] },
   redo: { hasModifier: true, keys: ["⇧", "Z"] },
   save: { hasModifier: true, keys: ["S"] },
+  remove: { hasModifier: false, keys: ["Del"] },
 } as const satisfies Record<string, ActionShortcut>;
+
+/** The `KeyboardEvent.key` values that remove the selection; the toolbar cap spells them "Del". */
+const REMOVE_KEYS: readonly string[] = ["Delete", "Backspace"];
+
+/**
+ * Whether a key press removes the selected elements.
+ * @param key - `KeyboardEvent.key`
+ * @returns True for Delete and Backspace
+ */
+export function isRemoveKey(key: string): boolean {
+  return REMOVE_KEYS.includes(key);
+}
 
 /** The two keys that step the stroke width, shown on the width group. */
 export const STROKE_WIDTH_SHORTCUT: ActionShortcut = {

@@ -11,7 +11,7 @@ import {
  * Where each kind of element sits on the map: the box it covers and whether a point lands on it.
  *
  * Both answers live here, each ending in `assertNever`, so a new element kind is a compile error in
- * this one file rather than a hit test and an action bar that each guess its shape their own way.
+ * this one file rather than a hit test and a selection box that each guess its shape their own way.
  */
 
 /** A point in virtual map space. */
@@ -40,8 +40,6 @@ export interface ElementBounds {
   left: number;
   /** Right edge of the element */
   right: number;
-  /** Middle of the element along the x axis */
-  centerX: number;
   /** Top edge of the element */
   top: number;
   /** Bottom edge of the element */
@@ -106,7 +104,7 @@ export function isElementHit(element: TacticElement, point: MapPoint): boolean {
 }
 
 /**
- * The box one element covers on the map - what the selection's action bar hangs off.
+ * The box one element covers on the map - what the selection box is drawn around.
  * @param element - The selected element
  * @returns Its bounds, in virtual map units
  */
@@ -124,7 +122,6 @@ export function elementBounds(element: TacticElement): ElementBounds {
       return {
         left: element.x - radius,
         right: element.x + radius,
-        centerX: element.x,
         top: element.y - radius,
         bottom: element.y + radius + labelHeight,
       };
@@ -133,7 +130,6 @@ export function elementBounds(element: TacticElement): ElementBounds {
       return {
         left: element.x,
         right: element.x + textWidth(element),
-        centerX: element.x + textWidth(element) / 2,
         top: element.y,
         bottom: element.y + element.fontSize,
       };
@@ -183,26 +179,8 @@ export function elementsInRect(stage: TacticStage, rect: MapRect): string[] {
 }
 
 /**
- * The box around several boxes - what the action bar of a multi-element selection hangs off.
- * @param bounds - The boxes to wrap; at least one, since there is no box around nothing
- * @returns One box around all of them, centred on the whole
- */
-export function unionBounds(bounds: readonly ElementBounds[]): ElementBounds {
-  const left = Math.min(...bounds.map((box) => box.left));
-  const right = Math.max(...bounds.map((box) => box.right));
-
-  return {
-    left,
-    right,
-    centerX: (left + right) / 2,
-    top: Math.min(...bounds.map((box) => box.top)),
-    bottom: Math.max(...bounds.map((box) => box.bottom)),
-  };
-}
-
-/**
  * How wide a note is estimated to be. One estimate, used by both the hit test and the bounds, so
- * the box a click picks up is the box the action bar is centred on.
+ * the box a click picks up is the box the selection is drawn around.
  * @param note - The note
  * @returns Its width, in map units
  */
@@ -235,7 +213,6 @@ function polylineBounds(points: number[]): ElementBounds {
   return {
     left: minX,
     right: maxX,
-    centerX: (minX + maxX) / 2,
     top: minY,
     bottom: maxY,
   };
