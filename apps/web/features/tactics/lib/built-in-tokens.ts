@@ -4,6 +4,7 @@ import {
   TACTIC_INSIGNIA,
   numberedTeamLabel,
 } from "@guild/shared/lib";
+import type { TacticInsigniaKey } from "@guild/shared/enums";
 
 /**
  * The `dataTransfer` type a palette entry is dragged under, so the map can tell it from a file or
@@ -18,6 +19,8 @@ export interface BuiltInToken {
   label: string;
   /** Icon key, resolved to a component by `tokenIcon` */
   icon: TacticTokenIcon;
+  /** Set on an Insignia entry: lets a pick follow the Insignia's name when it is renamed */
+  insigniaKey?: TacticInsigniaKey;
 }
 
 /** The three groups the palette shows, in display order. */
@@ -35,7 +38,7 @@ export const TOKEN_GROUP_LABELS: Record<TokenGroup, string> = {
 
 /** The palette's named roles, the "Quân hiệu" group, under their shared default names. */
 export const INSIGNIA_TOKENS: readonly BuiltInToken[] = TACTIC_INSIGNIA.map(
-  ({ defaultLabel, icon }) => ({ label: defaultLabel, icon })
+  ({ key, defaultLabel, icon }) => ({ label: defaultLabel, icon, insigniaKey: key })
 );
 
 /**

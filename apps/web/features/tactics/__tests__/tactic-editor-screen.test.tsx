@@ -64,8 +64,14 @@ vi.mock("../components/tactic-canvas", () => ({
 
 vi.mock("../hooks/use-team-colors", () => ({ useTeamColors: () => ({}) }));
 
+/** What the Insignia list answers; undefined while it "loads". */
+const insigniaList: { current: unknown } = { current: undefined };
+
 vi.mock("../hooks/use-tactic-insignia", () => ({
-  useTacticInsignia: () => ({ data: undefined, isPending: true }),
+  useTacticInsignia: () => ({
+    data: insigniaList.current,
+    isPending: insigniaList.current === undefined,
+  }),
 }));
 
 vi.mock("../hooks/use-token-presets", () => ({
@@ -121,6 +127,7 @@ afterEach(() => {
 });
 
 beforeEach(() => {
+  insigniaList.current = undefined;
   canvasMounts.count = 0;
   isDesktop = true;
   push.mockReset();
@@ -158,8 +165,7 @@ function renderScreen(canEdit: boolean) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
-
-  render(
+  const tree = () =>
     createElement(
       QueryClientProvider,
       { client: queryClient },
@@ -167,8 +173,10 @@ function renderScreen(canEdit: boolean) {
         tacticId: "t1",
         canEdit,
       }) as ReactNode
-    )
-  );
+    );
+  const { rerender } = render(tree());
+
+  return { rerender: () => rerender(tree()) };
 }
 
 describe("TacticEditorScreen", () => {
@@ -333,6 +341,25 @@ describe("TacticEditorScreen", () => {
         y: expect.closeTo(480),
       }),
     ]);
+  });
+
+  it("keeps the picked Insignia selected under its new name after a rename", async () => {
+    const entries = (scout: string) => [
+      { key: "attack", icon: "swords", label: "Đội công", defaultLabel: "Đội công" },
+      { key: "scout", icon: "eye", label: scout, defaultLabel: "Trinh sát" },
+    ];
+    insigniaList.current = entries("Trinh sát");
+    const screenUnderTest = renderScreen(true);
+
+    await waitFor(() => expect(screen.getByTestId("canvas")).toBeTruthy());
+    fireEvent.click(screen.getByRole("button", { name: "Trinh sát" }));
+
+    insigniaList.current = entries("Do thám");
+    screenUnderTest.rerender();
+
+    expect(
+      screen.getByRole("button", { name: "Do thám" }).getAttribute("aria-pressed")
+    ).toBe("true");
   });
 
   it("refuses anything but a palette entry dragged over the map", async () => {

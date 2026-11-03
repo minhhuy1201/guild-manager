@@ -212,15 +212,23 @@ export function useTacticEditor(
   const [pickedPaletteToken, setPaletteToken] = useState<BuiltInToken | null>(
     null
   );
-  const firstInsignia = insignia.data?.[0];
-  const paletteToken = useMemo<BuiltInToken>(
-    () =>
+  const insigniaList = insignia.data;
+  const paletteToken = useMemo<BuiltInToken>(() => {
+    const first = insigniaList?.[0];
+    const picked =
       pickedPaletteToken ??
-      (firstInsignia
-        ? { label: firstInsignia.label, icon: firstInsignia.icon }
-        : DEFAULT_PALETTE_TOKEN),
-    [pickedPaletteToken, firstInsignia]
-  );
+      (first
+        ? { label: first.label, icon: first.icon, insigniaKey: first.key }
+        : DEFAULT_PALETTE_TOKEN);
+    // A pick made before a rename carries the old name; the Insignia's current one wins.
+    const current = insigniaList?.find(
+      (entry) => entry.key === picked.insigniaKey
+    );
+
+    return current
+      ? { label: current.label, icon: current.icon, insigniaKey: current.key }
+      : picked;
+  }, [pickedPaletteToken, insigniaList]);
   const gestureRef = useRef<Gesture | null>(null);
   // State, not a ref: the editor draws the dragged entry itself, since the browser's own drag image
   // is too faded to see. Drag events are discrete, so React commits it before the next one lands.

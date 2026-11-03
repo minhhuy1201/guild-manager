@@ -476,6 +476,21 @@ describe('TacticsService — the rest of the surface', () => {
     });
   });
 
+  describe('createPreset against other presets', () => {
+    it('refuses a name that differs from a stored preset only by case and spacing', async () => {
+      const prisma = createPrisma();
+      prisma.tacticTokenPreset.findMany.mockResolvedValue([
+        { id: 'p1', label: 'Đội Cảm Tử', icon: 'skull', sortOrder: 1 },
+      ]);
+      const service = new TacticsService(prisma as never);
+
+      await expect(
+        service.createPreset({ label: '  đội cảm tử ', icon: 'skull' }),
+      ).rejects.toThrow(new ConflictException('Đã có quân cờ trùng tên.'));
+      expect(prisma.tacticTokenPreset.create).not.toHaveBeenCalled();
+    });
+  });
+
   describe('createPreset against Insignia names', () => {
     const cases: [string, { key: string; label: string }[], string][] = [
       ['a renamed Insignia', [{ key: 'scout', label: 'Do thám' }], ' do THÁM '],
@@ -495,6 +510,7 @@ describe('TacticsService — the rest of the surface', () => {
         prisma.tacticInsigniaName.findMany.mockResolvedValue(
           rows.map((row) => ({ ...row, updatedAt: new Date() })),
         );
+        prisma.tacticTokenPreset.findMany.mockResolvedValue([]);
         const service = new TacticsService(prisma as never);
 
         await expect(

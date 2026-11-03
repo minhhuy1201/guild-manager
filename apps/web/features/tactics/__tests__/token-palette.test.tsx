@@ -144,6 +144,7 @@ describe("TokenPalette", () => {
     expect(handlers.onSelect).toHaveBeenCalledWith({
       label: "Đội thủ",
       icon: "shield",
+      insigniaKey: "defense",
     });
   });
 

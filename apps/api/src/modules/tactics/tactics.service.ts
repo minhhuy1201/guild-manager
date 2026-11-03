@@ -8,6 +8,7 @@ import type { TacticInsigniaKey } from '@guild/shared/enums';
 import {
   NUMBERED_TEAM_COUNT,
   TACTIC_INSIGNIA,
+  tacticInsigniaOf,
   numberedTeamLabel,
 } from '@guild/shared/lib';
 import type {
@@ -195,7 +196,7 @@ export class TacticsService {
     key: TacticInsigniaKey,
     label: string,
   ): Promise<TacticInsigniaEntry> {
-    const insignia = requireInsignia(key);
+    const insignia = tacticInsigniaOf(key);
 
     if (comparableLabel(label) === comparableLabel(insignia.defaultLabel)) {
       await this.prisma.tacticInsigniaName.deleteMany({ where: { key } });
@@ -251,25 +252,26 @@ export class TacticsService {
    * Add a preset at the end of the palette.
    * @param input - label and icon key
    * @returns The preset just created
-   * @throws ConflictException when another preset, an Insignia (current or default name) or a numbered team already has that name
+   * @throws ConflictException when another preset (after trim, NFC and lowercase), an Insignia (current or default name) or a numbered team already has that name
    */
   async createPreset(
     input: CreateTokenPresetInput,
   ): Promise<TacticTokenPreset> {
     const insignia = await this.listInsignia();
+    const existing = await this.prisma.tacticTokenPreset.findMany({
+      orderBy: { sortOrder: 'asc' },
+    });
 
     if (
       isLabelTaken(input.label, [
         ...insignia.flatMap((entry) => insigniaLabels(entry)),
         ...numberedTeamLabels(),
+        ...existing.map((preset) => preset.label),
       ])
     ) {
       throw new ConflictException(TOKEN_NAME_TAKEN);
     }
 
-    const existing = await this.prisma.tacticTokenPreset.findMany({
-      orderBy: { sortOrder: 'asc' },
-    });
     const sortOrder = (existing.at(-1)?.sortOrder ?? 0) + 1;
 
     try {
@@ -332,21 +334,6 @@ function isPrismaError(error: unknown, code: string): boolean {
     'code' in error &&
     error.code === code
   );
-}
-
-/**
- * Look an Insignia up by its key.
- * @param key - A validated Insignia key
- * @returns The shared definition
- */
-function requireInsignia(key: TacticInsigniaKey) {
-  const insignia = TACTIC_INSIGNIA.find((candidate) => candidate.key === key);
-
-  if (!insignia) {
-    throw new Error(`No Insignia is defined for key "${key}".`);
-  }
-
-  return insignia;
 }
 
 /**

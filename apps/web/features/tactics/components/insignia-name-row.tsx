@@ -31,9 +31,16 @@ interface InsigniaNameRowProps {
  */
 export function InsigniaNameRow({ insignia }: InsigniaNameRowProps) {
   const [draft, setDraft] = useState(insignia.label);
+  const [seenLabel, setSeenLabel] = useState(insignia.label);
   const [error, setError] = useState<string | null>(null);
   const rename = useRenameTacticInsignia();
   const reset = useResetTacticInsignia();
+
+  // A rename from another session lands through the refetched list; the field follows it.
+  if (seenLabel !== insignia.label) {
+    setSeenLabel(insignia.label);
+    setDraft(insignia.label);
+  }
   const recoverSession = useSessionRecovery();
   const isRenamed = insignia.label !== insignia.defaultLabel;
   const isPending = rename.isPending || reset.isPending;
@@ -63,13 +70,18 @@ export function InsigniaNameRow({ insignia }: InsigniaNameRowProps) {
   async function save() {
     if (!canSave || isPending) return;
 
-    const label = draft.trim();
+    const previous = insignia.label;
+    let savedLabel = "";
     const done = await attempt(async () => {
-      const saved = await rename.mutateAsync({ key: insignia.key, label });
+      const saved = await rename.mutateAsync({
+        key: insignia.key,
+        label: draft.trim(),
+      });
+      savedLabel = saved.label;
       setDraft(saved.label);
     });
 
-    if (done) toastSuccess(`Đã đổi tên ${insignia.label} thành ${label}.`);
+    if (done) toastSuccess(`Đã đổi tên ${previous} thành ${savedLabel}.`);
   }
 
   async function restore() {

@@ -98,7 +98,11 @@ export function TokenPalette({
   const insignia = useTacticInsignia();
   // Until the names arrive the group shows the shared defaults, so it neither empties nor shifts.
   const insigniaTokens: readonly BuiltInToken[] = insignia.data
-    ? insignia.data.map(({ label, icon }) => ({ label, icon }))
+    ? insignia.data.map(({ key, label, icon }) => ({
+        label,
+        icon,
+        insigniaKey: key,
+      }))
     : INSIGNIA_TOKENS;
   const customTokens: BuiltInToken[] = (presets.data ?? []).map((preset) => ({
     label: preset.label,

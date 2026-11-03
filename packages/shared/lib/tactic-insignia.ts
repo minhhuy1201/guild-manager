@@ -31,6 +31,15 @@ export const TACTIC_INSIGNIA: readonly TacticInsignia[] = TACTIC_INSIGNIA_KEYS.m
   (key) => ({ key, ...INSIGNIA_BY_KEY[key] })
 );
 
+/**
+ * One Insignia by key. The key type covers every entry, so the lookup cannot miss.
+ * @param key - A valid Insignia key
+ * @returns The shared definition
+ */
+export function tacticInsigniaOf(key: TacticInsigniaKey): TacticInsignia {
+  return { key, ...INSIGNIA_BY_KEY[key] };
+}
+
 /** How many numbered teams ("Đội 1" to "Đội 10") the palette offers, one per number icon. */
 export const NUMBERED_TEAM_COUNT = TACTIC_NUMBER_ICONS.length;
 
