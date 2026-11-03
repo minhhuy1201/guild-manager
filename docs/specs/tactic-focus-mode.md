@@ -130,8 +130,7 @@ Zoom, giai đoạn đang mở, việc đang phát và các thay đổi chưa lư
   - Khi bật, vùng bản đồ đo cả chiều rộng lẫn chiều cao. Bề ngang bản đồ là
     `min(rộng, cao × TACTIC_MAP_WIDTH / TACTIC_MAP_HEIGHT)`, và bản đồ được căn giữa. Phép tính này là
     một hàm thuần đặt cạnh các hàm tỉ lệ sẵn có.
-  - Zoom, pan, điểm thả token từ palette và vị trí thanh hành động của vùng chọn đều tính theo hộp
-    bản đồ đã fit, không theo vùng chứa bên ngoài. Nếu tính theo vùng chứa thì token thả xuống sẽ lệch
+  - Zoom, pan và điểm thả token từ palette đều tính theo hộp bản đồ đã fit, không theo vùng chứa bên ngoài. Nếu tính theo vùng chứa thì token thả xuống sẽ lệch
     đúng bằng phần viền trống.
   - Vùng thừa giữ nền lưới, thêm vignette nhẹ như cột grid của màn xếp đội. Bản đồ có
     `ring-1 ring-border` và `rounded-inner`. Không thêm noise hay grain.

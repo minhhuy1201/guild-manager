@@ -19,8 +19,6 @@ import { useTacticExport } from "../hooks/use-tactic-export";
 import { useTacticNotesDraft } from "../hooks/use-tactic-notes-draft";
 import { useLeaveGuard } from "../hooks/use-leave-guard";
 import { useTacticEditorStore } from "../store/editor-store";
-import { elementBounds, unionBounds } from "../lib/element-geometry";
-import { selectionPlacement } from "../lib/selection-anchor";
 import { canvasToMapPoint, fitStageWidth } from "../lib/stage-scale";
 import { PICKING_TOOLS } from "../types/tactic";
 import { ExportDialog } from "./export-dialog";
@@ -32,7 +30,6 @@ import { StageBar } from "./stage-bar";
 import { StagePlaybackControls } from "./stage-playback-controls";
 import { TacticHeader } from "./tactic-header";
 import { TacticNotesPanel } from "./tactic-notes-panel";
-import { SelectionActions } from "./selection-actions";
 import { TacticCanvas } from "./tactic-canvas";
 import { TacticViewer } from "./tactic-viewer";
 import { ZoomReadout } from "./zoom-readout";
@@ -98,18 +95,6 @@ export function TacticEditorScreen({
   const redo = useTacticEditorStore((store) => store.redo);
 
   const stages = scene?.stages ?? [];
-  // The action bar is a DOM overlay on the canvas, so where it goes follows the zoom and the pan.
-  // It steps aside while a drag or a marquee runs: it would cover what the pointer is working on.
-  const selection =
-    editor.isMoving || editor.marquee ? [] : editor.selectedElements;
-  const placement =
-    selection.length > 0
-      ? selectionPlacement(
-          unionBounds(selection.map(elementBounds)),
-          stageZoom.viewport,
-          stageZoom.zoom
-        )
-      : null;
   const exporter = useTacticExport(editor.name, stages, editor.stageRef);
   // An export switches stage and screenshots two frames later. With a move running, every picture
   // in the zip would catch the tokens mid-flight, so the canvas stands still until it is done.
@@ -218,6 +203,11 @@ export function TacticEditorScreen({
                     color={color}
                     strokeWidth={strokeWidth}
                     tokenSize={tokenSize}
+                    selectedCount={editor.selectedElements.length}
+                    selectedTokenSizes={editor.selectedElements.flatMap(
+                      (element) => (element.kind === "token" ? [element.size] : [])
+                    )}
+                    onDeleteSelected={editor.onDeleteSelected}
                     canUndo={editor.canUndo}
                     canRedo={editor.canRedo}
                     saving={editor.saving}
@@ -312,16 +302,6 @@ export function TacticEditorScreen({
                             onWheel={stageZoom.onWheel}
                             onStageMouseDown={stageZoom.onPanStart}
                           />
-                          {placement ? (
-                            <SelectionActions
-                              placement={placement}
-                              tokenSizes={selection.flatMap((element) =>
-                                element.kind === "token" ? [element.size] : []
-                              )}
-                              onTokenSizeChange={editor.onSelectionTokenSizeChange}
-                              onDeleteSelected={editor.onDeleteSelected}
-                            />
-                          ) : null}
                           <ZoomReadout
                             zoom={stageZoom.zoom.zoom}
                             onStep={stageZoom.step}

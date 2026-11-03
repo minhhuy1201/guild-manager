@@ -42,6 +42,7 @@ export const ACTION_SHORTCUTS = {
   undo: { hasModifier: true, keys: ["Z"] },
   redo: { hasModifier: true, keys: ["⇧", "Z"] },
   save: { hasModifier: true, keys: ["S"] },
+  remove: { hasModifier: false, keys: ["Del"] },
 } as const satisfies Record<string, ActionShortcut>;
 
 /** The two keys that step the stroke width, shown on the width group. */

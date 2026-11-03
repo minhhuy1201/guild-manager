@@ -7,7 +7,6 @@ import {
   hitTest,
   isElementHit,
   rectFromPoints,
-  unionBounds,
 } from "../lib/element-geometry";
 import { TOKEN_RADIUS } from "../lib/token-icon";
 
@@ -172,7 +171,7 @@ describe("elementBounds(…)", () => {
 
 describe("isElementHit and elementBounds together", () => {
   it.each(stage.elements.map((element) => [element.kind, element] as const))(
-    "hits a %s where its action bar anchors, so a click and the bar agree",
+    "hits a %s where its selection box sits, so a click and the box agree",
     (_kind, element) => {
       const bounds = elementBounds(element);
       const middle = { x: bounds.centerX, y: (bounds.top + bounds.bottom) / 2 };
@@ -230,19 +229,3 @@ describe("elementsInRect", () => {
   });
 });
 
-describe("unionBounds", () => {
-  it("returns the one box it is given", () => {
-    const bounds = elementBounds(stage.elements[1]);
-
-    expect(unionBounds([bounds])).toEqual(bounds);
-  });
-
-  it("wraps several boxes and centres on the whole", () => {
-    expect(
-      unionBounds([
-        { left: 100, right: 200, centerX: 150, top: 50, bottom: 80 },
-        { left: 300, right: 500, centerX: 400, top: 10, bottom: 60 },
-      ])
-    ).toEqual({ left: 100, right: 500, centerX: 300, top: 10, bottom: 80 });
-  });
-});

@@ -139,12 +139,10 @@ export interface TacticEditorScreen {
   notes: string | null;
   /** The stage being drawn on, null until the scene has loaded */
   activeStage: TacticStage | null;
-  /** The selected elements on the open stage, in drawing order; the action bar is drawn on them */
+  /** The selected elements on the open stage, in drawing order; the toolbar counts and resizes them */
   selectedElements: TacticElement[];
   /** The marquee being dragged out, or null when none is */
   marquee: MapRect | null;
-  /** Whether a selection is being dragged; the action bar hides while it is */
-  isMoving: boolean;
   /** Whether there is an edit to take back on the open stage */
   canUndo: boolean;
   /** Whether there is an edit to put back on the open stage */
@@ -177,8 +175,6 @@ export interface TacticEditorScreen {
   onPointerMove: (point: MapPoint) => void;
   /** Pointer was let go */
   onPointerUp: () => void;
-  /** Resize the selected tokens, from the action bar */
-  onSelectionTokenSizeChange: (size: TacticTokenSize) => void;
   /** Pick the size new tokens take, from the toolbar, and give it to the selected tokens too */
   onToolbarTokenSizeChange: (size: TacticTokenSize) => void;
   /** Delete every selected element */
@@ -218,11 +214,6 @@ export function useTacticEditor(
   const [draggedPaletteToken, setDraggedPaletteToken] =
     useState<BuiltInToken | null>(null);
   const [marquee, setMarquee] = useState<MapRect | null>(null);
-  // What the running drag last wrote, or null: a drag counts as running only while the open stage
-  // still holds exactly that, so a Delete or an undo mid-drag gives the action bar back at once.
-  const [movedElements, setMovedElements] = useState<TacticElement[] | null>(
-    null
-  );
   const [pendingTextPoint, setPendingTextPoint] = useState<MapPoint | null>(
     null
   );
@@ -461,7 +452,6 @@ export function useTacticEditor(
       if (isStageChangedUnder(gesture)) {
         gestureRef.current = null;
         setMarquee(null);
-        setMovedElements(null);
         return;
       }
 
@@ -497,7 +487,6 @@ export function useTacticEditor(
           else commit(gesture.stage.id, elements);
 
           gestureRef.current = { ...gesture, written: elements };
-          setMovedElements(elements);
           return;
         }
         default:
@@ -606,7 +595,6 @@ export function useTacticEditor(
 
     if (isStageChangedUnder(gesture)) {
       setMarquee(null);
-      setMovedElements(null);
       return;
     }
 
@@ -620,7 +608,6 @@ export function useTacticEditor(
         return;
       }
       case "move":
-        setMovedElements(null);
         // A click inside a selection, without a drag, means "this one": the drag is what the
         // rest of the selection was kept for.
         if (
@@ -650,27 +637,29 @@ export function useTacticEditor(
     };
   }, [onPointerUp]);
 
-  const onSelectionTokenSizeChange = useCallback(
-    (size: TacticTokenSize) => {
-      if (canEdit && activeStage && selectedElementIds.length > 0) {
-        commitElements(
-          resizeTokens(activeStage, selectedElementIds, size).elements
-        );
-      }
-    },
-    [canEdit, activeStage, selectedElementIds, commitElements]
-  );
-
   const onToolbarTokenSizeChange = useCallback(
     (size: TacticTokenSize) => {
       setTokenSize(size);
       // Only a selection holding a token has anything to resize; anything else would record an
       // undo step that changes nothing.
-      if (selectedElements.some((element) => element.kind === "token")) {
-        onSelectionTokenSizeChange(size);
+      if (
+        canEdit &&
+        activeStage &&
+        selectedElements.some((element) => element.kind === "token")
+      ) {
+        commitElements(
+          resizeTokens(activeStage, selectedElementIds, size).elements
+        );
       }
     },
-    [setTokenSize, selectedElements, onSelectionTokenSizeChange]
+    [
+      setTokenSize,
+      canEdit,
+      activeStage,
+      selectedElements,
+      selectedElementIds,
+      commitElements,
+    ]
   );
 
   const onDeleteSelected = useCallback(() => {
@@ -743,7 +732,6 @@ export function useTacticEditor(
     activeStage,
     selectedElements,
     marquee,
-    isMoving: movedElements !== null && activeStage?.elements === movedElements,
     canUndo: (history.past[activeStageId ?? ""] ?? []).length > 0,
     canRedo: (history.future[activeStageId ?? ""] ?? []).length > 0,
     saving: saveTactic.isPending,
@@ -760,7 +748,6 @@ export function useTacticEditor(
     onPointerDown,
     onPointerMove,
     onPointerUp,
-    onSelectionTokenSizeChange,
     onToolbarTokenSizeChange,
     onDeleteSelected,
     onSave,

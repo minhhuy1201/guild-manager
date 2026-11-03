@@ -45,7 +45,7 @@ interface EditorState {
   scene: TacticScene | null;
   /** Stage whose tab is open */
   activeStageId: string | null;
-  /** Elements the action bar, Delete and a drag act on, in the order they were picked */
+  /** Elements the toolbar, Delete and a drag act on, in the order they were picked */
   selectedElementIds: readonly string[];
   /** Whether the token palette is folded away */
   paletteCollapsed: boolean;
