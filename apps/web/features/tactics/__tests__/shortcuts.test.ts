@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   ACTION_SHORTCUTS,
   STROKE_WIDTH_SHORTCUT,
+  isRemoveKey,
   TOOL_SHORTCUTS,
   shortcutLabel,
   stageStepForKey,
@@ -60,5 +61,17 @@ describe("stageStepForKey", () => {
   it("steps nowhere on any other key", () => {
     expect(stageStepForKey("ArrowUp")).toBeNull();
     expect(stageStepForKey("a")).toBeNull();
+  });
+});
+
+describe("isRemoveKey", () => {
+  it("removes on Delete and Backspace", () => {
+    expect(isRemoveKey("Delete")).toBe(true);
+    expect(isRemoveKey("Backspace")).toBe(true);
+  });
+
+  it("removes on no other key", () => {
+    expect(isRemoveKey("Del")).toBe(false);
+    expect(isRemoveKey("x")).toBe(false);
   });
 });

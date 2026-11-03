@@ -40,8 +40,6 @@ export interface ElementBounds {
   left: number;
   /** Right edge of the element */
   right: number;
-  /** Middle of the element along the x axis */
-  centerX: number;
   /** Top edge of the element */
   top: number;
   /** Bottom edge of the element */
@@ -124,7 +122,6 @@ export function elementBounds(element: TacticElement): ElementBounds {
       return {
         left: element.x - radius,
         right: element.x + radius,
-        centerX: element.x,
         top: element.y - radius,
         bottom: element.y + radius + labelHeight,
       };
@@ -133,7 +130,6 @@ export function elementBounds(element: TacticElement): ElementBounds {
       return {
         left: element.x,
         right: element.x + textWidth(element),
-        centerX: element.x + textWidth(element) / 2,
         top: element.y,
         bottom: element.y + element.fontSize,
       };
@@ -217,7 +213,6 @@ function polylineBounds(points: number[]): ElementBounds {
   return {
     left: minX,
     right: maxX,
-    centerX: (minX + maxX) / 2,
     top: minY,
     bottom: maxY,
   };

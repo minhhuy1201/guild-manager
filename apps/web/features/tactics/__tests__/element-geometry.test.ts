@@ -88,7 +88,6 @@ const token: TacticElement = {
 describe("elementBounds(…)", () => {
   it("wraps a token in its own circle", () => {
     expect(elementBounds(token)).toEqual({
-      centerX: 400,
       left: 400 - TOKEN_RADIUS.md,
       right: 400 + TOKEN_RADIUS.md,
       top: 200 - TOKEN_RADIUS.md,
@@ -127,9 +126,8 @@ describe("elementBounds(…)", () => {
 
     expect(bounds.top).toBe(300);
     expect(bounds.bottom).toBe(324);
-    expect(bounds.centerX).toBeGreaterThan(100);
     expect(bounds.left).toBe(100);
-    expect(bounds.right).toBe(bounds.centerX * 2 - 100);
+    expect(bounds.right).toBeGreaterThan(100);
   });
 
   it("wraps a stroke in the box of its points, whichever way it was drawn", () => {
@@ -142,7 +140,6 @@ describe("elementBounds(…)", () => {
     };
 
     expect(elementBounds(freehand)).toEqual({
-      centerX: 200,
       left: 100,
       right: 300,
       top: 200,
@@ -160,7 +157,6 @@ describe("elementBounds(…)", () => {
     };
 
     expect(elementBounds(arrow)).toEqual({
-      centerX: 600,
       left: 500,
       right: 700,
       top: 100,
@@ -174,7 +170,7 @@ describe("isElementHit and elementBounds together", () => {
     "hits a %s where its selection box sits, so a click and the box agree",
     (_kind, element) => {
       const bounds = elementBounds(element);
-      const middle = { x: bounds.centerX, y: (bounds.top + bounds.bottom) / 2 };
+      const middle = { x: (bounds.left + bounds.right) / 2, y: (bounds.top + bounds.bottom) / 2 };
 
       // A token's box reaches down over its label, which is not part of what a click picks up, so
       // its middle is taken from the circle alone.

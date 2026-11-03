@@ -20,6 +20,7 @@ import { useTacticNotesDraft } from "../hooks/use-tactic-notes-draft";
 import { useLeaveGuard } from "../hooks/use-leave-guard";
 import { useTacticEditorStore } from "../store/editor-store";
 import { canvasToMapPoint, fitStageWidth } from "../lib/stage-scale";
+import { selectedTokenSizes } from "../lib/token-size-selection";
 import { PICKING_TOOLS } from "../types/tactic";
 import { ExportDialog } from "./export-dialog";
 import { LeaveDialog } from "./leave-dialog";
@@ -204,9 +205,7 @@ export function TacticEditorScreen({
                     strokeWidth={strokeWidth}
                     tokenSize={tokenSize}
                     selectedCount={editor.selectedElements.length}
-                    selectedTokenSizes={editor.selectedElements.flatMap(
-                      (element) => (element.kind === "token" ? [element.size] : [])
-                    )}
+                    selectedTokenSizes={selectedTokenSizes(editor.selectedElements)}
                     onDeleteSelected={editor.onDeleteSelected}
                     canUndo={editor.canUndo}
                     canRedo={editor.canRedo}

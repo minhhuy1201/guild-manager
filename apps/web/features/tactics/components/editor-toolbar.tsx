@@ -30,6 +30,7 @@ import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { cn } from "@/lib/utils";
 import { useModifierKey } from "../hooks/use-modifier-key";
 import { COLOR_HEX, COLOR_LABELS, TOKEN_SIZE_TEXT } from "../lib/token-icon";
+import { pressedTokenSize } from "../lib/token-size-selection";
 import {
   ACTION_SHORTCUTS,
   STROKE_WIDTH_SHORTCUT,
@@ -92,26 +93,6 @@ function ShortcutKeys({ shortcut, modifier }: ShortcutKeysProps) {
       ))}
     </KbdGroup>
   );
-}
-
-/**
- * The size the size group shows as pressed: the selected tokens' own when they share one, none
- * when they are mixed, and the size new tokens take when no token is selected.
- * @param tokenSize - Size every new token takes
- * @param selectedTokenSizes - Size of every selected token
- * @returns The pressed size, or null for a mixed selection
- */
-function pressedTokenSize(
-  tokenSize: TacticTokenSize,
-  selectedTokenSizes: readonly TacticTokenSize[]
-): TacticTokenSize | null {
-  const [first] = selectedTokenSizes;
-
-  if (first === undefined) {
-    return tokenSize;
-  }
-
-  return selectedTokenSizes.every((size) => size === first) ? first : null;
 }
 
 export interface EditorToolbarProps {
@@ -277,7 +258,7 @@ export function EditorToolbar({
           {/* A fixed width, so the groups after it do not shift as the count changes. */}
           <span
             aria-live="polite"
-            className="min-w-[5.5rem] px-1.5 text-center text-xs text-muted-foreground tabular-nums"
+            className="w-[5.5rem] shrink-0 px-1.5 text-center text-xs text-muted-foreground tabular-nums"
           >
             {selectedCount > 0 ? `Đã chọn ${selectedCount}` : "Chưa chọn"}
           </span>
