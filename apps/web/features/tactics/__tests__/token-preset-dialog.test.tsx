@@ -33,6 +33,13 @@ vi.mock("../hooks/use-tactic-insignia", () => ({
   useResetTacticInsignia: () => ({ mutateAsync: resetInsignia, isPending: false }),
 }));
 
+const toastSuccess = vi.fn();
+
+vi.mock("@/components/shared/toast", () => ({
+  toastSuccess: (message: string) => toastSuccess(message),
+  toastError: vi.fn(),
+}));
+
 vi.mock("@/hooks/use-session-recovery", () => ({
   useSessionRecovery: () => () => false,
 }));
@@ -42,6 +49,7 @@ import { TokenPresetDialog } from "../components/token-preset-dialog";
 afterEach(cleanup);
 
 beforeEach(() => {
+  toastSuccess.mockReset();
   createPreset.mockReset().mockResolvedValue(undefined);
   deletePreset.mockReset().mockResolvedValue(undefined);
   renameInsignia.mockReset().mockImplementation(
@@ -60,14 +68,13 @@ beforeEach(() => {
 
 /**
  * Render the dialog inside a fresh QueryClient.
- * @returns Nothing
+ * @returns A rerender that draws the dialog again from the current mock data
  */
 function renderDialog() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
-
-  render(
+  const tree = () =>
     createElement(
       QueryClientProvider,
       { client: queryClient },
@@ -75,8 +82,10 @@ function renderDialog() {
         open: true,
         onOpenChange: vi.fn(),
       }) as ReactNode
-    )
-  );
+    );
+  const { rerender } = render(tree());
+
+  return () => rerender(tree());
 }
 
 describe("TokenPresetDialog", () => {
@@ -241,6 +250,38 @@ describe("TokenPresetDialog", () => {
         expect(screen.getAllByText("Đã có quân cờ trùng tên.")).toHaveLength(1)
       );
       expect((attackField() as HTMLInputElement).value).toBe("Do thám");
+    });
+
+    it("follows a rename made elsewhere, discarding the stale draft", () => {
+      const rerender = renderDialog();
+
+      fireEvent.change(scoutField(), { target: { value: "Nửa chừng" } });
+      insignia = [
+        insignia![0],
+        { ...insignia![1], label: "Do thám 2" },
+      ];
+      rerender();
+
+      expect((scoutField() as HTMLInputElement).value).toBe("Do thám 2");
+    });
+
+    it("names the label the server saved in the toast", async () => {
+      renameInsignia.mockResolvedValue({
+        key: "attack",
+        icon: "swords",
+        label: "Xung kích",
+        defaultLabel: "Đội công",
+      });
+      renderDialog();
+
+      fireEvent.change(attackField(), { target: { value: "  xung kích  " } });
+      fireEvent.keyDown(attackField(), { key: "Enter" });
+
+      await waitFor(() =>
+        expect(toastSuccess).toHaveBeenCalledWith(
+          "Đã đổi tên Đội công thành Xung kích."
+        )
+      );
     });
 
     it("renders no Insignia section until the names arrive", () => {
