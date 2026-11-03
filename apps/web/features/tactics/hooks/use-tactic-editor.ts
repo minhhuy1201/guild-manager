@@ -44,6 +44,7 @@ import {
 import { useTacticEditorStore } from "../store/editor-store";
 import { PICKING_TOOLS, type PointerModifiers } from "../types/tactic";
 import { useSaveTactic } from "./use-save-tactic";
+import { useTacticInsignia } from "./use-tactic-insignia";
 import { useTactic } from "./use-tactic";
 
 /** Said when the fresh read failed and the draft had to start from the copy left in the cache. */
@@ -205,8 +206,20 @@ export function useTacticEditor(
   const saveTactic = useSaveTactic();
   const stageRef = useRef<Konva.Stage | null>(null);
   const drawingRef = useRef<TacticElement | null>(null);
-  const [paletteToken, setPaletteToken] = useState<BuiltInToken>(
-    DEFAULT_PALETTE_TOKEN
+  const insignia = useTacticInsignia();
+  // Null until the admin picks: the default then follows the first Insignia's current name, which
+  // arrives after the first render and may differ from the shared default.
+  const [pickedPaletteToken, setPaletteToken] = useState<BuiltInToken | null>(
+    null
+  );
+  const firstInsignia = insignia.data?.[0];
+  const paletteToken = useMemo<BuiltInToken>(
+    () =>
+      pickedPaletteToken ??
+      (firstInsignia
+        ? { label: firstInsignia.label, icon: firstInsignia.icon }
+        : DEFAULT_PALETTE_TOKEN),
+    [pickedPaletteToken, firstInsignia]
   );
   const gestureRef = useRef<Gesture | null>(null);
   // State, not a ref: the editor draws the dragged entry itself, since the browser's own drag image

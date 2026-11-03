@@ -15,6 +15,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Capability } from '@guild/shared/enums';
 import type {
   TacticDetail,
+  TacticInsigniaEntry,
   TacticSummary,
   TacticTokenPreset,
 } from '@guild/shared/schemas';
@@ -23,6 +24,8 @@ import { CapabilityGuard, JwtAuthGuard, RequireCapability } from '../../common';
 import {
   CreateTacticDto,
   CreateTokenPresetDto,
+  InsigniaKeyParamDto,
+  RenameInsigniaDto,
   SaveTacticStagesDto,
   UpdateTacticDto,
 } from './dto/tactic.dto';
@@ -47,6 +50,47 @@ export class TacticsController {
   @ApiOperation({ summary: 'Danh sách chiến thuật' })
   list(): Promise<TacticSummary[]> {
     return this.tactics.list();
+  }
+
+  /**
+   * The seven Insignia, each under its current name.
+   * Declared before `:id` so the literal path is not swallowed by the parameter route.
+   * @returns Insignia in display order
+   */
+  @Get('insignia')
+  @ApiOperation({ summary: 'Danh sách Quân hiệu kèm tên hiện tại' })
+  listInsignia(): Promise<TacticInsigniaEntry[]> {
+    return this.tactics.listInsignia();
+  }
+
+  /**
+   * Give an Insignia the guild's own name; a name equal to the default restores it.
+   * @param params - key: which Insignia
+   * @param body - label: the new name
+   * @returns The Insignia as it now stands
+   */
+  @Put('insignia/:key')
+  @UseGuards(CapabilityGuard)
+  @RequireCapability(Capability.TACTICS)
+  @ApiOperation({ summary: 'Đổi tên Quân hiệu' })
+  renameInsignia(
+    @Param() params: InsigniaKeyParamDto,
+    @Body() body: RenameInsigniaDto,
+  ): Promise<TacticInsigniaEntry> {
+    return this.tactics.renameInsignia(params.key, body.label);
+  }
+
+  /**
+   * Restore an Insignia's default name. Succeeds when it already wears it.
+   * @param params - key: which Insignia
+   */
+  @Delete('insignia/:key')
+  @UseGuards(CapabilityGuard)
+  @RequireCapability(Capability.TACTICS)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Khôi phục tên mặc định của Quân hiệu' })
+  resetInsignia(@Param() params: InsigniaKeyParamDto): Promise<void> {
+    return this.tactics.resetInsignia(params.key);
   }
 
   /**

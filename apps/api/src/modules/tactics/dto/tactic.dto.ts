@@ -1,6 +1,8 @@
 import {
   createTacticSchema,
   createTokenPresetSchema,
+  insigniaKeyParamSchema,
+  renameInsigniaSchema,
   saveTacticStagesSchema,
   updateTacticSchema,
 } from '@guild/shared/schemas';
@@ -19,3 +21,9 @@ export class SaveTacticStagesDto extends createZodDto(saveTacticStagesSchema) {}
 export class CreateTokenPresetDto extends createZodDto(
   createTokenPresetSchema,
 ) {}
+
+/** Body of PUT /tactics/insignia/:key. */
+export class RenameInsigniaDto extends createZodDto(renameInsigniaSchema) {}
+
+/** Path of PUT and DELETE /tactics/insignia/:key. */
+export class InsigniaKeyParamDto extends createZodDto(insigniaKeyParamSchema) {}

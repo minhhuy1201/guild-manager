@@ -1,9 +1,15 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { TacticTokenPreset } from "@guild/shared/schemas";
+import { TACTIC_INSIGNIA } from "@guild/shared/lib";
+import type { TacticInsigniaEntry, TacticTokenPreset } from "@guild/shared/schemas";
 
 let presets: TacticTokenPreset[] = [];
+let insignia: TacticInsigniaEntry[] | undefined;
+
+vi.mock("../hooks/use-tactic-insignia", () => ({
+  useTacticInsignia: () => ({ data: insignia, isPending: insignia === undefined }),
+}));
 
 vi.mock("../hooks/use-token-presets", () => ({
   useTokenPresets: () => ({ data: presets, isPending: false }),
@@ -23,6 +29,7 @@ const handlers = {
 };
 
 beforeEach(() => {
+  insignia = undefined;
   presets = [
     { id: "p1", label: "Đội cảm tử", icon: "skull", sortOrder: 1 },
   ];
@@ -48,6 +55,33 @@ function renderPalette(
 }
 
 describe("TokenPalette", () => {
+  it("shows the default Insignia names while the names are loading", () => {
+    renderPalette();
+
+    const group = screen.getByRole("heading", { name: "Quân hiệu" })
+      .parentElement as HTMLElement;
+
+    expect(within(group).getByText("Trinh sát")).toBeTruthy();
+    expect(within(group).getAllByRole("button")).toHaveLength(7);
+  });
+
+  it("shows the guild's own Insignia name on the button, the tooltip text and for screen readers", () => {
+    insignia = TACTIC_INSIGNIA.map(({ key, icon, defaultLabel }) => ({
+      key,
+      icon,
+      defaultLabel,
+      label: key === "scout" ? "Do thám" : defaultLabel,
+    }));
+    renderPalette();
+
+    const group = screen.getByRole("heading", { name: "Quân hiệu" })
+      .parentElement as HTMLElement;
+
+    expect(within(group).getByText("Do thám").className).toContain("sr-only");
+    expect(within(group).queryByText("Trinh sát")).toBeNull();
+    expect(within(group).getByRole("button", { name: "Do thám" })).toBeTruthy();
+  });
+
   it("shows the three groups in order", () => {
     renderPalette();
 

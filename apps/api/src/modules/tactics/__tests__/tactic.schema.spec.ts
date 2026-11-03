@@ -1,6 +1,8 @@
 import {
   TACTIC_LIMITS,
   TACTIC_SCHEMA_VERSION,
+  insigniaKeyParamSchema,
+  renameInsigniaSchema,
   saveTacticStagesSchema,
   tacticSceneSchema,
   updateTacticSchema,
@@ -254,6 +256,60 @@ describe('tactic notes', () => {
     expect(result.success).toBe(false);
     expect(result.error?.issues[0].message).toBe(
       'Ghi chú chiến thuật tối đa 5000 ký tự.',
+    );
+  });
+});
+
+describe('renameInsigniaSchema', () => {
+  it('trims the name', () => {
+    expect(renameInsigniaSchema.parse({ label: '  Do thám  ' })).toEqual({
+      label: 'Do thám',
+    });
+  });
+
+  it.each([
+    ['empty', ''],
+    ['blank', '   '],
+  ])('rejects a %s name', (_case, label) => {
+    const result = renameInsigniaSchema.safeParse({ label });
+
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0].message).toBe(
+      'Tên quân cờ không được để trống.',
+    );
+  });
+
+  it('accepts 40 characters and rejects 41', () => {
+    const limit = TACTIC_LIMITS.tokenLabelLength;
+
+    expect(
+      renameInsigniaSchema.safeParse({ label: 'x'.repeat(limit) }).success,
+    ).toBe(true);
+    expect(
+      renameInsigniaSchema.safeParse({ label: 'x'.repeat(limit + 1) }).success,
+    ).toBe(false);
+  });
+
+  it('counts the length after trimming', () => {
+    const padded = ` ${'x'.repeat(TACTIC_LIMITS.tokenLabelLength)} `;
+
+    expect(renameInsigniaSchema.safeParse({ label: padded }).success).toBe(
+      true,
+    );
+  });
+
+  it('rejects a missing label', () => {
+    expect(renameInsigniaSchema.safeParse({}).success).toBe(false);
+  });
+});
+
+describe('insigniaKeyParamSchema', () => {
+  it('accepts an Insignia key and rejects any other', () => {
+    expect(insigniaKeyParamSchema.safeParse({ key: 'scout' }).success).toBe(
+      true,
+    );
+    expect(insigniaKeyParamSchema.safeParse({ key: 'nope' }).success).toBe(
+      false,
     );
   });
 });

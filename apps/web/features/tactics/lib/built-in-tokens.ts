@@ -1,7 +1,9 @@
+import { TACTIC_NUMBER_ICONS, type TacticTokenIcon } from "@guild/shared/enums";
 import {
-  TACTIC_NUMBER_ICONS,
-  type TacticTokenIcon,
-} from "@guild/shared/enums";
+  NUMBERED_TEAM_COUNT,
+  TACTIC_INSIGNIA,
+  numberedTeamLabel,
+} from "@guild/shared/lib";
 
 /**
  * The `dataTransfer` type a palette entry is dragged under, so the map can tell it from a file or
@@ -18,9 +20,6 @@ export interface BuiltInToken {
   icon: TacticTokenIcon;
 }
 
-/** How many numbered teams the palette offers, matching the team builder's ten columns. */
-const NUMBERED_TEAM_COUNT = TACTIC_NUMBER_ICONS.length;
-
 /** The three groups the palette shows, in display order. */
 export const TOKEN_GROUPS = ["insignia", "team", "custom"] as const;
 
@@ -34,18 +33,10 @@ export const TOKEN_GROUP_LABELS: Record<TokenGroup, string> = {
   custom: "Custom",
 };
 
-/**
- * The palette's named roles — the "Quân hiệu" group.
- */
-export const INSIGNIA_TOKENS: readonly BuiltInToken[] = [
-  { label: "Đội công", icon: "swords" },
-  { label: "Đội thủ", icon: "shield" },
-  { label: "Cơ động", icon: "footprints" },
-  { label: "Trinh sát", icon: "eye" },
-  { label: "Tập kết", icon: "flag" },
-  { label: "Đội trụ", icon: "castle" },
-  { label: "Bảo tiêu", icon: "truck" },
-];
+/** The palette's named roles, the "Quân hiệu" group, under their shared default names. */
+export const INSIGNIA_TOKENS: readonly BuiltInToken[] = TACTIC_INSIGNIA.map(
+  ({ defaultLabel, icon }) => ({ label: defaultLabel, icon })
+);
 
 /**
  * The ten numbered teams — the "Đội" group, each carrying its own number as its icon so the teams
@@ -56,7 +47,7 @@ export const INSIGNIA_TOKENS: readonly BuiltInToken[] = [
 export const TEAM_TOKENS: readonly BuiltInToken[] = Array.from(
   { length: NUMBERED_TEAM_COUNT },
   (_, index) => ({
-    label: `Đội ${index + 1}`,
+    label: numberedTeamLabel(index + 1),
     icon: TACTIC_NUMBER_ICONS[index],
   })
 );

@@ -17,6 +17,7 @@ import {
   type BuiltInToken,
   type TokenGroup,
 } from "../lib/built-in-tokens";
+import { useTacticInsignia } from "../hooks/use-tactic-insignia";
 import { useTokenPresets } from "../hooks/use-token-presets";
 import { TokenGlyph } from "./token-glyph";
 
@@ -94,13 +95,18 @@ export function TokenPalette({
   onDragEnd,
 }: TokenPaletteProps) {
   const presets = useTokenPresets();
+  const insignia = useTacticInsignia();
+  // Until the names arrive the group shows the shared defaults, so it neither empties nor shifts.
+  const insigniaTokens: readonly BuiltInToken[] = insignia.data
+    ? insignia.data.map(({ label, icon }) => ({ label, icon }))
+    : INSIGNIA_TOKENS;
   const customTokens: BuiltInToken[] = (presets.data ?? []).map((preset) => ({
     label: preset.label,
     icon: preset.icon,
   }));
 
   const groups: { group: TokenGroup; tokens: readonly BuiltInToken[] }[] = [
-    { group: "insignia", tokens: INSIGNIA_TOKENS },
+    { group: "insignia", tokens: insigniaTokens },
     { group: "team", tokens: TEAM_TOKENS },
     { group: "custom", tokens: customTokens },
   ];

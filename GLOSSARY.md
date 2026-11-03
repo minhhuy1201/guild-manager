@@ -107,6 +107,22 @@ An optional symbol from a fixed set, shown before a team's name, that says the t
 Công, Thủ, Trụ or a lane.
 _Avoid_: badge, avatar, insignia
 
+## Tactics
+
+**Insignia** (UI: "Quân hiệu"):
+One of the fixed named roles the tactic palette always offers, such as Đội công or Trinh sát. Its
+icon is fixed; the guild may give it its own name in place of the default one.
+_Avoid_: built-in token, role token, default preset
+
+**Token preset** (UI: "Custom"):
+A token the guild adds to the tactic palette itself, with its own name and icon.
+_Avoid_: custom insignia, saved token
+
+**Placed token**:
+A token dropped on a tactic map. It keeps the name and icon it had when placed, so a later rename
+of its Insignia or Token preset never changes an existing tactic.
+_Avoid_: linked token, token instance
+
 ## Screens
 
 **Focus mode** (UI: "Toàn màn hình"):

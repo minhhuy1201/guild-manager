@@ -27,6 +27,9 @@ describe('TacticsController', () => {
     update: jest.fn(),
     saveStages: jest.fn(),
     remove: jest.fn(),
+    listInsignia: jest.fn(),
+    renameInsignia: jest.fn(),
+    resetInsignia: jest.fn(),
     listPresets: jest.fn(),
     createPreset: jest.fn(),
     removePreset: jest.fn(),
@@ -46,6 +49,8 @@ describe('TacticsController', () => {
     'remove',
     'createPreset',
     'removePreset',
+    'renameInsignia',
+    'resetInsignia',
   ] as const)(
     'guards the write handler %s with the tactics Capability',
     (handler) => {
@@ -57,7 +62,7 @@ describe('TacticsController', () => {
     },
   );
 
-  it.each(['list', 'get', 'listPresets'] as const)(
+  it.each(['list', 'get', 'listPresets', 'listInsignia'] as const)(
     'leaves the read handler %s open to any member',
     (handler) => {
       expect(guardsOf(handler)).not.toContain(CapabilityGuard);
@@ -80,6 +85,9 @@ describe('TacticsController — every handler reaches its service method', () =>
     update: jest.fn(),
     saveStages: jest.fn(),
     remove: jest.fn(),
+    listInsignia: jest.fn(),
+    renameInsignia: jest.fn(),
+    resetInsignia: jest.fn(),
     listPresets: jest.fn(),
     createPreset: jest.fn(),
     removePreset: jest.fn(),
@@ -90,7 +98,9 @@ describe('TacticsController — every handler reaches its service method', () =>
     await controller.list();
     await controller.get('t1');
     await controller.listPresets();
+    await controller.listInsignia();
 
+    expect(service.listInsignia).toHaveBeenCalled();
     expect(service.list).toHaveBeenCalled();
     expect(service.get).toHaveBeenCalledWith('t1');
     expect(service.listPresets).toHaveBeenCalled();
@@ -109,11 +119,15 @@ describe('TacticsController — every handler reaches its service method', () =>
   it('adds and deletes a preset', async () => {
     await controller.createPreset({ label: 'Đội thủ', icon: 'shield' });
     await controller.removePreset('p1');
+    await controller.renameInsignia({ key: 'scout' }, { label: 'Do thám' });
+    await controller.resetInsignia({ key: 'scout' });
 
     expect(service.createPreset).toHaveBeenCalledWith({
       label: 'Đội thủ',
       icon: 'shield',
     });
     expect(service.removePreset).toHaveBeenCalledWith('p1');
+    expect(service.renameInsignia).toHaveBeenCalledWith('scout', 'Do thám');
+    expect(service.resetInsignia).toHaveBeenCalledWith('scout');
   });
 });

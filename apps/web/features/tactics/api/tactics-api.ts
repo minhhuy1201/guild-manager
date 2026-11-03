@@ -1,9 +1,12 @@
 "use server";
 
+import type { TacticInsigniaKey } from "@guild/shared/enums";
 import type {
   CreateTacticInput,
+  RenameInsigniaInput,
   CreateTokenPresetInput,
   TacticDetail,
+  TacticInsigniaEntry,
   TacticScene,
   TacticSummary,
   TacticTokenPreset,
@@ -19,6 +22,12 @@ import { apiFetch } from "@/lib/api-client";
 export interface UpdateTacticArgs extends UpdateTacticInput {
   /** Id of the tactic being renamed */
   id: string;
+}
+
+/** Arguments of `renameTacticInsignia`. `key` travels on the URL; only the label is sent. */
+export interface RenameTacticInsigniaArgs extends RenameInsigniaInput {
+  /** Key of the Insignia being renamed */
+  key: TacticInsigniaKey;
 }
 
 /** Arguments of `saveTacticStages`. `id` travels on the URL; only the scene is sent. */
@@ -117,6 +126,54 @@ export async function saveTacticStages(
 export async function deleteTactic(id: string): Promise<ActionResult<void>> {
   return toActionResult(async () =>
     apiFetch<void>(`/tactics/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+      headers: await authHeader(),
+    })
+  );
+}
+
+/**
+ * Get the seven Insignia, each under its current name.
+ * @returns Insignia in display order; a failure value (`ok: false`) when signed out or the backend rejects it
+ */
+export async function fetchTacticInsignia(): Promise<ActionResult<TacticInsigniaEntry[]>> {
+  return toActionResult(async () =>
+    apiFetch<TacticInsigniaEntry[]>("/tactics/insignia", {
+      headers: await authHeader(),
+    })
+  );
+}
+
+/**
+ * Give an Insignia the guild's own name. A name equal to the default restores it.
+ * @param input - key plus the new label
+ * @returns The Insignia as it now stands; a failure value (`ok: false`) when signed out, without the Capability (403), the name is invalid (400) or already taken (409)
+ */
+export async function renameTacticInsignia(
+  input: RenameTacticInsigniaArgs
+): Promise<ActionResult<TacticInsigniaEntry>> {
+  return toActionResult(async () =>
+    apiFetch<TacticInsigniaEntry>(
+      `/tactics/insignia/${encodeURIComponent(input.key)}`,
+      {
+        method: "PUT",
+        body: JSON.stringify({ label: input.label }),
+        headers: await authHeader(),
+      }
+    )
+  );
+}
+
+/**
+ * Restore an Insignia's default name. Succeeds when it already wears it.
+ * @param key - Key of the Insignia
+ * @returns Nothing on success; a failure value (`ok: false`) when signed out or without the Capability (403)
+ */
+export async function resetTacticInsignia(
+  key: TacticInsigniaKey
+): Promise<ActionResult<void>> {
+  return toActionResult(async () =>
+    apiFetch<void>(`/tactics/insignia/${encodeURIComponent(key)}`, {
       method: "DELETE",
       headers: await authHeader(),
     })

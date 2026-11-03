@@ -1,12 +1,20 @@
 import {
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
+import type { TacticInsigniaKey } from '@guild/shared/enums';
+import {
+  NUMBERED_TEAM_COUNT,
+  TACTIC_INSIGNIA,
+  numberedTeamLabel,
+} from '@guild/shared/lib';
 import type {
   CreateTacticInput,
   CreateTokenPresetInput,
   TacticDetail,
+  TacticInsigniaEntry,
   TacticScene,
   TacticSummary,
   TacticTokenPreset,
@@ -17,6 +25,7 @@ import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import {
   emptyScene,
   toDetail,
+  toInsignia,
   toPreset,
   toSummary,
   type TacticRow,
@@ -34,9 +43,12 @@ const RECORD_NOT_FOUND = 'P2025';
  * same thing in the same words.
  */
 const TACTIC_NOT_FOUND = 'Không tìm thấy chiến thuật.';
+const TOKEN_NAME_TAKEN = 'Đã có quân cờ trùng tên.';
 
 @Injectable()
 export class TacticsService {
+  private readonly logger = new Logger(TacticsService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   /**
@@ -146,6 +158,84 @@ export class TacticsService {
   }
 
   /**
+   * The seven Insignia in display order, each under its current name: the guild's own when it set
+   * one, else the default. A stored name whose key is no longer in the shared list is skipped and
+   * logged, never returned.
+   * @returns Every Insignia, always all of them
+   */
+  async listInsignia(): Promise<TacticInsigniaEntry[]> {
+    const rows = await this.prisma.tacticInsigniaName.findMany();
+    const known = new Set<string>(TACTIC_INSIGNIA.map(({ key }) => key));
+    const labelByKey = new Map<string, string>();
+
+    for (const row of rows) {
+      if (!known.has(row.key)) {
+        this.logger.warn(
+          `Ignoring a stored Insignia name for unknown key "${row.key}".`,
+        );
+        continue;
+      }
+      labelByKey.set(row.key, row.label);
+    }
+
+    return TACTIC_INSIGNIA.map((insignia) =>
+      toInsignia(insignia, labelByKey.get(insignia.key)),
+    );
+  }
+
+  /**
+   * Give an Insignia the guild's own name. A name equal to the default restores it instead, so no
+   * stored row ever repeats a default.
+   * @param key - Which Insignia
+   * @param label - The new name, already trimmed
+   * @returns The Insignia as it now stands
+   * @throws ConflictException when another Insignia (current or default name), a numbered team or a preset already has that name
+   */
+  async renameInsignia(
+    key: TacticInsigniaKey,
+    label: string,
+  ): Promise<TacticInsigniaEntry> {
+    const insignia = requireInsignia(key);
+
+    if (comparableLabel(label) === comparableLabel(insignia.defaultLabel)) {
+      await this.prisma.tacticInsigniaName.deleteMany({ where: { key } });
+
+      return toInsignia(insignia, undefined);
+    }
+
+    const current = await this.listInsignia();
+    const takenByInsignia = current
+      .filter((entry) => entry.key !== key)
+      .flatMap((entry) => insigniaLabels(entry));
+    const presets = await this.prisma.tacticTokenPreset.findMany();
+    const taken = [
+      ...takenByInsignia,
+      ...numberedTeamLabels(),
+      ...presets.map((preset) => preset.label),
+    ];
+
+    if (isLabelTaken(label, taken)) {
+      throw new ConflictException(TOKEN_NAME_TAKEN);
+    }
+
+    const stored = await this.prisma.tacticInsigniaName.upsert({
+      where: { key },
+      create: { key, label },
+      update: { label },
+    });
+
+    return toInsignia(insignia, stored.label);
+  }
+
+  /**
+   * Restore an Insignia's default name. Calling it on one already wearing the default succeeds.
+   * @param key - Which Insignia
+   */
+  async resetInsignia(key: TacticInsigniaKey): Promise<void> {
+    await this.prisma.tacticInsigniaName.deleteMany({ where: { key } });
+  }
+
+  /**
    * The token palette's saved presets, in display order.
    * @returns Presets ordered by sortOrder
    */
@@ -161,11 +251,22 @@ export class TacticsService {
    * Add a preset at the end of the palette.
    * @param input - label and icon key
    * @returns The preset just created
-   * @throws ConflictException when another preset already carries that label
+   * @throws ConflictException when another preset, an Insignia (current or default name) or a numbered team already has that name
    */
   async createPreset(
     input: CreateTokenPresetInput,
   ): Promise<TacticTokenPreset> {
+    const insignia = await this.listInsignia();
+
+    if (
+      isLabelTaken(input.label, [
+        ...insignia.flatMap((entry) => insigniaLabels(entry)),
+        ...numberedTeamLabels(),
+      ])
+    ) {
+      throw new ConflictException(TOKEN_NAME_TAKEN);
+    }
+
     const existing = await this.prisma.tacticTokenPreset.findMany({
       orderBy: { sortOrder: 'asc' },
     });
@@ -179,7 +280,7 @@ export class TacticsService {
       );
     } catch (error) {
       if (isPrismaError(error, UNIQUE_VIOLATION)) {
-        throw new ConflictException('Đã có quân cờ trùng tên.');
+        throw new ConflictException(TOKEN_NAME_TAKEN);
       }
       throw error;
     }
@@ -230,5 +331,61 @@ function isPrismaError(error: unknown, code: string): boolean {
     error !== null &&
     'code' in error &&
     error.code === code
+  );
+}
+
+/**
+ * Look an Insignia up by its key.
+ * @param key - A validated Insignia key
+ * @returns The shared definition
+ */
+function requireInsignia(key: TacticInsigniaKey) {
+  const insignia = TACTIC_INSIGNIA.find((candidate) => candidate.key === key);
+
+  if (!insignia) {
+    throw new Error(`No Insignia is defined for key "${key}".`);
+  }
+
+  return insignia;
+}
+
+/**
+ * The names an Insignia holds: its current one and its default. The default stays reserved while
+ * the Insignia is renamed, so restoring it can never collide with another token.
+ * @param entry - An Insignia as listed
+ * @returns Both names
+ */
+function insigniaLabels(entry: TacticInsigniaEntry): string[] {
+  return [entry.label, entry.defaultLabel];
+}
+
+/**
+ * A name as it is compared for duplicates: trimmed, NFC and lowercase.
+ * @param label - Any token name
+ * @returns The comparable form
+ */
+function comparableLabel(label: string): string {
+  return label.trim().normalize('NFC').toLowerCase();
+}
+
+/**
+ * Whether a name equals any of the taken ones once both sides are normalised.
+ * @param label - The name about to be saved
+ * @param taken - Names already in use
+ * @returns True when it would duplicate one
+ */
+function isLabelTaken(label: string, taken: readonly string[]): boolean {
+  const wanted = comparableLabel(label);
+
+  return taken.some((name) => comparableLabel(name) === wanted);
+}
+
+/**
+ * The labels of the numbered team tokens, "Đội 1" to "Đội 10".
+ * @returns One label per team
+ */
+function numberedTeamLabels(): string[] {
+  return Array.from({ length: NUMBERED_TEAM_COUNT }, (_, index) =>
+    numberedTeamLabel(index + 1),
   );
 }

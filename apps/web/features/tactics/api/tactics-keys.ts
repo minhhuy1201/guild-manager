@@ -6,6 +6,7 @@ export const tacticKeys = {
   all: ["tactics"] as const,
   list: () => [...tacticKeys.all, "list"] as const,
   detail: (id: string) => [...tacticKeys.all, "detail", id] as const,
+  insignia: () => [...tacticKeys.all, "insignia"] as const,
   tokenPresets: () => [...tacticKeys.all, "token-presets"] as const,
   teamColors: () => [...tacticKeys.all, "team-colors"] as const,
 };

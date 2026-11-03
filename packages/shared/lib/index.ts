@@ -12,6 +12,7 @@ export * from './formation-announcement';
 export * from './permissions';
 export * from './safe-redirect';
 export * from './slot-id';
+export * from './tactic-insignia';
 export * from './team-notice';
 export * from './vn-format';
 export * from './vn-time';
