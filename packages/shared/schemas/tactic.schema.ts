@@ -5,6 +5,7 @@ import {
   TACTIC_TOKEN_ICONS,
   TACTIC_TOKEN_SIZES,
 } from "../enums/tactic.enum";
+import { TACTIC_INSIGNIA_KEYS } from "../enums/tactic-insignia.enum";
 
 /** Width of the virtual map space every coordinate is stored in. */
 export const TACTIC_MAP_WIDTH = 1920;
@@ -238,6 +239,29 @@ export const tacticTokenPresetSchema = z.object({
   sortOrder: z.number(),
 });
 
+/** Body of PUT /tactics/insignia/:key. The same 1-40 character rule as a Token preset's name. */
+export const renameInsigniaSchema = z.object({
+  label: z
+    .string("Tên quân cờ không được để trống.")
+    .trim()
+    .min(1, "Tên quân cờ không được để trống.")
+    .max(TACTIC_LIMITS.tokenLabelLength, "Tên quân cờ tối đa 40 ký tự."),
+});
+
+/** Path of PUT and DELETE /tactics/insignia/:key. */
+export const insigniaKeyParamSchema = z.object({
+  key: z.enum(TACTIC_INSIGNIA_KEYS, { error: "Quân hiệu không hợp lệ." }),
+});
+
+/** An Insignia as the palette shows it: its current name, and the default one it can return to. */
+export const tacticInsigniaSchema = z.object({
+  key: z.enum(TACTIC_INSIGNIA_KEYS),
+  icon: z.enum(TACTIC_TOKEN_ICONS),
+  /** The guild's own name when it set one, else `defaultLabel` */
+  label: z.string(),
+  defaultLabel: z.string(),
+});
+
 export type TacticToken = z.infer<typeof tacticTokenSchema>;
 
 export type TacticArrow = z.infer<typeof tacticArrowSchema>;
@@ -265,3 +289,7 @@ export type TacticSummary = z.infer<typeof tacticSummarySchema>;
 export type TacticDetail = z.infer<typeof tacticDetailSchema>;
 
 export type TacticTokenPreset = z.infer<typeof tacticTokenPresetSchema>;
+
+export type RenameInsigniaInput = z.infer<typeof renameInsigniaSchema>;
+
+export type TacticInsigniaEntry = z.infer<typeof tacticInsigniaSchema>;

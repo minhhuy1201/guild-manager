@@ -7,6 +7,7 @@ vi.mock("../../api/tactics-api", () => ({
   fetchTactics: vi.fn(),
   fetchTactic: vi.fn(),
   fetchTokenPresets: vi.fn(),
+  fetchTacticInsignia: vi.fn(),
   fetchTeamColors: vi.fn(),
   createTactic: vi.fn(),
   updateTactic: vi.fn(),
@@ -14,6 +15,8 @@ vi.mock("../../api/tactics-api", () => ({
   saveTacticStages: vi.fn(),
   createTokenPreset: vi.fn(),
   deleteTokenPreset: vi.fn(),
+  renameTacticInsignia: vi.fn(),
+  resetTacticInsignia: vi.fn(),
 }));
 
 import {
@@ -24,7 +27,10 @@ import {
   fetchTactic,
   fetchTactics,
   fetchTeamColors,
+  fetchTacticInsignia,
   fetchTokenPresets,
+  renameTacticInsignia,
+  resetTacticInsignia,
   saveTacticStages,
   updateTactic,
 } from "../../api/tactics-api";
@@ -35,6 +41,11 @@ import {
   useDeleteTactic,
   useUpdateTactic,
 } from "../use-tactic-mutations";
+import {
+  useRenameTacticInsignia,
+  useResetTacticInsignia,
+  useTacticInsignia,
+} from "../use-tactic-insignia";
 import { useTactics } from "../use-tactics";
 import { useTeamColors } from "../use-team-colors";
 import {
@@ -48,6 +59,7 @@ beforeEach(() => {
   vi.mocked(fetchTactics).mockResolvedValue({ ok: true, data: [] });
   vi.mocked(fetchTactic).mockResolvedValue({ ok: true, data: makeTactic() });
   vi.mocked(fetchTokenPresets).mockResolvedValue({ ok: true, data: [] });
+  vi.mocked(fetchTacticInsignia).mockResolvedValue({ ok: true, data: [] });
   vi.mocked(fetchTeamColors).mockResolvedValue({ ok: true, data: { "3": TeamColor.RED } });
   vi.mocked(createTactic).mockResolvedValue({ ok: true, data: makeTactic() });
   vi.mocked(updateTactic).mockResolvedValue({ ok: true, data: makeTactic() });
@@ -76,6 +88,13 @@ describe("tactics queries", () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(fetchTactic).toHaveBeenCalledWith("t1");
     expect(result.current.data?.name).toBe("Thủ cổng tây");
+  });
+
+  it("reads the Insignia names", async () => {
+    const { result } = renderTacticHook(() => useTacticInsignia());
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(fetchTacticInsignia).toHaveBeenCalled();
   });
 
   it("reads the token presets", async () => {
@@ -169,6 +188,31 @@ describe("tactics mutations", () => {
       icon: "skull",
     });
     expect(vi.mocked(deleteTokenPreset).mock.calls[0][0]).toBe("p1");
+  });
+
+  it("renames and restores an Insignia, refetching the list each time", async () => {
+    vi.mocked(renameTacticInsignia).mockResolvedValue({
+      ok: true,
+      data: { key: "scout", icon: "eye", label: "Do thám", defaultLabel: "Trinh sát" },
+    });
+    vi.mocked(resetTacticInsignia).mockResolvedValue({ ok: true, data: undefined });
+    const { result } = renderTacticHook(() => ({
+      list: useTacticInsignia(),
+      rename: useRenameTacticInsignia(),
+      reset: useResetTacticInsignia(),
+    }));
+    await waitFor(() => expect(result.current.list.isSuccess).toBe(true));
+    const fetchesBefore = vi.mocked(fetchTacticInsignia).mock.calls.length;
+
+    await result.current.rename.mutateAsync({ key: "scout", label: "Do thám" });
+    await result.current.reset.mutateAsync("scout");
+
+    expect(vi.mocked(renameTacticInsignia).mock.calls[0][0]).toEqual({
+      key: "scout",
+      label: "Do thám",
+    });
+    expect(vi.mocked(resetTacticInsignia).mock.calls[0][0]).toBe("scout");
+    expect(vi.mocked(fetchTacticInsignia).mock.calls.length).toBe(fetchesBefore + 2);
   });
 
   it("hands a failed save back to the caller instead of swallowing it", async () => {

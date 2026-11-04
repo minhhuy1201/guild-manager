@@ -1,11 +1,13 @@
 // @vitest-environment jsdom
 import { act, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { TACTIC_INSIGNIA } from "@guild/shared/lib";
 import { TACTIC_LIMITS, TACTIC_SCHEMA_VERSION } from "@guild/shared/schemas";
 import type { TacticElement } from "@guild/shared/schemas";
 
 vi.mock("../../api/tactics-api", () => ({
   fetchTactic: vi.fn(),
+  fetchTacticInsignia: vi.fn(),
   saveTacticStages: vi.fn(),
 }));
 
@@ -16,7 +18,11 @@ vi.mock("@/components/shared/toast", () => ({
   toastSuccess: (message: string) => toastSuccess(message),
 }));
 
-import { fetchTactic, saveTacticStages } from "../../api/tactics-api";
+import {
+  fetchTactic,
+  fetchTacticInsignia,
+  saveTacticStages,
+} from "../../api/tactics-api";
 import { tacticKeys } from "../../api/tactics-keys";
 import { useTacticEditorStore } from "../../store/editor-store";
 import { STALE_DRAFT_WARNING, useTacticEditor } from "../use-tactic-editor";
@@ -92,6 +98,30 @@ describe("useTacticEditor", () => {
     expect(elements()[0]).toMatchObject({
       kind: "token",
       label: "Đội công",
+      icon: "swords",
+    });
+  });
+
+  it("drops the first Insignia under the guild's name for it once the names arrive", async () => {
+    vi.mocked(fetchTacticInsignia).mockResolvedValueOnce({
+      ok: true,
+      data: TACTIC_INSIGNIA.map(({ key, icon, defaultLabel }) => ({
+        key,
+        icon,
+        label: key === "attack" ? "Mũi nhọn" : defaultLabel,
+        defaultLabel,
+      })),
+    });
+    const { result } = await renderEditor();
+
+    await waitFor(() =>
+      expect(result.current.paletteToken.label).toBe("Mũi nhọn")
+    );
+    act(() => result.current.onPointerDown({ x: 10, y: 10 }));
+
+    expect(elements()[0]).toMatchObject({
+      kind: "token",
+      label: "Mũi nhọn",
       icon: "swords",
     });
   });

@@ -9,3 +9,4 @@ export * from "./role.enum";
 export * from "./team-color.enum";
 export * from "./team-icon.enum";
 export * from "./tactic.enum";
+export * from "./tactic-insignia.enum";

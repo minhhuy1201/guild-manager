@@ -39,7 +39,11 @@ describe("built-in tokens", () => {
   });
 
   it("starts the palette on Đội công", () => {
-    expect(DEFAULT_PALETTE_TOKEN).toEqual({ label: "Đội công", icon: "swords" });
+    expect(DEFAULT_PALETTE_TOKEN).toEqual({
+      label: "Đội công",
+      icon: "swords",
+      insigniaKey: "attack",
+    });
   });
 
   it("gives every token an icon the enum allows and the web can render", () => {

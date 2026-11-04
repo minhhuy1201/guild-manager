@@ -23,6 +23,8 @@ import {
   useDeleteTokenPreset,
   useTokenPresets,
 } from "../hooks/use-token-presets";
+import { useTacticInsignia } from "../hooks/use-tactic-insignia";
+import { InsigniaNameRow } from "./insignia-name-row";
 import { TokenGlyph } from "./token-glyph";
 
 interface TokenPresetDialogProps {
@@ -33,7 +35,7 @@ interface TokenPresetDialogProps {
 }
 
 /**
- * The palette's preset manager: add a named token, or drop one.
+ * The palette's token manager: rename an Insignia, add a named token, or drop one.
  * Dropping a preset leaves every tactic already drawn untouched — a placed token captured its label
  * and icon when it was dropped on the map.
  * @param open - Whether the dialog is open
@@ -65,6 +67,7 @@ function TokenPresetBody({ onDone }: TokenPresetBodyProps) {
   const [label, setLabel] = useState("");
   const [icon, setIcon] = useState<TacticTokenIcon>("swords");
   const presets = useTokenPresets();
+  const insignia = useTacticInsignia();
   const createPreset = useCreateTokenPreset();
   const deletePreset = useDeleteTokenPreset();
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -111,6 +114,19 @@ function TokenPresetBody({ onDone }: TokenPresetBodyProps) {
         setLabel("");
       }}
     >
+      {insignia.data ? (
+        <section className="grid gap-2" aria-labelledby="insignia-heading">
+          <h3 id="insignia-heading" className="text-sm font-medium">
+            Quân hiệu
+          </h3>
+          <ul className="grid gap-2">
+            {insignia.data.map((entry) => (
+              <InsigniaNameRow key={entry.key} insignia={entry} />
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       <div className="grid gap-2">
         <FieldLabel htmlFor="preset-label" icon={<Plus />}>
           Tên quân cờ

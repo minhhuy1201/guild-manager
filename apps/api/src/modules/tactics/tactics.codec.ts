@@ -3,13 +3,16 @@ import {
   TACTIC_SCHEMA_VERSION,
   readTacticScene,
   tacticDetailSchema,
+  tacticInsigniaSchema,
   tacticSummarySchema,
   tacticTokenPresetSchema,
   type TacticDetail,
+  type TacticInsigniaEntry,
   type TacticScene,
   type TacticSummary,
   type TacticTokenPreset,
 } from '@guild/shared/schemas';
+import type { TacticInsignia } from '@guild/shared/lib';
 import { z } from 'zod';
 
 import { assertNever } from '../../common';
@@ -175,4 +178,22 @@ export function toPreset(row: TacticTokenPresetRow): TacticTokenPreset {
   }
 
   return parsed.data;
+}
+
+/**
+ * Pair an Insignia with the name it currently wears.
+ * @param insignia - The shared definition: key, icon and default name
+ * @param customLabel - The guild's own name for it, when one is stored
+ * @returns The wire shape, with `label` set to the custom name or, failing that, the default
+ */
+export function toInsignia(
+  insignia: TacticInsignia,
+  customLabel: string | undefined,
+): TacticInsigniaEntry {
+  return verifyResponse(tacticInsigniaSchema, {
+    key: insignia.key,
+    icon: insignia.icon,
+    label: customLabel ?? insignia.defaultLabel,
+    defaultLabel: insignia.defaultLabel,
+  } satisfies TacticInsigniaEntry);
 }

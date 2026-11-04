@@ -330,6 +330,17 @@ model TacticTokenPreset {
   @@unique([label])
 }
 
+/// A guild-wide custom name for one tactic Insignia. Global configuration like TacticTokenPreset: no
+/// relation. No row means the Insignia keeps its default name. A token placed on the map does NOT
+/// point here - it captures label and icon (decision 3).
+model TacticInsigniaName {
+  /// A key of TACTIC_INSIGNIA_KEYS (@guild/shared/enums), not a Prisma enum: a key dropped from the
+  /// list leaves a row the service skips and logs.
+  key       String   @id
+  label     String   @db.VarChar(40)
+  updatedAt DateTime @updatedAt
+}
+
 /// A stretch of days a member will be away. Read-time only: it never writes AttendanceRecord rows -
 /// see docs/archive/specs/2026-10-04-a1-leave-mode-design.md §4.
 model Leave {

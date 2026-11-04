@@ -313,6 +313,9 @@ Endpoints, all behind the `/api` prefix:
 | `PUT` | `/team-builder/team-settings` | Overwrite the whole names, colours and icons bundle; the body carries the `version` it was based on, a stale one is refused with 412 | Admin |
 | `GET` | `/team-builder/team-colors` | Colours teams were given, as `{ "1": "RED", ... }`; a team on its default colour is absent. Its own controller, because the other `/team-builder` routes need Capability `TEAM_BUILDER` and the tactics map is open to the whole guild | Bearer |
 | `GET` | `/tactics` | Tactics, newest edit first, without their scenes | Bearer |
+| `GET` | `/tactics/insignia` | The seven Insignia in display order, each as `{ key, icon, label, defaultLabel }` under its current name | Bearer |
+| `PUT` | `/tactics/insignia/:key` | Rename an Insignia guild-wide; a name equal to the default restores it; a taken name is refused with 409 | Capability `TACTICS` |
+| `DELETE` | `/tactics/insignia/:key` | Restore an Insignia's default name (idempotent) | Capability `TACTICS` |
 | `GET` | `/tactics/token-presets` | The palette's saved tokens, in display order | Bearer |
 | `POST` | `/tactics/token-presets` | Add a palette token | Admin |
 | `DELETE` | `/tactics/token-presets/:id` | Delete a palette token (tactics already drawn keep theirs) | Admin |
@@ -570,9 +573,10 @@ erDiagram
     BotChannel { }
     Tactic { }
     TacticTokenPreset { }
+    TacticInsigniaName { }
 ```
 
-The last eight hang off nothing on purpose. `TeamName`, `BotChannel` and `TacticTokenPreset` are global
+The last nine hang off nothing on purpose. `TeamName`, `BotChannel`, `TacticTokenPreset` and `TacticInsigniaName` are global
 configuration, not per week and not per battle day; `Tactic` is deliberately independent of the
 schedule (a tactic is not tied to a week or a battle day); `AuthExchange` holds a `discordId` rather
 than a foreign key, because a rescue admin may match no `Character` at all.
@@ -596,6 +600,7 @@ than a foreign key, because a rescue admin may match no `Character` at all.
 | `BotChannel` | Which Discord channel the bot posts a given kind of message to, keyed by `purpose`. Global configuration like `TeamName`, which is why it hangs off nothing in the diagram above. Three rows at most: `ATTENDANCE_REMINDER`, `GENERAL_NOTI` (cat race summaries and later general notices) and `ADMIN_ALERT` (where the cron reports a failed or channel-less run), all written by `/cau-hinh-kenh`. `purpose` is a `String` and not an enum on purpose: the value never crosses the network to the web app, so it need not stay in step with `packages/shared/enums`. |
 | `Tactic` | One guild war tactic drawing. `stages` is a `Json` column holding the whole scene document — `{ schemaVersion, stages }` per `tacticSceneSchema` in `@guild/shared` — rather than normalised stage and element tables: a new kind of drawn element is then a branch in the shared union and a branch in the renderer, with no migration, and the editor only ever saves the whole document anyway. The column is **untrusted on read** (an older app or a hand edit may have written it), so `tactics.codec.ts` parses it with Zod and fails loudly, naming the tactic, rather than returning an empty scene. `schemaVersion` is what makes a format change an upgrade step instead of guessed SQL over JSON: `liftTacticScene` in `@guild/shared` runs before the parse on both sides, and today it lifts a v1 document (which could be drawn in white) to v2 (where white became black). A token **keeps its `id` when a stage is duplicated**, so the same unit is recognisable on two neighbouring stages and the viewer can draw the path it takes; an id only has to be unique inside one stage, and every edit works on one stage at a time. Scenes saved before that rule carry a different id per stage and are paired by `label + icon` instead - see [`archive/specs/2026-09-23-tactic-stage-animation-design.md`](archive/specs/2026-09-23-tactic-stage-animation-design.md). `notes` is plain text (≤ 5000 characters) read beside the map; it is a column rather than part of the scene because it is not drawn, and it stays off `GET /tactics` - `description` is the list's one-line summary. |
 | `TacticTokenPreset` | A named token in the tactics palette, shared by every tactic. Global configuration like `TeamName`, which is why it hangs off nothing above. A token placed on a map does **not** point here: it captured the label and icon when it was dropped, so renaming or deleting a preset never rewrites a tactic drawn last week. |
+| `TacticInsigniaName` | The guild's own name for one of the seven Insignia, keyed by the stable Insignia key from `@guild/shared`; global like `TeamName`. An Insignia on its default name has no row, so `label` never repeats a default. A row whose key is no longer in the shared list is skipped and logged on read. A token placed on a map captured its label at placement and is not rewritten by a rename. |
 | `CatRaceEvent` | One prize-draw event. `mode` (`CatRaceMode`: `STANDARD` or `TICKET`) is fixed once a round exists. `endedAt` null = open; `discordPostedAt` is set only after Discord accepted the summary. `createdAt` is written from `Clock`; `createdById` is a plain id, not a relation. `featuredAt` is set from `Clock` while the event is a Featured race; null = not featured. |
 | `CatRaceParticipant` | A character in an event, with `tickets` 1-3 for the whole event (always 1 in `STANDARD`). Cascades with the event and with the character. |
 | `CatRacePrize` | A prize line: name, `quantity`, `tier` (`PrizeTier`), `sortOrder`. |

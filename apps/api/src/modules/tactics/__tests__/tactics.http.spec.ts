@@ -16,6 +16,8 @@ const WRITE_ROUTES = [
   ['DELETE', '/tactics/t1', undefined],
   ['POST', '/tactics/token-presets', { label: 'Đội cảm tử', icon: 'skull' }],
   ['DELETE', '/tactics/token-presets/p1', undefined],
+  ['PUT', '/tactics/insignia/scout', { label: 'Do thám' }],
+  ['DELETE', '/tactics/insignia/scout', undefined],
 ] as const;
 
 /**
@@ -33,6 +35,9 @@ describe('tactics routes over HTTP, as a member', () => {
     update: jest.fn().mockResolvedValue({}),
     saveStages: jest.fn().mockResolvedValue({}),
     remove: jest.fn().mockResolvedValue(undefined),
+    listInsignia: jest.fn().mockResolvedValue([]),
+    renameInsignia: jest.fn().mockResolvedValue({}),
+    resetInsignia: jest.fn().mockResolvedValue(undefined),
     listPresets: jest.fn().mockResolvedValue([]),
     createPreset: jest.fn().mockResolvedValue({}),
     removePreset: jest.fn().mockResolvedValue(undefined),
@@ -83,17 +88,22 @@ describe('tactics routes over HTTP, as a member', () => {
         service.remove,
         service.createPreset,
         service.removePreset,
+        service.renameInsignia,
+        service.resetInsignia,
       ]) {
         expect(write).not.toHaveBeenCalled();
       }
     },
   );
 
-  it('lets the member read the list and the presets', async () => {
+  it('lets the member read the list, the presets and the Insignia', async () => {
     const list = await fetch(`${baseUrl}/tactics`);
     const presets = await fetch(`${baseUrl}/tactics/token-presets`);
+    const insignia = await fetch(`${baseUrl}/tactics/insignia`);
 
     expect(list.status).toBe(200);
     expect(presets.status).toBe(200);
+    expect(insignia.status).toBe(200);
+    expect(service.listInsignia).toHaveBeenCalledTimes(1);
   });
 });
