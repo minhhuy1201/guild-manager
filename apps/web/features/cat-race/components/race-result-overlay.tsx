@@ -13,10 +13,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { discordAvatarUrl } from "@/features/auth";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
-import { belongsElsewhere } from "@/lib/keyboard-target";
 import { cn } from "@/lib/utils";
 import { catLabels } from "../lib/cat-label";
 import { PRIZE_TIER_ICON } from "../lib/prize-tier-style";
+import { isSkipKey } from "../lib/skip-key";
 import { podiumOf } from "../lib/race-podium";
 import { rankAt, type RaceScript } from "../lib/race-script";
 import { RACE_END_U } from "../lib/race-timeline";
@@ -87,9 +87,7 @@ export function RaceResultOverlay({
   const isFlashed = isCard && !reducedMotion && !isSkipped;
 
   const handleSkipKey = useEffectEvent((event: KeyboardEvent) => {
-    if (event.key.toLowerCase() !== "s") return;
-    if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return;
-    if (belongsElsewhere(event.target)) return;
+    if (!isSkipKey(event)) return;
 
     setIsSkipped(true);
   });

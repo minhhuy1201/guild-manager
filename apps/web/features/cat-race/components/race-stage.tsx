@@ -16,7 +16,6 @@ import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { useSessionRecovery } from "@/hooks/use-session-recovery";
 import { cn } from "@/lib/utils";
 import { errorMessageOf } from "@/lib/error-message";
-import { belongsElsewhere } from "@/lib/keyboard-target";
 import { useDrawCatRaceRound } from "../hooks/use-cat-race-mutations";
 import { useIdleChrome } from "../hooks/use-idle-chrome";
 import { useRaceCommentary } from "../hooks/use-race-commentary";
@@ -27,6 +26,7 @@ import { IDLE_CLOCK, startClock, stopClock, type RaceClock } from "../lib/race-c
 import { INITIAL_OVERLAY, applyCue } from "../lib/race-overlay";
 import type { RaceCue } from "../lib/race-cue";
 import { laneOrderOf } from "../lib/race-frame";
+import { isSkipKey } from "../lib/skip-key";
 import { stageFont } from "../lib/stage-font";
 import { buildRaceScript, shuffled } from "../lib/race-script";
 import { RACE_END_U } from "../lib/race-timeline";
@@ -45,6 +45,8 @@ const FOCUS_BAR_CLASS =
 
 /** Any positive number: a preview paints the start line only. */
 const RACE_PREVIEW_SECONDS = 1;
+/** Commentary needs no names until a script exists, and nothing is fed to it before then. */
+const NO_LABELS: ReadonlyMap<string, string> = new Map();
 
 interface RaceStageProps {
   event: CatRaceEventDetail;
@@ -95,9 +97,7 @@ export function RaceStage({
   const skip = () => setSkipSignal((n) => n + 1);
 
   const handleSkipKey = useEffectEvent((event: KeyboardEvent) => {
-    if (stage !== "racing" || event.key.toLowerCase() !== "s") return;
-    if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return;
-    if (belongsElsewhere(event.target)) return;
+    if (stage !== "racing" || !isSkipKey(event)) return;
 
     skip();
   });
@@ -147,7 +147,7 @@ export function RaceStage({
 
   const commentary = useRaceCommentary(
     useMemo(
-      () => (script ? catLabels(script.cats, event.participants) : null),
+      () => (script ? catLabels(script.cats, event.participants) : NO_LABELS),
       [script, event.participants]
     ),
     durationSeconds
@@ -371,7 +371,8 @@ export function RaceStage({
             <>
               {/* The commentary says what the lead-change bar would, so that bar stays out while it is on. */}
               <RaceOverlays
-                state={isCommentaryOn ? { ...overlay, leadToast: null } : overlay}
+                state={overlay}
+                isLeadBarHidden={isCommentaryOn}
                 script={script}
                 participants={event.participants}
               />

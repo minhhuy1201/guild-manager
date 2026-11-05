@@ -23,14 +23,14 @@ export interface ShownCommentary extends CommentaryLine {
  * @returns The current line, the two feeds and a reset for the next round
  */
 export function useRaceCommentary(
-  labels: ReadonlyMap<string, string> | null,
+  labels: ReadonlyMap<string, string>,
   durationSeconds: number
 ) {
   const [line, setLine] = useState<ShownCommentary | null>(null);
   const memory = useRef<CommentaryMemory>(INITIAL_COMMENTARY);
   const nextId = useRef(1);
 
-  const nameOf = useCallback((key: string) => labels?.get(key) ?? "?", [labels]);
+  const nameOf = useCallback((key: string) => labels.get(key)!, [labels]);
 
   const apply = useCallback((step: CommentaryStep) => {
     memory.current = step.memory;
@@ -44,7 +44,7 @@ export function useRaceCommentary(
         commentOnCue(memory.current, cue, {
           now: performance.now(),
           nameOf,
-          catCount: labels?.size ?? 0,
+          catCount: labels.size,
           random: Math.random,
         })
       ),

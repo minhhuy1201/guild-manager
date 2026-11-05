@@ -770,8 +770,18 @@ describe("RaceStage auto-hide", () => {
       clock.mockReturnValue(6000);
       fireEvent.click(screen.getByText("cue lead"));
 
-      expect(screen.getByText(/b (vượt lên dẫn đầu|cắn răng)|Đổi ngôi! b lên số một/)).toBeTruthy();
+      expect(screen.getByText(/^(b (vượt lên dẫn đầu|cắn răng)|Đổi ngôi! b lên số một)/)).toBeTruthy();
       expect(screen.queryByText("ĐỔI NGÔI")).toBeNull();
+    });
+
+    it("still announces a lead change in the live region while the commentary is on", async () => {
+      await startRacing();
+
+      fireEvent.click(screen.getByText("cue lead"));
+
+      const announced = screen.getAllByRole("status").map((node) => node.textContent);
+      expect(announced).toContain("Đổi ngôi: b vượt lên dẫn đầu");
+      expect(document.querySelector(".race-lead-bar")).toBeNull();
     });
 
     it("feeds no cue to the commentary and brings back the lead-change bar when switched off", async () => {
