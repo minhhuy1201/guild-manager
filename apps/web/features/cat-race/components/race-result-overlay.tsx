@@ -17,7 +17,6 @@ import { cn } from "@/lib/utils";
 import { catLabels } from "../lib/cat-label";
 import { PRIZE_TIER_ICON } from "../lib/prize-tier-style";
 import { podiumOf } from "../lib/race-podium";
-import { isUnderdog, oddsText } from "../lib/race-odds";
 import { rankAt, type RaceScript } from "../lib/race-script";
 import { RACE_END_U } from "../lib/race-timeline";
 import { confettiPlan } from "../lib/result-confetti";
@@ -63,12 +62,6 @@ export function RaceResultOverlay({
   const avatarUrl = winner?.discordId
     ? discordAvatarUrl(winner.discordId, winner.discordAvatar)
     : null;
-  const odds = {
-    mode: event.mode,
-    winnerTickets: round.winnerTickets,
-    totalTickets: round.totalTickets,
-    entrantCount: round.entrantCount,
-  };
   // The finished race ranks the same whether or not the replay ran, so reduced motion needs no
   // board to read from.
   const podium = script
@@ -115,7 +108,6 @@ export function RaceResultOverlay({
           {GUILD_CLASS_LABEL[round.winnerGuildClass]}
           {round.winnerTickets > 1 ? ` · mèo #${result.winningTicket}` : ""}
         </p>
-        <p className="race-odds">{oddsText(odds)}</p>
         <div className="race-podium">
           {podium.map(({ place, label }) => (
             <span key={place}>
@@ -135,7 +127,6 @@ export function RaceResultOverlay({
           {isContinuing ? <Spinner size="sm" /> : null}
           Đua tiếp
         </Button>
-        {isUnderdog(odds) ? <p className="race-stamp race-display">KÈO DƯỚI</p> : null}
       </div>
     </div>
   );

@@ -553,7 +553,6 @@
   --stage-reveal-3: 520ms;
   --stage-reveal-4: 680ms;
   --stage-reveal-5: 900ms;
-  --stage-reveal-6: 1100ms;
 }
 
 .race-display {
@@ -889,7 +888,7 @@
 .race-gap { font-size: 12px; font-variant-numeric: tabular-nums; color: var(--stage-paper-dim); }
 
 /* The winner card. Children stagger in the order the markup lists them: tier line, winner, class,
-   odds, podium, button. */
+   podium, button. */
 .race-result {
   position: absolute;
   inset: 0;
@@ -928,7 +927,6 @@
 .race-card > :nth-child(3) { animation-delay: var(--stage-reveal-3); }
 .race-card > :nth-child(4) { animation-delay: var(--stage-reveal-4); }
 .race-card > :nth-child(5) { animation-delay: var(--stage-reveal-5); }
-.race-card > :nth-child(6) { animation-delay: var(--stage-reveal-6); }
 
 .race-tierline {
   display: flex;
@@ -954,7 +952,6 @@
 }
 
 .race-class { font-size: 13px; color: var(--stage-paper-dim); }
-.race-odds { font-size: 14px; font-variant-numeric: tabular-nums; }
 
 .race-podium {
   display: flex;
@@ -971,21 +968,6 @@
 }
 .race-podium b { font-weight: 600; color: var(--stage-paper); }
 
-/* Rotated by its own keyframes: the shared `race-rise` would end on `transform: none`. */
-.race-card > .race-stamp {
-  position: absolute;
-  top: 14px;
-  right: -10px;
-  padding: 3px 8px 1px;
-  border: 2px solid var(--stage-lacquer);
-  background: var(--stage-card);
-  font-size: 13px;
-  color: var(--stage-lacquer);
-  transform: rotate(8deg);
-  animation-name: race-stamp;
-  animation-delay: var(--stage-reveal-6);
-}
-
 @keyframes race-rise {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: none; }
@@ -994,10 +976,6 @@
   0% { opacity: 0; transform: scale(2.2); }
   60% { opacity: 1; transform: scale(0.94); }
   100% { opacity: 1; transform: scale(1); }
-}
-@keyframes race-stamp {
-  from { opacity: 0; transform: rotate(8deg) scale(1.8); }
-  to { opacity: 1; transform: rotate(8deg) scale(1); }
 }
 
 @keyframes race-blink {

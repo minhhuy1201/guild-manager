@@ -156,13 +156,14 @@ describe("RaceResultOverlay", () => {
     return onContinue;
   }
 
-  it("shows the tier line, the winner and the odds, and continues on click", async () => {
+  it("shows the tier line, the winner and no odds, and continues on click", async () => {
     const onContinue = await renderOverlay();
 
     expect(screen.getByText("GIẢI ĐẶC BIỆT · Tiền mặt")).toBeTruthy();
     expect(screen.getByText("Alice")).toBeTruthy();
     expect(screen.getByText(GUILD_CLASS_LABEL[ROUND.winnerGuildClass])).toBeTruthy();
-    expect(screen.getByText("Thắng giữa 2 người · tỉ lệ 50%")).toBeTruthy();
+    expect(screen.queryByText(/tỉ lệ/)).toBeNull();
+    expect(screen.queryByText("KÈO DƯỚI")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Đua tiếp" }));
     expect(onContinue).toHaveBeenCalled();
   });
@@ -208,7 +209,7 @@ describe("RaceResultOverlay", () => {
     expect(m.confetti).not.toHaveBeenCalled();
   });
 
-  it("reports tickets and the cat number in TICKET mode, and survives a missing prize", async () => {
+  it("reports the cat number in TICKET mode, and survives a missing prize", async () => {
     await renderOverlay({
       event: makeEvent({ mode: CatRaceMode.TICKET }),
       prize: undefined,
@@ -219,29 +220,8 @@ describe("RaceResultOverlay", () => {
       },
     });
 
-    expect(screen.getByText("Thắng với 2/5 vé · tỉ lệ 40%")).toBeTruthy();
     expect(screen.getByText(/mèo #2/)).toBeTruthy();
-  });
-
-  it("stamps a long shot and leaves the stamp off an even one", async () => {
-    const event = makeEvent({
-      mode: CatRaceMode.TICKET,
-      participants: ["a", "b", "c"].map((id) => ({
-        ...makeEvent().participants[0],
-        characterId: id,
-        name: id,
-      })),
-    });
-    await renderOverlay({
-      event,
-      result: { ...RESULT, round: { ...ROUND, winnerTickets: 1, totalTickets: 6, entrantCount: 3 } },
-    });
-
-    expect(screen.getByText("KÈO DƯỚI")).toBeTruthy();
-    cleanup();
-    await renderOverlay();
-
-    expect(screen.queryByText("KÈO DƯỚI")).toBeNull();
+    expect(screen.queryByText(/tỉ lệ/)).toBeNull();
   });
 
   it("lists places two and three of the finished race, and nothing when there is no script", async () => {
