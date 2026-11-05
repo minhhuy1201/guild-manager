@@ -547,13 +547,14 @@
   --stage-chip-duration: 200ms;
   --stage-lantern-duration: 120ms;
   --stage-rise-duration: 420ms;
+  --stage-slam-duration: 520ms;
+  --stage-reveal-dim: #0b0610eb;
   /* The result card's lines arrive one after another, the name second and loudest. */
   --stage-reveal-1: 60ms;
   --stage-reveal-2: 260ms;
   --stage-reveal-3: 520ms;
   --stage-reveal-4: 680ms;
   --stage-reveal-5: 900ms;
-  --stage-reveal-6: 1100ms;
 }
 
 .race-display {
@@ -690,6 +691,40 @@
   border-left: 0;
 }
 .race-lead-bar em { color: var(--stage-gold); font-style: normal; }
+
+/* Sits where the lead-change bar does and stays put; only each new line rises. A size up from that
+   bar so it reads on a stream. */
+.race-commentary-bar {
+  left: 14px;
+  bottom: 14px;
+  display: flex;
+  align-items: stretch;
+  max-width: calc(100% - 28px);
+}
+.race-commentary-bar b {
+  font-weight: var(--stage-display-weight);
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  background: var(--stage-lacquer);
+  color: var(--stage-paper);
+  padding: 8px 12px 6px;
+  display: grid;
+  place-items: center;
+}
+.race-commentary-bar span {
+  background: #120c18ee;
+  color: var(--stage-paper);
+  padding: 8px 14px;
+  font-weight: 600;
+  font-size: 18px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border: 1px solid var(--stage-line);
+  border-left: 0;
+  animation: race-rise var(--stage-rise-duration) cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+.race-commentary-bar span[data-hype] { color: var(--stage-gold); }
 
 .race-photo {
   left: 50%;
@@ -889,7 +924,7 @@
 .race-gap { font-size: 12px; font-variant-numeric: tabular-nums; color: var(--stage-paper-dim); }
 
 /* The winner card. Children stagger in the order the markup lists them: tier line, winner, class,
-   odds, podium, button. */
+   podium, button. */
 .race-result {
   position: absolute;
   inset: 0;
@@ -898,6 +933,35 @@
   place-items: center;
   padding: 16px;
   background: #0b0610b0;
+}
+
+/* The official-result screen before the card: darker than the card's backdrop, one line per beat. */
+.race-result[data-reveal="true"] { background: var(--stage-reveal-dim); }
+.race-reveal {
+  display: grid;
+  justify-items: center;
+  gap: 20px;
+  width: 100%;
+  text-align: center;
+  color: var(--stage-paper);
+}
+.race-reveal-title {
+  font-size: clamp(26px, 4.5vw, 44px);
+  color: var(--stage-gold);
+  animation: race-slam var(--stage-slam-duration) cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+.race-reveal-place {
+  font-size: clamp(20px, 3vw, 30px);
+  animation: race-rise var(--stage-rise-duration) cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+.race-reveal-place[data-place="2"] { font-size: clamp(22px, 3.4vw, 34px); }
+.race-reveal-place[data-place="2"] > span { color: var(--stage-silver); }
+.race-reveal-place[data-place="3"] > span { color: var(--stage-bronze); }
+.race-reveal-suspense {
+  font-size: clamp(26px, 4.5vw, 44px);
+  color: var(--stage-gold);
+  animation: race-rise var(--stage-rise-duration) cubic-bezier(0.2, 0.8, 0.2, 1) backwards,
+    race-blink-soft var(--stage-blink-duration) ease-in-out var(--stage-rise-duration) infinite;
 }
 
 .race-card {
@@ -928,7 +992,6 @@
 .race-card > :nth-child(3) { animation-delay: var(--stage-reveal-3); }
 .race-card > :nth-child(4) { animation-delay: var(--stage-reveal-4); }
 .race-card > :nth-child(5) { animation-delay: var(--stage-reveal-5); }
-.race-card > :nth-child(6) { animation-delay: var(--stage-reveal-6); }
 
 .race-tierline {
   display: flex;
@@ -954,7 +1017,6 @@
 }
 
 .race-class { font-size: 13px; color: var(--stage-paper-dim); }
-.race-odds { font-size: 14px; font-variant-numeric: tabular-nums; }
 
 .race-podium {
   display: flex;
@@ -971,21 +1033,6 @@
 }
 .race-podium b { font-weight: 600; color: var(--stage-paper); }
 
-/* Rotated by its own keyframes: the shared `race-rise` would end on `transform: none`. */
-.race-card > .race-stamp {
-  position: absolute;
-  top: 14px;
-  right: -10px;
-  padding: 3px 8px 1px;
-  border: 2px solid var(--stage-lacquer);
-  background: var(--stage-card);
-  font-size: 13px;
-  color: var(--stage-lacquer);
-  transform: rotate(8deg);
-  animation-name: race-stamp;
-  animation-delay: var(--stage-reveal-6);
-}
-
 @keyframes race-rise {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: none; }
@@ -995,9 +1042,9 @@
   60% { opacity: 1; transform: scale(0.94); }
   100% { opacity: 1; transform: scale(1); }
 }
-@keyframes race-stamp {
-  from { opacity: 0; transform: rotate(8deg) scale(1.8); }
-  to { opacity: 1; transform: rotate(8deg) scale(1); }
+
+@keyframes race-blink-soft {
+  50% { opacity: 0.5; }
 }
 
 @keyframes race-blink {

@@ -62,6 +62,45 @@ describe("race store duration", () => {
   });
 });
 
+describe("race store commentary switch", () => {
+  it("is on by default and saves a change under its own key", async () => {
+    const setItem = vi.fn();
+    vi.stubGlobal("localStorage", { getItem: () => null, setItem });
+    const { useRaceStore } = await import("../race-store");
+    expect(useRaceStore.getState().isCommentaryOn).toBe(true);
+
+    useRaceStore.getState().setCommentaryOn(false);
+
+    expect(useRaceStore.getState().isCommentaryOn).toBe(false);
+    expect(setItem).toHaveBeenCalledWith("cat-race-commentary-on", "false");
+  });
+
+  it("reads the saved choice back in a new store, and ignores junk", async () => {
+    vi.stubGlobal("localStorage", { getItem: () => "false", setItem: () => {} });
+    const off = await import("../race-store");
+    expect(off.useRaceStore.getState().isCommentaryOn).toBe(false);
+
+    for (const stored of ["true", "yes", "", null]) {
+      vi.resetModules();
+      vi.stubGlobal("localStorage", { getItem: () => stored, setItem: () => {} });
+      const other = await import("../race-store");
+      expect(other.useRaceStore.getState().isCommentaryOn).toBe(true);
+    }
+  });
+
+  it("falls back to on when localStorage throws, and the change still holds", async () => {
+    const blocked = () => {
+      throw new Error("blocked");
+    };
+    vi.stubGlobal("localStorage", { getItem: blocked, setItem: blocked });
+    const { useRaceStore } = await import("../race-store");
+    expect(useRaceStore.getState().isCommentaryOn).toBe(true);
+
+    expect(() => useRaceStore.getState().setCommentaryOn(false)).not.toThrow();
+    expect(useRaceStore.getState().isCommentaryOn).toBe(false);
+  });
+});
+
 describe("race store lane order", () => {
   it("keeps a shuffle through a round and drops it when a prize is picked", async () => {
     vi.stubGlobal("localStorage", { getItem: () => null, setItem: () => {} });
