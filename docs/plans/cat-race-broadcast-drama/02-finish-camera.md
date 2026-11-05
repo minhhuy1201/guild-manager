@@ -30,11 +30,11 @@ số trần).
 
 **Model:** sonnet - thêm logic mới (hàm layout camera) và nối vào canvas
 
-**Status:** todo
+**Status:** done (visual check pending: run by the user before the PR)
 
-- [ ] Hàm layout camera có test: trước 80% trả về đúng layout gốc; từ 93% trở đi `travel` gấp đôi; điểm đích (`startX + travel`) không đổi ở mọi `u`; tắt thì trả về layout gốc; `u` giữa 80% và 93% cho độ giãn nằm giữa 1 và 2, tăng dần
-- [ ] Canvas dùng layout camera cho đường đua và vị trí mèo khi phát lại một vòng đua và ở chế độ `finish`; cột tên và dải trời giữ layout thật
-- [ ] Reduced motion thì canvas không giãn
-- [ ] Test canvas hiện có vẫn xanh
+- [x] Hàm layout camera có test: trước 80% trả về đúng layout gốc; từ 93% trở đi `travel` gấp đôi; điểm đích (`startX + travel`) không đổi ở mọi `u`; tắt thì trả về layout gốc; `u` giữa 80% và 93% cho độ giãn nằm giữa 1 và 2, tăng dần
+- [x] Canvas dùng layout camera cho đường đua và vị trí mèo khi phát lại một vòng đua và ở chế độ `finish`; cột tên và dải trời giữ layout thật
+- [x] Reduced motion thì canvas không giãn
+- [x] Test canvas hiện có vẫn xanh
 - [ ] Chạy app xem bằng mắt (`pnpm --filter web dev`, mở một đợt đua): đoạn cuối giãn ra, tên vẫn khớp làn, không mèo nào ra khỏi khung
-- [ ] `pnpm --filter web test`, `pnpm --filter web typecheck` và `pnpm --filter web lint` xanh
+- [x] `pnpm --filter web test`, `pnpm --filter web typecheck` và `pnpm --filter web lint` xanh
