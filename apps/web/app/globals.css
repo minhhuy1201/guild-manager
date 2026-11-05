@@ -547,6 +547,8 @@
   --stage-chip-duration: 200ms;
   --stage-lantern-duration: 120ms;
   --stage-rise-duration: 420ms;
+  --stage-slam-duration: 520ms;
+  --stage-reveal-dim: #0b0610eb;
   /* The result card's lines arrive one after another, the name second and loudest. */
   --stage-reveal-1: 60ms;
   --stage-reveal-2: 260ms;
@@ -933,6 +935,35 @@
   background: #0b0610b0;
 }
 
+/* The official-result screen before the card: darker than the card's backdrop, one line per beat. */
+.race-result[data-reveal="true"] { background: var(--stage-reveal-dim); }
+.race-reveal {
+  display: grid;
+  justify-items: center;
+  gap: 20px;
+  width: 100%;
+  text-align: center;
+  color: var(--stage-paper);
+}
+.race-reveal-title {
+  font-size: clamp(26px, 4.5vw, 44px);
+  color: var(--stage-gold);
+  animation: race-slam var(--stage-slam-duration) cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+.race-reveal-place {
+  font-size: clamp(20px, 3vw, 30px);
+  animation: race-rise var(--stage-rise-duration) cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+.race-reveal-place[data-place="2"] { font-size: clamp(22px, 3.4vw, 34px); }
+.race-reveal-place[data-place="2"] > span { color: var(--stage-silver); }
+.race-reveal-place[data-place="3"] > span { color: var(--stage-bronze); }
+.race-reveal-suspense {
+  font-size: clamp(26px, 4.5vw, 44px);
+  color: var(--stage-gold);
+  animation: race-rise var(--stage-rise-duration) cubic-bezier(0.2, 0.8, 0.2, 1) backwards,
+    race-blink-soft var(--stage-blink-duration) ease-in-out var(--stage-rise-duration) infinite;
+}
+
 .race-card {
   --tier-color: var(--stage-gold);
   position: relative;
@@ -1010,6 +1041,10 @@
   0% { opacity: 0; transform: scale(2.2); }
   60% { opacity: 1; transform: scale(0.94); }
   100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes race-blink-soft {
+  50% { opacity: 0.5; }
 }
 
 @keyframes race-blink {

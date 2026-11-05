@@ -21,6 +21,12 @@ vi.mock("@/features/auth", () => ({
 import { RaceResultOverlay } from "../race-result-overlay";
 import { WinnersPanel } from "../winners-panel";
 import { buildRaceScript } from "../../lib/race-script";
+import {
+  REVEAL_CARD_MS,
+  REVEAL_SECOND_MS,
+  REVEAL_SUSPENSE_MS,
+  REVEAL_THIRD_MS,
+} from "../../lib/reveal-beats";
 import { PRIZE, ROUND, makeEvent } from "./fixtures";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -131,11 +137,13 @@ describe("RaceResultOverlay", () => {
   }
 
   /**
-   * Render the overlay and let the confetti import settle.
+   * Render the overlay, wait out the reveal unless asked not to, and let the confetti import settle.
    * @param props - Fields to change
+   * @param waitForCard - Whether to run the clock to the card
    */
   async function renderOverlay(
-    props: Partial<React.ComponentProps<typeof RaceResultOverlay>> = {}
+    props: Partial<React.ComponentProps<typeof RaceResultOverlay>> = {},
+    waitForCard = true
   ) {
     const onContinue = vi.fn();
     render(
@@ -149,6 +157,7 @@ describe("RaceResultOverlay", () => {
         {...props}
       />
     );
+    if (waitForCard) act(() => void vi.advanceTimersByTime(REVEAL_CARD_MS));
     await act(async () => {
       await Promise.resolve();
     });
@@ -251,6 +260,146 @@ describe("RaceResultOverlay", () => {
 
     expect(screen.getByText(/^2\./)).toBeTruthy();
     expect(screen.queryByText(/^3\./)).toBeNull();
+  });
+
+  describe("reveal", () => {
+    const THREE = [
+      { characterId: "a", tickets: 1 },
+      { characterId: "b", tickets: 1 },
+      { characterId: "c", tickets: 1 },
+    ];
+
+    /**
+     * An event whose participants are the three entrants, named A, B and C.
+     * @returns The event
+     */
+    function threeCatEvent() {
+      const event = makeEvent();
+      event.participants = ["a", "b", "c"].map((id) => ({
+        ...event.participants[0],
+        characterId: id,
+        name: id.toUpperCase(),
+      }));
+
+      return event;
+    }
+
+    /**
+     * Move the fake clock.
+     * @param ms - How far
+     */
+    function advance(ms: number) {
+      act(() => void vi.advanceTimersByTime(ms));
+    }
+
+    const hasCard = () => screen.queryByRole("button", { name: "Đua tiếp" }) !== null;
+
+    it("calls the beats in order, on their times, and opens the card only at the end", async () => {
+      await renderOverlay({ event: threeCatEvent(), script: scriptOf(THREE) }, false);
+
+      expect(screen.getByText("KẾT QUẢ CHÍNH THỨC")).toBeTruthy();
+      expect(screen.queryByText("HẠNG 3")).toBeNull();
+      advance(REVEAL_THIRD_MS);
+      expect(screen.getByText("HẠNG 3")).toBeTruthy();
+      expect(screen.queryByText("HẠNG 2")).toBeNull();
+      advance(REVEAL_SECOND_MS - REVEAL_THIRD_MS);
+      expect(screen.getByText("HẠNG 2")).toBeTruthy();
+      expect(screen.queryByText("VÀ VỀ NHẤT LÀ...")).toBeNull();
+      advance(REVEAL_SUSPENSE_MS - REVEAL_SECOND_MS);
+      expect(screen.getByText("VÀ VỀ NHẤT LÀ...")).toBeTruthy();
+      expect(hasCard()).toBe(false);
+      advance(REVEAL_CARD_MS - REVEAL_SUSPENSE_MS - 1);
+      expect(hasCard()).toBe(false);
+      advance(1);
+
+      expect(hasCard()).toBe(true);
+      expect(screen.queryByText("KẾT QUẢ CHÍNH THỨC")).toBeNull();
+    });
+
+    it("leaves out the third place when only two cats ran, keeping the other times", async () => {
+      await renderOverlay(
+        { script: scriptOf([THREE[0], THREE[1]]) },
+        false
+      );
+      advance(REVEAL_SECOND_MS);
+
+      expect(screen.queryByText("HẠNG 3")).toBeNull();
+      expect(screen.getByText("HẠNG 2")).toBeTruthy();
+    });
+
+    it("shows no place without a script, and still opens the card", async () => {
+      await renderOverlay({ script: null }, false);
+      advance(REVEAL_SUSPENSE_MS);
+
+      expect(screen.queryByText(/HẠNG/)).toBeNull();
+      expect(screen.getByText("VÀ VỀ NHẤT LÀ...")).toBeTruthy();
+      advance(REVEAL_CARD_MS - REVEAL_SUSPENSE_MS);
+
+      expect(hasCard()).toBe(true);
+    });
+
+    it("opens the card at once on a click, without the flash", async () => {
+      await renderOverlay({}, false);
+      fireEvent.click(screen.getByRole("button", { name: /KẾT QUẢ CHÍNH THỨC/ }));
+
+      expect(hasCard()).toBe(true);
+      expect(document.querySelector(".race-flash")).toBeNull();
+    });
+
+    it("opens the card at once on S", async () => {
+      await renderOverlay({}, false);
+      fireEvent.keyDown(window, { key: "s" });
+
+      expect(hasCard()).toBe(true);
+      expect(document.querySelector(".race-flash")).toBeNull();
+    });
+
+    it("flashes when the card opens on its own", async () => {
+      await renderOverlay();
+
+      expect(document.querySelector(".race-flash")).not.toBeNull();
+    });
+
+    it("ignores S typed in a field, with a modifier, or already handled", async () => {
+      await renderOverlay({}, false);
+      const field = document.createElement("input");
+      document.body.appendChild(field);
+      fireEvent.keyDown(field, { key: "s" });
+      fireEvent.keyDown(window, { key: "s", ctrlKey: true });
+      fireEvent.keyDown(window, { key: "s", metaKey: true });
+      const handled = new KeyboardEvent("keydown", { key: "s", cancelable: true });
+      handled.preventDefault();
+      window.dispatchEvent(handled);
+      field.remove();
+
+      expect(hasCard()).toBe(false);
+    });
+
+    it("opens the card at once, with no reveal and no flash, for reduced motion", async () => {
+      m.reducedMotion.current = true;
+      await renderOverlay({}, false);
+
+      expect(hasCard()).toBe(true);
+      expect(screen.queryByText("KẾT QUẢ CHÍNH THỨC")).toBeNull();
+      expect(document.querySelector(".race-flash")).toBeNull();
+      expect(m.confetti).not.toHaveBeenCalled();
+    });
+
+    it("fires no confetti during the reveal, and the burst when the card opens", async () => {
+      await renderOverlay({}, false);
+      advance(REVEAL_CARD_MS - 1);
+      await act(async () => {
+        await Promise.resolve();
+      });
+
+      expect(m.confetti).not.toHaveBeenCalled();
+      advance(1);
+      await act(async () => {
+        await Promise.resolve();
+      });
+
+      expect(m.confetti).toHaveBeenCalledTimes(1);
+    });
   });
 
   // Base UI mounts the <img> only once the browser has loaded it, so jsdom keeps the fallback.

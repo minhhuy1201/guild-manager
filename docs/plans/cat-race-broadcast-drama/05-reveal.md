@@ -28,12 +28,12 @@ có skip bằng `S` hay bấm; bản thật thêm phần này.
 
 **Model:** sonnet - thêm các nhịp theo thời gian, phím tắt, rẽ nhánh reduced motion
 
-**Status:** todo
+**Status:** done
 
-- [ ] Test (fake timers, như các test confetti sẵn có): các nhịp hiện đúng thứ tự và đúng mốc; thẻ chưa hiện trước 4000 ms và hiện sau đó
-- [ ] Test: thiếu hạng 3 (hai mèo) thì không có dòng "HẠNG 3"; không có script thì không có dòng hạng nào nhưng thẻ vẫn mở
-- [ ] Test: bấm vào màn công bố, hoặc nhấn `S`, thì thẻ hiện ngay; `S` trong một ô nhập hay kèm Ctrl thì không có tác dụng
-- [ ] Test: reduced motion thì thẻ hiện ngay và không có confetti (như hiện nay)
-- [ ] Test: confetti không bắn trước khi thẻ mở, bắn khi thẻ mở
-- [ ] Test `RaceStage` hiện có ("shows the winner card when the replay ends...") vẫn xanh, hoặc được cập nhật để chờ qua màn công bố
-- [ ] `pnpm --filter web test`, `pnpm --filter web typecheck` và `pnpm --filter web lint` xanh
+- [x] Test (fake timers, như các test confetti sẵn có): các nhịp hiện đúng thứ tự và đúng mốc; thẻ chưa hiện trước 4000 ms và hiện sau đó
+- [x] Test: thiếu hạng 3 (hai mèo) thì không có dòng "HẠNG 3"; không có script thì không có dòng hạng nào nhưng thẻ vẫn mở
+- [x] Test: bấm vào màn công bố, hoặc nhấn `S`, thì thẻ hiện ngay; `S` trong một ô nhập hay kèm Ctrl thì không có tác dụng
+- [x] Test: reduced motion thì thẻ hiện ngay và không có confetti (như hiện nay)
+- [x] Test: confetti không bắn trước khi thẻ mở, bắn khi thẻ mở
+- [x] Test `RaceStage` hiện có ("shows the winner card when the replay ends...") vẫn xanh, hoặc được cập nhật để chờ qua màn công bố
+- [x] `pnpm --filter web test`, `pnpm --filter web typecheck` và `pnpm --filter web lint` xanh
