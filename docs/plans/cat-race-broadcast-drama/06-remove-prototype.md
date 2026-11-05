@@ -14,8 +14,8 @@ Kiểm tra lại không còn import nào trỏ vào các đường dẫn đó.
 
 **Model:** sonnet - theo luật chọn model thì đụng hơn 2 file, dù chỉ là xoá
 
-**Status:** todo
+**Status:** done
 
-- [ ] Ba đường dẫn trên không còn tồn tại
-- [ ] `/dua-meo/prototype` không còn là route (build không sinh trang đó)
-- [ ] `pnpm --filter web test`, `pnpm --filter web typecheck` và `pnpm --filter web lint` xanh
+- [x] Ba đường dẫn trên không còn tồn tại
+- [x] `/dua-meo/prototype` không còn là route (build không sinh trang đó)
+- [x] `pnpm --filter web test`, `pnpm --filter web typecheck` và `pnpm --filter web lint` xanh
