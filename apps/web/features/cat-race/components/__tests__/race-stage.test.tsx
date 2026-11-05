@@ -550,14 +550,13 @@ describe("RaceStage", () => {
       expect(document.querySelector(".race-countdown")?.getAttribute("data-on")).toBe("false");
     });
 
-    it("shows the lead-change bar with the cat's label and CHẬM ×3 on its cues", async () => {
+    it("shows CHẬM ×3 on the slow-motion cue, and no lead-change bar since the commentary speaks", async () => {
       await startRace();
 
       fireEvent.click(screen.getByText("cue lead"));
       fireEvent.click(screen.getByText("cue slow"));
 
-      expect(screen.getByText("ĐỔI NGÔI")).toBeTruthy();
-      expect(document.querySelector(".race-lead-bar em")?.textContent).toBe("b");
+      expect(screen.queryByText("ĐỔI NGÔI")).toBeNull();
       expect(document.querySelector(".race-slowmo")?.getAttribute("data-on")).toBe("true");
     });
 
@@ -747,5 +746,62 @@ describe("RaceStage auto-hide", () => {
     act(() => void vi.advanceTimersByTime(5000));
 
     expect(document.querySelector("[data-idle]")).toBeNull();
+  });
+
+  describe("commentary", () => {
+    const startRacing = async () => {
+      mutateAsync.mockResolvedValue(RESULT);
+      renderStage();
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: /ĐUA/ }));
+      });
+    };
+
+    afterEach(() => vi.restoreAllMocks());
+
+    it("tells the start and a lead change in the bar while the lead-change bar stays away", async () => {
+      const clock = vi.spyOn(performance, "now").mockReturnValue(1000);
+      await startRacing();
+
+      fireEvent.click(screen.getByText("cue go"));
+      expect(screen.getByText("BÌNH LUẬN")).toBeTruthy();
+      expect(screen.getByText(/2 chú mèo|Xuất phát|Chạy rồi/)).toBeTruthy();
+
+      clock.mockReturnValue(6000);
+      fireEvent.click(screen.getByText("cue lead"));
+
+      expect(screen.getByText(/b (vượt lên dẫn đầu|cắn răng)|Đổi ngôi! b lên số một/)).toBeTruthy();
+      expect(screen.queryByText("ĐỔI NGÔI")).toBeNull();
+    });
+
+    it("shows nothing at the start line or on the winner card", async () => {
+      fireEvent.click((renderStage(), screen.getByText("cue go")));
+      expect(screen.queryByText("BÌNH LUẬN")).toBeNull();
+      cleanup();
+
+      await startRacing();
+      fireEvent.click(screen.getByText("cue go"));
+      fireEvent.click(screen.getByText("finish"));
+
+      expect(screen.getByText(/RESULT/)).toBeTruthy();
+      expect(screen.queryByText("BÌNH LUẬN")).toBeNull();
+    });
+
+    it("starts a new round with a clean bar after Đua tiếp", async () => {
+      invalidate.mockResolvedValue(undefined);
+      await startRacing();
+      fireEvent.click(screen.getByText("cue go"));
+      fireEvent.click(screen.getByText("finish"));
+      await act(async () => {
+        fireEvent.click(screen.getByText("continue"));
+      });
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: /ĐUA/ }));
+      });
+
+      expect(useRaceStore.getState().stage).toBe("racing");
+      expect(screen.queryByText("BÌNH LUẬN")).toBeNull();
+    });
   });
 });

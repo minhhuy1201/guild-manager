@@ -38,10 +38,10 @@ Bản tham chiếu đang chạy (hook ghép cả bộ nhớ vào React) nằm �
 
 **Model:** sonnet - quy tắc bình luận mới, overlay mới, nối vào `RaceStage`
 
-**Status:** todo
+**Status:** done
 
-- [ ] Test lib (nguồn ngẫu nhiên có seed như `seeded-random.ts`) cho từng quy tắc trên, có test câu thường bị bỏ khi chưa đủ 2,2 giây, câu gấp không bị chặn, và câu `finish` không chứa tên mèo nào
-- [ ] Test `RaceStage` (canvas đã mock, bắn `onCue`/`onStandings`): khi đua, thanh bình luận hiện câu theo cue `go` và `lead-change`; thanh "ĐỔI NGÔI" không hiện
-- [ ] Bình luận reset khi bấm "Đua tiếp" rồi đua vòng mới
-- [ ] Thanh bình luận chỉ hiện khi đang đua (không ở vạch xuất phát, không trên thẻ người thắng)
-- [ ] `pnpm --filter web test`, `pnpm --filter web typecheck` và `pnpm --filter web lint` xanh
+- [x] Test lib (nguồn ngẫu nhiên có seed như `seeded-random.ts`) cho từng quy tắc trên, có test câu thường bị bỏ khi chưa đủ 2,2 giây, câu gấp không bị chặn, và câu `finish` không chứa tên mèo nào
+- [x] Test `RaceStage` (canvas đã mock, bắn `onCue`/`onStandings`): khi đua, thanh bình luận hiện câu theo cue `go` và `lead-change`; thanh "ĐỔI NGÔI" không hiện
+- [x] Bình luận reset khi bấm "Đua tiếp" rồi đua vòng mới
+- [x] Thanh bình luận chỉ hiện khi đang đua (không ở vạch xuất phát, không trên thẻ người thắng)
+- [x] `pnpm --filter web test`, `pnpm --filter web typecheck` và `pnpm --filter web lint` xanh

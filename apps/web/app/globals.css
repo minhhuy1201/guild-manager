@@ -690,6 +690,40 @@
 }
 .race-lead-bar em { color: var(--stage-gold); font-style: normal; }
 
+/* Sits where the lead-change bar does and stays put; only each new line rises. A size up from that
+   bar so it reads on a stream. */
+.race-commentary-bar {
+  left: 14px;
+  bottom: 14px;
+  display: flex;
+  align-items: stretch;
+  max-width: calc(100% - 28px);
+}
+.race-commentary-bar b {
+  font-weight: var(--stage-display-weight);
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  background: var(--stage-lacquer);
+  color: var(--stage-paper);
+  padding: 8px 12px 6px;
+  display: grid;
+  place-items: center;
+}
+.race-commentary-bar span {
+  background: #120c18ee;
+  color: var(--stage-paper);
+  padding: 8px 14px;
+  font-weight: 600;
+  font-size: 18px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border: 1px solid var(--stage-line);
+  border-left: 0;
+  animation: race-rise var(--stage-rise-duration) cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+.race-commentary-bar span[data-hype] { color: var(--stage-gold); }
+
 .race-photo {
   left: 50%;
   top: 50%;

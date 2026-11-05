@@ -19,9 +19,10 @@ import { errorMessageOf } from "@/lib/error-message";
 import { belongsElsewhere } from "@/lib/keyboard-target";
 import { useDrawCatRaceRound } from "../hooks/use-cat-race-mutations";
 import { useIdleChrome } from "../hooks/use-idle-chrome";
+import { useRaceCommentary } from "../hooks/use-race-commentary";
 import { catLabels } from "../lib/cat-label";
 import { PRIZE_LOCK_LABEL, prizeLockReason } from "../lib/prize-lock";
-import { EMPTY_BOARD, advanceBoard, standingsAt, type BoardState } from "../lib/race-board";
+import { EMPTY_BOARD, advanceBoard, standingsAt, type BoardState, type RaceStanding } from "../lib/race-board";
 import { IDLE_CLOCK, startClock, stopClock, type RaceClock } from "../lib/race-clock";
 import { INITIAL_OVERLAY, applyCue } from "../lib/race-overlay";
 import type { RaceCue } from "../lib/race-cue";
@@ -33,6 +34,7 @@ import { useRaceStore } from "../store/race-store";
 import { RaceBroadcastBar } from "./race-broadcast-bar";
 import { RacePrizePicker } from "./race-prize-picker";
 import { RaceCanvas } from "./race-canvas";
+import { RaceCommentaryBar } from "./race-commentary-bar";
 import { RaceOverlays } from "./race-overlays";
 import { RaceResultOverlay } from "./race-result-overlay";
 import { RaceStandings } from "./race-standings";
@@ -143,6 +145,19 @@ export function RaceStage({
     });
   }, [pendingResult, durationSeconds]);
 
+  const commentary = useRaceCommentary(
+    useMemo(
+      () => (script ? catLabels(script.cats, event.participants) : null),
+      [script, event.participants]
+    ),
+    durationSeconds
+  );
+
+  const showStandings = (rows: readonly RaceStanding[]) => {
+    setStandings((current) => advanceBoard(current, rows));
+    commentary.onStandings(rows);
+  };
+
   // Reduced motion skips the replay, so no board update ever came: rank the finished race instead.
   const board: BoardState =
     standings.rows.length === 0 && stage === "result" && script
@@ -154,6 +169,7 @@ export function RaceStage({
     setStandings(EMPTY_BOARD);
     setClock(IDLE_CLOCK);
     setOverlay(INITIAL_OVERLAY);
+    commentary.reset();
     store().startDrawing();
     try {
       const result = await draw.mutateAsync({ id: event.id, prizeId: prize.id });
@@ -201,6 +217,7 @@ export function RaceStage({
   const showCue = (cue: RaceCue) => {
     const now = performance.now();
     setOverlay((current) => applyCue(current, cue, now));
+    commentary.onCue(cue);
     if (cue.kind === "go") setClock(startClock(now));
     if (cue.kind === "finish") setClock((current) => stopClock(current, now));
   };
@@ -313,7 +330,7 @@ export function RaceStage({
               skipSignal={skipSignal}
               laneOrder={laneKeys}
               onFinish={finishRace}
-              onStandings={(rows) => setStandings((current) => advanceBoard(current, rows))}
+              onStandings={showStandings}
               onCue={showCue}
             />
           ) : stage === "racing" && script ? (
@@ -323,7 +340,7 @@ export function RaceStage({
               skipSignal={skipSignal}
               laneOrder={laneKeys}
               onFinish={finishRace}
-              onStandings={(rows) => setStandings((current) => advanceBoard(current, rows))}
+              onStandings={showStandings}
               onCue={showCue}
             />
           ) : stage !== "result" && previewScript ? (
@@ -334,7 +351,7 @@ export function RaceStage({
               skipSignal={skipSignal}
               laneOrder={laneKeys}
               onFinish={finishRace}
-              onStandings={(rows) => setStandings((current) => advanceBoard(current, rows))}
+              onStandings={showStandings}
               onCue={showCue}
             />
           ) : (
@@ -351,7 +368,15 @@ export function RaceStage({
             </div>
           )}
           {stage === "racing" && script ? (
-            <RaceOverlays state={overlay} script={script} participants={event.participants} />
+            <>
+              {/* The commentary says what the lead-change bar would, so that bar stays out. */}
+              <RaceOverlays
+                state={{ ...overlay, leadToast: null }}
+                script={script}
+                participants={event.participants}
+              />
+              <RaceCommentaryBar line={commentary.line} />
+            </>
           ) : null}
           {stage === "result" && pendingResult ? (
             <RaceResultOverlay
