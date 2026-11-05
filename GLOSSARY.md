@@ -64,6 +64,19 @@ _Avoid_: decoy, dark horse, runner-up role
 The close-up of the first two cats at the line, shown after every race.
 _Avoid_: finish shot, close finish
 
+**Commentary** (UI: "Bình luận"):
+The running lines that narrate a race as it plays; they never name the winner before the line.
+_Avoid_: caption, ticker, chatter
+
+**Finish camera**:
+The late part of a race where the last stretch of track spreads out toward the line, so the front
+of the field looks farther apart while every cat keeps its size.
+_Avoid_: zoom, close-up
+
+**Reveal** (UI: "Kết quả chính thức"):
+The beat after the photo finish that calls third and second place before the winner card opens.
+_Avoid_: result animation, announcement
+
 **Featured race** (UI: "Bảng vàng"):
 An ended event whose winners the guild chose to show to every visitor of its public page.
 _Avoid_: showcase, pinned race, quay thưởng
