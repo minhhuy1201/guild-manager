@@ -1,10 +1,13 @@
 "use client";
 
+import { useId } from "react";
 import { Timer } from "lucide-react";
 
 import { FieldLabel } from "@/components/shared/field-label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   RACE_DURATION_ERROR,
   RACE_DURATION_MAX_SECONDS,
@@ -17,7 +20,10 @@ interface RaceControlsProps {
   onDurationTextChange: (text: string) => void;
   /** Whether `durationText` is a whole number inside the limits */
   isDurationValid: boolean;
-  /** The field and the buttons lock while a round runs */
+  /** Whether the commentary bar narrates the race */
+  isCommentaryOn: boolean;
+  onCommentaryChange: (isOn: boolean) => void;
+  /** The field, the switch and the buttons lock while a round runs */
   isLocked: boolean;
   /** Whether a prize is selected, so its list can be edited */
   hasPrize: boolean;
@@ -32,6 +38,8 @@ interface RaceControlsProps {
  * @param durationText - What the duration field holds
  * @param onDurationTextChange - Receives the typed text
  * @param isDurationValid - Whether the typed text is in range
+ * @param isCommentaryOn - Whether commentary is switched on
+ * @param onCommentaryChange - Receives the new switch state
  * @param isLocked - Whether a round is running
  * @param hasPrize - Whether a prize is selected
  * @param entrantCount - People in the selected prize's list
@@ -44,6 +52,8 @@ export function RaceControls({
   durationText,
   onDurationTextChange,
   isDurationValid,
+  isCommentaryOn,
+  onCommentaryChange,
   isLocked,
   hasPrize,
   entrantCount,
@@ -51,6 +61,8 @@ export function RaceControls({
   onEditEntrants,
   onEditParticipants,
 }: RaceControlsProps) {
+  const commentaryId = useId();
+
   return (
     <div className="flex flex-wrap items-start gap-3">
       <div className="grid gap-1">
@@ -74,6 +86,16 @@ export function RaceControls({
           />
         </div>
         {isDurationValid ? null : <p className="text-sm text-destructive">{RACE_DURATION_ERROR}</p>}
+      </div>
+      <div className="flex h-9 items-center gap-2">
+        <Switch
+          id={commentaryId}
+          checked={isCommentaryOn}
+          // Commentary is wired when the round starts; a mid-race flip would leave it half fed.
+          disabled={isLocked}
+          onCheckedChange={(checked) => onCommentaryChange(checked)}
+        />
+        <Label htmlFor={commentaryId}>Bình luận</Label>
       </div>
       <Button type="button" variant="outline" disabled={!hasPrize || isLocked} onClick={onEditEntrants}>
         Danh sách đua {entrantCount}

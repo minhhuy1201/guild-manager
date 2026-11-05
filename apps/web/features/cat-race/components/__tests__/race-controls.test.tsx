@@ -14,11 +14,14 @@ import { RaceControls } from "../race-controls";
 function renderControls(props: Partial<React.ComponentProps<typeof RaceControls>> = {}) {
   const onEditEntrants = vi.fn();
   const onEditParticipants = vi.fn();
+  const onCommentaryChange = vi.fn();
   render(
     <RaceControls
       durationText="20"
       onDurationTextChange={() => {}}
       isDurationValid
+      isCommentaryOn
+      onCommentaryChange={onCommentaryChange}
       isLocked={false}
       hasPrize
       entrantCount={2}
@@ -29,7 +32,7 @@ function renderControls(props: Partial<React.ComponentProps<typeof RaceControls>
     />
   );
 
-  return { onEditEntrants, onEditParticipants };
+  return { onEditEntrants, onEditParticipants, onCommentaryChange };
 }
 
 afterEach(cleanup);
@@ -75,5 +78,23 @@ describe("RaceControls", () => {
     expect((screen.getByLabelText("Thời gian đua (giây)") as HTMLInputElement).disabled).toBe(true);
     expect((screen.getByRole("button", { name: /Danh sách đua/ }) as HTMLButtonElement).disabled).toBe(true);
     expect((screen.getByRole("button", { name: /Người tham gia/ }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("shows the commentary switch with its label and reports a flip", () => {
+    const { onCommentaryChange } = renderControls();
+    const toggle = screen.getByRole("switch", { name: "Bình luận" });
+    expect(toggle.getAttribute("aria-checked")).toBe("true");
+
+    fireEvent.click(toggle);
+
+    expect(onCommentaryChange).toHaveBeenCalledWith(false);
+  });
+
+  it("shows the switch off when commentary is off, and locks it while a round runs", () => {
+    renderControls({ isCommentaryOn: false, isLocked: true });
+    const toggle = screen.getByRole("switch", { name: "Bình luận" });
+
+    expect(toggle.getAttribute("aria-checked")).toBe("false");
+    expect(toggle.hasAttribute("data-disabled")).toBe(true);
   });
 });

@@ -170,7 +170,7 @@ beforeEach(() => {
   canvasMounts.count = 0;
   HTMLCanvasElement.prototype.getContext = vi.fn(() => null) as never;
   useRaceStore.getState().reset();
-  useRaceStore.setState({ laneOrder: null });
+  useRaceStore.setState({ laneOrder: null, isCommentaryOn: true });
 });
 afterEach(cleanup);
 
@@ -772,6 +772,18 @@ describe("RaceStage auto-hide", () => {
 
       expect(screen.getByText(/b (vượt lên dẫn đầu|cắn răng)|Đổi ngôi! b lên số một/)).toBeTruthy();
       expect(screen.queryByText("ĐỔI NGÔI")).toBeNull();
+    });
+
+    it("feeds no cue to the commentary and brings back the lead-change bar when switched off", async () => {
+      useRaceStore.setState({ isCommentaryOn: false });
+      await startRacing();
+
+      fireEvent.click(screen.getByText("cue go"));
+      fireEvent.click(screen.getByText("standings"));
+      fireEvent.click(screen.getByText("cue lead"));
+
+      expect(screen.queryByText("BÌNH LUẬN")).toBeNull();
+      expect(screen.getByText("ĐỔI NGÔI")).toBeTruthy();
     });
 
     it("shows nothing at the start line or on the winner card", async () => {

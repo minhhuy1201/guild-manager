@@ -77,7 +77,7 @@ export function RaceStage({
   focus,
   onSelectPrize,
 }: RaceStageProps) {
-  const { stage, durationSeconds, pendingResult, laneOrder } = useRaceStore();
+  const { stage, durationSeconds, pendingResult, laneOrder, isCommentaryOn } = useRaceStore();
   const store = useRaceStore.getState;
   const draw = useDrawCatRaceRound();
   const invalidate = useInvalidate("cat-race");
@@ -155,7 +155,7 @@ export function RaceStage({
 
   const showStandings = (rows: readonly RaceStanding[]) => {
     setStandings((current) => advanceBoard(current, rows));
-    commentary.onStandings(rows);
+    if (isCommentaryOn) commentary.onStandings(rows);
   };
 
   // Reduced motion skips the replay, so no board update ever came: rank the finished race instead.
@@ -217,7 +217,7 @@ export function RaceStage({
   const showCue = (cue: RaceCue) => {
     const now = performance.now();
     setOverlay((current) => applyCue(current, cue, now));
-    commentary.onCue(cue);
+    if (isCommentaryOn) commentary.onCue(cue);
     if (cue.kind === "go") setClock(startClock(now));
     if (cue.kind === "finish") setClock((current) => stopClock(current, now));
   };
@@ -369,13 +369,13 @@ export function RaceStage({
           )}
           {stage === "racing" && script ? (
             <>
-              {/* The commentary says what the lead-change bar would, so that bar stays out. */}
+              {/* The commentary says what the lead-change bar would, so that bar stays out while it is on. */}
               <RaceOverlays
-                state={{ ...overlay, leadToast: null }}
+                state={isCommentaryOn ? { ...overlay, leadToast: null } : overlay}
                 script={script}
                 participants={event.participants}
               />
-              <RaceCommentaryBar line={commentary.line} />
+              {isCommentaryOn ? <RaceCommentaryBar line={commentary.line} /> : null}
             </>
           ) : null}
           {stage === "result" && pendingResult ? (

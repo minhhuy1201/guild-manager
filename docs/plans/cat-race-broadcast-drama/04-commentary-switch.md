@@ -16,9 +16,9 @@ switch (quy ước `FieldLabel` trong `.claude/rules/web/display.md` áp cho fie
 
 **Model:** sonnet - thêm giá trị vào store kèm lưu trữ, thêm control, rẽ nhánh trong `RaceStage`
 
-**Status:** todo
+**Status:** done
 
-- [ ] Test store: mặc định bật; đổi giá trị thì ghi `localStorage`; store mới đọc lại giá trị đã lưu; `localStorage` ném lỗi thì về mặc định và đổi vẫn có tác dụng
-- [ ] Test `RaceControls`: công tắc hiện với nhãn "Bình luận", đổi được, bị khoá khi `isLocked`
-- [ ] Test `RaceStage`: bình luận tắt thì không có thanh bình luận và cue `lead-change` hiện thanh "ĐỔI NGÔI"; bật thì như ticket 03
-- [ ] `pnpm --filter web test`, `pnpm --filter web typecheck` và `pnpm --filter web lint` xanh
+- [x] Test store: mặc định bật; đổi giá trị thì ghi `localStorage`; store mới đọc lại giá trị đã lưu; `localStorage` ném lỗi thì về mặc định và đổi vẫn có tác dụng
+- [x] Test `RaceControls`: công tắc hiện với nhãn "Bình luận", đổi được, bị khoá khi `isLocked`
+- [x] Test `RaceStage`: bình luận tắt thì không có thanh bình luận và cue `lead-change` hiện thanh "ĐỔI NGÔI"; bật thì như ticket 03
+- [x] `pnpm --filter web test`, `pnpm --filter web typecheck` và `pnpm --filter web lint` xanh
