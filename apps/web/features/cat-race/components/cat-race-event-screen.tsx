@@ -77,8 +77,15 @@ type OpenDialog =
  * @returns The screen body
  */
 function EventBody({ event }: { event: CatRaceEventDetail }) {
-  const { selectedPrizeId, selectPrize, stage, durationSeconds, setDurationSeconds } =
-    useRaceStore();
+  const {
+    selectedPrizeId,
+    selectPrize,
+    stage,
+    durationSeconds,
+    setDurationSeconds,
+    isCommentaryOn,
+    setCommentaryOn,
+  } = useRaceStore();
   const charactersQuery = useCharacters();
   const deletePrize = useDeleteCatRacePrize();
   const [dialog, setDialog] = useState<OpenDialog>({ kind: "none" });
@@ -167,6 +174,8 @@ function EventBody({ event }: { event: CatRaceEventDetail }) {
             durationText={durationText}
             onDurationTextChange={changeDuration}
             isDurationValid={isDurationValid}
+            isCommentaryOn={isCommentaryOn}
+            onCommentaryChange={setCommentaryOn}
             isLocked={isBusy}
             hasPrize={selected !== undefined}
             entrantCount={selected?.entrantIds.length ?? 0}

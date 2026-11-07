@@ -9,6 +9,7 @@ import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { GUILD_CLASS_COLOR } from "@/lib/guild-class";
 import { bobOffset, legClock, legClockAt, legFrame, speedAt } from "../lib/cat-motion";
 import { catLabels } from "../lib/cat-label";
+import { cameraLayout } from "../lib/finish-camera";
 import { isShuffling, isTrotting, lanesAt, type LaneShuffle } from "../lib/lane-shuffle";
 import { INITIAL_CUE_CURSOR, nextCues, type FinishCue, type RaceCue } from "../lib/race-cue";
 import { paintCrown, paintDust, paintSpeedLines } from "../lib/paint-cat-effects";
@@ -115,8 +116,9 @@ export function RaceCanvas({
   laneOrder: shuffledOrder = null,
 }: RaceCanvasProps) {
   const isPreview = mode !== "replay";
-  // Only a preview reads it: a replay must not restart when the setting flips mid-race.
-  const isStill = useReducedMotion() && isPreview;
+  // Only a preview rebuilds on it: a replay must not restart when the setting flips mid-race.
+  const isReducedMotion = useReducedMotion();
+  const isStill = isReducedMotion && isPreview;
   const scrollRef = useRef<HTMLDivElement>(null);
   const spacerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -125,12 +127,18 @@ export function RaceCanvas({
   const cueRef = useRef(onCue);
   const skipRef = useRef(skipSignal);
   const doneRef = useRef(false);
+  // Read per frame, so flipping the setting mid-race neither restarts the replay nor needs a rebuild.
+  const cameraOnRef = useRef(!isReducedMotion);
   // The gaps are in cat bodies of the current canvas width, which only the canvas effect knows.
   const layoutRef = useRef<LaneLayout | null>(null);
   // A shuffle moves the cats on the running stage instead of rebuilding it, so the order stays out
   // of the canvas effect's dependencies and reaches it through these two refs.
   const orderRef = useRef(shuffledOrder);
   const reorderRef = useRef<((order: readonly string[] | null) => void) | null>(null);
+
+  useEffect(() => {
+    cameraOnRef.current = !isReducedMotion;
+  }, [isReducedMotion]);
 
   useEffect(() => {
     finishRef.current = onFinish;
@@ -316,6 +324,8 @@ export function RaceCanvas({
       const { layout } = current;
       const top = scroller.scrollTop;
       const lanes = visibleLanes(layout, current.laneOrder.length, top, viewHeight);
+      // The track and the cats follow the camera; the names, sky and crowd keep the real layout.
+      const camera = cameraLayout(layout, frame.u, cameraOnRef.current);
       const view = { layout, width: viewWidth, height: viewHeight, top, lanes };
       const now = frame.time * MS_PER_SECOND;
       const shuffledLanes = shuffle && isShuffling(shuffle, now) ? lanesAt(shuffle, now) : null;
@@ -348,11 +358,12 @@ export function RaceCanvas({
       context.clip();
       paintStageTrack(context, {
         ...view,
+        layout: camera,
         leaderLane: leaderKey === null ? null : current.laneOf.get(leaderKey)!,
       });
       dust = stepDust(dust, frame.dt);
       paintDust(context, dust, top);
-      const cats = frameAt(current, frame.u, shuffledLanes ?? current.laneOf);
+      const cats = frameAt({ ...current, layout: camera }, frame.u, shuffledLanes ?? current.laneOf);
       const kicked = drawCats(
         current,
         cats,

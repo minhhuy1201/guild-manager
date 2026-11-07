@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 import { GUILD_CLASS_LABEL, PRIZE_TIER_LABEL, PrizeTier } from "@guild/shared/enums";
 import type {
   CatRaceDrawResult,
@@ -16,11 +16,18 @@ import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { cn } from "@/lib/utils";
 import { catLabels } from "../lib/cat-label";
 import { PRIZE_TIER_ICON } from "../lib/prize-tier-style";
+import { isSkipKey } from "../lib/skip-key";
 import { podiumOf } from "../lib/race-podium";
-import { isUnderdog, oddsText } from "../lib/race-odds";
 import { rankAt, type RaceScript } from "../lib/race-script";
 import { RACE_END_U } from "../lib/race-timeline";
 import { confettiPlan } from "../lib/result-confetti";
+import {
+  REVEAL_CARD_MS,
+  REVEAL_SECOND_MS,
+  REVEAL_SUSPENSE_MS,
+  REVEAL_THIRD_MS,
+} from "../lib/reveal-beats";
+import { RaceReveal } from "./race-reveal";
 
 /** The tier of the card when the prize is gone from the event: the plainest one. */
 const FALLBACK_TIER = PrizeTier.LOW;
@@ -35,10 +42,14 @@ interface RaceResultOverlayProps {
   onContinue: () => void;
 }
 
+/** The moments the reveal screen changes, after the title that is there from the start. */
+const REVEAL_MILESTONES_MS = [REVEAL_THIRD_MS, REVEAL_SECOND_MS, REVEAL_SUSPENSE_MS, REVEAL_CARD_MS];
+
 /**
- * The winner card that closes a round: it builds up line by line in the colour of the prize tier,
- * with tier-sized confetti unless the viewer asked for less motion. Sits inside the stage root,
- * which owns the palette and the display font.
+ * Closes a round. A dark "official result" screen calls third and second place, then a flash opens
+ * the winner card (a click or `S` jumps to it, without the flash). The card builds up line by line
+ * in the colour of the prize tier, with tier-sized confetti. Reduced motion opens the card at once.
+ * Sits inside the stage root, which owns the palette and the display font.
  * @param event - The event, for the winner's avatar and the mode
  * @param prize - The prize that was drawn
  * @param result - The server's answer
@@ -56,6 +67,8 @@ export function RaceResultOverlay({
   onContinue,
 }: RaceResultOverlayProps) {
   const reducedMotion = useReducedMotion();
+  const [elapsedMs, setElapsedMs] = useState(0);
+  const [isSkipped, setIsSkipped] = useState(false);
   const { round } = result;
   const tier = prize?.tier ?? FALLBACK_TIER;
   const TierIcon = PRIZE_TIER_ICON[tier];
@@ -63,20 +76,35 @@ export function RaceResultOverlay({
   const avatarUrl = winner?.discordId
     ? discordAvatarUrl(winner.discordId, winner.discordAvatar)
     : null;
-  const odds = {
-    mode: event.mode,
-    winnerTickets: round.winnerTickets,
-    totalTickets: round.totalTickets,
-    entrantCount: round.entrantCount,
-  };
   // The finished race ranks the same whether or not the replay ran, so reduced motion needs no
   // board to read from.
   const podium = script
     ? podiumOf(rankAt(script, RACE_END_U), catLabels(script.cats, event.participants))
     : [];
+  const second = podium.find((entry) => entry.place === 2);
+  const third = podium.find((entry) => entry.place === 3);
+  const isCard = reducedMotion || isSkipped || elapsedMs >= REVEAL_CARD_MS;
+  const isFlashed = isCard && !reducedMotion && !isSkipped;
+
+  const handleSkipKey = useEffectEvent((event: KeyboardEvent) => {
+    if (!isSkipKey(event)) return;
+
+    setIsSkipped(true);
+  });
 
   useEffect(() => {
-    if (reducedMotion) return;
+    if (isCard) return;
+    const timers = REVEAL_MILESTONES_MS.map((at) => setTimeout(() => setElapsedMs(at), at));
+    window.addEventListener("keydown", handleSkipKey);
+
+    return () => {
+      timers.forEach(clearTimeout);
+      window.removeEventListener("keydown", handleSkipKey);
+    };
+  }, [isCard]);
+
+  useEffect(() => {
+    if (reducedMotion || !isCard) return;
     let cancelled = false;
     const timers: ReturnType<typeof setTimeout>[] = [];
     void import("canvas-confetti").then(({ default: confetti }) => {
@@ -91,10 +119,24 @@ export function RaceResultOverlay({
       cancelled = true;
       timers.forEach(clearTimeout);
     };
-  }, [reducedMotion, tier]);
+  }, [reducedMotion, isCard, tier]);
+
+  if (!isCard) {
+    return (
+      <div className="race-result" data-reveal="true">
+        <RaceReveal
+          elapsedMs={elapsedMs}
+          second={second}
+          third={third}
+          onSkip={() => setIsSkipped(true)}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="race-result">
+      {isFlashed ? <div className="race-ov race-flash" /> : null}
       <div className="race-card" data-tier={tier}>
         <p className="race-tierline race-display">
           <TierIcon aria-hidden className="size-4" />
@@ -115,7 +157,6 @@ export function RaceResultOverlay({
           {GUILD_CLASS_LABEL[round.winnerGuildClass]}
           {round.winnerTickets > 1 ? ` · mèo #${result.winningTicket}` : ""}
         </p>
-        <p className="race-odds">{oddsText(odds)}</p>
         <div className="race-podium">
           {podium.map(({ place, label }) => (
             <span key={place}>
@@ -135,7 +176,6 @@ export function RaceResultOverlay({
           {isContinuing ? <Spinner size="sm" /> : null}
           Đua tiếp
         </Button>
-        {isUnderdog(odds) ? <p className="race-stamp race-display">KÈO DƯỚI</p> : null}
       </div>
     </div>
   );

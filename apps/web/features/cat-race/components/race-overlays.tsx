@@ -15,6 +15,8 @@ const PHOTO_CATS = 2;
 
 interface RaceOverlaysProps {
   state: OverlayState;
+  /** Hides the visual lead-change bar; the live region still announces the change. */
+  isLeadBarHidden?: boolean;
   script: RaceScript;
   participants: readonly CatRaceParticipant[];
 }
@@ -23,11 +25,12 @@ interface RaceOverlaysProps {
  * The broadcast layer over the track: countdown, banners, lead-change bar, slow-motion frame,
  * finish flash and finish photo. It only reacts to the stage's state and takes no input.
  * @param props.state - What to show now
+ * @param props.isLeadBarHidden - True when the commentary bar already says it
  * @param props.script - The race, for names and the photo
  * @param props.participants - Who is racing, for names and colours
  * @returns The overlays
  */
-export function RaceOverlays({ state, script, participants }: RaceOverlaysProps) {
+export function RaceOverlays({ state, isLeadBarHidden = false, script, participants }: RaceOverlaysProps) {
   const labels = useMemo(() => catLabels(script.cats, participants), [script, participants]);
   const photoRows = useMemo<PhotoRow[]>(() => {
     if (!state.photo) return [];
@@ -66,7 +69,7 @@ export function RaceOverlays({ state, script, participants }: RaceOverlaysProps)
       <div className="race-ov race-display race-slowmo" data-on={state.isSlow}>
         CHẬM ×3
       </div>
-      {state.leadToast ? (
+      {state.leadToast && !isLeadBarHidden ? (
         <div key={state.leadToast.id} className="race-ov race-lead-bar" aria-hidden>
           <b className="race-display">ĐỔI NGÔI</b>
           <span>
