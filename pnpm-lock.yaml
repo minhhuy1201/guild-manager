@@ -156,8 +156,8 @@ importers:
         specifier: ^11.2.8
         version: 11.2.8(@nestjs/common@11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.2.8)(supports-color@8.1.1)
       '@nestjs/swagger':
-        specifier: ^11.4.7
-        version: 11.4.7(@nestjs/common@11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.2.8)(reflect-metadata@0.2.2)
+        specifier: ^11.4.8
+        version: 11.4.8(@nestjs/common@11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.2.8)(reflect-metadata@0.2.2)
       '@prisma/adapter-pg':
         specifier: ^7.10.1
         version: 7.10.1
@@ -165,11 +165,11 @@ importers:
         specifier: ^7.10.1
         version: 7.10.1(prisma@7.10.1(@types/node@26.6.6)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(magicast@0.5.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@5.9.3))(typescript@5.9.3)
       '@vercel/functions':
-        specifier: ^3.10.5
-        version: 3.10.6(ws@8.21.3)
+        specifier: ^3.11.0
+        version: 3.11.0(ws@8.21.3)
       nestjs-zod:
         specifier: ^5.5.0
-        version: 5.5.0(@nestjs/common@11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/swagger@11.4.7(@nestjs/common@11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.2.8)(reflect-metadata@0.2.2))(rxjs@7.8.2)(zod@4.6.7)
+        version: 5.5.0(@nestjs/common@11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/swagger@11.4.8(@nestjs/common@11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.2.8)(reflect-metadata@0.2.2))(rxjs@7.8.2)(zod@4.6.7)
       pg:
         specifier: ^8.23.1
         version: 8.23.1
@@ -220,8 +220,8 @@ importers:
         specifier: ^10.0.1
         version: 10.1.8(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))
       eslint-plugin-boundaries:
-        specifier: ^7.4.0
-        version: 7.4.1(@typescript-eslint/parser@8.72.1(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))(supports-color@8.1.1)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))(supports-color@8.1.1)
+        specifier: ^7.4.2
+        version: 7.4.2(@typescript-eslint/parser@8.72.1(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))(supports-color@8.1.1)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))(supports-color@8.1.1)
       eslint-plugin-prettier:
         specifier: ^5.5.7
         version: 5.5.7(@types/eslint@9.6.1)(eslint-config-prettier@10.1.8(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1)))(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))(prettier@3.9.10)
@@ -750,12 +750,24 @@ packages:
     resolution: {integrity: sha512-DzXyKWBe3z8ea7SSMVGy7EOFYelcOgL1UBXpwiEyFrsY+oG8qxpADGdw1Q6R5BdD6S+3kXjtcndbAMFwlcC5WA==}
     engines: {node: '>=18.18'}
 
+  '@boundaries/config@1.0.1':
+    resolution: {integrity: sha512-E4mNbeBF2yQOEaKgo8uoFJN63zfEro01biHLS18CWvQbtIesi9l8lLgvak8ReTfAZZZMIsLW5RspMbSCTeuapQ==}
+    engines: {node: '>=18.18'}
+
   '@boundaries/elements@3.3.1':
     resolution: {integrity: sha512-q0qVarcxxJv+J/ieJMjFie1N72kfOXQoHbKQentPDRSZkW9HwntOr6fj7u+g9q+IzSk3RXL+yp4CFRGDfPzDQg==}
     engines: {node: '>=18.18'}
 
+  '@boundaries/elements@3.3.2':
+    resolution: {integrity: sha512-5XMqT2B67g9NgatMy1fZwjc06O9edH3JCeOfiFJKkRgNZUI7BhrqBBNmSDkqXdrYk0JA8Lrkv1fmock7GaQHwg==}
+    engines: {node: '>=18.18'}
+
   '@boundaries/policies@1.0.0':
     resolution: {integrity: sha512-F3ydzYxBX5bBwyZjUjH1c40FRY9Uw3by8pnJBKVdCHwBlJRY0He2msLLssezWaTcLEdlIcdz4iDx03I7rpXPcw==}
+    engines: {node: '>=18.18'}
+
+  '@boundaries/policies@1.0.1':
+    resolution: {integrity: sha512-YTrpD9h/GEiCpVLWiFjvdclf2rZMz5UIjH2BC7V5+6GFYIOrITkW/yj+lAVnMjAhW7RTSARC2YBOpBcySMnJ7g==}
     engines: {node: '>=18.18'}
 
   '@bramus/specificity@2.4.2':
@@ -1584,8 +1596,8 @@ packages:
     resolution: {integrity: sha512-Z7C/xXCiGWsg0KuKsHTKJxbWhpI3Vs5GwLfOean7MGyVFGqdRgBbAjOCh6u4bbjPc/8MJ2pZmK/0DLdCbivLDA==}
     engines: {node: '>=8'}
 
-  '@microsoft/tsdoc@0.16.0':
-    resolution: {integrity: sha512-xgAyonlVVS+q7Vc7qLW0UrJU7rSFcETRWsqdXZtjzRU8dF+6CkozTK4V4y1LwOX7j8r/vHphjDeMeGI4tNGeGA==}
+  '@microsoft/tsdoc@0.17.1':
+    resolution: {integrity: sha512-VHyYyyoH63jFoO3shpw9Zfijk5v/9p/VrClW35z0/q6ooK7sSmxpzOkS4iZPxs3vO4XtBW4H38HRAKkAMIK7DA==}
 
   '@modelcontextprotocol/core@2.4.0':
     resolution: {integrity: sha512-z8QBKqdfXLPzkLQuG4xp8hrVEMm1PZ1IgxMN2sMbJiFiAKOWXnAzogXn2W4aqIBlP1ea6U5yiqVquvUNM1Cj6Q==}
@@ -1703,8 +1715,8 @@ packages:
       prettier:
         optional: true
 
-  '@nestjs/swagger@11.4.7':
-    resolution: {integrity: sha512-QyDYnmfP4IRucgmtQxMqzgRBdWtjFoDp8eFvvgf92+3wdLCL+Q0xOFO1948j/ntW/Wi7qT2dyck6ka8ADzPWQQ==}
+  '@nestjs/swagger@11.4.8':
+    resolution: {integrity: sha512-5Vd4/dPvrWCSRTjrXsfoemir9Mva1Pg5hZiUQ80+9mDkxlJBpK2Lpn4OVfM4g+TJeQwIwNgSHC47B5em75Jn3g==}
     peerDependencies:
       '@fastify/static': ^8.0.0 || ^9.0.0 || ^10.0.0
       '@nestjs/common': ^11.0.1
@@ -2950,15 +2962,15 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@vercel/cli-config@0.3.6':
-    resolution: {integrity: sha512-jKsEWixJ+yMs2V29fqFxeDTQDglsgj7hvSXJf9pPmyYISvuTpTt45j/g47O6RWbe7aJycPbDOk7uKPHPA+LDYg==}
+  '@vercel/cli-config@0.3.7':
+    resolution: {integrity: sha512-bHFJcUF2sUsB/6XfS+BWAYjD7DIt1xyhz6oOAvGEBua0S4P+pKQ04O6vZ3jLw1HMX1ZNKP9lyGpoiqgToqI7GQ==}
 
   '@vercel/cli-exec@1.0.1':
     resolution: {integrity: sha512-g9XerViJ/paZujufXYcu5XYI2vU2rtB4sgdpjUHde5RnOkdmpu0ngH46LCFGHoPXO/C+qDPSczIHIRN+8Q2YKQ==}
     engines: {node: '>= 18'}
 
-  '@vercel/functions@3.10.6':
-    resolution: {integrity: sha512-E6oojSTJALDq703E0R1ijZzX2ibZYYwRwLCq/9+FIdArpjJzQEy2nT3rGCV8H3mgU45wbjCd8iSdjpLtGjGvrw==}
+  '@vercel/functions@3.11.0':
+    resolution: {integrity: sha512-LKwNcV4Jwb8GpovADePfassmsR2gRL5OeKcQzrWfLOJaRX3MHbeUPqAurCAneKrKa8hxnWa4H5bCFreLSvHedA==}
     engines: {node: '>= 20'}
     peerDependencies:
       '@aws-sdk/credential-provider-web-identity': '*'
@@ -2973,8 +2985,8 @@ packages:
     resolution: {integrity: sha512-UycprH3T6n3jH0k44NHMa7pnFHGu/N05MjojYr+Mc6I7obkoLIJujSWwin1pCvdy/eOxrI/l3uDLQsmcrOb4ug==}
     engines: {node: '>= 20'}
 
-  '@vercel/oidc@4.0.6':
-    resolution: {integrity: sha512-VlrMq9V20Sts9PRYeeh7d8+QCuTvDgujZ0OyakfEJkM7NpQTW+x2IFvVWGJzg+84RhFFa2kKir6gw5E4EcTsuw==}
+  '@vercel/oidc@4.0.7':
+    resolution: {integrity: sha512-ZiplzlXLWdKPj36yp23LBwaKWt4hR+kNULULeMVwtrx+iDpxnMk1nFKiHEtUWRjGpnqi/rDGwtnE/Xkfl9xXvQ==}
     engines: {node: '>= 20'}
 
   '@visx/curve@4.0.1-alpha.0':
@@ -4026,6 +4038,12 @@ packages:
 
   eslint-plugin-boundaries@7.4.1:
     resolution: {integrity: sha512-skEsajABUNrZSKy30MNiVJVh52dym1vZ08Xb8MI/B2DanocVS+ajpkuGLXln+wJft8k+03YVm5Uycp7hxc7xVQ==}
+    engines: {node: '>=18.18'}
+    peerDependencies:
+      eslint: '>=6.0.0'
+
+  eslint-plugin-boundaries@7.4.2:
+    resolution: {integrity: sha512-gf0Z+FfkccqyVAmwjWdqWfpvy9y4hrUiXcF4DrC5S6fSjUhpyO/ncnvVbxyeNy0DlxNKaEnrld2+hrNwSSgXMw==}
     engines: {node: '>=18.18'}
     peerDependencies:
       eslint: '>=6.0.0'
@@ -6425,8 +6443,8 @@ packages:
     resolution: {integrity: sha512-ot0WnXS9fgdkgIcePe6RHNk1WA8+muPa6cSjeR3V8K27q9BB1rTE3R1p7Hv0z1ZyAc8s6Vvv8DIyWf681MAt0w==}
     engines: {node: '>= 0.4'}
 
-  swagger-ui-dist@5.32.13:
-    resolution: {integrity: sha512-qQobzb3DeC2LeK0j3E8812Ef4aIq1y9flJxvZkimkqUC/w4u7wS+yCc+VakqGJLweUUBrI24effhwo8OsAvNAw==}
+  swagger-ui-dist@5.34.1:
+    resolution: {integrity: sha512-VSr8fXfI93obYaQicLJbLUKGRxDojj/SfRJDDLCioGTUBj4BK/Nj4eE9jCeCAnJxVLi7iS+08PbiZLyrQKBkJQ==}
 
   synckit@0.11.13:
     resolution: {integrity: sha512-eNRKgb3z66Yp3D2CixVujOUvXLFUTij/zVnV8KRyvFdQwpz7I5DS8UfRkTeLzb64u+dkzDSdelE24izu+zSSUg==}
@@ -7458,7 +7476,18 @@ snapshots:
       '@boundaries/elements': 3.3.1
       ajv: 6.15.0
 
+  '@boundaries/config@1.0.1':
+    dependencies:
+      '@boundaries/elements': 3.3.2
+      ajv: 6.15.0
+
   '@boundaries/elements@3.3.1':
+    dependencies:
+      handlebars: 4.7.10
+      is-core-module: 2.17.0
+      picomatch: 4.0.7
+
+  '@boundaries/elements@3.3.2':
     dependencies:
       handlebars: 4.7.10
       is-core-module: 2.17.0
@@ -7468,6 +7497,12 @@ snapshots:
     dependencies:
       '@boundaries/config': 1.0.0
       '@boundaries/elements': 3.3.1
+      handlebars: 4.7.10
+
+  '@boundaries/policies@1.0.1':
+    dependencies:
+      '@boundaries/config': 1.0.1
+      '@boundaries/elements': 3.3.2
       handlebars: 4.7.10
 
   '@bramus/specificity@2.4.2':
@@ -8379,7 +8414,7 @@ snapshots:
 
   '@lukeed/csprng@1.1.0': {}
 
-  '@microsoft/tsdoc@0.16.0': {}
+  '@microsoft/tsdoc@0.17.1': {}
 
   '@modelcontextprotocol/core@2.4.0':
     dependencies:
@@ -8513,9 +8548,9 @@ snapshots:
     transitivePeerDependencies:
       - chokidar
 
-  '@nestjs/swagger@11.4.7(@nestjs/common@11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.2.8)(reflect-metadata@0.2.2)':
+  '@nestjs/swagger@11.4.8(@nestjs/common@11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.2.8)(reflect-metadata@0.2.2)':
     dependencies:
-      '@microsoft/tsdoc': 0.16.0
+      '@microsoft/tsdoc': 0.17.1
       '@nestjs/common': 11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)
       '@nestjs/core': 11.2.8(@nestjs/common@11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/platform-express@11.2.8)(reflect-metadata@0.2.2)(rxjs@7.8.2)
       '@nestjs/mapped-types': 2.1.1(@nestjs/common@11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(reflect-metadata@0.2.2)
@@ -8523,7 +8558,7 @@ snapshots:
       lodash: 4.18.1
       path-to-regexp: 8.4.2
       reflect-metadata: 0.2.2
-      swagger-ui-dist: 5.32.13
+      swagger-ui-dist: 5.34.1
 
   '@nestjs/testing@11.2.8(@nestjs/common@11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.2.8)(@nestjs/platform-express@11.2.8)':
     dependencies:
@@ -9650,7 +9685,7 @@ snapshots:
   '@unrs/resolver-binding-win32-x64-msvc@1.12.2':
     optional: true
 
-  '@vercel/cli-config@0.3.6':
+  '@vercel/cli-config@0.3.7':
     dependencies:
       xdg-app-paths: 5.5.1
       zod: 4.6.7
@@ -9659,17 +9694,17 @@ snapshots:
     dependencies:
       execa: 5.1.1
 
-  '@vercel/functions@3.10.6(ws@8.21.3)':
+  '@vercel/functions@3.11.0(ws@8.21.3)':
     dependencies:
-      '@vercel/oidc': 4.0.6
+      '@vercel/oidc': 4.0.7
     optionalDependencies:
       ws: 8.21.3
 
   '@vercel/oidc@3.2.0': {}
 
-  '@vercel/oidc@4.0.6':
+  '@vercel/oidc@4.0.7':
     dependencies:
-      '@vercel/cli-config': 0.3.6
+      '@vercel/cli-config': 0.3.7
       '@vercel/cli-exec': 1.0.1
       jose: 5.10.0
 
@@ -10908,11 +10943,11 @@ snapshots:
       - eslint-import-resolver-webpack
       - supports-color
 
-  eslint-plugin-boundaries@7.4.1(@typescript-eslint/parser@8.72.1(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))(supports-color@8.1.1)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))(supports-color@8.1.1):
+  eslint-plugin-boundaries@7.4.2(@typescript-eslint/parser@8.72.1(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))(supports-color@8.1.1)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@10.14.0(jiti@2.7.0)(supports-color@8.1.1))(supports-color@8.1.1):
     dependencies:
-      '@boundaries/config': 1.0.0
-      '@boundaries/elements': 3.3.1
-      '@boundaries/policies': 1.0.0
+      '@boundaries/config': 1.0.1
+      '@boundaries/elements': 3.3.2
+      '@boundaries/policies': 1.0.1
       chalk: 4.1.2
       eslint: 10.14.0(jiti@2.7.0)(supports-color@8.1.1)
       eslint-import-resolver-node: 0.3.9(supports-color@8.1.1)
@@ -12685,14 +12720,14 @@ snapshots:
 
   neo-async@2.6.2: {}
 
-  nestjs-zod@5.5.0(@nestjs/common@11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/swagger@11.4.7(@nestjs/common@11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.2.8)(reflect-metadata@0.2.2))(rxjs@7.8.2)(zod@4.6.7):
+  nestjs-zod@5.5.0(@nestjs/common@11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/swagger@11.4.8(@nestjs/common@11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.2.8)(reflect-metadata@0.2.2))(rxjs@7.8.2)(zod@4.6.7):
     dependencies:
       '@nestjs/common': 11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1)
       deepmerge: 4.3.1
       rxjs: 7.8.2
       zod: 4.6.7
     optionalDependencies:
-      '@nestjs/swagger': 11.4.7(@nestjs/common@11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.2.8)(reflect-metadata@0.2.2)
+      '@nestjs/swagger': 11.4.8(@nestjs/common@11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@8.1.1))(@nestjs/core@11.2.8)(reflect-metadata@0.2.2)
 
   next-themes@0.4.6(react-dom@19.3.1(react@19.3.1))(react@19.3.1):
     dependencies:
@@ -13796,7 +13831,7 @@ snapshots:
 
   supports-preserve-symlinks-flag@1.0.0: {}
 
-  swagger-ui-dist@5.32.13:
+  swagger-ui-dist@5.34.1:
     dependencies:
       '@scarf/scarf': 1.4.0
 
