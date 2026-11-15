@@ -22,6 +22,11 @@ export const INTERACTION_RESPONSE_TYPE = {
   /** A message visible in the channel the command was used in */
   channelMessageWithSource: 4,
   /**
+   * Acknowledge now, answer later: Discord shows "thinking" until the original response is edited.
+   * The only way to outlast the 3-second window.
+   */
+  deferredChannelMessageWithSource: 5,
+  /**
    * Rewrite the message the component sits on, instead of sending a new one.
    * Pressing three buttons then leaves one message showing the latest state, not three.
    */

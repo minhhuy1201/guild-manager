@@ -9,6 +9,8 @@ import { NOT_GRANTED, requireCommand } from '../require-command';
 const INTERACTION = {
   type: 2 as const,
   channel_id: '424242',
+  application_id: '777',
+  token: 'interaction-token',
   data: { name: 'thong-bao' },
   member: { user: { id: '111' } },
 };

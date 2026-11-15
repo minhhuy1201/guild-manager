@@ -70,12 +70,16 @@ describe('interactionSchema', () => {
     const parsed = interactionSchema.parse({
       type: 2,
       channel_id: '424242',
+      application_id: '777',
+      token: 'interaction-token',
       data: { name: 'ping', id: '123' },
     });
 
     expect(parsed).toEqual({
       type: 2,
       channel_id: '424242',
+      application_id: '777',
+      token: 'interaction-token',
       data: { name: 'ping' },
     });
   });
@@ -125,6 +129,8 @@ describe('callerDiscordId', () => {
     const parsed = interactionSchema.parse({
       type: 2,
       channel_id: '424242',
+      application_id: '777',
+      token: 'interaction-token',
       data: { name: 'diem-danh' },
       member: { user: { id: '111' } },
     });
@@ -138,6 +144,8 @@ describe('callerDiscordId', () => {
     const parsed = interactionSchema.parse({
       type: 2,
       channel_id: '424242',
+      application_id: '777',
+      token: 'interaction-token',
       data: { name: 'diem-danh' },
       user: { id: '222' },
     });
@@ -153,6 +161,8 @@ describe('callerDiscordId', () => {
     const parsed = interactionSchema.parse({
       type: 2,
       channel_id: '424242',
+      application_id: '777',
+      token: 'interaction-token',
       data: { name: 'diem-danh' },
     });
 
@@ -167,6 +177,8 @@ describe('invokedSubcommand', () => {
     const parsed = interactionSchema.parse({
       type: 2,
       channel_id: '424242',
+      application_id: '777',
+      token: 'interaction-token',
       data: {
         name: 'khao-sat-luu-phai',
         options: [
@@ -202,6 +214,8 @@ describe('invokedSubcommand', () => {
       interactionSchema.parse({
         type: 2,
         channel_id: '424242',
+        application_id: '777',
+        token: 'interaction-token',
         data: { name: 'diem-danh-ho', options: [option] },
         member: { user: { id: '111' } },
       }),
@@ -212,6 +226,8 @@ describe('invokedSubcommand', () => {
     const parsed = interactionSchema.parse({
       type: 2,
       channel_id: '424242',
+      application_id: '777',
+      token: 'interaction-token',
       data: {
         name: 'khao-sat-luu-phai',
         options: [{ name: 'nhac', type: 1, options: [] }],
@@ -228,6 +244,8 @@ describe('invokedSubcommand', () => {
     const parsed = interactionSchema.parse({
       type: 2,
       channel_id: '424242',
+      application_id: '777',
+      token: 'interaction-token',
       data: {
         name: 'diem-danh-ho',
         options: [{ name: 'nguoi', type: 6, value: '999' }],
@@ -246,6 +264,8 @@ describe('commandOptionValue', () => {
     const parsed = interactionSchema.parse({
       type: 2,
       channel_id: '424242',
+      application_id: '777',
+      token: 'interaction-token',
       data: {
         name: 'diem-danh-ho',
         options: [{ name: 'nguoi', type: 6, value: '999' }],
@@ -262,6 +282,8 @@ describe('commandOptionValue', () => {
     const parsed = interactionSchema.parse({
       type: 2,
       channel_id: '424242',
+      application_id: '777',
+      token: 'interaction-token',
       data: { name: 'diem-danh' },
       member: { user: { id: '111' } },
     });
@@ -271,11 +293,42 @@ describe('commandOptionValue', () => {
     ).toBeNull();
   });
 
+  describe('addressing the original response', () => {
+    const base = {
+      type: 2,
+      channel_id: '424242',
+      data: { name: 'nhac-diem-danh' },
+      member: { user: { id: '111' } },
+    };
+
+    it('đọc ra application_id và token của interaction', () => {
+      const parsed = interactionSchema.parse({
+        ...base,
+        application_id: '777',
+        token: 'interaction-token',
+      });
+
+      expect(parsed).toMatchObject({
+        application_id: '777',
+        token: 'interaction-token',
+      });
+    });
+
+    it.each([
+      ['application_id', { token: 'interaction-token' }],
+      ['token', { application_id: '777' }],
+    ])('từ chối một lệnh không mang %s', (_name, rest) => {
+      expect(() => interactionSchema.parse({ ...base, ...rest })).toThrow();
+    });
+  });
+
   describe('channel_id', () => {
     it('đọc ra channel nơi lệnh được gõ', () => {
       const parsed = interactionSchema.parse({
         type: 2,
         channel_id: '424242',
+        application_id: '777',
+        token: 'interaction-token',
         data: { name: 'cau-hinh-kenh' },
         member: { user: { id: '111' } },
       });

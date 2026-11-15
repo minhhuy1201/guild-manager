@@ -1,5 +1,6 @@
 import { HttpException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { waitUntil } from '@vercel/functions';
 
 import { assertNever, Clock } from '../../common';
 import type { Env } from '../../config';
@@ -26,6 +27,9 @@ import { commands } from './commands';
 import type {
   CommandDeps,
   CommandReply,
+  CommandResult,
+  DeferredReply,
+  MessagePayload,
   ModalReply,
   UpdateMessageReply,
 } from './commands/command.types';
@@ -46,6 +50,7 @@ import {
   INTERACTION_TYPE,
 } from './discord.constants';
 import {
+  type ApplicationCommandInteraction,
   callerDiscordId,
   type Interaction,
   type MessageComponentInteraction,
@@ -60,7 +65,10 @@ interface PongReply {
 
 /** Everything the bot may answer an interaction with. */
 export type InteractionReply =
-  PongReply | CommandReply | UpdateMessageReply | ModalReply;
+  PongReply | CommandReply | DeferredAck | UpdateMessageReply | ModalReply;
+
+/** What Discord receives for a deferred command: the acknowledgement, never the background work. */
+type DeferredAck = Omit<DeferredReply, 'followUp'>;
 
 /** Shown when something failed that the user can do nothing about. */
 const UNEXPECTED = 'Có lỗi xảy ra. Thử lại sau hoặc điểm danh trên web.';
@@ -146,7 +154,10 @@ export class InteractionRouter {
           );
         }
 
-        return command.execute(interaction, this.deps);
+        return this.settle(
+          interaction,
+          await command.execute(interaction, this.deps),
+        );
       }
 
       case INTERACTION_TYPE.messageComponent:
@@ -157,6 +168,73 @@ export class InteractionRouter {
 
       default:
         return assertNever(interaction, 'Interaction type ngoài dự kiến');
+    }
+  }
+
+  /**
+   * Turn a command's result into the HTTP reply, starting the background work of a deferred one.
+   *
+   * `waitUntil` keeps the Vercel Function alive after the response is sent, which is the only
+   * reason a deferred reply can outlast the request.
+   *
+   * @param interaction - The command invocation, whose token addresses the original response
+   * @param result - What the command returned
+   * @returns The reply for Discord
+   */
+  private settle(
+    interaction: ApplicationCommandInteraction,
+    result: CommandResult,
+  ): InteractionReply {
+    switch (result.type) {
+      case INTERACTION_RESPONSE_TYPE.channelMessageWithSource:
+        return result;
+
+      case INTERACTION_RESPONSE_TYPE.deferredChannelMessageWithSource:
+        waitUntil(this.finishDeferred(interaction, result.followUp));
+
+        return { type: result.type, data: result.data };
+
+      default:
+        return assertNever(result, 'Kết quả lệnh ngoài dự kiến');
+    }
+  }
+
+  /**
+   * Run a deferred command's follow-up and edit the original response with its result.
+   *
+   * Never rejects: this promise is handed to `waitUntil`, where nobody could act on a rejection, so
+   * every failure ends in the log - and in a generic sentence for the user when the work itself
+   * failed, so the "thinking" state does not hang until the token expires.
+   *
+   * @param interaction - The command invocation
+   * @param followUp - The command's slow work
+   */
+  private async finishDeferred(
+    interaction: ApplicationCommandInteraction,
+    followUp: () => Promise<MessagePayload>,
+  ): Promise<void> {
+    let payload: MessagePayload;
+
+    try {
+      payload = await followUp();
+    } catch (error) {
+      this.logger.error('Việc nền của lệnh Discord thất bại', error as Error);
+      payload = {
+        content: error instanceof HttpException ? error.message : UNEXPECTED,
+      };
+    }
+
+    try {
+      await this.rest.editOriginalResponse(
+        interaction.application_id,
+        interaction.token,
+        payload,
+      );
+    } catch (error) {
+      this.logger.error(
+        'Sửa câu trả lời gốc của Discord thất bại',
+        error as Error,
+      );
     }
   }
 

@@ -6,9 +6,11 @@ import type { CommandDeps } from '../commands/command.types';
 import { MESSAGE_FLAG } from '../discord.constants';
 import { DiscordApiError } from '../discord-rest';
 
-const INTERACTION = {
+const BARE_INTERACTION = {
   type: 2 as const,
   channel_id: '424242',
+  application_id: '777',
+  token: 'interaction-token',
   data: { name: 'cau-hinh-kenh' },
   member: { user: { id: '111' } },
 };
@@ -20,13 +22,15 @@ const INTERACTION = {
  */
 function withPurpose(value: string) {
   return {
-    ...INTERACTION,
+    ...BARE_INTERACTION,
     data: {
       name: 'cau-hinh-kenh',
       options: [{ name: 'muc-dich', type: 3, value }],
     },
   };
 }
+
+const INTERACTION = withPurpose('ADMIN_ALERT');
 
 /**
  * A resolved actor carrying the given role.
@@ -67,8 +71,30 @@ describe('/cau-hinh-kenh', () => {
 
     expect(postMessage).toHaveBeenCalledTimes(1);
     expect(postMessage).toHaveBeenCalledWith('424242', expect.anything());
-    expect(set).toHaveBeenCalledWith('ATTENDANCE_REMINDER', '424242');
+    expect(set).toHaveBeenCalledWith('ADMIN_ALERT', '424242');
     expect(reply.data.flags).toBe(MESSAGE_FLAG.ephemeral);
+  });
+
+  // The old default pointed at the reminder channel, which no longer exists.
+  it('muc-dich là option bắt buộc, chỉ còn hai lựa chọn', () => {
+    const [option] = cauHinhKenhCommand.definition.options ?? [];
+
+    expect(option.required).toBe(true);
+    expect(option.choices?.map((choice) => choice.value)).toEqual([
+      'ADMIN_ALERT',
+      'GENERAL_NOTI',
+    ]);
+  });
+
+  it('thiếu muc-dich: ném lỗi nhắc discord:register, không lưu gì', async () => {
+    const postMessage = jest.fn();
+    const { deps, set } = makeDeps(actor(GuildRole.ADMIN), postMessage);
+
+    await expect(
+      cauHinhKenhCommand.execute(BARE_INTERACTION, deps),
+    ).rejects.toThrow('discord:register');
+    expect(set).not.toHaveBeenCalled();
+    expect(postMessage).not.toHaveBeenCalled();
   });
 
   // A permission mistake has to surface while configuring, not at 09:00 the next morning in a log
@@ -122,11 +148,14 @@ describe('/cau-hinh-kenh', () => {
     expect(postMessage).not.toHaveBeenCalled();
   });
 
-  it('muc-dich = ADMIN_ALERT: đặt kênh admin, tin xác nhận của admin', async () => {
+  it('muc-dich = ADMIN_ALERT: đặt kênh admin, nói rõ kênh nhận cả lỗi lẫn người không nhận được tin nhắc', async () => {
     const postMessage = jest.fn().mockResolvedValue(undefined);
     const { deps, set } = makeDeps(actor(GuildRole.ADMIN), postMessage);
 
-    await cauHinhKenhCommand.execute(withPurpose('ADMIN_ALERT'), deps);
+    const reply = await cauHinhKenhCommand.execute(
+      withPurpose('ADMIN_ALERT'),
+      deps,
+    );
 
     expect(set).toHaveBeenCalledWith('ADMIN_ALERT', '424242');
     const [, message] = postMessage.mock.calls[0] as [
@@ -134,6 +163,9 @@ describe('/cau-hinh-kenh', () => {
       { content: string },
     ];
     expect(message.content).toContain('báo lỗi cho admin');
+    expect(reply.data.content).toBe(
+      'Đã lưu. Từ giờ bot sẽ báo lỗi và danh sách người không nhận được tin nhắc điểm danh trong channel này.',
+    );
   });
 
   it('muc-dich = GENERAL_NOTI: đặt kênh thông báo chung, tin xác nhận đúng câu', async () => {
@@ -159,7 +191,7 @@ describe('/cau-hinh-kenh', () => {
     expect(postMessage).not.toHaveBeenCalled();
   });
 
-  it.each(['ATTENDANCE_REMINDER', 'ADMIN_ALERT'])(
+  it.each(['ADMIN_ALERT', 'GENERAL_NOTI'])(
     'tin xác nhận bị từ chối: không lưu (%s)',
     async (purpose) => {
       const postMessage = jest

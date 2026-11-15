@@ -201,6 +201,38 @@ export class DiscordRestClient {
   }
 
   /**
+   * Replace the original response of an interaction - the "thinking" state of a deferred reply.
+   *
+   * The edited message keeps the privacy chosen when the reply was deferred. The interaction token
+   * stays out of the error: it is a credential for 15 minutes and errors reach the log.
+   *
+   * @param applicationId - Application id from the interaction payload
+   * @param interactionToken - Token from the interaction payload
+   * @param payload - The message that replaces the original response
+   * @returns A promise resolving once Discord has accepted the edit
+   * @throws DiscordApiError when Discord rejects the call
+   */
+  async editOriginalResponse(
+    applicationId: string,
+    interactionToken: string,
+    payload: MessagePayload,
+  ): Promise<void> {
+    const response = await fetch(
+      `${DISCORD_API_BASE}/webhooks/${applicationId}/${interactionToken}/messages/@original`,
+      {
+        method: 'PATCH',
+        // No bot token: the interaction token in the path is the credential, and Discord's webhook
+        // routes "do not require a bot user or authentication".
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      },
+    );
+
+    await this.ensureAccepted(`interaction:${applicationId}`, response);
+  }
+
+  /**
    * Post a message into a channel.
    * @param channelId - Discord channel id
    * @param payload - The message body, the same shape an interaction reply carries

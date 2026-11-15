@@ -1,32 +1,55 @@
-import { DiscordApiError } from '../discord-rest';
+import { MAX_CONTENT_LENGTH } from '../discord.constants';
 import {
-  REMINDER_NO_CHANNEL_ALERT,
+  hasUndelivered,
   reminderFailureText,
+  reminderUndeliveredText,
+  undeliveredLines,
 } from '../reminder-alert';
 
 describe('reminderFailureText', () => {
-  it('403 của Discord nói về quyền Send Messages', () => {
-    expect(reminderFailureText(new DiscordApiError(403, '1', '{}'))).toContain(
-      'Send Messages',
-    );
-  });
+  it('chỉ cách nhắc bù và không nhắc tới kênh nhắc', () => {
+    const text = reminderFailureText();
 
-  it('lỗi khác không lộ message gốc', () => {
-    const text = reminderFailureText(
-      new Error('connect ECONNREFUSED 10.0.0.1:5432'),
-    );
-
-    expect(text).toContain('lỗi hệ thống');
-    expect(text).not.toContain('ECONNREFUSED');
-  });
-
-  it('Discord 500 rơi vào nhánh lỗi khác', () => {
-    expect(reminderFailureText(new DiscordApiError(500, '1', '{}'))).toContain(
-      'lỗi hệ thống',
-    );
+    expect(text).toContain('/nhac-diem-danh');
+    expect(text).not.toContain('Send Messages');
   });
 });
 
-it('thiếu kênh nhắc chỉ cách sửa', () => {
-  expect(REMINDER_NO_CHANNEL_ALERT).toContain('/cau-hinh-kenh');
+describe('undelivered groups', () => {
+  const groups = {
+    unlinked: ['Chim Sẻ'],
+    blocked: ['Cún Con', 'Mèo Béo'],
+    unsent: [],
+  };
+
+  it('chỉ liệt kê nhóm có người', () => {
+    const lines = undeliveredLines(groups);
+
+    expect(lines).toHaveLength(2);
+    expect(lines[0]).toContain('Chim Sẻ');
+    expect(lines[1]).toContain('Cún Con, Mèo Béo');
+  });
+
+  it('hasUndelivered đúng khi có và không có người', () => {
+    expect(hasUndelivered(groups)).toBe(true);
+    expect(hasUndelivered({ unlinked: [], blocked: [], unsent: [] })).toBe(
+      false,
+    );
+  });
+
+  it('cắt theo giới hạn ký tự dù bang đông', () => {
+    const names = Array.from(
+      { length: 400 },
+      (_, index) => `Thành Viên Số ${index} Tên Hơi Dài`,
+    );
+
+    const text = reminderUndeliveredText({
+      unlinked: names,
+      blocked: names,
+      unsent: names,
+    });
+
+    expect(text.length).toBeLessThanOrEqual(MAX_CONTENT_LENGTH);
+    expect(text).toContain('người nữa');
+  });
 });

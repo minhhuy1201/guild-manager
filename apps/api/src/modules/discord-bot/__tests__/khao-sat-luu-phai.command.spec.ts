@@ -26,6 +26,8 @@ function invocation(han: string) {
   return {
     type: 2 as const,
     channel_id: '424242',
+    application_id: '777',
+    token: 'interaction-token',
     data: {
       name: 'khao-sat-luu-phai',
       options: [
@@ -207,6 +209,8 @@ describe('/khao-sat-luu-phai mo', () => {
 const REMIND = {
   type: 2 as const,
   channel_id: '424242',
+  application_id: '777',
+  token: 'interaction-token',
   data: {
     name: 'khao-sat-luu-phai',
     options: [{ name: 'nhac', type: 1 as const, options: [] }],

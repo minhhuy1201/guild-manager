@@ -58,6 +58,13 @@ const applicationCommandInteractionSchema = z.object({
    * always sends it for a command used in a server — the bot registers guild commands only.
    */
   channel_id: z.string().min(1),
+  /**
+   * Application and token of this interaction: together they address the original response, which
+   * a deferred command edits once its background work is done. Discord sends both on every
+   * interaction, and the token lives 15 minutes.
+   */
+  application_id: z.string().min(1),
+  token: z.string().min(1),
   data: z.object({
     name: z.string().min(1),
     options: z

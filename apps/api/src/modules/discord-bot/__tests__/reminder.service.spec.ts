@@ -3,10 +3,8 @@ import type { BattleSession } from '@guild/shared/schemas';
 import { FixedClock } from '../../../common';
 import type { MessagePayload } from '../commands/command.types';
 import { DiscordApiError } from '../discord-rest';
-import {
-  REMINDER_NO_CHANNEL_ALERT,
-  reminderFailureText,
-} from '../reminder-alert';
+import { reminderFailureText } from '../reminder-alert';
+import { DmSenderService } from '../dm-sender.service';
 import { ReminderService } from '../reminder.service';
 
 /** 09:00 Vietnam time on Friday 04/09/2026 - the morning of the Bang Chiến's 12:00 deadline. */
@@ -40,7 +38,6 @@ function session(overrides: Partial<BattleSession> = {}): BattleSession {
 }
 
 interface Options {
-  channelId?: string | null;
   adminChannelId?: string | null;
   adminChannelGet?: jest.Mock;
   sessions?: BattleSession[];
@@ -52,12 +49,21 @@ interface Options {
   }[];
   members?: { id: string; name: string; discordId: string | null }[];
   now?: Date;
+  /** Discord's refusal when opening a DM, by Discord ID; anyone absent receives theirs. */
+  dmErrors?: Record<string, Error>;
+  sendAllError?: Error;
+}
+
+/** One DM handed to the sender. */
+interface SentDm {
+  discordId: string;
+  payload: MessagePayload;
 }
 
 /**
  * Build the service around stubbed collaborators.
  * @param options - What each collaborator resolves to
- * @returns The service plus the postMessage mock, for assertions
+ * @returns The service plus the mocks, for assertions
  */
 function makeService(options: Options = {}) {
   const postMessage = jest.fn().mockResolvedValue(undefined);
@@ -70,6 +76,27 @@ function makeService(options: Options = {}) {
   const getRecordsForSessions = jest
     .fn()
     .mockResolvedValue(options.records ?? []);
+  const get =
+    options.adminChannelGet ??
+    jest.fn(() =>
+      Promise.resolve(
+        options.adminChannelId === undefined ? '999' : options.adminChannelId,
+      ),
+    );
+  // The real sender over a faked Discord, so a refusal reaches the service the way it would live.
+  const dmRest = {
+    openDm: jest.fn((discordId: string) => {
+      const error = options.dmErrors?.[discordId];
+
+      return error ? Promise.reject(error) : Promise.resolve(`dm-${discordId}`);
+    }),
+    postMessage: jest.fn().mockResolvedValue(undefined),
+  };
+  const clock = new FixedClock(options.now ?? NOW);
+  const dmSender = new DmSenderService(dmRest as never, clock);
+  const sendAll = jest.spyOn(dmSender, 'sendAll');
+
+  if (options.sendAllError) sendAll.mockRejectedValue(options.sendAllError);
 
   const service = new ReminderService(
     { listByWeek } as never,
@@ -83,51 +110,65 @@ function makeService(options: Options = {}) {
           ],
         ),
     } as never,
-    {
-      get:
-        options.adminChannelGet ??
-        jest.fn((purpose: string) =>
-          Promise.resolve(
-            purpose === 'ADMIN_ALERT'
-              ? options.adminChannelId === undefined
-                ? '999'
-                : options.adminChannelId
-              : options.channelId === undefined
-                ? '424242'
-                : options.channelId,
-          ),
-        ),
-    } as never,
+    { get } as never,
     { postMessage } as never,
-    new FixedClock(options.now ?? NOW),
+    dmSender,
+    clock,
     { get: () => 'https://mmgh-nth.vercel.app' } as never,
   );
 
   return {
     service,
     postMessage,
+    sendAll,
     listByWeek,
     getRecords,
     getRecordsForSessions,
+    get,
   };
 }
 
+/**
+ * The DMs a mocked `sendAll` call received.
+ * @param sendAll - The mock
+ * @returns The recipients of the first call
+ */
+function recipientsOf(sendAll: jest.SpyInstance): SentDm[] {
+  return (sendAll.mock.calls[0] as [SentDm[]])[0];
+}
+
+/** Discord's answer for a member who does not accept DMs from the bot. */
+const BLOCKED = new DiscordApiError(
+  403,
+  'user',
+  '{"code":50007,"message":"Cannot send messages to this user"}',
+);
+
+/** Any other refusal: counted as not sent. */
+const SERVER_ERROR = new DiscordApiError(500, 'user', 'Internal Server Error');
+
+const SENT_NONE_MISSED = { unlinked: [], blocked: [], unsent: [] };
+
 describe('ReminderService.run', () => {
-  it('gửi khi có ngày tới hạn và còn người thiếu', async () => {
-    const { service, postMessage } = makeService();
+  it('gửi một DM cho người thiếu, không đăng vào channel nào', async () => {
+    const { service, postMessage, sendAll } = makeService();
 
     await expect(service.run('today')).resolves.toEqual({
       status: 'sent',
       sessionCount: 1,
       missingCount: 1,
+      deliveredCount: 1,
+      ...SENT_NONE_MISSED,
     });
-    expect(postMessage).toHaveBeenCalledTimes(1);
-    expect(postMessage).toHaveBeenCalledWith('424242', expect.anything());
+    expect(sendAll).toHaveBeenCalledTimes(1);
+    expect(recipientsOf(sendAll)).toHaveLength(1);
+    expect(recipientsOf(sendAll)[0].discordId).toBe('111');
+    expect(postMessage).not.toHaveBeenCalled();
   });
 
   // The leave arrives as one more record from AttendanceService, so "has a record" stays the whole test.
   it('không nhắc người có lần nghỉ phủ trận, vẫn nhắc người khác', async () => {
-    const { service, postMessage } = makeService({
+    const { service, sendAll } = makeService({
       members: [
         { id: 'meo-beo', name: 'Mèo Béo', discordId: '111' },
         { id: 'cun', name: 'Cún', discordId: '222' },
@@ -146,14 +187,12 @@ describe('ReminderService.run', () => {
       status: 'sent',
       missingCount: 1,
     });
-    const [, message] = postMessage.mock.calls[0] as [string, unknown];
-    expect(JSON.stringify(message)).toContain('Cún');
-    expect(JSON.stringify(message)).not.toContain('Mèo Béo');
+    expect(recipientsOf(sendAll).map((dm) => dm.discordId)).toEqual(['222']);
   });
 
   // Auto-attend arrives the same way as a leave: one more record from AttendanceService.
   it('không nhắc người đang bật tự động điểm danh, vẫn nhắc người khác', async () => {
-    const { service, postMessage } = makeService({
+    const { service, sendAll } = makeService({
       members: [
         { id: 'meo-beo', name: 'Mèo Béo', discordId: '111' },
         { id: 'cun', name: 'Cún', discordId: '222' },
@@ -172,22 +211,11 @@ describe('ReminderService.run', () => {
       status: 'sent',
       missingCount: 1,
     });
-    const [, message] = postMessage.mock.calls[0] as [string, unknown];
-    expect(JSON.stringify(message)).toContain('Cún');
-    expect(JSON.stringify(message)).not.toContain('Mèo Béo');
-  });
-
-  it('không gửi gì khi chưa cấu hình channel', async () => {
-    const { service, postMessage } = makeService({ channelId: null });
-
-    await expect(service.run('today')).resolves.toEqual({
-      status: 'no-channel',
-    });
-    expect(postMessage).not.toHaveBeenCalled();
+    expect(recipientsOf(sendAll).map((dm) => dm.discordId)).toEqual(['222']);
   });
 
   it('không gửi gì khi không ngày nào tới lượt nhắc hôm nay', async () => {
-    const { service, postMessage } = makeService({
+    const { service, sendAll } = makeService({
       // A 17:00 deadline on Thursday 10/09 - more than a day away.
       sessions: [session({ deadline: '2026-09-10T10:00:00.000Z' })],
     });
@@ -195,13 +223,13 @@ describe('ReminderService.run', () => {
     await expect(service.run('today')).resolves.toEqual({
       status: 'nothing-due',
     });
-    expect(postMessage).not.toHaveBeenCalled();
+    expect(sendAll).not.toHaveBeenCalled();
   });
 
   // The new rule nudges on the deadline day too, so running /nhac-diem-danh by hand in the
   // afternoon meets a deadline that has already passed.
   it('bỏ trận đã quá hạn dù hôm nay là ngày nhắc của nó', async () => {
-    const { service, postMessage } = makeService({
+    const { service, sendAll } = makeService({
       now: AFTERNOON,
       sessions: [
         session(),
@@ -215,38 +243,39 @@ describe('ReminderService.run', () => {
       ],
     });
 
-    await expect(service.run('today')).resolves.toEqual({
+    await expect(service.run('today')).resolves.toMatchObject({
       status: 'sent',
       sessionCount: 1,
-      missingCount: 1,
     });
-    const [, payload] = postMessage.mock.calls[0] as [string, MessagePayload];
-    expect(payload.embeds?.[0].description).not.toContain('Bang Chiến');
+    const description =
+      recipientsOf(sendAll)[0].payload.embeds?.[0].description;
+    expect(description).not.toContain('Bang Chiến');
+    expect(description).toContain('Thứ 6 · 20:30');
   });
 
   it('chỉ còn trận đã quá hạn thì không gửi gì', async () => {
-    const { service, postMessage } = makeService({ now: AFTERNOON });
+    const { service, sendAll } = makeService({ now: AFTERNOON });
 
     await expect(service.run('today')).resolves.toEqual({
       status: 'nothing-due',
     });
-    expect(postMessage).not.toHaveBeenCalled();
+    expect(sendAll).not.toHaveBeenCalled();
   });
 
   it('không gửi gì khi mọi người đã trả lời', async () => {
-    const { service, postMessage } = makeService({
+    const { service, sendAll } = makeService({
       records: [{ characterId: 'meo-beo', sessionId: 'gw-2026-09-05' }],
     });
 
     await expect(service.run('today')).resolves.toEqual({
       status: 'nothing-due',
     });
-    expect(postMessage).not.toHaveBeenCalled();
+    expect(sendAll).not.toHaveBeenCalled();
   });
 
   // A record means they answered; isPresent is only what the answer said.
   it('người trả lời "Không" cũng tính là đã điểm danh', async () => {
-    const { service, postMessage } = makeService({
+    const { service, sendAll } = makeService({
       records: [
         {
           characterId: 'meo-beo',
@@ -259,11 +288,11 @@ describe('ReminderService.run', () => {
     await expect(service.run('today')).resolves.toEqual({
       status: 'nothing-due',
     });
-    expect(postMessage).not.toHaveBeenCalled();
+    expect(sendAll).not.toHaveBeenCalled();
   });
 
   it('bỏ ngày đã đủ người, giữ ngày còn thiếu', async () => {
-    const { service, postMessage } = makeService({
+    const { service, sendAll } = makeService({
       sessions: [
         session(),
         session({ id: 's1', label: 'Thứ 5 · 20:30', isGuildWar: false }),
@@ -276,13 +305,10 @@ describe('ReminderService.run', () => {
       sessionCount: 1,
     });
 
-    const [, payload] = postMessage.mock.calls[0] as [
-      string,
-      { embeds: { description: string }[] },
-    ];
-
-    expect(payload.embeds[0].description).toContain('Bang Chiến');
-    expect(payload.embeds[0].description).not.toContain('Thứ 5 · 20:30');
+    const description =
+      recipientsOf(sendAll)[0].payload.embeds?.[0].description;
+    expect(description).toContain('Bang Chiến');
+    expect(description).not.toContain('Thứ 5 · 20:30');
   });
 
   it('bản ghi của người khác trong cùng ngày không tính là mình đã trả lời', async () => {
@@ -323,17 +349,97 @@ describe('ReminderService.run', () => {
     expect(getRecordsForSessions).toHaveBeenCalledWith(['gw-2026-09-05', 's1']);
   });
 
-  it('đếm mỗi người một lần dù thiếu nhiều ngày', async () => {
+  it('một người thiếu nhiều ngày nhận đúng một DM chứa mọi ngày thiếu của họ', async () => {
+    const { service, sendAll } = makeService({
+      members: [
+        { id: 'meo-beo', name: 'Mèo Béo', discordId: '111' },
+        { id: 'cun', name: 'Cún', discordId: '222' },
+      ],
+      sessions: [
+        session(),
+        session({ id: 's1', label: 'Thứ 5 · 20:30', isGuildWar: false }),
+      ],
+      // Cún answered the scrim, so only Mèo Béo is missing both days.
+      records: [{ characterId: 'cun', sessionId: 's1' }],
+    });
+
+    await expect(service.run('today')).resolves.toMatchObject({
+      sessionCount: 2,
+      missingCount: 2,
+      deliveredCount: 2,
+    });
+
+    const [meo, cun] = recipientsOf(sendAll);
+    expect(recipientsOf(sendAll)).toHaveLength(2);
+    expect(meo.discordId).toBe('111');
+    expect(meo.payload.embeds?.[0].description).toContain('Bang Chiến');
+    expect(meo.payload.embeds?.[0].description).toContain('Thứ 5 · 20:30');
+    expect(cun.discordId).toBe('222');
+    expect(cun.payload.embeds?.[0].description).toContain('Bang Chiến');
+    expect(cun.payload.embeds?.[0].description).not.toContain('Thứ 5 · 20:30');
+  });
+
+  it('DM không nhắc tên người khác và không mention ai', async () => {
+    const { service, sendAll } = makeService({
+      members: [
+        { id: 'meo-beo', name: 'Mèo Béo', discordId: '111' },
+        { id: 'cun', name: 'Cún', discordId: '222' },
+      ],
+    });
+
+    await service.run('today');
+
+    const payload = JSON.stringify(recipientsOf(sendAll)[0].payload);
+    expect(payload).not.toContain('Cún');
+    expect(payload).not.toContain('<@');
+    expect(recipientsOf(sendAll)[0].payload.allowed_mentions).toEqual({
+      parse: [],
+    });
+  });
+
+  it('phân loại người không nhận được: chưa liên kết, chặn DM, chưa gửi được', async () => {
+    const { service, sendAll } = makeService({
+      members: [
+        { id: 'a', name: 'Mèo Béo', discordId: '111' },
+        { id: 'b', name: 'Cún Con', discordId: '222' },
+        { id: 'c', name: 'Chim Sẻ', discordId: null },
+        { id: 'd', name: 'Gà Mờ', discordId: '444' },
+        { id: 'e', name: 'Vịt Bầu', discordId: '555' },
+      ],
+      dmErrors: { '222': BLOCKED, '444': SERVER_ERROR },
+    });
+
+    await expect(service.run('today')).resolves.toEqual({
+      status: 'sent',
+      sessionCount: 1,
+      missingCount: 5,
+      deliveredCount: 2,
+      unlinked: ['Chim Sẻ'],
+      blocked: ['Cún Con'],
+      unsent: ['Gà Mờ'],
+    });
+    // Chim Sẻ has no Discord ID, so there is nobody to hand to the sender.
+    expect(recipientsOf(sendAll).map((dm) => dm.discordId)).toEqual([
+      '111',
+      '222',
+      '444',
+      '555',
+    ]);
+  });
+
+  it('một người thiếu nhiều ngày chỉ tính một lần trong nhóm không nhận được', async () => {
     const { service } = makeService({
       sessions: [
         session(),
         session({ id: 's1', label: 'Thứ 5 · 20:30', isGuildWar: false }),
       ],
+      members: [{ id: 'c', name: 'Chim Sẻ', discordId: null }],
     });
 
     await expect(service.run('today')).resolves.toMatchObject({
-      sessionCount: 2,
       missingCount: 1,
+      deliveredCount: 0,
+      unlinked: ['Chim Sẻ'],
     });
   });
 });
@@ -359,16 +465,17 @@ describe('ReminderService.run - phạm vi cả tuần', () => {
   ];
 
   it('nhắc cả trận chưa tới ngày nhắc, nhưng vẫn bỏ trận đã quá hạn', async () => {
-    const { service, postMessage } = makeService({ sessions });
+    const { service, sendAll } = makeService({ sessions });
 
-    await expect(service.run('week')).resolves.toEqual({
+    await expect(service.run('week')).resolves.toMatchObject({
       status: 'sent',
       sessionCount: 2,
       missingCount: 1,
     });
-    const [, payload] = postMessage.mock.calls[0] as [string, MessagePayload];
-    expect(payload.embeds?.[0].description).toContain('Thứ 7 · 16:00');
-    expect(payload.embeds?.[0].description).not.toContain('Thứ 4 · 20:30');
+    const description =
+      recipientsOf(sendAll)[0].payload.embeds?.[0].description;
+    expect(description).toContain('Thứ 7 · 16:00');
+    expect(description).not.toContain('Thứ 4 · 20:30');
   });
 
   it('cùng dữ liệu đó, phạm vi hôm nay chỉ nhắc trận tới ngày nhắc', async () => {
@@ -381,31 +488,26 @@ describe('ReminderService.run - phạm vi cả tuần', () => {
   });
 
   it('mọi trận trong tuần đã quá hạn thì không gửi gì', async () => {
-    const { service, postMessage } = makeService({ sessions: [sessions[2]] });
+    const { service, sendAll } = makeService({ sessions: [sessions[2]] });
 
     await expect(service.run('week')).resolves.toEqual({
       status: 'nothing-due',
     });
-    expect(postMessage).not.toHaveBeenCalled();
+    expect(sendAll).not.toHaveBeenCalled();
   });
 });
 
 describe('ReminderService.runScheduled', () => {
-  const adminCalls = (postMessage: jest.Mock): unknown[][] =>
-    (postMessage.mock.calls as unknown[][]).filter(
-      ([channelId]) => channelId === '999',
-    );
-
-  it('sent: không gửi tin báo', async () => {
+  it('gửi trót lọt: không đăng gì vào kênh admin', async () => {
     const { service, postMessage } = makeService();
 
     await expect(service.runScheduled()).resolves.toMatchObject({
       status: 'sent',
     });
-    expect(adminCalls(postMessage)).toHaveLength(0);
+    expect(postMessage).not.toHaveBeenCalled();
   });
 
-  it('nothing-due: không gửi tin báo', async () => {
+  it('nothing-due: không đăng gì', async () => {
     const { service, postMessage } = makeService({ sessions: [] });
 
     await expect(service.runScheduled()).resolves.toEqual({
@@ -414,68 +516,89 @@ describe('ReminderService.runScheduled', () => {
     expect(postMessage).not.toHaveBeenCalled();
   });
 
-  it('no-channel: báo vào kênh admin, trả outcome', async () => {
-    const { service, postMessage } = makeService({ channelId: null });
+  it('có người không nhận được: đăng một tin vào kênh admin liệt kê ba nhóm', async () => {
+    const { service, postMessage } = makeService({
+      members: [
+        { id: 'a', name: 'Mèo Béo', discordId: '111' },
+        { id: 'b', name: 'Cún Con', discordId: '222' },
+        { id: 'c', name: 'Chim Sẻ', discordId: null },
+      ],
+      dmErrors: { '111': BLOCKED, '222': SERVER_ERROR },
+    });
 
-    await expect(service.runScheduled()).resolves.toEqual({
-      status: 'no-channel',
+    await expect(service.runScheduled()).resolves.toMatchObject({
+      status: 'sent',
+      deliveredCount: 0,
     });
-    expect(postMessage).toHaveBeenCalledWith('999', {
-      content: REMINDER_NO_CHANNEL_ALERT,
+    expect(postMessage).toHaveBeenCalledTimes(1);
+    const [channelId, payload] = postMessage.mock.calls[0] as [
+      string,
+      { content: string },
+    ];
+    expect(channelId).toBe('999');
+    expect(payload.content).toContain('Chim Sẻ');
+    expect(payload.content).toContain('Mèo Béo');
+    expect(payload.content).toContain('Cún Con');
+  });
+
+  it('có người không nhận được mà thiếu kênh admin: chỉ log, vẫn trả outcome', async () => {
+    const { service, postMessage } = makeService({
+      adminChannelId: null,
+      dmErrors: { '111': BLOCKED },
     });
+
+    await expect(service.runScheduled()).resolves.toMatchObject({
+      status: 'sent',
+    });
+    expect(postMessage).not.toHaveBeenCalled();
   });
 
   it('run ném: báo rồi ném lại chính lỗi gốc', async () => {
-    const boom = new DiscordApiError(403, '424242', '{}');
-    const { service, postMessage } = makeService();
-    postMessage.mockRejectedValueOnce(boom).mockResolvedValueOnce(undefined);
+    const boom = new DiscordApiError(500, '1', '{}');
+    const { service, postMessage } = makeService({ sendAllError: boom });
 
     await expect(service.runScheduled()).rejects.toBe(boom);
-    expect(postMessage).toHaveBeenLastCalledWith('999', {
-      content: reminderFailureText(boom),
+    expect(postMessage).toHaveBeenCalledWith('999', {
+      content: reminderFailureText(),
     });
   });
 
   it('thiếu kênh admin: không gửi, vẫn ném lỗi gốc', async () => {
     const boom = new Error('boom');
-    const { service, postMessage } = makeService({ adminChannelId: null });
-    postMessage.mockRejectedValueOnce(boom);
+    const { service, postMessage } = makeService({
+      adminChannelId: null,
+      sendAllError: boom,
+    });
 
     await expect(service.runScheduled()).rejects.toBe(boom);
-    expect(adminCalls(postMessage)).toHaveLength(0);
+    expect(postMessage).not.toHaveBeenCalled();
   });
 
   it('gửi tin báo cũng lỗi: lỗi ném ra vẫn là lỗi gốc', async () => {
     const boom = new Error('boom');
-    const { service, postMessage } = makeService();
-    postMessage.mockRejectedValue(boom);
+    const { service, postMessage } = makeService({ sendAllError: boom });
+    postMessage.mockRejectedValue(new Error('discord down'));
 
     await expect(service.runScheduled()).rejects.toBe(boom);
   });
 
   it('đọc kênh admin ném: lỗi ném ra vẫn là lỗi gốc', async () => {
     const boom = new Error('boom');
-    const adminChannelGet = jest.fn((purpose: string) =>
-      purpose === 'ADMIN_ALERT'
-        ? Promise.reject(new Error('db down'))
-        : Promise.resolve('424242'),
-    );
-    const { service, postMessage } = makeService({ adminChannelGet });
-    postMessage.mockRejectedValueOnce(boom);
+    const adminChannelGet = jest.fn(() => Promise.reject(new Error('db down')));
+    const { service } = makeService({ adminChannelGet, sendAllError: boom });
 
     await expect(service.runScheduled()).rejects.toBe(boom);
   });
 
-  it('no-channel mà kênh admin ném: vẫn trả outcome', async () => {
-    const adminChannelGet = jest.fn((purpose: string) =>
-      purpose === 'ADMIN_ALERT'
-        ? Promise.reject(new Error('db down'))
-        : Promise.resolve(null),
-    );
-    const { service } = makeService({ adminChannelGet });
+  it('có người không nhận được mà đọc kênh admin ném: vẫn trả outcome', async () => {
+    const adminChannelGet = jest.fn(() => Promise.reject(new Error('db down')));
+    const { service } = makeService({
+      adminChannelGet,
+      dmErrors: { '111': BLOCKED },
+    });
 
-    await expect(service.runScheduled()).resolves.toEqual({
-      status: 'no-channel',
+    await expect(service.runScheduled()).resolves.toMatchObject({
+      status: 'sent',
     });
   });
 });

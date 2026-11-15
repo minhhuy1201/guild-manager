@@ -17,13 +17,9 @@ const PURPOSE_OPTION = 'muc-dich';
 
 /** What an admin can pick for `muc-dich`. The value is the `BotChannelPurpose` itself. */
 const PURPOSE_CHOICES = [
-  { name: 'Nhắc điểm danh', value: 'ATTENDANCE_REMINDER' },
   { name: 'Cảnh báo admin', value: 'ADMIN_ALERT' },
   { name: 'Thông báo chung', value: 'GENERAL_NOTI' },
 ] as const satisfies readonly { name: string; value: BotChannelPurpose }[];
-
-/** Left empty, the command sets the reminder channel - what it did before the option existed. */
-const DEFAULT_PURPOSE: BotChannelPurpose = 'ATTENDANCE_REMINDER';
 
 /**
  * What each purpose posts as proof, and what the admin reads once it is saved.
@@ -33,14 +29,10 @@ const PURPOSE_COPY: Record<
   BotChannelPurpose,
   { confirmation: string; saved: string }
 > = {
-  ATTENDANCE_REMINDER: {
-    confirmation:
-      '✅ Channel này đã được đặt làm nơi bot nhắc điểm danh hằng ngày.',
-    saved: 'Đã lưu. Từ giờ bot sẽ nhắc điểm danh trong channel này.',
-  },
   ADMIN_ALERT: {
     confirmation: '✅ Channel này đã được đặt làm nơi bot báo lỗi cho admin.',
-    saved: 'Đã lưu. Từ giờ bot sẽ báo lỗi nhắc điểm danh trong channel này.',
+    saved:
+      'Đã lưu. Từ giờ bot sẽ báo lỗi và danh sách người không nhận được tin nhắc điểm danh trong channel này.',
   },
   GENERAL_NOTI: {
     confirmation: '✅ Channel này đã được đặt làm nơi bot gửi thông báo chung.',
@@ -67,19 +59,16 @@ const CANNOT_REACH =
 const logger = new Logger('cau-hinh-kenh');
 
 /**
- * Purpose the admin picked, or the default when they left the option empty.
+ * Purpose the admin picked.
  * @param interaction - The command invocation
  * @returns The purpose to configure
- * @throws Error when the value is none of the choices - the registered definition and this build
- *   disagree, and the fix is `pnpm --filter api discord:register`
+ * @throws Error when the value is missing or none of the choices - the registered definition and
+ *   this build disagree, and the fix is `pnpm --filter api discord:register`
  */
 function purposeOf(
   interaction: ApplicationCommandInteraction,
 ): BotChannelPurpose {
   const value = commandOptionValue(interaction, PURPOSE_OPTION);
-
-  if (value === null) return DEFAULT_PURPOSE;
-
   const choice = PURPOSE_CHOICES.find((candidate) => candidate.value === value);
 
   if (!choice) {
@@ -92,29 +81,28 @@ function purposeOf(
 }
 
 /**
- * Point the daily attendance reminder, or the admin failure alert, at the channel this command was
- * typed in — an Admin, or a Manager granted this command.
+ * Point the admin alert, or general announcements, at the channel this command was typed in — an
+ * Admin, or a Manager granted this command.
  *
  * No channel option: the channel is already inside the signed interaction, and asking an admin to
  * enable Developer Mode and copy an id adds three steps and a place to mistype.
  *
  * The confirmation is posted **before** the row is written, and a refusal aborts the whole command.
  * A channel the bot cannot post in is not a configuration; without this check the mistake would
- * surface at 9am the next morning, inside a job nobody is watching, and the cost is a reminder that
- * cannot be sent late.
+ * surface only when the bot first needs the channel, inside a job nobody is watching, and the cost
+ * is an alert or announcement that never arrives.
  */
 export const cauHinhKenhCommand: SlashCommand = {
   definition: {
     name: 'cau-hinh-kenh',
     description:
-      'Đặt channel này làm nơi bot nhắc điểm danh hoặc báo lỗi (cần được cấp quyền)',
+      'Đặt channel này làm nơi bot báo lỗi hoặc gửi thông báo chung (cần được cấp quyền)',
     options: [
       {
         name: PURPOSE_OPTION,
-        description:
-          'Kênh nhắc điểm danh (mặc định), báo lỗi cho admin hay thông báo chung',
+        description: 'Kênh báo lỗi cho admin hay thông báo chung',
         type: COMMAND_OPTION_TYPE.string,
-        required: false,
+        required: true,
         choices: [...PURPOSE_CHOICES],
       },
     ],

@@ -83,7 +83,7 @@ by default, and each writes to whatever database it names.
 | `DISCORD_NGHICH_THUY_HAN_CHANNEL_ID` | Channel `#🌊│nghich-thuy-han`. Same rule: set it before merging, a missing value kills the API at boot |
 | `DISCORD_KHAM_ACC_CHANNEL_ID` | Channel `#khám-acc`. Same rule: set it before merging, a missing value kills the API at boot |
 | `DISCORD_BAO_BAN_CHANNEL_ID` | Channel `#🤒│báo-bận`, linked from the formation announcement. Same rule: set it before merging, a missing value kills the API at boot |
-| `DISCORD_BOT_TOKEN` | Bot token of **this environment's** Discord Application (Bot → Reset Token) — mark Sensitive. The reminder job posts with it. **Set it before merging the PR that ships the reminder**: required, so a missing value kills the API at boot |
+| `DISCORD_BOT_TOKEN` | Bot token of **this environment's** Discord Application (Bot → Reset Token) — mark Sensitive. The reminder job sends its DMs with it. **Set it before merging the PR that ships the reminder**: required, so a missing value kills the API at boot |
 | `CRON_SECRET` | Secret guarding `GET /api/cron/attendance-reminder`, at least 32 characters (`openssl rand -hex 32`) — mark Sensitive. Vercel attaches it to the scheduled call by itself once the variable exists. **Set it before merging the PR that ships the reminder**: required, so a missing value kills the API at boot |
 | `WEB_ORIGIN` | The web app's real origin (`https://…`) — CORS matches this value exactly |
 | `WEB_PREVIEW_PROJECT` | The web app's Vercel project name (`mmgh-nth`) — makes CORS also accept that project's preview domains. Optional; omit it and only `WEB_ORIGIN` is allowed |
@@ -769,11 +769,14 @@ fires against an unguarded endpoint.
   Vietnam time. The job's rule compares Vietnam calendar dates only, so the whole window gives the
   same answer.
 - Last run: Vercel → the api project → Cron Jobs.
-- After the first deploy, type `/cau-hinh-kenh` in the channel that should receive announcements.
-  With none configured the job still runs, writes one `warn` line and stops — that is not a failure.
-- After the first deploy of the admin alert, run `pnpm --filter api discord:register` (the
-  `muc-dich` option), then `/cau-hinh-kenh muc-dich:Cảnh báo admin` once in the admin channel. Until
-  then a failed run only reaches the log and Vercel, as before, with one `warn` line.
+- The reminder needs no channel: it sends one DM per member still missing an answer. The migration
+  that ships with it deletes the leftover `ATTENDANCE_REMINDER` row, and CI applies it on merge.
+- **Before merging** the PR that ships this, type `/cau-hinh-kenh muc-dich:Cảnh báo admin` once in the
+  admin channel. A run that could not reach some members posts its list to `ADMIN_ALERT`; without it
+  the list only reaches the log and Vercel, as one `warn` line.
+- **After the deploy**, run `pnpm --filter api discord:register`: `/cau-hinh-kenh` now requires
+  `muc-dich`, and `/nhac-diem-danh` has its deferred reply. Until then Discord shows the old command
+  shapes.
 - After deploying the cat race (`GENERAL_NOTI`), run `pnpm --filter api discord:register` so Discord
   shows the new `Thông báo chung` choice, then `/cau-hinh-kenh muc-dich:Thông báo chung` once in the
   channel that should receive the draw summaries. Without it "Đăng tổng kết lên Discord" answers 409
@@ -782,8 +785,8 @@ fires against an unguarded endpoint.
   Its `pham-vi` option defaults to `today`, the cron's own rule; `week` reaches every open deadline
   of the week instead. After changing a command's options, run `pnpm --filter api discord:register`
   by hand so Discord shows them.
-- The job **deliberately has no duplicate protection**. If Vercel fires twice the guild gets the same
-  message twice; one extra ping is cheaper than maintaining a "sent today" state table.
+- The job **deliberately has no duplicate protection**. If Vercel fires twice each member gets the same
+  DM twice; one extra ping is cheaper than maintaining a "sent today" state table.
 
 ### Health check
 

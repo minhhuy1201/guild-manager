@@ -42,6 +42,13 @@ Optional text an admin writes for one send, shown first in the Formation announc
 Team notice of that send.
 _Avoid_: message, extra announcement, thông báo thêm
 
+## Attendance on Discord
+
+**Attendance reminder** (UI: "Nhắc điểm danh"):
+A direct message to one guild character, of any role, listing the battle days whose attendance deadline is near and that
+they have not answered yet.
+_Avoid_: ping, nhắc chung, DM
+
 ## Cat race
 
 **Draw** (UI: "đua"):

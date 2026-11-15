@@ -3,6 +3,7 @@ import type { BattleSession, MatchFormation } from '@guild/shared/schemas';
 
 import { DiscordApiError } from '../discord-rest';
 import { Clock } from '../../../common';
+import { DmSenderService } from '../dm-sender.service';
 import { TeamNoticeService } from '../team-notice.service';
 
 /** A 20:30 scrim over two matches whose attendance is already closed by the announcement. */
@@ -118,9 +119,8 @@ function build(options: BuildOptions = {}) {
     teamBuilder as never,
     attendance as never,
     characters as never,
-    rest as never,
+    new DmSenderService(rest as never, clock),
     config as never,
-    clock,
   );
 
   return { service, battleSessions, rest, clock };

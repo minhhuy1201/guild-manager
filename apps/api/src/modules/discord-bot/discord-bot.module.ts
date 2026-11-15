@@ -19,6 +19,7 @@ import { FormationAnnouncerService } from './formation-announcer.service';
 import { InteractionRouter } from './interaction-router';
 import { ReminderController } from './reminder.controller';
 import { ReminderService } from './reminder.service';
+import { DmSenderService } from './dm-sender.service';
 import { TeamNoticeService } from './team-notice.service';
 
 /**
@@ -56,6 +57,7 @@ import { TeamNoticeService } from './team-notice.service';
     DiscordRestClient,
     ReminderService,
     FormationAnnouncerService,
+    DmSenderService,
     TeamNoticeService,
     CatRaceAnnouncerService,
     CronSecretGuard,

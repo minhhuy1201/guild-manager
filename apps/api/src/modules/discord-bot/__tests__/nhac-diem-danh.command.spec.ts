@@ -1,15 +1,16 @@
 import { GuildRole } from '@guild/shared/enums';
 
 import { TOKEN_TYPE } from '../../../common';
-import type { CommandDeps } from '../commands/command.types';
+import type { CommandDeps, MessagePayload } from '../commands/command.types';
 import { nhacDiemDanhCommand } from '../commands/nhac-diem-danh.command';
-import { MESSAGE_FLAG } from '../discord.constants';
-import { DiscordApiError } from '../discord-rest';
+import { INTERACTION_RESPONSE_TYPE, MESSAGE_FLAG } from '../discord.constants';
 import type { ReminderOutcome } from '../reminder.service';
 
 const INTERACTION = {
   type: 2 as const,
   channel_id: '424242',
+  application_id: '777',
+  token: 'interaction-token',
   data: { name: 'nhac-diem-danh' },
   member: { user: { id: '111' } },
 };
@@ -47,19 +48,56 @@ function makeDeps(resolved: unknown, outcome: ReminderOutcome) {
   return { deps, run };
 }
 
+/**
+ * Run the command and its background work the way the router does.
+ * @param deps - Stubbed deps
+ * @param interaction - The invocation
+ * @returns The message that replaces the "thinking" state
+ */
+async function finalMessage(
+  deps: CommandDeps,
+  interaction: Parameters<typeof nhacDiemDanhCommand.execute>[0] = INTERACTION,
+): Promise<MessagePayload> {
+  const reply = await nhacDiemDanhCommand.execute(interaction, deps);
+
+  if (
+    reply.type !== INTERACTION_RESPONSE_TYPE.deferredChannelMessageWithSource
+  ) {
+    throw new Error('expected a deferred reply');
+  }
+
+  return reply.followUp();
+}
+
 describe('/nhac-diem-danh', () => {
+  it('được phép thì trả type 5 ephemeral và chưa nhắc ai trước khi Discord nhận trả lời', async () => {
+    const { deps, run } = makeDeps(actor(GuildRole.ADMIN), {
+      status: 'nothing-due',
+    });
+
+    const reply = await nhacDiemDanhCommand.execute(INTERACTION, deps);
+
+    expect(reply.type).toBe(
+      INTERACTION_RESPONSE_TYPE.deferredChannelMessageWithSource,
+    );
+    expect(reply.data.flags).toBe(MESSAGE_FLAG.ephemeral);
+    expect(run).not.toHaveBeenCalled();
+  });
+
   it('báo đã nhắc bao nhiêu người cho bao nhiêu ngày', async () => {
     const { deps } = makeDeps(actor(GuildRole.ADMIN), {
       status: 'sent',
       sessionCount: 2,
       missingCount: 5,
+      deliveredCount: 4,
+      unlinked: [],
+      blocked: [],
+      unsent: [],
     });
 
-    const reply = await nhacDiemDanhCommand.execute(INTERACTION, deps);
+    const message = await finalMessage(deps);
 
-    expect(reply.data.content).toContain('5');
-    expect(reply.data.content).toContain('2');
-    expect(reply.data.flags).toBe(MESSAGE_FLAG.ephemeral);
+    expect(message.content).toBe('Đã nhắc 4/5 người cho 2 ngày đánh.');
   });
 
   it('không chọn phạm vi thì chạy đúng luật của cron', async () => {
@@ -67,7 +105,7 @@ describe('/nhac-diem-danh', () => {
       status: 'nothing-due',
     });
 
-    await nhacDiemDanhCommand.execute(INTERACTION, deps);
+    await finalMessage(deps);
 
     expect(run).toHaveBeenCalledWith('today');
   });
@@ -77,16 +115,13 @@ describe('/nhac-diem-danh', () => {
       status: 'nothing-due',
     });
 
-    await nhacDiemDanhCommand.execute(
-      {
-        ...INTERACTION,
-        data: {
-          name: 'nhac-diem-danh',
-          options: [{ name: 'pham-vi', value: 'week' }],
-        },
+    await finalMessage(deps, {
+      ...INTERACTION,
+      data: {
+        name: 'nhac-diem-danh',
+        options: [{ name: 'pham-vi', value: 'week' }],
       },
-      deps,
-    );
+    });
 
     expect(run).toHaveBeenCalledWith('week');
   });
@@ -118,9 +153,9 @@ describe('/nhac-diem-danh', () => {
       status: 'nothing-due',
     });
 
-    const reply = await nhacDiemDanhCommand.execute(INTERACTION, deps);
+    const message = await finalMessage(deps);
 
-    expect(reply.data.content).toContain('Cả tuần');
+    expect(message.content).toContain('Cả tuần');
   });
 
   it('nói rõ khi không còn ai thiếu', async () => {
@@ -128,19 +163,27 @@ describe('/nhac-diem-danh', () => {
       status: 'nothing-due',
     });
 
-    const reply = await nhacDiemDanhCommand.execute(INTERACTION, deps);
+    const message = await finalMessage(deps);
 
-    expect(reply.data.content).toContain('đủ');
+    expect(message.content).toContain('đủ');
   });
 
-  it('chỉ đường khi chưa cấu hình channel', async () => {
+  it('nêu tên ba nhóm không nhận được', async () => {
     const { deps } = makeDeps(actor(GuildRole.ADMIN), {
-      status: 'no-channel',
+      status: 'sent',
+      sessionCount: 1,
+      missingCount: 4,
+      deliveredCount: 1,
+      unlinked: ['Chim Sẻ'],
+      blocked: ['Cún Con'],
+      unsent: ['Mèo Béo'],
     });
 
-    const reply = await nhacDiemDanhCommand.execute(INTERACTION, deps);
+    const message = await finalMessage(deps);
 
-    expect(reply.data.content).toContain('/cau-hinh-kenh');
+    expect(message.content).toContain('Chim Sẻ');
+    expect(message.content).toContain('Cún Con');
+    expect(message.content).toContain('Mèo Béo');
   });
 
   it('thành viên thường bị từ chối và không chạy gì', async () => {
@@ -151,6 +194,7 @@ describe('/nhac-diem-danh', () => {
     const reply = await nhacDiemDanhCommand.execute(INTERACTION, deps);
 
     expect(run).not.toHaveBeenCalled();
+    expect(reply.type).toBe(INTERACTION_RESPONSE_TYPE.channelMessageWithSource);
     expect(reply.data.flags).toBe(MESSAGE_FLAG.ephemeral);
   });
 
@@ -160,34 +204,5 @@ describe('/nhac-diem-danh', () => {
     await nhacDiemDanhCommand.execute(INTERACTION, deps);
 
     expect(run).not.toHaveBeenCalled();
-  });
-
-  it('Discord từ chối vì thiếu quyền thì nói phải làm gì', async () => {
-    // The same 403 that /cau-hinh-kenh and formation-announcer already translate. Here it used to
-    // escape as a generic "Có lỗi xảy ra..." with no way for an admin to learn why.
-    const { deps, run } = makeDeps(actor(GuildRole.ADMIN), {
-      status: 'nothing-due',
-    });
-    run.mockRejectedValue(
-      new DiscordApiError(403, '424242', 'Missing Permissions'),
-    );
-
-    const reply = await nhacDiemDanhCommand.execute(INTERACTION, deps);
-
-    expect(reply.data.content).toContain('quyền');
-    expect(reply.data.flags).toBe(MESSAGE_FLAG.ephemeral);
-  });
-
-  it('lỗi khác của Discord vẫn nổi lên nguyên trạng', async () => {
-    const { deps, run } = makeDeps(actor(GuildRole.ADMIN), {
-      status: 'nothing-due',
-    });
-    run.mockRejectedValue(
-      new DiscordApiError(500, '424242', 'Internal Server Error'),
-    );
-
-    await expect(
-      nhacDiemDanhCommand.execute(INTERACTION, deps),
-    ).rejects.toThrow(DiscordApiError);
   });
 });

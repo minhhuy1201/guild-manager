@@ -9,13 +9,22 @@ import { khaoSatLuuPhaiCommand } from '../commands/khao-sat-luu-phai.command';
 import { nhacDiemDanhCommand } from '../commands/nhac-diem-danh.command';
 import { pingCommand } from '../commands/ping.command';
 import { thongBaoCommand } from '../commands/thong-bao.command';
-import type { CommandDeps, SlashCommand } from '../commands/command.types';
+import { INTERACTION_RESPONSE_TYPE } from '../discord.constants';
+import type {
+  CommandDeps,
+  CommandResult,
+  SlashCommand,
+} from '../commands/command.types';
 import { NOT_LINKED } from '../attendance-board';
 import { MESSAGE_FLAG } from '../discord.constants';
 import { NOT_GRANTED } from '../require-command';
 
 /** Each admin command with the Grant that opens it. */
-const ADMIN_COMMANDS: [string, SlashCommand, GrantableCommand][] = [
+const ADMIN_COMMANDS: [
+  string,
+  SlashCommand<CommandResult>,
+  GrantableCommand,
+][] = [
   ['/diem-danh-ho', diemDanhHoCommand, GrantableCommand.DIEM_DANH_HO],
   ['/chao-mung', chaoMungCommand, GrantableCommand.CHAO_MUNG],
   ['/cau-hinh-kenh', cauHinhKenhCommand, GrantableCommand.CAU_HINH_KENH],
@@ -33,10 +42,12 @@ const ADMIN_COMMANDS: [string, SlashCommand, GrantableCommand][] = [
  * @param command - The command being run
  * @returns A validated-looking interaction with the options a command may read
  */
-function invocationOf(command: SlashCommand) {
+function invocationOf(command: SlashCommand<CommandResult>) {
   return {
     type: 2 as const,
     channel_id: '424242',
+    application_id: '777',
+    token: 'interaction-token',
     data: {
       name: command.definition.name,
       options: [
@@ -86,7 +97,7 @@ function caller(
  * @returns The reply content, or 'proceeded' when the command went past the gate into a service
  */
 async function outcomeOf(
-  command: SlashCommand,
+  command: SlashCommand<CommandResult>,
   resolved: unknown,
 ): Promise<{ content: string; flags?: number }> {
   try {
@@ -94,6 +105,13 @@ async function outcomeOf(
       invocationOf(command),
       depsFor(resolved),
     );
+
+    // A deferred reply is what a granted caller gets from /nhac-diem-danh: past the gate.
+    if (
+      reply.type === INTERACTION_RESPONSE_TYPE.deferredChannelMessageWithSource
+    ) {
+      return { content: 'proceeded' };
+    }
 
     return { content: reply.data.content ?? '', flags: reply.data.flags };
   } catch {
