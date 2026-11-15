@@ -1,0 +1,1 @@
+DELETE FROM "BotChannel" WHERE "purpose" = 'ATTENDANCE_REMINDER';

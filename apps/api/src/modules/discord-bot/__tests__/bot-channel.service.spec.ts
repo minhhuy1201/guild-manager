@@ -17,9 +17,9 @@ describe('BotChannelService', () => {
     const { prisma, findUnique } = makePrisma({ channelId: '424242' });
     const service = new BotChannelService(prisma as never);
 
-    await expect(service.get('ATTENDANCE_REMINDER')).resolves.toBe('424242');
+    await expect(service.get('GENERAL_NOTI')).resolves.toBe('424242');
     expect(findUnique).toHaveBeenCalledWith({
-      where: { purpose: 'ATTENDANCE_REMINDER' },
+      where: { purpose: 'GENERAL_NOTI' },
     });
   });
 
@@ -28,18 +28,18 @@ describe('BotChannelService', () => {
     const { prisma } = makePrisma(null);
     const service = new BotChannelService(prisma as never);
 
-    await expect(service.get('ATTENDANCE_REMINDER')).resolves.toBeNull();
+    await expect(service.get('GENERAL_NOTI')).resolves.toBeNull();
   });
 
   it('ghi đè dòng cũ thay vì thêm dòng thứ hai', async () => {
     const { prisma, upsert } = makePrisma(null);
     const service = new BotChannelService(prisma as never);
 
-    await service.set('ATTENDANCE_REMINDER', '999');
+    await service.set('GENERAL_NOTI', '999');
 
     expect(upsert).toHaveBeenCalledWith({
-      where: { purpose: 'ATTENDANCE_REMINDER' },
-      create: { purpose: 'ATTENDANCE_REMINDER', channelId: '999' },
+      where: { purpose: 'GENERAL_NOTI' },
+      create: { purpose: 'GENERAL_NOTI', channelId: '999' },
       update: { channelId: '999' },
     });
   });

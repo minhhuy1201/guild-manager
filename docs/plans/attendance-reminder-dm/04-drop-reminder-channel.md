@@ -15,12 +15,12 @@ còn đọc mục đích này).
 
 **Model:** opus - migration xoá dữ liệu đã lưu trên production.
 
-**Status:** todo
+**Status:** done
 
-- [ ] `ATTENDANCE_REMINDER` bị bỏ khỏi union mục đích channel; không còn tham chiếu nào trong `apps/api/src` ngoài code Prisma sinh ra.
-- [ ] `/cau-hinh-kenh`: bỏ lựa chọn và câu xác nhận của mục đích nhắc; option `muc-dich` thành bắt buộc, không còn mặc định.
-- [ ] Câu xác nhận `ADMIN_ALERT` (`saved`) thành "Đã lưu. Từ giờ bot sẽ báo lỗi và danh sách người không nhận được tin nhắc điểm danh trong channel này."
-- [ ] Migration tạo bằng `pnpm --filter api prisma:migrate` (DB local), chỉ chứa `DELETE FROM "BotChannel" WHERE "purpose" = 'ATTENDANCE_REMINDER';`, không đổi schema, đúng `.claude/rules/prisma.md`. Không chạy `migrate deploy` lên production.
-- [ ] Spec `/cau-hinh-kenh` và service channel cập nhật theo hành vi mới.
-- [ ] Test, typecheck, lint của `api` xanh.
-- [ ] Ghi chú cho PR: sau deploy chạy `pnpm --filter api discord:register` (option đổi thành bắt buộc).
+- [x] `ATTENDANCE_REMINDER` bị bỏ khỏi union mục đích channel; không còn tham chiếu nào trong `apps/api/src` ngoài code Prisma sinh ra.
+- [x] `/cau-hinh-kenh`: bỏ lựa chọn và câu xác nhận của mục đích nhắc; option `muc-dich` thành bắt buộc, không còn mặc định.
+- [x] Câu xác nhận `ADMIN_ALERT` (`saved`) thành "Đã lưu. Từ giờ bot sẽ báo lỗi và danh sách người không nhận được tin nhắc điểm danh trong channel này."
+- [x] Migration tạo bằng `pnpm --filter api prisma:migrate` (DB local), chỉ chứa `DELETE FROM "BotChannel" WHERE "purpose" = 'ATTENDANCE_REMINDER';`, không đổi schema, đúng `.claude/rules/prisma.md`. Không chạy `migrate deploy` lên production.
+- [x] Spec `/cau-hinh-kenh` và service channel cập nhật theo hành vi mới.
+- [x] Test, typecheck, lint của `api` xanh.
+- [x] Ghi chú cho PR: sau deploy chạy `pnpm --filter api discord:register` (option đổi thành bắt buộc).
