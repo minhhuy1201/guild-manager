@@ -14,13 +14,13 @@ admin không thấy gì thay đổi: Team notice gửi y như cũ, báo cáo y n
 
 **Model:** sonnet - tạo interface mới dùng chung, không đủ điều kiện haiku.
 
-**Status:** todo
+**Status:** done
 
-- [ ] Service mới nhận danh sách người nhận (Discord ID, payload, file tuỳ chọn) và trả kết quả từng người: đã gửi, chặn DM (50007), chưa gửi được.
-- [ ] Gửi tuần tự từng người. 429 đợi tối đa 10 giây (mặc định 1 giây khi Discord không nói) rồi thử lại đúng một lần; lần hai là chưa gửi được.
-- [ ] 40003 dừng cả lượt: người đó và mọi người còn lại là chưa gửi được.
-- [ ] Ngân sách 220 giây cho cả lượt, tính bằng `Clock` inject: hết ngân sách thì người còn lại là chưa gửi được, ghi log warn một lần.
-- [ ] Lỗi khác ghi log kèm nội dung lỗi của Discord và tính là chưa gửi được.
-- [ ] Service Team notice gọi qua service mới; các quy tắc riêng của Team notice (không có mặt, chưa liên kết Discord ID, chọn ảnh theo team) giữ nguyên ở chỗ cũ.
-- [ ] Spec Team notice hiện có xanh mà không sửa kỳ vọng. Các ca 429/40003/50007/ngân sách có test ở service mới (chuyển hoặc thêm).
-- [ ] Test, typecheck, lint của `api` xanh.
+- [x] Service mới nhận danh sách người nhận (Discord ID, payload, file tuỳ chọn) và trả kết quả từng người: đã gửi, chặn DM (50007), chưa gửi được.
+- [x] Gửi tuần tự từng người. 429 đợi tối đa 10 giây (mặc định 1 giây khi Discord không nói) rồi thử lại đúng một lần; lần hai là chưa gửi được.
+- [x] 40003 dừng cả lượt: người đó và mọi người còn lại là chưa gửi được.
+- [x] Ngân sách 220 giây cho cả lượt, tính bằng `Clock` inject: hết ngân sách thì người còn lại là chưa gửi được, ghi log warn một lần.
+- [x] Lỗi khác ghi log kèm nội dung lỗi của Discord và tính là chưa gửi được.
+- [x] Service Team notice gọi qua service mới; các quy tắc riêng của Team notice (không có mặt, chưa liên kết Discord ID, chọn ảnh theo team) giữ nguyên ở chỗ cũ.
+- [x] Spec Team notice hiện có xanh mà không sửa kỳ vọng. Các ca 429/40003/50007/ngân sách có test ở service mới (chuyển hoặc thêm).
+- [x] Test, typecheck, lint của `api` xanh.
