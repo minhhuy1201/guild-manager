@@ -2,6 +2,11 @@
 
 Status: approved
 
+> **Tạm ẩn (2026-11-16):** bang chưa dùng trang Class outlook. `/luu-phai` trả 404 cho mọi role và
+> không còn mục nav (header lẫn tab bar điện thoại). Feature `class-survey`, API và lệnh Discord vẫn
+> giữ nguyên; nút "🌐 Xem trên website" trong tin `mo` và `nhac` giờ dẫn tới trang 404. Cách bật lại
+> ghi ở `apps/web/app/luu-phai/page.tsx`. Các mục nói về trang web bên dưới mô tả lúc trang còn bật.
+
 Ngày: 2026-10-31 · Thuật ngữ mới: **Class survey** (UI: "Khảo sát lưu phái"), **Class outlook** (UI:
 "Lực lượng lưu phái") - thêm vào `GLOSSARY.md` khi spec được duyệt · Tiền lệ: Tự động điểm danh
 ([`2026-10-27-auto-attend.md`](2026-10-27-auto-attend.md)) cho bảng riêng trên Discord. Prototype giao
