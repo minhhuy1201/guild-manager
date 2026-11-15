@@ -48,6 +48,9 @@ interface MemberReminder {
   sessions: BattleSession[];
 }
 
+/** A member with a Discord ID, the only kind a DM can reach. */
+type LinkedReminder = MemberReminder & { discordId: string };
+
 /**
  * Key identifying one person's answer for one battle day.
  *
@@ -188,11 +191,7 @@ export class ReminderService {
   ): Promise<UndeliveredGroups> {
     const webOrigin = this.config.get('WEB_ORIGIN', { infer: true });
     const groups: UndeliveredGroups = { unlinked: [], blocked: [], unsent: [] };
-    const linked: {
-      name: string;
-      discordId: string;
-      sessions: BattleSession[];
-    }[] = [];
+    const linked: LinkedReminder[] = [];
 
     for (const reminder of reminders) {
       if (reminder.discordId === null) {

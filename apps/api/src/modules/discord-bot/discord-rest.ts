@@ -221,10 +221,9 @@ export class DiscordRestClient {
       `${DISCORD_API_BASE}/webhooks/${applicationId}/${interactionToken}/messages/@original`,
       {
         method: 'PATCH',
-        headers: {
-          ...this.authHeader(),
-          'Content-Type': 'application/json',
-        },
+        // No bot token: the interaction token in the path is the credential, and Discord's webhook
+        // routes "do not require a bot user or authentication".
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       },

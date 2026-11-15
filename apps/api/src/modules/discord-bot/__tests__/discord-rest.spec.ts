@@ -227,7 +227,7 @@ describe('DiscordRestClient - giới hạn thời gian chờ', () => {
 });
 
 describe('DiscordRestClient.editOriginalResponse', () => {
-  it('PATCH câu trả lời gốc của interaction, kèm bot token và nội dung mới', async () => {
+  it('PATCH câu trả lời gốc của interaction bằng token interaction, không kèm bot token', async () => {
     const fetchMock = stubFetch({ ok: true });
     const client = new DiscordRestClient(CONFIG);
 
@@ -244,7 +244,7 @@ describe('DiscordRestClient.editOriginalResponse', () => {
       'https://discord.com/api/v10/webhooks/777/interaction-token/messages/@original',
     );
     expect(init.method).toBe('PATCH');
-    expect(init.headers.Authorization).toBe('Bot bot-token-value');
+    expect(init.headers.Authorization).toBeUndefined();
     expect(JSON.parse(init.body)).toEqual({ content: 'xong' });
   });
 

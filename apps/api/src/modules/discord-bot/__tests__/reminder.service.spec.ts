@@ -4,7 +4,7 @@ import { FixedClock } from '../../../common';
 import type { MessagePayload } from '../commands/command.types';
 import { DiscordApiError } from '../discord-rest';
 import { reminderFailureText } from '../reminder-alert';
-import type { DmResult } from '../dm-sender.service';
+import { DmSenderService } from '../dm-sender.service';
 import { ReminderService } from '../reminder.service';
 
 /** 09:00 Vietnam time on Friday 04/09/2026 - the morning of the Bang Chiến's 12:00 deadline. */
@@ -49,8 +49,8 @@ interface Options {
   }[];
   members?: { id: string; name: string; discordId: string | null }[];
   now?: Date;
-  /** What the DM sender answers per call; defaults to every recipient `sent`. */
-  sendResults?: (count: number) => DmResult[];
+  /** Discord's refusal when opening a DM, by Discord ID; anyone absent receives theirs. */
+  dmErrors?: Record<string, Error>;
   sendAllError?: Error;
 }
 
@@ -83,15 +83,20 @@ function makeService(options: Options = {}) {
         options.adminChannelId === undefined ? '999' : options.adminChannelId,
       ),
     );
-  const sendAll = jest.fn((recipients: SentDm[]) => {
-    if (options.sendAllError) return Promise.reject(options.sendAllError);
+  // The real sender over a faked Discord, so a refusal reaches the service the way it would live.
+  const dmRest = {
+    openDm: jest.fn((discordId: string) => {
+      const error = options.dmErrors?.[discordId];
 
-    return Promise.resolve(
-      options.sendResults
-        ? options.sendResults(recipients.length)
-        : recipients.map(() => 'sent' as const),
-    );
-  });
+      return error ? Promise.reject(error) : Promise.resolve(`dm-${discordId}`);
+    }),
+    postMessage: jest.fn().mockResolvedValue(undefined),
+  };
+  const clock = new FixedClock(options.now ?? NOW);
+  const dmSender = new DmSenderService(dmRest as never, clock);
+  const sendAll = jest.spyOn(dmSender, 'sendAll');
+
+  if (options.sendAllError) sendAll.mockRejectedValue(options.sendAllError);
 
   const service = new ReminderService(
     { listByWeek } as never,
@@ -107,8 +112,8 @@ function makeService(options: Options = {}) {
     } as never,
     { get } as never,
     { postMessage } as never,
-    { sendAll } as never,
-    new FixedClock(options.now ?? NOW),
+    dmSender,
+    clock,
     { get: () => 'https://mmgh-nth.vercel.app' } as never,
   );
 
@@ -128,9 +133,19 @@ function makeService(options: Options = {}) {
  * @param sendAll - The mock
  * @returns The recipients of the first call
  */
-function recipientsOf(sendAll: jest.Mock): SentDm[] {
+function recipientsOf(sendAll: jest.SpyInstance): SentDm[] {
   return (sendAll.mock.calls[0] as [SentDm[]])[0];
 }
+
+/** Discord's answer for a member who does not accept DMs from the bot. */
+const BLOCKED = new DiscordApiError(
+  403,
+  'user',
+  '{"code":50007,"message":"Cannot send messages to this user"}',
+);
+
+/** Any other refusal: counted as not sent. */
+const SERVER_ERROR = new DiscordApiError(500, 'user', 'Internal Server Error');
 
 const SENT_NONE_MISSED = { unlinked: [], blocked: [], unsent: [] };
 
@@ -391,7 +406,7 @@ describe('ReminderService.run', () => {
         { id: 'd', name: 'Gà Mờ', discordId: '444' },
         { id: 'e', name: 'Vịt Bầu', discordId: '555' },
       ],
-      sendResults: () => ['sent', 'blocked', 'unsent', 'sent'],
+      dmErrors: { '222': BLOCKED, '444': SERVER_ERROR },
     });
 
     await expect(service.run('today')).resolves.toEqual({
@@ -508,7 +523,7 @@ describe('ReminderService.runScheduled', () => {
         { id: 'b', name: 'Cún Con', discordId: '222' },
         { id: 'c', name: 'Chim Sẻ', discordId: null },
       ],
-      sendResults: () => ['blocked', 'unsent'],
+      dmErrors: { '111': BLOCKED, '222': SERVER_ERROR },
     });
 
     await expect(service.runScheduled()).resolves.toMatchObject({
@@ -529,7 +544,7 @@ describe('ReminderService.runScheduled', () => {
   it('có người không nhận được mà thiếu kênh admin: chỉ log, vẫn trả outcome', async () => {
     const { service, postMessage } = makeService({
       adminChannelId: null,
-      sendResults: () => ['blocked'],
+      dmErrors: { '111': BLOCKED },
     });
 
     await expect(service.runScheduled()).resolves.toMatchObject({
@@ -579,7 +594,7 @@ describe('ReminderService.runScheduled', () => {
     const adminChannelGet = jest.fn(() => Promise.reject(new Error('db down')));
     const { service } = makeService({
       adminChannelGet,
-      sendResults: () => ['blocked'],
+      dmErrors: { '111': BLOCKED },
     });
 
     await expect(service.runScheduled()).resolves.toMatchObject({
