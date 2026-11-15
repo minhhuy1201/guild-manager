@@ -1,7 +1,6 @@
 import {
   ClipboardCheck,
   History,
-  Shuffle,
   Settings,
   Swords,
   Users,
@@ -48,14 +47,6 @@ export const NAV_ITEMS: readonly NavItem[] = [
     label: "Lịch sử điểm danh",
     shortLabel: "Lịch sử",
     icon: History,
-    capabilities: [],
-    desktopOnly: false,
-  },
-  {
-    href: ROUTES.classOutlook,
-    label: "Lực lượng lưu phái",
-    shortLabel: "Lưu phái",
-    icon: Shuffle,
     capabilities: [],
     desktopOnly: false,
   },
