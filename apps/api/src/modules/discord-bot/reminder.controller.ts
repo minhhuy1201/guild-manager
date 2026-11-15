@@ -9,8 +9,8 @@ import { ReminderService, type ReminderOutcome } from './reminder.service';
  *
  * Separate from `DiscordBotController` because that one verifies Discord's Ed25519 signature on
  * every request and this one verifies a shared secret — two authentication schemes cannot share a
- * class-level guard. It stays inside this module all the same: the only thing it does is send a
- * Discord message, and everything it calls lives here.
+ * class-level guard. It stays inside this module all the same: the only thing it does is send
+ * Discord messages, and everything it calls lives here.
  *
  * Excluded from Swagger: it is not part of the api ↔ web contract.
  */
@@ -30,12 +30,11 @@ export class ReminderController {
    * The body is not run through `verifyResponse`: this shape is internal to the job, never part of
    * the api ↔ web contract that `packages/shared` owns, and the caller ignores it.
    *
-   * The body carries the outcome's tag, so a run that posted nothing still says which silence it
-   * was — `no-channel` needs an admin, `nothing-due` is an ordinary morning. Reading the Vercel log
-   * to tell those apart was the alternative.
+   * The body carries the outcome, including who could not be reached, so the Vercel log shows what
+   * a quiet morning did without reading Discord.
    *
-   * A run that threw or found no reminder channel also posts one line in the admin channel, then
-   * still fails the request so Vercel records it.
+   * A run that threw, or left someone without their reminder, also posts in the admin channel; a
+   * thrown error still fails the request so Vercel records it.
    *
    * Always the `today` scope: the schedule is the daily rule, and only an admin asking by hand may
    * reach further ahead.

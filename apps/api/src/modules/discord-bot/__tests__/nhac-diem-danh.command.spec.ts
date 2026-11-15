@@ -4,7 +4,6 @@ import { TOKEN_TYPE } from '../../../common';
 import type { CommandDeps } from '../commands/command.types';
 import { nhacDiemDanhCommand } from '../commands/nhac-diem-danh.command';
 import { MESSAGE_FLAG } from '../discord.constants';
-import { DiscordApiError } from '../discord-rest';
 import type { ReminderOutcome } from '../reminder.service';
 
 const INTERACTION = {
@@ -53,12 +52,15 @@ describe('/nhac-diem-danh', () => {
       status: 'sent',
       sessionCount: 2,
       missingCount: 5,
+      deliveredCount: 4,
+      unlinked: [],
+      blocked: [],
+      unsent: [],
     });
 
     const reply = await nhacDiemDanhCommand.execute(INTERACTION, deps);
 
-    expect(reply.data.content).toContain('5');
-    expect(reply.data.content).toContain('2');
+    expect(reply.data.content).toBe('Đã nhắc 4/5 người cho 2 ngày đánh.');
     expect(reply.data.flags).toBe(MESSAGE_FLAG.ephemeral);
   });
 
@@ -133,14 +135,22 @@ describe('/nhac-diem-danh', () => {
     expect(reply.data.content).toContain('đủ');
   });
 
-  it('chỉ đường khi chưa cấu hình channel', async () => {
+  it('nêu tên ba nhóm không nhận được', async () => {
     const { deps } = makeDeps(actor(GuildRole.ADMIN), {
-      status: 'no-channel',
+      status: 'sent',
+      sessionCount: 1,
+      missingCount: 4,
+      deliveredCount: 1,
+      unlinked: ['Chim Sẻ'],
+      blocked: ['Cún Con'],
+      unsent: ['Mèo Béo'],
     });
 
     const reply = await nhacDiemDanhCommand.execute(INTERACTION, deps);
 
-    expect(reply.data.content).toContain('/cau-hinh-kenh');
+    expect(reply.data.content).toContain('Chim Sẻ');
+    expect(reply.data.content).toContain('Cún Con');
+    expect(reply.data.content).toContain('Mèo Béo');
   });
 
   it('thành viên thường bị từ chối và không chạy gì', async () => {
@@ -160,34 +170,5 @@ describe('/nhac-diem-danh', () => {
     await nhacDiemDanhCommand.execute(INTERACTION, deps);
 
     expect(run).not.toHaveBeenCalled();
-  });
-
-  it('Discord từ chối vì thiếu quyền thì nói phải làm gì', async () => {
-    // The same 403 that /cau-hinh-kenh and formation-announcer already translate. Here it used to
-    // escape as a generic "Có lỗi xảy ra..." with no way for an admin to learn why.
-    const { deps, run } = makeDeps(actor(GuildRole.ADMIN), {
-      status: 'nothing-due',
-    });
-    run.mockRejectedValue(
-      new DiscordApiError(403, '424242', 'Missing Permissions'),
-    );
-
-    const reply = await nhacDiemDanhCommand.execute(INTERACTION, deps);
-
-    expect(reply.data.content).toContain('quyền');
-    expect(reply.data.flags).toBe(MESSAGE_FLAG.ephemeral);
-  });
-
-  it('lỗi khác của Discord vẫn nổi lên nguyên trạng', async () => {
-    const { deps, run } = makeDeps(actor(GuildRole.ADMIN), {
-      status: 'nothing-due',
-    });
-    run.mockRejectedValue(
-      new DiscordApiError(500, '424242', 'Internal Server Error'),
-    );
-
-    await expect(
-      nhacDiemDanhCommand.execute(INTERACTION, deps),
-    ).rejects.toThrow(DiscordApiError);
   });
 });

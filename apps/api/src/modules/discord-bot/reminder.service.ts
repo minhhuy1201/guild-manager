@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import type { BattleSession } from '@guild/shared/schemas';
 
 import { Clock } from '../../common';
 import type { Env } from '../../config';
@@ -12,33 +13,40 @@ import {
 import { CharactersService } from '../characters/characters.public';
 import { BotChannelService } from './bot-channel.service';
 import { DiscordRestClient } from './discord-rest';
-import { buildReminder, type DueSession } from './reminder';
+import { DmSenderService } from './dm-sender.service';
+import { buildReminder } from './reminder';
 import {
-  REMINDER_NO_CHANNEL_ALERT,
+  hasUndelivered,
   reminderFailureText,
+  reminderUndeliveredText,
+  type UndeliveredGroups,
 } from './reminder-alert';
 
 /**
- * What one run did — the cron response body, and what `/nhac-diem-danh` reports back.
+ * What one run did - the cron response body, and what `/nhac-diem-danh` reports back.
  *
- * A tagged union rather than `{ sent: boolean }`, because the two ways of sending nothing are not
- * the same event: `no-channel` is waiting on an admin, `nothing-due` is the ordinary quiet morning.
- * Collapsing them left the caller unable to tell which had happened, so `/nhac-diem-danh` had to
- * re-read the channel itself just to pick its wording, and the cron response could not say why it
- * stayed silent.
+ * A tagged union rather than `{ sent: boolean }`, because `nothing-due` is the ordinary quiet
+ * morning while `sent` may still carry people who could not be reached.
  */
 export type ReminderOutcome =
-  | {
+  | ({
       status: 'sent';
-      /** Battle days the message covered */
+      /** Battle days the reminders covered */
       sessionCount: number;
-      /** People mentioned, each counted once however many days they are missing from */
+      /** People who had to be reminded, each counted once however many days they are missing from */
       missingCount: number;
-    }
-  /** No channel configured yet — an admin has not run `/cau-hinh-kenh`. */
-  | { status: 'no-channel' }
+      /** How many of them received their reminder */
+      deliveredCount: number;
+    } & UndeliveredGroups)
   /** Nothing in the scope is due, or everyone has already answered for what is. */
   | { status: 'nothing-due' };
+
+/** One member and the battle days they have not answered for. */
+interface MemberReminder {
+  name: string;
+  discordId: string | null;
+  sessions: BattleSession[];
+}
 
 /**
  * Key identifying one person's answer for one battle day.
@@ -55,7 +63,7 @@ function answerKey(sessionId: string, characterId: string): string {
 }
 
 /**
- * Finds who still has not answered for a deadline due for a reminder, and says so in Discord.
+ * Finds who still has not answered for a deadline due for a reminder, and DMs each of them once.
  *
  * Both the cron endpoint and `/nhac-diem-danh` call `run`: a scheduled reminder and a hand-run one
  * must not be able to disagree about who is missing. They may differ only in which deadlines they
@@ -69,6 +77,7 @@ export class ReminderService {
     private readonly characters: CharactersService,
     private readonly channels: BotChannelService,
     private readonly rest: DiscordRestClient,
+    private readonly dmSender: DmSenderService,
     private readonly clock: Clock,
     private readonly config: ConfigService<Env, true>,
   ) {}
@@ -76,9 +85,10 @@ export class ReminderService {
   private readonly logger = new Logger(ReminderService.name);
 
   /**
-   * The cron's run: `run('today')`, plus an alert in the admin channel when it threw or found no
-   * reminder channel. The error is rethrown so Vercel still records the run as failed.
-   * `/nhac-diem-danh` keeps calling `run`: the admin already reads the outcome in chat.
+   * The cron's run: `run('today')`, plus a post in the admin channel when it threw or when someone
+   * could not be reached. A clean run stays silent. The error is rethrown so Vercel still records
+   * the run as failed. `/nhac-diem-danh` keeps calling `run`: the admin already reads the outcome
+   * in chat.
    *
    * @returns What the run did
    * @throws The error `run` threw, unchanged
@@ -88,39 +98,27 @@ export class ReminderService {
     try {
       outcome = await this.run('today');
     } catch (error) {
-      await this.alert(reminderFailureText(error));
+      await this.alert(reminderFailureText());
       throw error;
     }
 
-    if (outcome.status === 'no-channel') {
-      await this.alert(REMINDER_NO_CHANNEL_ALERT);
+    if (outcome.status === 'sent' && hasUndelivered(outcome)) {
+      await this.alert(reminderUndeliveredText(outcome));
     }
 
     return outcome;
   }
 
   /**
-   * Post the reminder, if there is anything to remind about.
+   * DM every member who has not answered for a due day, one message each covering all their days.
    *
    * Silence is a normal outcome, not a failure: no deadline in the scope is due, or everyone has
-   * already answered for the ones that are. A daily "nothing today" is the fastest way to get a
-   * channel muted.
+   * already answered for the ones that are.
    *
    * @param scope - Which deadlines to look at: `today` for the daily rule, `week` for every open one
-   * @returns What the run did, tagged so the caller can tell the two silences apart
-   * @throws Error when Discord rejects the message — the caller decides how loud that is
+   * @returns What the run did, including who could not be reached
    */
   async run(scope: ReminderScope): Promise<ReminderOutcome> {
-    const channelId = await this.channels.get('ATTENDANCE_REMINDER');
-
-    if (!channelId) {
-      this.logger.warn(
-        'Chưa cấu hình channel nhắc điểm danh — chạy /cau-hinh-kenh trong channel muốn dùng.',
-      );
-
-      return { status: 'no-channel' };
-    }
-
     const now = this.clock.now();
     const sessions = await this.battleSessions.listByWeek();
     const dueSessions = sessions.filter((session) =>
@@ -136,7 +134,7 @@ export class ReminderService {
 
     const [members, records] = await Promise.all([
       this.characters.listRows(),
-      // Not `getRecords()`, which would derive the week a second time — and materialising it writes.
+      // Not `getRecords()`, which would derive the week a second time - and materialising it writes.
       // The whole week, not just `dueSessions`: narrowing what is read is a separate change.
       this.attendance.getRecordsForSessions(
         sessions.map((session) => session.id),
@@ -149,33 +147,77 @@ export class ReminderService {
       records.map((record) => answerKey(record.sessionId, record.characterId)),
     );
 
-    const due: DueSession[] = dueSessions
-      .map((session) => ({
-        session,
-        missing: members
-          .filter((member) => !answered.has(answerKey(session.id, member.id)))
-          .map((member) => ({
-            name: member.name,
-            discordId: member.discordId,
-          })),
+    const reminders: MemberReminder[] = members
+      .map((member) => ({
+        name: member.name,
+        discordId: member.discordId,
+        sessions: dueSessions.filter(
+          (session) => !answered.has(answerKey(session.id, member.id)),
+        ),
       }))
-      .filter((day) => day.missing.length > 0);
+      .filter((reminder) => reminder.sessions.length > 0);
 
-    if (due.length === 0) return { status: 'nothing-due' };
+    if (reminders.length === 0) return { status: 'nothing-due' };
 
-    await this.rest.postMessage(
-      channelId,
-      buildReminder(due, this.config.get('WEB_ORIGIN', { infer: true })),
-    );
+    const groups = await this.deliver(reminders);
 
     return {
       status: 'sent',
-      sessionCount: due.length,
-      // By name, not by row: one person missing three days is one person to nudge.
-      missingCount: new Set(
-        due.flatMap((day) => day.missing.map((member) => member.name)),
+      sessionCount: new Set(
+        reminders.flatMap((reminder) =>
+          reminder.sessions.map((session) => session.id),
+        ),
       ).size,
+      missingCount: reminders.length,
+      deliveredCount:
+        reminders.length -
+        groups.unlinked.length -
+        groups.blocked.length -
+        groups.unsent.length,
+      ...groups,
     };
+  }
+
+  /**
+   * Send each linked member their reminder and sort everyone who did not get one.
+   * @param reminders - Who to remind and for which days
+   * @returns The names of the people who could not be reached, by reason
+   */
+  private async deliver(
+    reminders: readonly MemberReminder[],
+  ): Promise<UndeliveredGroups> {
+    const webOrigin = this.config.get('WEB_ORIGIN', { infer: true });
+    const groups: UndeliveredGroups = { unlinked: [], blocked: [], unsent: [] };
+    const linked: {
+      name: string;
+      discordId: string;
+      sessions: BattleSession[];
+    }[] = [];
+
+    for (const reminder of reminders) {
+      if (reminder.discordId === null) {
+        groups.unlinked.push(reminder.name);
+        continue;
+      }
+
+      linked.push({ ...reminder, discordId: reminder.discordId });
+    }
+
+    const results = await this.dmSender.sendAll(
+      linked.map((member) => ({
+        discordId: member.discordId,
+        payload: buildReminder(member.sessions, webOrigin),
+      })),
+    );
+
+    linked.forEach((member, index) => {
+      const result = results[index];
+
+      if (result === 'blocked') groups.blocked.push(member.name);
+      else if (result === 'unsent') groups.unsent.push(member.name);
+    });
+
+    return groups;
   }
 
   /**

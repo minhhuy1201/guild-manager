@@ -2,13 +2,12 @@ import { GrantableCommand } from '@guild/shared/enums';
 import { assertNever } from '../../../common';
 import type { ReminderScope } from '../../battle-sessions/battle-sessions.public';
 import { COMMAND_OPTION_TYPE } from '../discord.constants';
-import { isDiscordForbidden } from '../discord-rest';
 import {
   type ApplicationCommandInteraction,
   commandOptionValue,
 } from '../interaction.schema';
 import { ephemeralText } from '../reply';
-import type { ReminderOutcome } from '../reminder.service';
+import { undeliveredLines } from '../reminder-alert';
 import { requireCommand } from '../require-command';
 import type { CommandReply, SlashCommand } from './command.types';
 
@@ -26,20 +25,6 @@ const SCOPE_CHOICES = [
 
 /** Left empty, the command runs the cron's own rule - what it did before the option existed. */
 const DEFAULT_SCOPE: ReminderScope = 'today';
-
-/** Shown when no channel has been configured yet — the fix is one command away. */
-const NO_CHANNEL =
-  'Chưa có channel nào để nhắc. Gõ /cau-hinh-kenh trong channel muốn dùng.';
-
-/**
- * Shown when Discord refuses the reminder post for lack of permission.
- *
- * The same refusal `/cau-hinh-kenh` already translates, worded for this command: the channel was
- * configured once and something changed since, so the fix is to check it or configure it again.
- */
-const CANNOT_POST =
-  'Bot không gửi được tin vào channel nhắc điểm danh. Kiểm tra bot còn thấy channel đó và có ' +
-  'quyền Send Messages không, hoặc chạy lại /cau-hinh-kenh trong channel muốn dùng.';
 
 /**
  * Shown when nothing is due, or everyone whose deadline is due has already answered - per scope,
@@ -113,27 +98,18 @@ export const nhacDiemDanhCommand: SlashCommand = {
 
     const scope = scopeOf(interaction);
 
-    // `run` posts to Discord and lets a refusal through; its JSDoc leaves how loud that is to the
-    // caller. Loud here means one sentence naming the action, not the router's generic apology.
-    let outcome: ReminderOutcome;
-    try {
-      outcome = await deps.reminders.run(scope);
-    } catch (error) {
-      if (isDiscordForbidden(error)) return ephemeralText(CANNOT_POST);
-
-      throw error;
-    }
+    const outcome = await deps.reminders.run(scope);
 
     switch (outcome.status) {
-      case 'no-channel':
-        return ephemeralText(NO_CHANNEL);
-
       case 'nothing-due':
         return ephemeralText(NOTHING_TO_SAY[scope]);
 
       case 'sent':
         return ephemeralText(
-          `Đã nhắc ${outcome.missingCount} người cho ${outcome.sessionCount} ngày đánh.`,
+          [
+            `Đã nhắc ${outcome.deliveredCount}/${outcome.missingCount} người cho ${outcome.sessionCount} ngày đánh.`,
+            ...undeliveredLines(outcome),
+          ].join('\n'),
         );
 
       default:
