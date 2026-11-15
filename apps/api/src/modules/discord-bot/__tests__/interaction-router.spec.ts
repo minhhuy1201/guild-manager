@@ -18,7 +18,11 @@ import {
   encodeSurveySelectId,
 } from '../custom-id';
 import { INTERACTION_RESPONSE_TYPE, MESSAGE_FLAG } from '../discord.constants';
+import { waitUntil } from '@vercel/functions';
+
 import { InteractionRouter } from '../interaction-router';
+
+jest.mock('@vercel/functions', () => ({ waitUntil: jest.fn() }));
 
 /** Every button test below lands on this one sentence, so it is written once. */
 const NOT_LINKED =
@@ -57,6 +61,8 @@ describe('InteractionRouter', () => {
     const reply = await makeRouter().route({
       type: 2,
       channel_id: '424242',
+      application_id: '777',
+      token: 'interaction-token',
       data: { name: 'ping' },
     });
 
@@ -72,6 +78,8 @@ describe('InteractionRouter', () => {
     const reply = await makeRouter().route({
       type: 2,
       channel_id: '424242',
+      application_id: '777',
+      token: 'interaction-token',
       data: { name: 'khong-ton-tai' },
     });
 
@@ -138,6 +146,8 @@ describe('InteractionRouter', () => {
     await router.route({
       type: 2,
       channel_id: '424242',
+      application_id: '777',
+      token: 'interaction-token',
       data: { name: 'ping' },
     });
 
@@ -149,6 +159,134 @@ describe('InteractionRouter', () => {
       expect(get).toHaveBeenCalledWith(key, { infer: true });
     }
   });
+  describe('lệnh trả lời trễ', () => {
+    const ADMIN = {
+      actor: { sub: '111', role: GuildRole.ADMIN, type: TOKEN_TYPE.access },
+      character: { id: 'meo-beo-k7ma3x', name: 'Mèo Béo', discordId: '111' },
+    };
+
+    const COMMAND = {
+      type: 2 as const,
+      channel_id: '424242',
+      application_id: '777',
+      token: 'interaction-token',
+      data: { name: 'nhac-diem-danh' },
+      member: { user: { id: '111' } },
+    };
+
+    /**
+     * A router whose reminder run and Discord client are stubs.
+     * @param run - What ReminderService.run does
+     * @param resolved - What ActorResolver.resolve returns
+     * @returns The router with the stubs, for assertions
+     */
+    function deferredRouter(run: jest.Mock, resolved: unknown = ADMIN) {
+      const edit = jest.fn().mockResolvedValue(undefined);
+      const router = new InteractionRouter(
+        {} as never,
+        {} as never,
+        {} as never,
+        { resolve: jest.fn().mockResolvedValue(resolved) } as never,
+        { get: jest.fn().mockReturnValue('') } as never,
+        {} as never,
+        { run } as never,
+        { editOriginalResponse: edit } as never,
+        {} as never,
+        {} as never,
+        {} as never,
+        {} as never,
+      );
+
+      return { router, edit };
+    }
+
+    /**
+     * Wait for the background promise the router handed to `waitUntil`.
+     * @returns Resolves once the background work finished
+     */
+    async function backgroundDone(): Promise<void> {
+      const calls = (waitUntil as jest.Mock).mock.calls;
+
+      await (calls[calls.length - 1] as [Promise<void>])[0];
+    }
+
+    beforeEach(() => {
+      (waitUntil as jest.Mock).mockClear();
+    });
+
+    it('bị từ chối thì trả lời ngay và không chạy nền', async () => {
+      const { router, edit } = deferredRouter(jest.fn(), null);
+
+      const reply = await router.route(COMMAND);
+
+      expect(reply).toMatchObject({
+        type: INTERACTION_RESPONSE_TYPE.channelMessageWithSource,
+      });
+      expect(waitUntil).not.toHaveBeenCalled();
+      expect(edit).not.toHaveBeenCalled();
+    });
+
+    it('được phép thì trả type 5 ephemeral, không kèm việc nền trong body', async () => {
+      const { router } = deferredRouter(
+        jest.fn().mockResolvedValue({ status: 'nothing-due' }),
+      );
+
+      const reply = await router.route(COMMAND);
+
+      expect(reply).toEqual({
+        type: INTERACTION_RESPONSE_TYPE.deferredChannelMessageWithSource,
+        data: { flags: MESSAGE_FLAG.ephemeral },
+      });
+      await backgroundDone();
+    });
+
+    it('việc nền xong thì sửa câu trả lời gốc bằng kết quả', async () => {
+      const { router, edit } = deferredRouter(
+        jest.fn().mockResolvedValue({
+          status: 'sent',
+          sessionCount: 2,
+          missingCount: 5,
+          deliveredCount: 5,
+          unlinked: [],
+          blocked: [],
+          unsent: [],
+        }),
+      );
+
+      await router.route(COMMAND);
+      await backgroundDone();
+
+      expect(edit).toHaveBeenCalledWith('777', 'interaction-token', {
+        content: 'Đã nhắc 5/5 người cho 2 ngày đánh.',
+      });
+    });
+
+    it('việc nền lỗi thì sửa câu trả lời gốc thành câu lỗi chung', async () => {
+      const { router, edit } = deferredRouter(
+        jest.fn().mockRejectedValue(new Error('boom')),
+      );
+
+      await router.route(COMMAND);
+      await backgroundDone();
+
+      expect(edit).toHaveBeenCalledWith('777', 'interaction-token', {
+        content: 'Có lỗi xảy ra. Thử lại sau hoặc điểm danh trên web.',
+      });
+    });
+
+    it('sửa câu trả lời gốc lỗi thì chỉ ghi log, không ném ra ngoài waitUntil', async () => {
+      const { router, edit } = deferredRouter(
+        jest.fn().mockResolvedValue({ status: 'nothing-due' }),
+      );
+
+      edit.mockRejectedValue(new Error('Unknown Webhook'));
+
+      await router.route(COMMAND);
+
+      await expect(backgroundDone()).resolves.toBeUndefined();
+    });
+  });
+
   describe('xin nghỉ', () => {
     const MODAL_SUBMIT = {
       type: 5 as const,

@@ -6,10 +6,14 @@ import {
   type ApplicationCommandInteraction,
   commandOptionValue,
 } from '../interaction.schema';
-import { ephemeralText } from '../reply';
+import { deferredEphemeral } from '../reply';
 import { undeliveredLines } from '../reminder-alert';
 import { requireCommand } from '../require-command';
-import type { CommandReply, SlashCommand } from './command.types';
+import type {
+  CommandResult,
+  MessagePayload,
+  SlashCommand,
+} from './command.types';
 
 /** Name of the option, used both when registering and when reading the invocation. */
 const SCOPE_OPTION = 'pham-vi';
@@ -71,7 +75,7 @@ function scopeOf(interaction: ApplicationCommandInteraction): ReminderScope {
  * Every branch below comes from the outcome `run` reports, so this command asks the database
  * nothing of its own — the run is the single source of truth for what happened, wording included.
  */
-export const nhacDiemDanhCommand: SlashCommand = {
+export const nhacDiemDanhCommand: SlashCommand<CommandResult> = {
   definition: {
     name: 'nhac-diem-danh',
     description: 'Nhắc ngay những ai chưa điểm danh (cần được cấp quyền)',
@@ -87,7 +91,7 @@ export const nhacDiemDanhCommand: SlashCommand = {
     ],
   },
 
-  execute: async (interaction, deps): Promise<CommandReply> => {
+  execute: async (interaction, deps): Promise<CommandResult> => {
     const check = await requireCommand(
       interaction,
       deps,
@@ -98,22 +102,26 @@ export const nhacDiemDanhCommand: SlashCommand = {
 
     const scope = scopeOf(interaction);
 
-    const outcome = await deps.reminders.run(scope);
+    // Sending one DM per member takes longer than Discord's 3 seconds, so acknowledge now; the
+    // router runs the follow-up and edits the original response with its result.
+    return deferredEphemeral(async (): Promise<MessagePayload> => {
+      const outcome = await deps.reminders.run(scope);
 
-    switch (outcome.status) {
-      case 'nothing-due':
-        return ephemeralText(NOTHING_TO_SAY[scope]);
+      switch (outcome.status) {
+        case 'nothing-due':
+          return { content: NOTHING_TO_SAY[scope] };
 
-      case 'sent':
-        return ephemeralText(
-          [
-            `Đã nhắc ${outcome.deliveredCount}/${outcome.missingCount} người cho ${outcome.sessionCount} ngày đánh.`,
-            ...undeliveredLines(outcome),
-          ].join('\n'),
-        );
+        case 'sent':
+          return {
+            content: [
+              `Đã nhắc ${outcome.deliveredCount}/${outcome.missingCount} người cho ${outcome.sessionCount} ngày đánh.`,
+              ...undeliveredLines(outcome),
+            ].join('\n'),
+          };
 
-      default:
-        return assertNever(outcome, 'Kết quả nhắc điểm danh ngoài dự kiến');
-    }
+        default:
+          return assertNever(outcome, 'Kết quả nhắc điểm danh ngoài dự kiến');
+      }
+    });
   },
 };

@@ -139,6 +139,26 @@ export interface CommandReply {
   data: MessagePayload;
 }
 
+/**
+ * A reply that only acknowledges the command, with the real answer produced afterwards.
+ *
+ * `followUp` is not part of the HTTP response: the router answers Discord with `type` and `data`,
+ * then runs `followUp` in the background and edits the original response with what it returns.
+ */
+export interface DeferredReply {
+  type: (typeof INTERACTION_RESPONSE_TYPE)['deferredChannelMessageWithSource'];
+  /** Only the flags matter: they decide who sees the "thinking" state and the final message */
+  data: { flags: number };
+  /**
+   * Do the slow work and say what happened.
+   * @returns The message that replaces the "thinking" state
+   */
+  followUp: () => Promise<MessagePayload>;
+}
+
+/** What a command may answer with: at once, or acknowledged now and answered later. */
+export type CommandResult = CommandReply | DeferredReply;
+
 /** One text box of a modal, wrapped in a Label. Snake_case because it is Discord's payload. */
 export interface TextInputComponent {
   type: (typeof COMPONENT_TYPE)['textInput'];
@@ -225,8 +245,12 @@ export interface CommandDeps {
 /**
  * One command, whole. Keeping the Discord-facing definition next to the handler is what makes
  * adding a command a one-file change.
+ *
+ * `Result` narrows what `execute` may return: most commands answer at once, and a test of one reads
+ * `reply.data.content` without first excluding a deferred reply. Only the command that defers
+ * declares the wider type, and the registry accepts either.
  */
-export interface SlashCommand {
+export interface SlashCommand<Result extends CommandResult = CommandReply> {
   definition: SlashCommandDefinition;
   /**
    * Answer one invocation.
@@ -237,5 +261,5 @@ export interface SlashCommand {
   execute(
     interaction: ApplicationCommandInteraction,
     deps: CommandDeps,
-  ): Promise<CommandReply>;
+  ): Promise<Result>;
 }

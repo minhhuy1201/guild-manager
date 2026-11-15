@@ -225,3 +225,38 @@ describe('DiscordRestClient - giới hạn thời gian chờ', () => {
     expect(init.signal).toBeInstanceOf(AbortSignal);
   });
 });
+
+describe('DiscordRestClient.editOriginalResponse', () => {
+  it('PATCH câu trả lời gốc của interaction, kèm bot token và nội dung mới', async () => {
+    const fetchMock = stubFetch({ ok: true });
+    const client = new DiscordRestClient(CONFIG);
+
+    await client.editOriginalResponse('777', 'interaction-token', {
+      content: 'xong',
+    });
+
+    const [url, init] = fetchMock.mock.calls[0] as [
+      string,
+      { method: string; headers: Record<string, string>; body: string },
+    ];
+
+    expect(url).toBe(
+      'https://discord.com/api/v10/webhooks/777/interaction-token/messages/@original',
+    );
+    expect(init.method).toBe('PATCH');
+    expect(init.headers.Authorization).toBe('Bot bot-token-value');
+    expect(JSON.parse(init.body)).toEqual({ content: 'xong' });
+  });
+
+  it('ném DiscordApiError khi Discord từ chối, không lộ token interaction', async () => {
+    stubFetch({ ok: false, status: 404, text: '{"code":10015}' });
+    const client = new DiscordRestClient(CONFIG);
+
+    const error = await client
+      .editOriginalResponse('777', 'interaction-token', { content: 'xong' })
+      .catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(DiscordApiError);
+    expect((error as Error).message).not.toContain('interaction-token');
+  });
+});

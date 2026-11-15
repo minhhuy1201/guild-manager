@@ -9,6 +9,8 @@ import { DiscordApiError } from '../discord-rest';
 const INTERACTION = {
   type: 2 as const,
   channel_id: '424242',
+  application_id: '777',
+  token: 'interaction-token',
   data: { name: 'cau-hinh-kenh' },
   member: { user: { id: '111' } },
 };

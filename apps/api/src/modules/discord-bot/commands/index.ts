@@ -1,6 +1,10 @@
 import { cauHinhKenhCommand } from './cau-hinh-kenh.command';
 import { chaoMungCommand } from './chao-mung.command';
-import type { SlashCommand, SlashCommandDefinition } from './command.types';
+import type {
+  CommandResult,
+  SlashCommand,
+  SlashCommandDefinition,
+} from './command.types';
 import { diemDanhHoCommand } from './diem-danh-ho.command';
 import { diemDanhCommand } from './diem-danh.command';
 import { khaoSatLuuPhaiCommand } from './khao-sat-luu-phai.command';
@@ -14,7 +18,7 @@ import { thongBaoCommand } from './thong-bao.command';
  * Adding a command is: one new file next to this one, one line here. Nothing else in the module
  * changes.
  */
-export const commands: readonly SlashCommand[] = [
+export const commands: readonly SlashCommand<CommandResult>[] = [
   pingCommand,
   diemDanhCommand,
   diemDanhHoCommand,

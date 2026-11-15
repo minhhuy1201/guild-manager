@@ -1,4 +1,8 @@
-import type { CommandReply, MessagePayload } from './commands/command.types';
+import type {
+  CommandReply,
+  DeferredReply,
+  MessagePayload,
+} from './commands/command.types';
 import { INTERACTION_RESPONSE_TYPE, MESSAGE_FLAG } from './discord.constants';
 
 /**
@@ -49,5 +53,24 @@ export function publicMessage(payload: MessagePayload): CommandReply {
   return {
     type: INTERACTION_RESPONSE_TYPE.channelMessageWithSource,
     data: payload,
+  };
+}
+
+/**
+ * Acknowledge now and answer privately once `followUp` resolves.
+ *
+ * For a command whose work can outlast Discord's 3-second window. The flag is set on the
+ * acknowledgement because Discord decides privacy there: the edited message inherits it.
+ *
+ * @param followUp - The slow work, resolving to the message that replaces the "thinking" state
+ * @returns The deferred reply
+ */
+export function deferredEphemeral(
+  followUp: () => Promise<MessagePayload>,
+): DeferredReply {
+  return {
+    type: INTERACTION_RESPONSE_TYPE.deferredChannelMessageWithSource,
+    data: { flags: MESSAGE_FLAG.ephemeral },
+    followUp,
   };
 }

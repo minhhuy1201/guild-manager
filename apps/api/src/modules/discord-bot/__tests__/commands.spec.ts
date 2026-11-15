@@ -6,7 +6,13 @@ import { INTERACTION_RESPONSE_TYPE } from '../discord.constants';
 describe('/ping', () => {
   it('trả một tin nhắn thấy được trong kênh', async () => {
     const reply = await pingCommand.execute(
-      { type: 2, channel_id: '424242', data: { name: 'ping' } },
+      {
+        type: 2,
+        channel_id: '424242',
+        application_id: '777',
+        token: 't',
+        data: { name: 'ping' },
+      },
       {} as never,
     );
 
