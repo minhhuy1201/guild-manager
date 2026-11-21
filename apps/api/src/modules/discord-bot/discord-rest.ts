@@ -217,8 +217,9 @@ export class DiscordRestClient {
     interactionToken: string,
     payload: MessagePayload,
   ): Promise<void> {
+    // Both segments come from the request body: encoded, they cannot climb out of this route.
     const response = await fetch(
-      `${DISCORD_API_BASE}/webhooks/${applicationId}/${interactionToken}/messages/@original`,
+      `${DISCORD_API_BASE}/webhooks/${encodeURIComponent(applicationId)}/${encodeURIComponent(interactionToken)}/messages/@original`,
       {
         method: 'PATCH',
         // No bot token: the interaction token in the path is the credential, and Discord's webhook

@@ -22,7 +22,8 @@ export function ViewOnlyMark({ reason }: ViewOnlyMarkProps) {
       <TooltipTrigger
         render={
           <span
-            tabIndex={0}
+            // The tab stop lets a keyboard user reach the reason in the tooltip.
+            tabIndex={0} // NOSONAR
             className="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground outline-none focus-visible:ring-3 focus-visible:ring-ring/50 max-sm:size-10"
           />
         }
