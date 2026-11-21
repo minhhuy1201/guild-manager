@@ -136,8 +136,9 @@ export function RowActionButton({
   return (
     <Tooltip>
       {isExplained ? (
-        // A disabled button gets no pointer events, so the tooltip hangs on a focusable wrapper.
-        <TooltipTrigger render={<span tabIndex={0} className="inline-flex" />}>
+        // A disabled button gets no pointer events, so the tooltip hangs on a focusable wrapper: its
+        // tab stop is what lets a keyboard user read why the button is disabled.
+        <TooltipTrigger render={<span tabIndex={0} /* NOSONAR */ className="inline-flex" />}>
           {button}
         </TooltipTrigger>
       ) : (

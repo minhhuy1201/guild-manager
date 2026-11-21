@@ -91,7 +91,7 @@ export function FocusModeShell({
    * @param event - The keydown bubbling up from inside the dialog
    */
   function trapTab(event: KeyboardEvent<HTMLDivElement>) {
-    if (!active || event.key !== "Tab" || !rootRef.current) return;
+    if (event.key !== "Tab" || !rootRef.current) return;
 
     // A roving tablist keeps its unselected tabs at -1, and a column can be hidden below `md`:
     // neither is a Tab stop, and counting one as the edge lets focus slip out behind the dialog.
@@ -122,6 +122,7 @@ export function FocusModeShell({
         "aria-label": label,
         tabIndex: -1,
         "data-slot": activeSlot,
+        onKeyDown: trapTab,
       }
     : {};
 
@@ -129,7 +130,6 @@ export function FocusModeShell({
     <div
       ref={rootRef}
       {...dialogProps}
-      onKeyDown={trapTab}
       className={active ? cn(ACTIVE_CLASS, activeClassName) : className}
     >
       {active ? (

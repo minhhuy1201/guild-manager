@@ -259,4 +259,19 @@ describe('DiscordRestClient.editOriginalResponse', () => {
     expect(error).toBeInstanceOf(DiscordApiError);
     expect((error as Error).message).not.toContain('interaction-token');
   });
+
+  it('mã hoá id và token trong path để payload không đổi được route Discord', async () => {
+    const fetchMock = stubFetch({ ok: true });
+    const client = new DiscordRestClient(CONFIG);
+
+    await client.editOriginalResponse('777/../../users', '../x?y#z', {
+      content: 'xong',
+    });
+
+    const [url] = fetchMock.mock.calls[0] as [string];
+
+    expect(url).toBe(
+      'https://discord.com/api/v10/webhooks/777%2F..%2F..%2Fusers/..%2Fx%3Fy%23z/messages/@original',
+    );
+  });
 });
