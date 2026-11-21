@@ -122,6 +122,7 @@ export function FocusModeShell({
         "aria-label": label,
         tabIndex: -1,
         "data-slot": activeSlot,
+        onKeyDown: trapTab,
       }
     : {};
 
@@ -129,7 +130,6 @@ export function FocusModeShell({
     <div
       ref={rootRef}
       {...dialogProps}
-      onKeyDown={trapTab}
       className={active ? cn(ACTIVE_CLASS, activeClassName) : className}
     >
       {active ? (

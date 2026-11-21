@@ -29,7 +29,7 @@ export const CROWN_GOLD = FIXED_COLORS.g;
  * @returns `#rrggbb` with every channel scaled by `STRIPE_SHADE`
  */
 export function darker(hex: string): string {
-  const value = parseInt(hex.slice(1), HEX_RADIX);
+  const value = Number.parseInt(hex.slice(1), HEX_RADIX);
   const channel = (part: number) =>
     Math.round(part * STRIPE_SHADE)
       .toString(HEX_RADIX)
